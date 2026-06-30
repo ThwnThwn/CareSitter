@@ -1,0 +1,13 @@
+# Build output
+bin/
+obj/
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# Bien moi truong (chua secret) — chi commit .env.example
+.env
+.env.local
+.env.*.local

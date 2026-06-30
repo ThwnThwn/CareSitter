@@ -1,0 +1,6 @@
+@CareSitter.ApiHost_HostAddress = http://localhost:5033
+
+GET {{CareSitter.ApiHost_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

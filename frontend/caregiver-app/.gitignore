@@ -1,0 +1,70 @@
+# ===========================================================
+# caregiver-app — Flutter
+# ===========================================================
+
+# ---------- Dart / Flutter tool ----------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+# pubspec.lock — NÊN commit cho Flutter app (đảm bảo team dùng đúng version)
+# Bỏ comment dòng dưới nếu đây là Flutter package (library):
+# pubspec.lock
+
+# ---------- Build artifacts ----------
+build/
+coverage/
+**/doc/api/
+app.*.symbols
+app.*.map.json
+
+# ---------- Android ----------
+**/android/.gradle/
+**/android/.kotlin/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+*.keystore
+*.jks
+
+# ---------- iOS / macOS ----------
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec/
+**/macos/Pods/
+**/Podfile.lock
+
+# ---------- Windows / Linux desktop ----------
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# ---------- Web ----------
+lib/generated_plugin_registrant.dart
+
+# ---------- Last build IDs ----------
+**/ios/Flutter/.last_build_id
+*.class
+
+# ---------- Environment ----------
+.env
+.env.local
+!.env.example
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ---------- IDE ----------
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.swp

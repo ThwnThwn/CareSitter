@@ -1,0 +1,101 @@
+# ===========================================================
+# CareSitter monorepo — root .gitignore
+# (backend: .NET | frontend: Flutter + web)
+# ===========================================================
+
+# ---------- Secrets / môi trường ----------
+# Chỉ commit *.env.example, KHÔNG commit file thật
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+secrets.json
+appsettings.*.Local.json
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---------- IDE / Editor ----------
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.iml
+*.ipr
+*.iws
+*.swp
+
+# ---------- Công cụ AI / trợ lý (cấu hình cục bộ) ----------
+.claude/
+.codex/
+.cursor/
+.fk-skills/
+**/*.local.json
+
+# =====================  BACKEND (.NET)  =====================
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.dll
+*.pdb
+TestResults/
+[Tt]est[Rr]esults/
+project.lock.json
+*.nupkg
+
+# =====================  FRONTEND (Flutter)  =================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+app.*.symbols
+app.*.map.json
+*.class
+
+# Android
+**/android/.gradle/
+**/android/.kotlin/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+*.keystore
+*.jks
+
+# iOS / macOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+**/Podfile.lock
+
+# Windows / Linux desktop build
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# =====================  FRONTEND (Web/Node)  ===============
+node_modules/
+dist/
+.next/
+.nuxt/
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -1,0 +1,73 @@
+# ===========================================================
+# customer-app — Flutter
+# ===========================================================
+
+# ---------- Miscellaneous ----------
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# ---------- IntelliJ / IDE ----------
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# ---------- Flutter / Dart / Pub ----------
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# ---------- Symbolication ----------
+app.*.symbols
+
+# ---------- Obfuscation ----------
+app.*.map.json
+
+# ---------- Android ----------
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/.gradle/
+**/android/.kotlin/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+*.keystore
+*.jks
+
+# ---------- iOS / macOS ----------
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec/
+**/macos/Pods/
+**/Podfile.lock
+
+# ---------- Windows / Linux desktop ----------
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# ---------- Environment ----------
+.env
+.env.local
+!.env.example

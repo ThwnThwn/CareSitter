@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\CareSitter.Infrastructure\CareSitter.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Identity\CareSitter.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\People\CareSitter.Modules.People.csproj" />
+    <ProjectReference Include="..\Modules\Catalog\CareSitter.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\Modules\Booking\CareSitter.Modules.Booking.csproj" />
+    <ProjectReference Include="..\Modules\Payments\CareSitter.Modules.Payments.csproj" />
+    <ProjectReference Include="..\Modules\Support\CareSitter.Modules.Support.csproj" />
+  </ItemGroup>
+
+</Project>

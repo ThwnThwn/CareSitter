@@ -1,0 +1,23 @@
+# Postgres + PostGIS cho dev local. Doc bien tu file .env.
+# Chay:  docker compose up -d
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: caresitter-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-caresitter}
+      POSTGRES_USER: ${POSTGRES_USER:-caresitter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-caresitter}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - caresitter-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-caresitter} -d ${POSTGRES_DB:-caresitter}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  caresitter-pgdata:
