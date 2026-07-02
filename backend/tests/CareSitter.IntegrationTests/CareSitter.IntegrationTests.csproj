@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ApiHost\CareSitter.ApiHost.csproj" />
+    <ProjectReference Include="..\..\caresitter-be\ApiHost\CareSitter.ApiHost.csproj" />
   </ItemGroup>
 
 </Project>
