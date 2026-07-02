@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Modules\Payments\CareSitter.Modules.Payments.csproj" />
-    <ProjectReference Include="..\..\src\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\caresitter-be\Modules\Payments\CareSitter.Modules.Payments.csproj" />
+    <ProjectReference Include="..\..\caresitter-be\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

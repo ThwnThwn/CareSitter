@@ -1,0 +1,64 @@
+using CareSitter.SharedKernel.Domain;
+using CareSitter.SharedKernel.Results;
+
+namespace CareSitter.Modules.Support.Domain;
+
+/// <summary>
+/// Aggregate root cho 1 tranh chap (dispute) gan voi 1 booking. Map sang bang support.disputes.
+/// Khong co created_at/updated_at — thoi diem mien nghiep vu la opened_at/resolved_at.
+/// </summary>
+public sealed class Dispute : AggregateRoot
+{
+    private Dispute() { } // EF
+
+    private Dispute(
+        Guid id,
+        Guid bookingId,
+        Guid raisedByUserId,
+        string? reason,
+        string? description) : base(id)
+    {
+        BookingId = bookingId;
+        RaisedByUserId = raisedByUserId;
+        Reason = reason;
+        Description = description;
+        Status = "OPEN";
+        OpenedAt = DateTimeOffset.UtcNow;
+    }
+
+    public Guid BookingId { get; private set; }
+    public Guid RaisedByUserId { get; private set; }
+
+    public string? Reason { get; private set; }
+    public string? Description { get; private set; }
+
+    /// <summary>Allowed values: OPEN, INVESTIGATING, RESOLVED, CANCELLED.</summary>
+    public string Status { get; private set; } = "OPEN";
+
+    /// <summary>jsonb — gom dispute_evidence.</summary>
+    public string? Evidence { get; private set; }
+
+    /// <summary>Allowed values: CUSTOMER_WINS, CAREGIVER_WINS, PARTIAL_REFUND.</summary>
+    public string? Decision { get; private set; }
+
+    public long? RefundAmount { get; private set; }
+    public long? CaregiverPenaltyAmount { get; private set; }
+    public Guid? DecidedByAdminId { get; private set; }
+
+    public DateTimeOffset OpenedAt { get; private set; }
+    public DateTimeOffset? ResolvedAt { get; private set; }
+
+    public static Result<Dispute> Create(
+        Guid bookingId,
+        Guid raisedByUserId,
+        string? reason = null,
+        string? description = null)
+    {
+        if (bookingId == Guid.Empty)
+            return Error.Validation("dispute.booking", "booking_id khong duoc rong.");
+        if (raisedByUserId == Guid.Empty)
+            return Error.Validation("dispute.raisedBy", "raised_by_user_id khong duoc rong.");
+
+        return new Dispute(Guid.NewGuid(), bookingId, raisedByUserId, reason, description);
+    }
+}
