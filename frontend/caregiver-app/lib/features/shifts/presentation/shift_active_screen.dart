@@ -1,0 +1,1052 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_widgets.dart';
+import '../../../core/router/navigation_helpers.dart';
+import '../../../core/mock/mock_data.dart';
+import 'providers/shifts_provider.dart';
+import '../../earnings/presentation/providers/earnings_provider.dart';
+
+class ShiftActiveScreen extends ConsumerStatefulWidget {
+  final String id;
+  const ShiftActiveScreen({super.key, required this.id});
+
+  @override
+  ConsumerState<ShiftActiveScreen> createState() => _ShiftActiveScreenState();
+}
+
+class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
+    with TickerProviderStateMixin {
+  // ── Check-in state ────────────────────────────────────────
+  int _checkInStep = 0; // 0 = not started, 1 = selfie, 2 = gps, 3 = done
+  bool _isCheckedIn = false;
+  DateTime? _checkInTime;
+
+  // ── Animated step transitions ─────────────────────────────
+  late AnimationController _stepAnim;
+  late Animation<double> _stepFade;
+
+  // ── Live work timer ───────────────────────────────────────
+  Timer? _timer;
+  Duration _elapsed = Duration.zero;
+
+  // ── Task photos ───────────────────────────────────────────
+  final Map<String, String> _taskPhotos = {};
+
+  // ── Caregiver note ────────────────────────────────────────
+  final TextEditingController _noteController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _stepAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _stepFade = CurvedAnimation(parent: _stepAnim, curve: Curves.easeOut);
+    _stepAnim.forward();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _stepAnim.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _checkInTime = DateTime.now();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _elapsed = DateTime.now().difference(_checkInTime!);
+        });
+      }
+    });
+  }
+
+  String get _elapsedLabel {
+    final h = _elapsed.inHours.toString().padLeft(2, '0');
+    final m = (_elapsed.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (_elapsed.inSeconds % 60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+
+  String get _checkInTimeLabel {
+    if (_checkInTime == null) return '';
+    final t = _checkInTime!;
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  // ── Advance through check-in steps ───────────────────────
+  Future<void> _advanceStep() async {
+    _stepAnim.reset();
+    setState(() => _checkInStep++);
+    await _stepAnim.forward();
+
+    if (_checkInStep == 3) {
+      // Small delay then mark as done
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) {
+        setState(() => _isCheckedIn = true);
+        _startTimer();
+      }
+    }
+  }
+
+  void _simulatePhotoCapture(String taskTitle) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Text('Đính kèm minh chứng',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt_rounded,
+                    color: AppColors.primary),
+              ),
+              title: const Text('Chụp ảnh minh chứng'),
+              subtitle: const Text('Mở camera để chụp ngay'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _savePhoto(taskTitle, 'photo_captured.jpg');
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.photo_library_rounded,
+                    color: AppColors.primary),
+              ),
+              title: const Text('Chọn từ Thư viện'),
+              subtitle: const Text('Tải ảnh đã có sẵn'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _savePhoto(taskTitle, 'photo_selected.jpg');
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _savePhoto(String taskTitle, String fileName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đang xử lý ảnh…'),
+        duration: Duration(milliseconds: 600),
+      ),
+    );
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() => _taskPhotos[taskTitle] = fileName);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Đã đính kèm ảnh cho: $taskTitle'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shifts = ref.watch(shiftsProvider);
+    MockBooking? booking;
+    for (final b in shifts) {
+      if (b.id == widget.id) {
+        booking = b;
+        break;
+      }
+    }
+
+    if (booking == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Ca đang diễn ra'),
+          leading: const AppBackButton(fallbackRoute: '/shifts'),
+        ),
+        body: const Center(
+          child: Text('Không tìm thấy thông tin ca làm việc này.',
+              style:
+                  TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+        ),
+      );
+    }
+
+    final allDone = booking.tasks.isNotEmpty &&
+        booking.tasks.every((t) => t.isCompleted);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Ca đang diễn ra'),
+        leading: const AppBackButton(fallbackRoute: '/shifts'),
+        actions: [
+          // Live timer chip (visible after check-in)
+          if (_isCheckedIn)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.timer_outlined,
+                      size: 14, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    _elapsedLabel,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          IconButton(
+            icon: const Icon(Icons.warning_amber_rounded,
+                color: AppColors.error),
+            tooltip: 'Báo cáo sự cố',
+            onPressed: _showIncidentReport,
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Check-in section ──
+            _isCheckedIn
+                ? _buildCheckedInBadge()
+                : _buildCheckInFlow(booking),
+            const SizedBox(height: 24),
+
+            // ── Checklist ──
+            Row(
+              children: [
+                const Text(
+                  'Checklist công việc',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary),
+                ),
+                const Spacer(),
+                if (booking.tasks.isNotEmpty)
+                  Text(
+                    '${booking.tasks.where((t) => t.isCompleted).length}/${booking.tasks.length}',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (booking.tasks.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('Không có checklist công việc đặc biệt.',
+                    style: TextStyle(
+                        fontSize: 14, color: AppColors.textSecondary)),
+              )
+            else
+              ...booking.tasks
+                  .map((task) => _buildChecklistItem(booking!, task)),
+
+            // ── Caregiver note ──
+            if (_isCheckedIn) ...[
+              const SizedBox(height: 24),
+              _buildNoteSection(),
+            ],
+
+            // ── Progress bar ──
+            if (_isCheckedIn && booking.tasks.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _buildProgressBar(booking),
+            ],
+
+            const SizedBox(height: 24),
+
+            // ── Check-out button ──
+            if (_isCheckedIn) _buildCheckOutButton(booking, allDone),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // CHECK-IN FLOW — 3 animated steps
+  // ════════════════════════════════════════════════════════
+  Widget _buildCheckInFlow(MockBooking booking) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        children: [
+          // Step indicator bar
+          _buildStepBar(),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: FadeTransition(
+              opacity: _stepFade,
+              child: _buildStepContent(booking),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepBar() {
+    const labels = ['Selfie', 'GPS', 'Xác nhận'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Row(
+        children: List.generate(3, (i) {
+          final stepNum = i + 1;
+          final isDone = _checkInStep > stepNum;
+          final isCurrent = _checkInStep == stepNum;
+          return Expanded(
+            child: Row(
+              children: [
+                // Circle
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDone
+                        ? AppColors.success
+                        : isCurrent
+                            ? AppColors.primary
+                            : AppColors.border,
+                  ),
+                  child: Center(
+                    child: isDone
+                        ? const Icon(Icons.check_rounded,
+                            size: 16, color: Colors.white)
+                        : Text(
+                            '$stepNum',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isCurrent
+                                  ? Colors.white
+                                  : AppColors.textHint,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  labels[i],
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isCurrent || isDone
+                        ? AppColors.textPrimary
+                        : AppColors.textHint,
+                  ),
+                ),
+                // Connector
+                if (i < 2)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: isDone ? AppColors.success : AppColors.border,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStepContent(MockBooking booking) {
+    switch (_checkInStep) {
+      case 0:
+        return _buildStep0Start(booking);
+      case 1:
+        return _buildStep1Selfie();
+      case 2:
+        return _buildStep2GPS(booking);
+      case 3:
+        return _buildStep3Confirm();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  // Step 0 — Not started
+  Widget _buildStep0Start(MockBooking booking) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on_rounded,
+                  color: AppColors.primary, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Địa chỉ ca làm việc',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                    Text(
+                      booking.address,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Bạn đã đến nơi chưa?',
+          style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Thực hiện check-in để bắt đầu ca làm việc\nvà ghi lại minh chứng có mặt.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.fingerprint_rounded),
+            label: const Text('Bắt đầu Check-in'),
+            onPressed: _advanceStep,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Step 1 — Selfie
+  Widget _buildStep1Selfie() {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          height: 140,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3), width: 2),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.face_retouching_natural_rounded,
+                    size: 40, color: AppColors.primary),
+              ),
+              const SizedBox(height: 8),
+              const Text('Khung chụp selfie',
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Chụp ảnh selfie tại địa điểm',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Ảnh selfie sẽ được gửi tới khách hàng\nnhư minh chứng bạn đã đến đúng địa điểm.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: const Text('Thư viện'),
+                onPressed: _advanceStep,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                label: const Text('Chụp ảnh'),
+                onPressed: _advanceStep,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Step 2 — GPS
+  Widget _buildStep2GPS(MockBooking booking) {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primaryContainer,
+                AppColors.primary.withValues(alpha: 0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.my_location_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('📍 Vị trí GPS hiện tại',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary)),
+                    Text(
+                      booking.address,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        '✅ Đúng địa điểm • Cách 48m',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Xác nhận vị trí GPS',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Hệ thống đã phát hiện bạn đang ở gần\nđịa chỉ khách hàng. Xác nhận để tiếp tục.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.check_circle_outline_rounded),
+            label: const Text('Xác nhận vị trí'),
+            onPressed: _advanceStep,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Step 3 — Confirm (auto-complete)
+  Widget _buildStep3Confirm() {
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 500),
+          builder: (ctx, v, child) => Transform.scale(scale: v, child: child),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_rounded,
+                color: AppColors.success, size: 56),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Check-in thành công!',
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Thông tin check-in đã được ghi lại\nvà gửi tới khách hàng.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ── Checked-in badge (after done) ────────────────────────
+  Widget _buildCheckedInBadge() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE8F8F0), Color(0xFFF0FBF5)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.success.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.verified_rounded,
+                color: AppColors.success, size: 28),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '✅ Đã Check-in',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.success),
+                ),
+                Text(
+                  'Lúc $_checkInTimeLabel • Cách 48m • Đã selfie + GPS',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          // Live timer
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text('Đang làm',
+                  style:
+                      TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              Text(
+                _elapsedLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Progress bar ─────────────────────────────────────────
+  Widget _buildProgressBar(MockBooking booking) {
+    final done = booking.tasks.where((t) => t.isCompleted).length;
+    final total = booking.tasks.length;
+    final ratio = total == 0 ? 0.0 : done / total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Tiến độ hoàn thành',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const Spacer(),
+            Text('${(ratio * 100).round()}%',
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: ratio,
+            minHeight: 8,
+            backgroundColor: AppColors.border,
+            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Checklist item ────────────────────────────────────────
+  Widget _buildChecklistItem(MockBooking booking, MockCareTask task) {
+    final hasPhoto = _taskPhotos.containsKey(task.title);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: task.isCompleted
+            ? AppColors.success.withValues(alpha: 0.05)
+            : AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color:
+              task.isCompleted ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
+        ),
+      ),
+      child: CheckboxListTile(
+        value: task.isCompleted,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                task.title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  decoration:
+                      task.isCompleted ? TextDecoration.lineThrough : null,
+                  color: task.isCompleted
+                      ? AppColors.textSecondary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            if (hasPhoto)
+              Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.image_rounded,
+                        size: 11, color: AppColors.success),
+                    SizedBox(width: 3),
+                    Text('Ảnh',
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        activeColor: AppColors.primary,
+        onChanged: _isCheckedIn
+            ? (val) {
+                if (val != null) {
+                  ref
+                      .read(shiftsProvider.notifier)
+                      .toggleTask(booking.id, task.title, val);
+                }
+              }
+            : null,
+        secondary: IconButton(
+          icon: Icon(
+            hasPhoto
+                ? Icons.camera_alt_rounded
+                : Icons.camera_alt_outlined,
+            color: hasPhoto ? AppColors.success : AppColors.textHint,
+            size: 22,
+          ),
+          tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
+          onPressed: _isCheckedIn
+              ? () => _simulatePhotoCapture(task.title)
+              : null,
+        ),
+      ),
+    );
+  }
+
+  // ── Caregiver note ────────────────────────────────────────
+  Widget _buildNoteSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Ghi chú cuối ca',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Ghi chú sẽ hiện trong báo cáo gửi khách hàng',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _noteController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Ví dụ: Bé ăn được 1 bát cháo, ngủ trưa 1 tiếng…',
+            hintStyle: const TextStyle(
+                fontSize: 13, color: AppColors.textHint),
+            filled: true,
+            fillColor: AppColors.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.all(14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Check-out button ─────────────────────────────────────
+  Widget _buildCheckOutButton(MockBooking booking, bool allDone) {
+    return Column(
+      children: [
+        if (!allDone)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    size: 18, color: AppColors.warning),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Hoàn thành tất cả công việc để check-out',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.warning),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            label: '✅  Hoàn thành ca & Check-out',
+            onPressed: allDone
+                ? () {
+                    ref
+                        .read(shiftsProvider.notifier)
+                        .checkOut(booking.id);
+                    ref.read(earningsProvider.notifier).addEarning(
+                        booking.caregiverEarning,
+                        booking.id,
+                        booking.beneficiaryName);
+                    context.go(
+                      '/shifts/${booking.id}/summary',
+                      extra: {
+                        'beneficiaryName': booking.beneficiaryName,
+                        'caregiverEarning': booking.caregiverEarning,
+                        'completedTasks': booking.tasks
+                            .where((t) => t.isCompleted)
+                            .length,
+                        'totalTasks': booking.tasks.length,
+                        'duration': booking.duration,
+                        'checkInTime': _checkInTimeLabel,
+                        'caregiverNote': _noteController.text,
+                        'taskPhotos': _taskPhotos.keys.toList(),
+                      },
+                    );
+                  }
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Incident report ───────────────────────────────────────
+  void _showIncidentReport() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('🚨 Báo cáo sự cố',
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text(
+                  'Mô tả sự cố — hệ thống sẽ thông báo ngay đến khách hàng và admin.',
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary)),
+              const SizedBox(height: 16),
+              const TextField(
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Mô tả vấn đề khẩn cấp…',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppButton(
+                label: 'Gửi báo cáo khẩn cấp',
+                backgroundColor: AppColors.error,
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã gửi báo cáo khẩn cấp'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
