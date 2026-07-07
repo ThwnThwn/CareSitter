@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/shift_status_style.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../core/mock/mock_data.dart';
 import 'providers/shifts_provider.dart';
 
@@ -41,8 +43,10 @@ class ShiftListScreen extends ConsumerWidget {
     final upcomingList = shifts.where((s) => s.status == 'confirmed' || s.status == 'in_progress').toList();
 
     if (upcomingList.isEmpty) {
-      return const Center(
-        child: Text('Không có ca làm việc sắp tới', style: TextStyle(color: AppColors.textSecondary)),
+      return const AppEmptyState(
+        icon: Icons.event_available_rounded,
+        title: 'Chưa có ca sắp tới',
+        message: 'Các ca bạn đã nhận sẽ xuất hiện ở đây.',
       );
     }
 
@@ -69,8 +73,10 @@ class ShiftListScreen extends ConsumerWidget {
     final pendingList = shifts.where((s) => s.status == 'pending').toList();
 
     if (pendingList.isEmpty) {
-      return const Center(
-        child: Text('Không có ca đang chờ phản hồi', style: TextStyle(color: AppColors.textSecondary)),
+      return const AppEmptyState(
+        icon: Icons.hourglass_empty_rounded,
+        title: 'Không có lời mời nào',
+        message: 'Khi có ca mới phù hợp, lời mời sẽ hiển thị tại đây.',
       );
     }
 
@@ -98,8 +104,10 @@ class ShiftListScreen extends ConsumerWidget {
     final historyList = shifts.where((s) => s.status == 'completed').toList();
 
     if (historyList.isEmpty) {
-      return const Center(
-        child: Text('Chưa có lịch sử ca làm việc', style: TextStyle(color: AppColors.textSecondary)),
+      return const AppEmptyState(
+        icon: Icons.history_rounded,
+        title: 'Chưa có lịch sử',
+        message: 'Các ca đã hoàn thành sẽ được lưu lại ở đây.',
       );
     }
 
@@ -133,44 +141,21 @@ class ShiftListScreen extends ConsumerWidget {
     required String status,
     bool isInvitation = false,
   }) {
-    Color statusColor;
-    String statusText;
-
-    switch (status) {
-      case 'in_progress':
-        statusColor = const Color(0xFF27AE60);
-        statusText = 'Đang diễn ra';
-        break;
-      case 'confirmed':
-      case 'upcoming':
-        statusColor = AppColors.primary;
-        statusText = 'Sắp tới';
-        break;
-      case 'pending':
-        statusColor = const Color(0xFFF2994A);
-        statusText = 'Chờ phản hồi';
-        break;
-      case 'completed':
-        statusColor = AppColors.textSecondary;
-        statusText = 'Hoàn thành';
-        break;
-      default:
-        statusColor = AppColors.textHint;
-        statusText = status;
-    }
+    final style = ShiftStatusStyle.of(status);
+    final statusColor = style.color;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
         boxShadow: AppShadows.card,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap: () {
             if (status == 'in_progress') {
               context.push('/shifts/$id/active');
@@ -221,21 +206,7 @@ class ShiftListScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    StatusBadge(label: style.label, color: statusColor),
                   ],
                 ),
                 const SizedBox(height: 16),

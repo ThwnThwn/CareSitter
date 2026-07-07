@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../../core/mock/mock_data.dart';
 import 'providers/shifts_provider.dart';
 import '../../earnings/presentation/providers/earnings_provider.dart';
@@ -30,9 +31,10 @@ class ShiftDetailScreen extends ConsumerWidget {
           title: const Text('Chi tiết ca'),
           leading: const AppBackButton(fallbackRoute: '/shifts'),
         ),
-        body: const Center(
-          child: Text('Không tìm thấy thông tin ca làm việc này.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+        body: const AppEmptyState(
+          icon: Icons.search_off_rounded,
+          title: 'Không tìm thấy ca làm việc',
+          message: 'Ca này có thể đã bị huỷ hoặc không còn tồn tại.',
         ),
       );
     }
@@ -111,7 +113,8 @@ class ShiftDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildTimeAndLocation(BuildContext context, MockBooking booking) {
-    return Column(
+    return GlassCard(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
@@ -161,6 +164,7 @@ class ShiftDetailScreen extends ConsumerWidget {
           ],
         ),
       ],
+    ),
     );
   }
 
@@ -194,40 +198,42 @@ class ShiftDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildChecklist(MockBooking booking) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Checklist công việc',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-        ),
-        const SizedBox(height: 12),
-        if (booking.tasks.isEmpty)
-          const Text('Không có checklist công việc đặc biệt.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary))
-        else
-          ...booking.tasks.map((task) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      task.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-                      color: task.isCompleted ? const Color(0xFF27AE60) : AppColors.textHint,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      task.title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                        decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Checklist công việc',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          if (booking.tasks.isEmpty)
+            const Text('Không có checklist công việc đặc biệt.',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary))
+          else
+            ...booking.tasks.map((task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        task.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                        color: task.isCompleted ? AppColors.success : AppColors.textHint,
+                        size: 20,
                       ),
-                    ),
-                  ],
-                ),
-              )),
-      ],
+                      const SizedBox(width: 12),
+                      Text(
+                        task.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+        ],
+      ),
     );
   }
 
@@ -298,7 +304,7 @@ class ShiftDetailScreen extends ConsumerWidget {
         },
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: const Color(0xFF27AE60),
+          backgroundColor: AppColors.success,
         ),
         child: const Text('Vào ca đang diễn ra', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
       ),
@@ -310,20 +316,20 @@ class ShiftDetailScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F8F0),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF27AE60)),
+        color: AppColors.successLight,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.success),
       ),
       child: Column(
         children: [
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.check_circle, color: Color(0xFF27AE60), size: 24),
+              Icon(Icons.check_circle, color: AppColors.success, size: 24),
               SizedBox(width: 8),
               Text(
                 'Ca làm việc đã hoàn thành',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF27AE60)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
               ),
             ],
           ),
@@ -334,7 +340,7 @@ class ShiftDetailScreen extends ConsumerWidget {
               const Text('Thu nhập của bạn:', style: TextStyle(fontSize: 14, color: AppColors.textPrimary)),
               Text(
                 '+ ${formatCurrency(booking.caregiverEarning)} ₫',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF27AE60)),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
               ),
             ],
           ),

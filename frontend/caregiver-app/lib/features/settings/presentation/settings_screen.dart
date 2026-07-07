@@ -68,7 +68,9 @@ class SettingsScreen extends ConsumerWidget {
               width: double.infinity,
               child: AppButton(
                 label: 'Đăng xuất',
+                icon: Icons.logout_rounded,
                 backgroundColor: AppColors.errorLight,
+                foregroundColor: AppColors.error,
                 onPressed: () {
                   ref.read(authStateProvider.notifier).logout();
                   context.go('/auth/phone');

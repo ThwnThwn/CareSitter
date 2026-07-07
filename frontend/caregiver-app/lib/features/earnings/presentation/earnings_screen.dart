@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
+import '../../../core/widgets/app_widgets.dart';
 import 'providers/earnings_provider.dart';
 
 class EarningsScreen extends ConsumerWidget {
@@ -46,9 +47,9 @@ class EarningsScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppShadows.card,
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        boxShadow: AppShadows.elevated,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,15 +99,26 @@ class EarningsScreen extends ConsumerWidget {
   }
 
   Widget _buildTransactionList(List<EarningTransaction> transactions) {
+    if (transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 24),
+        child: AppEmptyState(
+          icon: Icons.receipt_long_rounded,
+          title: 'Chưa có giao dịch',
+          message: 'Thu nhập và các lần rút tiền sẽ hiển thị tại đây.',
+        ),
+      );
+    }
     return Column(
       children: transactions.map((t) {
         final isIn = t.type == 'in';
+        final amountColor = isIn ? AppColors.success : AppColors.error;
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
@@ -114,16 +126,16 @@ class EarningsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isIn ? const Color(0xFFE8F8F0) : const Color(0xFFFDE8E8),
+                  color: amountColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                  color: isIn ? const Color(0xFF27AE60) : const Color(0xFFE74C3C),
+                  color: amountColor,
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +164,7 @@ class EarningsScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: isIn ? const Color(0xFF27AE60) : const Color(0xFFE74C3C),
+                  color: amountColor,
                 ),
               ),
             ],
