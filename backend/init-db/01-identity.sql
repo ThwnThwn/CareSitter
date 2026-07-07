@@ -16,8 +16,8 @@ SET search_path = identity, public;
 -- =====================================================================
 CREATE TABLE users (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  phone              varchar(20) NOT NULL,
-  email              varchar(255),
+  phone              varchar(20),
+  email              varchar(255) NOT NULL,
   display_name       varchar(255),
   avatar_media_id    uuid,
   status             varchar(50) NOT NULL DEFAULT 'ACTIVE'
@@ -37,8 +37,15 @@ CREATE TABLE users (
   last_login_at      timestamptz,
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now(),
-  deleted_at         timestamptz
+  deleted_at         timestamptz,
+  -- auth fields
+  password_hash      text,                          -- BCrypt hash, NULL neu dung OTP/Google login
+  google_id          varchar(255) UNIQUE            -- Google Subject ID ("sub"), NULL neu khong dung Google
 );
+
+-- Partial unique index: chi enforce unique khi google_id khong null
+CREATE UNIQUE INDEX idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+
 
 -- =====================================================================
 -- 2. user_devices + audit_logs

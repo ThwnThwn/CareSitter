@@ -104,3 +104,17 @@ VALUES
      ST_SetSRID(ST_MakePoint(106.700, 10.776), 4326)::geography, 5000,
      'a0000000-0000-0000-0000-000000000002')
 ON CONFLICT (id) DO NOTHING;
+
+-- 5. Dia chi mau cho customer Lan
+INSERT INTO catalog.addresses (id, owner_user_id, label, full_address, ward, district, city, location, note)
+VALUES
+    ('a0000000-0000-0000-0000-000000000071', 'a0000000-0000-0000-0000-0000000000c1',
+     'Nha rieng', '123 Nguyen Hue, Phuong Ben Nghe, Quan 1, TP. Ho Chi Minh',
+     'Ben Nghe', 'Quan 1', 'Ho Chi Minh',
+     ST_SetSRID(ST_MakePoint(106.702, 10.775), 4326)::geography, 'Chung cu lau 5')
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE identity.users
+SET default_address_id = 'a0000000-0000-0000-0000-000000000071'
+WHERE id = 'a0000000-0000-0000-0000-0000000000c1' AND default_address_id IS NULL;
+

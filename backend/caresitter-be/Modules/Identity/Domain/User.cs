@@ -11,13 +11,9 @@ public sealed class User : AggregateRoot
 {
     private User() { } // EF
 
-    private User(Guid id, string phone) : base(id)
-    {
-        Phone = phone;
-    }
 
-    public string Phone { get; private set; } = null!;
-    public string? Email { get; private set; }
+    public string? Phone { get; private set; }
+    public string Email { get; private set; } = null!;
     public string? DisplayName { get; private set; }
     public Guid? AvatarMediaId { get; private set; }
 
@@ -49,11 +45,76 @@ public sealed class User : AggregateRoot
     public DateTimeOffset? LastLoginAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
-    public static Result<User> Create(Guid id, string phone)
-    {
-        if (string.IsNullOrWhiteSpace(phone))
-            return Error.Validation("user.phone", "phone la bat buoc.");
+    /// <summary>BCrypt hash mật khẩu. Null nếu user không dùng password login.</summary>
+    public string? PasswordHash { get; private set; }
 
-        return new User(id, phone.Trim());
+    /// <summary>Google Subject ID ("sub" claim). Null nếu user không dùng Google login.</summary>
+    public string? GoogleId { get; private set; }
+
+    private User(Guid id, string email) : base(id)
+    {
+        Email = email;
+    }
+
+    public static Result<User> Create(Guid id, string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Error.Validation("user.email", "Email là bắt buộc.");
+
+        return new User(id, email.Trim().ToLowerInvariant());
+    }
+
+    /// <summary>
+    /// Cập nhật thông tin hồ sơ cơ bản của người dùng.
+    /// </summary>
+    /// <param name="fullName">Họ và tên đầy đủ.</param>
+    /// <param name="email">Địa chỉ email.</param>
+    /// <param name="displayName">Tên hiển thị trên giao diện.</param>
+    public void UpdateProfile(string? fullName, string? email, string? displayName)
+    {
+        FullName = fullName?.Trim();
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            Email = email.Trim().ToLowerInvariant();
+        }
+        DisplayName = !string.IsNullOrWhiteSpace(displayName) ? displayName.Trim() : fullName?.Trim();
+    }
+
+    /// <summary>
+    /// Thiết lập danh sách vai trò (roles) cho người dùng.
+    /// </summary>
+    /// <param name="roles">Mảng chứa các vai trò như CUSTOMER, CAREGIVER, ADMIN.</param>
+    public void SetRoles(string[] roles)
+    {
+        Roles = roles ?? Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// Ghi nhận thời điểm đăng nhập gần nhất của người dùng.
+    /// </summary>
+    /// <param name="time">Thời điểm đăng nhập.</param>
+    public void RecordLogin(DateTimeOffset time)
+    {
+        LastLoginAt = time;
+    }
+
+    /// <summary>
+    /// Thiết lập mật khẩu đã được hash bằng BCrypt cho tài khoản.
+    /// </summary>
+    /// <param name="passwordHash">BCrypt hash của mật khẩu.</param>
+    public void SetPassword(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+    }
+
+    /// <summary>
+    /// Liên kết tài khoản Google (Google Subject ID) với user này.
+    /// </summary>
+    /// <param name="googleId">Google Subject ID từ ID token.</param>
+    public void LinkGoogle(string googleId)
+    {
+        GoogleId = googleId;
     }
 }
+
+
