@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Auth Tester — CareSitter</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 720px; margin: 40px auto; padding: 20px; background: #f0f2f5; }
+    h1 { color: #1a1a2e; font-size: 22px; margin-bottom: 4px; }
+    .sub { color: #888; font-size: 13px; margin-bottom: 24px; }
+    .card { background: white; border-radius: 12px; padding: 20px; margin: 14px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card h3 { margin: 0 0 12px; color: #444; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    label { font-size: 13px; color: #666; display: block; margin-bottom: 4px; }
+    select, input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+    textarea { width: 100%; height: 90px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; font-size: 11px; resize: vertical; background: #fafafa; }
+    .btn { padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-primary { background: #4285F4; color: white; }
+    .btn-primary:hover { background: #357ae8; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; background: #eee; border-radius: 6px; border: none; cursor: pointer; }
+    .response { background: #1e1e1e; color: #4ec9b0; border-radius: 8px; padding: 14px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 60px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-ok { background: #e6f4ea; color: #2e7d32; }
+    .badge-err { background: #fdecea; color: #c62828; }
+    .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .token-preview { font-size: 11px; color: #999; margin-top: 6px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>🔑 Google Auth Tester</h1>
+  <p class="sub">Test endpoint <code>POST /api/v1/auth/google/callback</code> — CareSitter local</p>
+
+  <!-- Step 1: Sign in -->
+  <div class="card">
+    <h3>① Đăng nhập Google</h3>
+    <div id="g_id_onload"
+         data-client_id="340316840384-i62pjr37qimiif6dd57qoleijf2ha7lj.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="filled_blue"
+         data-text="sign_in_with"
+         data-shape="rectangular">
+    </div>
+    <div id="user-info" class="token-preview"></div>
+  </div>
+
+  <!-- Step 2: Config & Call API -->
+  <div class="card">
+    <h3>② Gọi API</h3>
+    <label>API Base URL</label>
+    <input id="api-url" value="http://localhost:5033" />
+
+    <label>Roles (cho lần đầu đăng ký qua Google)</label>
+    <select id="roles">
+      <option value="CUSTOMER">CUSTOMER</option>
+      <option value="CAREGIVER">CAREGIVER</option>
+      <option value="ADMIN">ADMIN</option>
+    </select>
+
+    <button class="btn btn-primary" onclick="callApi()">🚀 Gọi /api/v1/auth/google/callback</button>
+  </div>
+
+  <!-- Step 3: Response -->
+  <div class="card">
+    <h3>③ Kết quả <span id="status-badge"></span></h3>
+    <div class="response" id="response-box">Chưa có response...</div>
+    <br>
+    <button class="btn btn-sm" onclick="copyToken()">📋 Copy Access Token</button>
+  </div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    let idToken = null;
+    let accessToken = null;
+
+    function handleCredentialResponse(response) {
+      idToken = response.credential;
+      const payload = JSON.parse(atob(idToken.split('.')[1]));
+      document.getElementById('user-info').innerHTML =
+        `✅ Đã xác thực: <strong>${payload.name}</strong> (${payload.email}) — Token hết hạn lúc ${new Date(payload.exp * 1000).toLocaleTimeString()}`;
+    }
+
+    async function callApi() {
+      if (!idToken) { alert('Hãy đăng nhập Google trước!'); return; }
+
+      const baseUrl = document.getElementById('api-url').value.replace(/\/$/, '');
+      const role = document.getElementById('roles').value;
+      const box = document.getElementById('response-box');
+      const badge = document.getElementById('status-badge');
+
+      box.textContent = 'Đang gọi API...';
+      badge.textContent = '';
+
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/auth/google/callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, roles: [role] })
+        });
+
+        const data = await res.json();
+        box.textContent = JSON.stringify(data, null, 2);
+
+        if (res.ok) {
+          badge.className = 'badge badge-ok';
+          badge.textContent = `✅ ${res.status} OK`;
+          accessToken = data.accessToken;
+        } else {
+          badge.className = 'badge badge-err';
+          badge.textContent = `❌ ${res.status}`;
+        }
+      } catch (err) {
+        box.textContent = `Lỗi kết nối: ${err.message}\n\nKiểm tra backend đang chạy tại ${baseUrl}`;
+        badge.className = 'badge badge-err';
+        badge.textContent = '❌ Network Error';
+      }
+    }
+
+    function copyToken() {
+      if (!accessToken) { alert('Chưa có Access Token!'); return; }
+      navigator.clipboard.writeText(accessToken).then(() => alert('✅ Đã copy Access Token!\nPaste vào ô Authorize của Swagger.'));
+    }
+  </script>
+</body>
+</html>

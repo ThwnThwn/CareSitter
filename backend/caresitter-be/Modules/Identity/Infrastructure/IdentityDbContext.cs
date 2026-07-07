@@ -48,6 +48,9 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+            b.Property(x => x.PasswordHash).HasColumnName("password_hash");
+            b.Property(x => x.GoogleId).HasColumnName("google_id").HasMaxLength(255);
+            b.HasIndex(x => x.GoogleId).IsUnique().HasFilter("google_id IS NOT NULL");
         });
 
         modelBuilder.Entity<UserDevice>(b =>
@@ -84,7 +87,9 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.EntityId).HasColumnName("entity_id");
             b.Property(x => x.BeforeData).HasColumnName("before_data").HasColumnType("jsonb");
             b.Property(x => x.AfterData).HasColumnName("after_data").HasColumnType("jsonb");
-            b.Property(x => x.IpAddress).HasColumnName("ip_address").HasColumnType("inet");
+            // Dùng "text" thay vì "inet" vì Npgsql không tự convert C# string ↔ PostgreSQL inet.
+            // Giá trị IP address vẫn được lưu đúng, chỉ mất validation kiểu inet ở DB level.
+            b.Property(x => x.IpAddress).HasColumnName("ip_address").HasColumnType("text");
             b.Property(x => x.UserAgent).HasColumnName("user_agent");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
         });

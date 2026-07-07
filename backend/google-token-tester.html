@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Token Tester</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    #token-box {
+      width: 100%; height: 120px; margin-top: 16px;
+      font-family: monospace; font-size: 12px;
+      background: #1e1e1e; color: #4ec9b0; border: none;
+      border-radius: 8px; padding: 12px; box-sizing: border-box;
+    }
+    button.copy-btn {
+      margin-top: 10px; padding: 8px 20px;
+      background: #4285F4; color: white; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
+    }
+    button.copy-btn:hover { background: #357ae8; }
+    .info { color: #888; font-size: 13px; margin-top: 8px; }
+    .step { background: white; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .step h3 { margin: 0 0 8px; color: #555; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>🔑 Google ID Token Tester</h1>
+  <p>Dùng để lấy Google ID Token test <code>POST /api/v1/auth/google/callback</code></p>
+
+  <div class="step">
+    <h3>Bước 1 — Đăng nhập Google</h3>
+    <!-- Google Sign-In button sẽ render vào đây -->
+    <div id="g_id_onload"
+         data-client_id="340316840384-i62pjr37qimiif6dd57qoleijf2ha7lj.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="sign_in_with"
+         data-shape="rectangular">
+    </div>
+  </div>
+
+  <div class="step">
+    <h3>Bước 2 — Copy token vào Swagger</h3>
+    <textarea id="token-box" readonly placeholder="Token sẽ xuất hiện ở đây sau khi đăng nhập..."></textarea>
+    <br>
+    <button class="copy-btn" onclick="copyToken()">📋 Copy Token</button>
+    <p class="info">Token hợp lệ trong ~1 giờ. Paste vào body của POST /api/v1/auth/google/callback → field "idToken"</p>
+  </div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    function handleCredentialResponse(response) {
+      const token = response.credential;
+      document.getElementById('token-box').value = token;
+
+      // Parse để hiển thị thông tin user
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('Google user:', payload);
+      alert(`✅ Đã lấy token!\nUser: ${payload.name} (${payload.email})\nExpires: ${new Date(payload.exp * 1000).toLocaleString()}`);
+    }
+
+    function copyToken() {
+      const box = document.getElementById('token-box');
+      if (!box.value) { alert('Chưa có token! Hãy đăng nhập Google trước.'); return; }
+      navigator.clipboard.writeText(box.value).then(() => alert('✅ Đã copy token!'));
+    }
+  </script>
+</body>
+</html>
