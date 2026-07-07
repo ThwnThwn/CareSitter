@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/shift_status_style.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../shifts/presentation/providers/shifts_provider.dart';
@@ -114,14 +115,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isAvailable 
-                  ? const Color(0xFF27AE60).withValues(alpha: 0.15)
+              color: isAvailable
+                  ? AppColors.success.withValues(alpha: 0.15)
                   : AppColors.textHint.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isAvailable ? Icons.directions_run_rounded : Icons.pause_circle_outline_rounded,
-              color: isAvailable ? const Color(0xFF27AE60) : AppColors.textHint,
+              color: isAvailable ? AppColors.success : AppColors.textHint,
             ),
           ),
           const SizedBox(width: 16),
@@ -149,7 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           Switch(
             value: isAvailable,
-            activeTrackColor: const Color(0xFF27AE60),
+            activeTrackColor: AppColors.success,
             onChanged: (val) {
               ref.read(profileProvider.notifier).toggleAvailability();
             },
@@ -302,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Text('$completedCount ca đã hoàn thành', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
               const Spacer(),
-              const Text('+15% so với tháng trước', style: TextStyle(fontSize: 13, color: Color(0xFF27AE60), fontWeight: FontWeight.w600)),
+              const Text('+15% so với tháng trước', style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -365,17 +366,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         else
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Center(
-              child: Text(
-                'Không có ca làm việc sắp tới',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              ),
+            child: const Column(
+              children: [
+                Icon(Icons.event_busy_rounded, size: 36, color: AppColors.textHint),
+                SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Không có ca làm việc sắp tới',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Bật "Sẵn sàng nhận việc" để nhận ca mới',
+                  style: TextStyle(color: AppColors.textHint, fontSize: 12),
+                ),
+              ],
             ),
           ),
       ],
@@ -392,22 +402,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String status,
   }) {
     final isInProgress = status == 'in_progress';
-    final statusColor = isInProgress ? const Color(0xFF27AE60) : AppColors.primary;
-    final statusText = isInProgress ? 'Đang diễn ra' : 'Sắp tới';
+    final style = ShiftStatusStyle.of(status);
+    final statusColor = style.color;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
         boxShadow: AppShadows.card,
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: ListTile(
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: const EdgeInsets.all(AppSpacing.md),
           leading: CircleAvatar(
             backgroundColor: statusColor.withValues(alpha: 0.15),
             child: Text(
@@ -431,17 +441,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               )
             ],
           ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              statusText,
-              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-          ),
+          trailing: StatusBadge(label: style.label, color: statusColor),
           onTap: () {
             if (isInProgress) {
               context.push('/shifts/$id/active');

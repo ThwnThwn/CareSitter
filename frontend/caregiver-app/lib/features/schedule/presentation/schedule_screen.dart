@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/shift_status_style.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../shifts/presentation/providers/shifts_provider.dart';
 import 'providers/schedule_provider.dart';
@@ -628,46 +629,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   // ── Shift Card (similar to the reference image appointment card) ──
   Widget _buildShiftCard(TimelineShift shift) {
-    Color statusColor;
-    String statusLabel;
-    Color accentColor;
-
-    switch (shift.status) {
-      case 'in_progress':
-        // Xanh lá — đang diễn ra
-        statusColor = AppColors.success;
-        statusLabel = 'Đang diễn ra';
-        accentColor = AppColors.success;
-        break;
-      case 'confirmed':
-        // Xanh teal — đã xác nhận
-        statusColor = AppColors.statusConfirmed;
-        statusLabel = 'Đã xác nhận';
-        accentColor = AppColors.statusConfirmed;
-        break;
-      case 'pending':
-        // Cam — chờ xác nhận
-        statusColor = AppColors.statusPending;
-        statusLabel = 'Chờ xác nhận';
-        accentColor = AppColors.statusPending;
-        break;
-      case 'completed':
-        // Xanh dương nhạt / xám — hoàn thành
-        statusColor = AppColors.info;
-        statusLabel = 'Hoàn thành';
-        accentColor = AppColors.info;
-        break;
-      case 'cancelled':
-        // Đỏ — đã huỷ
-        statusColor = AppColors.error;
-        statusLabel = 'Đã huỷ';
-        accentColor = AppColors.error;
-        break;
-      default:
-        statusColor = AppColors.textHint;
-        statusLabel = shift.status;
-        accentColor = AppColors.textHint;
-    }
+    final style = ShiftStatusStyle.of(shift.status);
+    final statusColor = style.color;
+    final statusLabel = style.label;
+    final accentColor = style.color;
 
     return GestureDetector(
       onTap: () {
