@@ -175,17 +175,24 @@ class ShiftSummaryScreen extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.textSecondary, size: 20),
         const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            color: valueColor ?? AppColors.textPrimary,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
           ),
         ),
       ],

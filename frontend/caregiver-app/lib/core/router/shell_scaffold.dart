@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
 class ShellScaffold extends StatelessWidget {
@@ -31,13 +32,7 @@ class ShellScaffold extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          boxShadow: AppShadows.bottomBar,
         ),
         child: SafeArea(
           child: Padding(
@@ -121,7 +116,7 @@ class _NavBarItem extends StatelessWidget {
                   item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: GoogleFonts.beVietnamPro(
                     fontSize: 10,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                     color: isSelected ? AppColors.primary : AppColors.textHint,

@@ -383,14 +383,18 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  labels[i],
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isCurrent || isDone
-                        ? AppColors.textPrimary
-                        : AppColors.textHint,
+                Flexible(
+                  child: Text(
+                    labels[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isCurrent || isDone
+                          ? AppColors.textPrimary
+                          : AppColors.textHint,
+                    ),
                   ),
                 ),
                 // Connector
@@ -506,7 +510,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primaryContainer,
                   shape: BoxShape.circle,
                 ),
@@ -736,6 +740,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                 ),
                 Text(
                   'Lúc $_checkInTimeLabel • Cách 48m • Đã selfie + GPS',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontSize: 12, color: AppColors.textSecondary),
                 ),
