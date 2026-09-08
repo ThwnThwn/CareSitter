@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // ── Primary Teal Palette ──────────────────────────────
-  static const Color primary = Color(0xFF2F7F7F);
-  static const Color primaryLight = Color(0xFF3A8D8C);
-  static const Color primaryDark = Color(0xFF1F5F5F);
-  static const Color primaryContainer = Color(0xFFE0F4F4);
+  // ── Primary Emerald Green Palette ─────────────────────────────
+  static const Color primary = Color(0xFF2D9E6B);
+  static const Color primaryLight = Color(0xFF3DB87E);
+  static const Color primaryDark = Color(0xFF1E7A52);
+  static const Color primaryContainer = Color(0xFFE3F5EC);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color onPrimaryContainer = Color(0xFF1F5F5F);
+  static const Color onPrimaryContainer = Color(0xFF1E7A52);
 
   // ── Secondary / Accent ───────────────────────────────
   static const Color secondary = Color(0xFFF5A623);
@@ -16,15 +16,15 @@ class AppColors {
   static const Color onSecondary = Color(0xFFFFFFFF);
 
   // ── Surfaces ─────────────────────────────────────────
-  static const Color background = Color(0xFFEEF7F7);
-  static const Color surface = Color(0xFFF7FBFB);
-  static const Color surfaceVariant = Color(0xFFE8F5F5);
+  static const Color background = Color(0xFFF0F4F2);
+  static const Color surface = Color(0xFFF8FBF9);
+  static const Color surfaceVariant = Color(0xFFE8F2EC);
   static const Color cardBackground = Color(0xFFFFFFFF);
 
   // ── Text ─────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A2E2E);
-  static const Color textSecondary = Color(0xFF5A7272);
-  static const Color textHint = Color(0xFF9FBABA);
+  static const Color textPrimary = Color(0xFF0B1F17);
+  static const Color textSecondary = Color(0xFF3E4941);
+  static const Color textHint = Color(0xFF6E7A71);
   static const Color textOnDark = Color(0xFFFFFFFF);
 
   // ── State Colors ─────────────────────────────────────
@@ -32,42 +32,42 @@ class AppColors {
   static const Color successLight = Color(0xFFD5F5E3);
   static const Color warning = Color(0xFFF39C12);
   static const Color warningLight = Color(0xFFFEF9E7);
-  static const Color error = Color(0xFFE84040);
-  static const Color errorLight = Color(0xFFFDEDED);
-  static const Color info = Color(0xFF3498DB);
-  static const Color infoLight = Color(0xFFEBF5FB);
+  static const Color error = Color(0xFFBA1A1A);
+  static const Color errorLight = Color(0xFFFFEDED);
+  static const Color info = Color(0xFF1976D2);
+  static const Color infoLight = Color(0xFFE3F0FC);
 
   // ── Booking Status Colors ─────────────────────────────
   static const Color statusPending = Color(0xFFF39C12);
-  static const Color statusConfirmed = Color(0xFF3A8D8C);
-  static const Color statusInProgress = Color(0xFF2F7F7F);
-  static const Color statusCompleted = Color(0xFF2ECC71);
+  static const Color statusConfirmed = Color(0xFF2D9E6B);
+  static const Color statusInProgress = AppColors.primary;
+  static const Color statusCompleted = Color(0xFF2D9E6B);
   static const Color statusCancelled = Color(0xFF95A5A6);
-  static const Color statusCrisis = Color(0xFFE84040);
+  static const Color statusCrisis = Color(0xFFBA1A1A);
   static const Color statusDisputed = Color(0xFFE67E22);
 
   // ── Border / Divider ─────────────────────────────────
-  static const Color border = Color(0xFFD5E8E8);
-  static const Color borderFocus = Color(0xFF3A8D8C);
-  static const Color divider = Color(0xFFECF5F5);
+  static const Color border = Color(0xFFD0E8DA);
+  static const Color borderFocus = AppColors.primary;
+  static const Color divider = Color(0xFFE8F2EC);
 
   // ── Gradient ─────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
+    colors: [Color(0xFF34C47C), Color(0xFF2D9E6B)],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1F5F5F), Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
+    colors: [Color(0xFF0D4F2C), Color(0xFF1E7A52), Color(0xFF2D9E6B)],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE0F4F4), Color(0xFFF7FBFB)],
+    colors: [AppColors.primaryContainer, Color(0xFFF8FBF9)],
   );
 }
 
@@ -91,20 +91,20 @@ class AppTheme {
         onSecondaryContainer: Color(0xFF7A4800),
         tertiary: AppColors.primaryLight,
         onTertiary: Colors.white,
-        tertiaryContainer: Color(0xFFE0F4F4),
+        tertiaryContainer: AppColors.primaryContainer,
         onTertiaryContainer: AppColors.primaryDark,
         error: AppColors.error,
         onError: Colors.white,
         errorContainer: AppColors.errorLight,
-        onErrorContainer: Color(0xFF8B0000),
+        onErrorContainer: Color(0xFF680000),
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
         surfaceContainerHighest: AppColors.surfaceVariant,
         onSurfaceVariant: AppColors.textSecondary,
         outline: AppColors.border,
         outlineVariant: AppColors.divider,
-        shadow: Color(0x1A2F7F7F),
-        scrim: Color(0x801A2E2E),
+        shadow: Color(0x142D9E6B),
+        scrim: Color(0x800B1F17),
         inverseSurface: AppColors.textPrimary,
         onInverseSurface: Colors.white,
         inversePrimary: AppColors.primaryLight,
@@ -233,10 +233,10 @@ class AppTheme {
         disabledForegroundColor: AppColors.textHint,
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        minimumSize: const Size(double.infinity, 52),
-        textStyle: _textStyle(16, Colors.white, weight: FontWeight.w600),
+        minimumSize: const Size(double.infinity, 54),
+        textStyle: _textStyle(16, Colors.white, weight: FontWeight.w700),
       ),
     );
   }
@@ -246,10 +246,10 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: AppColors.primary, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        minimumSize: const Size(double.infinity, 52),
-        textStyle: _textStyle(16, AppColors.primary, weight: FontWeight.w600),
+        minimumSize: const Size(double.infinity, 54),
+        textStyle: _textStyle(16, AppColors.primary, weight: FontWeight.w700),
       ),
     );
   }
@@ -307,7 +307,7 @@ class AppTheme {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: AppColors.border, width: 1),
       ),
       margin: EdgeInsets.zero,
@@ -401,19 +401,26 @@ class AppRadius {
 }
 
 class AppShadows {
-  static List<BoxShadow> get card => [
-        BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-        ),
-      ];
+  static List<BoxShadow> get card =>
+        [
+          const BoxShadow(
+            color: Color(0x142D9E6B),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+          const BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 6,
+            offset: Offset(0, 1),
+          ),
+        ];
 
-  static List<BoxShadow> get elevated => [
-        BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.15),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
-      ];
+  static List<BoxShadow> get elevated =>
+        [
+          const BoxShadow(
+            color: Color(0x252D9E6B),
+            blurRadius: 24,
+            offset: Offset(0, 8),
+          ),
+        ];
 }

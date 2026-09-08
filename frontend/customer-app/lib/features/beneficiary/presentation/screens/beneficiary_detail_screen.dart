@@ -1,18 +1,22 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
+import '../../application/beneficiary_store.dart';
 
-class BeneficiaryDetailScreen extends StatelessWidget {
+class BeneficiaryDetailScreen extends ConsumerWidget {
   final String id;
   const BeneficiaryDetailScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context) {
-    final b = MockData.beneficiaries.firstWhere((x) => x.id == id,
-        orElse: () => MockData.beneficiaries.first);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final beneficiaries = ref.watch(beneficiaryStoreProvider);
+    final b = beneficiaries.firstWhere((x) => x.id == id,
+        orElse: () => beneficiaries.first);
     final careLevelColor = b.careLevel == 'Nặng'
         ? AppColors.error
         : b.careLevel == 'Trung bình'
@@ -25,7 +29,7 @@ class BeneficiaryDetailScreen extends StatelessWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 200,
+            expandedHeight: 220,
             backgroundColor: AppColors.primary,
             leading: const AppBackButton(
               fallbackRoute: '/beneficiaries',
@@ -41,21 +45,36 @@ class BeneficiaryDetailScreen extends StatelessWidget {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration:
-                    const BoxDecoration(gradient: AppColors.heroGradient),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF0D4F2C), Color(0xFF1E7A52), Color(0xFF2D9E6B)],
+                  ),
+                ),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 40),
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(b.avatarInitial,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800)),
-                      ),
+                      const SizedBox(height: 48),
+                      (() {
+                        final hasAvatar = b.avatarPath != null && b.avatarPath!.isNotEmpty;
+                        return CircleAvatar(
+                          radius: 46,
+                          backgroundColor: Colors.white.withValues(alpha: 0.22),
+                          backgroundImage: hasAvatar
+                              ? (kIsWeb
+                                  ? NetworkImage(b.avatarPath!) as ImageProvider
+                                  : FileImage(File(b.avatarPath!)) as ImageProvider)
+                              : null,
+                          child: hasAvatar
+                              ? null
+                              : Text(b.avatarInitial,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800)),
+                        );
+                      })(),
                       const SizedBox(height: 8),
                       Text(b.name,
                           style: const TextStyle(
@@ -65,7 +84,7 @@ class BeneficiaryDetailScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text('${b.age} tuổi · ${b.relation}',
                           style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withOpacity(0.8),
                               fontSize: 13)),
                     ]),
               ),
@@ -80,10 +99,10 @@ class BeneficiaryDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: careLevelColor.withValues(alpha: 0.1),
+                      color: careLevelColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: careLevelColor.withValues(alpha: 0.3)),
+                          color: careLevelColor.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
@@ -116,7 +135,7 @@ class BeneficiaryDetailScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => context.push('/booking/new'),
+                      onPressed: () => context.push('/booking/new?beneficiaryId=${b.id}'),
                       icon: const Icon(Icons.add),
                       label: Text('Đặt lịch cho ${b.name}'),
                     ),
@@ -132,7 +151,7 @@ class BeneficiaryDetailScreen extends StatelessWidget {
                         color: AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: AppColors.error.withValues(alpha: 0.25)),
+                            color: AppColors.error.withOpacity(0.25)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

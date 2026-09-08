@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/auth/presentation/screens/phone_input_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/email_input_screen.dart';
 import '../../features/auth/presentation/screens/otp_verify_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/notifications_screen.dart';
+import '../../features/home/presentation/activity_screen.dart';
 import '../../features/beneficiary/presentation/screens/beneficiary_list_screen.dart';
 import '../../features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
 import '../../features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
@@ -33,6 +36,84 @@ import 'shell_scaffold.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
+// ── Grab-style tab transition: micro-slide từ phải + fade ─────────────────────
+CustomTransitionPage<T> _grabTabPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) {
+  // Spring curve giống Grab app: ease-out cực nhanh, landing mềm
+  const spring = Cubic(0.16, 1.0, 0.30, 1.0);
+
+  return CustomTransitionPage<T>(
+    key: pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 350),
+    reverseTransitionDuration: const Duration(milliseconds: 280),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      // Slide: 3% từ phải sang (micro — vừa đủ thấy, không làm mất focus)
+      final slideIn = Tween<Offset>(
+        begin: const Offset(0.03, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: spring));
+
+      // Fade: 0 → 1 nhanh ở đầu
+      final fadeIn = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+      );
+
+      // Secondary (trang cũ đi ra): fade ra mềm + slide nhẹ sang trái
+      final slideOut = Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(-0.015, 0),
+      ).animate(
+          CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeIn));
+      final fadeOut = Tween<double>(begin: 1.0, end: 0.85).animate(
+        CurvedAnimation(
+            parent: secondaryAnimation,
+            curve: const Interval(0.0, 0.8, curve: Curves.easeIn)),
+      );
+
+      return SlideTransition(
+        position: slideOut,
+        child: FadeTransition(
+          opacity: fadeOut,
+          child: SlideTransition(
+            position: slideIn,
+            child: FadeTransition(
+              opacity: fadeIn,
+              child: child,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// ── Slide-up + Fade transition (dùng cho màn hình detail push lên trên) ─────
+CustomTransitionPage<T> _slideUpPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 450),
+    reverseTransitionDuration: const Duration(milliseconds: 350),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final slideAnim = Tween<Offset>(
+        begin: const Offset(0, 0.25),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart));
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: SlideTransition(position: slideAnim, child: child),
+      );
+    },
+  );
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   // Dựng GoRouter MỘT lần. Thay vì ref.watch (sẽ dựng lại toàn bộ router +
   // mất nav stack mỗi lần auth đổi), ta cầu nối auth state sang một Listenable
@@ -49,22 +130,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn =
           ref.read(authStateProvider).value?.isAuthenticated ?? false;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
-      if (!isLoggedIn && !isAuthRoute) return '/auth/phone';
+      if (!isLoggedIn && !isAuthRoute) return '/auth/login';
       if (isLoggedIn && isAuthRoute) return '/home';
       return null;
     },
     routes: [
       // ── Auth Routes ─────────────────────────────
       GoRoute(
+        path: '/auth/login',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const LoginScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/auth/register',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const RegisterScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/auth/email',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const EmailInputScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/auth/phone',
-        builder: (ctx, state) => const PhoneInputScreen(),
+        redirect: (ctx, state) => '/auth/email',
       ),
       GoRoute(
         path: '/auth/otp',
-        builder: (ctx, state) {
-          final phone = state.extra as String? ?? '';
-          return OtpVerifyScreen(phone: phone);
-        },
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: OtpVerifyScreen(email: state.extra as String? ?? ''),
+        ),
       ),
 
       // ── Shell (Bottom Nav) ───────────────────────
@@ -74,19 +176,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (ctx, state) => const HomeScreen(),
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const HomeScreen(),
+            ),
           ),
           GoRoute(
             path: '/bookings',
-            builder: (ctx, state) => const BookingListScreen(),
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const BookingListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/caregivers',
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const CaregiverListScreen(),
+            ),
           ),
           GoRoute(
             path: '/beneficiaries',
-            builder: (ctx, state) => const BeneficiaryListScreen(),
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const BeneficiaryListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/tracking',
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const ActivityScreen(),
+            ),
           ),
           GoRoute(
             path: '/settings',
-            builder: (ctx, state) => const SettingsScreen(),
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const SettingsScreen(),
+            ),
           ),
         ],
       ),
@@ -95,128 +223,175 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/beneficiaries/create',
-        builder: (ctx, state) => const BeneficiaryCreateScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const BeneficiaryCreateScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/beneficiaries/:id',
-        builder: (ctx, state) =>
-            BeneficiaryDetailScreen(id: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BeneficiaryDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
 
       // ── Catalog ──────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/catalog',
-        builder: (ctx, state) => const CatalogScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const CatalogScreen(),
+        ),
       ),
 
       // ── Notifications ─────────────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/notifications',
-        builder: (ctx, state) => const NotificationsScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const NotificationsScreen(),
+        ),
       ),
 
       // ── Booking ──────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/booking/new',
-        builder: (ctx, state) {
-          final serviceId = state.uri.queryParameters['serviceId'];
-          return BookingWizardScreen(initialServiceId: serviceId);
-        },
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BookingWizardScreen(
+            initialServiceId: state.uri.queryParameters['serviceId'],
+            initialBeneficiaryId: state.uri.queryParameters['beneficiaryId'],
+          ),
+        ),
       ),
       // ── Shift Tracking ───────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/bookings/:id/tracking',
-        builder: (ctx, state) =>
-            ShiftTrackingScreen(bookingId: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: ShiftTrackingScreen(bookingId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/bookings/:id/timeline',
-        builder: (ctx, state) =>
-            CareTimelineScreen(bookingId: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: CareTimelineScreen(bookingId: state.pathParameters['id']!),
+        ),
       ),
 
       // ── Review & Dispute ─────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/bookings/:id/review',
-        builder: (ctx, state) =>
-            ReviewScreen(bookingId: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: ReviewScreen(bookingId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/bookings/:id/dispute',
-        builder: (ctx, state) =>
-            DisputeScreen(bookingId: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: DisputeScreen(bookingId: state.pathParameters['id']!),
+        ),
       ),
 
       // ── Booking (generic :id — đặt SAU các sub-route cụ thể) ────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/bookings/:id',
-        builder: (ctx, state) =>
-            BookingDetailScreen(id: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BookingDetailScreen(id: state.pathParameters['id']!),
+        ),
       ),
 
       // ── Caregiver ────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/caregivers',
-        builder: (ctx, state) => const CaregiverListScreen(),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: '/caregivers/:id',
-        builder: (ctx, state) =>
-            CaregiverProfileScreen(id: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: CaregiverProfileScreen(id: state.pathParameters['id']!),
+        ),
       ),
 
       // ── Settings Sub-screens ─────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/profile/edit',
-        builder: (ctx, state) => const ProfileEditScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const ProfileEditScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/payment',
-        builder: (ctx, state) => const PaymentMethodsScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const PaymentMethodsScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/addresses',
-        builder: (ctx, state) => const SavedAddressesScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: SavedAddressesScreen(
+            selectionMode: state.uri.queryParameters['select'] == '1',
+            selectedAddressId: state.uri.queryParameters['selected'],
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/password',
-        builder: (ctx, state) => const ChangePasswordScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const ChangePasswordScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/2fa',
-        builder: (ctx, state) => const TwoFactorAuthScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const TwoFactorAuthScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/faq',
-        builder: (ctx, state) => const FaqScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const FaqScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/support',
-        builder: (ctx, state) => const SupportScreen(),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const SupportScreen(),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/beneficiaries/:id/edit',
-        builder: (ctx, state) =>
-            BeneficiaryEditScreen(id: state.pathParameters['id']!),
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BeneficiaryEditScreen(id: state.pathParameters['id']!),
+        ),
       ),
     ],
   );

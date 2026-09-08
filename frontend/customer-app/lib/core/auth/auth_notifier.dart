@@ -2,11 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'auth_state.dart';
 
-// ─────────────────────────────────────────────────────────────
-// 🔧 UI TEST MODE — đặt thành false khi kết nối backend thật
-const kDebugBypassAuth = true;
-// ─────────────────────────────────────────────────────────────
-
 const _storage = FlutterSecureStorage();
 
 const _kAccessToken = 'access_token';
@@ -21,16 +16,6 @@ final authStateProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
-    // 🔧 Bỏ qua auth khi test UI
-    if (kDebugBypassAuth) {
-      return const AuthState(
-        accessToken: 'mock_token',
-        refreshToken: 'mock_refresh',
-        userId: 'mock_user_001',
-        phone: '0901234567',
-        isAuthenticated: true,
-      );
-    }
     return _loadFromStorage();
   }
 

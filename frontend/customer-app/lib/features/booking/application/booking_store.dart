@@ -1,234 +1,211 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/auth/auth_notifier.dart';
+import '../../review/data/review_repository.dart';
+import '../data/booking_repository.dart';
+import '../data/models/booking_model.dart';
 
-import '../../../core/mock/mock_data.dart';
+export '../data/booking_repository.dart' show BookingDraft;
+export '../data/models/booking_model.dart';
 
-class BookingDraft {
-  final String beneficiaryId;
-  final String beneficiaryName;
-  final String caregiverId;
-  final String caregiverName;
-  final String caregiverAvatar;
-  final String serviceId;
-  final String serviceName;
-  final String date;
-  final String time;
-  final String duration;
-  final double totalPrice;
-  final String address;
-  final bool isSystemMatched;
-  final bool isDemoBooking;
-  final String paymentLabel;
-
-  const BookingDraft({
-    required this.beneficiaryId,
-    required this.beneficiaryName,
-    required this.caregiverId,
-    required this.caregiverName,
-    required this.caregiverAvatar,
-    required this.serviceId,
-    required this.serviceName,
-    required this.date,
-    required this.time,
-    required this.duration,
-    required this.totalPrice,
-    required this.address,
-    required this.isSystemMatched,
-    required this.isDemoBooking,
-    required this.paymentLabel,
-  });
-}
+// ── Provider ─────────────────────────────────────────────────────────────────
 
 final bookingStoreProvider =
-    NotifierProvider<BookingStore, List<MockBooking>>(BookingStore.new);
+    NotifierProvider<BookingStore, List<BookingModel>>(BookingStore.new);
 
-class BookingStore extends Notifier<List<MockBooking>> {
+/// BookingStore — quản lý state danh sách booking của customer.
+/// Luôn dùng real backend API (không có mock).
+class BookingStore extends Notifier<List<BookingModel>> {
+  BookingRepository get _repo => ref.read(bookingRepositoryProvider);
+
   @override
-  List<MockBooking> build() {
-    return MockData.bookings
-        .map((booking) => booking.tasks.isEmpty
-            ? booking.copyWith(tasks: defaultTasksFor(booking.serviceName))
-            : booking)
-        .toList(growable: false);
+  List<BookingModel> build() {
+    ref.listen(authStateProvider, (prev, next) {
+      final isAuth = next.value?.isAuthenticated ?? false;
+      if (isAuth) {
+        _loadFromApi();
+      } else {
+        state = const [];
+      }
+    });
+    _loadFromApi();
+    return const [];
   }
 
-  MockBooking createBooking(BookingDraft draft) {
-    final booking = MockBooking(
-      id: 'bk${DateTime.now().millisecondsSinceEpoch}',
-      beneficiaryId: draft.beneficiaryId,
-      beneficiaryName: draft.beneficiaryName,
-      caregiverId: draft.caregiverId,
-      caregiverName: draft.caregiverName,
-      caregiverAvatar: draft.caregiverAvatar,
-      serviceId: draft.serviceId,
-      serviceName: draft.serviceName,
-      date: draft.date,
-      time: draft.time,
-      duration: draft.duration,
-      status: 'pending',
-      totalPrice: draft.totalPrice,
-      address: draft.address,
-      isSystemMatched: draft.isSystemMatched,
-      isDemoBooking: draft.isDemoBooking,
-      paymentLabel: draft.paymentLabel,
-      consentAcceptedAt: DateTime.now(),
-      tasks: defaultTasksFor(draft.serviceName),
-    );
-    state = [booking, ...state];
-    return booking;
+  /// Fetch danh sách booking từ API và cập nhật state.
+  Future<void> refresh() => _loadFromApi();
+
+  Future<void> _loadFromApi() async {
+    final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    if (!isAuth) return;
+    try {
+      final response = await _repo.getBookings(pageSize: 50);
+      state = response.items;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] Lỗi load bookings: $e');
+    }
   }
 
-  void caregiverAccept(String bookingId) {
-    _transition(bookingId, from: const {'pending'}, to: 'confirmed');
+  // ── Lifecycle actions (gọi trực tiếp API, chờ response) ──────────────────
+
+  Future<BookingModel> createBooking(BookingDraft draft) async {
+    final created = await _repo.createBooking(draft);
+    state = [created, ...state];
+    return created;
   }
 
-  void caregiverEnRoute(String bookingId) {
-    _transition(bookingId, from: const {'confirmed'}, to: 'en_route');
+  Future<void> caregiverEnRoute(String bookingId) async {
+    try {
+      final updated = await _repo.startEnRoute(bookingId);
+      _applyUpdate(updated);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] caregiverEnRoute error: $e');
+    }
   }
 
-  void caregiverCheckIn(String bookingId) {
-    _transition(bookingId, from: const {'confirmed', 'en_route'}, to: 'in_progress');
+  Future<void> caregiverCheckIn(
+    String bookingId, {
+    double latitude = 10.7769,
+    double longitude = 106.6952,
+  }) async {
+    try {
+      final updated = await _repo.checkIn(bookingId,
+          latitude: latitude, longitude: longitude);
+      _applyUpdate(updated);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] caregiverCheckIn error: $e');
+    }
   }
 
-  void caregiverRequestCheckout(String bookingId) {
-    _replace(
-      bookingId,
-      (booking) {
-        _ensureStatus(booking, const {'in_progress'});
-        return booking.copyWith(
-          status: 'checkout_requested',
-          checkoutRequestedAt: DateTime.now(),
-          tasks: booking.tasks
-              .map((task) => task.copyWith(isCompleted: true))
-              .toList(growable: false),
+  Future<void> caregiverRequestCheckout(String bookingId) async {
+    try {
+      final updated = await _repo.requestCheckout(bookingId);
+      _applyUpdate(updated);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] requestCheckout error: $e');
+    }
+  }
+
+  Future<void> confirmPayment(String bookingId) async {
+    try {
+      final updated = await _repo.confirmPayment(bookingId);
+      _applyUpdate(updated);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] confirmPayment error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> confirmCompleted(String bookingId) async {
+    try {
+      final updated = await _repo.completeBooking(bookingId);
+      _applyUpdate(updated);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] confirmCompleted error: $e');
+    }
+  }
+
+  Future<void> cancel(String bookingId, {String? reason}) async {
+    try {
+      await _repo.cancelBooking(bookingId, reason: reason);
+      // Cập nhật status local để UI phản hồi ngay
+      _updateStatus(bookingId, 'cancelled');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] cancel error: $e');
+    }
+  }
+
+  Future<void> openDispute(String bookingId, String reason, {String? description}) async {
+    try {
+      await ref.read(reviewRepositoryProvider).createDispute(
+        bookingId: bookingId,
+        reason: reason,
+        description: description ?? reason,
+      );
+      state = [
+        for (final b in state)
+          if (b.id == bookingId)
+            b.copyWith(status: 'disputed', cancelReason: reason)
+          else
+            b,
+      ];
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] openDispute error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> markReviewed(
+    String bookingId, {
+    String? caregiverId,
+    int? rating,
+    String? comment,
+    String? experienceTags,
+  }) async {
+    try {
+      if (caregiverId != null && rating != null && rating > 0) {
+        await ref.read(reviewRepositoryProvider).createReview(
+          bookingId: bookingId,
+          caregiverId: caregiverId,
+          rating: rating,
+          comment: comment,
+          experienceTags: experienceTags,
         );
-      },
-    );
-  }
-
-  void confirmCompleted(String bookingId) {
-    _replace(
-      bookingId,
-      (booking) {
-        _ensureStatus(booking, const {'checkout_requested'});
-        return booking.copyWith(
-          status: 'completed',
-          completedAt: DateTime.now(),
-          platformRevenue: booking.totalPrice * 0.15,
-          caregiverEarning: booking.totalPrice * 0.85,
-        );
-      },
-    );
-  }
-
-  void openDispute(String bookingId, String reason) {
-    _replace(
-      bookingId,
-      (booking) {
-        _ensureStatus(
-          booking,
-          const {'in_progress', 'checkout_requested', 'completed'},
-        );
-        return booking.copyWith(status: 'disputed', disputeReason: reason);
-      },
-    );
-  }
-
-  void markReviewed(String bookingId) {
-    _replace(
-      bookingId,
-      (booking) {
-        _ensureStatus(booking, const {'completed'});
-        return booking.copyWith(isReviewed: true);
-      },
-    );
-  }
-
-  void cancel(String bookingId) {
-    _transition(
-      bookingId,
-      from: const {'pending', 'confirmed'},
-      to: 'cancelled',
-    );
+      }
+      state = [
+        for (final b in state)
+          if (b.id == bookingId) b.copyWith(isReviewed: true) else b,
+      ];
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] markReviewed error: $e');
+      state = [
+        for (final b in state)
+          if (b.id == bookingId) b.copyWith(isReviewed: true) else b,
+      ];
+      rethrow;
+    }
   }
 
   void toggleTask(String bookingId, int taskIndex) {
-    _replace(
-      bookingId,
-      (booking) {
-        _ensureStatus(booking, const {'in_progress'});
-        if (taskIndex < 0 || taskIndex >= booking.tasks.length) return booking;
-        final tasks = [...booking.tasks];
-        tasks[taskIndex] = tasks[taskIndex].copyWith(
-          isCompleted: !tasks[taskIndex].isCompleted,
-        );
-        return booking.copyWith(tasks: tasks);
-      },
-    );
-  }
-
-  void _transition(
-    String bookingId, {
-    required Set<String> from,
-    required String to,
-  }) {
-    _replace(bookingId, (booking) {
-      _ensureStatus(booking, from);
-      return booking.copyWith(status: to);
-    });
-  }
-
-  void _replace(
-    String bookingId,
-    MockBooking Function(MockBooking booking) update,
-  ) {
     state = [
-      for (final booking in state)
-        if (booking.id == bookingId) update(booking) else booking,
+      for (final b in state)
+        if (b.id == bookingId)
+          b.copyWith(
+            tasks: [
+              for (int i = 0; i < b.tasks.length; i++)
+                if (i == taskIndex)
+                  (b.tasks[i] is dynamic && b.tasks[i].copyWith != null)
+                      ? b.tasks[i].copyWith(isCompleted: !(b.tasks[i].isCompleted as bool))
+                      : b.tasks[i]
+                else
+                  b.tasks[i],
+            ],
+          )
+        else
+          b,
     ];
   }
 
-  void _ensureStatus(MockBooking booking, Set<String> allowed) {
-    if (!allowed.contains(booking.status)) {
-      throw StateError(
-        'Booking ${booking.id} không thể chuyển trạng thái từ ${booking.status}.',
-      );
-    }
-  }
-}
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-List<MockCareTask> defaultTasksFor(String serviceName) {
-  final normalized = serviceName.toLowerCase();
-  final specificTasks = <String>[];
-
-  if (normalized.contains('trẻ') || normalized.contains('bé')) {
-    specificTasks.addAll([
-      'Kiểm tra bữa ăn và dị ứng',
-      'Hoạt động vui chơi phù hợp độ tuổi',
-      'Vệ sinh cá nhân và thời gian nghỉ',
-    ]);
-  } else if (normalized.contains('dọn') || normalized.contains('việc nhà')) {
-    specificTasks.addAll([
-      'Xác nhận khu vực cần dọn dẹp',
-      'Dọn dẹp theo checklist gia đình',
-      'Kiểm tra và bàn giao đồ dùng',
-    ]);
-  } else if (normalized.contains('nấu')) {
-    specificTasks.addAll([
-      'Kiểm tra thực đơn và dị ứng',
-      'Chuẩn bị bữa ăn',
-      'Vệ sinh khu vực bếp',
-    ]);
-  } else {
-    specificTasks.addAll([
-      'Xác nhận tình trạng người được chăm sóc',
-      'Hỗ trợ sinh hoạt theo kế hoạch',
-      'Cập nhật ghi chú cho gia đình',
-    ]);
+  void _applyUpdate(BookingModel updated) {
+    state = [
+      for (final b in state) if (b.id == updated.id) updated else b,
+    ];
   }
 
-  return [
-    const MockCareTask(title: 'Check-in tại địa điểm', isCompleted: true),
-    ...specificTasks.map((title) => MockCareTask(title: title)),
-    const MockCareTask(title: 'Gửi báo cáo và yêu cầu kết thúc ca'),
-  ];
+  void _updateStatus(String id, String newStatus) {
+    state = [
+      for (final b in state)
+        if (b.id == id) b.copyWith(status: newStatus) else b,
+    ];
+  }
 }

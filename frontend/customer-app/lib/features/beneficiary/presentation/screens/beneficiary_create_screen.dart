@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/mock/mock_data.dart';
@@ -37,6 +40,7 @@ class _BeneficiaryCreateScreenState
   String _gender = 'Nam';
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
+  String? _avatarPath;
 
   // Thông tin cần biết (tag-based)
   final _conditionCtrl = TextEditingController();
@@ -60,6 +64,7 @@ class _BeneficiaryCreateScreenState
       _gender != 'Nam' ||
       _relation != 'Bố' ||
       _careLevel != 'Nhẹ' ||
+      _avatarPath != null ||
       _contacts.length != 2 ||
       _contacts.any(
         (entry) =>
@@ -67,6 +72,28 @@ class _BeneficiaryCreateScreenState
             entry.phoneCtrl.text.trim().isNotEmpty ||
             entry.relationship != 'Con trai',
       );
+
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _avatarPath = image.path;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ Lỗi chọn ảnh: $e')),
+      );
+    }
+  }
 
   static const _relations = [
     'Bố',
@@ -126,10 +153,9 @@ class _BeneficiaryCreateScreenState
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
 
-    if (mounted) {
-      ref.read(beneficiaryStoreProvider.notifier).add(
+    try {
+      await ref.read(beneficiaryStoreProvider.notifier).add(
             name: _nameCtrl.text,
             age: int.parse(_ageCtrl.text),
             relation: _relation,
@@ -146,7 +172,10 @@ class _BeneficiaryCreateScreenState
                   ),
                 )
                 .toList(growable: false),
+            avatarPath: _avatarPath,
           );
+
+      if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -155,6 +184,15 @@ class _BeneficiaryCreateScreenState
         ),
       );
       popOrGo(context, fallbackRoute: '/beneficiaries');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thêm được người thân. Vui lòng thử lại.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -198,20 +236,54 @@ class _BeneficiaryCreateScreenState
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Avatar placeholder
+              // Avatar edit section
               Center(
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        width: 2.5),
-                  ),
-                  child: const Icon(Icons.person_add_outlined,
-                      size: 40, color: AppColors.primary),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            width: 2.5),
+                        image: _avatarPath != null && _avatarPath!.isNotEmpty
+                            ? DecorationImage(
+                                image: kIsWeb
+                                    ? NetworkImage(_avatarPath!)
+                                        as ImageProvider
+                                    : FileImage(File(_avatarPath!))
+                                        as ImageProvider,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: _avatarPath != null && _avatarPath!.isNotEmpty
+                          ? null
+                          : const Center(
+                              child: Icon(Icons.person_add_outlined,
+                                  size: 40, color: AppColors.primary),
+                            ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 14),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 28),
@@ -385,7 +457,8 @@ class _BeneficiaryCreateScreenState
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.4)),
+                    color: AppColors.warning.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

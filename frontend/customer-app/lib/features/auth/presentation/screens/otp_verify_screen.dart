@@ -1,25 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/auth_repository.dart';
 
-class OtpVerifyScreen extends StatefulWidget {
-  final String phone;
-  const OtpVerifyScreen({super.key, required this.phone});
+class OtpVerifyScreen extends ConsumerStatefulWidget {
+  final String email;
+  const OtpVerifyScreen({super.key, required this.email});
 
   @override
-  State<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
+  ConsumerState<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
 }
 
-class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
+class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   int _countdown = 60;
   Timer? _timer;
   bool _isVerifying = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -54,6 +57,28 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     });
   }
 
+  Future<void> _resendOtp() async {
+    _startCountdown();
+    setState(() => _errorMessage = null);
+    try {
+      await ref.read(authRepositoryProvider).sendOtp(widget.email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Không thể gửi lại mã OTP. Vui lòng thử lại sau.';
+        });
+      }
+    }
+  }
+
   String get _otp => _controllers.map((c) => c.text).join();
 
   void _onDigitChanged(int index, String value) {
@@ -68,11 +93,28 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
   }
 
   Future<void> _verify() async {
-    setState(() => _isVerifying = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() => _isVerifying = false);
-      context.go('/home');
+    if (_otp.length < 6) return;
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(authRepositoryProvider).loginWithOtp(
+            widget.email,
+            _otp,
+          );
+      if (mounted) context.go('/home');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+          _errorMessage = 'Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.';
+          for (final c in _controllers) {
+            c.clear();
+          }
+        });
+        _focusNodes[0].requestFocus();
+      }
     }
   }
 
@@ -84,12 +126,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const AppBackButton(
-          fallbackRoute: '/auth/phone',
+          fallbackRoute: '/auth/email',
           color: AppColors.textPrimary,
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,9 +164,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                       fontSize: 14,
                       height: 1.5),
                   children: [
-                    const TextSpan(text: 'Mã OTP đã được gửi đến\n'),
+                    const TextSpan(text: 'Mã xác thực 6 chữ số đã được gửi đến\n'),
                     TextSpan(
-                      text: widget.phone,
+                      text: widget.email,
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
@@ -133,12 +175,44 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          color: AppColors.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) => _buildOtpBox(index)),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -158,7 +232,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               color: Colors.white, strokeWidth: 2.5),
                         )
                       : const Text(
-                          'Xác nhận',
+                          'Xác nhận đăng nhập',
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -184,9 +258,10 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           ],
                         ),
                       )
-                    : TextButton(
-                        onPressed: _startCountdown,
-                        child: const Text(
+                    : TextButton.icon(
+                        onPressed: _resendOtp,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text(
                           'Gửi lại mã OTP',
                           style: TextStyle(
                               color: AppColors.primary,
@@ -205,8 +280,8 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     final isFocused = _focusNodes[index].hasFocus;
     final hasValue = _controllers[index].text.isNotEmpty;
     return SizedBox(
-      width: 48,
-      height: 56,
+      width: 46,
+      height: 54,
       child: TextField(
         controller: _controllers[index],
         focusNode: _focusNodes[index],
@@ -215,7 +290,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
         maxLength: 1,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         style: const TextStyle(
-          fontSize: 22,
+          fontSize: 20,
           fontWeight: FontWeight.w800,
           color: AppColors.primary,
         ),
@@ -242,8 +317,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        onChanged: (v) => _onDigitChanged(index, v),
+        onChanged: (value) => _onDigitChanged(index, value),
       ),
     );
   }

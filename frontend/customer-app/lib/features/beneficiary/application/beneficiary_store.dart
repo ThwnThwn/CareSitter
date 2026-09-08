@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/dio_client.dart';
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/mock/mock_data.dart';
+import '../../catalog/application/address_store.dart';
 
 final beneficiaryStoreProvider =
     NotifierProvider<BeneficiaryStore, List<MockBeneficiary>>(
@@ -9,9 +13,47 @@ final beneficiaryStoreProvider =
 
 class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
   @override
-  List<MockBeneficiary> build() => [...MockData.beneficiaries];
+  List<MockBeneficiary> build() {
+    // Lắng nghe đăng nhập để tải dữ liệu người thân của user thật
+    ref.listen(authStateProvider, (prev, next) {
+      final isAuth = next.value?.isAuthenticated ?? false;
+      if (isAuth) {
+        _loadFromBackend();
+      } else {
+        state = const [];
+      }
+    });
 
-  MockBeneficiary add({
+    _loadFromBackend();
+    // Tài khoản người dùng mới bắt đầu với danh sách rỗng
+    return const [];
+  }
+
+  Future<void> _loadFromBackend() async {
+    final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    if (!isAuth) return;
+
+    try {
+      final dio = ref.read(dioClientProvider);
+      final addresses = await _readAddresses();
+      final addressesById = {
+        for (final address in addresses) address.id: address
+      };
+      final resp = await dio.get<List<dynamic>>('/beneficiaries');
+      if (resp.data != null) {
+        final list = resp.data!
+            .whereType<Map<String, dynamic>>()
+            .map((item) => _fromBackend(item, addressesById: addressesById))
+            .toList();
+
+        state = list;
+      }
+    } catch (_) {
+      // Khi có lỗi mạng hoặc tài khoản mới chưa có data → giữ state hiện tại
+    }
+  }
+
+  Future<MockBeneficiary> add({
     required String name,
     required int age,
     required String relation,
@@ -20,7 +62,8 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     required String notes,
     required String address,
     required List<EmergencyContact> emergencyContacts,
-  }) {
+    String? avatarPath,
+  }) async {
     final initials = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -28,19 +71,214 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
         .map((part) => part[0].toUpperCase())
         .take(3)
         .join();
+    final localId = 'b${DateTime.now().millisecondsSinceEpoch}';
     final beneficiary = MockBeneficiary(
-      id: 'b${DateTime.now().millisecondsSinceEpoch}',
+      id: localId,
       name: name.trim(),
       age: age,
       relation: relation,
-      avatarInitial: initials,
+      avatarInitial: initials.isNotEmpty ? initials : 'B',
       condition: condition.isEmpty ? 'Chưa có ghi chú' : condition,
       careLevel: careLevel,
       notes: notes.trim(),
       address: address.trim(),
       emergencyContacts: [...emergencyContacts],
+      avatarPath: avatarPath,
     );
     state = [...state, beneficiary];
-    return beneficiary;
+
+    final synced = await _syncAddToBackend(beneficiary);
+    return synced ?? beneficiary;
+  }
+
+  Future<MockBeneficiary?> _syncAddToBackend(MockBeneficiary b) async {
+    final dio = ref.read(dioClientProvider);
+
+    AddressModel? createdAddress;
+    if (b.address.isNotEmpty) {
+      createdAddress = await ref.read(addressStoreProvider.notifier).addAddress(
+            fullAddress: b.address,
+            latitude: 10.7769,
+            longitude: 106.7009,
+            label: 'Địa chỉ của ${b.name}',
+            city: 'Ho Chi Minh',
+          );
+      state = [
+        for (final item in state)
+          if (item.id == b.id)
+            item.copyWith(defaultAddressId: createdAddress.id)
+          else
+            item,
+      ];
+    }
+
+    final approxBirthYear = DateTime.now().year - b.age;
+    final resp = await dio.post<Map<String, dynamic>>('/beneficiaries', data: {
+      'FullName': b.name,
+      'DateOfBirth': '$approxBirthYear-01-01',
+      'RelationshipToCustomer': b.relation,
+      'GeneralNote': b.condition,
+      'CareInstructions': b.notes,
+      if (createdAddress != null) 'DefaultAddressId': createdAddress.id,
+    });
+
+    final synced = resp.data == null
+        ? null
+        : _fromBackend(
+            resp.data!,
+            addressesById: {
+              if (createdAddress != null) createdAddress.id: createdAddress,
+            },
+          );
+    await _loadFromBackend();
+    return synced;
+  }
+
+  void update(
+    String id, {
+    String? name,
+    int? age,
+    String? relation,
+    String? condition,
+    String? careLevel,
+    String? notes,
+    String? address,
+    List<EmergencyContact>? emergencyContacts,
+    String? avatarPath,
+  }) {
+    MockBeneficiary? updatedItem;
+    state = [
+      for (final b in state)
+        if (b.id == id)
+          (() {
+            final updated = b.copyWith(
+              name: name,
+              age: age,
+              relation: relation,
+              avatarInitial: name
+                  ?.trim()
+                  .split(RegExp(r'\s+'))
+                  .where((part) => part.isNotEmpty)
+                  .map((part) => part[0].toUpperCase())
+                  .take(3)
+                  .join(),
+              condition: condition,
+              careLevel: careLevel,
+              notes: notes,
+              address: address,
+              emergencyContacts: emergencyContacts,
+              avatarPath: avatarPath,
+            );
+            updatedItem = updated;
+            return updated;
+          })()
+        else
+          b
+    ];
+
+    if (updatedItem != null) {
+      unawaited(_syncUpdateToBackend(id, updatedItem!));
+    }
+  }
+
+  Future<void> _syncUpdateToBackend(String id, MockBeneficiary b) async {
+    final isGuid = RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+        .hasMatch(id);
+    if (!isGuid) return;
+
+    try {
+      final dio = ref.read(dioClientProvider);
+      var defaultAddressId = b.defaultAddressId;
+      if (defaultAddressId == null && b.address.isNotEmpty) {
+        final createdAddress =
+            await ref.read(addressStoreProvider.notifier).addAddress(
+                  fullAddress: b.address,
+                  latitude: 10.7769,
+                  longitude: 106.7009,
+                  label: 'Địa chỉ của ${b.name}',
+                  city: 'Ho Chi Minh',
+                );
+        defaultAddressId = createdAddress.id;
+      }
+
+      final approxBirthYear = DateTime.now().year - b.age;
+      await dio.put('/beneficiaries/$id', data: {
+        'FullName': b.name,
+        'DateOfBirth': '$approxBirthYear-01-01',
+        'RelationshipToCustomer': b.relation,
+        'GeneralNote': b.condition,
+        'CareInstructions': b.notes,
+        if (defaultAddressId != null) 'DefaultAddressId': defaultAddressId,
+      });
+      await _loadFromBackend();
+    } catch (_) {}
+  }
+
+  void delete(String id) {
+    state = state.where((b) => b.id != id).toList();
+    try {
+      ref.read(dioClientProvider).delete('/beneficiaries/$id');
+    } catch (_) {}
+  }
+
+  Future<List<AddressModel>> _readAddresses() async {
+    try {
+      return await ref.read(addressStoreProvider.future);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  MockBeneficiary _fromBackend(
+    Map<String, dynamic> map, {
+    required Map<String, AddressModel> addressesById,
+  }) {
+    final id = (map['id'] ?? map['Id'])?.toString() ?? '';
+    final fullName =
+        (map['fullName'] ?? map['FullName']) as String? ?? 'Người thân';
+    final dobStr = (map['dateOfBirth'] ?? map['DateOfBirth']) as String?;
+    var age = 70;
+    if (dobStr != null) {
+      final parsedDob = DateTime.tryParse(dobStr);
+      if (parsedDob != null) {
+        age = DateTime.now().year - parsedDob.year;
+      }
+    }
+    final relation = (map['relationshipToCustomer'] ??
+            map['RelationshipToCustomer']) as String? ??
+        'Người thân';
+    final mobilityNote =
+        (map['mobilityNote'] ?? map['MobilityNote']) as String?;
+    final generalNote = (map['generalNote'] ?? map['GeneralNote']) as String?;
+    final careInstructions =
+        (map['careInstructions'] ?? map['CareInstructions']) as String? ?? '';
+    final defaultAddressId =
+        (map['defaultAddressId'] ?? map['DefaultAddressId'])?.toString();
+    final address = defaultAddressId == null
+        ? ''
+        : addressesById[defaultAddressId]?.fullAddress ?? '';
+
+    final initials = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase())
+        .take(3)
+        .join();
+
+    return MockBeneficiary(
+      id: id,
+      name: fullName,
+      age: age,
+      relation: relation,
+      avatarInitial: initials.isNotEmpty ? initials : 'B',
+      condition: generalNote ?? mobilityNote ?? 'Bình thường',
+      careLevel: 'Trung bình',
+      notes: careInstructions,
+      address: address,
+      defaultAddressId: defaultAddressId,
+      emergencyContacts: const [],
+    );
   }
 }
