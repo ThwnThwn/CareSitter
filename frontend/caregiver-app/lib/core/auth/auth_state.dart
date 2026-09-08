@@ -5,6 +5,7 @@ class AuthState extends Equatable {
   final String? refreshToken;
   final String? userId;
   final String? phone;
+  final List<String> roles;
   final bool isAuthenticated;
 
   const AuthState({
@@ -12,6 +13,7 @@ class AuthState extends Equatable {
     this.refreshToken,
     this.userId,
     this.phone,
+    this.roles = const [],
     this.isAuthenticated = false,
   });
 
@@ -22,6 +24,7 @@ class AuthState extends Equatable {
     String? refreshToken,
     String? userId,
     String? phone,
+    List<String>? roles,
     bool? isAuthenticated,
   }) {
     return AuthState(
@@ -29,10 +32,12 @@ class AuthState extends Equatable {
       refreshToken: refreshToken ?? this.refreshToken,
       userId: userId ?? this.userId,
       phone: phone ?? this.phone,
+      roles: roles ?? this.roles,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );
   }
 
   @override
-  List<Object?> get props => [accessToken, userId, phone, isAuthenticated];
+  List<Object?> get props =>
+      [accessToken, userId, phone, roles, isAuthenticated];
 }

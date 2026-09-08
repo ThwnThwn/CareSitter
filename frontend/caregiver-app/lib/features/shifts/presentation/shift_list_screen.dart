@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/shift_status_style.dart';
 import '../../../core/widgets/app_widgets.dart';
@@ -28,19 +29,29 @@ class ShiftListScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildUpcomingShifts(context, ref, shifts),
-            _buildPendingShifts(context, ref, shifts),
-            _buildHistoryShifts(context, ref, shifts),
-          ],
+        body: RefreshIndicator(
+          onRefresh: () => ref.read(shiftsProvider.notifier).refresh(),
+          child: TabBarView(
+            children: [
+              _buildUpcomingShifts(context, ref, shifts),
+              _buildPendingShifts(context, ref, shifts),
+              _buildHistoryShifts(context, ref, shifts),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildUpcomingShifts(BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
-    final upcomingList = shifts.where((s) => s.status == 'confirmed' || s.status == 'in_progress').toList();
+  Widget _buildUpcomingShifts(
+      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+    final upcomingList = shifts
+        .where((s) =>
+            s.status == 'confirmed' ||
+            s.status == 'assigned' ||
+            s.status == 'caregiver_en_route' ||
+            s.status == 'in_progress')
+        .toList();
 
     if (upcomingList.isEmpty) {
       return const AppEmptyState(
@@ -69,8 +80,11 @@ class ShiftListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPendingShifts(BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
-    final pendingList = shifts.where((s) => s.status == 'pending').toList();
+  Widget _buildPendingShifts(
+      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+    final pendingList = shifts
+        .where((s) => s.status == 'pending' || s.status == 'open')
+        .toList();
 
     if (pendingList.isEmpty) {
       return const AppEmptyState(
@@ -100,7 +114,8 @@ class ShiftListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHistoryShifts(BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+  Widget _buildHistoryShifts(
+      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
     final historyList = shifts.where((s) => s.status == 'completed').toList();
 
     if (historyList.isEmpty) {
@@ -143,13 +158,17 @@ class ShiftListScreen extends ConsumerWidget {
   }) {
     final style = ShiftStatusStyle.of(status);
     final statusColor = style.color;
+    final isPending = status == 'pending' || status == 'open';
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+            color: isPending
+                ? AppColors.statusPending.withValues(alpha: 0.3)
+                : AppColors.border),
         boxShadow: AppShadows.card,
       ),
       child: Material(
@@ -176,7 +195,7 @@ class ShiftListScreen extends ConsumerWidget {
                       backgroundColor: AppColors.primaryContainer,
                       child: Text(
                         beneficiaryName.substring(0, 1),
-                        style: const TextStyle(
+                        style: GoogleFonts.beVietnamPro(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 18),
@@ -189,7 +208,7 @@ class ShiftListScreen extends ConsumerWidget {
                         children: [
                           Text(
                             beneficiaryName,
-                            style: const TextStyle(
+                            style: GoogleFonts.beVietnamPro(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -198,7 +217,7 @@ class ShiftListScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text(
                             serviceName,
-                            style: const TextStyle(
+                            style: GoogleFonts.beVietnamPro(
                               fontSize: 14,
                               color: AppColors.textSecondary,
                             ),
@@ -206,34 +225,60 @@ class ShiftListScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    StatusBadge(label: style.label, color: statusColor),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: style.backgroundColor,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        style.label,
+                        style: GoogleFonts.beVietnamPro(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 const Divider(height: 1, color: AppColors.border),
                 const SizedBox(height: 16),
-                Row(
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
                   children: [
-                    const Icon(Icons.access_time_rounded,
-                        size: 16, color: AppColors.textSecondary),
-                    const SizedBox(width: 6),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time_rounded,
+                            size: 16, color: AppColors.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          time,
+                          style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.calendar_month_rounded,
-                        size: 16, color: AppColors.textSecondary),
-                    const SizedBox(width: 6),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_month_rounded,
+                            size: 16, color: AppColors.textSecondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          date,
+                          style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -244,7 +289,9 @@ class ShiftListScreen extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () {
-                            ref.read(shiftsProvider.notifier).declineBooking(id);
+                            ref
+                                .read(shiftsProvider.notifier)
+                                .declineBooking(id);
                           },
                           child: const Text('Từ chối'),
                         ),

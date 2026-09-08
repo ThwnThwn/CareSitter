@@ -1,0 +1,35 @@
+/// API path constants cho CareSitter Caregiver App.
+/// baseUrl: --dart-define=BASE_URL=http://localhost:5033/api/v1
+library;
+
+const String kBaseUrl = String.fromEnvironment(
+  'BASE_URL',
+  defaultValue: 'http://localhost:5033/api/v1',
+);
+
+class ApiPaths {
+  ApiPaths._();
+
+  // ── Bookings / Shifts ─────────────────────────────────────
+  static const bookings = '/bookings';
+  static String booking(String id) => '/bookings/$id';
+
+  // ── Lifecycle (caregiver actions) ─────────────────────────
+  static String acceptBooking(String id) => '/bookings/$id/accept';
+  static String enRoute(String id) => '/bookings/$id/en-route';
+  static String checkIn(String id) => '/bookings/$id/check-in';
+  static String checkoutRequest(String id) => '/bookings/$id/checkout/request';
+  static String complete(String id) => '/bookings/$id/complete';
+
+  // ── GPS push ──────────────────────────────────────────────
+  static String postGps(String id) => '/bookings/$id/gps';
+
+  // ── Care tasks ────────────────────────────────────────────
+  static String tasks(String id) => '/bookings/$id/tasks';
+  static String taskComplete(String id, String taskId) =>
+      '/bookings/$id/tasks/$taskId/complete';
+
+  // ── Auth ─────────────────────────────────────────────────
+  static const login = '/auth/login';
+  static const refreshToken = '/auth/refresh';
+}

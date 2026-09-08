@@ -90,9 +90,18 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   String _getMonthName(int month) {
     const months = [
-      'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4',
-      'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8',
-      'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
     ];
     return months[month - 1];
   }
@@ -104,15 +113,22 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   String _getFullDayOfWeekName(int weekday) {
     const days = [
-      'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm',
-      'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật',
+      'Thứ Hai',
+      'Thứ Ba',
+      'Thứ Tư',
+      'Thứ Năm',
+      'Thứ Sáu',
+      'Thứ Bảy',
+      'Chủ Nhật',
     ];
     return days[weekday - 1];
   }
 
   bool _isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   @override
@@ -121,7 +137,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final shifts = ref.watch(shiftsProvider);
 
     // Get available slots for selected date
-    final daySlots = ref.read(scheduleProvider.notifier).getSlotsForDate(_selectedDate);
+    final daySlots =
+        ref.read(scheduleProvider.notifier).getSlotsForDate(_selectedDate);
 
     // Get booked shifts for the selected date (parse time range from shifts)
     final dayShifts = _getShiftsForDate(shifts);
@@ -132,7 +149,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         children: [
           // ── Top Header with month, day, and nav ──
           _buildHeader(),
-    // ── Date Selector Row ──
+          // ── Date Selector Row ──
           _buildDateSelector(),
           const SizedBox(height: 4),
           // ── Timeline Body ──
@@ -145,7 +162,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm lịch rảnh', style: TextStyle(fontWeight: FontWeight.w600)),
+        label: const Text('Thêm lịch rảnh',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         onPressed: () => _showAddAvailabilitySheet(context),
       ),
     );
@@ -209,7 +227,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 GestureDetector(
                   onTap: () => setState(() => _isMonthView = !_isMonthView),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         _getMonthName(_selectedDate.month),
@@ -231,12 +248,16 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       ),
                       const SizedBox(width: 12),
                       if (!_isMonthView)
-                        Text(
-                          _getFullDayOfWeekName(_selectedDate.weekday),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
+                        Flexible(
+                          child: Text(
+                            _getFullDayOfWeekName(_selectedDate.weekday),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                     ],
@@ -401,11 +422,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             itemCount: startOffset + daysInMonth,
             itemBuilder: (context, index) {
               if (index < startOffset) {
-                return const SizedBox.shrink(); // empty cells before month start
+                return const SizedBox
+                    .shrink(); // empty cells before month start
               }
               final day = index - startOffset + 1;
               final date = DateTime(year, month, day);
-              return _buildDayCell(date, chipWidth: double.infinity, compact: true);
+              return _buildDayCell(date,
+                  chipWidth: double.infinity, compact: true);
             },
           ),
         ],
@@ -414,16 +437,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   }
 
   // ── Shared day cell widget ──
-  Widget _buildDayCell(DateTime date, {double chipWidth = 48, bool compact = false}) {
+  Widget _buildDayCell(DateTime date,
+      {double chipWidth = 48, bool compact = false}) {
     final isSelected = date.day == _selectedDate.day &&
         date.month == _selectedDate.month &&
         date.year == _selectedDate.year;
     final isCurrentDay = _isToday(date);
     final dayName = _getDayOfWeekName(date.weekday);
-    final hasSlots = ref
-        .read(scheduleProvider.notifier)
-        .getSlotsForDate(date)
-        .isNotEmpty;
+    final hasSlots =
+        ref.read(scheduleProvider.notifier).getSlotsForDate(date).isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -515,8 +537,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         final timeLabel = '${hour.toString().padLeft(2, '0')}:00';
 
         // Check if this hour falls within an availability slot
-        final matchingSlot = daySlots.where(
-            (s) => hour >= s.startHour && hour < s.endHour);
+        final matchingSlot =
+            daySlots.where((s) => hour >= s.startHour && hour < s.endHour);
         final isAvailable = matchingSlot.isNotEmpty;
 
         // Check if there's a shift starting at this hour
@@ -524,8 +546,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             dayShifts.where((s) => s.startHour == hour).toList();
 
         // Check if this hour is covered by a shift (for the green bar)
-        final isShiftHour = dayShifts.any(
-            (s) => hour >= s.startHour && hour < s.endHour);
+        final isShiftHour =
+            dayShifts.any((s) => hour >= s.startHour && hour < s.endHour);
 
         // Current hour indicator
         final now = DateTime.now();
@@ -709,7 +731,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.schedule_rounded,
+                            const Icon(Icons.schedule_rounded,
                                 size: 14, color: AppColors.textHint),
                             const SizedBox(width: 4),
                             Text(
@@ -724,7 +746,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.location_on_outlined,
+                            const Icon(Icons.location_on_outlined,
                                 size: 14, color: AppColors.textHint),
                             const SizedBox(width: 4),
                             ConstrainedBox(
@@ -766,20 +788,23 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline_rounded,
+          const Icon(Icons.check_circle_outline_rounded,
               size: 16, color: AppColors.primary),
           const SizedBox(width: 8),
-          Text(
-            'Rảnh ${slot.timeLabel}',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+          Expanded(
+            child: Text(
+              'Rảnh ${slot.timeLabel}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: () => _confirmRemoveSlot(slot),
             child: Container(
@@ -815,8 +840,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               ref.read(scheduleProvider.notifier).removeSlot(slot.id);
               Navigator.pop(ctx);
             },
-            child: const Text('Xóa',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text('Xóa', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -879,9 +903,18 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
 
   String _getMonthName(int month) {
     const months = [
-      'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4',
-      'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8',
-      'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+      'Tháng 1',
+      'Tháng 2',
+      'Tháng 3',
+      'Tháng 4',
+      'Tháng 5',
+      'Tháng 6',
+      'Tháng 7',
+      'Tháng 8',
+      'Tháng 9',
+      'Tháng 10',
+      'Tháng 11',
+      'Tháng 12',
     ];
     return months[month - 1];
   }
@@ -965,7 +998,15 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
                       final date = _sheetWeekStart.add(Duration(days: index));
                       final isSelected = date.day == _sheetDate.day &&
                           date.month == _sheetDate.month;
-                      final dayName = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][date.weekday - 1];
+                      final dayName = [
+                        'T2',
+                        'T3',
+                        'T4',
+                        'T5',
+                        'T6',
+                        'T7',
+                        'CN'
+                      ][date.weekday - 1];
 
                       return Expanded(
                         child: GestureDetector(
@@ -1105,7 +1146,7 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
               bottom: MediaQuery.of(context).padding.bottom + 16,
               top: 16,
             ),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.cardBackground,
               border: Border(
                 top: BorderSide(color: AppColors.divider),
@@ -1127,12 +1168,16 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
                             color: AppColors.textHint,
                           ),
                         ),
-                        Text(
-                          '${_selectedStartHour!.toString().padLeft(2, '0')}:00 - ${_selectedEndHour!.toString().padLeft(2, '0')}:00',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${_selectedStartHour!.toString().padLeft(2, '0')}:00 - ${_selectedEndHour!.toString().padLeft(2, '0')}:00',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       ],
@@ -1183,8 +1228,7 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
     );
   }
 
-  Widget _buildTimePeriodSection(
-      String title, IconData icon, List<int> hours) {
+  Widget _buildTimePeriodSection(String title, IconData icon, List<int> hours) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1251,8 +1295,7 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
                   label,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
                         ? Colors.white
                         : isDisabled

@@ -143,9 +143,9 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
             Container(
               height: 180,
               width: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.background,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Center(
                 child: Column(

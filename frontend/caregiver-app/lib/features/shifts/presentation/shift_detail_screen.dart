@@ -15,7 +15,7 @@ class ShiftDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shifts = ref.watch(shiftsProvider);
-    
+
     // Find the booking
     MockBooking? booking;
     for (final b in shifts) {
@@ -45,8 +45,10 @@ class ShiftDetailScreen extends ConsumerWidget {
       orElse: () => MockData.beneficiaries.first,
     );
 
-    final isPending = booking.status == 'pending';
-    final isUpcoming = booking.status == 'confirmed';
+    final isPending = booking.status == 'pending' || booking.status == 'open';
+    final isUpcoming =
+        booking.status == 'confirmed' || booking.status == 'assigned';
+    final isEnRoute = booking.status == 'caregiver_en_route';
     final isInProgress = booking.status == 'in_progress';
     final isCompleted = booking.status == 'completed';
 
@@ -70,8 +72,10 @@ class ShiftDetailScreen extends ConsumerWidget {
             _buildChecklist(booking),
             const SizedBox(height: 32),
             if (isPending) _buildAcceptRejectButtons(context, ref, booking.id),
-            if (isUpcoming) _buildStartShiftButton(context, ref, booking.id),
-            if (isUpcoming) const SizedBox(height: 12), // Spacing helper
+            if (isUpcoming) _buildEnRouteButton(context, ref, booking.id),
+            if (isUpcoming) const SizedBox(height: 12),
+            if (isEnRoute) _buildEnRouteBanner(context, ref, booking),
+            if (isEnRoute) const SizedBox(height: 12),
             if (isInProgress) _buildGoToActiveShiftButton(context, booking.id),
             if (isCompleted) _buildCompletedShiftCard(booking),
           ],
@@ -88,7 +92,10 @@ class ShiftDetailScreen extends ConsumerWidget {
           backgroundColor: AppColors.primaryContainer,
           child: Text(
             beneficiary.avatarInitial,
-            style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(width: 16),
@@ -98,12 +105,17 @@ class ShiftDetailScreen extends ConsumerWidget {
             children: [
               Text(
                 beneficiary.name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
               ),
               const SizedBox(height: 4),
               Text(
                 '${beneficiary.age} tuổi • Quan hệ: ${beneficiary.relation} • Mức độ: ${beneficiary.careLevel}',
-                style: TextStyle(fontSize: 14, color: AppColors.textPrimary.withValues(alpha: 0.7)),
+                style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary.withValues(alpha: 0.7)),
               ),
             ],
           ),
@@ -115,60 +127,74 @@ class ShiftDetailScreen extends ConsumerWidget {
   Widget _buildTimeAndLocation(BuildContext context, MockBooking booking) {
     return GlassCard(
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Thời gian & Địa điểm',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
-            const SizedBox(width: 12),
-            Text(booking.date, style: const TextStyle(fontSize: 15, color: AppColors.textPrimary)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            const Icon(Icons.access_time, color: AppColors.primary, size: 20),
-            const SizedBox(width: 12),
-            Text('${booking.time} (${booking.duration})', style: const TextStyle(fontSize: 15, color: AppColors.textPrimary)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.location_on, color: AppColors.primary, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                booking.address,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Thời gian & Địa điểm',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.calendar_month,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(booking.date,
+                    style: const TextStyle(
+                        fontSize: 15, color: AppColors.textPrimary)),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.map, color: AppColors.primary),
-              onPressed: () {
-                context.push(
-                  '/shifts/${booking.id}/map',
-                  extra: {
-                    'beneficiaryName': booking.beneficiaryName,
-                    'address': booking.address,
-                  },
-                );
-              },
-            ),
-          ],
-        ),
-      ],
-    ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.access_time, color: AppColors.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('${booking.time} (${booking.duration})',
+                    style: const TextStyle(
+                        fontSize: 15, color: AppColors.textPrimary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  booking.address,
+                  style: const TextStyle(
+                      fontSize: 15, color: AppColors.textPrimary),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.map, color: AppColors.primary),
+                onPressed: () {
+                  context.push(
+                    '/shifts/${booking.id}/map',
+                    extra: {
+                      'beneficiaryName': booking.beneficiaryName,
+                      'address': booking.address,
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildServiceDetails(MockBeneficiary beneficiary, MockBooking booking) {
+  Widget _buildServiceDetails(
+      MockBeneficiary beneficiary, MockBooking booking) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -181,17 +207,28 @@ class ShiftDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Lưu ý đặc biệt (${booking.serviceName})',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           const Text('Tình trạng sức khỏe:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text(beneficiary.condition, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          Text(beneficiary.condition,
+              style: const TextStyle(
+                  fontSize: 14, color: AppColors.textSecondary)),
           const SizedBox(height: 12),
           const Text('Ghi chú sinh hoạt:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text(beneficiary.notes, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          Text(beneficiary.notes,
+              style: const TextStyle(
+                  fontSize: 14, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -204,7 +241,10 @@ class ShiftDetailScreen extends ConsumerWidget {
         children: [
           const Text(
             'Checklist công việc',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary),
           ),
           const SizedBox(height: 12),
           if (booking.tasks.isEmpty)
@@ -216,17 +256,25 @@ class ShiftDetailScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       Icon(
-                        task.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-                        color: task.isCompleted ? AppColors.success : AppColors.textHint,
+                        task.isCompleted
+                            ? Icons.check_circle
+                            : Icons.check_circle_outline,
+                        color: task.isCompleted
+                            ? AppColors.success
+                            : AppColors.textHint,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        task.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                      Expanded(
+                        child: Text(
+                          task.title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                            decoration: task.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
                         ),
                       ),
                     ],
@@ -237,7 +285,8 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAcceptRejectButtons(BuildContext context, WidgetRef ref, String bookingId) {
+  Widget _buildAcceptRejectButtons(
+      BuildContext context, WidgetRef ref, String bookingId) {
     return Row(
       children: [
         Expanded(
@@ -258,12 +307,31 @@ class ShiftDetailScreen extends ConsumerWidget {
         const SizedBox(width: 16),
         Expanded(
           child: ElevatedButton(
-            onPressed: () {
-              ref.read(shiftsProvider.notifier).acceptBooking(bookingId);
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã nhận ca thành công! Ca làm việc nằm trong Tab Sắp tới.')),
-              );
+            onPressed: () async {
+              try {
+                await ref
+                    .read(shiftsProvider.notifier)
+                    .acceptBooking(bookingId);
+                if (context.mounted) {
+                  context.pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          '✅ Đã nhận ca thành công! Ca làm việc nằm trong Tab Sắp tới.'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Lỗi nhận ca: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -275,22 +343,102 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStartShiftButton(BuildContext context, WidgetRef ref, String bookingId) {
+  Widget _buildEnRouteButton(
+      BuildContext context, WidgetRef ref, String bookingId) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         onPressed: () {
-          ref.read(shiftsProvider.notifier).checkIn(bookingId);
-          context.pushReplacement('/shifts/$bookingId/active');
+          ref.read(shiftsProvider.notifier).startEnRoute(bookingId);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Ca làm việc đã được bắt đầu! Vui lòng thực hiện Check-in.')),
+            const SnackBar(
+              content: Text(
+                  '🚗 Bắt đầu di chuyển! Khách hàng có thể theo dõi vị trí của bạn.'),
+              backgroundColor: Color(0xFFE67E22),
+            ),
           );
         },
+        icon: const Icon(Icons.directions_car_rounded, color: Colors.white),
+        label: const Text(
+          'Bắt đầu di chuyển đến nhà khách',
+          style: TextStyle(
+              fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: AppColors.primary,
+          backgroundColor: const Color(0xFFE67E22),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
-        child: const Text('Bắt đầu ca làm việc', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildEnRouteBanner(
+      BuildContext context, WidgetRef ref, MockBooking booking) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: const Color(0xFFE67E22).withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.navigation_rounded,
+                  color: Color(0xFFE67E22), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Đang trên đường đến',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFE67E22),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Khách hàng đang theo dõi vị trí của bạn trực tiếp.\nHãy check-in khi đến nơi (trong bán kính 50m).',
+            style: TextStyle(
+                fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ref.read(shiftsProvider.notifier).checkIn(booking.id);
+                context.pushReplacement('/shifts/${booking.id}/active');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        '📍 Đã GPS check-in! Bắt đầu thực hiện ca chăm sóc.'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.my_location_rounded, size: 18),
+              label: const Text('GPS Check-in tại địa điểm',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -306,7 +454,11 @@ class ShiftDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           backgroundColor: AppColors.success,
         ),
-        child: const Text('Vào ca đang diễn ra', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        child: const Text('Vào ca đang diễn ra',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white)),
       ),
     );
   }
@@ -329,7 +481,10 @@ class ShiftDetailScreen extends ConsumerWidget {
               SizedBox(width: 8),
               Text(
                 'Ca làm việc đã hoàn thành',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.success),
               ),
             ],
           ),
@@ -337,10 +492,14 @@ class ShiftDetailScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Thu nhập của bạn:', style: TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+              const Text('Thu nhập của bạn:',
+                  style: TextStyle(fontSize: 14, color: AppColors.textPrimary)),
               Text(
                 '+ ${formatCurrency(booking.caregiverEarning)} ₫',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.success),
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.success),
               ),
             ],
           ),
