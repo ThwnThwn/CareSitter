@@ -3,6 +3,10 @@
 # (backend: .NET | frontend: Flutter + web)
 # ===========================================================
 
+# ---------- Docs / Design ----------
+docs/
+DESIGN.md
+
 # ---------- Secrets / môi trường ----------
 # Chỉ commit *.env.example, KHÔNG commit file thật
 .env
