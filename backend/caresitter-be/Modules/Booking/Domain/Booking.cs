@@ -49,7 +49,12 @@ public sealed class Booking : AggregateRoot
     public long EscrowAmount { get; private set; }
     public long PlatformFeeAmount { get; private set; }
     public long CaregiverEarningAmount { get; private set; }
+    public string? PriceSnapshot { get; private set; }
     public int GeofenceRadiusMeters { get; private set; }
+    public DateTimeOffset? CancelledAt { get; private set; }
+    public Guid? CancelledByUserId { get; private set; }
+    public string? CancelledByRole { get; private set; }
+    public string? CancelReason { get; private set; }
 
     public static Result<Booking> Create(
         Guid customerId,
@@ -68,7 +73,7 @@ public sealed class Booking : AggregateRoot
         return booking;
     }
 
-    public Result ApplyPricing(long escrow, long platformFee, long caregiverEarning)
+    public Result ApplyPricing(long escrow, long platformFee, long caregiverEarning, string? snapshot = null)
     {
         if (escrow < 0 || platformFee < 0 || caregiverEarning < 0)
             return Error.Validation("booking.pricing", "So tien khong duoc am.");
@@ -76,6 +81,26 @@ public sealed class Booking : AggregateRoot
         EscrowAmount = escrow;
         PlatformFeeAmount = platformFee;
         CaregiverEarningAmount = caregiverEarning;
+        PriceSnapshot = snapshot;
+        return Result.Success();
+    }
+
+    public Result SelectCaregiver(Guid caregiverId)
+    {
+        if (caregiverId == Guid.Empty || Status is not (BookingStatus.Draft or BookingStatus.PendingPayment or BookingStatus.Confirmed))
+            return Error.Conflict("booking.select_caregiver", "Khong the chon caregiver o trang thai hien tai.");
+        CaregiverId = caregiverId;
+        return Result.Success();
+    }
+
+    public Result Reschedule(DateTimeOffset start, DateTimeOffset end)
+    {
+        if (end <= start)
+            return Error.Validation("booking.schedule", "Thoi gian ket thuc phai sau thoi gian bat dau.");
+        if (Status is not (BookingStatus.Draft or BookingStatus.PendingPayment or BookingStatus.Confirmed))
+            return Error.Conflict("booking.reschedule", "Khong the doi lich o trang thai hien tai.");
+        ScheduledStart = start;
+        ScheduledEnd = end;
         return Result.Success();
     }
 
@@ -129,7 +154,17 @@ public sealed class Booking : AggregateRoot
 
     public Result StartEnRoute() => TransitionTo(BookingStatus.CaregiverEnRoute);
     public Result ConfirmPayment() => TransitionTo(BookingStatus.Confirmed);
-    public Result Cancel() => TransitionTo(BookingStatus.Cancelled);
+    public Result Cancel(Guid userId, string role, string? reason, DateTimeOffset cancelledAt)
+    {
+        var result = TransitionTo(BookingStatus.Cancelled);
+        if (result.IsFailure)
+            return result;
+        CancelledAt = cancelledAt;
+        CancelledByUserId = userId;
+        CancelledByRole = role;
+        CancelReason = reason?.Trim();
+        return Result.Success();
+    }
 
     public Result TransitionTo(BookingStatus next)
     {

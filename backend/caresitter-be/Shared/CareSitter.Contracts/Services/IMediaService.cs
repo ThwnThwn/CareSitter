@@ -1,4 +1,5 @@
 using CareSitter.SharedKernel.Results;
+using System.IO;
 
 namespace CareSitter.Contracts.Services;
 
@@ -6,6 +7,7 @@ namespace CareSitter.Contracts.Services;
 public interface IMediaService
 {
     Task<Result<string>> CreateSignedUrlAsync(Guid mediaId, TimeSpan ttl, CancellationToken ct = default);
+    Task<Result<string>> UploadImageAsync(Stream fileStream, string fileName, string folder, CancellationToken ct = default);
 }
 
 /// <summary>audit_logs dung cheo nhieu module -> ghi qua interface chung.</summary>

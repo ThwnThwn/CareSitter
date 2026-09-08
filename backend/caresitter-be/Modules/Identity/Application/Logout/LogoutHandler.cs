@@ -6,37 +6,48 @@ using Microsoft.Extensions.Caching.Distributed;
 namespace CareSitter.Modules.Identity.Application.Logout;
 
 /// <summary>
-/// Stores the current access token jti in Redis until the token expires.
+/// Xử lý đăng xuất:
+///   1. Blacklist access token JTI vào Redis cho đến khi token hết hạn.
+///   2. Xóa refresh token khỏi Redis (nếu client gửi) → logout thật, không thể refresh nữa.
 /// </summary>
 internal sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result>
 {
     private readonly IDistributedCache _cache;
+    private readonly IJwtTokenService  _jwtTokenService;
 
-    public LogoutHandler(IDistributedCache cache)
+    public LogoutHandler(IDistributedCache cache, IJwtTokenService jwtTokenService)
     {
-        _cache = cache;
+        _cache           = cache;
+        _jwtTokenService = jwtTokenService;
     }
 
     public async Task<Result> Handle(LogoutCommand request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Jti))
-        {
-            return Error.Validation("auth.missing_token_id", "Access token khong co ma dinh danh de dang xuat.");
-        }
+            return Error.Validation("auth.missing_token_id", "Access token không có mã định danh để đăng xuất.");
 
+        // 1. Blacklist access token JTI
         var now = DateTimeOffset.UtcNow;
-        if (request.ExpiresAtUtc <= now)
+        if (request.ExpiresAtUtc > now)
         {
-            return Result.Success();
+            var ttl = request.ExpiresAtUtc - now;
+            await _cache.SetStringAsync(
+                JwtRevocationCacheKeys.RevokedAccessToken(request.Jti),
+                "revoked",
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ttl
+                }, ct);
         }
 
-        var ttl = request.ExpiresAtUtc - now;
-        var cacheKey = JwtRevocationCacheKeys.RevokedAccessToken(request.Jti);
-
-        await _cache.SetStringAsync(cacheKey, "revoked", new DistributedCacheEntryOptions
+        // 2. Xóa refresh token khỏi Redis (nếu client gửi)
+        // → refresh token cũ không thể dùng nữa dù chưa hết TTL 7 ngày
+        if (!string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            AbsoluteExpirationRelativeToNow = ttl
-        }, ct);
+            var hashed    = _jwtTokenService.HashRefreshToken(request.RefreshToken);
+            var redisKey  = JwtRevocationCacheKeys.RefreshToken(hashed);
+            await _cache.RemoveAsync(redisKey, ct);
+        }
 
         return Result.Success();
     }

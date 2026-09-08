@@ -63,4 +63,31 @@ public sealed class PaymentIntent : AggregateRoot
 
         return new PaymentIntent(Guid.NewGuid(), bookingId, customerId, provider, amount, currency, idempotencyKey);
     }
+
+    public Result MarkSucceeded(string? providerTransactionId = null, string? responsePayload = null)
+    {
+        if (Status is not ("CREATED" or "PENDING"))
+            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> SUCCEEDED.");
+        Status = "SUCCEEDED";
+        ProviderTransactionId = providerTransactionId;
+        ResponsePayload = responsePayload;
+        return Result.Success();
+    }
+
+    public Result MarkFailed(string? responsePayload = null)
+    {
+        if (Status is not ("CREATED" or "PENDING"))
+            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> FAILED.");
+        Status = "FAILED";
+        ResponsePayload = responsePayload;
+        return Result.Success();
+    }
+
+    public Result MarkPending()
+    {
+        if (Status != "CREATED")
+            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> PENDING.");
+        Status = "PENDING";
+        return Result.Success();
+    }
 }

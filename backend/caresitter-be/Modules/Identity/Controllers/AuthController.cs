@@ -4,6 +4,7 @@ using CareSitter.Modules.Identity.Application.GoogleLogin;
 using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Application.LoginWithPassword;
 using CareSitter.Modules.Identity.Application.Logout;
+using CareSitter.Modules.Identity.Application.RefreshToken;
 using CareSitter.Modules.Identity.Application.Register;
 using CareSitter.Modules.Identity.Application.SendOtp;
 using CareSitter.SharedKernel.Results;
@@ -59,7 +60,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest? body = null)
     {
         var jti = User.FindFirstValue(JwtRegisteredClaimNames.Jti);
         var exp = User.FindFirstValue(JwtRegisteredClaimNames.Exp);
@@ -70,11 +71,12 @@ public sealed class AuthController : ControllerBase
         {
             return HandleFailure(Error.Validation(
                 "auth.invalid_token",
-                "Access token khong hop le hoac thieu thong tin het han."));
+                "Access token không hợp lệ hoặc thiếu thông tin hết hạn."));
         }
 
         var expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expUnixSeconds);
-        var result = await _sender.Send(new LogoutCommand(jti, expiresAtUtc));
+        // Gửi refreshToken (nếu có) để server xóa khỏi Redis → logout thật
+        var result = await _sender.Send(new LogoutCommand(jti, expiresAtUtc, body?.RefreshToken));
 
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
@@ -111,6 +113,22 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Làm mới Access Token và Refresh Token từ refresh token hiện tại.
+    /// Chiến lược Redis stateful với token rotation:
+    ///   - Client chỉ gửi refreshToken (không cần accessToken).
+    ///   - Server tìm và xóa key cũ, cấp cặp token mới.
+    ///   - Refresh token cũ bị vô hiệu ngay sau rotation.
+    /// </summary>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command)
+    {
+        var result = await _sender.Send(command);
+        return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
+    }
+
+    /// <summary>
     /// Đăng nhập hoặc đăng ký bằng Google Account.
     /// Gửi Google ID Token nhận được từ Google Sign-In SDK trên client.
     /// Nếu tài khoản chưa tồn tại sẽ tự động được tạo với role mặc định CUSTOMER.
@@ -127,17 +145,23 @@ public sealed class AuthController : ControllerBase
 
     private IActionResult HandleFailure(Error error) => error.Type switch
     {
-        ErrorType.Validation => BadRequest(CreateProblem(error)),
-        ErrorType.NotFound => NotFound(CreateProblem(error)),
-        ErrorType.Conflict => Conflict(CreateProblem(error)),
-        ErrorType.Forbidden => Forbid(),
+        ErrorType.Validation  => BadRequest(CreateProblem(error)),
+        ErrorType.NotFound    => NotFound(CreateProblem(error)),
+        ErrorType.Conflict    => Conflict(CreateProblem(error)),
+        ErrorType.Forbidden   => StatusCode(StatusCodes.Status403Forbidden, CreateProblem(error)),
         ErrorType.Unavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, CreateProblem(error)),
-        _ => BadRequest(CreateProblem(error))
+        _                     => BadRequest(CreateProblem(error))
     };
 
     private static ProblemDetails CreateProblem(Error error) => new()
     {
-        Title = error.Code,
+        Title  = error.Code,
         Detail = error.Message,
     };
 }
+
+/// <summary>
+/// Body cho POST /auth/logout.
+/// RefreshToken là tùy chọn — nếu gửi, server sẽ xóa khỏi Redis để đảm bảo logout thật.
+/// </summary>
+public sealed record LogoutRequest(string? RefreshToken = null);

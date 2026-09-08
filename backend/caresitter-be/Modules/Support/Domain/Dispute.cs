@@ -61,4 +61,37 @@ public sealed class Dispute : AggregateRoot
 
         return new Dispute(Guid.NewGuid(), bookingId, raisedByUserId, reason, description);
     }
+
+    public Result Investigate()
+    {
+        if (Status != "OPEN")
+            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> INVESTIGATING.");
+        Status = "INVESTIGATING";
+        return Result.Success();
+    }
+
+    public Result Resolve(Guid adminId, string decision, long? refundAmount = null, long? caregiverPenalty = null)
+    {
+        if (Status is not ("OPEN" or "INVESTIGATING"))
+            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> RESOLVED.");
+        if (decision is not ("CUSTOMER_WINS" or "CAREGIVER_WINS" or "PARTIAL_REFUND"))
+            return Error.Validation("dispute.decision", "Decision phai la CUSTOMER_WINS, CAREGIVER_WINS hoac PARTIAL_REFUND.");
+
+        Status = "RESOLVED";
+        Decision = decision;
+        DecidedByAdminId = adminId;
+        RefundAmount = refundAmount;
+        CaregiverPenaltyAmount = caregiverPenalty;
+        ResolvedAt = DateTimeOffset.UtcNow;
+        return Result.Success();
+    }
+
+    public Result Cancel()
+    {
+        if (Status is not ("OPEN" or "INVESTIGATING"))
+            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> CANCELLED.");
+        Status = "CANCELLED";
+        ResolvedAt = DateTimeOffset.UtcNow;
+        return Result.Success();
+    }
 }

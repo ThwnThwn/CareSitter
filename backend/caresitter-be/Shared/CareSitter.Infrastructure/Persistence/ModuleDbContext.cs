@@ -1,4 +1,5 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.SharedKernel.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Infrastructure.Persistence;
@@ -25,8 +26,41 @@ public abstract class ModuleDbContext : DbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        UpdateTimestamps();
         await ApplyRlsContextAsync(cancellationToken);
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        UpdateTimestamps();
+        return base.SaveChanges();
+    }
+
+    private void UpdateTimestamps()
+    {
+        var now = DateTimeOffset.UtcNow;
+        foreach (var entry in ChangeTracker.Entries<Entity>())
+        {
+            var createdAt = entry.Metadata.FindProperty(nameof(Entity.CreatedAt));
+            var updatedAt = entry.Metadata.FindProperty(nameof(Entity.UpdatedAt));
+
+            if (entry.State == EntityState.Added)
+            {
+                if (createdAt is not null && entry.Entity.CreatedAt == default)
+                {
+                    entry.Property(nameof(Entity.CreatedAt)).CurrentValue = now;
+                }
+                if (updatedAt is not null && entry.Entity.UpdatedAt == default)
+                {
+                    entry.Property(nameof(Entity.UpdatedAt)).CurrentValue = now;
+                }
+            }
+            else if (entry.State == EntityState.Modified && updatedAt is not null)
+            {
+                entry.Property(nameof(Entity.UpdatedAt)).CurrentValue = now;
+            }
+        }
     }
 
     private async Task ApplyRlsContextAsync(CancellationToken ct)

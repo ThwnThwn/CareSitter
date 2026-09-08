@@ -57,4 +57,31 @@ public sealed class Beneficiary : AggregateRoot
 
         return new Beneficiary(Guid.NewGuid(), customerId, fullName);
     }
+
+    public Result Update(string fullName, DateOnly? dateOfBirth, string? gender,
+        string? relationship, string? phone, Guid? defaultAddressId, string? mobilityNote,
+        string? generalNote, string? healthHistory, string? allergies, string? chronicConditions,
+        string? careInstructions, string? emergencyContacts, string? medications)
+    {
+        if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length > 255)
+            return Error.Validation("beneficiary.full_name", "Ho ten khong hop le.");
+
+        FullName = fullName.Trim();
+        DateOfBirth = dateOfBirth;
+        Gender = gender;
+        RelationshipToCustomer = relationship?.Trim();
+        Phone = phone?.Trim();
+        DefaultAddressId = defaultAddressId;
+        MobilityNote = mobilityNote?.Trim();
+        GeneralNote = generalNote?.Trim();
+        HealthHistory = healthHistory;
+        Allergies = allergies;
+        ChronicConditions = chronicConditions;
+        CareInstructions = careInstructions?.Trim();
+        EmergencyContacts = emergencyContacts;
+        Medications = medications;
+        return Result.Success();
+    }
+
+    public void Delete(DateTimeOffset deletedAt) => DeletedAt = deletedAt;
 }

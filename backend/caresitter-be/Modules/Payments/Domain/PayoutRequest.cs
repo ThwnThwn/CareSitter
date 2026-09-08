@@ -67,4 +67,49 @@ public sealed class PayoutRequest : Entity
         return new PayoutRequest(Guid.NewGuid(), caregiverId, walletAccountId, amount,
             bankName, accountHolderName, accountNumberEncrypted);
     }
+
+    public Result Approve(Guid adminId)
+    {
+        if (Status != "PENDING")
+            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> APPROVED.");
+        Status = "APPROVED";
+        ReviewedByAdminId = adminId;
+        ReviewedAt = DateTimeOffset.UtcNow;
+        return Result.Success();
+    }
+
+    public Result Reject(Guid adminId, string? reason = null)
+    {
+        if (Status != "PENDING")
+            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> REJECTED.");
+        Status = "REJECTED";
+        ReviewedByAdminId = adminId;
+        ReviewedAt = DateTimeOffset.UtcNow;
+        RejectReason = reason;
+        return Result.Success();
+    }
+
+    public Result MarkProcessing()
+    {
+        if (Status != "APPROVED")
+            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> PROCESSING.");
+        Status = "PROCESSING";
+        return Result.Success();
+    }
+
+    public Result MarkPaid()
+    {
+        if (Status is not ("APPROVED" or "PROCESSING"))
+            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> PAID.");
+        Status = "PAID";
+        return Result.Success();
+    }
+
+    public Result MarkFailed()
+    {
+        if (Status is not ("APPROVED" or "PROCESSING"))
+            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> FAILED.");
+        Status = "FAILED";
+        return Result.Success();
+    }
 }

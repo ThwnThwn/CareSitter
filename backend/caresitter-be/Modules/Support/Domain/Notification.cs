@@ -55,4 +55,9 @@ public sealed class Notification : Entity
 
         return new Notification(Guid.NewGuid(), userId, type, title, body, data);
     }
+
+    public void MarkRead()
+    {
+        ReadAt ??= DateTimeOffset.UtcNow;
+    }
 }

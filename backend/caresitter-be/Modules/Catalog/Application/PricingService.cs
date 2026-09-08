@@ -1,34 +1,42 @@
+using System.Text.Json;
 using CareSitter.Contracts.Services;
+using CareSitter.Modules.Catalog.Infrastructure;
 using CareSitter.SharedKernel.Results;
+using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Catalog.Application;
 
-/// <summary>
-/// Implement IPricingService (Contracts) — Catalog so huu logic gia.
-/// MVP tinh tam: gia co ban 90k/gio, phi nen tang 15%. Production doc tu pricing_rules.
-/// </summary>
-internal sealed class PricingService : IPricingService
+internal sealed class PricingService(CatalogDbContext db) : IPricingService
 {
-    private const long BaseHourlyPrice = 90_000;
-    private const decimal PlatformFeePercent = 0.15m;
-    private const int DefaultDisputeWindowHours = 48;
-
-    public Task<Result<PriceQuote>> QuoteAsync(Guid serviceTypeId, DateTimeOffset start, DateTimeOffset end,
-        CancellationToken ct = default)
+    public async Task<Result<PriceQuote>> QuoteAsync(Guid serviceTypeId, DateTimeOffset start,
+        DateTimeOffset end, CancellationToken ct = default)
     {
         if (end <= start)
-            return Task.FromResult(Result.Failure<PriceQuote>(
-                Error.Validation("pricing.window", "Khoang thoi gian khong hop le.")));
+            return Error.Validation("pricing.window", "Khoang thoi gian khong hop le.");
 
-        double hours = (end - start).TotalHours;
-        long escrow = (long)Math.Round(hours * BaseHourlyPrice);
-        long fee = (long)Math.Round(escrow * PlatformFeePercent);
-        long earning = escrow - fee;
+        if (!await db.ServiceTypes.AsNoTracking().AnyAsync(x => x.Id == serviceTypeId && x.IsActive, ct))
+            return Error.NotFound("pricing.service", "Dich vu khong ton tai hoac da ngung hoat dong.");
 
-        string snapshot =
-            $"{{\"base_hourly\":{BaseHourlyPrice},\"hours\":{hours:F2},\"fee_percent\":{PlatformFeePercent}}}";
+        var now = DateTimeOffset.UtcNow;
+        var rule = await db.PricingRules.AsNoTracking()
+            .Where(x => x.ServiceTypeId == serviceTypeId && x.IsActive &&
+                x.EffectiveFrom <= now && (x.EffectiveTo == null || x.EffectiveTo > now))
+            .OrderByDescending(x => x.EffectiveFrom).FirstOrDefaultAsync(ct);
+        if (rule is null)
+            return Error.NotFound("pricing.rule", "Chua co bang gia hieu luc cho dich vu.");
 
-        var quote = new PriceQuote(escrow, fee, earning, DefaultDisputeWindowHours, snapshot);
-        return Task.FromResult(Result.Success(quote));
+        var hours = (decimal)(end - start).TotalHours;
+        var multiplier = start.Hour >= 22 || start.Hour < 6 ? rule.NightMultiplier : 1m;
+        var escrow = (long)Math.Round(hours * rule.BaseHourlyPrice * multiplier);
+        var fee = (long)Math.Round(escrow * rule.PlatformFeePercent / 100m);
+        var snapshot = JsonSerializer.Serialize(new
+        {
+            ruleId = rule.Id,
+            rule.BaseHourlyPrice,
+            hours,
+            multiplier,
+            rule.PlatformFeePercent
+        });
+        return new PriceQuote(escrow, fee, escrow - fee, rule.DisputeWindowHours, snapshot);
     }
 }

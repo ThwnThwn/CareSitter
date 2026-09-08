@@ -15,9 +15,11 @@ namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 /// Vai trò muốn đăng ký (chỉ cần khi tạo tài khoản mới qua Google lần đầu).
 /// Nếu null hoặc rỗng và chưa có tài khoản → mặc định là ["CUSTOMER"].
 /// </param>
+/// <param name="RequiredRole">Vai trò bắt buộc cho ứng dụng đang đăng nhập, ví dụ CUSTOMER hoặc CAREGIVER.</param>
 public sealed record GoogleLoginCommand(
     string IdToken,
-    string[]? Roles = null
+    string[]? Roles = null,
+    string? RequiredRole = null
 ) : IRequest<Result<GoogleLoginResponse>>;
 
 /// <summary>

@@ -113,4 +113,15 @@ public sealed class JwtTokenService : IJwtTokenService
             return null;
         }
     }
+
+    /// <summary>
+    /// Hash raw refresh token bằng SHA-256, trả về chuỗi hex lowercase.
+    /// Dùng để làm Redis key — đảm bảo raw token không bị lộ nếu Redis bị inspect.
+    /// </summary>
+    public string HashRefreshToken(string rawToken)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(rawToken);
+        var hash  = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
 }

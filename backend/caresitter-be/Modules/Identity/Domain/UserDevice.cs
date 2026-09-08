@@ -35,4 +35,20 @@ public sealed class UserDevice : Entity
 
         return new UserDevice(Guid.NewGuid(), userId, platform.Trim());
     }
+
+    public void UpdatePushToken(string? token)
+    {
+        PushToken = token;
+        LastSeenAt = DateTimeOffset.UtcNow;
+    }
+
+    public void UpdateDeviceName(string? name)
+    {
+        DeviceName = name;
+    }
+
+    public void UpdateLastSeen()
+    {
+        LastSeenAt = DateTimeOffset.UtcNow;
+    }
 }

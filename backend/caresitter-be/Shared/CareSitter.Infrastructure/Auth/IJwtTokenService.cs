@@ -29,4 +29,12 @@ public interface IJwtTokenService
     /// <param name="token">Access Token cần giải mã.</param>
     /// <returns>ClaimsPrincipal chứa các claims nếu hợp lệ, ngược lại là null.</returns>
     ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
+
+    /// <summary>
+    /// Hash raw refresh token bằng SHA-256 để dùng làm Redis key.
+    /// Đảm bảo raw token không bị lộ nếu Redis bị xâm phạm.
+    /// </summary>
+    /// <param name="rawToken">Refresh token gốc (opaque string).</param>
+    /// <returns>Chuỗi hex SHA-256 của token.</returns>
+    string HashRefreshToken(string rawToken);
 }

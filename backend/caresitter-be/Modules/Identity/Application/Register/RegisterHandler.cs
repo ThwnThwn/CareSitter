@@ -6,6 +6,8 @@ using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Identity.Application.Register;
 
@@ -15,17 +17,25 @@ namespace CareSitter.Modules.Identity.Application.Register;
 internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<LoginResponse>>
 {
     private readonly IdentityDbContext _db;
+    private readonly IDistributedCache _cache;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly JwtSettings _jwtSettings;
 
     private static readonly string[] AllowedRoles = { "CUSTOMER", "CAREGIVER", "ADMIN" };
 
     /// <summary>
-    /// Khởi tạo RegisterHandler với DbContext và JWT token service.
+    /// Khởi tạo RegisterHandler với DbContext, JWT token service và Redis cache.
     /// </summary>
-    public RegisterHandler(IdentityDbContext db, IJwtTokenService jwtTokenService)
+    public RegisterHandler(
+        IdentityDbContext db,
+        IDistributedCache cache,
+        IJwtTokenService jwtTokenService,
+        IOptions<JwtSettings> jwtSettingsOptions)
     {
         _db = db;
+        _cache = cache;
         _jwtTokenService = jwtTokenService;
+        _jwtSettings = jwtSettingsOptions.Value;
     }
 
     /// <summary>
@@ -34,6 +44,7 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
     public async Task<Result<LoginResponse>> Handle(RegisterCommand request, CancellationToken ct)
     {
         var email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+        var phone = request.Phone?.Trim();
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -79,11 +90,18 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
             }
         }
 
-        // Kiểm tra trùng Email
-        var exists = await _db.Users.AnyAsync(u => u.Email == email, ct);
-        if (exists)
+        // Kiểm tra trùng Email / Phone theo partial unique indexes của DB.
+        var emailExists = await _db.Users.AnyAsync(u => u.Email == email && u.DeletedAt == null, ct);
+        if (emailExists)
         {
             return Error.Conflict("auth.email_exists", $"Email {email} đã được đăng ký.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            var phoneExists = await _db.Users.AnyAsync(u => u.Phone == phone && u.DeletedAt == null, ct);
+            if (phoneExists)
+                return Error.Conflict("auth.phone_exists", $"Số điện thoại {phone} đã được đăng ký.");
         }
 
         // Tạo mới User
@@ -96,6 +114,10 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         var user = userResult.Value;
         user.UpdateProfile(request.FullName, email, request.FullName);
         user.SetRoles(request.Roles.Select(r => r.ToUpper()).ToArray());
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            user.SetPhone(phone);
+        }
 
         // Hash và lưu password nếu được cung cấp
         if (request.Password is not null)
@@ -108,8 +130,18 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         await _db.SaveChangesAsync(ct);
 
         // Sinh token
-        var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
+        var accessToken  = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
+
+        // Lưu refresh token vào Redis (giống LoginHandler)
+        var hashed = _jwtTokenService.HashRefreshToken(refreshToken);
+        await _cache.SetStringAsync(
+            JwtRevocationCacheKeys.RefreshToken(hashed),
+            user.Id.ToString(),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
+            }, ct);
 
         return new LoginResponse(accessToken, refreshToken, user.Id, user.Roles, user.DisplayName);
     }
