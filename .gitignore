@@ -12,6 +12,11 @@
 !*.env.example
 secrets.json
 appsettings.*.Local.json
+*firebase-adminsdk*.json
+firebase-service-account*.json
+**/android/app/google-services.json
+**/ios/Runner/GoogleService-Info.plist
+**/macos/Runner/GoogleService-Info.plist
 
 # ---------- OS ----------
 .DS_Store
@@ -31,10 +36,23 @@ Desktop.ini
 *.swp
 
 # ---------- Công cụ AI / trợ lý (cấu hình cục bộ) ----------
+.agent*
+.agent/
+.agent*/
+.agents/
+**/.agent*
+**/.agent/
+**/.agent*/
+**/.agents/
 .claude/
 .codex/
 .cursor/
 .fk-skills/
+.skill/
+.skills/
+**/.skill/
+**/.skills/
+.playwright-mcp/
 **/*.local.json
 
 # =====================  BACKEND (.NET)  =====================
@@ -99,3 +117,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# =====================  DOCS/REPORTS  ===============
+baocao/

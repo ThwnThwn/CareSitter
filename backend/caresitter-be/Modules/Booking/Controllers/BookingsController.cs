@@ -180,8 +180,11 @@ public sealed class BookingsController(
         var result = booking.SelectCaregiver(request.CaregiverId);
         if (result.IsFailure) return Problem(result.Error);
         await db.SaveChangesAsync(ct);
-        await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
-            "Khách hàng đã chọn bạn cho một lịch chăm sóc.", ct);
+        if (booking.Status == BookingStatus.Confirmed)
+        {
+            await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
+                "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct);
+        }
         return Ok(ToResponse(booking));
     }
 
@@ -204,6 +207,8 @@ public sealed class BookingsController(
         var result = booking.ConfirmPayment();
         if (result.IsFailure) return Problem(result.Error);
         await db.SaveChangesAsync(ct);
+        await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
+            "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct);
         return Ok(ToResponse(booking));
     }
 
@@ -214,10 +219,29 @@ public sealed class BookingsController(
         if (currentUser.UserId is not { } userId) return Unauthorized();
         var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return NotFound();
-        if (booking.CaregiverId is not { } caregiverId)
-            return BadRequest(new { error = "Booking chua co caregiver." });
-        if (!await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
-            return Forbid();
+        if (!currentUser.IsInRole("CAREGIVER")) return Forbid();
+
+        Guid caregiverId;
+        if (booking.CaregiverId is { } assignedCaregiverId)
+        {
+            if (!await people.IsCaregiverForBookingAsync(assignedCaregiverId, userId, ct))
+                return Forbid();
+            caregiverId = assignedCaregiverId;
+        }
+        else
+        {
+            var currentCaregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
+            if (currentCaregiverId is null) return Forbid();
+            caregiverId = currentCaregiverId.Value;
+        }
+
+        if (!await people.CaregiverIsAvailableAsync(
+                caregiverId, booking.ScheduledStart, booking.ScheduledEnd, ct))
+            return Conflict(new { error = "Caregiver khong ranh trong khung gio nay." });
+
+        if (await HasCaregiverScheduleConflictAsync(booking.Id, caregiverId,
+                booking.ScheduledStart, booking.ScheduledEnd, ct))
+            return Conflict(new { error = "Caregiver da co ca cham soc trong khung gio nay." });
 
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.AssignCaregiver(caregiverId);
@@ -454,6 +478,16 @@ public sealed class BookingsController(
                 BookingNotificationData(booking)), ct);
         }
     }
+
+    private Task<bool> HasCaregiverScheduleConflictAsync(Guid bookingId, Guid caregiverId,
+        DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd, CancellationToken ct) =>
+        db.Bookings.AsNoTracking().AnyAsync(x =>
+            x.Id != bookingId &&
+            x.CaregiverId == caregiverId &&
+            x.Status != BookingStatus.Completed &&
+            x.Status != BookingStatus.Cancelled &&
+            x.ScheduledStart < scheduledEnd &&
+            x.ScheduledEnd > scheduledStart, ct);
 
     private static IReadOnlyDictionary<string, string> BookingNotificationData(Domain.Booking booking) =>
         new Dictionary<string, string>
