@@ -1,43 +1,134 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../../core/presentation/widgets/fade_slide_staggered.dart';
+import '../../../core/presentation/widgets/custom_animations.dart';
 import '../../booking/application/booking_store.dart';
+import '../../settings/application/profile_store.dart';
+import '../../caregiver/application/caregiver_store.dart';
+import '../../caregiver/data/models/caregiver_model.dart';
+import '../../catalog/application/service_store.dart';
+import '../../catalog/data/models/service_model.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _caregiverScrollController = ScrollController();
+  double _caregiverScrollProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _caregiverScrollController.addListener(_syncCaregiverScrollProgress);
+  }
+
+  @override
+  void dispose() {
+    _caregiverScrollController.dispose();
+    super.dispose();
+  }
+
+  void _syncCaregiverScrollProgress() {
+    if (!_caregiverScrollController.hasClients) return;
+
+    final position = _caregiverScrollController.position;
+    final maxScroll = position.maxScrollExtent;
+    final nextProgress =
+        maxScroll <= 0 ? 0.0 : (position.pixels / maxScroll).clamp(0.0, 1.0);
+
+    if ((nextProgress - _caregiverScrollProgress).abs() > 0.01 && mounted) {
+      setState(() => _caregiverScrollProgress = nextProgress);
+    }
+  }
+
+  void _scrollCaregivers(double direction) {
+    if (!_caregiverScrollController.hasClients) return;
+
+    final position = _caregiverScrollController.position;
+    final distance = position.viewportDimension * 0.72;
+    final target = (position.pixels + distance * direction)
+        .clamp(0.0, position.maxScrollExtent);
+
+    _caregiverScrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bookings = ref.watch(bookingStoreProvider);
+    final profile = ref.watch(profileStoreProvider);
     final topPadding = MediaQuery.of(context).padding.top;
+
+    // Tìm ca đang diễn ra (nếu có)
+    final liveBooking = bookings.where((b) {
+      final s = b.status.toLowerCase();
+      return s == 'in_progress' ||
+          s == 'caregiver_en_route' ||
+          s == 'confirmed';
+    }).firstOrNull;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         slivers: [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _HomeHeaderDelegate(
-              topPadding: topPadding,
-              onNotificationTap: () => context.push('/notifications'),
+          // ── Header ──
+          SliverToBoxAdapter(
+            child: FadeSlideStaggered(
+              index: 0,
+              slideFromTop: true,
+              child: _buildHeader(context, profile, topPadding),
             ),
           ),
+
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 8),
-                _buildActiveShiftBanner(context, bookings),
+                // ── Hero Banner ──
+                const SizedBox(height: 16),
+                FadeSlideStaggered(
+                  index: 1,
+                  child: _buildHeroBanner(context),
+                ),
+
+                // ── Live session card ──
+                if (liveBooking != null) ...[
+                  const SizedBox(height: 12),
+                  FadeSlideStaggered(
+                    index: 2,
+                    child: _buildLiveSessionCard(liveBooking, context),
+                  ),
+                ],
+
                 const SizedBox(height: 20),
-                _buildQuickActions(context),
+
+                // ── Services Grid ──
+                FadeSlideStaggered(
+                  index: 3,
+                  child: _buildServicesSection(context),
+                ),
                 const SizedBox(height: 24),
-                _buildUpcomingBookings(context, bookings),
+
+                // ── Caregiver horizontal scroll ──
+                FadeSlideStaggered(
+                  index: 4,
+                  child: _buildCaregiverSection(context),
+                ),
                 const SizedBox(height: 24),
-                _buildBeneficiariesRow(context),
-                const SizedBox(height: 24),
-                _buildStatsRow(),
-                const SizedBox(height: 32),
               ]),
             ),
           ),
@@ -46,624 +137,709 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  // ── Active Shift Banner ──────────────────────────────────────
-  Widget _buildActiveShiftBanner(
-    BuildContext context,
-    List<MockBooking> bookings,
-  ) {
-    final active = bookings
-        .where((b) =>
-            b.status == 'in_progress' || b.status == 'checkout_requested')
-        .toList();
-    if (active.isEmpty) return const SizedBox.shrink();
-    final activeBooking = active.first;
+  // ── Header ─────────────────────────────────────────────────────────────────
+  Widget _buildHeader(
+      BuildContext context, UserProfile profile, double topPadding) {
+    final hasAvatar =
+        profile.avatarPath != null && profile.avatarPath!.isNotEmpty;
+    final initials = profile.name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String p) => p.isNotEmpty)
+        .map((String p) => p[0].toUpperCase())
+        .take(2)
+        .join();
+
+    // Greeting theo giờ
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Chào buổi sáng,'
+        : hour < 18
+            ? 'Chào buổi chiều,'
+            : 'Chào buổi tối,';
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A8C4E), Color(0xFF27AE60)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF27AE60).withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      color: AppColors.background,
+      padding: EdgeInsets.only(
+        top: topPadding + 12,
+        left: 16,
+        right: 16,
+        bottom: 12,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text('🟢', style: TextStyle(fontSize: 20)),
+          // Avatar
+          GestureDetector(
+            onTap: () => context.push('/settings'),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.primaryContainer,
+              backgroundImage: hasAvatar
+                  ? (kIsWeb
+                      ? NetworkImage(profile.avatarPath!) as ImageProvider
+                      : FileImage(File(profile.avatarPath!)) as ImageProvider)
+                  : null,
+              child: hasAvatar
+                  ? null
+                  : Text(
+                      initials.isNotEmpty ? initials : 'U',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
+
+          // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Ca chăm sóc đang diễn ra',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
+                Text(
+                  greeting,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        profile.name.isNotEmpty ? profile.name : 'Bạn',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text('👋', style: TextStyle(fontSize: 16)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Search icon
+          GestureDetector(
+            onTap: () => context.push('/catalog'),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.search_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Bell icon
+          GestureDetector(
+            onTap: () => context.push('/notifications'),
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE74C3C),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Live Session Card ───────────────────────────────────────────────────────
+  Widget _buildLiveSessionCard(BookingModel booking, BuildContext context) {
+    final isActive = booking.status == 'in_progress' ||
+        booking.status == 'caregiver_en_route';
+    return GestureDetector(
+      onTap: () => context.push('/bookings/${booking.id}/tracking'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: BorderSide(
+              color: isActive ? AppColors.primary : AppColors.secondary,
+              width: 4,
+            ),
+          ),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.primary : AppColors.secondary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isActive ? 'Ca đang diễn ra hôm nay' : 'Ca sắp diễn ra hôm nay',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              booking.time,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _formatCurrency(booking.totalPrice),
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right,
+                size: 16, color: AppColors.textHint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Services Section ────────────────────────────────────────────────────────
+  Widget _buildServicesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Dịch vụ nổi bật',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => context.push('/catalog'),
+              child: const Text(
+                'Tất cả',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Consumer(
+          builder: (context, ref, _) {
+            final servicesAsync = ref.watch(serviceStoreProvider);
+            return servicesAsync.when(
+              loading: () => const SizedBox(
+                height: 128,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (services) {
+                final featured = services.take(4).toList();
+                if (featured.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return SizedBox(
+                  height: 132,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: featured.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) => _buildServiceCard(
+                      featured[i],
+                      _serviceAccent(i),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildServiceCard(ServiceModel service, _ServiceAccent accent) {
+    final serviceId = Uri.encodeComponent(service.id);
+
+    return BouncingCard(
+      onTap: () => context.push('/booking/new?serviceId=$serviceId'),
+      child: Container(
+        width: 138,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: accent.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: accent.color.withValues(alpha: 0.14),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  service.icon,
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              service.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '${service.defaultDurationMinutes} phút',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent.color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _ServiceAccent _serviceAccent(int index) {
+    const accents = [
+      _ServiceAccent(AppColors.primary, AppColors.primaryContainer),
+      _ServiceAccent(Color(0xFFE67E22), Color(0xFFFFF3E0)),
+      _ServiceAccent(Color(0xFF1976D2), Color(0xFFE3F0FC)),
+      _ServiceAccent(Color(0xFF7B1FA2), Color(0xFFF3E5F5)),
+    ];
+    return accents[index % accents.length];
+  }
+
+  // ── Caregiver Section ───────────────────────────────────────────────────────
+  Widget _buildCaregiverSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    'Caregiver gần bạn',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Text('📍', style: TextStyle(fontSize: 14)),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => context.go('/caregivers'),
+              child: const Text(
+                'Xem thêm',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Consumer(
+          builder: (context, ref, _) {
+            final caregiverAsync = ref.watch(caregiverStoreProvider);
+            return caregiverAsync.when(
+              loading: () => const SizedBox(
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (caregivers) {
+                if (caregivers.isEmpty) {
+                  return _buildCaregiverEmptyState(context);
+                }
+                final preview = caregivers.take(5).toList();
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _syncCaregiverScrollProgress(),
+                );
+
+                return Column(
+                  children: [
+                    SizedBox(
+                      height: 220,
+                      child: ListView.separated(
+                        controller: _caregiverScrollController,
+                        physics: const BouncingScrollPhysics(),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: preview.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, i) =>
+                            _buildCaregiverCard(preview[i], context),
+                      ),
+                    ),
+                    if (preview.length > 1) ...[
+                      const SizedBox(height: 10),
+                      _buildCaregiverCarouselControls(),
+                    ],
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCaregiverCarouselControls() {
+    final progress = (0.18 + _caregiverScrollProgress * 0.82).clamp(0.18, 1.0);
+
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: AppColors.surfaceVariant,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Icon(Icons.swipe_rounded, color: AppColors.textHint, size: 16),
+        const SizedBox(width: 4),
+        const Text(
+          'Vuốt để xem thêm',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 10),
+        _buildCaregiverScrollButton(
+          icon: Icons.chevron_left_rounded,
+          tooltip: 'Xem caregiver trước',
+          onTap: () => _scrollCaregivers(-1),
+        ),
+        const SizedBox(width: 6),
+        _buildCaregiverScrollButton(
+          icon: Icons.chevron_right_rounded,
+          tooltip: 'Xem caregiver tiếp theo',
+          onTap: () => _scrollCaregivers(1),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCaregiverScrollButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaregiverCard(CaregiverModel c, BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/caregivers/${c.id}'),
+      child: Container(
+        width: 180,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: AppShadows.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: AppColors.primaryContainer,
+                  child: Text(
+                    c.initials,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (c.isOnline)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    c.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.verified_rounded,
+                    color: AppColors.primary, size: 14),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded,
+                    color: Color(0xFFF5A623), size: 13),
+                const SizedBox(width: 2),
+                Text(
+                  c.ratingAvg.toStringAsFixed(1),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
-                  '${activeBooking.caregiverName} • ${activeBooking.beneficiaryName}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  activeBooking.time,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                  ' (${c.ratingCount})',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
                     fontSize: 11,
                   ),
                 ),
               ],
             ),
-          ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 90),
-            child: TextButton(
-              onPressed: () =>
-                  context.push('/bookings/${activeBooking.id}/tracking'),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            const SizedBox(height: 8),
+            if (c.skills.isNotEmpty) ...[
+              Row(
+                children: [
+                  Flexible(
+                    child: _buildSkillChip(c.skills.first),
+                  ),
+                  if (c.skills.length > 1) ...[
+                    const SizedBox(width: 4),
+                    _buildSkillChip('+${c.skills.length - 1}'),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            const Spacer(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Text(
-                'Theo dõi',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                'Chi tiết',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Quick Actions ────────────────────────────────────────────
-  Widget _buildQuickActions(BuildContext context) {
-    final actions = [
-      {
-        'icon': Icons.calendar_month,
-        'label': 'Đặt lịch\nmới',
-        'route': '/booking/new',
-        'color': AppColors.primary,
-        'push': true,
-      },
-      {
-        'icon': Icons.people,
-        'label': 'Người\nthân',
-        'route': '/beneficiaries',
-        'color': const Color(0xFF9B59B6),
-        'push': false,
-      },
-      {
-        'icon': Icons.favorite,
-        'label': 'Dịch vụ',
-        'route': '/catalog',
-        'color': const Color(0xFFE67E22),
-        'push': true,
-      },
-      {
-        'icon': Icons.history,
-        'label': 'Lịch sử',
-        'route': '/bookings',
-        'color': const Color(0xFF2980B9),
-        'push': false,
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Thao tác nhanh',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: actions.map((a) {
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => a['push'] == true
-                    ? context.push(a['route'] as String)
-                    : context.go(a['route'] as String),
-                child: Container(
-                  height: 96,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: (a['color'] as Color).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          a['icon'] as IconData,
-                          color: a['color'] as Color,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        a['label'] as String,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  // ── Upcoming Bookings ────────────────────────────────────────
-  Widget _buildUpcomingBookings(
-    BuildContext context,
-    List<MockBooking> bookings,
-  ) {
-    final upcoming = bookings
-        .where((b) =>
-            b.status == 'pending' ||
-            b.status == 'confirmed' ||
-            b.status == 'in_progress' ||
-            b.status == 'checkout_requested')
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Lịch hẹn sắp tới',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => context.go('/bookings'),
-              child: const Text('Xem tất cả'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...upcoming.map((b) => _buildBookingCard(b, context)),
-      ],
-    );
-  }
-
-  Widget _buildBookingCard(MockBooking booking, BuildContext context) {
-    final statusConfig = _getStatusConfig(booking.status);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: AppColors.primaryLight,
-                child: Text(
-                  booking.caregiverAvatar,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      booking.caregiverName,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      'Cho: ${booking.beneficiaryName}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusConfig['bg'] as Color,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  statusConfig['label'] as String,
-                  style: TextStyle(
-                    color: statusConfig['color'] as Color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(booking.date,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12)),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.access_time_outlined,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(booking.time,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(Icons.home_repair_service_outlined,
-                  size: 14, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  booking.serviceName,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ),
-              Text(
-                _formatCurrency(booking.totalPrice),
-                style: const TextStyle(
                   color: AppColors.primary,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Beneficiaries Row ────────────────────────────────────────
-  Widget _buildBeneficiariesRow(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Người thân',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => context.go('/beneficiaries'),
-              child: const Text('Quản lý'),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 110,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: MockData.beneficiaries.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              if (index == MockData.beneficiaries.length) {
-                return GestureDetector(
-                  onTap: () => context.push('/beneficiaries/create'),
-                  child: Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.divider, width: 1.5),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_circle_outline,
-                            color: AppColors.primary, size: 28),
-                        SizedBox(height: 8),
-                        Text(
-                          'Thêm\nmới',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              final b = MockData.beneficiaries[index];
-              final careColor = b.careLevel == 'Nặng'
-                  ? const Color(0xFFE74C3C)
-                  : b.careLevel == 'Trung bình'
-                      ? const Color(0xFFF39C12)
-                      : const Color(0xFF27AE60);
-
-              return GestureDetector(
-                onTap: () => context.push('/beneficiaries/${b.id}'),
-                child: Container(
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: AppColors.primaryLight,
-                        child: Text(
-                          b.avatarInitial,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        b.name.split(' ').last,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: careColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          b.careLevel,
-                          style: TextStyle(
-                            color: careColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // ── Stats Row ────────────────────────────────────────────────
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        Expanded(
-            child: _buildStatCard('23', 'Ca hoàn thành',
-                Icons.check_circle_outline, AppColors.primary)),
-        const SizedBox(width: 12),
-        Expanded(
-            child: _buildStatCard('4.8⭐', 'Đánh giá TB', Icons.star_outline,
-                const Color(0xFFF39C12))),
-        const SizedBox(width: 12),
-        Expanded(
-            child: _buildStatCard(
-                '2.5M',
-                'Chi tháng này',
-                Icons.account_balance_wallet_outlined,
-                const Color(0xFF2980B9))),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-      String value, String label, IconData icon, Color color) {
+  Widget _buildSkillChip(String label) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+        color: AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                color: color, fontSize: 18, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 10, height: 1.3),
-          ),
-        ],
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────────────
-  Map<String, dynamic> _getStatusConfig(String status) {
-    switch (status) {
-      case 'in_progress':
-        return {
-          'label': '🟢 Đang diễn ra',
-          'color': const Color(0xFF27AE60),
-          'bg': const Color(0xFFE8F8F0)
-        };
-      case 'confirmed':
-        return {
-          'label': '● Đã xác nhận',
-          'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFFF3DC)
-        };
-      case 'pending':
-        return {
-          'label': '● Chờ xác nhận',
-          'color': const Color(0xFF7F8C8D),
-          'bg': const Color(0xFFF4F6F6)
-        };
-      case 'completed':
-        return {
-          'label': '✅ Hoàn thành',
-          'color': AppColors.textSecondary,
-          'bg': AppColors.surface
-        };
-      case 'cancelled':
-        return {
-          'label': '❌ Đã huỷ',
-          'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC)
-        };
-      default:
-        return {
-          'label': status,
-          'color': AppColors.textSecondary,
-          'bg': AppColors.surface
-        };
-    }
+  Widget _buildCaregiverEmptyState(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.go('/caregivers'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.people_alt_outlined,
+                color: AppColors.textHint, size: 36),
+            SizedBox(height: 8),
+            Text(
+              'Chưa có caregiver trong khu vực',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
+  // Helpers
   String _formatCurrency(double amount) {
     if (amount >= 1000000) {
       return '${(amount / 1000000).toStringAsFixed(1).replaceAll('.', ',')}M ₫';
@@ -673,146 +849,215 @@ class HomeScreen extends ConsumerWidget {
           (m) => '${m[1]}.',
         )} ₫';
   }
-}
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Header Delegate — pinned + fixed height (không co, luôn hiện)
-// ────────────────────────────────────────────────────────────────────────────────
-class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final double topPadding;
-  final VoidCallback onNotificationTap;
+  // ── Hero Banner ────────────────────────────────────────────────────────────
+  Widget _buildHeroBanner(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(
+        children: [
+          // Background image
+          SizedBox(
+            height: 320,
+            width: double.infinity,
+            child: Image.network(
+              'https://lh3.googleusercontent.com/aida-public/AB6AXuB_gclqxTQn4Hcbz-83_gEg_MI4goQwj5nYiQZUd0zrWDfoybrs5j468EvYpccjQIJJFrVTI67wuoh7Z0NRIGF9MxbDKSyHNoKOlk8yxNHqzA_mqeKF7jbE0KUjwdrUuQMtcP4g5I-YO-UoQ_iiLGbRsTCfz0c2CEvq8BKN0pgJWk0gyVm9-tgZPvsg7bkPlycqYWLBLVb3r6bsGe--8-MHnPdrZh43tjpZrrx2BFVCpqArNmmv3QK9',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: AppColors.primaryContainer,
+                child: const Icon(Icons.elderly_woman_rounded,
+                    size: 80, color: AppColors.primary),
+              ),
+            ),
+          ),
 
-  const _HomeHeaderDelegate({
-    required this.topPadding,
-    required this.onNotificationTap,
-  });
+          // Gradient overlay (bottom-heavy dark)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.15),
+                    Colors.black.withValues(alpha: 0.75),
+                  ],
+                  stops: const [0.3, 1.0],
+                ),
+              ),
+            ),
+          ),
 
-  // Chiều cao nội dung header (không tính status bar)
-  static const double _contentHeight = 148.0;
+          // Content
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Badge pill
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('⭐', style: TextStyle(fontSize: 13)),
+                        SizedBox(width: 6),
+                        Text(
+                          'Đồng hành tin cậy cùng Cha Mẹ',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
 
-  @override
-  double get minExtent => _contentHeight + topPadding;
+                  const Spacer(),
 
-  @override
-  double get maxExtent => _contentHeight + topPadding;
+                  // Headline
+                  const Text(
+                    'Trao gửi yêu thương,\nan tâm mỗi ngày',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
-  @override
-  bool shouldRebuild(covariant _HomeHeaderDelegate old) =>
-      old.topPadding != topPadding;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      // Gradient nhẹ hơn: top→bottom, tránh diagonal cắt ngang lẻ
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF1E6262), // deep teal
-            Color(0xFF297979), // mid teal
-          ],
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: Colors.white.withValues(alpha: 0.22),
-                  child: const Text(
-                    MockData.currentUserAvatar,
+                  // Description
+                  const Text(
+                    'Người bạn đồng hành tận tâm hỗ trợ sinh hoạt, trò chuyện & chăm sóc Cha Mẹ chu đáo khi bạn bận rộn.',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      height: 1.5,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+
+                  // Stats + CTA row
+                  Row(
                     children: [
-                      Text(
-                        'Xin chào 👋',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 13,
+                      // Green dot + stats text
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4ADE80),
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      const Text(
-                        MockData.currentUserName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Hơn 250+ điều dưỡng & hộ lý\ncao tuổi sẵn sàng',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 1.4,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      // CTA Button
+                      GestureDetector(
+                        onTap: () => context.push('/booking/new'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            children: [
+                              Text(
+                                'Đặt lịch ngay',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(Icons.arrow_forward_rounded,
+                                  color: Colors.white, size: 15),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined,
-                          color: Colors.white),
-                      tooltip: 'Thông báo',
-                      onPressed: onNotificationTap,
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF6B6B),
-                          shape: BoxShape.circle,
-                        ),
+                  const SizedBox(height: 16),
+
+                  // Search bar
+                  GestureDetector(
+                    onTap: () => context.push('/caregivers'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Chip cải thiện độ tương phản (WCAG AA: alpha 0.22 + border)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35), width: 0.8),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.calendar_month, color: Colors.white, size: 15),
-                  SizedBox(width: 7),
-                  Text(
-                    '${MockData.totalBookingsThisMonth} lịch hẹn tháng này',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search_rounded,
+                              color: Color(0xFFB0B8C1), size: 20),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Tìm người chăm sóc người già, địa chỉ...',
+                              style: TextStyle(
+                                color: Color(0xFFB0B8C1),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.tune_rounded,
+                                color: AppColors.textSecondary, size: 16),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _ServiceAccent {
+  final Color color;
+  final Color background;
+
+  const _ServiceAccent(this.color, this.background);
 }

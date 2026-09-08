@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
 import '../../booking/application/booking_store.dart';
 
 class CareTimelineScreen extends ConsumerWidget {
@@ -36,7 +35,7 @@ class CareTimelineScreen extends ConsumerWidget {
               CircleAvatar(
                   radius: 22,
                   backgroundColor: AppColors.primaryContainer,
-                  child: Text(bk.caregiverAvatar,
+                  child: Text(bk.caregiverAvatar ?? bk.caregiverInitials,
                       style: const TextStyle(
                           color: AppColors.primary,
                           fontSize: 11,
@@ -46,7 +45,7 @@ class CareTimelineScreen extends ConsumerWidget {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text(bk.caregiverName,
+                    Text(bk.caregiverName ?? 'Người chăm sóc',
                         style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -85,15 +84,54 @@ class CareTimelineScreen extends ConsumerWidget {
     );
   }
 
-  List<_TimelineEvent> _buildEvents(MockBooking bk) {
+  List<_TimelineEvent> _buildEvents(BookingModel bk) {
+    if (bk.tasks.isEmpty) {
+      return [
+        _TimelineEvent(
+          'Bắt đầu',
+          'Check-in ca chăm sóc',
+          bk.actualStart != null
+              ? 'Caregiver đã có mặt và bắt đầu ca trực.'
+              : 'Đang chờ caregiver check-in tại địa chỉ.',
+          Icons.login_outlined,
+          bk.actualStart != null ? AppColors.success : AppColors.warning,
+          bk.actualStart != null,
+        ),
+        _TimelineEvent(
+          'Ca trực',
+          'Thực hiện các hoạt động chăm sóc',
+          bk.status == 'in_progress' || bk.status == 'completed'
+              ? 'Caregiver đang thực hiện nhiệm vụ chăm sóc.'
+              : 'Chưa bắt đầu.',
+          Icons.task_alt,
+          bk.status == 'in_progress' || bk.status == 'completed'
+              ? AppColors.success
+              : AppColors.warning,
+          bk.status == 'in_progress' || bk.status == 'completed',
+        ),
+        _TimelineEvent(
+          'Kết thúc',
+          'Check-out & Báo cáo',
+          bk.isCompleted
+              ? 'Ca chăm sóc đã hoàn tất thành công.'
+              : 'Dự kiến khi hết thời gian ca trực.',
+          Icons.logout_outlined,
+          bk.isCompleted ? AppColors.success : AppColors.warning,
+          bk.isCompleted,
+        ),
+      ];
+    }
+
     return bk.tasks.asMap().entries.map((entry) {
       final task = entry.value;
       final isFirst = entry.key == 0;
       final isLast = entry.key == bk.tasks.length - 1;
+      final title = task.title as String? ?? 'Nhiệm vụ ${entry.key + 1}';
+      final isCompleted = (task.isCompleted as bool?) ?? false;
       return _TimelineEvent(
         'B${entry.key + 1}',
-        task.title,
-        task.isCompleted
+        title,
+        isCompleted
             ? 'Caregiver đã cập nhật hoàn thành nhiệm vụ.'
             : 'Đang chờ caregiver cập nhật trong ca chăm sóc.',
         isFirst
@@ -101,8 +139,8 @@ class CareTimelineScreen extends ConsumerWidget {
             : isLast
                 ? Icons.logout_outlined
                 : Icons.task_alt,
-        task.isCompleted ? AppColors.success : AppColors.warning,
-        task.isCompleted,
+        isCompleted ? AppColors.success : AppColors.warning,
+        isCompleted,
       );
     }).toList(growable: false);
   }
@@ -131,7 +169,7 @@ class CareTimelineScreen extends ConsumerWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: event.isDone
-                    ? event.color.withValues(alpha: 0.15)
+                    ? event.color.withOpacity(0.15)
                     : AppColors.surfaceVariant,
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -147,7 +185,7 @@ class CareTimelineScreen extends ConsumerWidget {
                 width: 2,
                 height: 60,
                 color: event.isDone
-                    ? event.color.withValues(alpha: 0.2)
+                    ? event.color.withOpacity(0.2)
                     : AppColors.border,
               ),
           ],

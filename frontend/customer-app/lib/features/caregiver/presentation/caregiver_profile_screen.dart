@@ -1,52 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../../core/presentation/widgets/fade_slide_staggered.dart';
+import '../application/caregiver_store.dart';
+import '../data/models/caregiver_model.dart';
 
-class CaregiverProfileScreen extends StatelessWidget {
+class CaregiverProfileScreen extends ConsumerWidget {
   final String id;
 
   const CaregiverProfileScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context) {
-    final caregiver = MockData.caregivers.firstWhere(
-      (c) => c.id == id,
-      orElse: () => MockData.caregivers.first,
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final caregiverAsync = ref.watch(caregiverStoreProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildHeader(context, caregiver),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildStatsRow(caregiver),
-                const SizedBox(height: 20),
-                _buildSection(
-                    'Kỹ năng & Chuyên môn', _buildSkillsSection(caregiver)),
-                const SizedBox(height: 16),
-                _buildSection('Chứng chỉ', _buildCertSection(caregiver)),
-                const SizedBox(height: 16),
-                _buildSection('Đánh giá gần đây', _buildReviewsSection()),
-                const SizedBox(height: 16),
-                _buildSection('Lịch làm việc', _buildScheduleSection()),
-                const SizedBox(height: 24),
-              ]),
-            ),
-          ),
-        ],
+      body: caregiverAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Lỗi: $e')),
+        data: (caregivers) {
+          final caregiver = caregivers.firstWhere(
+            (c) => c.id == id,
+            orElse: () => caregivers.isNotEmpty
+                ? caregivers.first
+                : CaregiverModel(
+                    id: id,
+                    userId: id,
+                    fullName: 'Caregiver',
+                    ratingAvg: 5.0,
+                    ratingCount: 0,
+                    availabilityStatus: 'ONLINE',
+                    skills: const [],
+                  ),
+          );
+
+          return CustomScrollView(
+            slivers: [
+              _buildHeader(context, caregiver),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    FadeSlideStaggered(
+                      index: 0,
+                      child: _buildStatsRow(caregiver),
+                    ),
+                    const SizedBox(height: 20),
+                    FadeSlideStaggered(
+                      index: 1,
+                      child: _buildSection('Kỹ năng & Chuyên môn',
+                          _buildSkillsSection(caregiver)),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeSlideStaggered(
+                      index: 2,
+                      child: _buildSection(
+                          'Giới thiệu', _buildBioSection(caregiver)),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeSlideStaggered(
+                      index: 3,
+                      child: _buildSection(
+                          'Đánh giá gần đây', _buildReviewsSection()),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeSlideStaggered(
+                      index: 4,
+                      child: _buildSection(
+                          'Lịch làm việc', _buildScheduleSection()),
+                    ),
+                    const SizedBox(height: 24),
+                  ]),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomBar(context),
+      bottomNavigationBar: caregiverAsync.maybeWhen(
+        data: (caregivers) {
+          final caregiver = caregivers.firstWhere(
+            (c) => c.id == id,
+            orElse: () => caregivers.isNotEmpty
+                ? caregivers.first
+                : CaregiverModel(
+                    id: id,
+                    userId: id,
+                    fullName: 'Caregiver',
+                    ratingAvg: 5.0,
+                    ratingCount: 0,
+                    availabilityStatus: 'ONLINE',
+                    skills: const [],
+                  ),
+          );
+          return _buildBottomBar(context, caregiver);
+        },
+        orElse: () => const SizedBox.shrink(),
+      ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, MockCaregiver caregiver) {
+  Widget _buildHeader(BuildContext context, CaregiverModel caregiver) {
     return SliverAppBar(
       expandedHeight: 240,
       pinned: true,
@@ -57,16 +115,16 @@ class CaregiverProfileScreen extends StatelessWidget {
         color: Colors.white,
       ),
       actions: [
-        _FavoriteButton(caregiverName: caregiver.name),
+        _FavoriteButton(caregiverName: caregiver.displayName),
         IconButton(
           icon: const Icon(Icons.share_outlined, color: Colors.white),
           onPressed: () {
             SharePlus.instance.share(
               ShareParams(
-                text: 'Xem hồ sơ caregiver ${caregiver.name} trên CareSitter!\n'
-                    'Kinh nghiệm: ${caregiver.experience}\n'
-                    'Đánh giá: ${caregiver.rating}/5 ⭐',
-                subject: 'Hồ sơ Caregiver - ${caregiver.name}',
+                text:
+                    'Xem hồ sơ caregiver ${caregiver.displayName} trên CareSitter!\n'
+                    'Đánh giá: ${caregiver.ratingAvg.toStringAsFixed(1)}/5 ⭐',
+                subject: 'Hồ sơ Caregiver - ${caregiver.displayName}',
               ),
             );
           },
@@ -84,16 +142,16 @@ class CaregiverProfileScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 44,
-                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                      backgroundColor: Colors.white.withOpacity(0.25),
                       child: Text(
-                        caregiver.avatarInitial,
+                        caregiver.initials,
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.w800),
                       ),
                     ),
-                    if (caregiver.isAvailable)
+                    if (caregiver.isOnline)
                       Positioned(
                         right: 2,
                         bottom: 2,
@@ -111,7 +169,7 @@ class CaregiverProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  caregiver.name,
+                  caregiver.displayName,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -119,12 +177,11 @@ class CaregiverProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  caregiver.isAvailable
-                      ? '● Đang rảnh • ${caregiver.experience} kinh nghiệm'
+                  caregiver.isOnline
+                      ? '● Đang rảnh${caregiver.yearsOfExperience != null ? ' • ${caregiver.yearsOfExperience} năm kinh nghiệm' : ''}'
                       : '○ Hiện đang bận',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 13),
+                      color: Colors.white.withOpacity(0.85), fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -133,22 +190,23 @@ class CaregiverProfileScreen extends StatelessWidget {
                     const Icon(Icons.star, size: 14, color: Color(0xFFF39C12)),
                     const SizedBox(width: 4),
                     Text(
-                      '${caregiver.rating} (${caregiver.totalReviews} đánh giá)',
+                      '${caregiver.ratingAvg.toStringAsFixed(1)} (${caregiver.ratingCount} đánh giá)',
                       style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.location_on_outlined,
-                        size: 14, color: Colors.white70),
-                    const SizedBox(width: 4),
-                    Text(
-                      caregiver.location,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12),
-                    ),
+                    if (caregiver.location.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      const Icon(Icons.location_on_outlined,
+                          size: 14, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(
+                        caregiver.location,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -159,209 +217,118 @@ class CaregiverProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(MockCaregiver caregiver) {
+  Widget _buildStatsRow(CaregiverModel caregiver) {
     return Container(
       margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          _buildStat('${caregiver.completedShifts}', 'Ca hoàn thành',
-              Icons.check_circle_outline),
-          _buildStatDivider(),
-          _buildStat('${caregiver.rating}⭐', 'Đánh giá TB', Icons.star_outline),
-          _buildStatDivider(),
-          _buildStat(
-              '${caregiver.totalReviews}', 'Đánh giá', Icons.reviews_outlined),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStat(String value, String label, IconData icon) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(height: 6),
-          Text(value,
-              style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700)),
-          const SizedBox(height: 3),
-          Text(label,
-              style:
-                  const TextStyle(color: AppColors.textSecondary, fontSize: 10),
-              textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatDivider() {
-    return Container(width: 1, height: 40, color: AppColors.divider);
-  }
-
-  Widget _buildSection(String title, Widget content) {
-    return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
-              offset: const Offset(0, 3)),
+              offset: const Offset(0, 2)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700)),
-          const SizedBox(height: 12),
-          content,
+          _buildStatItem('⭐ ${caregiver.ratingAvg.toStringAsFixed(1)}',
+              '${caregiver.ratingCount} đánh giá'),
+          _buildDivider(),
+          _buildStatItem('🛡️ 100%', 'Xác minh KYC'),
+          _buildDivider(),
+          _buildStatItem('📍 ${caregiver.location.isNotEmpty ? caregiver.location : 'TP.HCM'}', 'Khu vực'),
         ],
       ),
     );
   }
 
-  Widget _buildSkillsSection(MockCaregiver caregiver) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: caregiver.skills.map((skill) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle,
-                  size: 13, color: AppColors.primary),
-              const SizedBox(width: 5),
-              Text(skill,
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildCertSection(MockCaregiver caregiver) {
-    return Row(
+  Widget _buildStatItem(String value, String label) {
+    return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.secondaryContainer,
-            borderRadius: BorderRadius.circular(10),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
           ),
-          child: const Icon(Icons.workspace_premium,
-              color: AppColors.secondary, size: 22),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            caregiver.certifications,
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 13, height: 1.5),
-          ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       ],
     );
   }
 
-  Widget _buildReviewsSection() {
-    final reviews = [
-      {
-        'name': 'Nguyễn Văn B',
-        'rating': 5,
-        'text': 'Rất tận tâm, chăm sóc bố tôi rất chu đáo!',
-        'time': '3 ngày trước'
-      },
-      {
-        'name': 'Trần Thị C',
-        'rating': 4,
-        'text': 'Đúng giờ, chuyên nghiệp. Sẽ đặt lại lần sau.',
-        'time': '1 tuần trước'
-      },
-    ];
+  Widget _buildDivider() {
+    return Container(
+      height: 32,
+      width: 1,
+      color: AppColors.divider,
+    );
+  }
 
+  Widget _buildSection(String title, Widget content) {
     return Column(
-      children: reviews.map((r) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        content,
+      ],
+    );
+  }
+
+  Widget _buildSkillsSection(CaregiverModel caregiver) {
+    if (caregiver.skills.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text('Chưa cập nhật kỹ năng',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: caregiver.skills.map((skill) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
+            border:
+                Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.surfaceVariant,
-                    child: Text(
-                      (r['name'] as String).substring(0, 2),
-                      style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(r['name'] as String,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600)),
-                        Row(
-                          children: [
-                            ...List.generate(
-                                r['rating'] as int,
-                                (_) => const Icon(Icons.star,
-                                    size: 12, color: Color(0xFFF39C12))),
-                            const SizedBox(width: 6),
-                            Text(r['time'] as String,
-                                style: const TextStyle(
-                                    color: AppColors.textHint, fontSize: 11)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              const Icon(Icons.check_circle_outline,
+                  color: AppColors.primary, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                skill,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 40),
-                child: Text(r['text'] as String,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.4)),
-              ),
-              if (r != reviews.last)
-                const Divider(height: 16, color: AppColors.divider),
             ],
           ),
         );
@@ -369,9 +336,97 @@ class CaregiverProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildBioSection(CaregiverModel caregiver) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Text(
+        caregiver.bio != null && caregiver.bio!.isNotEmpty
+            ? caregiver.bio!
+            : 'Caregiver tận tâm, chu đáo, được đào tạo bài bản và luôn sẵn sàng hỗ trợ chăm sóc gia đình bạn.',
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 13,
+          height: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.secondaryContainer,
+                child: Text('TH',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.w700)),
+              ),
+              SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Trần Hữu',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  Row(
+                    children: [
+                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
+                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
+                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
+                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
+                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
+                    ],
+                  ),
+                ],
+              ),
+              Spacer(),
+              Text('2 ngày trước',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Caregiver rất tận tâm, đúng giờ và chu đáo. Gia đình rất an tâm.',
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScheduleSection() {
     final days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    final available = [true, true, false, true, true, true, false];
+    final available = [true, true, true, true, true, true, false];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -403,19 +458,15 @@ class CaregiverProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context) {
-    final caregiver = MockData.caregivers.firstWhere(
-      (c) => c.id == id,
-      orElse: () => MockData.caregivers.first,
-    );
-
+  Widget _buildBottomBar(BuildContext context, CaregiverModel caregiver) {
+    final rate = caregiver.hourlyRateExpected ?? 85000;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
               blurRadius: 20,
               offset: const Offset(0, -4)),
         ],
@@ -431,7 +482,7 @@ class CaregiverProfileScreen extends StatelessWidget {
                     style: TextStyle(
                         color: AppColors.textSecondary, fontSize: 12)),
                 Text(
-                  '${caregiver.hourlyRate.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ/giờ',
+                  '${rate.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ/giờ',
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 20,
@@ -444,7 +495,7 @@ class CaregiverProfileScreen extends StatelessWidget {
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: caregiver.isAvailable
+              onPressed: caregiver.isOnline
                   ? () => context.push('/booking/new')
                   : null,
               style: ElevatedButton.styleFrom(
@@ -453,7 +504,7 @@ class CaregiverProfileScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14)),
               ),
               child: Text(
-                caregiver.isAvailable ? 'Đặt lịch ngay' : 'Hiện đang bận',
+                caregiver.isOnline ? 'Đặt lịch ngay' : 'Hiện đang bận',
                 style:
                     const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),

@@ -1,40 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../../core/presentation/widgets/fade_slide_staggered.dart';
+import '../application/service_store.dart';
+import '../data/models/service_model.dart';
 
-class CatalogScreen extends StatefulWidget {
+class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
 
   @override
-  State<CatalogScreen> createState() => _CatalogScreenState();
+  ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
 }
 
-class _CatalogScreenState extends State<CatalogScreen> {
+class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   String _selectedCategory = 'Tất cả';
-  final List<String> _categories = [
-    'Tất cả',
-    'Phổ biến',
-    'Chuyên biệt',
-    'Trẻ em',
-    'Sinh hoạt'
-  ];
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
-  List<MockService> get _filtered {
-    var list = _selectedCategory == 'Tất cả'
-        ? MockData.services
-        : MockData.services
-            .where((s) => s.category == _selectedCategory)
-            .toList();
+  List<ServiceModel> _filtered(List<ServiceModel> services) {
+    var list = services;
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       list = list
           .where((s) =>
               s.name.toLowerCase().contains(q) ||
-              s.description.toLowerCase().contains(q))
+              (s.description?.toLowerCase().contains(q) ?? false))
           .toList();
     }
     return list;
@@ -48,6 +40,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final servicesAsync = ref.watch(serviceStoreProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -58,22 +52,55 @@ class _CatalogScreenState extends State<CatalogScreen> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-                _buildCategoryChips(),
+                FadeSlideStaggered(index: 0, child: _buildSearchBar()),
                 const SizedBox(height: 8),
-                _buildBanner(),
+                FadeSlideStaggered(index: 2, child: _buildBanner()),
                 const SizedBox(height: 20),
-                const Text(
-                  'Dịch vụ chăm sóc',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                FadeSlideStaggered(
+                  index: 3,
+                  child: const Text(
+                    'Dịch vụ chăm sóc',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                ..._filtered.map((s) => _buildServiceCard(s, context)),
+                FadeSlideStaggered(
+                  index: 4,
+                  child: servicesAsync.when(
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (e, _) => Center(
+                      child: Text('Không thể tải dịch vụ: $e'),
+                    ),
+                    data: (services) {
+                      final filtered = _filtered(services);
+                      if (filtered.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Text(
+                              'Không tìm thấy dịch vụ phù hợp.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: filtered
+                            .map((s) => _buildServiceCard(s, context))
+                            .toList(),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: 32),
               ]),
             ),
@@ -120,18 +147,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   setState(() => _searchQuery = '');
                 },
               )
-            : Container(
-                padding: const EdgeInsets.all(10),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.tune,
-                      color: AppColors.primary, size: 16),
-                ),
-              ),
+            : null,
         filled: true,
         fillColor: AppColors.cardBackground,
         contentPadding:
@@ -149,47 +165,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: _categories.map((cat) {
-          final isSelected = _selectedCategory == cat;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = cat),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color:
-                    isSelected ? AppColors.primary : AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.3)
-                        : Colors.black.withValues(alpha: 0.04),
-                    blurRadius: isSelected ? 8 : 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                cat,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -220,7 +195,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 Text(
                   'Gọi để được hỗ trợ chọn dịch vụ phù hợp',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: Colors.white.withOpacity(0.85),
                       fontSize: 12),
                 ),
                 const SizedBox(height: 10),
@@ -228,7 +203,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -249,7 +224,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
   }
 
-  Widget _buildServiceCard(MockService service, BuildContext context) {
+  Widget _buildServiceCard(ServiceModel service, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -258,7 +233,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 3)),
         ],
@@ -313,7 +288,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  service.description,
+                  service.description ?? '',
                   style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
@@ -322,32 +297,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${_formatPrice(service.pricePerHour)}/giờ',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                FilledButton(
+                  onPressed: () =>
+                      context.push('/booking/new?serviceId=${service.id}'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(width: 12),
-                    FilledButton(
-                      onPressed: () =>
-                          context.push('/booking/new?serviceId=${service.id}'),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 44),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text('Đặt ngay'),
-                    ),
-                  ],
+                  ),
+                  child: const Text('Đặt ngay'),
                 ),
               ],
             ),
@@ -355,9 +314,5 @@ class _CatalogScreenState extends State<CatalogScreen> {
         ],
       ),
     );
-  }
-
-  String _formatPrice(double price) {
-    return '${price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ';
   }
 }

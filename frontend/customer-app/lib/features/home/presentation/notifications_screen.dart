@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 // ─── Mock notification model ──────────────────────────────────────────────────
 class _Notification {
@@ -36,7 +37,7 @@ final List<_Notification> _mockNotifications = [
     time: '5 phút trước',
     icon: Icons.check_circle_outline,
     iconColor: const Color(0xFF27AE60),
-    iconBg: const Color(0xFFE8F8F0),
+    iconBg: AppColors.primaryContainer,
     route: '/bookings/bk001',
   ),
   _Notification(
@@ -133,7 +134,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Text(
                 '$_unreadCount chưa đọc',
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                    color: Colors.white.withOpacity(0.8), fontSize: 12),
               ),
           ],
         ),
@@ -162,8 +163,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 endIndent: 16,
                 color: AppColors.divider,
               ),
-              itemBuilder: (context, index) =>
-                  _buildItem(_notifications[index]),
+              itemBuilder: (context, index) => FadeSlideStaggered(
+                index: index,
+                child: _buildItem(_notifications[index]),
+              ),
             ),
     );
   }
@@ -173,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       onTap: () => _onTap(notif),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        color: notif.isRead ? Colors.transparent : AppColors.primary.withValues(alpha: 0.05),
+        color: notif.isRead ? Colors.transparent : AppColors.primary.withOpacity(0.05),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

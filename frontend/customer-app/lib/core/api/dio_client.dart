@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_notifier.dart';
+import 'api_constants.dart';
 
-const String _baseUrl = 'https://api.caresitter.vn/api/v1';
+// baseUrl đọc từ --dart-define=BASE_URL=http://localhost:5033/api/v1
+// Nếu không truyền → dùng giá trị mặc định trong api_constants.dart
+const String _baseUrl = kBaseUrl;
 
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
 
@@ -76,7 +79,11 @@ class _AuthInterceptor extends Interceptor {
   @override
   Future<void> onError(
       DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
+    final path = err.requestOptions.path;
+    final isAuthEndpoint =
+        path.endsWith('/auth/refresh') || path.endsWith('/auth/logout');
+
+    if (err.response?.statusCode == 401 && !isAuthEndpoint) {
       final authNotifier = _ref.read(authStateProvider.notifier);
       final refreshToken = authNotifier.refreshToken;
 
@@ -101,6 +108,7 @@ class _AuthInterceptor extends Interceptor {
       _isRefreshing = true;
       try {
         final dio = Dio(BaseOptions(baseUrl: _baseUrl));
+        // BE stateful: chỉ cần refreshToken — userId lấy từ Redis, không cần accessToken
         final resp = await dio
             .post('/auth/refresh', data: {'refreshToken': refreshToken});
         final newAccess = resp.data['accessToken'] as String;

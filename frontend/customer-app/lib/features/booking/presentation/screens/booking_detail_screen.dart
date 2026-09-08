@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../application/booking_store.dart';
+
+import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 class BookingDetailScreen extends ConsumerWidget {
   final String id;
@@ -44,353 +45,390 @@ class BookingDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: statusConfig['bg'] as Color,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: (statusConfig['color'] as Color)
-                        .withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: (statusConfig['color'] as Color)
-                          .withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+            FadeSlideStaggered(
+              index: 0,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: statusConfig['bg'] as Color,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: (statusConfig['color'] as Color).withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color:
+                            (statusConfig['color'] as Color).withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                          child: Text(statusConfig['emoji'] as String,
+                              style: const TextStyle(fontSize: 22))),
                     ),
-                    child: Center(
-                        child: Text(statusConfig['emoji'] as String,
-                            style: const TextStyle(fontSize: 20))),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        statusConfig['label'] as String,
-                        style: TextStyle(
-                          color: statusConfig['color'] as Color,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          statusConfig['label'] as String,
+                          style: TextStyle(
+                            color: statusConfig['color'] as Color,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Mã đặt lịch: ${booking.id.toUpperCase()}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ],
+                        Text(
+                          'Mã đặt lịch: ${booking.id.toUpperCase()}',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
 
             // Caregiver info
-            _buildInfoCard(
-              title: 'Người chăm sóc',
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppColors.primaryLight,
-                    child: Text(booking.caregiverAvatar,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(booking.caregiverName,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 3),
-                        const Row(
-                          children: [
-                            Icon(Icons.star,
-                                size: 13, color: Color(0xFFF39C12)),
-                            SizedBox(width: 3),
-                            Text('4.9 • 127 đánh giá',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12)),
-                          ],
-                        ),
-                      ],
+            FadeSlideStaggered(
+              index: 1,
+              child: _buildInfoCard(
+                title: 'Người chăm sóc',
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: AppColors.primaryLight,
+                      child: Text(
+                          booking.caregiverAvatar ?? booking.caregiverInitials,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text('📞 Gọi cho ${booking.caregiverName}...'),
-                          backgroundColor: AppColors.primary,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.call_outlined,
-                        color: AppColors.primary),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              '💬 Nhắn tin cho ${booking.caregiverName}...'),
-                          backgroundColor: AppColors.primaryLight,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.chat_bubble_outline,
-                        color: AppColors.primary),
-                  ),
-                ],
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(booking.caregiverName ?? 'Người chăm sóc',
+                              style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 3),
+                          const Row(
+                            children: [
+                              Icon(Icons.star,
+                                  size: 13, color: Color(0xFFF39C12)),
+                              SizedBox(width: 3),
+                              Text('4.9 • 127 đánh giá',
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                '📞 Gọi cho ${booking.caregiverName ?? "người chăm sóc"}...'),
+                            backgroundColor: AppColors.primary,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.call_outlined,
+                          color: AppColors.primary),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                '💬 Nhắn tin cho ${booking.caregiverName ?? "người chăm sóc"}...'),
+                            backgroundColor: AppColors.primaryLight,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline,
+                          color: AppColors.primary),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
 
             // Booking details
-            _buildInfoCard(
-              title: 'Thông tin lịch hẹn',
-              child: Column(
-                children: [
-                  _buildDetailRow(Icons.person_outline, 'Người được chăm sóc',
-                      booking.beneficiaryName),
-                  const Divider(height: 16, color: AppColors.divider),
-                  _buildDetailRow(Icons.home_repair_service_outlined, 'Dịch vụ',
-                      booking.serviceName),
-                  const Divider(height: 16, color: AppColors.divider),
-                  _buildDetailRow(
-                      Icons.calendar_today_outlined, 'Ngày', booking.date),
-                  const Divider(height: 16, color: AppColors.divider),
-                  _buildDetailRow(Icons.access_time_outlined, 'Thời gian',
-                      '${booking.time} (${booking.duration})'),
-                  const Divider(height: 16, color: AppColors.divider),
-                  _buildDetailRow(
-                      Icons.location_on_outlined, 'Địa chỉ', booking.address),
-                ],
+            FadeSlideStaggered(
+              index: 2,
+              child: _buildInfoCard(
+                title: 'Thông tin lịch hẹn',
+                child: Column(
+                  children: [
+                    _buildDetailRow(Icons.person_outline, 'Người được chăm sóc',
+                        booking.beneficiaryName ?? 'Người thân'),
+                    const Divider(height: 16, color: AppColors.divider),
+                    _buildDetailRow(Icons.home_repair_service_outlined,
+                        'Dịch vụ', booking.serviceName ?? 'Dịch vụ chăm sóc'),
+                    const Divider(height: 16, color: AppColors.divider),
+                    _buildDetailRow(
+                        Icons.calendar_today_outlined, 'Ngày', booking.date),
+                    const Divider(height: 16, color: AppColors.divider),
+                    _buildDetailRow(Icons.access_time_outlined, 'Thời gian',
+                        '${booking.time} (${booking.duration})'),
+                    const Divider(height: 16, color: AppColors.divider),
+                    _buildDetailRow(
+                        Icons.location_on_outlined, 'Địa chỉ', booking.address),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
 
             // Payment
-            _buildInfoCard(
-              title: 'Thanh toán',
-              child: Column(
-                children: [
-                  _buildPaymentRow(
-                      'Dịch vụ (${booking.duration})', booking.totalPrice),
-                  const Divider(height: 16, color: AppColors.divider),
-                  _buildPaymentRow('Phí nền tảng', 0),
-                  const Divider(height: 16, color: AppColors.divider),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Tổng cộng',
-                          style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
-                      Text(
-                        '${_formatCurrency(booking.totalPrice)}đ',
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 16, color: AppColors.divider),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Hình thức',
-                          style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 13)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          booking.paymentLabel,
-                          textAlign: TextAlign.right,
+            FadeSlideStaggered(
+              index: 3,
+              child: _buildInfoCard(
+                title: 'Thanh toán',
+                child: Column(
+                  children: [
+                    _buildPaymentRow(
+                        'Dịch vụ (${booking.duration})', booking.totalPrice),
+                    const Divider(height: 16, color: AppColors.divider),
+                    _buildPaymentRow('Phí nền tảng', 0),
+                    const Divider(height: 16, color: AppColors.divider),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Tổng cộng',
+                            style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
+                        Text(
+                          '${_formatCurrency(booking.totalPrice)}đ',
                           style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600),
+                              color: AppColors.primary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const Divider(height: 16, color: AppColors.divider),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Hình thức',
+                            style: TextStyle(
+                                color: AppColors.textSecondary, fontSize: 13)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            booking.paymentLabel,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             if (booking.status == 'completed') ...[
               const SizedBox(height: 12),
-              _buildInfoCard(
-                title: 'Ghi nhận tài chính • Prototype',
-                child: Column(
-                  children: [
-                    _buildPaymentRow(
-                        'Doanh thu nền tảng (15%)', booking.platformRevenue),
-                    const Divider(height: 16, color: AppColors.divider),
-                    _buildPaymentRow(
-                        'Thu nhập caregiver (85%)', booking.caregiverEarning),
-                  ],
+              FadeSlideStaggered(
+                index: 4,
+                child: _buildInfoCard(
+                  title: 'Ghi nhận tài chính • Prototype',
+                  child: Column(
+                    children: [
+                      _buildPaymentRow(
+                          'Doanh thu nền tảng (15%)', booking.platformRevenue),
+                      const Divider(height: 16, color: AppColors.divider),
+                      _buildPaymentRow(
+                          'Thu nhập caregiver (85%)', booking.caregiverEarning),
+                    ],
+                  ),
                 ),
               ),
             ],
             const SizedBox(height: 24),
 
             // Actions
-            if (booking.status == 'pending') ...[
-              _buildDemoBanner(
-                  'Caregiver chưa phản hồi. Dùng nút dưới để mô phỏng caregiver nhận ca.'),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverAccept(booking.id),
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Mô phỏng caregiver nhận ca'),
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
+            FadeSlideStaggered(
+              index: 5,
+              child: Column(
+                children: [
+                  if (booking.status == 'pending_payment' ||
+                      booking.status == 'pending') ...[
+                    _buildDemoBanner(
+                        'Đơn đang chờ bạn thanh toán ký quỹ (Escrow) để kích hoạt và thông báo cho người chăm sóc.'),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _handleConfirmPayment(context, ref, booking),
+                      icon: const Icon(Icons.payment_rounded),
+                      label: Text(
+                          'Thanh toán ký quỹ (${_formatCurrency(booking.totalPrice)}đ)'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCancelButton(context, ref, booking),
+                  ] else if (booking.status == 'confirmed' ||
+                      booking.status == 'assigned') ...[
+                    _buildDemoBanner(
+                        'Ca đã được nhận. Mô phỏng caregiver đang di chuyển hoặc check-in GPS trực tiếp.'),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () => ref
+                          .read(bookingStoreProvider.notifier)
+                          .caregiverEnRoute(booking.id),
+                      icon: const Icon(Icons.directions_car_outlined),
+                      label: const Text('Mô phỏng caregiver đang di chuyển'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                        backgroundColor: const Color(0xFFE67E22),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => ref
+                          .read(bookingStoreProvider.notifier)
+                          .caregiverCheckIn(booking.id),
+                      icon: const Icon(Icons.location_on_outlined),
+                      label: const Text('Mô phỏng GPS check-in ngay'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCancelButton(context, ref, booking),
+                  ] else if (booking.status == 'caregiver_en_route') ...[
+                    _buildDemoBanner(
+                        'Caregiver đang trên đường đến. Chờ caregiver GPS check-in tại địa điểm.'),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          context.push('/bookings/${booking.id}/tracking'),
+                      icon: const Icon(Icons.my_location_rounded),
+                      label: const Text('Xem vị trí trực tiếp 🚗'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                        backgroundColor: const Color(0xFFE67E22),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => ref
+                          .read(bookingStoreProvider.notifier)
+                          .caregiverCheckIn(booking.id),
+                      icon: const Icon(Icons.location_on_outlined),
+                      label: const Text('Mô phỏng GPS check-in'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCancelButton(context, ref, booking),
+                  ] else if (booking.status == 'in_progress') ...[
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          context.push('/bookings/${booking.id}/tracking'),
+                      icon: const Icon(Icons.location_on_outlined),
+                      label: const Text('Theo dõi ca chăm sóc'),
+                      style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => ref
+                          .read(bookingStoreProvider.notifier)
+                          .caregiverRequestCheckout(booking.id),
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Mô phỏng caregiver yêu cầu kết thúc'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => _showExtendShiftSheet(context),
+                      icon: const Icon(Icons.add_alarm),
+                      label: const Text('Gia hạn ca chăm sóc'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                      ),
+                    ),
+                  ] else if (booking.status == 'checkout_pending_review') ...[
+                    _buildDemoBanner(
+                        'Caregiver đã gửi yêu cầu kết thúc ca. Hãy xác nhận để hoàn tất.'),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () =>
+                          _showCompleteShiftDialog(context, ref, booking),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Đã hoàn thành'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                        backgroundColor: AppColors.success,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          context.push('/bookings/${booking.id}/dispute'),
+                      icon: const Icon(Icons.report_problem_outlined,
+                          color: AppColors.error),
+                      label: const Text('Có vấn đề với ca chăm sóc',
+                          style: TextStyle(color: AppColors.error)),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                  ] else if (booking.status == 'completed') ...[
+                    if (!booking.isReviewed)
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            context.push('/bookings/${booking.id}/review'),
+                        icon: const Icon(Icons.star_outline),
+                        label: const Text('Đánh giá dịch vụ'),
+                        style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 52)),
+                      )
+                    else
+                      _buildDemoBanner('Bạn đã đánh giá ca chăm sóc này.'),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/booking/new'),
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('Đặt lịch lại'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 52)),
+                    ),
+                  ] else if (booking.status == 'disputed') ...[
+                    _buildDemoBanner(
+                        'Ca đang được đánh dấu có vấn đề. Prototype tạm dừng ghi nhận tài chính.'),
+                  ],
+                ],
               ),
-              const SizedBox(height: 10),
-              _buildCancelButton(context, ref, booking),
-            ] else if (booking.status == 'confirmed') ...[
-              _buildDemoBanner(
-                  'Ca đã được nhận. Mô phỏng caregiver đang di chuyển hoặc check-in GPS trực tiếp.'),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverEnRoute(booking.id),
-                icon: const Icon(Icons.directions_car_outlined),
-                label: const Text('Mô phỏng caregiver đang di chuyển'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                  backgroundColor: const Color(0xFFE67E22),
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverCheckIn(booking.id),
-                icon: const Icon(Icons.location_on_outlined),
-                label: const Text('Mô phỏng GPS check-in ngay'),
-                style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-              ),
-              const SizedBox(height: 10),
-              _buildCancelButton(context, ref, booking),
-            ] else if (booking.status == 'en_route') ...[
-              _buildDemoBanner(
-                  'Caregiver đang trên đường đến. Chờ caregiver GPS check-in tại địa điểm.'),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverCheckIn(booking.id),
-                icon: const Icon(Icons.location_on_outlined),
-                label: const Text('Mô phỏng GPS check-in'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildCancelButton(context, ref, booking),
-            ] else if (booking.status == 'in_progress') ...[
-              ElevatedButton.icon(
-                onPressed: () =>
-                    context.push('/bookings/${booking.id}/tracking'),
-                icon: const Icon(Icons.location_on_outlined),
-                label: const Text('Theo dõi ca chăm sóc'),
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverRequestCheckout(booking.id),
-                icon: const Icon(Icons.logout),
-                label: const Text('Mô phỏng caregiver yêu cầu kết thúc'),
-                style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => _showExtendShiftSheet(context),
-                icon: const Icon(Icons.add_alarm),
-                label: const Text('Gia hạn ca chăm sóc'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                ),
-              ),
-            ] else if (booking.status == 'checkout_requested') ...[
-              _buildDemoBanner(
-                  'Caregiver đã gửi báo cáo và yêu cầu kết thúc ca.'),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () =>
-                    _showCompleteShiftDialog(context, ref, booking),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Đã hoàn thành'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                  backgroundColor: AppColors.success,
-                ),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    context.push('/bookings/${booking.id}/dispute'),
-                icon: const Icon(Icons.report_problem_outlined,
-                    color: AppColors.error),
-                label: const Text('Có vấn đề với ca chăm sóc',
-                    style: TextStyle(color: AppColors.error)),
-                style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-              ),
-            ] else if (booking.status == 'completed') ...[
-              if (!booking.isReviewed)
-                ElevatedButton.icon(
-                  onPressed: () =>
-                      context.push('/bookings/${booking.id}/review'),
-                  icon: const Icon(Icons.star_outline),
-                  label: const Text('Đánh giá dịch vụ'),
-                  style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 52)),
-                )
-              else
-                _buildDemoBanner('Bạn đã đánh giá ca chăm sóc này.'),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/booking/new'),
-                icon: const Icon(Icons.refresh_outlined),
-                label: const Text('Đặt lịch lại'),
-                style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
-              ),
-            ] else if (booking.status == 'disputed') ...[
-              _buildDemoBanner(
-                  'Ca đang được đánh dấu có vấn đề. Prototype tạm dừng ghi nhận tài chính.'),
-            ],
+            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -406,7 +444,7 @@ class BookingDetailScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3))
         ],
@@ -478,8 +516,7 @@ class BookingDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFEF9E7),
         borderRadius: BorderRadius.circular(10),
-        border:
-            Border.all(color: const Color(0xFFF39C12).withValues(alpha: 0.3)),
+        border: Border.all(color: const Color(0xFFF39C12).withOpacity(0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,7 +537,7 @@ class BookingDetailScreen extends ConsumerWidget {
   Widget _buildCancelButton(
     BuildContext context,
     WidgetRef ref,
-    MockBooking booking,
+    BookingModel booking,
   ) {
     return OutlinedButton.icon(
       onPressed: () {
@@ -526,11 +563,11 @@ class BookingDetailScreen extends ConsumerWidget {
           'label': 'Đang diễn ra',
           'emoji': '🟢',
           'color': const Color(0xFF27AE60),
-          'bg': const Color(0xFFE8F8F0)
+          'bg': AppColors.primaryContainer
         };
-      case 'checkout_requested':
+      case 'checkout_pending_review':
         return {
-          'label': 'Chờ bạn xác nhận',
+          'label': 'Chờ xác nhận kết thúc',
           'emoji': '🟣',
           'color': const Color(0xFF8E44AD),
           'bg': const Color(0xFFF4ECF7)
@@ -542,12 +579,26 @@ class BookingDetailScreen extends ConsumerWidget {
           'color': const Color(0xFFE67E22),
           'bg': const Color(0xFFFEF5E7)
         };
-      case 'en_route':
+      case 'caregiver_en_route':
         return {
           'label': 'Caregiver đang đến',
           'emoji': '🚗',
           'color': const Color(0xFFE67E22),
           'bg': const Color(0xFFFEF5E7)
+        };
+      case 'pending_payment':
+        return {
+          'label': 'Chờ thanh toán ký quỹ',
+          'emoji': '💳',
+          'color': const Color(0xFFE67E22),
+          'bg': const Color(0xFFFEF5E7)
+        };
+      case 'assigned':
+        return {
+          'label': 'Caregiver đã nhận ca',
+          'emoji': '🤝',
+          'color': const Color(0xFF2980B9),
+          'bg': const Color(0xFFEBF5FB)
         };
       case 'confirmed':
         return {
@@ -590,7 +641,7 @@ class BookingDetailScreen extends ConsumerWidget {
   void _showCompleteShiftDialog(
     BuildContext context,
     WidgetRef ref,
-    MockBooking booking,
+    BookingModel booking,
   ) {
     showDialog(
       context: context,
@@ -619,8 +670,7 @@ class BookingDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FBF4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.25)),
+                border: Border.all(color: AppColors.success.withOpacity(0.25)),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -667,6 +717,105 @@ class BookingDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleConfirmPayment(
+    BuildContext context,
+    WidgetRef ref,
+    BookingModel booking,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.shield_outlined, color: AppColors.primary, size: 26),
+            SizedBox(width: 10),
+            Text('Thanh toán ký quỹ (Escrow)', style: TextStyle(fontSize: 17)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Số tiền thanh toán: ${_formatCurrency(booking.totalPrice)}đ',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEBF5FB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.security, size: 16, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Khoản tiền này sẽ được giữ an toàn trên CareSitter Platform (Escrow) và chỉ giải ngân cho người chăm sóc sau khi ca trực hoàn tất thành công.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dCtx, false),
+            child: const Text('Hủy',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(dCtx, true),
+            child: const Text('Xác nhận thanh toán'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref
+            .read(bookingStoreProvider.notifier)
+            .confirmPayment(booking.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  '✅ Thanh toán ký quỹ thành công! Lịch hẹn đã được xác nhận.'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi xác nhận thanh toán: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   String _formatCurrency(double amount) {
@@ -766,7 +915,7 @@ class BookingDetailScreen extends ConsumerWidget {
   void _showMoreOptions(
     BuildContext context,
     WidgetRef ref,
-    MockBooking booking,
+    BookingModel booking,
   ) {
     showModalBottomSheet(
       context: context,

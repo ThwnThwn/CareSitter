@@ -1,8 +1,13 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/mock/mock_data.dart';
+import '../../application/beneficiary_store.dart';
 
 // Helper: entry cho 1 liên hệ khẩn cấp
 class _ECEntry {
@@ -16,15 +21,16 @@ class _ECEntry {
   }
 }
 
-class BeneficiaryEditScreen extends StatefulWidget {
+class BeneficiaryEditScreen extends ConsumerStatefulWidget {
   final String id;
   const BeneficiaryEditScreen({super.key, required this.id});
 
   @override
-  State<BeneficiaryEditScreen> createState() => _BeneficiaryEditScreenState();
+  ConsumerState<BeneficiaryEditScreen> createState() =>
+      _BeneficiaryEditScreenState();
 }
 
-class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
+class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Thông tin cơ bản
@@ -34,6 +40,7 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
   String _gender = 'Nam';
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
+  String? _avatarPath;
 
   // Thông tin cần biết (tag-based)
   final _conditionCtrl = TextEditingController();
@@ -58,6 +65,7 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
         _conditionCtrl.text,
         ..._conditions,
         _notesCtrl.text,
+        _avatarPath ?? '',
         for (final entry in _contacts) ...[
           entry.nameCtrl.text,
           entry.phoneCtrl.text,
@@ -92,27 +100,52 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data from mock
-    final b = MockData.beneficiaries.firstWhere(
+    // Load data from provider
+    final beneficiaries = ref.read(beneficiaryStoreProvider);
+    final b = beneficiaries.firstWhere(
       (e) => e.id == widget.id,
-      orElse: () => MockData.beneficiaries.first,
+      orElse: () => beneficiaries.first,
     );
     _nameCtrl.text = b.name;
     _ageCtrl.text = b.age.toString();
     _addressCtrl.text =
-        '123 Đường ABC, Quận XYZ, TP.HCM'; // Mocked address since not in model
+        b.address.isEmpty ? '123 Đường ABC, Quận XYZ, TP.HCM' : b.address;
     _relation = b.relation;
     if (_relations.contains(_relation) == false) _relation = 'Khác';
     _careLevel = b.careLevel;
+    _avatarPath = b.avatarPath;
 
-    if (b.condition.isNotEmpty) _conditions.add(b.condition);
+    if (b.condition.isNotEmpty) {
+      _conditions.add(b.condition);
+    }
     _notesCtrl.text = b.notes;
 
-    // Mock 2 emergency contacts
-    _contacts[0].nameCtrl.text = 'Nguyễn Văn A';
-    _contacts[0].phoneCtrl.text = '0901234567';
-    _contacts[1].nameCtrl.text = 'Trần Thị B';
-    _contacts[1].phoneCtrl.text = '0987654321';
+    // Load emergency contacts
+    if (b.emergencyContacts.isNotEmpty) {
+      // Clear defaults
+      for (final e in _contacts) {
+        e.dispose();
+      }
+      _contacts.clear();
+
+      for (final ec in b.emergencyContacts) {
+        final entry = _ECEntry();
+        entry.nameCtrl.text = ec.name;
+        entry.phoneCtrl.text = ec.phone;
+        entry.relationship = ec.relationship;
+        _contacts.add(entry);
+      }
+      // Ensure at least 2 entries
+      while (_contacts.length < 2) {
+        _contacts.add(_ECEntry());
+      }
+    } else {
+      // Defaults
+      _contacts[0].nameCtrl.text = 'Nguyễn Văn A';
+      _contacts[0].phoneCtrl.text = '0901234567';
+      _contacts[1].nameCtrl.text = 'Trần Thị B';
+      _contacts[1].phoneCtrl.text = '0987654321';
+    }
     _initialFormState = _formState;
   }
 
@@ -137,6 +170,28 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _avatarPath = image.path;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ Lỗi chọn ảnh: $e')),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (_contacts.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,7 +205,29 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
+
+    // Save to store provider
+    ref.read(beneficiaryStoreProvider.notifier).update(
+          widget.id,
+          name: _nameCtrl.text.trim(),
+          age: int.tryParse(_ageCtrl.text) ?? 70,
+          relation: _relation,
+          condition: _conditions.join(', '),
+          careLevel: _careLevel,
+          notes: _notesCtrl.text.trim(),
+          address: _addressCtrl.text.trim(),
+          emergencyContacts: [
+            for (final c in _contacts)
+              EmergencyContact(
+                name: c.nameCtrl.text.trim(),
+                phone: c.phoneCtrl.text.trim(),
+                relationship: c.relationship,
+              )
+          ],
+          avatarPath: _avatarPath,
+        );
+
+    await Future.delayed(const Duration(milliseconds: 600));
 
     if (mounted) {
       setState(() => _isSaving = false);
@@ -204,20 +281,54 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Avatar placeholder
+              // Avatar edit section
               Center(
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        width: 2.5),
-                  ),
-                  child: const Icon(Icons.person_add_outlined,
-                      size: 40, color: AppColors.primary),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            width: 2.5),
+                        image: _avatarPath != null && _avatarPath!.isNotEmpty
+                            ? DecorationImage(
+                                image: kIsWeb
+                                    ? NetworkImage(_avatarPath!)
+                                        as ImageProvider
+                                    : FileImage(File(_avatarPath!))
+                                        as ImageProvider,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: _avatarPath != null && _avatarPath!.isNotEmpty
+                          ? null
+                          : const Center(
+                              child: Icon(Icons.person,
+                                  size: 40, color: AppColors.primary),
+                            ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 14),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 28),
@@ -391,7 +502,8 @@ class _BeneficiaryEditScreenState extends State<BeneficiaryEditScreen> {
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.4)),
+                    color: AppColors.warning.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

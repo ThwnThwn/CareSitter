@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
 import '../../booking/application/booking_store.dart';
 import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 
@@ -15,7 +14,9 @@ class ActivityScreen extends ConsumerWidget {
 
     final active = bookings
         .where((b) =>
-            b.status == 'in_progress' || b.status == 'checkout_requested')
+            b.status == 'caregiver_en_route' ||
+            b.status == 'in_progress' ||
+            b.status == 'checkout_pending_review')
         .toList();
 
     final recent = bookings
@@ -102,7 +103,7 @@ class ActivityScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
+                                color: Colors.black.withOpacity(0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -175,7 +176,7 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   // ── Active shift card (nổi bật, full card) ──────────────────
-  Widget _buildActiveCard(MockBooking booking, BuildContext context) {
+  Widget _buildActiveCard(BookingModel booking, BuildContext context) {
     return GestureDetector(
       key: ValueKey('active_${booking.id}'),
       onTap: () => context.push('/bookings/${booking.id}/tracking'),
@@ -191,7 +192,7 @@ class ActivityScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF27AE60).withValues(alpha: 0.35),
+              color: const Color(0xFF27AE60).withOpacity(0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -206,7 +207,7 @@ class ActivityScreen extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
@@ -228,7 +229,7 @@ class ActivityScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        booking.caregiverName,
+                        booking.caregiverName ?? 'Người chăm sóc',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
@@ -236,9 +237,9 @@ class ActivityScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'Cho: ${booking.beneficiaryName}',
+                        'Cho: ${booking.beneficiaryName ?? "Người thân"}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
+                          color: Colors.white.withOpacity(0.82),
                           fontSize: 13,
                         ),
                       ),
@@ -249,7 +250,7 @@ class ActivityScreen extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.chevron_right_rounded,
@@ -260,10 +261,9 @@ class ActivityScreen extends ConsumerWidget {
             const SizedBox(height: 14),
             // Info row
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -284,9 +284,9 @@ class ActivityScreen extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      booking.serviceName,
+                      booking.serviceName ?? 'Dịch vụ chăm sóc',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
+                        color: Colors.white.withOpacity(0.88),
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -323,7 +323,7 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   // ── Recent booking row (Grab style) ─────────────────────────
-  Widget _buildRecentRow(MockBooking booking, BuildContext context) {
+  Widget _buildRecentRow(BookingModel booking, BuildContext context) {
     final statusConfig = _getStatusConfig(booking.status);
     final isCancelled = booking.status == 'cancelled';
 
@@ -344,7 +344,7 @@ class ActivityScreen extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  booking.caregiverAvatar,
+                  booking.caregiverAvatar ?? booking.caregiverInitials,
                   style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
@@ -369,7 +369,7 @@ class ActivityScreen extends ConsumerWidget {
                       ),
                     ),
                   Text(
-                    booking.caregiverName,
+                    booking.caregiverName ?? 'Người chăm sóc',
                     style: TextStyle(
                       color: isCancelled
                           ? const Color(0xFF5A7272)
@@ -380,16 +380,16 @@ class ActivityScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${booking.serviceName} • Cho: ${booking.beneficiaryName}',
-                    style: const TextStyle(
-                        color: Color(0xFF5A7272), fontSize: 12),
+                    '${booking.serviceName ?? "Dịch vụ chăm sóc"} • Cho: ${booking.beneficiaryName ?? "Người thân"}',
+                    style:
+                        const TextStyle(color: Color(0xFF5A7272), fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
                   Text(
                     '${booking.time} • ${booking.date}',
-                    style: const TextStyle(
-                        color: Color(0xFF9FBABA), fontSize: 11),
+                    style:
+                        const TextStyle(color: Color(0xFF9FBABA), fontSize: 11),
                   ),
                   if (!isCancelled && booking.status == 'completed') ...[
                     const SizedBox(height: 6),

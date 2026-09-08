@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../application/booking_store.dart';
+
+import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 class BookingListScreen extends ConsumerStatefulWidget {
   const BookingListScreen({super.key});
@@ -24,43 +25,107 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        title: const Text(
-          'Lịch hẹn của tôi',
-          style: TextStyle(
-              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          labelStyle:
-              const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Sắp tới'),
-            Tab(text: 'Đang diễn ra'),
-            Tab(text: 'Hoàn thành'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () => context.push('/booking/new'),
-          ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBookingList(['confirmed', 'pending']),
-          _buildBookingList(['in_progress', 'checkout_requested', 'disputed']),
-          _buildBookingList(['completed', 'cancelled']),
+          // ── Flat header theo Stitch ──
+          Container(
+            color: Colors.white,
+            padding: EdgeInsets.only(
+              top: topPadding + 16,
+              left: 20,
+              right: 16,
+              bottom: 0,
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Quản lý Lịch hẹn',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.push('/notifications'),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
+                      ),
+                      const Positioned(
+                        right: 6,
+                        top: 6,
+                        child: CircleAvatar(
+                          radius: 4,
+                          backgroundColor: Color(0xFFE74C3C),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Tabs ──
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: AppColors.primary,
+              indicatorWeight: 2.5,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textHint,
+              labelStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              unselectedLabelStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+              tabs: const [
+                Tab(text: 'Sắp tới'),
+                Tab(text: 'Hoàn tất'),
+                Tab(text: 'Đã hủy'),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE8F2EC)),
+          // ── Content ──
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildBookingList([
+                  'draft',
+                  'pending',
+                  'pending_payment',
+                  'confirmed',
+                  'caregiver_accepted',
+                  'caregiver_en_route',
+                  'in_progress',
+                  'checkout_pending_review',
+                  'crisis',
+                ]),
+                _buildBookingList(['completed']),
+                _buildBookingList(['cancelled', 'disputed', 'refunded']),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -79,7 +144,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
       padding: const EdgeInsets.all(16),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _buildBookingCard(filtered[index]),
+      itemBuilder: (context, index) => FadeSlideStaggered(
+        index: index,
+        child: _buildBookingCard(filtered[index]),
+      ),
     );
   }
 
@@ -129,169 +197,232 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     );
   }
 
-  Widget _buildBookingCard(MockBooking booking) {
+  Widget _buildBookingCard(BookingModel booking) {
     final statusConfig = _getStatusConfig(booking.status);
+    final borderColor = statusConfig['color'] as Color;
 
     return GestureDetector(
       onTap: () => context.push('/bookings/${booking.id}'),
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 3)),
-          ],
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: AppShadows.card,
         ),
-        child: Column(
+        child: Stack(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.primaryLight,
-                  child: Text(
-                    booking.caregiverAvatar,
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: borderColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    bottomLeft: Radius.circular(18),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Row 1: Status pill + Price ──
+                  Row(
                     children: [
-                      Text(
-                        booking.caregiverName,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (statusConfig['bg'] as Color),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          statusConfig['label'] as String,
+                          style: TextStyle(
+                              color: borderColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
                       ),
+                      const Spacer(),
                       Text(
-                        booking.serviceName,
+                        _formatCurrencyFull(booking.totalPrice),
                         style: const TextStyle(
                             color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusConfig['bg'] as Color,
-                        borderRadius: BorderRadius.circular(20),
+                  const SizedBox(height: 12),
+
+                  // ── Row 2: Date / Time / Address ──
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 13, color: AppColors.textSecondary),
+                      const SizedBox(width: 5),
+                      Text(booking.date,
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_outlined,
+                          size: 13, color: AppColors.textSecondary),
+                      const SizedBox(width: 5),
+                      Text('${booking.time} (${booking.duration})',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 13, color: AppColors.textSecondary),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          booking.address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 12),
+                        ),
                       ),
-                      child: Text(
-                        statusConfig['label'] as String,
-                        style: TextStyle(
-                            color: statusConfig['color'] as Color,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Color(0xFFE8F2EC)),
+                  const SizedBox(height: 10),
+
+                  // ── Row 3: Caregiver ──
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primaryContainer,
+                        child: Text(
+                          booking.caregiverAvatar ?? booking.caregiverInitials,
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${_formatCurrency(booking.totalPrice)}đ',
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    booking.caregiverName ?? 'Người chăm sóc',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.verified_rounded,
+                                    color: AppColors.primary, size: 12),
+                              ],
+                            ),
+                            Text(
+                              booking.serviceName ?? 'Dịch vụ chăm sóc',
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Action buttons
+                      if (booking.status == 'confirmed' ||
+                          booking.status == 'pending') ...[
+                        _ActionIconButton(
+                          icon: Icons.call_outlined,
+                          onTap: () {},
+                        ),
+                        const SizedBox(width: 6),
+                        _ActionIconButton(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          onTap: () {},
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  // ── Cancel button ──
+                  if (booking.status == 'confirmed' ||
+                      booking.status == 'pending') ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            context.push('/bookings/${booking.id}'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE74C3C),
+                          side: const BorderSide(
+                              color: Color(0xFFE74C3C), width: 1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          minimumSize: Size.zero,
+                        ),
+                        child: const Text('Hủy lịch hẹn',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
                     ),
                   ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  _infoRow(Icons.person_outline, 'Người được chăm sóc',
-                      booking.beneficiaryName),
-                  const SizedBox(height: 6),
-                  _infoRow(Icons.calendar_today_outlined, 'Ngày', booking.date),
-                  const SizedBox(height: 6),
-                  _infoRow(Icons.access_time_outlined, 'Giờ',
-                      '${booking.time} (${booking.duration})'),
-                  const SizedBox(height: 6),
-                  _infoRow(
-                      Icons.location_on_outlined, 'Địa chỉ', booking.address),
+
+                  // ── Review button ──
+                  if (booking.status == 'completed' && !booking.isReviewed) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            context.push('/bookings/${booking.id}/review'),
+                        icon: const Icon(Icons.star_outline, size: 15),
+                        label: const Text('Đánh giá dịch vụ'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          minimumSize: Size.zero,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-            if (booking.status == 'completed' && !booking.isReviewed) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      context.push('/bookings/${booking.id}/review'),
-                  icon: const Icon(Icons.star_outline, size: 16),
-                  label: const Text('Đánh giá dịch vụ'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-            ] else if (booking.status == 'completed' && booking.isReviewed) ...[
-              const SizedBox(height: 12),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle, size: 16, color: AppColors.success),
-                  SizedBox(width: 6),
-                  Text('Đã đánh giá',
-                      style: TextStyle(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
           ],
         ),
       ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 14, color: AppColors.textSecondary),
-        const SizedBox(width: 8),
-        Text('$label: ',
-            style:
-                const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
     );
   }
 
@@ -299,60 +430,91 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     switch (status) {
       case 'in_progress':
         return {
-          'label': '🟢 Đang diễn ra',
-          'color': const Color(0xFF27AE60),
-          'bg': const Color(0xFFE8F8F0)
+          'label': 'Sắp diễn ra',
+          'color': AppColors.primary,
+          'bg': AppColors.primaryContainer,
         };
-      case 'checkout_requested':
+      case 'checkout_pending_review':
         return {
-          'label': '🟣 Chờ bạn hoàn tất',
+          'label': 'Chờ xác nhận',
           'color': const Color(0xFF8E44AD),
-          'bg': const Color(0xFFF4ECF7)
+          'bg': const Color(0xFFF4ECF7),
         };
       case 'disputed':
         return {
-          'label': '⚠️ Đang xử lý',
+          'label': 'Đang xử lý',
           'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFEF5E7)
+          'bg': const Color(0xFFFEF5E7),
         };
       case 'confirmed':
+      case 'caregiver_accepted':
         return {
-          'label': '🔵 Đã xác nhận',
+          'label': 'Đã xác nhận',
           'color': const Color(0xFF2980B9),
-          'bg': const Color(0xFFEBF5FB)
+          'bg': const Color(0xFFEBF5FB),
         };
       case 'pending':
         return {
-          'label': '🟡 Chờ xác nhận',
+          'label': 'Chờ xác nhận',
           'color': const Color(0xFFF39C12),
-          'bg': const Color(0xFFFEF9E7)
+          'bg': const Color(0xFFFFF8E6),
+        };
+      case 'pending_payment':
+        return {
+          'label': 'Chờ thanh toán',
+          'color': const Color(0xFFF39C12),
+          'bg': const Color(0xFFFFF8E6),
         };
       case 'completed':
         return {
-          'label': '✅ Hoàn thành',
+          'label': 'Hoàn thành',
           'color': AppColors.textSecondary,
-          'bg': AppColors.surface
+          'bg': AppColors.surface,
         };
       case 'cancelled':
         return {
-          'label': '❌ Đã huỷ',
+          'label': 'Đã huỷ',
           'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC)
+          'bg': const Color(0xFFFDEDEC),
         };
       default:
         return {
           'label': status,
           'color': AppColors.textSecondary,
-          'bg': AppColors.surface
+          'bg': AppColors.surface,
         };
     }
   }
 
-  String _formatCurrency(double amount) {
-    if (amount >= 1000000) return '${(amount / 1000000).toStringAsFixed(1)}M';
-    return amount.toInt().toString().replaceAllMapped(
+  String _formatCurrencyFull(double amount) {
+    final s = amount.toInt().toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
+          (m) => '${m[1]}.',
         );
+    return '$sđ';
+  }
+}
+
+// ── Action icon button ─────────────────────────────────────────────────────
+class _ActionIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ActionIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.border),
+          color: Colors.white,
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 18),
+      ),
+    );
   }
 }

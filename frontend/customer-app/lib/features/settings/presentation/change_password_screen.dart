@@ -76,7 +76,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.4)),
+                      color: AppColors.warning.withOpacity(0.4)),
                 ),
                 child: const Row(
                   children: [

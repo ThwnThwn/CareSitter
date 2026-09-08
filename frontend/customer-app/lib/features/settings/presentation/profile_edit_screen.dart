@@ -1,16 +1,20 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/mock/mock_data.dart';
+import '../application/profile_store.dart';
 
-class ProfileEditScreen extends StatefulWidget {
+class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
 
   @override
-  State<ProfileEditScreen> createState() => _ProfileEditScreenState();
+  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
-class _ProfileEditScreenState extends State<ProfileEditScreen> {
+class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameCtrl;
   late TextEditingController _emailCtrl;
@@ -18,6 +22,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _addressCtrl;
   String _gender = 'Nam';
   String _language = 'Tiếng Việt';
+  String? _avatarPath;
   bool _isSaving = false;
   late final String _initialFormState;
 
@@ -28,16 +33,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _addressCtrl.text,
         _gender,
         _language,
+        _avatarPath ?? '',
       ].toString();
 
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: MockData.currentUserName);
-    _emailCtrl = TextEditingController(text: 'customer@caresitter.vn');
-    _dobCtrl = TextEditingController(text: '15/08/1985');
-    _addressCtrl =
-        TextEditingController(text: '123 Lê Văn Sỹ, P.13, Q.3, TP.HCM');
+    final profile = ref.read(profileStoreProvider);
+    _nameCtrl = TextEditingController(text: profile.name);
+    _emailCtrl = TextEditingController(text: profile.email);
+    _dobCtrl = TextEditingController(text: profile.dob);
+    _addressCtrl = TextEditingController(text: profile.address);
+    _gender = profile.gender;
+    _language = profile.language;
+    _avatarPath = profile.avatarPath;
     _initialFormState = _formState;
   }
 
@@ -65,21 +74,58 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _avatarPath = image.path;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ Lỗi chọn ảnh: $e')),
+      );
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+
+    final success = await ref.read(profileStoreProvider.notifier).updateProfile(
+          name: _nameCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          dob: _dobCtrl.text.trim(),
+          address: _addressCtrl.text.trim(),
+          gender: _gender,
+          language: _language,
+          avatarPath: _avatarPath,
+        );
+
     if (mounted) {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Đã cập nhật thông tin cá nhân thành công!'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: Text(
+            success
+                ? '✅ Đã cập nhật thông tin cá nhân thành công!'
+                : '⚠️ Cập nhật thành công (lưu local). Đồng bộ server khi có mạng.',
+          ),
+          backgroundColor: success ? AppColors.primary : Colors.orange,
         ),
       );
       popOrGo(context, fallbackRoute: '/settings');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -121,27 +167,35 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         gradient: AppColors.primaryGradient,
                         shape: BoxShape.circle,
                         boxShadow: AppShadows.elevated,
+                        image: _avatarPath != null && _avatarPath!.isNotEmpty
+                            ? DecorationImage(
+                                image: kIsWeb
+                                    ? NetworkImage(_avatarPath!) as ImageProvider
+                                    : FileImage(File(_avatarPath!)) as ImageProvider,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                      child: const Center(
-                        child: Text(
-                          MockData.currentUserAvatar,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800),
-                        ),
-                      ),
+                      child: _avatarPath != null && _avatarPath!.isNotEmpty
+                          ? null
+                          : Center(
+                              child: Text(
+                                () {
+                                  final initials = _nameCtrl.text.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).map((p) => p[0].toUpperCase()).take(3).join();
+                                  return initials.isNotEmpty ? initials : 'U';
+                                }(),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800),
+                              ),
+                            ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('📸 Đã mở bộ sưu tập ảnh')),
-                          );
-                        },
+                        onTap: _pickImage,
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
@@ -173,7 +227,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                initialValue: MockData.currentUserPhone,
+                initialValue: ref.read(profileStoreProvider).phone,
                 enabled: false,
                 decoration: const InputDecoration(
                   labelText: 'Số điện thoại (Cố định)',

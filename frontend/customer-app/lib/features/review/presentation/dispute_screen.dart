@@ -104,7 +104,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(12),
                 border:
-                    Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                    Border.all(color: AppColors.warning.withOpacity(0.4)),
               ),
               child: const Row(children: [
                 Icon(Icons.info_outline, color: AppColors.warning, size: 20),
@@ -130,7 +130,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
               child: Column(children: [
                 _refRow('Mã lịch hẹn', '#${bk.id.toUpperCase()}'),
                 const Divider(height: 16),
-                _refRow('Người chăm sóc', bk.caregiverName),
+                _refRow('Người chăm sóc', bk.caregiverName ?? 'Người chăm sóc'),
                 const Divider(height: 16),
                 _refRow('Ngày', bk.date),
                 const Divider(height: 16),
@@ -340,19 +340,33 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
 
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      ref.read(bookingStoreProvider.notifier).openDispute(
+    try {
+      await ref.read(bookingStoreProvider.notifier).openDispute(
             widget.bookingId,
-            '${_selectedReason!}: ${_descCtrl.text.trim()}',
+            _selectedReason!,
+            description: _descCtrl.text.trim(),
           );
-      setState(() => _isSubmitting = false);
-      popOrGo(context, fallbackRoute: '/bookings');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        popOrGo(context, fallbackRoute: '/bookings');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-                '✅ Khiếu nại đã được ghi nhận. Chúng tôi sẽ liên hệ bạn sớm.')),
-      );
+                '✅ Khiếu nại đã được ghi nhận. Chúng tôi sẽ liên hệ bạn sớm.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi gửi khiếu nại: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 

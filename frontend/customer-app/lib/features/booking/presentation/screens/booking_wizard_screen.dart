@@ -2,15 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/mock/mock_data.dart';
 import '../../application/booking_store.dart';
 import '../../../beneficiary/application/beneficiary_store.dart';
+import '../../../catalog/application/service_store.dart';
+import '../../../catalog/application/address_store.dart';
+import '../../../catalog/data/models/service_model.dart';
+import '../../../caregiver/application/caregiver_store.dart';
+import '../../../caregiver/data/models/caregiver_model.dart';
+import '../../../../core/api/dio_client.dart' show AppApiException;
+import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 class BookingWizardScreen extends ConsumerStatefulWidget {
   final String? initialServiceId;
+  final String? initialBeneficiaryId;
 
-  const BookingWizardScreen({super.key, this.initialServiceId});
+  const BookingWizardScreen({
+    super.key,
+    this.initialServiceId,
+    this.initialBeneficiaryId,
+  });
 
   @override
   ConsumerState<BookingWizardScreen> createState() =>
@@ -27,37 +40,58 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   int _duration = 4; // hours
   bool _consentAccepted = false; // FR-CUS-09
   bool _isSystemMatched = true;
+  bool _isSubmitting = false; // guard chống double-submit
   String _bookingMode = 'demo';
-  final TextEditingController _addressController = TextEditingController();
+  String? _selectedAddressId; // ID địa chỉ thật từ API
 
   bool get _hasUnsavedChanges =>
       _selectedServiceId != widget.initialServiceId ||
-      _selectedBeneficiaryId != null ||
+      _selectedBeneficiaryId != widget.initialBeneficiaryId ||
       _selectedCaregiverId != null ||
       _selectedDate != null ||
       _startTime != null ||
-      _addressController.text.trim().isNotEmpty ||
+      _selectedAddressId != null ||
       _duration != 4 ||
       _consentAccepted ||
       !_isSystemMatched ||
       _bookingMode != 'demo';
 
-  static const _savedAddresses = [
-    '123 Lê Văn Sỹ, Phường 13, Quận 3, TP.HCM',
-    '456 Nguyễn Trọng Tuyển, Phường 15, Quận Phú Nhuận, TP.HCM',
-    '78 Điện Biên Phủ, Quận Bình Thạnh, TP.HCM',
-  ];
-
   @override
   void initState() {
     super.initState();
     _selectedServiceId = widget.initialServiceId;
-    if (_selectedServiceId != null) _currentStep = 1;
+    _selectedBeneficiaryId = widget.initialBeneficiaryId;
+
+    // Nếu có initialBeneficiaryId, auto-set địa chỉ mặc định và bỏ qua bước chọn người thân
+    if (_selectedBeneficiaryId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final all = ref.read(beneficiaryStoreProvider);
+        try {
+          final b = all.firstWhere((b) => b.id == _selectedBeneficiaryId);
+          if (b.defaultAddressId != null) {
+            setState(() => _selectedAddressId = b.defaultAddressId);
+          }
+        } catch (_) {
+          // list chưa load xong hoặc không tìm thấy — bỏ qua, user có thể chọn địa chỉ thủ công
+        }
+      });
+    }
+
+    // Tính bước khởi đầu:
+    // - Có cả service lẫn beneficiary → Bước 2 (Lịch & địa chỉ)
+    // - Chỉ có beneficiary → Bước 0 (Dịch vụ) nhưng bước người thân đã pre-filled
+    // - Chỉ có service → Bước 1 (Người thân)
+    if (_selectedServiceId != null && _selectedBeneficiaryId != null) {
+      _currentStep = 2;
+    } else if (_selectedServiceId != null) {
+      _currentStep = 1;
+    }
+    // nếu chỉ có beneficiaryId thì vẫn bắt đầu từ Bước 0 để chọn dịch vụ
   }
 
   @override
   void dispose() {
-    _addressController.dispose();
     super.dispose();
   }
 
@@ -70,24 +104,33 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     'Xác nhận'
   ];
 
-  MockService? get _selectedService => _selectedServiceId != null
-      ? MockData.services.firstWhere((s) => s.id == _selectedServiceId,
-          orElse: () => MockData.services.first)
-      : null;
+  ServiceModel? get _selectedService {
+    if (_selectedServiceId == null) return null;
+    final servicesAsync = ref.read(serviceStoreProvider);
+    final list = servicesAsync.valueOrNull ?? [];
+    if (list.isEmpty) return null;
+    return list.firstWhere((s) => s.id == _selectedServiceId,
+        orElse: () => list.first);
+  }
 
   MockBeneficiary? get _selectedBeneficiary {
     if (_selectedBeneficiaryId == null) return null;
     final all = ref.read(beneficiaryStoreProvider);
+    if (all.isEmpty) return null;
     return all.firstWhere(
       (b) => b.id == _selectedBeneficiaryId,
       orElse: () => all.first,
     );
   }
 
-  MockCaregiver? get _selectedCaregiver => _selectedCaregiverId != null
-      ? MockData.caregivers.firstWhere((c) => c.id == _selectedCaregiverId,
-          orElse: () => MockData.caregivers.first)
-      : null;
+  CaregiverModel? get _selectedCaregiver {
+    if (_selectedCaregiverId == null) return null;
+    final caregiverAsync = ref.read(caregiverStoreProvider);
+    final list = caregiverAsync.valueOrNull ?? [];
+    if (list.isEmpty) return null;
+    return list.firstWhere((c) => c.id == _selectedCaregiverId,
+        orElse: () => list.first);
+  }
 
   bool get _hasValidSchedule {
     if (_selectedDate == null || _startTime == null) return false;
@@ -101,38 +144,30 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return start.isAfter(DateTime.now().add(const Duration(minutes: 30)));
   }
 
-  List<MockCaregiver> get _matchedCaregivers {
-    final candidates = MockData.caregivers.where((c) => c.isAvailable).toList();
-    candidates.sort((a, b) => _matchScore(b).compareTo(_matchScore(a)));
-    final serviceMatches = candidates.where((c) => _matchesService(c)).toList();
+  List<CaregiverModel> get _matchedCaregivers {
+    // NOTE: chỉ dùng trong _buildCaregiverStep nơi ref.watch đã được gọi.
+    // Getter này đọc cached value sau khi widget đã rebuild.
+    final caregiverAsync = ref.read(caregiverStoreProvider);
+    final all = caregiverAsync.valueOrNull ?? [];
+    final candidates = all.where((c) => c.isOnline).toList();
+    candidates
+        .sort((a, b) => _matchScoreModel(b).compareTo(_matchScoreModel(a)));
+    final serviceMatches =
+        candidates.where((c) => _matchesServiceModel(c)).toList();
     return serviceMatches.isEmpty ? candidates : serviceMatches;
   }
 
-  bool _matchesService(MockCaregiver caregiver) {
+  bool _matchesServiceModel(CaregiverModel caregiver) {
     final skills = caregiver.skills.join(' ').toLowerCase();
     final keywords = switch (_selectedServiceId) {
-      'sv001' => const ['đồng hành', 'cao tuổi', 'người già', 'lớn tuổi'],
-      'sv002' => const ['ban đêm', 'cao tuổi', 'người già'],
-      'sv003' || 'sv007' || 'sv008' => const ['trẻ', 'mầm non', 'montessori'],
-      'sv004' => const ['dọn dẹp', 'giúp việc'],
-      'sv005' => const ['nấu ăn'],
-      'sv006' => const ['đưa đón', 'lái xe'],
       _ => const <String>[],
     };
     return keywords.isEmpty || keywords.any(skills.contains);
   }
 
-  int _matchScore(MockCaregiver caregiver) {
-    var score = _matchesService(caregiver) ? 100 : 0;
-    final normalizedAddress =
-        _addressController.text.toLowerCase().replaceAll('quận', 'q.');
-    final district = caregiver.location
-        .split(',')
-        .first
-        .toLowerCase()
-        .replaceAll('quận', 'q.');
-    if (normalizedAddress.contains(district)) score += 30;
-    score += (caregiver.rating * 10).round();
+  int _matchScoreModel(CaregiverModel caregiver) {
+    var score = _matchesServiceModel(caregiver) ? 100 : 0;
+    score += (caregiver.ratingAvg * 10).round();
     return score;
   }
 
@@ -143,9 +178,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       case 1:
         return _selectedBeneficiaryId != null;
       case 2:
-        return _hasValidSchedule && _addressController.text.trim().isNotEmpty;
+        return _hasValidSchedule && _selectedAddressId != null;
       case 3:
-        return _selectedCaregiverId != null;
+        return _selectedCaregiverId != null || _isSystemMatched;
       case 4:
         return _consentAccepted;
       default:
@@ -178,7 +213,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                child: _buildCurrentStep(),
+                child: FadeSlideStaggered(
+                  key: ValueKey(_currentStep),
+                  index: 0,
+                  child: _buildCurrentStep(),
+                ),
               ),
             ),
             _buildBottomBar(context),
@@ -294,84 +333,94 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildServiceStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Chọn dịch vụ cần đặt',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        const Text('Chọn loại dịch vụ chăm sóc phù hợp',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 16),
-        ...MockData.services.map((s) {
-          final isSelected = _selectedServiceId == s.id;
-          return GestureDetector(
-            onTap: () => setState(() {
-              _selectedServiceId = s.id;
-              _selectedCaregiverId = null;
-              _isSystemMatched = true;
-            }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                    width: isSelected ? 2 : 1),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Center(
-                        child:
-                            Text(s.icon, style: const TextStyle(fontSize: 22))),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(s.name,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600)),
-                        Text(
-                          '${s.pricePerHour.toInt()}đ/giờ',
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ],
+    final servicesAsync = ref.watch(serviceStoreProvider);
+    return servicesAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (e, _) => Center(child: Text('Lỗi tải dịch vụ: $e')),
+      data: (services) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Chọn dịch vụ cần đặt',
+              style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          const Text('Chọn loại dịch vụ chăm sóc phù hợp',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 16),
+          ...services.map((s) {
+            final isSelected = _selectedServiceId == s.id;
+            return GestureDetector(
+              onTap: () => setState(() {
+                _selectedServiceId = s.id;
+                _selectedCaregiverId = null;
+                _isSystemMatched = true;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                      width: isSelected ? 2 : 1),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2))
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Center(
+                          child: Text(s.icon,
+                              style: const TextStyle(fontSize: 22))),
                     ),
-                  ),
-                  if (isSelected)
-                    const Icon(Icons.check_circle,
-                        color: AppColors.primary, size: 22),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.name,
+                              style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            '${s.pricePerHour.toInt()}đ/giờ',
+                            style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle,
+                          color: AppColors.primary, size: 22),
+                  ],
+                ),
               ),
-            ),
-          );
-        }),
-      ],
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -388,11 +437,43 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 4),
         const Text('Chọn người thân cần được chăm sóc',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        if (widget.initialBeneficiaryId != null &&
+            _selectedBeneficiary != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+              border:
+                  Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    color: AppColors.primary, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Đã chọn sẵn: ${_selectedBeneficiary!.name} — bạn có thể đổi sang người khác nếu muốn.',
+                    style:
+                        const TextStyle(color: AppColors.primary, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         ...beneficiaries.map((b) {
           final isSelected = _selectedBeneficiaryId == b.id;
           return GestureDetector(
-            onTap: () => setState(() => _selectedBeneficiaryId = b.id),
+            onTap: () => setState(() {
+              _selectedBeneficiaryId = b.id;
+              if (b.defaultAddressId != null) {
+                _selectedAddressId = b.defaultAddressId;
+              }
+            }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(bottom: 10),
@@ -496,178 +577,220 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildCaregiverStep() {
-    final available = _matchedCaregivers;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Chọn người chăm sóc',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text(
-          '${available.length} caregiver phù hợp với dịch vụ, lịch và khu vực',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+    // ref.watch → widget tự rebuild khi caregiver store load xong
+    final caregiverAsync = ref.watch(caregiverStoreProvider);
+
+    return caregiverAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
         ),
-        const SizedBox(height: 16),
-        if (available.isNotEmpty) ...[
-          GestureDetector(
-            onTap: () => setState(() {
-              _isSystemMatched = true;
-              _selectedCaregiverId = available.first.id;
-            }),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _isSystemMatched
-                    ? AppColors.primaryContainer
-                    : AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color:
-                      _isSystemMatched ? AppColors.primary : AppColors.border,
-                  width: _isSystemMatched ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.auto_awesome, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Để hệ thống gợi ý',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary),
-                        ),
-                        Text(
-                          '${available.first.name} • điểm phù hợp cao nhất',
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.textSecondary),
-                        ),
-                      ],
+      ),
+      error: (e, _) => Center(child: Text('Lỗi tải danh sách: $e')),
+      data: (_) {
+        final available = _matchedCaregivers;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Chọn người chăm sóc',
+                style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(
+              '${available.length} caregiver phù hợp với dịch vụ, lịch và khu vực',
+              style:
+                  const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            if (available.isNotEmpty) ...[
+              GestureDetector(
+                onTap: () => setState(() {
+                  _isSystemMatched = true;
+                  _selectedCaregiverId = available.first.id;
+                }),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: _isSystemMatched
+                        ? AppColors.primaryContainer
+                        : AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _isSystemMatched
+                          ? AppColors.primary
+                          : AppColors.border,
+                      width: _isSystemMatched ? 2 : 1,
                     ),
                   ),
-                  if (_isSystemMatched)
-                    const Icon(Icons.check_circle, color: AppColors.primary),
-                ],
-              ),
-            ),
-          ),
-          const Text(
-            'Hoặc tự chọn caregiver',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 10),
-        ],
-        ...available.map((c) {
-          final isSelected = _selectedCaregiverId == c.id;
-          return GestureDetector(
-            onTap: () => setState(() {
-              _isSystemMatched = false;
-              _selectedCaregiverId = c.id;
-            }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                    width: isSelected ? 2 : 1),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              child: Row(
-                children: [
-                  Stack(
+                  child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: AppColors.primaryLight,
-                        child: Text(c.avatarInitial,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700)),
-                      ),
-                      if (c.isAvailable)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                                color: AppColors.success,
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2)),
-                          ),
+                      const Icon(Icons.auto_awesome, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Để hệ thống gợi ý',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary),
+                            ),
+                            Text(
+                              '${available.first.displayName} • điểm phù hợp cao nhất',
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                          ],
                         ),
+                      ),
+                      if (_isSystemMatched)
+                        const Icon(Icons.check_circle,
+                            color: AppColors.primary),
                     ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                                child: Text(c.name,
-                                    style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600))),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.star,
-                                size: 12, color: Color(0xFFF39C12)),
-                            const SizedBox(width: 3),
-                            Text('${c.rating} • ${c.experience}',
-                                style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12)),
-                          ],
-                        ),
-                        Text('${c.hourlyRate.toInt()}đ/giờ',
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    const Icon(Icons.check_circle,
-                        color: AppColors.primary, size: 22),
-                ],
+                ),
               ),
-            ),
-          );
-        }),
-      ],
+              const Text(
+                'Hoặc tự chọn caregiver',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 10),
+            ],
+            ...available.map((c) {
+              final isSelected = _selectedCaregiverId == c.id;
+              return GestureDetector(
+                onTap: () => setState(() {
+                  _isSystemMatched = false;
+                  _selectedCaregiverId = c.id;
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color:
+                            isSelected ? AppColors.primary : AppColors.border,
+                        width: isSelected ? 2 : 1),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2))
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: AppColors.primaryLight,
+                            child: Text(c.initials,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                          if (c.isOnline)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                    color: AppColors.success,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 2)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                    child: Text(c.displayName,
+                                        style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600))),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                const Icon(Icons.star,
+                                    size: 12, color: Color(0xFFF39C12)),
+                                const SizedBox(width: 3),
+                                Text(
+                                    '${c.ratingAvg.toStringAsFixed(1)} • ${c.yearsOfExperience ?? 3} năm',
+                                    style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12)),
+                              ],
+                            ),
+                            if (c.hourlyRateExpected != null)
+                              Text('${c.hourlyRateExpected}đ/giờ',
+                                  style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        const Icon(Icons.check_circle,
+                            color: AppColors.primary, size: 22),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 
+  Future<void> _openAddressSelector() async {
+    final selectedParam = _selectedAddressId == null
+        ? ''
+        : '&selected=${Uri.encodeComponent(_selectedAddressId!)}';
+    final selectedAddressId = await context
+        .push<String>('/settings/addresses?select=1$selectedParam');
+
+    if (!mounted) return;
+    ref.invalidate(addressStoreProvider);
+
+    if (selectedAddressId == null || selectedAddressId.isEmpty) return;
+    setState(() {
+      _selectedAddressId = selectedAddressId;
+      _selectedCaregiverId = null;
+    });
+  }
+
   Widget _buildTimeStep() {
+    final addressAsync = ref.watch(addressStoreProvider);
+    // Khi service thay doi, dat duration mac dinh theo service
+    final defaultDurationHrs =
+        (_selectedService?.defaultDurationMinutes ?? 240) ~/ 60;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -680,7 +803,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const Text('Chọn ngày và giờ bắt đầu ca chăm sóc',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         const SizedBox(height: 16),
-        // Date picker placeholder
+        // Date picker
         GestureDetector(
           onTap: () async {
             final picked = await showDatePicker(
@@ -802,16 +925,27 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ],
         const SizedBox(height: 20),
-        const Text('Thời lượng (giờ)',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [2, 4, 6, 8, 12].map((h) {
+          children: [
+            const Text('Thời lượng (giờ)',
+                style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            Text(
+              '(mặc định: ${defaultDurationHrs}h)',
+              style: const TextStyle(color: AppColors.textHint, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [1, 2, 3, 4, 6, 8, 12].map((h) {
             final isSelected = _duration == h;
+            final isDefault = h == defaultDurationHrs;
             return GestureDetector(
               onTap: () => setState(() => _duration = h),
               child: AnimatedContainer(
@@ -823,7 +957,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                       isSelected ? AppColors.primary : AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border),
+                    color: isSelected
+                        ? AppColors.primary
+                        : isDefault
+                            ? AppColors.primaryLight
+                            : AppColors.border,
+                    width: isDefault && !isSelected ? 2 : 1,
+                  ),
                   boxShadow: isSelected ? AppShadows.card : [],
                 ),
                 child: Center(
@@ -841,41 +981,113 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           }).toList(),
         ),
         const SizedBox(height: 20),
-        const Text('Địa chỉ chăm sóc',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _savedAddresses.asMap().entries.map((entry) {
-            final selected = _addressController.text == entry.value;
-            return ChoiceChip(
-              label: Text(entry.key == 0
-                  ? 'Nhà riêng'
-                  : entry.key == 1
-                      ? 'Nhà bố mẹ'
-                      : 'Văn phòng'),
-              selected: selected,
-              onSelected: (_) => setState(() {
-                _addressController.text = entry.value;
-                _selectedCaregiverId = null;
-              }),
-            );
-          }).toList(),
+        // ── Dia chi cham soc — lay tu API ──────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Địa chỉ chăm sóc',
+                style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+            TextButton.icon(
+              onPressed: _openAddressSelector,
+              icon: const Icon(Icons.location_on_outlined, size: 16),
+              label: const Text('Chọn / thêm', style: TextStyle(fontSize: 13)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _addressController,
-          maxLines: 2,
-          onChanged: (_) => setState(() => _selectedCaregiverId = null),
-          decoration: const InputDecoration(
-            labelText: 'Địa chỉ chi tiết *',
-            hintText: 'Số nhà, đường, phường/xã, quận/huyện',
-            prefixIcon: Icon(Icons.location_on_outlined),
+        const SizedBox(height: 8),
+        addressAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
           ),
+          error: (e, _) => Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3F3),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_outlined,
+                    color: AppColors.error, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Không tải được danh sách địa chỉ. Thử lại?',
+                    style: TextStyle(color: AppColors.error, fontSize: 13),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => ref.invalidate(addressStoreProvider),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          ),
+          data: (addresses) {
+            if (addresses.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      style: BorderStyle.solid),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_off_outlined,
+                        color: AppColors.textSecondary, size: 20),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Bạn chưa có địa chỉ nào. Thêm ngay để đặt lịch.',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 13),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _openAddressSelector,
+                      child: const Text('Thêm'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            // Auto-select địa chỉ mặc định của người thân nếu chưa chọn gì
+            final defaultAddrId = _selectedBeneficiary?.defaultAddressId;
+            if (_selectedAddressId == null && defaultAddrId != null) {
+              final matched = addresses.any((a) => a.id == defaultAddrId);
+              if (matched) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _selectedAddressId == null) {
+                    setState(() => _selectedAddressId = defaultAddrId);
+                  }
+                });
+              }
+            }
+
+            final selectedAddress = _selectedAddressId == null
+                ? null
+                : _findAddressById(addresses, _selectedAddressId!);
+
+            if (selectedAddress == null) {
+              return _buildChooseAddressPrompt();
+            }
+
+            return _buildSelectedAddressCard(selectedAddress);
+          },
         ),
         const SizedBox(height: 20),
         if (_selectedService != null) ...[
@@ -902,6 +1114,125 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  AddressModel? _findAddressById(List<AddressModel> addresses, String id) {
+    for (final address in addresses) {
+      if (address.id == id) return address;
+    }
+    return null;
+  }
+
+  Widget _buildChooseAddressPrompt() {
+    return InkWell(
+      onTap: _openAddressSelector,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.location_on_outlined,
+                color: AppColors.textSecondary, size: 20),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Chọn địa chỉ chăm sóc',
+                style: TextStyle(color: AppColors.textHint, fontSize: 13),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: AppColors.textHint, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedAddressCard(AddressModel address) {
+    final isBeneficiaryDefault =
+        _selectedBeneficiary?.defaultAddressId == address.id;
+
+    return InkWell(
+      onTap: _openAddressSelector,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary, width: 2),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on_outlined,
+                color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          address.displayLabel,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isBeneficiaryDefault)
+                        Flexible(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _selectedBeneficiary == null
+                                  ? 'Của người thân'
+                                  : 'Của ${_selectedBeneficiary!.name}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  Text(
+                    address.shortAddress,
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1116,7 +1447,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           if (caregiver != null)
             _buildConfirmRow(
               '👩',
-              '${caregiver.name}${_isSystemMatched ? ' • Hệ thống gợi ý' : ''}',
+              '${caregiver.displayName}${_isSystemMatched ? ' • Hệ thống gợi ý' : ''}',
             ),
         ]),
         const SizedBox(height: 10),
@@ -1127,7 +1458,21 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           if (_startTime != null)
             _buildConfirmRow(
                 '⏰', '${_startTime!.format(context)} • $_duration giờ'),
-          _buildConfirmRow('📍', _addressController.text.trim()),
+          if (_selectedAddressId != null)
+            _buildConfirmRow(
+              '📍',
+              ref
+                      .watch(addressStoreProvider)
+                      .valueOrNull
+                      ?.firstWhere(
+                        (a) => a.id == _selectedAddressId,
+                        orElse: () => AddressModel(
+                            id: _selectedAddressId!,
+                            fullAddress: _selectedAddressId!),
+                      )
+                      .shortAddress ??
+                  '',
+            ),
         ]),
         const SizedBox(height: 16),
         const Text(
@@ -1161,19 +1506,29 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Tổng giá trị booking',
+              const Flexible(
+                child: Text(
+                  'Tổng giá trị booking',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
-                      fontWeight: FontWeight.w600)),
-              Text(
-                service != null
-                    ? '${(service.pricePerHour * _duration).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ'
-                    : '---',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800),
+                      fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 0,
+                child: Text(
+                  service != null
+                      ? '${(service.pricePerHour * _duration).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ'
+                      : '---',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800),
+                  maxLines: 1,
+                ),
               ),
             ],
           ),
@@ -1293,7 +1648,14 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         children: [
           if (_currentStep > 0) ...[
             IconButton(
-              onPressed: () => setState(() => _currentStep--),
+              onPressed: () => setState(() {
+                // Nếu đang ở bước 2 và người thân đã chọn sẵn → quay về bước 0 (bỏ qua bước 1)
+                if (_currentStep == 2 && widget.initialBeneficiaryId != null) {
+                  _currentStep = 0;
+                } else {
+                  _currentStep--;
+                }
+              }),
               tooltip: 'Quay lại bước trước',
               icon: const Icon(Icons.arrow_back_ios_new, size: 20),
               style: IconButton.styleFrom(
@@ -1306,25 +1668,38 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ],
           Expanded(
             child: ElevatedButton(
-              onPressed: _canContinue
+              onPressed: _canContinue && !_isSubmitting
                   ? () {
                       if (isLastStep) {
                         _submitBooking();
                       } else {
                         setState(() {
-                          if (_currentStep == 2 &&
+                          if (_currentStep == 3 &&
                               _selectedCaregiverId == null &&
                               _matchedCaregivers.isNotEmpty) {
                             _selectedCaregiverId = _matchedCaregivers.first.id;
                             _isSystemMatched = true;
                           }
-                          _currentStep++;
+                          // Nếu đang ở bước 0 và người thân đã được chọn sẵn từ ngoài
+                          // → bỏ qua bước 1, nhảy thẳng sang bước 2
+                          if (_currentStep == 0 &&
+                              widget.initialBeneficiaryId != null) {
+                            _currentStep = 2;
+                          } else {
+                            _currentStep++;
+                          }
                         });
                       }
                     }
                   : null,
               style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
-              child: Text(isLastStep ? 'Xác nhận đặt lịch' : 'Tiếp theo'),
+              child: isLastStep && _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.white))
+                  : Text(isLastStep ? 'Xác nhận đặt lịch' : 'Tiếp theo'),
             ),
           ),
         ],
@@ -1332,55 +1707,113 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     );
   }
 
-  void _submitBooking() {
+  Future<void> _submitBooking() async {
+    if (_isSubmitting) return; // chặn double-submit
     final service = _selectedService;
     final beneficiary = _selectedBeneficiary;
     final caregiver = _selectedCaregiver;
+
+    // Guard: tat ca fields bat buoc phai co
     if (service == null ||
         beneficiary == null ||
-        caregiver == null ||
         _selectedDate == null ||
-        _startTime == null) {
+        _startTime == null ||
+        _selectedAddressId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng điền đầy đủ thông tin trước khi xác nhận.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
       return;
     }
 
-    String twoDigits(int value) => value.toString().padLeft(2, '0');
-    final startMinutes = _startTime!.hour * 60 + _startTime!.minute;
-    final endMinutes = startMinutes + _duration * 60;
-    final startLabel =
-        '${twoDigits(_startTime!.hour)}:${twoDigits(_startTime!.minute)}';
-    final endLabel =
-        '${twoDigits((endMinutes ~/ 60) % 24)}:${twoDigits(endMinutes % 60)}';
+    setState(() => _isSubmitting = true);
 
-    final booking = ref.read(bookingStoreProvider.notifier).createBooking(
-          BookingDraft(
-            beneficiaryId: beneficiary.id,
-            beneficiaryName: beneficiary.name,
-            caregiverId: caregiver.id,
-            caregiverName: caregiver.name,
-            caregiverAvatar: caregiver.avatarInitial,
-            serviceId: service.id,
-            serviceName: service.name,
-            date:
-                '${twoDigits(_selectedDate!.day)}/${twoDigits(_selectedDate!.month)}/${_selectedDate!.year}',
-            time: '$startLabel — $endLabel',
-            duration: '$_duration giờ',
-            totalPrice: service.pricePerHour * _duration,
-            address: _addressController.text.trim(),
-            isSystemMatched: _isSystemMatched,
-            isDemoBooking: _bookingMode == 'demo',
-            paymentLabel: _bookingMode == 'demo'
-                ? 'Booking demo • không thanh toán'
-                : 'Ví demo • đã giữ tiền mô phỏng',
+    final start = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _startTime!.hour,
+      _startTime!.minute,
+    );
+    final end = start.add(Duration(hours: _duration));
+
+    try {
+      final booking =
+          await ref.read(bookingStoreProvider.notifier).createBooking(
+                BookingDraft(
+                  beneficiaryId: beneficiary.id,
+                  serviceTypeId: service.id,
+                  caregiverId: caregiver?.id,
+                  addressId: _selectedAddressId!,
+                  scheduledStart: start,
+                  scheduledEnd: end,
+                ),
+              );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã tạo booking • đang chờ caregiver nhận ca'),
+            backgroundColor: AppColors.success,
           ),
         );
+        context.pushReplacement('/bookings/${booking.id}');
+      }
+    } on DioException catch (e) {
+      final apiError = e.error;
+      if (apiError is AppApiException) {
+        _showSubmitApiError(apiError);
+      } else {
+        _showGenericSubmitError();
+      }
+    } on AppApiException catch (e) {
+      _showSubmitApiError(e);
+    } catch (e) {
+      _showGenericSubmitError();
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showSubmitApiError(AppApiException e) {
+    if (!mounted) return;
+
+    final isCaregiverConflict = e.statusCode == 409;
+    final msg = isCaregiverConflict
+        ? 'Caregiver đã có lịch trong khung giờ này. Vui lòng chọn caregiver khác hoặc đổi giờ.'
+        : e.message;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 6),
+        action: isCaregiverConflict
+            ? SnackBarAction(
+                label: 'Chọn lại',
+                textColor: Colors.white,
+                onPressed: () => setState(() {
+                  _selectedCaregiverId = null;
+                  _currentStep = 3; // về step Caregiver
+                }),
+              )
+            : null,
+      ),
+    );
+  }
+
+  void _showGenericSubmitError() {
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Đã tạo booking • đang chờ caregiver nhận ca'),
-        backgroundColor: AppColors.success,
+        content: Text('Lỗi tạo booking. Vui lòng thử lại sau.'),
+        backgroundColor: AppColors.error,
       ),
     );
-    context.pushReplacement('/bookings/${booking.id}');
   }
 }

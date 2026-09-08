@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/mock/mock_data.dart';
 import '../../application/beneficiary_store.dart';
+import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 class BeneficiaryListScreen extends ConsumerWidget {
   const BeneficiaryListScreen({super.key});
@@ -44,18 +45,78 @@ class BeneficiaryListScreen extends ConsumerWidget {
             child: Text(
               '${beneficiaries.length} hồ sơ đang quản lý',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                  color: Colors.white.withOpacity(0.85), fontSize: 13),
             ),
           ),
-          // List
+          // List or Empty State
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: beneficiaries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) =>
-                  _buildBeneficiaryCard(beneficiaries[index], context),
-            ),
+            child: beneficiaries.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.people_outline_rounded,
+                              size: 40,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Chưa có hồ sơ người thân',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Hãy thêm hồ sơ người thân để đặt lịch chăm sóc chu đáo nhất.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                context.push('/beneficiaries/create'),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Thêm người thân ngay'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: beneficiaries.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) => FadeSlideStaggered(
+                      index: index,
+                      child: _buildBeneficiaryCard(beneficiaries[index], context),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -85,7 +146,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 3)),
           ],
@@ -127,7 +188,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: careColor.withValues(alpha: 0.12),
+                          color: careColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
