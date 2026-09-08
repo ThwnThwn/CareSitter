@@ -1,73 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // ── Primary Teal Palette ──────────────────────────────
-  static const Color primary = Color(0xFF2F7F7F);
-  static const Color primaryLight = Color(0xFF3A8D8C);
-  static const Color primaryDark = Color(0xFF1F5F5F);
-  static const Color primaryContainer = Color(0xFFE0F4F4);
+  // ── Primary Botanical Green Palette ─────────────────────
+  static const Color primary = Color(0xFF2D9E6B);
+  static const Color primaryLight = Color(0xFF4FBF8A);
+  static const Color primaryDark = Color(0xFF1E7A52);
+  static const Color primaryContainer = Color(0xFFE8F7F0);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color onPrimaryContainer = Color(0xFF1F5F5F);
+  static const Color onPrimaryContainer = Color(0xFF1E7A52);
 
-  // ── Secondary / Accent ───────────────────────────────
-  static const Color secondary = Color(0xFFF5A623);
-  static const Color secondaryLight = Color(0xFFFFCC70);
-  static const Color secondaryContainer = Color(0xFFFFF3DC);
+  // ── Secondary / Teal Companion ──────────────────────────
+  static const Color secondary = Color(0xFF00B4A0);
+  static const Color secondaryLight = Color(0xFF4FDCC6);
+  static const Color secondaryContainer = Color(0xFFE0F9F5);
   static const Color onSecondary = Color(0xFFFFFFFF);
 
-  // ── Surfaces ─────────────────────────────────────────
-  static const Color background = Color(0xFFEEF7F7);
-  static const Color surface = Color(0xFFF7FBFB);
-  static const Color surfaceVariant = Color(0xFFE8F5F5);
+  // ── Tertiary / Amber Warning ────────────────────────────
+  static const Color tertiary = Color(0xFFF5A623);
+  static const Color tertiaryContainer = Color(0xFFFEF7EC);
+
+  // ── Surfaces ───────────────────────────────────────────
+  static const Color background = Color(0xFFF0F4F2);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFE8F7F0);
+  static const Color surfaceContainer = Color(0xFFF5FAF7);
+  static const Color surfaceContainerLow = Color(0xFFF7FBF9);
+  static const Color surfaceContainerHigh = Color(0xFFE8F0EB);
   static const Color cardBackground = Color(0xFFFFFFFF);
 
-  // ── Text ─────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A2E2E);
-  static const Color textSecondary = Color(0xFF5A7272);
-  static const Color textHint = Color(0xFF9FBABA);
+  // ── Text ───────────────────────────────────────────────
+  static const Color textPrimary = Color(0xFF1A2E25);
+  static const Color textSecondary = Color(0xFF5A7268);
+  static const Color textHint = Color(0xFF9FB8AC);
   static const Color textOnDark = Color(0xFFFFFFFF);
 
-  // ── State Colors ─────────────────────────────────────
-  static const Color success = Color(0xFF2ECC71);
-  static const Color successLight = Color(0xFFD5F5E3);
-  static const Color warning = Color(0xFFF39C12);
-  static const Color warningLight = Color(0xFFFEF9E7);
-  static const Color error = Color(0xFFE84040);
-  static const Color errorLight = Color(0xFFFDEDED);
-  static const Color info = Color(0xFF3498DB);
-  static const Color infoLight = Color(0xFFEBF5FB);
+  // ── State Colors ───────────────────────────────────────
+  static const Color success = Color(0xFF059669);
+  static const Color successLight = Color(0xFFD1FAE5);
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningLight = Color(0xFFFEF3C7);
+  static const Color error = Color(0xFFDC2626);
+  static const Color errorLight = Color(0xFFFEE2E2);
+  static const Color info = Color(0xFF0284C7);
+  static const Color infoLight = Color(0xFFE0F2FE);
 
-  // ── Booking Status Colors ─────────────────────────────
-  static const Color statusPending = Color(0xFFF39C12);
-  static const Color statusConfirmed = Color(0xFF3A8D8C);
-  static const Color statusInProgress = Color(0xFF2F7F7F);
-  static const Color statusCompleted = Color(0xFF2ECC71);
-  static const Color statusCancelled = Color(0xFF95A5A6);
-  static const Color statusCrisis = Color(0xFFE84040);
+  // ── Booking Status Colors (Stitch Semantic) ────────────
+  static const Color statusPending = Color(0xFFD97706);
+  static const Color statusPendingBg = Color(0xFFFEF3C7);
+  static const Color statusConfirmed = Color(0xFF16A34A);
+  static const Color statusConfirmedBg = Color(0xFFDCFCE7);
+  static const Color statusInProgress = Color(0xFF005F56);
+  static const Color statusInProgressBg = Color(0xFFE6F4F2);
+  static const Color statusCompleted = Color(0xFF059669);
+  static const Color statusCompletedBg = Color(0xFFD1FAE5);
+  static const Color statusCancelled = Color(0xFF64748B);
+  static const Color statusCancelledBg = Color(0xFFF1F5F9);
+  static const Color statusCrisis = Color(0xFFDC2626);
+  static const Color statusCrisisBg = Color(0xFFFEE2E2);
   static const Color statusDisputed = Color(0xFFE67E22);
 
-  // ── Border / Divider ─────────────────────────────────
-  static const Color border = Color(0xFFD5E8E8);
-  static const Color borderFocus = Color(0xFF3A8D8C);
-  static const Color divider = Color(0xFFECF5F5);
+  // ── Border / Divider ───────────────────────────────────
+  static const Color border = Color(0xFFDDE8E3);
+  static const Color borderFocus = Color(0xFF2D9E6B);
+  static const Color divider = Color(0xFFEDF5EF);
 
-  // ── Gradient ─────────────────────────────────────────
+  // ── Gradient ───────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
+    colors: [Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1F5F5F), Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
+    colors: [Color(0xFF1E7A52), Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE0F4F4), Color(0xFFF7FBFB)],
+    colors: [Color(0xFFE8F7F0), Color(0xFFF5FAF7)],
   );
 }
 
@@ -78,7 +92,6 @@ class AppTheme {
   static ThemeData _buildLightTheme() {
     final base = ThemeData(
       useMaterial3: true,
-      fontFamily: 'Inter',
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
         primary: AppColors.primary,
@@ -88,23 +101,23 @@ class AppTheme {
         secondary: AppColors.secondary,
         onSecondary: AppColors.onSecondary,
         secondaryContainer: AppColors.secondaryContainer,
-        onSecondaryContainer: Color(0xFF7A4800),
-        tertiary: AppColors.primaryLight,
+        onSecondaryContainer: Color(0xFF005047),
+        tertiary: AppColors.tertiary,
         onTertiary: Colors.white,
-        tertiaryContainer: Color(0xFFE0F4F4),
-        onTertiaryContainer: AppColors.primaryDark,
+        tertiaryContainer: AppColors.tertiaryContainer,
+        onTertiaryContainer: Color(0xFF633F00),
         error: AppColors.error,
         onError: Colors.white,
         errorContainer: AppColors.errorLight,
         onErrorContainer: Color(0xFF8B0000),
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
-        surfaceContainerHighest: AppColors.surfaceVariant,
+        surfaceContainerHighest: AppColors.surfaceContainerHigh,
         onSurfaceVariant: AppColors.textSecondary,
         outline: AppColors.border,
         outlineVariant: AppColors.divider,
-        shadow: Color(0x1A2F7F7F),
-        scrim: Color(0x801A2E2E),
+        shadow: Color(0x1A1A2E25),
+        scrim: Color(0x801A2E25),
         inverseSurface: AppColors.textPrimary,
         onInverseSurface: Colors.white,
         inversePrimary: AppColors.primaryLight,
@@ -159,35 +172,49 @@ class AppTheme {
     );
   }
 
-  // ── Text Theme ─────────────────────────────────────────
+  // ── Text Theme (Be Vietnam Pro via google_fonts) ────────
   static TextTheme _buildTextTheme() {
-    return TextTheme(
-      displayLarge:
-          _textStyle(57, AppColors.textPrimary, weight: FontWeight.w700),
-      displayMedium:
-          _textStyle(45, AppColors.textPrimary, weight: FontWeight.w700),
-      displaySmall:
-          _textStyle(36, AppColors.textPrimary, weight: FontWeight.w700),
-      headlineLarge:
-          _textStyle(32, AppColors.textPrimary, weight: FontWeight.w700),
-      headlineMedium:
-          _textStyle(28, AppColors.textPrimary, weight: FontWeight.w700),
-      headlineSmall:
-          _textStyle(24, AppColors.textPrimary, weight: FontWeight.w600),
-      titleLarge:
-          _textStyle(22, AppColors.textPrimary, weight: FontWeight.w600),
-      titleMedium:
-          _textStyle(16, AppColors.textPrimary, weight: FontWeight.w600),
-      titleSmall:
-          _textStyle(14, AppColors.textPrimary, weight: FontWeight.w600),
-      bodyLarge: _textStyle(16, AppColors.textPrimary),
-      bodyMedium: _textStyle(14, AppColors.textPrimary),
-      bodySmall: _textStyle(12, AppColors.textSecondary),
-      labelLarge:
-          _textStyle(14, AppColors.textPrimary, weight: FontWeight.w600),
-      labelMedium:
-          _textStyle(12, AppColors.textSecondary, weight: FontWeight.w500),
-      labelSmall: _textStyle(11, AppColors.textHint, weight: FontWeight.w500),
+    return GoogleFonts.beVietnamProTextTheme(
+      TextTheme(
+        // display-lg: 32/700, -0.02em
+        displayLarge:
+            _textStyle(32, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.02 * 32),
+        displayMedium:
+            _textStyle(28, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.02 * 28),
+        displaySmall:
+            _textStyle(24, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.01 * 24),
+        // headline-lg: 24/600, -0.01em
+        headlineLarge:
+            _textStyle(24, AppColors.textPrimary, weight: FontWeight.w600, letterSpacing: -0.01 * 24),
+        // headline-md: 20/600
+        headlineMedium:
+            _textStyle(20, AppColors.textPrimary, weight: FontWeight.w600),
+        // headline-sm: 18/600
+        headlineSmall:
+            _textStyle(18, AppColors.textPrimary, weight: FontWeight.w600),
+        // title-lg: 18/600
+        titleLarge:
+            _textStyle(18, AppColors.textPrimary, weight: FontWeight.w600),
+        // body-lg: 16/400
+        titleMedium:
+            _textStyle(16, AppColors.textPrimary, weight: FontWeight.w600),
+        titleSmall:
+            _textStyle(14, AppColors.textPrimary, weight: FontWeight.w600),
+        bodyLarge: _textStyle(16, AppColors.textPrimary),
+        // body-md: 14/400
+        bodyMedium: _textStyle(14, AppColors.textPrimary),
+        // body-sm: 12/400
+        bodySmall: _textStyle(12, AppColors.textSecondary),
+        // label-lg: 15/600, 0.01em
+        labelLarge:
+            _textStyle(15, AppColors.textPrimary, weight: FontWeight.w600, letterSpacing: 0.01 * 15),
+        // label-md: 13/500
+        labelMedium:
+            _textStyle(13, AppColors.textSecondary, weight: FontWeight.w500),
+        // label-sm: 11/600, 0.02em
+        labelSmall:
+            _textStyle(11, AppColors.textHint, weight: FontWeight.w600, letterSpacing: 0.02 * 11),
+      ),
     );
   }
 
@@ -196,14 +223,14 @@ class AppTheme {
     Color color, {
     FontWeight weight = FontWeight.w400,
     double? height,
+    double? letterSpacing,
   }) {
-    // Inter được bundle cục bộ (variable font) — không tải qua mạng.
     return TextStyle(
-      fontFamily: 'Inter',
       fontSize: size,
       color: color,
       fontWeight: weight,
       height: height ?? 1.4,
+      letterSpacing: letterSpacing,
     );
   }
 
@@ -214,11 +241,14 @@ class AppTheme {
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: const Color(0x1A2F7F7F),
+      shadowColor: const Color(0x0A1A2E25),
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
-      titleTextStyle:
-          _textStyle(18, AppColors.textPrimary, weight: FontWeight.w600),
+      titleTextStyle: GoogleFonts.beVietnamPro(
+        fontSize: 18,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
       iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
     );
   }
@@ -236,7 +266,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         minimumSize: const Size(double.infinity, 52),
-        textStyle: _textStyle(16, Colors.white, weight: FontWeight.w600),
+        textStyle: GoogleFonts.beVietnamPro(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -249,7 +282,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         minimumSize: const Size(double.infinity, 52),
-        textStyle: _textStyle(16, AppColors.primary, weight: FontWeight.w600),
+        textStyle: GoogleFonts.beVietnamPro(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -258,7 +294,10 @@ class AppTheme {
     return TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
-        textStyle: _textStyle(14, AppColors.primary, weight: FontWeight.w600),
+        textStyle: GoogleFonts.beVietnamPro(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
@@ -268,25 +307,25 @@ class AppTheme {
   static InputDecorationTheme _buildInputDecorationTheme() {
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceVariant,
+      fillColor: AppColors.surface,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.error, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -317,16 +356,19 @@ class AppTheme {
   // ── Chip ─────────────────────────────────────────────
   static ChipThemeData _buildChipTheme() {
     return ChipThemeData(
-      backgroundColor: AppColors.surfaceVariant,
+      backgroundColor: AppColors.primaryContainer,
       selectedColor: AppColors.primaryContainer,
-      labelStyle:
-          _textStyle(12, AppColors.textSecondary, weight: FontWeight.w500),
+      labelStyle: GoogleFonts.beVietnamPro(
+        fontSize: 12,
+        color: AppColors.onPrimaryContainer,
+        fontWeight: FontWeight.w500,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide.none,
       ),
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide.none,
     );
   }
 
@@ -338,9 +380,15 @@ class AppTheme {
       unselectedItemColor: AppColors.textHint,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
-      selectedLabelStyle:
-          _textStyle(11, AppColors.primary, weight: FontWeight.w600),
-      unselectedLabelStyle: _textStyle(11, AppColors.textHint),
+      selectedLabelStyle: GoogleFonts.beVietnamPro(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: AppColors.primary,
+      ),
+      unselectedLabelStyle: GoogleFonts.beVietnamPro(
+        fontSize: 11,
+        color: AppColors.textHint,
+      ),
     );
   }
 
@@ -351,9 +399,16 @@ class AppTheme {
       surfaceTintColor: Colors.transparent,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return _textStyle(11, AppColors.primary, weight: FontWeight.w600);
+          return GoogleFonts.beVietnamPro(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+          );
         }
-        return _textStyle(11, AppColors.textHint);
+        return GoogleFonts.beVietnamPro(
+          fontSize: 11,
+          color: AppColors.textHint,
+        );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
@@ -369,8 +424,15 @@ class AppTheme {
     return TabBarThemeData(
       labelColor: AppColors.primary,
       unselectedLabelColor: AppColors.textSecondary,
-      labelStyle: _textStyle(14, AppColors.primary, weight: FontWeight.w600),
-      unselectedLabelStyle: _textStyle(14, AppColors.textSecondary),
+      labelStyle: GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.primary,
+      ),
+      unselectedLabelStyle: GoogleFonts.beVietnamPro(
+        fontSize: 14,
+        color: AppColors.textSecondary,
+      ),
       indicator: const UnderlineTabIndicator(
         borderSide: BorderSide(color: AppColors.primary, width: 3),
         borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
@@ -383,6 +445,7 @@ class AppTheme {
 
 // ── Spacing / Radius Constants ────────────────────────────
 class AppSpacing {
+  static const double xxs = 4;
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 16;
@@ -401,19 +464,32 @@ class AppRadius {
 }
 
 class AppShadows {
+  /// Level 1: Resting cards — green-tinted ambient shadow
   static List<BoxShadow> get card => [
         BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
+          color: const Color(0xFF1A2E25).withValues(alpha: 0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+          spreadRadius: -2,
         ),
       ];
 
+  /// Level 2: Interactive floating items — elevated green-tinted
   static List<BoxShadow> get elevated => [
         BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.15),
+          color: const Color(0xFF1A2E25).withValues(alpha: 0.08),
           blurRadius: 24,
           offset: const Offset(0, 8),
+          spreadRadius: -4,
+        ),
+      ];
+
+  /// Level 3: Bottom bar — upward shadow
+  static List<BoxShadow> get bottomBar => [
+        BoxShadow(
+          color: const Color(0xFF1A2E25).withValues(alpha: 0.06),
+          blurRadius: 16,
+          offset: const Offset(0, -4),
         ),
       ];
 }

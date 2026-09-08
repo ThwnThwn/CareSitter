@@ -47,7 +47,12 @@ class AppButton extends StatelessWidget {
                 Icon(icon, size: 20),
                 const SizedBox(width: 8),
               ],
-              Text(label),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           );
 
@@ -56,11 +61,13 @@ class AppButton extends StatelessWidget {
             foregroundColor: bgColor,
             side: BorderSide(color: bgColor, width: 1.5),
             minimumSize: Size(width ?? double.infinity, height),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
           )
         : ElevatedButton.styleFrom(
             backgroundColor: bgColor,
             foregroundColor: fgColor,
             minimumSize: Size(width ?? double.infinity, height),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
           );
 
     return isOutlined

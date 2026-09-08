@@ -1,19 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/auth_repository.dart';
 
-class OtpVerifyScreen extends StatefulWidget {
+class OtpVerifyScreen extends ConsumerStatefulWidget {
   final String phone;
   const OtpVerifyScreen({super.key, required this.phone});
 
   @override
-  State<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
+  ConsumerState<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
 }
 
-class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
+class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
@@ -69,10 +71,22 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
   Future<void> _verify() async {
     setState(() => _isVerifying = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() => _isVerifying = false);
-      context.go('/home');
+    try {
+      await ref.read(authRepositoryProvider).loginWithOtp(widget.phone, _otp);
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isVerifying = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Xác thực OTP thất bại: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 

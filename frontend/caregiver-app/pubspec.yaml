@@ -28,12 +28,12 @@ dependencies:
   hive_flutter: ^1.1.0
   shared_preferences: ^2.3.3
 
-  # Realtime (chờ backend)
-  # signalr_netcore: ^1.3.6  # TODO: bật khi có backend
+  # Realtime
+  signalr_netcore: ^1.3.6
 
-  # Firebase (chờ cấu hình google-services.json)
-  # firebase_core: ^3.8.0    # TODO: bật khi có google-services.json
-  # firebase_messaging: ^15.1.5
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
 
   # Map & Location
   flutter_map: ^7.0.2
@@ -46,8 +46,7 @@ dependencies:
   image_cropper: ^8.0.2
 
   # UI / Design
-  # google_fonts: gỡ bỏ — Inter đã được bundle vào assets/fonts (xem mục flutter.fonts)
-  # tránh tải font qua mạng lúc khởi động (font flash + phụ thuộc network)
+  google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0

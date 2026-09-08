@@ -215,7 +215,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                           Container(
                             height: 48,
                             width: 48,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.primaryContainer,
                               shape: BoxShape.circle,
                             ),

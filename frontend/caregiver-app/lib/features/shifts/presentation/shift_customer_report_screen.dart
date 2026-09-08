@@ -182,7 +182,7 @@ class _ShiftCustomerReportScreenState
           Container(
             width: 56,
             height: 56,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
             ),
@@ -205,12 +205,15 @@ class _ShiftCustomerReportScreenState
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.caregiverName,
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary),
+                    Flexible(
+                      child: Text(
+                        widget.caregiverName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary),
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -681,15 +684,18 @@ class _ShiftCustomerReportScreenState
         children: [
           Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary),
+                ),
               ),
               if (subtitle != null) ...[
-                const Spacer(),
+                const SizedBox(width: 8),
                 Text(subtitle,
                     style: const TextStyle(
                         fontSize: 13,
