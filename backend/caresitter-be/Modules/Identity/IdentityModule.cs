@@ -1,4 +1,7 @@
+
+using CareSitter.Modules.Identity.Application.Push;
 using CareSitter.Modules.Identity.Infrastructure;
+using CareSitter.Contracts.Services;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +24,7 @@ public sealed class IdentityModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", IdentityDbContext.SchemaName)));
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<IdentityModule>());
+        services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
 
         // Đăng ký Controllers nằm trong assembly của Identity module
         // (AuthController được khai báo trong project này, không phải ApiHost)

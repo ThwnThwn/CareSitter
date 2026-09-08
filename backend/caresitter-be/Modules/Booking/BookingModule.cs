@@ -1,10 +1,12 @@
-using CareSitter.Modules.Booking.Endpoints;
+using CareSitter.Infrastructure.Hubs;
+using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace CareSitter.Modules.Booking;
 
@@ -21,7 +23,17 @@ public sealed class BookingModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", BookingDbContext.SchemaName)));
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingModule>());
+
+        // Đăng ký Controllers nằm trong assembly của Booking module
+        services.AddControllers()
+            .AddApplicationPart(Assembly.GetAssembly(typeof(BookingModule))!);
+
+        // Đăng ký BookingMembershipReader để CareTrackingHub verify quyền join SignalR group.
+        // Hub resolve IBookingMembershipChecker (Shared interface) → implementation nằm ở đây.
+        // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
+        services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) => BookingEndpoints.Map(endpoints);
+    // Controllers tự được map qua app.MapControllers() ở Program.cs
+    public void MapEndpoints(IEndpointRouteBuilder endpoints) { }
 }

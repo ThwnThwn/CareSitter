@@ -1,4 +1,7 @@
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Any;
+using Microsoft.AspNetCore.Http;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace CareSitter.ApiHost.OpenApi;
 
@@ -56,6 +59,8 @@ internal static class SwaggerExtensions
             {
                 options.IncludeXmlComments(xmlFile, includeControllerXmlComments: true);
             }
+            // Fix: IFormFile với Minimal API cần OperationFilter thủ công
+            options.OperationFilter<FormFileOperationFilter>();
         });
 
         return services;
@@ -81,5 +86,72 @@ internal static class SwaggerExtensions
         });
 
         return app;
+    }
+}
+
+/// <summary>
+/// Swashbuckle filter: tự động xử lý IFormFile trong Minimal API endpoint.
+/// Thay thế schema bị lỗi bằng multipart/form-data request body đúng.
+/// </summary>
+internal sealed class FormFileOperationFilter : IOperationFilter
+{
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
+        // Tìm các parameter có type IFormFile hoặc IFormFileCollection
+        var formFileParams = context.ApiDescription.ParameterDescriptions
+            .Where(p => p.ModelMetadata?.ModelType == typeof(IFormFile)
+                     || p.ModelMetadata?.ModelType == typeof(IFormFileCollection))
+            .ToList();
+
+        if (formFileParams.Count == 0) return;
+
+        // Xoá parameters bị lỗi
+        foreach (var param in formFileParams)
+        {
+            var toRemove = operation.Parameters
+                .FirstOrDefault(p => p.Name == param.Name);
+            if (toRemove != null) operation.Parameters.Remove(toRemove);
+        }
+
+        // Build multipart/form-data schema thủ công
+        var properties = new Dictionary<string, OpenApiSchema>();
+
+        foreach (var p in context.ApiDescription.ParameterDescriptions)
+        {
+            if (p.ModelMetadata?.ModelType == typeof(IFormFile) ||
+                p.ModelMetadata?.ModelType == typeof(IFormFileCollection))
+            {
+                properties[p.Name] = new OpenApiSchema
+                {
+                    Type   = "string",
+                    Format = "binary",
+                    Description = "File upload"
+                };
+            }
+            else if (p.Source?.Id == "Form")
+            {
+                properties[p.Name] = new OpenApiSchema
+                {
+                    Type     = p.ModelMetadata?.ModelType == typeof(string) ? "string" : "object",
+                    Nullable = true
+                };
+            }
+        }
+
+        operation.RequestBody = new OpenApiRequestBody
+        {
+            Required = true,
+            Content  =
+            {
+                ["multipart/form-data"] = new OpenApiMediaType
+                {
+                    Schema = new OpenApiSchema
+                    {
+                        Type       = "object",
+                        Properties = properties
+                    }
+                }
+            }
+        };
     }
 }

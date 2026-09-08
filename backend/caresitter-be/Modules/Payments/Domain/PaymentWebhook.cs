@@ -50,4 +50,22 @@ public sealed class PaymentWebhook : Entity
 
         return new PaymentWebhook(Guid.NewGuid(), provider, providerEventId, eventType, payload);
     }
+
+    public Result MarkProcessed()
+    {
+        if (Status != "RECEIVED")
+            return Error.Conflict("webhook.status", $"Khong the chuyen {Status} -> PROCESSED.");
+        Status = "PROCESSED";
+        ProcessedAt = DateTimeOffset.UtcNow;
+        return Result.Success();
+    }
+
+    public Result MarkFailed()
+    {
+        if (Status != "RECEIVED")
+            return Error.Conflict("webhook.status", $"Khong the chuyen {Status} -> FAILED.");
+        Status = "FAILED";
+        ProcessedAt = DateTimeOffset.UtcNow;
+        return Result.Success();
+    }
 }

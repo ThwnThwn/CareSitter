@@ -4,6 +4,7 @@ using CareSitter.SharedKernel.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Identity.Application.Login;
 
@@ -16,12 +17,18 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
     private readonly IdentityDbContext _db;
     private readonly IDistributedCache _cache;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly JwtSettings _jwtSettings;
 
-    public LoginHandler(IdentityDbContext db, IDistributedCache cache, IJwtTokenService jwtTokenService)
+    public LoginHandler(
+        IdentityDbContext db,
+        IDistributedCache cache,
+        IJwtTokenService jwtTokenService,
+        IOptions<JwtSettings> jwtSettingsOptions)
     {
         _db = db;
         _cache = cache;
         _jwtTokenService = jwtTokenService;
+        _jwtSettings = jwtSettingsOptions.Value;
     }
 
     /// <summary>
@@ -47,9 +54,6 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
             return Error.Validation("auth.invalid_otp", "Mã OTP không hợp lệ hoặc đã hết hiệu lực.");
         }
 
-        // Xóa mã OTP sau khi sử dụng (đảm bảo dùng 1 lần duy nhất)
-        await _cache.RemoveAsync(cacheKey, ct);
-
         var now = DateTimeOffset.UtcNow;
 
         // Tìm user theo email
@@ -62,14 +66,31 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
         if (user.Status != "ACTIVE")
             return Error.Failure("auth.inactive_user", $"Tài khoản đang ở trạng thái {user.Status} và không thể đăng nhập.");
 
+        var roleRequirement = AuthRoleRequirement.Validate(user, request.RequiredRole);
+        if (roleRequirement.IsFailure)
+            return roleRequirement.Error;
+
+        // Xóa mã OTP sau khi user hợp lệ và đúng role ứng dụng.
+        await _cache.RemoveAsync(cacheKey, ct);
+
         // Ghi nhận thời gian đăng nhập gần nhất
         user.RecordLogin(now);
 
         await _db.SaveChangesAsync(ct);
 
         // Phát hành JWT Access Token và Refresh Token
-        var accessToken = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
+        var accessToken  = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
+
+        // Lưu refresh token vào Redis (stateful, có thể revoke khi logout/đổi mật khẩu)
+        var hashed = _jwtTokenService.HashRefreshToken(refreshToken);
+        await _cache.SetStringAsync(
+            JwtRevocationCacheKeys.RefreshToken(hashed),
+            user.Id.ToString(),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
+            }, ct);
 
         return new LoginResponse(accessToken, refreshToken, user.Id, user.Roles, user.DisplayName);
     }

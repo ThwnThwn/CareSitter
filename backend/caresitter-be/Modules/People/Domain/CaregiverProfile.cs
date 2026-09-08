@@ -56,4 +56,53 @@ public sealed class CaregiverProfile : AggregateRoot
 
         return new CaregiverProfile(Guid.NewGuid(), userId);
     }
+
+    public Result SubmitKyc(string cccdEncrypted, string cccdHash)
+    {
+        if (KycStatus is not ("DRAFT" or "REJECTED"))
+            return Error.Conflict("caregiver.kyc_status", $"Khong the nop KYC khi trang thai la {KycStatus}.");
+        if (string.IsNullOrWhiteSpace(cccdEncrypted))
+            return Error.Validation("caregiver.cccd", "cccd_number_encrypted la bat buoc.");
+        if (string.IsNullOrWhiteSpace(cccdHash))
+            return Error.Validation("caregiver.cccd_hash", "cccd_hash la bat buoc.");
+
+        CccdNumberEncrypted = cccdEncrypted;
+        CccdHash = cccdHash;
+        KycStatus = "PENDING";
+        return Result.Success();
+    }
+
+    public Result ApproveKyc()
+    {
+        if (KycStatus != "PENDING")
+            return Error.Conflict("caregiver.kyc_status", $"Khong the duyet KYC khi trang thai la {KycStatus}.");
+        KycStatus = "APPROVED";
+        return Result.Success();
+    }
+
+    public Result RejectKyc()
+    {
+        if (KycStatus != "PENDING")
+            return Error.Conflict("caregiver.kyc_status", $"Khong the tu choi KYC khi trang thai la {KycStatus}.");
+        KycStatus = "REJECTED";
+        return Result.Success();
+    }
+
+    public Result UpdateProfile(
+        string? fullName = null, string? bio = null, int? yearsOfExperience = null,
+        long? hourlyRateExpected = null, string? skills = null,
+        string? serviceCity = null, string? serviceDistrict = null,
+        string? gender = null, DateOnly? dateOfBirth = null)
+    {
+        if (fullName is not null) FullName = fullName;
+        if (bio is not null) Bio = bio;
+        if (yearsOfExperience.HasValue) YearsOfExperience = yearsOfExperience.Value;
+        if (hourlyRateExpected.HasValue) HourlyRateExpected = hourlyRateExpected.Value;
+        if (skills is not null) Skills = skills;
+        if (serviceCity is not null) ServiceCity = serviceCity;
+        if (serviceDistrict is not null) ServiceDistrict = serviceDistrict;
+        if (gender is not null) Gender = gender;
+        if (dateOfBirth.HasValue) DateOfBirth = dateOfBirth.Value;
+        return Result.Success();
+    }
 }

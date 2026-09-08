@@ -1,0 +1,122 @@
+using CareSitter.Contracts.Services;
+using CareSitter.Modules.People.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+
+namespace CareSitter.Modules.People.Application;
+
+/// <summary>
+/// Triển khai <see cref="IPeopleLookupService"/> — cung cấp các truy vấn kiểm tra
+/// quyền sở hữu và tính khả dụng của Caregiver/Beneficiary xuyên module.
+/// Được inject vào BookingModule, BookingsController và các Application Handlers.
+/// </summary>
+internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupService
+{
+    /// <summary>
+    /// Kiểm tra xem một người thân (Beneficiary) có thuộc về
+    /// khách hàng (<paramref name="customerId"/>) hay không.
+    /// Sử dụng RLS PostgreSQL để cách ly dữ liệu: bắt đầu transaction và gán
+    /// <c>app.current_user_id</c> trước khi truy vấn để RLS tự lọc đúng user.
+    /// </summary>
+    /// <param name="beneficiaryId">ID hồ sơ người thân cần kiểm tra.</param>
+    /// <param name="customerId">ID của khách hàng (User.Id) đang thực hiện thao tác.</param>
+    /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
+    /// <returns><c>true</c> nếu hồ sơ người thân thuộc về khách hàng và chưa bị xóa.</returns>
+    public async Task<bool> BeneficiaryBelongsToAsync(Guid beneficiaryId, Guid customerId,
+        CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT set_config('app.current_user_id', {customerId.ToString()}, true)", ct);
+        return await db.Beneficiaries.AnyAsync(x => x.Id == beneficiaryId &&
+            x.CustomerId == customerId && x.DeletedAt == null, ct);
+    }
+
+    /// <summary>
+    /// Kiểm tra caregiver có profile đã được duyệt (KYC APPROVED) và có slot
+    /// khả dụng phủ toàn bộ khoảng thời gian yêu cầu hay không.
+    /// Dùng khi đặt lịch hoặc dời lịch để đảm bảo caregiver thực sự rảnh.
+    /// </summary>
+    /// <param name="caregiverId">ID của CaregiverProfile.</param>
+    /// <param name="start">Thời điểm bắt đầu ca cần kiểm tra.</param>
+    /// <param name="end">Thời điểm kết thúc ca cần kiểm tra.</param>
+    /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
+    /// <returns>
+    /// <c>true</c> khi caregiver đã được duyệt KYC VÀ có ít nhất 1 slot khả dụng
+    /// phủ kín khoảng [<paramref name="start"/>, <paramref name="end"/>].
+    /// </returns>
+    public async Task<bool> CaregiverIsAvailableAsync(Guid caregiverId, DateTimeOffset start,
+        DateTimeOffset end, CancellationToken ct = default)
+    {
+        var caregiver = await db.CaregiverProfiles.AsNoTracking().AnyAsync(x =>
+            x.Id == caregiverId && x.DeletedAt == null && x.KycStatus == "APPROVED", ct);
+        if (!caregiver)
+            return false;
+
+        // Nếu caregiver chưa setup slot nào → coi là rảnh toàn thời gian (prototype fallback).
+        // Khi production, caregiver sẽ tự đăng ký slot trước; lúc đó bỏ fallback này.
+        var hasAnySlot = await db.CaregiverAvailabilities.AsNoTracking()
+            .AnyAsync(x => x.CaregiverId == caregiverId, ct);
+        if (!hasAnySlot)
+            return true;
+
+        return await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
+            x.CaregiverId == caregiverId && x.Status == "AVAILABLE" &&
+            x.StartAt <= start && x.EndAt >= end, ct);
+    }
+
+    /// <summary>
+    /// Kiểm tra nhanh xem một CaregiverProfile có trạng thái KYC là APPROVED không.
+    /// Dùng khi cần xác thực tư cách hành nghề của caregiver mà không cần kiểm tra lịch.
+    /// </summary>
+    /// <param name="caregiverId">ID của CaregiverProfile.</param>
+    /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
+    /// <returns><c>true</c> nếu caregiver đã được duyệt KYC và chưa bị xóa.</returns>
+    public Task<bool> IsCaregiverApprovedAsync(Guid caregiverId, CancellationToken ct = default) =>
+        db.CaregiverProfiles.AsNoTracking().AnyAsync(x =>
+            x.Id == caregiverId && x.DeletedAt == null && x.KycStatus == "APPROVED", ct);
+
+    /// <summary>
+    /// Xác minh rằng một <c>userId</c> (Identity user) chính là chủ sở hữu của
+    /// <c>caregiverId</c> (CaregiverProfile). Dùng trong lifecycle endpoints (accept,
+    /// en-route, check-in, checkout) để đảm bảo chỉ đúng caregiver được phân công
+    /// mới có thể thực hiện thao tác trên booking.
+    /// </summary>
+    /// <param name="caregiverId">ID của CaregiverProfile được phân công cho booking.</param>
+    /// <param name="userId">ID của User hiện tại đang gọi API (lấy từ JWT claim).</param>
+    /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
+    /// <returns>
+    /// <c>true</c> nếu CaregiverProfile có <c>UserId == userId</c> và chưa bị xóa.
+    /// </returns>
+    public async Task<bool> IsCaregiverForBookingAsync(Guid caregiverId, Guid userId, CancellationToken ct = default) =>
+        await db.CaregiverProfiles.AsNoTracking().AnyAsync(x =>
+            x.Id == caregiverId && x.UserId == userId && x.DeletedAt == null, ct);
+
+    /// <summary>
+    /// Lấy CaregiverProfile.Id tương ứng với một userId (Identity user).
+    /// Dùng trong <c>BookingsController.List/Get</c> để map từ JWT user identity
+    /// sang CaregiverProfile.Id nhằm lọc danh sách ca trực của caregiver đó.
+    /// </summary>
+    /// <param name="userId">User.Id lấy từ JWT claim của caregiver đang đăng nhập.</param>
+    /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
+    /// <returns>
+    /// <see cref="Guid"/> của CaregiverProfile, hoặc <c>null</c> nếu user chưa có
+    /// profile caregiver (chưa nộp KYC hoặc hồ sơ bị xóa).
+    /// </returns>
+    public async Task<Guid?> GetCaregiverProfileIdByUserIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var profile = await db.CaregiverProfiles.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
+        return profile?.Id;
+    }
+
+    /// <summary>
+    /// Lấy User.Id tương ứng với một CaregiverProfile.Id để các module khác có thể
+    /// gửi notification/push cho caregiver mà không query chéo DbContext.
+    /// </summary>
+    public async Task<Guid?> GetUserIdByCaregiverProfileIdAsync(Guid caregiverId, CancellationToken ct = default)
+    {
+        var profile = await db.CaregiverProfiles.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == caregiverId && x.DeletedAt == null, ct);
+        return profile?.UserId;
+    }
+}

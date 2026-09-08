@@ -44,4 +44,51 @@ public sealed class WalletAccount : AggregateRoot
 
         return new WalletAccount(Guid.NewGuid(), userId, accountType, currency);
     }
+
+    public Result DeductAvailable(long amount)
+    {
+        if (amount <= 0)
+            return Error.Validation("wallet.amount", "amount phai lon hon 0.");
+        if (AvailableBalance < amount)
+            return Error.Validation("wallet.balance", "So du kha dung khong du.");
+        AvailableBalance -= amount;
+        return Result.Success();
+    }
+
+    public Result AddAvailable(long amount)
+    {
+        if (amount <= 0)
+            return Error.Validation("wallet.amount", "amount phai lon hon 0.");
+        AvailableBalance += amount;
+        return Result.Success();
+    }
+
+    public Result AddPending(long amount)
+    {
+        if (amount <= 0)
+            return Error.Validation("wallet.amount", "amount phai lon hon 0.");
+        PendingBalance += amount;
+        return Result.Success();
+    }
+
+    public Result ReleasePending(long amount)
+    {
+        if (amount <= 0)
+            return Error.Validation("wallet.amount", "amount phai lon hon 0.");
+        if (PendingBalance < amount)
+            return Error.Validation("wallet.pending_balance", "So du tam giu khong du.");
+        PendingBalance -= amount;
+        AvailableBalance += amount;
+        return Result.Success();
+    }
+
+    public Result FreezePending(long amount)
+    {
+        if (amount <= 0)
+            return Error.Validation("wallet.amount", "amount phai lon hon 0.");
+        if (PendingBalance < amount)
+            return Error.Validation("wallet.pending_balance", "So du tam giu khong du de dong bang.");
+        PendingBalance -= amount;
+        return Result.Success();
+    }
 }

@@ -1,11 +1,14 @@
 using CareSitter.Infrastructure.Auth;
+using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Domain;
 using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using Google.Apis.Auth;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 
@@ -17,18 +20,24 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
 {
     private readonly IdentityDbContext _db;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IDistributedCache _cache;
+    private readonly JwtSettings _jwtSettings;
     private readonly string _googleClientId;
 
     private static readonly string[] DefaultRoles = { "CUSTOMER" };
-    private static readonly string[] AllowedRoles = { "CUSTOMER", "CAREGIVER", "ADMIN" };
+    private static readonly string[] AllowedRoles  = { "CUSTOMER", "CAREGIVER", "ADMIN" };
 
     public GoogleLoginHandler(
         IdentityDbContext db,
         IJwtTokenService jwtTokenService,
+        IDistributedCache cache,
+        IOptions<JwtSettings> jwtSettingsOptions,
         IConfiguration configuration)
     {
         _db = db;
         _jwtTokenService = jwtTokenService;
+        _cache = cache;
+        _jwtSettings = jwtSettingsOptions.Value;
         _googleClientId = configuration["Google:ClientId"]
             ?? throw new InvalidOperationException("Google:ClientId chưa được cấu hình trong appsettings / .env.");
     }
@@ -75,6 +84,11 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
                 return Error.Validation("auth.invalid_role", $"Vai trò '{role}' không hợp lệ.");
         }
 
+        var requiredRoleResult = AuthRoleRequirement.Normalize(request.RequiredRole);
+        if (requiredRoleResult.IsFailure)
+            return requiredRoleResult.Error;
+        var requiredRole = requiredRoleResult.Value;
+
         var now = DateTimeOffset.UtcNow;
         bool isNewUser = false;
 
@@ -87,7 +101,11 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
         if (user is null)
         {
             // --- Tạo user mới (auto-register qua Google) ---
-            var finalRoles = roles.Length > 0 ? roles : DefaultRoles;
+            var finalRoles = roles.Length > 0
+                ? roles
+                : requiredRole is not null
+                    ? new[] { requiredRole }
+                    : DefaultRoles;
             var userResult = User.Create(Guid.NewGuid(), email);
             if (userResult.IsFailure)
                 return userResult.Error;
@@ -110,11 +128,25 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
                 user.LinkGoogle(googleId);
         }
 
+        var roleRequirement = AuthRoleRequirement.Validate(user, requiredRole);
+        if (roleRequirement.IsFailure)
+            return roleRequirement.Error;
+
         user.RecordLogin(now);
         await _db.SaveChangesAsync(ct);
 
         var accessToken  = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
+
+        // Lưu refresh token vào Redis (stateful)
+        var hashed = _jwtTokenService.HashRefreshToken(refreshToken);
+        await _cache.SetStringAsync(
+            JwtRevocationCacheKeys.RefreshToken(hashed),
+            user.Id.ToString(),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
+            }, ct);
 
         return new GoogleLoginResponse(
             accessToken, refreshToken,

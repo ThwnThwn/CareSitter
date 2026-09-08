@@ -15,10 +15,12 @@ namespace CareSitter.Modules.Identity.Application.Register;
 /// Tối thiểu 8 ký tự, có ít nhất 1 chữ hoa và 1 chữ số.
 /// </param>
 /// <param name="ConfirmPassword">Xác nhận lại mật khẩu — phải khớp với Password.</param>
+/// <param name="Phone">Số điện thoại liên hệ của người dùng.</param>
 public sealed record RegisterCommand(
     string Email,
     string FullName,
     string[] Roles,
     string? Password = null,
-    string? ConfirmPassword = null
+    string? ConfirmPassword = null,
+    string? Phone = null
 ) : IRequest<Result<LoginResponse>>;

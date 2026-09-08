@@ -69,4 +69,21 @@ public sealed class Address : Entity
         return new Address(Guid.NewGuid(), fullAddress, location, ownerUserId,
             label, ward, district, city, country, note);
     }
+
+    public Result Update(string fullAddress, Point location, string? label, string? ward,
+        string? district, string? city, string country, string? note)
+    {
+        if (string.IsNullOrWhiteSpace(fullAddress) || location is null || string.IsNullOrWhiteSpace(country))
+            return Error.Validation("address.invalid", "Thong tin dia chi khong hop le.");
+
+        FullAddress = fullAddress.Trim();
+        Location = location;
+        Label = label?.Trim();
+        Ward = ward?.Trim();
+        District = district?.Trim();
+        City = city?.Trim();
+        Country = country.Trim();
+        Note = note?.Trim();
+        return Result.Success();
+    }
 }

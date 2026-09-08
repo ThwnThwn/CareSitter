@@ -81,18 +81,43 @@ public sealed class User : AggregateRoot
     }
 
     /// <summary>
+    /// Updates the editable personal information of the user.
+    /// </summary>
+    public void UpdateProfile(
+        string fullName,
+        string email,
+        string? displayName,
+        DateOnly? dateOfBirth,
+        string? gender)
+    {
+        FullName = fullName.Trim();
+        Email = email.Trim().ToLowerInvariant();
+        DisplayName = string.IsNullOrWhiteSpace(displayName)
+            ? FullName
+            : displayName.Trim();
+        DateOfBirth = dateOfBirth;
+        Gender = gender;
+    }
+
+    /// <summary>
     /// Thiết lập danh sách vai trò (roles) cho người dùng.
     /// </summary>
-    /// <param name="roles">Mảng chứa các vai trò như CUSTOMER, CAREGIVER, ADMIN.</param>
     public void SetRoles(string[] roles)
     {
         Roles = roles ?? Array.Empty<string>();
     }
 
     /// <summary>
+    /// Thiết lập số điện thoại cho người dùng.
+    /// </summary>
+    public void SetPhone(string? phone)
+    {
+        Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+    }
+
+    /// <summary>
     /// Ghi nhận thời điểm đăng nhập gần nhất của người dùng.
     /// </summary>
-    /// <param name="time">Thời điểm đăng nhập.</param>
     public void RecordLogin(DateTimeOffset time)
     {
         LastLoginAt = time;
@@ -101,7 +126,6 @@ public sealed class User : AggregateRoot
     /// <summary>
     /// Thiết lập mật khẩu đã được hash bằng BCrypt cho tài khoản.
     /// </summary>
-    /// <param name="passwordHash">BCrypt hash của mật khẩu.</param>
     public void SetPassword(string passwordHash)
     {
         PasswordHash = passwordHash;
@@ -110,11 +134,9 @@ public sealed class User : AggregateRoot
     /// <summary>
     /// Liên kết tài khoản Google (Google Subject ID) với user này.
     /// </summary>
-    /// <param name="googleId">Google Subject ID từ ID token.</param>
     public void LinkGoogle(string googleId)
     {
         GoogleId = googleId;
     }
 }
-
 

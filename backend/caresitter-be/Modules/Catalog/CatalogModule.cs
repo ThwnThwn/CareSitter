@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace CareSitter.Modules.Catalog;
 
@@ -23,7 +24,13 @@ public sealed class CatalogModule : IModule
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).
         services.AddScoped<IPricingService, PricingService>();
+        services.AddScoped<ICatalogLookupService, CatalogLookupService>();
+
+        // Đăng ký Controllers nằm trong assembly của Catalog module
+        services.AddControllers()
+            .AddApplicationPart(Assembly.GetAssembly(typeof(CatalogModule))!);
     }
 
+    // Controllers tự được map qua app.MapControllers() ở Program.cs
     public void MapEndpoints(IEndpointRouteBuilder endpoints) { }
 }

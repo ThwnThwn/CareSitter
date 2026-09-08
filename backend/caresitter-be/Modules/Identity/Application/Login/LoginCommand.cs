@@ -8,7 +8,12 @@ namespace CareSitter.Modules.Identity.Application.Login;
 /// </summary>
 /// <param name="Email">Địa chỉ email đăng nhập.</param>
 /// <param name="Otp">Mã OTP 6 chữ số nhận được qua email.</param>
-public sealed record LoginCommand(string Email, string Otp) : IRequest<Result<LoginResponse>>;
+/// <param name="RequiredRole">Vai trò bắt buộc cho ứng dụng đang đăng nhập, ví dụ CUSTOMER hoặc CAREGIVER.</param>
+public sealed record LoginCommand(
+    string Email,
+    string Otp,
+    string? RequiredRole = null
+) : IRequest<Result<LoginResponse>>;
 
 /// <summary>
 /// Phản hồi kết quả đăng nhập chứa thông tin tokens và người dùng.

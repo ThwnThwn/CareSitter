@@ -54,4 +54,33 @@ public sealed class SupportTicket : AggregateRoot
 
         return new SupportTicket(Guid.NewGuid(), userId, bookingId, type, priority);
     }
+
+    public Result AssignAdmin(Guid adminId)
+    {
+        if (adminId == Guid.Empty)
+            return Error.Validation("ticket.admin", "admin_id khong duoc rong.");
+        AssignedAdminId = adminId;
+        if (Status == "NEW") Status = "IN_PROGRESS";
+        return Result.Success();
+    }
+
+    public Result UpdateStatus(string newStatus)
+    {
+        if (string.IsNullOrWhiteSpace(newStatus))
+            return Error.Validation("ticket.status", "status khong duoc rong.");
+
+        var allowed = Status switch
+        {
+            "NEW" => new[] { "IN_PROGRESS", "CLOSED" },
+            "IN_PROGRESS" => new[] { "RESOLVED", "CLOSED" },
+            "RESOLVED" => new[] { "CLOSED" },
+            _ => Array.Empty<string>()
+        };
+
+        if (!allowed.Contains(newStatus))
+            return Error.Conflict("ticket.status", $"Khong the chuyen {Status} -> {newStatus}.");
+
+        Status = newStatus;
+        return Result.Success();
+    }
 }
