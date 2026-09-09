@@ -5,13 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../core/auth/auth_notifier.dart';
 import '../../../core/realtime/care_signalr_service.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../booking/application/booking_store.dart';
-import '../../booking/data/booking_repository.dart';
-import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 
 class ShiftTrackingScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -27,6 +24,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   late LatLng _caregiverPos;
   StreamSubscription<GpsUpdate>? _gpsSub;
   StreamSubscription<BookingStatusChange>? _statusSub;
+  late final CareSignalRService _signalR;
   int _etaSeconds = 8 * 60; // ETA khởi tạo: 8 phút
   double _heading = 45.0;
 
@@ -37,6 +35,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   void initState() {
     super.initState();
     _caregiverPos = _caregiverStart;
+    _signalR = ref.read(careSignalRProvider);
     _connectSignalR();
   }
 
@@ -45,16 +44,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     _gpsSub?.cancel();
     _statusSub?.cancel();
     // Rời group khi thoát màn hình
-    ref.read(careSignalRProvider).leaveBooking(widget.bookingId).ignore();
+    _signalR.leaveBooking(widget.bookingId).ignore();
     super.dispose();
   }
 
   Future<void> _connectSignalR() async {
-    final signalR = ref.read(careSignalRProvider);
-    await signalR.joinBooking(widget.bookingId);
+    await _signalR.joinBooking(widget.bookingId);
 
     // ── Lắng nghe GPS updates ────────────────────────────────────
-    _gpsSub = signalR.gpsStream
+    _gpsSub = _signalR.gpsStream
         .where((e) => e.bookingId == widget.bookingId)
         .listen((gps) {
       if (!mounted) return;
@@ -79,7 +77,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     });
 
     // ── Lắng nghe booking status changes ─────────────────────────
-    _statusSub = signalR.statusStream
+    _statusSub = _signalR.statusStream
         .where((e) => e.bookingId == widget.bookingId)
         .listen((change) {
       if (!mounted) return;
@@ -117,7 +115,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     if (!liveStatuses.contains(bk.status)) {
       return _buildNotLiveScaffold(context, bk);
     }
-    final doneCount = bk.tasks.where((t) => t.isCompleted).length;
+    final doneCount = bk.tasks.where((t) {
+      try {
+        return t.isCompleted == true;
+      } catch (_) {
+        return false;
+      }
+    }).length;
     final totalCount = bk.tasks.length;
     final progressPct = totalCount > 0 ? doneCount / totalCount : 0.0;
 
@@ -126,54 +130,31 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       extendBodyBehindAppBar: true,
       appBar: _buildFloatingAppBar(context),
       bottomNavigationBar: _BottomActionBar(bk: bk, bookingId: bookingId),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _buildMapSection(bk),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Column(
-              children: [
-                // Banner đang di chuyển — chỉ hiện khi caregiver_en_route
-                if (bk.status == 'caregiver_en_route') ...[
-                  FadeSlideStaggered(
-                    index: 0,
-                    child: _buildEnRouteBanner(bk),
-                  ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildMapSection(bk),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                children: [
+                  if (bk.status == 'caregiver_en_route') ...[
+                    _buildEnRouteBanner(bk),
+                    const SizedBox(height: 14),
+                  ],
+                  _buildCaregiverCard(context, bk),
                   const SizedBox(height: 14),
-                ],
-                FadeSlideStaggered(
-                  index: bk.status == 'caregiver_en_route' ? 1 : 0,
-                  child: _buildCaregiverCard(context, bk),
-                ),
-                const SizedBox(height: 14),
-                // Khi đang di chuyển: ẩn checklist & progress, chỉ hiện info
-                if (bk.status != 'caregiver_en_route') ...[
-                  FadeSlideStaggered(
-                    index: 1,
-                    child: _buildProgressStrip(
-                        bk, doneCount, totalCount, progressPct),
-                  ),
+                  if (bk.status != 'caregiver_en_route') ...[
+                    _buildProgressStrip(bk, doneCount, totalCount, progressPct),
+                    const SizedBox(height: 14),
+                    _buildTaskList(context, ref, bk),
+                    const SizedBox(height: 14),
+                    _buildCaregiverNote(bk),
+                    const SizedBox(height: 14),
+                  ],
+                  _buildInfoRow(bk),
                   const SizedBox(height: 14),
-                  FadeSlideStaggered(
-                    index: 2,
-                    child: _buildTaskList(context, ref, bk),
-                  ),
-                  const SizedBox(height: 14),
-                  FadeSlideStaggered(
-                    index: 3,
-                    child: _buildCaregiverNote(bk),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-                FadeSlideStaggered(
-                  index: bk.status == 'caregiver_en_route' ? 2 : 4,
-                  child: _buildInfoRow(bk),
-                ),
-                const SizedBox(height: 14),
-                FadeSlideStaggered(
-                  index: bk.status == 'caregiver_en_route' ? 3 : 5,
-                  child: OutlinedButton.icon(
+                  OutlinedButton.icon(
                     onPressed: () =>
                         context.push('/bookings/$bookingId/timeline'),
                     icon: const Icon(Icons.timeline_outlined, size: 16),
@@ -184,12 +165,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                           borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                ),
-                if (bk.status == 'in_progress') ...[
-                  const SizedBox(height: 10),
-                  FadeSlideStaggered(
-                    index: 6,
-                    child: OutlinedButton.icon(
+                  if (bk.status == 'in_progress') ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
                       onPressed: () => _showExtendShiftSheet(context, bk),
                       icon: const Icon(Icons.more_time_outlined, size: 16),
                       label: const Text('Yêu cầu gia hạn ca'),
@@ -201,13 +179,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                             borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -345,6 +322,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
             Flexible(
               child: Text(
                 'Theo dõi ca chăm sóc',
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: Colors.white,
@@ -401,7 +379,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       height: isEnRoute ? 280 : 230, // cao hơn khi đang di chuyển
       child: Stack(
         children: [
-          if (kIsWeb)
+          if (_useStaticMapFallback)
             _buildStaticMapPlaceholder(isEnRoute: isEnRoute)
           else
             RepaintBoundary(
@@ -533,8 +511,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
           // Address pill
           Positioned(
             bottom: 10,
-            left: 0,
-            right: 0,
+            left: 16,
+            right: 16,
             child: Center(
               child: Container(
                 padding:
@@ -557,7 +535,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                           color: AppColors.success, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 5),
-                    Flexible(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 240),
                       child: Text(
                         bk.address,
                         maxLines: 1,
@@ -576,6 +555,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
         ],
       ),
     );
+  }
+
+  bool get _useStaticMapFallback {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.linux;
   }
 
   // ── Banner caregiver đang trên đường đến (en_route) ────────────────────────────────────────────
@@ -662,9 +648,10 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       ),
       child: Stack(
         children: [
-          CustomPaint(
-            painter: _MapGridPainter(),
-            child: const SizedBox.expand(),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _MapGridPainter(),
+            ),
           ),
           Center(
             child: Column(
@@ -705,6 +692,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
 
   // ── Caregiver card ─────────────────────────────────────────────────────────
   Widget _buildCaregiverCard(BuildContext context, BookingModel bk) {
+    final caregiverAvatar = bk.caregiverAvatar ?? '';
+    final avatarText = caregiverAvatar.isNotEmpty && caregiverAvatar.length <= 3
+        ? caregiverAvatar
+        : bk.caregiverInitials;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -727,11 +719,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.primaryContainer,
-                    child: Text(bk.caregiverAvatar ?? bk.caregiverInitials,
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800)),
+                    child: Text(
+                      avatarText,
+                      style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800),
+                    ),
                   ),
                   Positioned(
                     bottom: 0,
@@ -762,11 +756,17 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                     const Row(children: [
                       Icon(Icons.verified, color: AppColors.primary, size: 13),
                       SizedBox(width: 3),
-                      Text('CareConnect Certified',
+                      Expanded(
+                        child: Text(
+                          'CareConnect Certified',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 11,
-                              fontWeight: FontWeight.w500)),
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ),
                     ]),
                     const SizedBox(height: 3),
                     Text('Chăm sóc: ${bk.beneficiaryName ?? "Người thân"}',
@@ -846,6 +846,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
+                  minimumSize: const Size(96, 40),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                   padding:
@@ -927,7 +928,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
 
   // ── Task list ──────────────────────────────────────────────────────────────
   Widget _buildTaskList(BuildContext context, WidgetRef ref, BookingModel bk) {
-    final doneCount = bk.tasks.where((t) => t.isCompleted).length;
+    final doneCount = bk.tasks.where((t) {
+      try {
+        return t.isCompleted == true;
+      } catch (_) {
+        return false;
+      }
+    }).length;
     final allDone = bk.tasks.isNotEmpty && doneCount == bk.tasks.length;
 
     return Container(
@@ -994,6 +1001,21 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   Widget _buildTaskRow(
       dynamic task, int index, BookingModel bk, WidgetRef ref) {
     final canToggle = bk.status == 'in_progress';
+    final isDone = () {
+      try {
+        return task.isCompleted == true;
+      } catch (_) {
+        return false;
+      }
+    }();
+    final taskTitle = () {
+      try {
+        return task.title?.toString() ?? 'Công việc';
+      } catch (_) {
+        return 'Công việc';
+      }
+    }();
+
     return InkWell(
       onTap: canToggle
           ? () =>
@@ -1008,38 +1030,30 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: task.isCompleted
-                    ? AppColors.successLight
-                    : AppColors.surface,
+                color: isDone ? AppColors.successLight : AppColors.surface,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                task.isCompleted
-                    ? Icons.check_rounded
-                    : _iconForTask(task.title),
-                color:
-                    task.isCompleted ? AppColors.success : AppColors.textHint,
+                isDone ? Icons.check_rounded : _iconForTask(taskTitle),
+                color: isDone ? AppColors.success : AppColors.textHint,
                 size: 18,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                task.title,
+                taskTitle,
                 style: TextStyle(
                   fontSize: 13,
-                  color: task.isCompleted
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                  fontWeight:
-                      task.isCompleted ? FontWeight.w400 : FontWeight.w600,
-                  decoration:
-                      task.isCompleted ? TextDecoration.lineThrough : null,
+                  color:
+                      isDone ? AppColors.textSecondary : AppColors.textPrimary,
+                  fontWeight: isDone ? FontWeight.w400 : FontWeight.w600,
+                  decoration: isDone ? TextDecoration.lineThrough : null,
                   decorationColor: AppColors.textSecondary,
                 ),
               ),
             ),
-            if (task.isCompleted)
+            if (isDone)
               const Icon(Icons.check_circle_rounded,
                   color: AppColors.success, size: 20)
             else
@@ -1423,10 +1437,12 @@ class _BottomActionBar extends ConsumerWidget {
                     Icon(Icons.science_outlined, size: 15),
                     SizedBox(width: 6),
                     Flexible(
-                      child: Text('Demo: Mô phỏng caregiver kết thúc ca',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12)),
+                      child: Text(
+                        'Demo: Mô phỏng caregiver kết thúc ca',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
@@ -1535,6 +1551,12 @@ Widget _mapTileBuilder(
 class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 ||
+        size.height <= 0 ||
+        size.width.isInfinite ||
+        size.height.isInfinite) {
+      return;
+    }
     final paint = Paint()
       ..color = const Color(0xFF27AE60).withOpacity(0.12)
       ..strokeWidth = 1.0

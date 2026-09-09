@@ -28,105 +28,103 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Flat header theo Stitch ──
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.only(
-              top: topPadding + 16,
-              left: 20,
-              right: 16,
-              bottom: 0,
-            ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Quản lý Lịch hẹn',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: Container(
+              color: Colors.white,
+              padding: EdgeInsets.only(
+                top: topPadding + 16,
+                left: 20,
+                right: 16,
+                bottom: 8,
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Quản lý Lịch hẹn',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () => context.push('/notifications'),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: AppColors.background,
-                          shape: BoxShape.circle,
+                  GestureDetector(
+                    onTap: () => context.push('/notifications'),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: AppColors.background,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.textSecondary,
+                            size: 22,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: AppColors.textSecondary,
-                          size: 22,
+                        const Positioned(
+                          right: 6,
+                          top: 6,
+                          child: CircleAvatar(
+                            radius: 4,
+                            backgroundColor: Color(0xFFE74C3C),
+                          ),
                         ),
-                      ),
-                      const Positioned(
-                        right: 6,
-                        top: 6,
-                        child: CircleAvatar(
-                          radius: 4,
-                          backgroundColor: Color(0xFFE74C3C),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          // ── Tabs ──
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 2.5,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textHint,
-              labelStyle:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              unselectedLabelStyle:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-              tabs: const [
-                Tab(text: 'Sắp tới'),
-                Tab(text: 'Hoàn tất'),
-                Tab(text: 'Đã hủy'),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Color(0xFFE8F2EC)),
-          // ── Content ──
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBookingList([
-                  'draft',
-                  'pending',
-                  'pending_payment',
-                  'confirmed',
-                  'caregiver_accepted',
-                  'caregiver_en_route',
-                  'in_progress',
-                  'checkout_pending_review',
-                  'crisis',
-                ]),
-                _buildBookingList(['completed']),
-                _buildBookingList(['cancelled', 'disputed', 'refunded']),
-              ],
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverTabBarDelegate(
+              TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 2.5,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textHint,
+                labelStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                tabs: const [
+                  Tab(text: 'Sắp tới'),
+                  Tab(text: 'Hoàn tất'),
+                  Tab(text: 'Đã hủy'),
+                ],
+              ),
             ),
           ),
         ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildBookingList([
+              'draft',
+              'pending',
+              'pending_payment',
+              'confirmed',
+              'caregiver_accepted',
+              'caregiver_en_route',
+              'in_progress',
+              'checkout_pending_review',
+              'crisis',
+            ]),
+            _buildBookingList(['completed']),
+            _buildBookingList(
+                ['cancelled', 'matching_failed', 'disputed', 'refunded']),
+          ],
+        ),
       ),
     );
   }
@@ -136,18 +134,32 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     final filtered =
         bookings.where((b) => statuses.contains(b.status)).toList();
 
-    if (filtered.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => FadeSlideStaggered(
-        index: index,
-        child: _buildBookingCard(filtered[index]),
-      ),
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => ref.read(bookingStoreProvider.notifier).refresh(),
+      child: filtered.isEmpty
+          ? LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 144,
+                  ),
+                  child: _buildEmptyState(),
+                ),
+              ),
+            )
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) => FadeSlideStaggered(
+                index: index,
+                child: _buildBookingCard(filtered[index]),
+              ),
+            ),
     );
   }
 
@@ -198,7 +210,15 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   }
 
   Widget _buildBookingCard(BookingModel booking) {
-    final statusConfig = _getStatusConfig(booking.status);
+    final isWaitingCaregiver =
+        booking.status.toLowerCase() == 'confirmed' && booking.caregiverId == null;
+    final statusConfig = isWaitingCaregiver
+        ? {
+            'label': 'Chờ ghép CSV',
+            'color': const Color(0xFFD97706),
+            'bg': const Color(0xFFFEF3C7),
+          }
+        : _getStatusConfig(booking.status);
     final borderColor = statusConfig['color'] as Color;
 
     return GestureDetector(
@@ -315,14 +335,20 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppColors.primaryContainer,
-                        child: Text(
-                          booking.caregiverAvatar ?? booking.caregiverInitials,
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700),
-                        ),
+                        backgroundColor: isWaitingCaregiver
+                            ? const Color(0xFFFEF3C7)
+                            : AppColors.primaryContainer,
+                        child: isWaitingCaregiver
+                            ? const Icon(Icons.auto_awesome,
+                                size: 16, color: Color(0xFFD97706))
+                            : Text(
+                                booking.caregiverAvatar ??
+                                    booking.caregiverInitials,
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700),
+                              ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -333,18 +359,24 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                               children: [
                                 Flexible(
                                   child: Text(
-                                    booking.caregiverName ?? 'Người chăm sóc',
+                                    isWaitingCaregiver
+                                        ? 'Hệ thống đang ghép chăm sóc viên'
+                                        : (booking.caregiverName ?? 'Chăm sóc viên'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                        color: isWaitingCaregiver
+                                            ? const Color(0xFFD97706)
+                                            : AppColors.textPrimary,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.verified_rounded,
-                                    color: AppColors.primary, size: 12),
+                                if (!isWaitingCaregiver) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.verified_rounded,
+                                      color: AppColors.primary, size: 12),
+                                ],
                               ],
                             ),
                             Text(
@@ -357,6 +389,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                       ),
                       // Action buttons
                       if (booking.status == 'confirmed' ||
+                          booking.status == 'caregiver_accepted' ||
                           booking.status == 'pending') ...[
                         _ActionIconButton(
                           icon: Icons.call_outlined,
@@ -370,31 +403,6 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                       ],
                     ],
                   ),
-
-                  // ── Cancel button ──
-                  if (booking.status == 'confirmed' ||
-                      booking.status == 'pending') ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () =>
-                            context.push('/bookings/${booking.id}'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFE74C3C),
-                          side: const BorderSide(
-                              color: Color(0xFFE74C3C), width: 1),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          minimumSize: Size.zero,
-                        ),
-                        child: const Text('Hủy lịch hẹn',
-                            style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
 
                   // ── Review button ──
                   if (booking.status == 'completed' && !booking.isReviewed) ...[
@@ -427,12 +435,25 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   }
 
   Map<String, dynamic> _getStatusConfig(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'in_progress':
         return {
-          'label': 'Sắp diễn ra',
+          'label': 'Đang diễn ra',
           'color': AppColors.primary,
           'bg': AppColors.primaryContainer,
+        };
+      case 'caregiver_en_route':
+        return {
+          'label': 'Đang đến',
+          'color': const Color(0xFF0284C7),
+          'bg': const Color(0xFFE0F2FE),
+        };
+      case 'caregiver_accepted':
+      case 'assigned':
+        return {
+          'label': 'Đã nhận ca',
+          'color': const Color(0xFF2980B9),
+          'bg': const Color(0xFFEBF5FB),
         };
       case 'checkout_pending_review':
         return {
@@ -447,23 +468,23 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
           'bg': const Color(0xFFFEF5E7),
         };
       case 'confirmed':
-      case 'caregiver_accepted':
         return {
           'label': 'Đã xác nhận',
-          'color': const Color(0xFF2980B9),
-          'bg': const Color(0xFFEBF5FB),
+          'color': const Color(0xFF006A43),
+          'bg': const Color(0xFFE8F7F0),
         };
       case 'pending':
-        return {
-          'label': 'Chờ xác nhận',
-          'color': const Color(0xFFF39C12),
-          'bg': const Color(0xFFFFF8E6),
-        };
       case 'pending_payment':
         return {
           'label': 'Chờ thanh toán',
           'color': const Color(0xFFF39C12),
           'bg': const Color(0xFFFFF8E6),
+        };
+      case 'draft':
+        return {
+          'label': 'Bản nháp',
+          'color': const Color(0xFF95A5A6),
+          'bg': const Color(0xFFF2F4F4),
         };
       case 'completed':
         return {
@@ -477,9 +498,30 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
           'color': const Color(0xFFE74C3C),
           'bg': const Color(0xFFFDEDEC),
         };
-      default:
+      case 'refunded':
         return {
-          'label': status,
+          'label': 'Đã hoàn tiền',
+          'color': const Color(0xFFE74C3C),
+          'bg': const Color(0xFFFDEDEC),
+        };
+      case 'crisis':
+        return {
+          'label': 'Khẩn cấp',
+          'color': const Color(0xFFDC2626),
+          'bg': const Color(0xFFFEE2E2),
+        };
+      case 'matching_failed':
+        return {
+          'label': 'Chưa ghép được',
+          'color': const Color(0xFFD97706),
+          'bg': const Color(0xFFFEF3C7),
+        };
+      default:
+        final formattedLabel = status.replaceAll('_', ' ');
+        return {
+          'label': formattedLabel.isEmpty
+              ? 'Chi tiết ca'
+              : formattedLabel[0].toUpperCase() + formattedLabel.substring(1),
           'color': AppColors.textSecondary,
           'bg': AppColors.surface,
         };
@@ -517,4 +559,33 @@ class _ActionIconButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Sliver TabBar Delegate ──────────────────────────────────────────────────
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+  _SliverTabBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height + 1;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height + 1;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          _tabBar,
+          const Divider(height: 1, color: Color(0xFFE8F2EC)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) =>
+      _tabBar != oldDelegate._tabBar;
 }

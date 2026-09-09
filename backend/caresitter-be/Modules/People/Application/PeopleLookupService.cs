@@ -48,7 +48,8 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
         DateTimeOffset end, CancellationToken ct = default)
     {
         var caregiver = await db.CaregiverProfiles.AsNoTracking().AnyAsync(x =>
-            x.Id == caregiverId && x.DeletedAt == null && x.KycStatus == "APPROVED", ct);
+            x.Id == caregiverId && x.DeletedAt == null && x.KycStatus == "APPROVED"
+            && x.AvailabilityStatus == "ONLINE", ct);
         if (!caregiver)
             return false;
 
@@ -58,6 +59,12 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
             .AnyAsync(x => x.CaregiverId == caregiverId, ct);
         if (!hasAnySlot)
             return true;
+
+        var hasBlockedSlot = await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
+            x.CaregiverId == caregiverId && x.Status == "BLOCKED" &&
+            x.StartAt < end && x.EndAt > start, ct);
+        if (hasBlockedSlot)
+            return false;
 
         return await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
             x.CaregiverId == caregiverId && x.Status == "AVAILABLE" &&
@@ -118,5 +125,27 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
         var profile = await db.CaregiverProfiles.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == caregiverId && x.DeletedAt == null, ct);
         return profile?.UserId;
+    }
+
+    public async Task<PeopleDisplaySummary?> GetBeneficiaryDisplayAsync(Guid beneficiaryId, CancellationToken ct = default)
+    {
+        var beneficiary = await db.Beneficiaries.AsNoTracking()
+            .Where(x => x.Id == beneficiaryId && x.DeletedAt == null)
+            .Select(x => new { x.Id, x.FullName })
+            .SingleOrDefaultAsync(ct);
+        return beneficiary is null || string.IsNullOrWhiteSpace(beneficiary.FullName)
+            ? null
+            : new PeopleDisplaySummary(beneficiary.Id, beneficiary.FullName);
+    }
+
+    public async Task<PeopleDisplaySummary?> GetCaregiverDisplayAsync(Guid caregiverId, CancellationToken ct = default)
+    {
+        var caregiver = await db.CaregiverProfiles.AsNoTracking()
+            .Where(x => x.Id == caregiverId && x.DeletedAt == null)
+            .Select(x => new { x.Id, x.FullName })
+            .SingleOrDefaultAsync(ct);
+        return caregiver is null || string.IsNullOrWhiteSpace(caregiver.FullName)
+            ? null
+            : new PeopleDisplaySummary(caregiver.Id, caregiver.FullName);
     }
 }

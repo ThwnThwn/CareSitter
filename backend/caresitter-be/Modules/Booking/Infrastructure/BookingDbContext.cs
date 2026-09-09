@@ -16,6 +16,7 @@ public sealed class BookingDbContext : ModuleDbContext
     protected override string Schema => SchemaName;
 
     public DbSet<Domain.Booking> Bookings => Set<Domain.Booking>();
+    public DbSet<BookingAssignment> BookingAssignments => Set<BookingAssignment>();
     public DbSet<CareTask> CareTasks => Set<CareTask>();
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
@@ -38,6 +39,7 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.ScheduledEnd).HasColumnName("scheduled_end");
             b.Property(x => x.ActualStart).HasColumnName("actual_start");
             b.Property(x => x.ActualEnd).HasColumnName("actual_end");
+            b.Property(x => x.RequiredSkills).HasColumnName("required_skills").HasColumnType("jsonb");
             b.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion(v => BookingStatusCodec.ToDatabase(v), v => BookingStatusCodec.FromDatabase(v))
@@ -54,6 +56,24 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.Ignore(x => x.DomainEvents);
+        });
+
+        modelBuilder.Entity<BookingAssignment>(b =>
+        {
+            b.ToTable("booking_assignments");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.BookingId).HasColumnName("booking_id");
+            b.Property(x => x.CaregiverId).HasColumnName("caregiver_id");
+            b.Property(x => x.AssignmentType).HasColumnName("assignment_type").HasMaxLength(20);
+            b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
+            b.Property(x => x.Rank).HasColumnName("rank");
+            b.Property(x => x.DistanceMeters).HasColumnName("distance_meters");
+            b.Property(x => x.Score).HasColumnName("score");
+            b.Property(x => x.ScoreBreakdown).HasColumnName("score_breakdown").HasColumnType("jsonb");
+            b.Property(x => x.OfferedAt).HasColumnName("offered_at");
+            b.Property(x => x.RespondedAt).HasColumnName("responded_at");
+            b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
         });
 
         modelBuilder.Entity<CareTask>(b =>

@@ -8,11 +8,12 @@ import '../../data/shift_repository.dart';
 
 /// ShiftsNotifier — quản lý state danh sách ca của caregiver.
 ///
-/// kDebugBypassAuth=true  → dùng mock data, actions chỉ thay state local.
+/// kDebugBypassAuth=true  → không gọi backend, danh sách ca để rỗng để tránh booking demo tự xuất hiện.
 /// kDebugBypassAuth=false → tải danh sách ca thật từ backend và gọi API mutations.
 class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
   final Ref _ref;
   Timer? _gpsTimer;
+  Timer? _refreshTimer;
   StreamSubscription<BookingStatusChange>? _signalRSub;
 
   ShiftsNotifier(this._ref) : super([]) {
@@ -20,9 +21,11 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
       final isAuth = next.value?.isAuthenticated ?? false;
       if (isAuth) {
         refresh();
+        _startRefreshPolling();
         _subscribeSignalR();
       } else {
         state = [];
+        _stopRefreshPolling();
         _signalRSub?.cancel();
       }
     });
@@ -47,14 +50,32 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   void _init() {
     if (kDebugBypassAuth) {
-      state = _getSampleShifts();
+      state = [];
     } else {
       refresh();
+      _startRefreshPolling();
     }
+  }
+
+  void _startRefreshPolling() {
+    if (kDebugBypassAuth || _refreshTimer != null) return;
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      refresh();
+    });
+  }
+
+  void _stopRefreshPolling() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
   }
 
   /// Tải danh sách ca từ backend
   Future<void> refresh() async {
+    if (kDebugBypassAuth) {
+      state = [];
+      return;
+    }
+
     final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) {
       state = [];
@@ -81,10 +102,6 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftsNotifier] Lỗi tải ca trực: $e');
-      // Nếu lỗi network, giữ state cũ nếu có
-      if (state.isEmpty && kDebugBypassAuth) {
-        state = _getSampleShifts();
-      }
     }
   }
 
@@ -108,7 +125,16 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   /// Caregiver từ chối ca
   Future<void> declineBooking(String id) async {
-    _updateStatus(id, to: 'declined');
+    if (!kDebugBypassAuth) {
+      try {
+        await _shiftRepo.declineBooking(id);
+      } catch (e) {
+        // ignore: avoid_print
+        print('[ShiftsNotifier] declineBooking error: $e');
+        rethrow;
+      }
+    }
+    _removeShift(id);
   }
 
   /// Bắt đầu di chuyển đến nhà khách
@@ -240,6 +266,13 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
     ];
   }
 
+  void _removeShift(String id) {
+    state = [
+      for (final b in state)
+        if (b.id != id) b,
+    ];
+  }
+
   MockBooking _mapFromApi(Map<String, dynamic> json) {
     final id = json['id']?.toString() ?? '';
     final rawStatus = json['status']?.toString().toLowerCase() ?? 'pending';
@@ -293,20 +326,32 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
     return MockBooking(
       id: id,
       beneficiaryId: json['beneficiaryId']?.toString(),
-      beneficiaryName:
-          'Người thân (ID: ${json['beneficiaryId']?.toString().substring(0, 8) ?? ""})',
+      beneficiaryName: _displayText(
+        json['beneficiaryName'],
+        fallback: _shortIdLabel('Người thân', json['beneficiaryId']),
+      ),
       caregiverId: json['caregiverId']?.toString(),
-      caregiverName: 'Caregiver',
-      caregiverAvatar: 'CG',
+      caregiverName: _displayText(json['caregiverName'], fallback: 'Caregiver'),
+      caregiverAvatar:
+          _initials(_displayText(json['caregiverName'], fallback: 'CG')),
       serviceId: json['serviceTypeId']?.toString(),
-      serviceName: 'Gói Chăm sóc Genki',
+      serviceName:
+          _displayText(json['serviceName'], fallback: 'Gói Chăm sóc Genki'),
       date: dateStr,
       time: timeStr,
       duration: durationStr,
+      scheduledStart: start,
+      scheduledEnd: end,
       status: mappedStatus,
       totalPrice: escrow,
       caregiverEarning: earning,
-      address: 'Địa chỉ khách hàng đã đăng ký',
+      address: _displayText(
+        json['addressText'],
+        fallback: 'Địa chỉ khách hàng đã đăng ký',
+      ),
+      customerNote: _displayText(json['note'], fallback: ''),
+      isSystemMatched: json['caregiverId'] != null,
+      isDemoBooking: false,
       tasks: const [
         MockCareTask(
             title: 'Đo huyết áp & kiểm tra sức khoẻ', isCompleted: false),
@@ -318,69 +363,36 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
     );
   }
 
-  List<MockBooking> _getSampleShifts() => [
-        const MockBooking(
-          id: 'bk001',
-          beneficiaryName: 'Nguyễn Văn An',
-          caregiverName: 'Phạm Thị Bích Ngọc',
-          caregiverAvatar: 'PBN',
-          serviceName: 'Gói Dưỡng - Hỗ trợ sinh hoạt',
-          date: 'Hôm nay, 26/06/2026',
-          time: '08:00 - 12:00',
-          duration: '4 giờ',
-          status: 'in_progress',
-          totalPrice: 340000,
-          caregiverEarning: 290000,
-          address: '123 Nguyễn Trãi, P.2, Q.5, TP.HCM',
-          tasks: [
-            MockCareTask(title: 'Đo huyết áp', isCompleted: false),
-            MockCareTask(title: 'Nhắc uống thuốc', isCompleted: false),
-            MockCareTask(title: 'Ăn trưa', isCompleted: false),
-          ],
-        ),
-        const MockBooking(
-          id: 'bk002',
-          beneficiaryName: 'Trần Thị Hoa',
-          caregiverName: 'Lê Văn Hùng',
-          caregiverAvatar: 'LVH',
-          serviceName: 'Gói An - Kích hoạt trí não',
-          date: 'Ngày mai, 27/06/2026',
-          time: '09:00 - 11:00',
-          duration: '2 giờ',
-          status: 'confirmed',
-          totalPrice: 150000,
-          caregiverEarning: 130000,
-          address: '45 Lê Lợi, P.7, Q.3, TP.HCM',
-          tasks: [
-            MockCareTask(title: 'Chuẩn bị bữa ăn trưa', isCompleted: false),
-            MockCareTask(title: 'Giúp tắm gội', isCompleted: false),
-            MockCareTask(title: 'Dọn dẹp phòng khách', isCompleted: false),
-          ],
-        ),
-        const MockBooking(
-          id: 'bk003',
-          beneficiaryName: 'Bé Minh Khang',
-          caregiverName: 'Trần Thị Thanh Mai',
-          caregiverAvatar: 'TTM',
-          serviceName: 'Gói Tâm - Toàn diện 1:1',
-          date: 'T6, 28/06/2026',
-          time: '07:00 - 19:00',
-          duration: '12 giờ',
-          status: 'pending',
-          totalPrice: 1140000,
-          caregiverEarning: 970000,
-          address: '123 Nguyễn Trãi, P.2, Q.5, TP.HCM',
-          tasks: [
-            MockCareTask(title: 'Hỗ trợ ăn uống', isCompleted: false),
-            MockCareTask(title: 'Nhắc giờ ngủ', isCompleted: false),
-            MockCareTask(title: 'Vận động nhẹ', isCompleted: false),
-          ],
-        ),
-      ];
+  String _displayText(Object? value, {required String fallback}) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? fallback : text;
+  }
+
+  String _shortIdLabel(String label, Object? rawId) {
+    final id = rawId?.toString();
+    if (id == null || id.isEmpty) return label;
+    final shortId = id.length > 8 ? id.substring(0, 8) : id;
+    return '$label (ID: $shortId)';
+  }
+
+  String _initials(String name) {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'CG';
+    if (parts.length == 1) {
+      final take = parts.first.length < 2 ? parts.first.length : 2;
+      return parts.first.substring(0, take).toUpperCase();
+    }
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
 
   @override
   void dispose() {
     _stopGpsPush();
+    _stopRefreshPolling();
     super.dispose();
   }
 }

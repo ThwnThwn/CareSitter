@@ -291,12 +291,28 @@ class ShiftDetailScreen extends ConsumerWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () {
-              ref.read(shiftsProvider.notifier).declineBooking(bookingId);
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã từ chối ca làm việc này.')),
-              );
+            onPressed: () async {
+              try {
+                await ref
+                    .read(shiftsProvider.notifier)
+                    .declineBooking(bookingId);
+                if (context.mounted) {
+                  context.pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Đã từ chối ca làm việc này.')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Chưa từ chối được ca: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),

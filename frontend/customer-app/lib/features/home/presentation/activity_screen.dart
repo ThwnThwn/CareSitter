@@ -490,12 +490,37 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   Map<String, dynamic> _getStatusConfig(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'in_progress':
         return {
           'shortLabel': 'Đang diễn ra',
           'color': AppColors.primary,
           'bg': AppColors.primaryContainer,
+        };
+      case 'caregiver_en_route':
+        return {
+          'shortLabel': 'Đang đến',
+          'color': const Color(0xFF0284C7),
+          'bg': const Color(0xFFE0F2FE),
+        };
+      case 'caregiver_accepted':
+      case 'assigned':
+        return {
+          'shortLabel': 'Đã nhận ca',
+          'color': const Color(0xFF2980B9),
+          'bg': const Color(0xFFEBF5FB),
+        };
+      case 'checkout_pending_review':
+        return {
+          'shortLabel': 'Chờ xác nhận',
+          'color': const Color(0xFF8E44AD),
+          'bg': const Color(0xFFF4ECF7),
+        };
+      case 'disputed':
+        return {
+          'shortLabel': 'Đang xử lý',
+          'color': const Color(0xFFE67E22),
+          'bg': const Color(0xFFFEF5E7),
         };
       case 'confirmed':
         return {
@@ -504,6 +529,8 @@ class ActivityScreen extends ConsumerWidget {
           'bg': const Color(0xFFFFF3DC),
         };
       case 'pending':
+      case 'pending_payment':
+      case 'draft':
         return {
           'shortLabel': 'Chờ xác nhận',
           'color': const Color(0xFF7F8C8D),
@@ -516,14 +543,24 @@ class ActivityScreen extends ConsumerWidget {
           'bg': const Color(0xFFEBF5FB),
         };
       case 'cancelled':
+      case 'refunded':
         return {
           'shortLabel': 'Đã huỷ',
           'color': const Color(0xFFE74C3C),
           'bg': const Color(0xFFFDEDEC),
         };
-      default:
+      case 'matching_failed':
         return {
-          'shortLabel': status,
+          'shortLabel': 'Chưa ghép được',
+          'color': const Color(0xFFD97706),
+          'bg': const Color(0xFFFEF3C7),
+        };
+      default:
+        final formatted = status.replaceAll('_', ' ');
+        return {
+          'shortLabel': formatted.isEmpty
+              ? 'Chi tiết ca'
+              : formatted[0].toUpperCase() + formatted.substring(1),
           'color': AppColors.textSecondary,
           'bg': AppColors.surface,
         };

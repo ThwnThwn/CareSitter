@@ -54,6 +54,11 @@ class ShiftRepository {
     return resp.data ?? {};
   }
 
+  /// Caregiver từ chối ca → POST /bookings/{id}/decline
+  Future<void> declineBooking(String id) async {
+    await _dio.post<void>(ApiPaths.declineBooking(id));
+  }
+
   /// Bắt đầu di chuyển → POST /bookings/{id}/en-route
   Future<Map<String, dynamic>> startEnRoute(String id) async {
     final resp = await _dio.post<Map<String, dynamic>>(ApiPaths.enRoute(id));

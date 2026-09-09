@@ -28,6 +28,7 @@ public sealed class BookingsController(
     BookingDbContext db, ICurrentUser currentUser, IClock clock,
     IPricingService pricing, IPeopleLookupService people,
     IWalletService wallet, ICatalogLookupService catalog,
+    IMatchingService matching,
     ISender sender,
     IHubContext<CareTrackingHub> hub,
     IUserNotificationService notifications) : ControllerBase
@@ -46,7 +47,7 @@ public sealed class BookingsController(
         // Query lại để lấy entity đầy đủ (handler chỉ trả Guid)
         var booking = await db.Bookings.AsNoTracking()
             .SingleAsync(x => x.Id == result.Value, ct);
-        return Created($"/api/v1/bookings/{booking.Id}", ToResponse(booking));
+        return Created($"/api/v1/bookings/{booking.Id}", await ToResponseAsync(booking, ct));
     }
 
     /// <summary>Lấy danh sách booking của user hiện tại (Customer hoặc Caregiver), có lọc theo status và phân trang.</summary>
@@ -73,7 +74,9 @@ public sealed class BookingsController(
             if (string.Equals(status, "open", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(status, "available", StringComparison.OrdinalIgnoreCase))
             {
-                query = db.Bookings.AsNoTracking().Where(x => x.CaregiverId == null && x.Status == BookingStatus.Confirmed);
+                var personalizedIds = await matching.GetOpenBookingIdsForCaregiverAsync(
+                    caregiverProfileId.Value, ct);
+                query = db.Bookings.AsNoTracking().Where(x => personalizedIds.Contains(x.Id));
                 status = null; // đã filter xong
             }
             else
@@ -96,7 +99,8 @@ public sealed class BookingsController(
         var total = await query.CountAsync(ct);
         var items = await query.OrderByDescending(x => x.ScheduledStart)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return Ok(new { items = items.Select(ToResponse), total, page, pageSize });
+        var responses = await ToResponsesAsync(items, ct);
+        return Ok(new { items = responses, total, page, pageSize });
     }
 
     /// <summary>Xem chi tiết một booking theo ID, kiểm tra quyền theo Customer, Caregiver hoặc Admin.</summary>
@@ -120,7 +124,36 @@ public sealed class BookingsController(
         if (!isCustomer && !isCaregiver && !isAdmin)
             return Forbid();
 
-        return Ok(ToResponse(entity));
+        return Ok(await ToResponseAsync(entity, ct));
+    }
+
+    /// <summary>
+    /// Gợi ý caregiver cho customer chọn thủ công.
+    /// Dùng cùng bộ lọc/ranking với auto matching nhưng không tạo offer hàng loạt.
+    /// </summary>
+    [HttpGet("{id:guid}/caregiver-suggestions")]
+    public async Task<IActionResult> GetCaregiverSuggestions(Guid id, int limit = 10, CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+        limit = Math.Clamp(limit, 1, 20);
+
+        var booking = await db.Bookings.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (booking is null) return NotFound();
+        if (booking.CustomerId != userId && !currentUser.IsInRole("ADMIN"))
+            return Forbid();
+        if (booking.CaregiverId.HasValue)
+            return Ok(new { items = Array.Empty<CaregiverSuggestionResponse>(), total = 0 });
+
+        var candidates = await matching.GetSuggestedCaregiversAsync(id, ct);
+        var items = new List<CaregiverSuggestionResponse>();
+        foreach (var candidate in candidates.Take(limit))
+        {
+            var display = await people.GetCaregiverDisplayAsync(candidate.CaregiverId, ct);
+            items.Add(ToCaregiverSuggestion(candidate, display));
+        }
+
+        return Ok(new { items, total = candidates.Count });
     }
 
     /// <summary>Hủy booking. Customer có thể hủy ở trạng thái phù hợp; gồm ghi lại lý do.</summary>
@@ -140,7 +173,7 @@ public sealed class BookingsController(
                 id, oldStatus, "cancelled", DateTimeOffset.UtcNow), ct);
         await NotifyCaregiverAsync(booking, "Lịch chăm sóc đã bị hủy",
             "Khách hàng đã hủy lịch chăm sóc.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>Dời lịch booking. Tính lại giá và kiểm tra caregiver cón rảnh trong khung giờ mới.</summary>
@@ -163,7 +196,7 @@ public sealed class BookingsController(
         booking.ApplyPricing(quote.Value.EscrowAmount, quote.Value.PlatformFeeAmount,
             quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson);
         await db.SaveChangesAsync(ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>Chọn caregiver cho booking. Kiểm tra rảnh lịch trước khi gán.</summary>
@@ -177,6 +210,9 @@ public sealed class BookingsController(
         if (!await people.CaregiverIsAvailableAsync(request.CaregiverId,
             booking.ScheduledStart, booking.ScheduledEnd, ct))
             return Conflict(new { error = "Caregiver khong ranh trong khung gio nay." });
+        var suggestions = await matching.GetSuggestedCaregiversAsync(id, ct);
+        if (!suggestions.Any(x => x.CaregiverId == request.CaregiverId))
+            return Conflict(new { error = "Caregiver khong nam trong danh sach goi y phu hop cua ca nay." });
         var result = booking.SelectCaregiver(request.CaregiverId);
         if (result.IsFailure) return Problem(result.Error);
         await db.SaveChangesAsync(ct);
@@ -185,7 +221,7 @@ public sealed class BookingsController(
             await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
                 "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct);
         }
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     // ════════════════════════════════════════════
@@ -207,9 +243,10 @@ public sealed class BookingsController(
         var result = booking.ConfirmPayment();
         if (result.IsFailure) return Problem(result.Error);
         await db.SaveChangesAsync(ct);
+        await matching.OfferTopCandidatesAsync(id, ct);
         await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
             "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>Caregiver chấp nhận ca, chuyển booking sang ASSIGNED và ghi timeline CHECKIN.</summary>
@@ -233,6 +270,22 @@ public sealed class BookingsController(
             var currentCaregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
             if (currentCaregiverId is null) return Forbid();
             caregiverId = currentCaregiverId.Value;
+
+            var offer = await db.BookingAssignments.AsNoTracking().SingleOrDefaultAsync(x =>
+                x.BookingId == id && x.CaregiverId == caregiverId
+                && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
+                && (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow), ct);
+            var hasAnyAssignment = await db.BookingAssignments.AsNoTracking()
+                .AnyAsync(x => x.BookingId == id, ct);
+            if (offer is null && hasAnyAssignment)
+                return Conflict(new { error = "Ca nay khong con offer hop le cho caregiver nay." });
+
+            if (offer is null)
+            {
+                var eligible = await matching.GetEligibleCaregiversAsync(id, ct);
+                if (!eligible.Any(x => x.CaregiverId == caregiverId))
+                    return Conflict(new { error = "Caregiver khong nam trong tap phu hop cua ca nay." });
+            }
         }
 
         if (!await people.CaregiverIsAvailableAsync(
@@ -243,18 +296,79 @@ public sealed class BookingsController(
                 booking.ScheduledStart, booking.ScheduledEnd, ct))
             return Conflict(new { error = "Caregiver da co ca cham soc trong khung gio nay." });
 
+        if (booking.CaregiverId.HasValue && booking.CaregiverId != caregiverId)
+            return Conflict(new { error = "Ca này vừa được nhận bởi người chăm sóc khác." });
+        if (booking.Status != BookingStatus.Confirmed && booking.Status != BookingStatus.Crisis)
+            return Conflict(new { error = "Ca này không còn ở trạng thái chờ nhận." });
+
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.AssignCaregiver(caregiverId);
         if (result.IsFailure) return Problem(result.Error);
+        var acceptedOffer = await db.BookingAssignments.SingleOrDefaultAsync(x =>
+            x.BookingId == id && x.CaregiverId == caregiverId
+            && (x.Status == "OFFERED" || x.Status == "SUGGESTED"), ct);
+        acceptedOffer?.Accept();
+        var otherOffers = await db.BookingAssignments
+            .Where(x => x.BookingId == id && x.CaregiverId != caregiverId && x.Status == "OFFERED")
+            .ToListAsync(ct);
+        foreach (var otherOffer in otherOffers)
+            otherOffer.Cancel();
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKIN", "Caregiver da nhan ca"));
-        await db.SaveChangesAsync(ct);
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new { error = "Ca này vừa được nhận bởi người chăm sóc khác." });
+        }
+
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, "caregiver_accepted", DateTimeOffset.UtcNow), ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã nhận ca",
             "Caregiver đã xác nhận lịch chăm sóc của bạn.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
+    }
+
+    /// <summary>Caregiver từ chối một ca mở để ca đó không hiển thị lại cho caregiver này.</summary>
+    [HttpPost("{id:guid}/decline")]
+    public async Task<IActionResult> Decline(Guid id, CancellationToken ct)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+        if (!currentUser.IsInRole("CAREGIVER")) return Forbid();
+
+        var caregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
+        if (caregiverId is null) return Forbid();
+
+        var booking = await db.Bookings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (booking is null) return NotFound();
+
+        if (booking.CaregiverId.HasValue || booking.Status != BookingStatus.Confirmed)
+            return Conflict(new { error = "Ca nay khong con mo de tu choi." });
+
+        var assignment = await db.BookingAssignments.SingleOrDefaultAsync(
+            x => x.BookingId == id && x.CaregiverId == caregiverId.Value, ct);
+
+        if (assignment is null)
+        {
+            db.BookingAssignments.Add(BookingAssignment.CreateRejected(id, caregiverId.Value));
+        }
+        else
+        {
+            assignment.Reject();
+        }
+
+        await db.SaveChangesAsync(ct);
+        var hasActiveOffer = await db.BookingAssignments.AsNoTracking().AnyAsync(x =>
+            x.BookingId == id && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
+            && (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow), ct);
+        if (!hasActiveOffer)
+            await matching.OfferTopCandidatesAsync(id, ct);
+
+        return NoContent();
     }
 
     /// <summary>Caregiver bắt đầu di chuyển đến nơi chăm sóc, chuyển sang EN_ROUTE.</summary>
@@ -280,7 +394,7 @@ public sealed class BookingsController(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đang di chuyển",
             "Caregiver đang trên đường đến địa điểm chăm sóc.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>
@@ -326,7 +440,7 @@ public sealed class BookingsController(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã check-in",
             "Ca chăm sóc đã bắt đầu.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>Caregiver gửi yêu cầu checkout thủ công (khi chưa auto-checkout).</summary>
@@ -352,7 +466,7 @@ public sealed class BookingsController(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver yêu cầu checkout",
             "Vui lòng kiểm tra và xác nhận hoàn tất ca chăm sóc.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>
@@ -393,7 +507,7 @@ public sealed class BookingsController(
             "Lịch chăm sóc đã được xác nhận hoàn tất.", ct);
         await NotifyCaregiverAsync(booking, "Ca chăm sóc đã hoàn tất",
             "Escrow đã được xử lý cho ca chăm sóc này.", ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     /// <summary>
@@ -427,7 +541,7 @@ public sealed class BookingsController(
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
         await NotifySosTargetsAsync(booking, userId, ct);
-        return Ok(ToResponse(booking));
+        return Ok(await ToResponseAsync(booking, ct));
     }
 
     // ── Helpers ──
@@ -486,6 +600,8 @@ public sealed class BookingsController(
             x.CaregiverId == caregiverId &&
             x.Status != BookingStatus.Completed &&
             x.Status != BookingStatus.Cancelled &&
+            x.Status != BookingStatus.Refunded &&
+            x.Status != BookingStatus.MatchingFailed &&
             x.ScheduledStart < scheduledEnd &&
             x.ScheduledEnd > scheduledStart, ct);
 
@@ -497,10 +613,45 @@ public sealed class BookingsController(
             ["deepLink"] = $"/bookings/{booking.Id}"
         };
 
-    private static BookingResponse ToResponse(Domain.Booking x) => new(x.Id, x.BeneficiaryId,
-        x.CaregiverId, x.AddressId, x.ServiceTypeId, x.ScheduledStart, x.ScheduledEnd,
-        x.ActualStart, x.ActualEnd, BookingStatusCodec.ToApi(x.Status), x.EscrowAmount,
-        x.PlatformFeeAmount, x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt);
+    private async Task<IReadOnlyList<BookingResponse>> ToResponsesAsync(
+        IReadOnlyList<Domain.Booking> bookings, CancellationToken ct)
+    {
+        var responses = new List<BookingResponse>(bookings.Count);
+        foreach (var booking in bookings)
+            responses.Add(await ToResponseAsync(booking, ct));
+        return responses;
+    }
+
+    private async Task<BookingResponse> ToResponseAsync(Domain.Booking x, CancellationToken ct)
+    {
+        var beneficiary = await people.GetBeneficiaryDisplayAsync(x.BeneficiaryId, ct);
+        var caregiver = x.CaregiverId is { } caregiverId
+            ? await people.GetCaregiverDisplayAsync(caregiverId, ct)
+            : null;
+        var address = await catalog.GetAddressDisplayAsync(x.AddressId, ct);
+        var service = await catalog.GetServiceDisplayAsync(x.ServiceTypeId, ct);
+
+        return new BookingResponse(x.Id, x.BeneficiaryId,
+            x.CaregiverId, x.AddressId, x.ServiceTypeId, x.ScheduledStart, x.ScheduledEnd,
+            x.ActualStart, x.ActualEnd, BookingStatusCodec.ToApi(x.Status), x.EscrowAmount,
+            x.PlatformFeeAmount, x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt,
+            beneficiary?.DisplayName, caregiver?.DisplayName, address?.FullAddress, service?.Name);
+    }
+
+    private static CaregiverSuggestionResponse ToCaregiverSuggestion(
+        MatchingCandidate candidate,
+        PeopleDisplaySummary? display)
+    {
+        candidate.ScoreBreakdown.TryGetValue("travelTimeMinutes", out var travelTimeMinutes);
+        return new CaregiverSuggestionResponse(
+            candidate.CaregiverId,
+            display?.DisplayName,
+            candidate.Rank,
+            candidate.Score,
+            candidate.DistanceMeters,
+            travelTimeMinutes == 0m ? null : travelTimeMinutes,
+            candidate.ScoreBreakdown);
+    }
 
     private IActionResult Problem(Error error) => error.Type switch
     {
@@ -517,8 +668,18 @@ public sealed record RescheduleBookingRequest(DateTimeOffset ScheduledStart, Dat
 public sealed record SelectCaregiverRequest(Guid CaregiverId);
 public sealed record CheckInRequest(double Latitude, double Longitude, double? AccuracyMeters = null);
 
+public sealed record CaregiverSuggestionResponse(
+    Guid CaregiverId,
+    string? DisplayName,
+    int Rank,
+    decimal Score,
+    int? DistanceMeters,
+    decimal? TravelTimeMinutes,
+    IReadOnlyDictionary<string, decimal> ScoreBreakdown);
+
 public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? CaregiverId,
     Guid AddressId, Guid ServiceTypeId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd,
     DateTimeOffset? ActualStart, DateTimeOffset? ActualEnd, string Status, long EscrowAmount,
     long PlatformFeeAmount, DateTimeOffset? CancelledAt, string? CancelReason,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, string? BeneficiaryName = null,
+    string? CaregiverName = null, string? AddressText = null, string? ServiceName = null);

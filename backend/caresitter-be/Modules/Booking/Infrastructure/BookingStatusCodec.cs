@@ -18,19 +18,20 @@ internal static class BookingStatusCodec
     /// </summary>
     public static string ToDatabase(BookingStatus value) => value switch
     {
-        BookingStatus.Draft                 => "DRAFT",
-        BookingStatus.PendingPayment        => "PENDING_PAYMENT",
-        BookingStatus.Confirmed             => "CONFIRMED",
-        BookingStatus.CaregiverAccepted     => "CAREGIVER_ACCEPTED",
-        BookingStatus.CaregiverEnRoute      => "CAREGIVER_EN_ROUTE",
-        BookingStatus.InProgress            => "IN_PROGRESS",
+        BookingStatus.Draft => "DRAFT",
+        BookingStatus.PendingPayment => "PENDING_PAYMENT",
+        BookingStatus.Confirmed => "CONFIRMED",
+        BookingStatus.MatchingFailed => "MATCHING_FAILED",
+        BookingStatus.CaregiverAccepted => "CAREGIVER_ACCEPTED",
+        BookingStatus.CaregiverEnRoute => "CAREGIVER_EN_ROUTE",
+        BookingStatus.InProgress => "IN_PROGRESS",
         BookingStatus.CheckoutPendingReview => "CHECKOUT_PENDING_REVIEW",
-        BookingStatus.Completed             => "COMPLETED",
-        BookingStatus.Crisis                => "CRISIS",
-        BookingStatus.Cancelled             => "CANCELLED",
-        BookingStatus.Disputed              => "DISPUTED",
-        BookingStatus.Refunded              => "REFUNDED",
-        _                                   => value.ToString().ToUpperInvariant()
+        BookingStatus.Completed => "COMPLETED",
+        BookingStatus.Crisis => "CRISIS",
+        BookingStatus.Cancelled => "CANCELLED",
+        BookingStatus.Disputed => "DISPUTED",
+        BookingStatus.Refunded => "REFUNDED",
+        _ => value.ToString().ToUpperInvariant()
     };
 
     /// <summary>
@@ -39,19 +40,20 @@ internal static class BookingStatusCodec
     /// </summary>
     public static string ToApi(BookingStatus value) => value switch
     {
-        BookingStatus.Draft                 => "draft",
-        BookingStatus.PendingPayment        => "pending_payment",
-        BookingStatus.Confirmed             => "confirmed",
-        BookingStatus.CaregiverAccepted     => "caregiver_accepted",
-        BookingStatus.CaregiverEnRoute      => "caregiver_en_route",
-        BookingStatus.InProgress            => "in_progress",
+        BookingStatus.Draft => "draft",
+        BookingStatus.PendingPayment => "pending_payment",
+        BookingStatus.Confirmed => "confirmed",
+        BookingStatus.MatchingFailed => "matching_failed",
+        BookingStatus.CaregiverAccepted => "caregiver_accepted",
+        BookingStatus.CaregiverEnRoute => "caregiver_en_route",
+        BookingStatus.InProgress => "in_progress",
         BookingStatus.CheckoutPendingReview => "checkout_pending_review",
-        BookingStatus.Completed             => "completed",
-        BookingStatus.Crisis                => "crisis",
-        BookingStatus.Cancelled             => "cancelled",
-        BookingStatus.Disputed              => "disputed",
-        BookingStatus.Refunded              => "refunded",
-        _                                   => value.ToString().ToLowerInvariant()
+        BookingStatus.Completed => "completed",
+        BookingStatus.Crisis => "crisis",
+        BookingStatus.Cancelled => "cancelled",
+        BookingStatus.Disputed => "disputed",
+        BookingStatus.Refunded => "refunded",
+        _ => value.ToString().ToLowerInvariant()
     };
 
     /// <summary>
@@ -60,18 +62,19 @@ internal static class BookingStatusCodec
     /// </summary>
     public static BookingStatus FromDatabase(string value) => value.ToLowerInvariant() switch
     {
-        "draft"                   => BookingStatus.Draft,
-        "pending_payment"         => BookingStatus.PendingPayment,
-        "confirmed"               => BookingStatus.Confirmed,
-        "caregiver_accepted"      => BookingStatus.CaregiverAccepted,
-        "caregiver_en_route"      => BookingStatus.CaregiverEnRoute,
-        "in_progress"             => BookingStatus.InProgress,
+        "draft" => BookingStatus.Draft,
+        "pending_payment" => BookingStatus.PendingPayment,
+        "confirmed" => BookingStatus.Confirmed,
+        "matching_failed" => BookingStatus.MatchingFailed,
+        "caregiver_accepted" => BookingStatus.CaregiverAccepted,
+        "caregiver_en_route" => BookingStatus.CaregiverEnRoute,
+        "in_progress" => BookingStatus.InProgress,
         "checkout_pending_review" => BookingStatus.CheckoutPendingReview,
-        "completed"               => BookingStatus.Completed,
-        "crisis"                  => BookingStatus.Crisis,
-        "cancelled"               => BookingStatus.Cancelled,
-        "disputed"                => BookingStatus.Disputed,
-        "refunded"                => BookingStatus.Refunded,
-        _                         => Enum.Parse<BookingStatus>(value, true)
+        "completed" => BookingStatus.Completed,
+        "crisis" => BookingStatus.Crisis,
+        "cancelled" => BookingStatus.Cancelled,
+        "disputed" => BookingStatus.Disputed,
+        "refunded" => BookingStatus.Refunded,
+        _ => Enum.Parse<BookingStatus>(value, true)
     };
 }

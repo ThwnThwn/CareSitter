@@ -1,0 +1,8 @@
+namespace CareSitter.Contracts.Services.Routing;
+
+public sealed record GeoPoint(double Latitude, double Longitude)
+{
+    public bool IsValid =>
+        Latitude is >= -90 and <= 90 &&
+        Longitude is >= -180 and <= 180;
+}

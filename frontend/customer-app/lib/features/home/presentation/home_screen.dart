@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 import '../../../core/presentation/widgets/custom_animations.dart';
 import '../../booking/application/booking_store.dart';
 import '../../settings/application/profile_store.dart';
@@ -21,49 +20,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final _caregiverScrollController = ScrollController();
-  double _caregiverScrollProgress = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _caregiverScrollController.addListener(_syncCaregiverScrollProgress);
-  }
-
-  @override
-  void dispose() {
-    _caregiverScrollController.dispose();
-    super.dispose();
-  }
-
-  void _syncCaregiverScrollProgress() {
-    if (!_caregiverScrollController.hasClients) return;
-
-    final position = _caregiverScrollController.position;
-    final maxScroll = position.maxScrollExtent;
-    final nextProgress =
-        maxScroll <= 0 ? 0.0 : (position.pixels / maxScroll).clamp(0.0, 1.0);
-
-    if ((nextProgress - _caregiverScrollProgress).abs() > 0.01 && mounted) {
-      setState(() => _caregiverScrollProgress = nextProgress);
-    }
-  }
-
-  void _scrollCaregivers(double direction) {
-    if (!_caregiverScrollController.hasClients) return;
-
-    final position = _caregiverScrollController.position;
-    final distance = position.viewportDimension * 0.72;
-    final target = (position.pixels + distance * direction)
-        .clamp(0.0, position.maxScrollExtent);
-
-    _caregiverScrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final bookings = ref.watch(bookingStoreProvider);
@@ -80,59 +36,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
-        slivers: [
-          // ── Header ──
-          SliverToBoxAdapter(
-            child: FadeSlideStaggered(
-              index: 0,
-              slideFromTop: true,
-              child: _buildHeader(context, profile, topPadding),
-            ),
-          ),
-
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // ── Hero Banner ──
-                const SizedBox(height: 16),
-                FadeSlideStaggered(
-                  index: 1,
-                  child: _buildHeroBanner(context),
-                ),
-
-                // ── Live session card ──
-                if (liveBooking != null) ...[
-                  const SizedBox(height: 12),
-                  FadeSlideStaggered(
-                    index: 2,
-                    child: _buildLiveSessionCard(liveBooking, context),
-                  ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(context, profile, topPadding),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  _buildHeroBanner(context),
+                  if (liveBooking != null) ...[
+                    const SizedBox(height: 12),
+                    _buildLiveSessionCard(liveBooking, context),
+                  ],
+                  const SizedBox(height: 20),
+                  _buildServicesSection(context),
+                  const SizedBox(height: 24),
+                  _buildCaregiverSection(context),
+                  const SizedBox(height: 24),
                 ],
-
-                const SizedBox(height: 20),
-
-                // ── Services Grid ──
-                FadeSlideStaggered(
-                  index: 3,
-                  child: _buildServicesSection(context),
-                ),
-                const SizedBox(height: 24),
-
-                // ── Caregiver horizontal scroll ──
-                FadeSlideStaggered(
-                  index: 4,
-                  child: _buildCaregiverSection(context),
-                ),
-                const SizedBox(height: 24),
-              ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -140,8 +72,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Header ─────────────────────────────────────────────────────────────────
   Widget _buildHeader(
       BuildContext context, UserProfile profile, double topPadding) {
-    final hasAvatar =
-        profile.avatarPath != null && profile.avatarPath!.isNotEmpty;
+    final avatarPath = profile.avatarPath?.trim() ?? '';
+    ImageProvider? avatarImage;
+    if (avatarPath.startsWith('http')) {
+      avatarImage = NetworkImage(avatarPath);
+    } else if (avatarPath.isNotEmpty && !kIsWeb) {
+      avatarImage = FileImage(File(avatarPath));
+    }
     final initials = profile.name
         .trim()
         .split(RegExp(r'\s+'))
@@ -175,12 +112,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: CircleAvatar(
               radius: 22,
               backgroundColor: AppColors.primaryContainer,
-              backgroundImage: hasAvatar
-                  ? (kIsWeb
-                      ? NetworkImage(profile.avatarPath!) as ImageProvider
-                      : FileImage(File(profile.avatarPath!)) as ImageProvider)
-                  : null,
-              child: hasAvatar
+              backgroundImage: avatarImage,
+              child: avatarImage != null
                   ? null
                   : Text(
                       initials.isNotEmpty ? initials : 'U',
@@ -426,13 +359,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 return SizedBox(
                   height: 132,
-                  child: ListView.separated(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     scrollDirection: Axis.horizontal,
-                    itemCount: featured.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, i) => _buildServiceCard(
-                      featured[i],
-                      _serviceAccent(i),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < featured.length; i++) ...[
+                          _buildServiceCard(featured[i], _serviceAccent(i)),
+                          if (i != featured.length - 1)
+                            const SizedBox(width: 10),
+                        ],
+                      ],
                     ),
                   ),
                 );
@@ -527,7 +464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Caregiver gần bạn',
+                    'Chăm sóc viên gần bạn',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 17,
@@ -572,102 +509,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return _buildCaregiverEmptyState(context);
                 }
                 final preview = caregivers.take(5).toList();
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => _syncCaregiverScrollProgress(),
-                );
-
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 220,
-                      child: ListView.separated(
-                        controller: _caregiverScrollController,
-                        physics: const BouncingScrollPhysics(),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: preview.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, i) =>
-                            _buildCaregiverCard(preview[i], context),
-                      ),
+                return SizedBox(
+                  height: 220,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < preview.length; i++) ...[
+                          _buildCaregiverCard(preview[i], context),
+                          if (i != preview.length - 1)
+                            const SizedBox(width: 12),
+                        ],
+                      ],
                     ),
-                    if (preview.length > 1) ...[
-                      const SizedBox(height: 10),
-                      _buildCaregiverCarouselControls(),
-                    ],
-                  ],
+                  ),
                 );
               },
             );
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildCaregiverCarouselControls() {
-    final progress = (0.18 + _caregiverScrollProgress * 0.82).clamp(0.18, 1.0);
-
-    return Row(
-      children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 4,
-              backgroundColor: AppColors.surfaceVariant,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        const Icon(Icons.swipe_rounded, color: AppColors.textHint, size: 16),
-        const SizedBox(width: 4),
-        const Text(
-          'Vuốt để xem thêm',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 10),
-        _buildCaregiverScrollButton(
-          icon: Icons.chevron_left_rounded,
-          tooltip: 'Xem caregiver trước',
-          onTap: () => _scrollCaregivers(-1),
-        ),
-        const SizedBox(width: 6),
-        _buildCaregiverScrollButton(
-          icon: Icons.chevron_right_rounded,
-          tooltip: 'Xem caregiver tiếp theo',
-          onTap: () => _scrollCaregivers(1),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCaregiverScrollButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 18),
-        ),
-      ),
     );
   }
 
@@ -830,7 +692,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: AppColors.textHint, size: 36),
             SizedBox(height: 8),
             Text(
-              'Chưa có caregiver trong khu vực',
+              'Chưa có chăm sóc viên trong khu vực',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
           ],

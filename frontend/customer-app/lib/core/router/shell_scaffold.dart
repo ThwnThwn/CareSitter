@@ -16,7 +16,7 @@ class ShellScaffold extends ConsumerWidget {
         path: '/bookings'),
     _NavItem(
         icon: Icons.people_alt_rounded,
-        label: 'Caregiver',
+        label: 'Chăm sóc viên',
         path: '/caregivers'),
     _NavItem(
         icon: Icons.person_outline_rounded, label: 'Hồ sơ', path: '/settings'),

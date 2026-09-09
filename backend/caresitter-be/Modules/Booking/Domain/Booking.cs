@@ -21,7 +21,8 @@ public sealed class Booking : AggregateRoot
         Guid serviceTypeId,
         DateTimeOffset scheduledStart,
         DateTimeOffset scheduledEnd,
-        int geofenceRadiusMeters) : base(id)
+        int geofenceRadiusMeters,
+        string? requiredSkills) : base(id)
     {
         CustomerId = customerId;
         BeneficiaryId = beneficiaryId;
@@ -30,6 +31,7 @@ public sealed class Booking : AggregateRoot
         ScheduledStart = scheduledStart;
         ScheduledEnd = scheduledEnd;
         GeofenceRadiusMeters = geofenceRadiusMeters;
+        RequiredSkills = requiredSkills;
         Status = BookingStatus.Draft;
     }
 
@@ -43,6 +45,7 @@ public sealed class Booking : AggregateRoot
     public DateTimeOffset ScheduledEnd { get; private set; }
     public DateTimeOffset? ActualStart { get; private set; }
     public DateTimeOffset? ActualEnd { get; private set; }
+    public string? RequiredSkills { get; private set; }
 
     public BookingStatus Status { get; private set; }
 
@@ -63,13 +66,14 @@ public sealed class Booking : AggregateRoot
         Guid serviceTypeId,
         DateTimeOffset scheduledStart,
         DateTimeOffset scheduledEnd,
-        int geofenceRadiusMeters = 50)
+        int geofenceRadiusMeters = 50,
+        string? requiredSkills = null)
     {
         if (scheduledEnd <= scheduledStart)
             return Error.Validation("booking.schedule", "scheduled_end phai sau scheduled_start.");
 
         var booking = new Booking(Guid.NewGuid(), customerId, beneficiaryId, addressId, serviceTypeId,
-            scheduledStart, scheduledEnd, geofenceRadiusMeters);
+            scheduledStart, scheduledEnd, geofenceRadiusMeters, requiredSkills);
         return booking;
     }
 
@@ -154,6 +158,7 @@ public sealed class Booking : AggregateRoot
 
     public Result StartEnRoute() => TransitionTo(BookingStatus.CaregiverEnRoute);
     public Result ConfirmPayment() => TransitionTo(BookingStatus.Confirmed);
+    public Result MarkMatchingFailed() => TransitionTo(BookingStatus.MatchingFailed);
     public Result Cancel(Guid userId, string role, string? reason, DateTimeOffset cancelledAt)
     {
         var result = TransitionTo(BookingStatus.Cancelled);

@@ -288,10 +288,21 @@ class ShiftListScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {
-                            ref
-                                .read(shiftsProvider.notifier)
-                                .declineBooking(id);
+                          onPressed: () async {
+                            try {
+                              await ref
+                                  .read(shiftsProvider.notifier)
+                                  .declineBooking(id);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Chưa từ chối được ca: $e'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                              }
+                            }
                           },
                           child: const Text('Từ chối'),
                         ),

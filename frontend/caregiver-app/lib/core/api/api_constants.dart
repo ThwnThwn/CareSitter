@@ -16,6 +16,7 @@ class ApiPaths {
 
   // ── Lifecycle (caregiver actions) ─────────────────────────
   static String acceptBooking(String id) => '/bookings/$id/accept';
+  static String declineBooking(String id) => '/bookings/$id/decline';
   static String enRoute(String id) => '/bookings/$id/en-route';
   static String checkIn(String id) => '/bookings/$id/check-in';
   static String checkoutRequest(String id) => '/bookings/$id/checkout/request';
@@ -23,6 +24,14 @@ class ApiPaths {
 
   // ── GPS push ──────────────────────────────────────────────
   static String postGps(String id) => '/bookings/$id/gps';
+
+  // ── Caregiver profile / availability ──────────────────────
+  static const myCaregiverProfile = '/caregivers/me/profile';
+  static const myAvailability = '/caregivers/me/availability';
+  static const myCaregiverStatus = '/caregivers/me/status';
+
+  // ── Wallet / earnings ─────────────────────────────────────
+  static const wallet = '/wallet';
 
   // ── Care tasks ────────────────────────────────────────────
   static String tasks(String id) => '/bookings/$id/tasks';

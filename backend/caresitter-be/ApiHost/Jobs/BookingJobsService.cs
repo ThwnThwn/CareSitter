@@ -1,4 +1,5 @@
 using CareSitter.Contracts.Services;
+using CareSitter.ApiHost.Matching;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
@@ -224,5 +225,22 @@ public sealed class BookingJobsService
 
         await db.SaveChangesAsync();
         _logger.LogInformation("[BookingJobs] Auto-completed {Count} expired shifts", expiredShifts.Count);
+    }
+
+    // ════════════════════════════════════════════
+    //  JOB 4: Mở rộng offer matching đã hết hạn
+    // ════════════════════════════════════════════
+
+    /// <summary>
+    /// Đánh dấu offer hết hạn và mời batch caregiver phù hợp tiếp theo.
+    /// Chạy mỗi phút để booking không bị kẹt sau khi nhóm đầu không phản hồi.
+    /// </summary>
+    public async Task ExpandExpiredBookingOffersAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var matching = scope.ServiceProvider.GetRequiredService<IMatchingService>();
+        var expanded = await matching.ExpandExpiredOffersAsync(CancellationToken.None);
+        if (expanded > 0)
+            _logger.LogInformation("[BookingJobs] Expanded {Count} expired caregiver offers", expanded);
     }
 }

@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Payments
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.IntegrationTests", "tests\CareSitter.IntegrationTests\CareSitter.IntegrationTests.csproj", "{B0D43F96-D2BB-4404-A8A2-709344EC73D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Routing.UnitTests", "tests\CareSitter.Modules.Routing.UnitTests\CareSitter.Modules.Routing.UnitTests.csproj", "{957EEB78-BB6E-42DA-8F8D-8A99C574416B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -203,6 +205,18 @@ Global
 		{B0D43F96-D2BB-4404-A8A2-709344EC73D8}.Release|x64.Build.0 = Release|Any CPU
 		{B0D43F96-D2BB-4404-A8A2-709344EC73D8}.Release|x86.ActiveCfg = Release|Any CPU
 		{B0D43F96-D2BB-4404-A8A2-709344EC73D8}.Release|x86.Build.0 = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|x64.Build.0 = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Debug|x86.Build.0 = Debug|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x64.ActiveCfg = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x64.Build.0 = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x86.ActiveCfg = Release|Any CPU
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -223,5 +237,6 @@ Global
 		{1BC85A17-C9CC-4164-AFBA-444122365494} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 		{693E2D20-EA57-4ACA-A59C-B135452793A7} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 		{B0D43F96-D2BB-4404-A8A2-709344EC73D8} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
+		{957EEB78-BB6E-42DA-8F8D-8A99C574416B} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 	EndGlobalSection
 EndGlobal

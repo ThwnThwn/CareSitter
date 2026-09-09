@@ -25,6 +25,7 @@ CREATE TABLE bookings (
   care_notes               text,
   status                   varchar(50) NOT NULL DEFAULT 'DRAFT'
                            CHECK (status IN ('DRAFT','PENDING_PAYMENT','CONFIRMED','CAREGIVER_ACCEPTED',
+                                  'MATCHING_FAILED',
                                   'CAREGIVER_EN_ROUTE','IN_PROGRESS','CHECKOUT_PENDING_REVIEW',
                                   'COMPLETED','CANCELLED','CRISIS','DISPUTED','REFUNDED')),
   escrow_amount            bigint NOT NULL DEFAULT 0,
@@ -92,7 +93,8 @@ CREATE TABLE care_timeline_events (
                                      'TASK_DONE','PHOTO_UPLOADED','NOTE','CHECKOUT',
                                      'CHECKOUT_OTP_SENT','CHECKOUT_VALID',
                                      'CHECKOUT_MANUAL_REQUESTED','CHECKOUT_MANUAL_APPROVED',
-                                     'CHECKOUT_MANUAL_REJECTED','GPS_LOST','SOS','SYNC_DELAYED')),
+                                     'CHECKOUT_MANUAL_REJECTED','GPS_LOST','SOS','SYNC_DELAYED',
+                                     'LATE_CHECKIN','AUTO_CHECKOUT')),
   title                      varchar(255),
   note                       text,
   media_id                   uuid,
@@ -101,7 +103,7 @@ CREATE TABLE care_timeline_events (
   recorded_at                timestamptz NOT NULL DEFAULT now(),
   synced_at                  timestamptz,
   source                     varchar(20) NOT NULL DEFAULT 'ONLINE'
-                             CHECK (source IN ('ONLINE','OFFLINE_SYNC','ADMIN')),
+                             CHECK (source IN ('ONLINE','OFFLINE_SYNC','ADMIN','SYSTEM')),
   metadata                   jsonb
 );
 

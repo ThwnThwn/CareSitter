@@ -78,7 +78,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                           Row(
                             children: [
                               const Text(
-                                'Đội ngũ Caregiver',
+                                'Đội ngũ Chăm sóc viên',
                                 style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontSize: 20,
@@ -316,7 +316,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '100% Caregiver xác minh lý lịch tư pháp & đào tạo kỹ năng phi y tế.',
+                  '100% Chăm sóc viên xác minh lý lịch tư pháp & đào tạo kỹ năng phi y tế.',
                   style: TextStyle(
                     color: Color(0xFFA07020),
                     fontSize: 11,

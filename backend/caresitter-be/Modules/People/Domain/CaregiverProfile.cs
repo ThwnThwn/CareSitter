@@ -105,4 +105,13 @@ public sealed class CaregiverProfile : AggregateRoot
         if (dateOfBirth.HasValue) DateOfBirth = dateOfBirth.Value;
         return Result.Success();
     }
+
+    public Result SetAvailabilityStatus(string status)
+    {
+        var normalized = status?.Trim().ToUpperInvariant();
+        if (normalized is not ("ONLINE" or "OFFLINE" or "BUSY"))
+            return Error.Validation("caregiver.availability_status", "Trang thai phai la ONLINE, OFFLINE hoac BUSY.");
+        AvailabilityStatus = normalized;
+        return Result.Success();
+    }
 }

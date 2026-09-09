@@ -8,6 +8,7 @@ class BookingDraft {
   final String beneficiaryId;
   final String serviceTypeId;
   final String? caregiverId;
+  final bool isSystemMatched;
   final String addressId;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
@@ -16,6 +17,7 @@ class BookingDraft {
     required this.beneficiaryId,
     required this.serviceTypeId,
     this.caregiverId,
+    this.isSystemMatched = true,
     required this.addressId,
     required this.scheduledStart,
     required this.scheduledEnd,
@@ -41,13 +43,12 @@ class BookingRepository {
       data: {
         'beneficiaryId': draft.beneficiaryId,
         'serviceTypeId': draft.serviceTypeId,
-        if (draft.caregiverId != null) 'caregiverId': draft.caregiverId,
         'addressId': draft.addressId,
         'scheduledStart': draft.scheduledStart.toUtc().toIso8601String(),
         'scheduledEnd': draft.scheduledEnd.toUtc().toIso8601String(),
       },
     );
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   // ── Queries ─────────────────────────────────────────────────────────────────
@@ -69,13 +70,25 @@ class BookingRepository {
         'pageSize': pageSize,
       },
     );
-    return BookingListResponse.fromJson(resp.data!);
+    return BookingListResponse.fromJson(resp.data ?? {});
   }
 
   /// Lấy chi tiết một booking theo ID.
   Future<BookingModel> getBooking(String id) async {
     final resp = await _dio.get<Map<String, dynamic>>(ApiPaths.booking(id));
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
+  }
+
+  /// Customer chọn thủ công một caregiver đã nằm trong danh sách gợi ý của booking.
+  Future<BookingModel> selectCaregiver(
+    String bookingId, {
+    required String caregiverId,
+  }) async {
+    final resp = await _dio.put<Map<String, dynamic>>(
+      ApiPaths.bookingCaregiver(bookingId),
+      data: {'caregiverId': caregiverId},
+    );
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Lấy vị trí GPS mới nhất của caregiver trong booking.
@@ -84,7 +97,7 @@ class BookingRepository {
     try {
       final resp =
           await _dio.get<Map<String, dynamic>>(ApiPaths.latestGps(bookingId));
-      return GpsTrackModel.fromJson(resp.data!);
+      return GpsTrackModel.fromJson(resp.data ?? {});
     } on Exception catch (e) {
       // 404 = chưa có GPS track → return null
       if (e.toString().contains('404')) return null;
@@ -98,14 +111,14 @@ class BookingRepository {
   Future<BookingModel> confirmPayment(String bookingId) async {
     final resp = await _dio
         .post<Map<String, dynamic>>(ApiPaths.confirmPayment(bookingId));
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Caregiver bắt đầu di chuyển → status: caregiver_en_route
   Future<BookingModel> startEnRoute(String bookingId) async {
     final resp =
         await _dio.post<Map<String, dynamic>>(ApiPaths.enRoute(bookingId));
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Caregiver GPS check-in tại địa điểm → status: in_progress
@@ -123,21 +136,21 @@ class BookingRepository {
         if (accuracyMeters != null) 'accuracyMeters': accuracyMeters,
       },
     );
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Caregiver yêu cầu kết thúc ca → status: checkout_pending_review
   Future<BookingModel> requestCheckout(String bookingId) async {
     final resp = await _dio
         .post<Map<String, dynamic>>(ApiPaths.checkoutRequest(bookingId));
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Customer xác nhận kết thúc ca → status: completed
   Future<BookingModel> completeBooking(String bookingId) async {
     final resp =
         await _dio.post<Map<String, dynamic>>(ApiPaths.complete(bookingId));
-    return BookingModel.fromJson(resp.data!);
+    return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Huỷ booking.
@@ -169,6 +182,6 @@ class BookingRepository {
         if (heading != null) 'heading': heading,
       },
     );
-    return GpsTrackModel.fromJson(resp.data!);
+    return GpsTrackModel.fromJson(resp.data ?? {});
   }
 }
