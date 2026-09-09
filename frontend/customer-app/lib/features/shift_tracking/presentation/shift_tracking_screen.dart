@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/realtime/care_signalr_service.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
@@ -157,14 +157,19 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                   OutlinedButton.icon(
                     onPressed: () =>
                         context.push('/bookings/$bookingId/timeline'),
-                    icon: const Icon(Icons.timeline_outlined, size: 16),
+                    icon: const Icon(Icons.history_edu_outlined, size: 18),
                     label: const Text('Xem nhật ký chăm sóc'),
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 46),
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary, width: 1.2),
+                      backgroundColor: const Color(0xFFE8F5E9).withOpacity(0.5),
+                      minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  _buildTrustGuaranteeCard(),
                   if (bk.status == 'in_progress') ...[
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
@@ -311,23 +316,42 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       title: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.38),
+          color: const Color(0xFFE8F5E9),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: AppColors.success, size: 8),
-            SizedBox(width: 6),
-            Flexible(
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.5, end: 1.0),
+              duration: const Duration(milliseconds: 900),
+              builder: (_, v, __) => Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(v),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Flexible(
               child: Text(
                 'Theo dõi ca chăm sóc',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600),
+                    color: AppColors.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -337,10 +361,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
+            color: Colors.white.withOpacity(0.95),
             shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border.withOpacity(0.8)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 8)
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
             ],
           ),
           child: const AppBackButton(
@@ -354,16 +379,34 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
           padding: const EdgeInsets.all(8),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withOpacity(0.95),
               shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border.withOpacity(0.8)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 8)
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
               ],
             ),
-            child: IconButton(
-              icon: const Icon(Icons.notifications_outlined,
-                  size: 18, color: AppColors.textPrimary),
-              onPressed: () {},
+            child: Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_none_rounded,
+                      size: 20, color: AppColors.textPrimary),
+                  onPressed: () {},
+                ),
+                Positioned(
+                  top: 9,
+                  right: 9,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -380,7 +423,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       child: Stack(
         children: [
           if (_useStaticMapFallback)
-            _buildStaticMapPlaceholder(isEnRoute: isEnRoute)
+            _buildStaticMapPlaceholder(isEnRoute: isEnRoute, bk: bk)
           else
             RepaintBoundary(
               child: FlutterMap(
@@ -410,8 +453,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                       polylines: [
                         Polyline(
                           points: [_caregiverPos, destCoord],
-                          color: AppColors.primary.withValues(alpha: 0.55),
-                          strokeWidth: 3.5,
+                          color: AppColors.primary.withValues(alpha: 0.65),
+                          strokeWidth: 4,
                           pattern: const StrokePattern.dotted(),
                         ),
                       ],
@@ -455,12 +498,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(11),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE67E22),
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      const Color(0xFFE67E22).withOpacity(0.5),
+                                  color: AppColors.primary.withOpacity(0.5),
                                   blurRadius: 18,
                                   spreadRadius: 5,
                                 ),
@@ -485,25 +527,34 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
           // Badge trạng thái (Trực tiếp / Đang di chuyển)
           Positioned(
             top: 60,
-            right: 12,
+            right: 14,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: bk.status == 'caregiver_en_route'
-                    ? const Color(0xFFE67E22).withOpacity(0.92)
-                    : AppColors.primary.withOpacity(0.92),
+                color: Colors.white.withOpacity(0.92),
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border.withOpacity(0.8)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.gps_fixed, color: Colors.white, size: 12),
+                  Icon(Icons.podcasts, color: AppColors.primary, size: 13),
                   SizedBox(width: 4),
-                  Text('Trực tiếp',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    'Trực tiếp',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -516,27 +567,23 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
             child: Center(
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.white.withOpacity(0.96),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border.withOpacity(0.8)),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.14), blurRadius: 8)
+                        color: Colors.black.withOpacity(0.12), blurRadius: 10)
                   ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                          color: AppColors.success, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 5),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
+                    const Icon(Icons.location_on,
+                        color: AppColors.primary, size: 15),
+                    const SizedBox(width: 4),
+                    Flexible(
                       child: Text(
                         bk.address,
                         maxLines: 1,
@@ -545,6 +592,28 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle,
+                              color: AppColors.primary, size: 10),
+                          SizedBox(width: 3),
+                          Text('Đã xác thực',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700)),
+                        ],
                       ),
                     ),
                   ],
@@ -569,64 +638,104 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF3E0), Color(0xFFFFF8F0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFFFEF7EC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE67E22).withOpacity(0.4)),
+        border: Border.all(
+          color: const Color(0xFFF5A623).withOpacity(0.55),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE67E22).withOpacity(0.08),
-            blurRadius: 12,
+            color: const Color(0xFFF5A623).withOpacity(0.12),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE67E22).withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.directions_car_rounded,
-                color: Color(0xFFE67E22), size: 28),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Caregiver đang trên đường đến',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFE67E22)),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5A623).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${bk.caregiverName} · Dự kiến đến: $_etaLabel',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                child: const Icon(
+                  Icons.directions_car_rounded,
+                  color: Color(0xFF935200),
+                  size: 24,
                 ),
-              ],
-            ),
-          ),
-          // Pulsing dot
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.6, end: 1.0),
-            duration: const Duration(milliseconds: 900),
-            builder: (_, v, __) => Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE67E22).withOpacity(v),
-                shape: BoxShape.circle,
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Caregiver đang trên đường đến',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                        children: [
+                          TextSpan(text: '${bk.caregiverName} · '),
+                          const TextSpan(text: 'Dự kiến đến: '),
+                          TextSpan(
+                            text: '$_etaLabel (còn ~1.8 km)',
+                            style: const TextStyle(
+                              color: Color(0xFF935200),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.5, end: 1.0),
+                duration: const Duration(milliseconds: 900),
+                builder: (_, v, __) => Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5A623).withOpacity(v),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF5A623).withOpacity(v * 0.5),
+                        blurRadius: 6,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Micro progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: 0.75,
+              backgroundColor: const Color(0xFFF5A623).withOpacity(0.18),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
+              minHeight: 5,
             ),
           ),
         ],
@@ -634,57 +743,187 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     );
   }
 
-  // ── Static map placeholder (web only) ──────────────────────────────────────
-  Widget _buildStaticMapPlaceholder({bool isEnRoute = false}) {
+  // ── Static map placeholder (web & desktop) ──────────────────────────────────────
+  Widget _buildStaticMapPlaceholder(
+      {bool isEnRoute = false, required BookingModel bk}) {
     return Container(
       width: double.infinity,
-      height: 230,
+      height: isEnRoute ? 280 : 230,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFDFF0EA), Color(0xFFB2D8CC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Color(0xFFE5ECE7),
       ),
       child: Stack(
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _MapGridPainter(),
+              painter: _VectorMapPainter(isEnRoute: isEnRoute),
             ),
           ),
-          Center(
+          // Destination Pin (Nhà khách)
+          Positioned(
+            left: 210,
+            top: 68,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.7), width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.5),
-                        blurRadius: 20,
-                        spreadRadius: 6,
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.person_pin_circle,
-                      color: Colors.white, size: 28),
-                ),
-                Container(width: 2, height: 14, color: AppColors.primary),
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.25),
-                    shape: BoxShape.circle,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.home_rounded,
+                          color: Colors.white, size: 11),
+                      const SizedBox(width: 3),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 100),
+                        child: Text(
+                          'Nhà ${bk.beneficiaryName?.split(' ').last ?? 'khách'}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.35),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.location_on_rounded,
+                      color: AppColors.primary, size: 18),
                 ),
               ],
             ),
           ),
+          // Caregiver Moving Marker (en_route)
+          if (isEnRoute)
+            Positioned(
+              left: 90,
+              top: 130,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.8, end: 1.2),
+                    duration: const Duration(milliseconds: 1000),
+                    builder: (_, scale, __) => Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Transform.scale(
+                          scale: scale,
+                          child: Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary.withOpacity(0.25),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border:
+                                Border.all(color: AppColors.primary, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.4),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              bk.caregiverInitials,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5A623),
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: const Icon(Icons.navigation_rounded,
+                                size: 8, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A2E25),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'Caregiver đang di chuyển',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -702,12 +941,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.8),
+        border: Border.all(color: AppColors.border, width: 0.9),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4))
+            color: const Color(0xFF1A2E25).withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -717,14 +957,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
               Stack(
                 children: [
                   CircleAvatar(
-                    radius: 28,
+                    radius: 26,
                     backgroundColor: AppColors.primaryContainer,
                     child: Text(
                       avatarText,
                       style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800),
+                        color: AppColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -734,7 +975,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                       width: 14,
                       height: 14,
                       decoration: BoxDecoration(
-                        color: AppColors.success,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -747,64 +988,111 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(bk.caregiverName ?? 'Người chăm sóc',
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    const Row(children: [
-                      Icon(Icons.verified, color: AppColors.primary, size: 13),
-                      SizedBox(width: 3),
-                      Expanded(
-                        child: Text(
-                          'CareConnect Certified',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500),
-                        ),
+                    Text(
+                      bk.caregiverName ?? 'Người chăm sóc',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ]),
+                    ),
                     const SizedBox(height: 3),
-                    Text('Chăm sóc: ${bk.beneficiaryName ?? "Người thân"}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 12)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified,
+                              color: AppColors.primary, size: 12),
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'CareConnect Certified',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Chăm sóc: ${bk.beneficiaryName ?? "Người thân"}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: AppColors.success.withOpacity(0.5),
-                              blurRadius: 4,
-                              spreadRadius: 1)
-                        ],
                       ),
                     ),
                     const SizedBox(width: 5),
-                    const Text('Đang làm',
-                        style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Đang làm',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Rating and metadata
+          const Row(
+            children: [
+              Icon(Icons.star_rounded, color: AppColors.secondary, size: 16),
+              SizedBox(width: 3),
+              Text(
+                '4.98',
+                style: TextStyle(
+                  color: Color(0xFF805200),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  '(142 ca) • 4 năm kinh nghiệm',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -816,19 +1104,20 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('💬 Nhắn tin cho ${bk.caregiverName}...'),
-                      backgroundColor: AppColors.primaryLight,
+                      content: Text('💬 Kết nối liên hệ với ${bk.caregiverName}...'),
+                      backgroundColor: AppColors.primary,
                       duration: const Duration(seconds: 2),
                     ),
                   ),
-                  icon: const Icon(Icons.chat_bubble_outline, size: 15),
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
                   label: const Text('Liên hệ'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
+                    side: const BorderSide(color: AppColors.primary, width: 1.2),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
                   ),
                 ),
               ),
@@ -836,21 +1125,22 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
               ElevatedButton.icon(
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('🚨 Đang kết nối khẩn cấp...'),
+                    content: Text('🚨 Đang kích hoạt tín hiệu SOS khẩn cấp 24/7...'),
                     backgroundColor: AppColors.error,
-                    duration: Duration(seconds: 2),
+                    duration: Duration(seconds: 3),
                   ),
                 ),
-                icon: const Icon(Icons.emergency_share_outlined, size: 15),
+                icon: const Icon(Icons.emergency_share_outlined, size: 16),
                 label: const Text('SOS'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(96, 40),
+                  minimumSize: const Size(100, 44),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                 ),
               ),
             ],
@@ -1140,42 +1430,112 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
     return Row(
       children: [
         Expanded(
-            child: _infoChip(Icons.person_outline, 'Người thân',
-                bk.beneficiaryName ?? 'Người thân')),
-        const SizedBox(width: 10),
+          child: _infoCard(
+            icon: Icons.person_outline_rounded,
+            label: 'Người thân',
+            value: bk.beneficiaryName ?? 'Người thân',
+            subtext: 'Cụ ông • 78 tuổi',
+          ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
-            child: _infoChip(Icons.access_time_outlined, 'Ca làm',
-                '${bk.time} • ${bk.duration}')),
+          child: _infoCard(
+            icon: Icons.access_time_outlined,
+            label: 'Ca làm',
+            value: '${bk.time} • ${bk.duration}',
+            subtext: 'Hôm nay, ${bk.date.isNotEmpty ? bk.date : "09/09/2026"}',
+          ),
+        ),
       ],
     );
   }
 
-  Widget _infoChip(IconData icon, String label, String value) {
+  Widget _infoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String subtext,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 0.8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.9),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: const BoxDecoration(
+              color: AppColors.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: AppColors.primary),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 10, color: AppColors.textHint)),
-                Text(value,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary)),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textHint,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustGuaranteeCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF7EC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF5A623).withOpacity(0.3)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.verified_user_rounded, color: Color(0xFF935200), size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Cam kết Đồng hành Phi Y tế & Bảo hiểm CareSitter CareGuard 24/7',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF7A5812),
+              ),
             ),
           ),
         ],
@@ -1453,6 +1813,87 @@ class _BottomActionBar extends ConsumerWidget {
       );
     }
 
+    if (bk.status == 'caregiver_en_route') {
+      return Container(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPad * 0.5),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          border: const Border(top: BorderSide(color: AppColors.border)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content:
+                      Text('💬 Mở tin nhắn nhanh cho ${bk.caregiverName}...'),
+                  backgroundColor: AppColors.primary,
+                  duration: const Duration(seconds: 2),
+                ),
+              ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              label: const Text(
+                'Gửi lời nhắn nhanh cho Caregiver',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('⚠️ Đang kết nối tổng đài giám sát viên 24/7...'),
+                  backgroundColor: AppColors.error,
+                  duration: Duration(seconds: 2),
+                ),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.warning_amber_rounded,
+                        size: 13, color: AppColors.error),
+                    SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        'Báo cáo sự cố hoặc liên hệ giám sát viên 24/7',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return const SizedBox.shrink();
   }
 
@@ -1547,43 +1988,162 @@ Widget _mapTileBuilder(
   return tileWidget;
 }
 
-// ── Map grid painter (web placeholder) ────────────────────────────────────────
-class _MapGridPainter extends CustomPainter {
+// ── Vector map painter (web & desktop placeholder) ───────────────────────────
+class _VectorMapPainter extends CustomPainter {
+  final bool isEnRoute;
+  const _VectorMapPainter({this.isEnRoute = false});
+
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 ||
-        size.height <= 0 ||
-        size.width.isInfinite ||
-        size.height.isInfinite) {
-      return;
-    }
-    final paint = Paint()
-      ..color = const Color(0xFF27AE60).withOpacity(0.12)
+    if (size.width <= 0 || size.height <= 0) return;
+
+    // 1. Base canvas background
+    final bgPaint = Paint()..color = const Color(0xFFE5ECE7);
+    canvas.drawRect(Offset.zero & size, bgPaint);
+
+    // 2. Green Parks & Natural Zones
+    final parkPaint = Paint()
+      ..color = const Color(0xFFD2E8DA)
+      ..style = PaintingStyle.fill;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width * 0.42, size.height * 0.32),
+        const Radius.circular(16),
+      ),
+      parkPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.62, size.height * 0.58, size.width * 0.38,
+            size.height * 0.42),
+        const Radius.circular(20),
+      ),
+      parkPaint,
+    );
+
+    // 3. Water Canal with gentle curved ribbon
+    final waterPaint = Paint()
+      ..color = const Color(0xFFBCE3DF)
+      ..style = PaintingStyle.fill;
+    final riverPath = Path();
+    riverPath.moveTo(0, size.height * 0.82);
+    riverPath.cubicTo(
+      size.width * 0.25,
+      size.height * 0.78,
+      size.width * 0.45,
+      size.height * 0.88,
+      size.width * 0.75,
+      size.height * 0.80,
+    );
+    riverPath.cubicTo(
+      size.width * 0.90,
+      size.height * 0.76,
+      size.width,
+      size.height * 0.84,
+      size.width,
+      size.height * 0.84,
+    );
+    riverPath.lineTo(size.width, size.height * 0.94);
+    riverPath.cubicTo(
+      size.width * 0.88,
+      size.height * 0.88,
+      size.width * 0.75,
+      size.height * 0.90,
+      size.width * 0.45,
+      size.height * 0.96,
+    );
+    riverPath.cubicTo(
+      size.width * 0.25,
+      size.height * 0.88,
+      0,
+      size.height * 0.92,
+      0,
+      size.height * 0.92,
+    );
+    riverPath.close();
+    canvas.drawPath(riverPath, waterPaint);
+
+    // 4. City Blocks / Buildings (Light soft rects)
+    final blockPaint = Paint()
+      ..color = const Color(0xFFF9FAF8)
+      ..style = PaintingStyle.fill;
+    final blockBorder = Paint()
+      ..color = const Color(0xFFD3DFD7)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
-    const step = 30.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    final blocks = [
+      Rect.fromLTWH(16, 16, 42, 32),
+      Rect.fromLTWH(68, 20, 36, 28),
+      Rect.fromLTWH(116, 14, 52, 38),
+      Rect.fromLTWH(size.width - 70, 24, 48, 32),
+      Rect.fromLTWH(20, 110, 44, 34),
+      Rect.fromLTWH(size.width - 80, 100, 56, 40),
+    ];
+    for (final b in blocks) {
+      final r = RRect.fromRectAndRadius(b, const Radius.circular(6));
+      canvas.drawRRect(r, blockPaint);
+      canvas.drawRRect(r, blockBorder);
     }
 
-    // Vẽ "đường phố" giả
-    final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.55)
-      ..strokeWidth = 4.0
+    // 5. Street Network
+    final roadBorderPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 12.0
+      ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    canvas.drawLine(Offset(0, size.height * 0.4),
-        Offset(size.width, size.height * 0.4), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.35, 0),
-        Offset(size.width * 0.35, size.height), roadPaint);
-    canvas.drawLine(Offset(size.width * 0.7, 0),
-        Offset(size.width * 0.7, size.height), roadPaint);
+    final roadSurfacePaint = Paint()
+      ..color = const Color(0xFFEAEFE9)
+      ..strokeWidth = 8.0
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    // Horizontal roads
+    canvas.drawLine(Offset(0, size.height * 0.35),
+        Offset(size.width, size.height * 0.35), roadBorderPaint);
+    canvas.drawLine(Offset(0, size.height * 0.35),
+        Offset(size.width, size.height * 0.35), roadSurfacePaint);
+
+    // Vertical roads
+    canvas.drawLine(Offset(size.width * 0.45, 0),
+        Offset(size.width * 0.45, size.height), roadBorderPaint);
+    canvas.drawLine(Offset(size.width * 0.45, 0),
+        Offset(size.width * 0.45, size.height), roadSurfacePaint);
+
+    canvas.drawLine(Offset(size.width * 0.18, size.height * 0.35),
+        Offset(size.width * 0.18, size.height), roadBorderPaint);
+    canvas.drawLine(Offset(size.width * 0.18, size.height * 0.35),
+        Offset(size.width * 0.18, size.height), roadSurfacePaint);
+
+    // 6. Navigation Route (Caregiver -> Destination)
+    if (isEnRoute) {
+      final routePath = Path();
+      routePath.moveTo(105, 145);
+      routePath.quadraticBezierTo(
+          size.width * 0.35, 145, size.width * 0.45, 120);
+      routePath.lineTo(size.width * 0.45, size.height * 0.35);
+      routePath.lineTo(225, size.height * 0.35);
+
+      final routeGlow = Paint()
+        ..color = AppColors.primary.withOpacity(0.35)
+        ..strokeWidth = 8.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawPath(routePath, routeGlow);
+
+      final routeLine = Paint()
+        ..color = AppColors.primary
+        ..strokeWidth = 4.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawPath(routePath, routeLine);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _VectorMapPainter oldDelegate) =>
+      oldDelegate.isEnRoute != isEnRoute;
 }

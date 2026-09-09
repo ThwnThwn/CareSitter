@@ -23,8 +23,16 @@ public sealed class CatalogModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", CatalogDbContext.SchemaName)));
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).
+        services.AddMemoryCache();
         services.AddScoped<IPricingService, PricingService>();
         services.AddScoped<ICatalogLookupService, CatalogLookupService>();
+        services.AddHttpClient<IPlaceAutocompleteService, GeoapifyPlaceAutocompleteService>((_, client) =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Geoapify:BaseUrl"] ??
+                configuration["Routing:Geoapify:BaseUrl"] ??
+                "https://api.geoapify.com");
+        });
 
         // Đăng ký Controllers nằm trong assembly của Catalog module
         services.AddControllers()

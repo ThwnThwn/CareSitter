@@ -63,10 +63,14 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.District).HasColumnName("district").HasMaxLength(100);
             b.Property(x => x.City).HasColumnName("city").HasMaxLength(100);
             b.Property(x => x.Country).HasColumnName("country").HasMaxLength(100);
+            b.Property(x => x.PlaceId).HasColumnName("place_id").HasMaxLength(255);
+            b.Property(x => x.Provider).HasColumnName("provider").HasMaxLength(50);
+            b.Property(x => x.VerifiedAt).HasColumnName("verified_at");
             b.Property(x => x.Location).HasColumnName("location").HasColumnType("geography(Point,4326)");
             b.Property(x => x.Note).HasColumnName("note");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.Ignore(x => x.IsVerified);
             // OMIT latitude & longitude: cot GENERATED ALWAYS AS (ST_Y/ST_X(location)) STORED,
             // khong ghi duoc va suy ra tu Location nen khong map vao entity.
         });

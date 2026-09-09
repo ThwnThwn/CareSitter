@@ -2,7 +2,8 @@
 import '../../../core/auth/auth_notifier.dart';
 import '../data/address_repository.dart';
 
-export '../data/address_repository.dart' show AddressModel;
+export '../data/address_repository.dart'
+    show AddressModel, PlaceSuggestionModel, VerifiedPlaceDetailsModel;
 
 final addressStoreProvider =
     AsyncNotifierProvider<AddressStore, List<AddressModel>>(AddressStore.new);
@@ -32,23 +33,15 @@ class AddressStore extends AsyncNotifier<List<AddressModel>> {
   Future<void> refresh() => ref.refresh(addressStoreProvider.future);
 
   Future<AddressModel> addAddress({
-    required String fullAddress,
-    required double latitude,
-    required double longitude,
+    required String placeId,
+    String? sessionToken,
     String? label,
-    String? ward,
-    String? district,
-    String? city,
     String? note,
   }) async {
     final created = await _repo.createAddress(
-      fullAddress: fullAddress,
-      latitude: latitude,
-      longitude: longitude,
+      placeId: placeId,
+      sessionToken: sessionToken,
       label: label,
-      ward: ward,
-      district: district,
-      city: city,
       note: note,
     );
     final current = state.valueOrNull ?? const <AddressModel>[];

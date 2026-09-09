@@ -45,11 +45,13 @@ class _FakeAddressStore extends AddressStore {
           label: 'Văn phòng',
           fullAddress:
               '78 Điện Biên Phủ, Phường 15, Quận Bình Thạnh, TP. Hồ Chí Minh',
+          isVerified: true,
         ),
         AddressModel(
           id: 'selected-address-2',
           label: 'Nhà riêng',
           fullAddress: '123 Lê Văn Sỹ, Phường 13, Quận 3, TP. Hồ Chí Minh',
+          isVerified: true,
         ),
       ];
 }

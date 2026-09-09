@@ -23,6 +23,9 @@ public sealed class Address : Entity
         string? district,
         string? city,
         string country,
+        string? placeId,
+        string? provider,
+        DateTimeOffset? verifiedAt,
         string? note) : base(id)
     {
         FullAddress = fullAddress;
@@ -33,6 +36,9 @@ public sealed class Address : Entity
         District = district;
         City = city;
         Country = country;
+        PlaceId = placeId;
+        Provider = provider;
+        VerifiedAt = verifiedAt;
         Note = note;
     }
 
@@ -43,6 +49,10 @@ public sealed class Address : Entity
     public string? District { get; private set; }
     public string? City { get; private set; }
     public string Country { get; private set; } = null!;
+    public string? PlaceId { get; private set; }
+    public string? Provider { get; private set; }
+    public DateTimeOffset? VerifiedAt { get; private set; }
+    public bool IsVerified => !string.IsNullOrWhiteSpace(PlaceId) && VerifiedAt is not null;
 
     /// <summary>geography(Point,4326) — NOT NULL.</summary>
     public Point Location { get; private set; } = null!;
@@ -57,6 +67,9 @@ public sealed class Address : Entity
         string? district = null,
         string? city = null,
         string country = "Vietnam",
+        string? placeId = null,
+        string? provider = null,
+        DateTimeOffset? verifiedAt = null,
         string? note = null)
     {
         if (string.IsNullOrWhiteSpace(fullAddress))
@@ -67,11 +80,13 @@ public sealed class Address : Entity
             return Error.Validation("address.country", "country la bat buoc.");
 
         return new Address(Guid.NewGuid(), fullAddress, location, ownerUserId,
-            label, ward, district, city, country, note);
+            label, ward, district, city, country, placeId?.Trim(), provider?.Trim(),
+            verifiedAt, note);
     }
 
     public Result Update(string fullAddress, Point location, string? label, string? ward,
-        string? district, string? city, string country, string? note)
+        string? district, string? city, string country, string? placeId,
+        string? provider, DateTimeOffset? verifiedAt, string? note)
     {
         if (string.IsNullOrWhiteSpace(fullAddress) || location is null || string.IsNullOrWhiteSpace(country))
             return Error.Validation("address.invalid", "Thong tin dia chi khong hop le.");
@@ -83,6 +98,9 @@ public sealed class Address : Entity
         District = district?.Trim();
         City = city?.Trim();
         Country = country.Trim();
+        PlaceId = placeId?.Trim();
+        Provider = provider?.Trim();
+        VerifiedAt = verifiedAt;
         Note = note?.Trim();
         return Result.Success();
     }

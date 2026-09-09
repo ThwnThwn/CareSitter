@@ -94,24 +94,6 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
   Future<MockBeneficiary?> _syncAddToBackend(MockBeneficiary b) async {
     final dio = ref.read(dioClientProvider);
 
-    AddressModel? createdAddress;
-    if (b.address.isNotEmpty) {
-      createdAddress = await ref.read(addressStoreProvider.notifier).addAddress(
-            fullAddress: b.address,
-            latitude: 10.7769,
-            longitude: 106.7009,
-            label: 'Địa chỉ của ${b.name}',
-            city: 'Ho Chi Minh',
-          );
-      state = [
-        for (final item in state)
-          if (item.id == b.id)
-            item.copyWith(defaultAddressId: createdAddress.id)
-          else
-            item,
-      ];
-    }
-
     final approxBirthYear = DateTime.now().year - b.age;
     final resp = await dio.post<Map<String, dynamic>>('/beneficiaries', data: {
       'FullName': b.name,
@@ -119,16 +101,13 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
       'RelationshipToCustomer': b.relation,
       'GeneralNote': b.condition,
       'CareInstructions': b.notes,
-      if (createdAddress != null) 'DefaultAddressId': createdAddress.id,
     });
 
     final synced = resp.data == null
         ? null
         : _fromBackend(
             resp.data!,
-            addressesById: {
-              if (createdAddress != null) createdAddress.id: createdAddress,
-            },
+            addressesById: const {},
           );
     await _loadFromBackend();
     return synced;
@@ -189,19 +168,6 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
 
     try {
       final dio = ref.read(dioClientProvider);
-      var defaultAddressId = b.defaultAddressId;
-      if (defaultAddressId == null && b.address.isNotEmpty) {
-        final createdAddress =
-            await ref.read(addressStoreProvider.notifier).addAddress(
-                  fullAddress: b.address,
-                  latitude: 10.7769,
-                  longitude: 106.7009,
-                  label: 'Địa chỉ của ${b.name}',
-                  city: 'Ho Chi Minh',
-                );
-        defaultAddressId = createdAddress.id;
-      }
-
       final approxBirthYear = DateTime.now().year - b.age;
       await dio.put('/beneficiaries/$id', data: {
         'FullName': b.name,
@@ -209,7 +175,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
         'RelationshipToCustomer': b.relation,
         'GeneralNote': b.condition,
         'CareInstructions': b.notes,
-        if (defaultAddressId != null) 'DefaultAddressId': defaultAddressId,
+        if (b.defaultAddressId != null) 'DefaultAddressId': b.defaultAddressId,
       });
       await _loadFromBackend();
     } catch (_) {}

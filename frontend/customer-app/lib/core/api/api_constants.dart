@@ -50,6 +50,8 @@ class ApiPaths {
   // ── Addresses ────────────────────────────────────────────
   static const addresses = '/addresses';
   static String addressById(String id) => '/addresses/$id';
+  static const addressAutocomplete = '/addresses/autocomplete';
+  static String addressPlace(String placeId) => '/addresses/places/$placeId';
 
   // ── Caregivers ───────────────────────────────────────────
   static const caregivers = '/caregivers';

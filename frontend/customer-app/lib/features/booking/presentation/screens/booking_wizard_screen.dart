@@ -144,6 +144,12 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return start.isAfter(DateTime.now().add(const Duration(minutes: 30)));
   }
 
+  bool get _selectedAddressIsVerified {
+    if (_selectedAddressId == null) return false;
+    final addresses = ref.read(addressStoreProvider).valueOrNull ?? [];
+    return addresses.any((a) => a.id == _selectedAddressId && a.isVerified);
+  }
+
   List<CaregiverModel> get _matchedCaregivers {
     // NOTE: chỉ dùng trong _buildCaregiverStep nơi ref.watch đã được gọi.
     // Getter này đọc cached value sau khi widget đã rebuild.
@@ -178,7 +184,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       case 1:
         return _selectedBeneficiaryId != null;
       case 2:
-        return _hasValidSchedule && _selectedAddressId != null;
+        return _hasValidSchedule && _selectedAddressIsVerified;
       case 3:
         return _selectedCaregiverId != null || _isSystemMatched;
       case 4:
@@ -631,11 +637,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                     children: [
                       const Icon(Icons.auto_awesome, color: AppColors.primary),
                       const SizedBox(width: 12),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Để hệ thống gợi ý',
                               style: TextStyle(
                                   fontWeight: FontWeight.w700,
@@ -643,7 +649,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                             ),
                             Text(
                               'Hệ thống sẽ chọn người phù hợp nhất cho bạn',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12, color: AppColors.textSecondary),
                             ),
                           ],
@@ -1090,6 +1096,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             return _buildSelectedAddressCard(selectedAddress);
           },
         ),
+        if (_selectedAddressId != null && !_selectedAddressIsVerified) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Địa chỉ này chưa được xác minh. Vui lòng thêm/chọn địa chỉ từ danh sách gợi ý.',
+            style: TextStyle(color: AppColors.warning, fontSize: 12),
+          ),
+        ],
         const SizedBox(height: 20),
         if (_selectedService != null) ...[
           Container(
@@ -1166,9 +1179,14 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.primaryContainer,
+          color: address.isVerified
+              ? AppColors.primaryContainer
+              : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary, width: 2),
+          border: Border.all(
+            color: address.isVerified ? AppColors.primary : AppColors.warning,
+            width: 2,
+          ),
         ),
         child: Row(
           children: [
