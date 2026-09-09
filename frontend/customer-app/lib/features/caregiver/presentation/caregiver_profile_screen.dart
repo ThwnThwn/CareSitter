@@ -122,9 +122,9 @@ class CaregiverProfileScreen extends ConsumerWidget {
             SharePlus.instance.share(
               ShareParams(
                 text:
-                    'Xem hồ sơ caregiver ${caregiver.displayName} trên CareSitter!\n'
+                    'Xem hồ sơ chăm sóc viên ${caregiver.displayName} trên CareSitter!\n'
                     'Đánh giá: ${caregiver.ratingAvg.toStringAsFixed(1)}/5 ⭐',
-                subject: 'Hồ sơ Caregiver - ${caregiver.displayName}',
+                subject: 'Hồ sơ Chăm sóc viên - ${caregiver.displayName}',
               ),
             );
           },
@@ -353,7 +353,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
       child: Text(
         caregiver.bio != null && caregiver.bio!.isNotEmpty
             ? caregiver.bio!
-            : 'Caregiver tận tâm, chu đáo, được đào tạo bài bản và luôn sẵn sàng hỗ trợ chăm sóc gia đình bạn.',
+            : 'Chăm sóc viên tận tâm, chu đáo, được đào tạo bài bản và luôn sẵn sàng hỗ trợ chăm sóc gia đình bạn.',
         style: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 13,
@@ -416,7 +416,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'Caregiver rất tận tâm, đúng giờ và chu đáo. Gia đình rất an tâm.',
+            'Chăm sóc viên rất tận tâm, đúng giờ và chu đáo. Gia đình rất an tâm.',
             style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
           ),
         ],

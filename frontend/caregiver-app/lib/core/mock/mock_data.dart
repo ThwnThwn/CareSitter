@@ -102,9 +102,12 @@ class MockBooking {
   final String date;
   final String time;
   final String duration;
+  final DateTime? scheduledStart;
+  final DateTime? scheduledEnd;
   final String status;
   final double totalPrice;
   final String address;
+  final String? customerNote;
   final bool isSystemMatched;
   final bool isDemoBooking;
   final String paymentLabel;
@@ -129,9 +132,12 @@ class MockBooking {
     required this.date,
     required this.time,
     required this.duration,
+    this.scheduledStart,
+    this.scheduledEnd,
     required this.status,
     required this.totalPrice,
     required this.address,
+    this.customerNote,
     this.isSystemMatched = false,
     this.isDemoBooking = true,
     this.paymentLabel = 'Booking demo',
@@ -167,9 +173,12 @@ class MockBooking {
       date: date,
       time: time,
       duration: duration,
+      scheduledStart: scheduledStart,
+      scheduledEnd: scheduledEnd,
       status: status ?? this.status,
       totalPrice: totalPrice,
       address: address,
+      customerNote: customerNote,
       isSystemMatched: isSystemMatched,
       isDemoBooking: isDemoBooking,
       paymentLabel: paymentLabel,
@@ -358,7 +367,8 @@ class MockData {
       location: 'Quận 3, TP.HCM',
       hourlyRate: 85000,
       isAvailable: true,
-      certifications: 'Chứng chỉ Chăm sóc trẻ em, Chứng chỉ Đồng hành người cao tuổi',
+      certifications:
+          'Chứng chỉ Chăm sóc trẻ em, Chứng chỉ Đồng hành người cao tuổi',
     ),
     MockCaregiver(
       id: 'cg002',
@@ -626,7 +636,8 @@ class MockData {
       reviewerName: 'Nguyễn Minh Tuấn',
       reviewerInitial: 'NMT',
       rating: 5.0,
-      comment: 'Chị Ngọc rất tận tâm, chăm sóc bố tôi rất chu đáo. Bố tôi rất thích và luôn nhắc tên chị.',
+      comment:
+          'Chị Ngọc rất tận tâm, chăm sóc bố tôi rất chu đáo. Bố tôi rất thích và luôn nhắc tên chị.',
       date: '20/06/2026',
       shiftService: 'Đồng hành ban ngày',
     ),
@@ -635,7 +646,8 @@ class MockData {
       reviewerName: 'Trần Hữu Phúc',
       reviewerInitial: 'THP',
       rating: 4.5,
-      comment: 'Dịch vụ rất tốt, đúng giờ và chuyên nghiệp. Mẹ tôi rất hài lòng với cách chăm sóc.',
+      comment:
+          'Dịch vụ rất tốt, đúng giờ và chuyên nghiệp. Mẹ tôi rất hài lòng với cách chăm sóc.',
       date: '15/06/2026',
       shiftService: 'Đồng hành ban ngày',
     ),
@@ -644,7 +656,8 @@ class MockData {
       reviewerName: 'Lê Thị Mai Anh',
       reviewerInitial: 'LMA',
       rating: 5.0,
-      comment: 'Chị chăm bé rất giỏi, bé rất quý chị. Sẽ tiếp tục đặt lịch trong tương lai!',
+      comment:
+          'Chị chăm bé rất giỏi, bé rất quý chị. Sẽ tiếp tục đặt lịch trong tương lai!',
       date: '10/06/2026',
       shiftService: 'Trông trẻ cả ngày',
     ),
@@ -653,7 +666,8 @@ class MockData {
       reviewerName: 'Phạm Văn Đức',
       reviewerInitial: 'PVD',
       rating: 4.0,
-      comment: 'Nhìn chung rất hài lòng. Có một vài điểm nhỏ cần cải thiện nhưng tổng thể rất tốt.',
+      comment:
+          'Nhìn chung rất hài lòng. Có một vài điểm nhỏ cần cải thiện nhưng tổng thể rất tốt.',
       date: '05/06/2026',
       shiftService: 'Hỗ trợ sinh hoạt & dọn dẹp',
     ),
@@ -662,7 +676,8 @@ class MockData {
       reviewerName: 'Hoàng Thị Lan',
       reviewerInitial: 'HTL',
       rating: 5.0,
-      comment: 'Tuyệt vời! Chị rất kiên nhẫn và có kinh nghiệm chăm sóc người cao tuổi. Rất đáng tin cậy.',
+      comment:
+          'Tuyệt vời! Chị rất kiên nhẫn và có kinh nghiệm chăm sóc người cao tuổi. Rất đáng tin cậy.',
       date: '01/06/2026',
       shiftService: 'Đồng hành & đưa đón',
     ),
@@ -697,31 +712,38 @@ class MockData {
   static const List<MockFaqItem> faqItems = [
     MockFaqItem(
       question: 'Làm sao để nhận ca làm việc?',
-      answer: 'Bạn sẽ nhận được thông báo khi có ca phù hợp. Vào mục "Ca làm việc" → tab "Đang chờ" để xem và nhận ca. Đảm bảo hồ sơ của bạn đã được duyệt và lịch rảnh đã cập nhật.',
+      answer:
+          'Bạn sẽ nhận được thông báo khi có ca phù hợp. Vào mục "Ca làm việc" → tab "Đang chờ" để xem và nhận ca. Đảm bảo hồ sơ của bạn đã được duyệt và lịch rảnh đã cập nhật.',
     ),
     MockFaqItem(
       question: 'Tôi có thể từ chối ca không?',
-      answer: 'Có, bạn có thể từ chối ca ở trạng thái "Đang chờ". Tuy nhiên, việc từ chối quá nhiều ca có thể ảnh hưởng đến xếp hạng của bạn trong hệ thống.',
+      answer:
+          'Có, bạn có thể từ chối ca ở trạng thái "Đang chờ". Tuy nhiên, việc từ chối quá nhiều ca có thể ảnh hưởng đến xếp hạng của bạn trong hệ thống.',
     ),
     MockFaqItem(
       question: 'Tiền được thanh toán khi nào?',
-      answer: 'Sau khi hoàn thành ca và gia đình xác nhận, tiền sẽ được cộng vào ví của bạn trong vòng 24 giờ. Bạn có thể rút tiền bất cứ lúc nào khi số dư >= 100,000đ.',
+      answer:
+          'Sau khi hoàn thành ca và gia đình xác nhận, tiền sẽ được cộng vào ví của bạn trong vòng 24 giờ. Bạn có thể rút tiền bất cứ lúc nào khi số dư >= 100,000đ.',
     ),
     MockFaqItem(
       question: 'Tôi bị đánh giá thấp thì sao?',
-      answer: 'Đánh giá thấp không ảnh hưởng ngay lập tức. Hệ thống sẽ xem xét tổng thể và liên hệ bạn nếu cần trao đổi thêm. Bạn cũng có quyền phản hồi đánh giá.',
+      answer:
+          'Đánh giá thấp không ảnh hưởng ngay lập tức. Hệ thống sẽ xem xét tổng thể và liên hệ bạn nếu cần trao đổi thêm. Bạn cũng có quyền phản hồi đánh giá.',
     ),
     MockFaqItem(
       question: 'Tôi cần giấy tờ gì để đăng ký?',
-      answer: 'Bạn cần: CCCD/CMND còn hạn, Ảnh chân dung, Giấy khám sức khỏe (< 6 tháng). Ngoài ra, chứng chỉ sơ cấp cứu và bằng điều dưỡng là điểm cộng.',
+      answer:
+          'Bạn cần: CCCD/CMND còn hạn, Ảnh chân dung, Giấy khám sức khỏe (< 6 tháng). Ngoài ra, chứng chỉ sơ cấp cứu và bằng điều dưỡng là điểm cộng.',
     ),
     MockFaqItem(
       question: 'Tôi có thể hủy ca đã nhận không?',
-      answer: 'Bạn có thể hủy ca trước 4 giờ so với giờ bắt đầu mà không bị phạt. Hủy muộn hơn sẽ ảnh hưởng đến xếp hạng và có thể bị trừ phí.',
+      answer:
+          'Bạn có thể hủy ca trước 4 giờ so với giờ bắt đầu mà không bị phạt. Hủy muộn hơn sẽ ảnh hưởng đến xếp hạng và có thể bị trừ phí.',
     ),
     MockFaqItem(
       question: 'Check-in và Check-out hoạt động như thế nào?',
-      answer: 'Khi đến nơi, nhấn "Check-in" trên màn hình ca. Trong ca, bạn hoàn thành checklist và ghi nhận bằng ảnh. Khi kết thúc, nhấn "Check-out" để hoàn tất.',
+      answer:
+          'Khi đến nơi, nhấn "Check-in" trên màn hình ca. Trong ca, bạn hoàn thành checklist và ghi nhận bằng ảnh. Khi kết thúc, nhấn "Check-out" để hoàn tất.',
     ),
   ];
 }

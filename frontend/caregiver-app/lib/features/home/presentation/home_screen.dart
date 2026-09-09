@@ -6,8 +6,12 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/shift_status_style.dart';
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/mock/mock_data.dart';
 import '../../shifts/presentation/providers/shifts_provider.dart';
+import '../../earnings/presentation/providers/earnings_provider.dart';
+import '../../profile/presentation/providers/profile_provider.dart';
+import 'providers/notifications_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,25 +19,41 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shifts = ref.watch(shiftsProvider);
-    final todayShifts = shifts
-        .where((s) =>
-            s.status == 'confirmed' ||
-            s.status == 'assigned' ||
-            s.status == 'in_progress' ||
-            s.status == 'caregiver_en_route')
-        .toList();
+    final earnings = ref.watch(earningsProvider);
+    final profile = ref.watch(profileProvider);
+
+    // Lọc ca hôm nay theo ngày thật
+    final now = DateTime.now();
+    final todayShifts = shifts.where((s) {
+      final isActiveStatus = s.status == 'confirmed' ||
+          s.status == 'assigned' ||
+          s.status == 'in_progress' ||
+          s.status == 'caregiver_en_route';
+      if (!isActiveStatus) return false;
+      // Ưu tiên scheduledStart, fallback tất cả nếu không có ngày
+      final start = s.scheduledStart;
+      if (start == null) return true;
+      return start.year == now.year &&
+          start.month == now.month &&
+          start.day == now.day;
+    }).toList();
     final pendingShifts = shifts.where(_isOfferStatus).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          _buildStickyHeader(context),
+          _buildStickyHeader(context, ref),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildKpiCards(todayShifts.length),
+                _buildKpiCards(
+                  todayCount: todayShifts.length,
+                  monthTotal: earnings.monthTotal,
+                  rating: profile.rating,
+                  totalReviews: profile.totalReviews,
+                ),
                 const SizedBox(height: 16),
                 if (pendingShifts.isNotEmpty) ...[
                   _buildNewBookingRequest(context, ref, pendingShifts.first),
@@ -41,7 +61,11 @@ class HomeScreen extends ConsumerWidget {
                 ],
                 _buildTodayTimeline(context, todayShifts),
                 const SizedBox(height: 16),
-                _buildEarningsChart(),
+                _buildEarningsChart(
+                  last7Days: earnings.last7Days,
+                  completedShifts: earnings.completedShifts,
+                  monthTotal: earnings.monthTotal,
+                ),
                 const SizedBox(height: 16),
                 _buildSafetyDisclaimer(),
               ]),
@@ -53,7 +77,18 @@ class HomeScreen extends ConsumerWidget {
   }
 
   // ── Sticky Header ──────────────────────────────────────
-  Widget _buildStickyHeader(BuildContext context) {
+  Widget _buildStickyHeader(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authStateProvider).value;
+    final profile = ref.watch(profileProvider);
+    final displayName =
+        profile.name.trim().isNotEmpty && profile.name != 'Caregiver'
+            ? profile.name.trim()
+            : (auth?.phone?.trim().isNotEmpty ?? false)
+                ? auth!.phone!.trim()
+                : 'Caregiver';
+    final greetingName = _shortName(displayName);
+    final initials = _initials(displayName);
+
     return SliverAppBar(
       pinned: true,
       floating: false,
@@ -80,7 +115,7 @@ class HomeScreen extends ConsumerWidget {
                   radius: 20,
                   backgroundColor: AppColors.primaryContainer,
                   child: Text(
-                    'BN',
+                    initials,
                     style: GoogleFonts.beVietnamPro(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -116,7 +151,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        'Chào, Bích Ngọc!',
+                        'Chào, $greetingName!',
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.beVietnamPro(
                           fontSize: 18,
@@ -131,37 +166,42 @@ class HomeScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                _StatusTogglePill(),
+                _StatusTogglePill(profile.isAvailable),
               ],
             ),
           ),
         ],
       ),
       actions: [
-        // Notification bell
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined,
-                  color: AppColors.textPrimary),
-              onPressed: () => context.push('/notifications'),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  shape: BoxShape.circle,
-                  border:
-                      Border.all(color: AppColors.cardBackground, width: 1.5),
-                ),
+        // Notification bell với badge động
+        Builder(builder: (context) {
+          final notifications = ref.watch(notificationsProvider);
+          final unread = notifications.where((n) => !n.isRead).length;
+          return Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined,
+                    color: AppColors.textPrimary),
+                onPressed: () => context.push('/notifications'),
               ),
-            ),
-          ],
-        ),
+              if (unread > 0)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.cardBackground, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }),
         const SizedBox(width: 4),
       ],
     );
@@ -171,8 +211,43 @@ class HomeScreen extends ConsumerWidget {
     return shift.status == 'pending' || shift.status == 'open';
   }
 
+  String _shortName(String displayName) {
+    final parts =
+        displayName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    return parts.isEmpty ? 'Caregiver' : parts.last;
+  }
+
+  String _initials(String displayName) {
+    final parts = displayName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) return 'CG';
+    if (parts.length == 1) {
+      return parts.first.characters.first.toUpperCase();
+    }
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
+  }
+
   // ── KPI Summary Cards ──────────────────────────────────
-  Widget _buildKpiCards(int todayCount) {
+  Widget _buildKpiCards({
+    required int todayCount,
+    required double monthTotal,
+    required double rating,
+    required int totalReviews,
+  }) {
+    // Format thu nhập tháng: 4.800.000 → "4.800k"
+    final monthTotalK = monthTotal / 1000;
+    final monthLabel = monthTotal <= 0
+        ? '-'
+        : monthTotalK >= 1000
+            ? '${(monthTotalK / 1000).toStringAsFixed(1)}M'
+            : '${monthTotalK.round()}k';
+    final ratingLabel = rating <= 0 ? '-' : rating.toStringAsFixed(1);
+    final reviewLabel = totalReviews == 0 ? 'Chưa có' : '($totalReviews ca)';
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -190,49 +265,35 @@ class HomeScreen extends ConsumerWidget {
                 label: 'Ca hôm nay',
                 value: '$todayCount',
                 unit: 'ca',
-                badge: 'Đúng tiến độ',
+                badge: todayCount > 0 ? 'Đúng tiến độ' : null,
                 badgeColor: AppColors.primary,
               ),
             ),
             const VerticalDivider(
                 color: AppColors.border, width: 1, thickness: 1),
-            // Thu nhập T9
+            // Thu nhập tháng này
             Expanded(
               child: _KpiItem(
-                label: 'Thu nhập T9',
-                value: '4.800k',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.trending_up_rounded,
-                        color: AppColors.secondary, size: 12),
-                    const SizedBox(width: 2),
-                    Text(
-                      '+12%',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                  ],
-                ),
+                label: 'Thu nhập T${DateTime.now().month}',
+                value: monthLabel,
               ),
             ),
             const VerticalDivider(
                 color: AppColors.border, width: 1, thickness: 1),
-            // Đánh giá
+            // Đánh giá từ profile DB
             Expanded(
               child: _KpiItem(
                 label: 'Đánh giá',
                 valueWidget: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded,
-                        color: Color(0xFFA16900), size: 18),
-                    const SizedBox(width: 4),
+                    if (rating > 0) ...[
+                      const Icon(Icons.star_rounded,
+                          color: Color(0xFFA16900), size: 18),
+                      const SizedBox(width: 4),
+                    ],
                     Text(
-                      '4.9',
+                      ratingLabel,
                       style: GoogleFonts.beVietnamPro(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -242,7 +303,7 @@ class HomeScreen extends ConsumerWidget {
                   ],
                 ),
                 trailing: Text(
-                  '(98 ca)',
+                  reviewLabel,
                   style: GoogleFonts.beVietnamPro(
                     fontSize: 11,
                     color: AppColors.textSecondary,
@@ -259,6 +320,8 @@ class HomeScreen extends ConsumerWidget {
   // ── New Booking Request Card (Pulse) ───────────────────
   Widget _buildNewBookingRequest(
       BuildContext context, WidgetRef ref, MockBooking booking) {
+    final note = booking.customerNote?.trim();
+
     return _PulseCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +363,7 @@ class HomeScreen extends ConsumerWidget {
                         color: AppColors.error, size: 14),
                     const SizedBox(width: 4),
                     Text(
-                      '14:32',
+                      'Đang chờ',
                       style: GoogleFonts.beVietnamPro(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -400,7 +463,7 @@ class HomeScreen extends ConsumerWidget {
                                 const SizedBox(width: 2),
                                 Expanded(
                                   child: Text(
-                                    'Quận 1 · Cách bạn 2.1km',
+                                    _offerLocationLabel(booking),
                                     style: GoogleFonts.beVietnamPro(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -445,7 +508,9 @@ class HomeScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              '"Hỗ trợ trò chuyện buổi sáng, nhắc nhở uống nước."',
+              note == null || note.isEmpty
+                  ? 'Booking ID: ${_shortId(booking.id)}'
+                  : '"$note"',
               style: GoogleFonts.beVietnamPro(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
@@ -462,10 +527,22 @@ class HomeScreen extends ConsumerWidget {
                 child: SizedBox(
                   height: 48,
                   child: OutlinedButton.icon(
-                    onPressed: () =>
-                        ref.read(shiftsProvider.notifier).declineBooking(
-                              booking.id,
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(shiftsProvider.notifier)
+                            .declineBooking(booking.id);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Chưa từ chối được ca: $e'),
+                              backgroundColor: AppColors.error,
                             ),
+                          );
+                        }
+                      }
+                    },
                     icon: const Icon(Icons.close_rounded, size: 18),
                     label: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -562,7 +639,7 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header — ngày được tính động
           Row(
             children: [
               const Icon(Icons.calendar_today_rounded,
@@ -581,7 +658,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Thứ Hai, 08/09',
+                _todayLabel(),
                 style: GoogleFonts.beVietnamPro(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -638,11 +715,44 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  // ── Helpers ────────────────────────────────────────────
+  /// Nhãn ngày hôm nay động: "Thứ Hai, 09/09"
+  String _todayLabel() {
+    const dayNames = [
+      'Thứ Hai',
+      'Thứ Ba',
+      'Thứ Tư',
+      'Thứ Năm',
+      'Thứ Sáu',
+      'Thứ Bảy',
+      'Chủ Nhật',
+    ];
+    final now = DateTime.now();
+    final dayName = dayNames[now.weekday - 1];
+    final d = now.day.toString().padLeft(2, '0');
+    final m = now.month.toString().padLeft(2, '0');
+    return '$dayName, $d/$m';
+  }
+
   // ── Earnings Bar Chart ─────────────────────────────────
-  Widget _buildEarningsChart() {
-    final earningsData = [300.0, 450.0, 200.0, 600.0, 500.0, 0.0, 400.0];
-    final labels = ['T4', 'T5', 'T6', 'T7', 'CN', 'T2', 'Nay'];
-    final total = earningsData.fold(0.0, (a, b) => a + b);
+  Widget _buildEarningsChart({
+    required List<double> last7Days,
+    required int completedShifts,
+    required double monthTotal,
+  }) {
+    // last7Days từ earningsProvider — đơn vị: VND
+    // Chuyển sang nghìn đồng cho chart label
+    final earningsData = last7Days.map((v) => v / 1000).toList();
+    final total = last7Days.fold(0.0, (a, b) => a + b);
+
+    // Label: 7 ngày gần nhất, ngày cuối = hôm nay
+    final now = DateTime.now();
+    final labels = List.generate(7, (i) {
+      final d = now.subtract(Duration(days: 6 - i));
+      if (i == 6) return 'Nay';
+      const short = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      return short[d.weekday - 1];
+    });
 
     return Container(
       decoration: BoxDecoration(
@@ -680,7 +790,7 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           const TextSpan(text: 'Tổng tích luỹ: '),
                           TextSpan(
-                            text: '${_formatPrice(total * 1000)}đ',
+                            text: '${_formatPrice(total)}đ',
                             style: GoogleFonts.beVietnamPro(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -720,7 +830,10 @@ class HomeScreen extends ConsumerWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: 700,
+                maxY: earningsData.isEmpty || earningsData.every((v) => v == 0)
+                    ? 100 // placeholder khi chưa có data
+                    : (earningsData.reduce((a, b) => a > b ? a : b) * 1.25)
+                        .ceilToDouble(),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipItem: (group, gIdx, rod, rIdx) {
@@ -795,15 +908,21 @@ class HomeScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  'Trung bình mỗi ca: ~350.000đ',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                child: Builder(builder: (context) {
+                  // Tính trung bình từ ca đã hoàn thành
+                  final avgLabel = completedShifts > 0
+                      ? 'TB/ca: ${_formatPrice(monthTotal / completedShifts)}đ'
+                      : 'Chưa có ca hoàn thành';
+                  return Text(
+                    avgLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  );
+                }),
               ),
               const SizedBox(width: 8),
               Text(
@@ -889,6 +1008,22 @@ class HomeScreen extends ConsumerWidget {
     }
     return price.toStringAsFixed(0);
   }
+
+  String _offerLocationLabel(MockBooking booking) {
+    final address = booking.address.trim();
+    if (address.isEmpty || address == 'Địa chỉ khách hàng đã đăng ký') {
+      return 'Địa chỉ theo booking';
+    }
+    final parts = address
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.length >= 2) return parts.take(2).join(', ');
+    return address;
+  }
+
+  String _shortId(String id) => id.length > 8 ? id.substring(0, 8) : id;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -896,28 +1031,25 @@ class HomeScreen extends ConsumerWidget {
 // ═══════════════════════════════════════════════════════════
 
 /// Status toggle pill: Rảnh / Bận
-class _StatusTogglePill extends StatefulWidget {
-  @override
-  State<_StatusTogglePill> createState() => _StatusTogglePillState();
-}
+class _StatusTogglePill extends ConsumerWidget {
+  final bool isAvailable;
 
-class _StatusTogglePillState extends State<_StatusTogglePill> {
-  bool _isAvailable = true;
+  const _StatusTogglePill(this.isAvailable);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => setState(() => _isAvailable = !_isAvailable),
+      onTap: () => ref.read(profileProvider.notifier).toggleAvailability(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: _isAvailable
+          color: isAvailable
               ? AppColors.primaryContainer
               : AppColors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: _isAvailable
+            color: isAvailable
                 ? AppColors.primary.withValues(alpha: 0.2)
                 : AppColors.border,
           ),
@@ -929,17 +1061,17 @@ class _StatusTogglePillState extends State<_StatusTogglePill> {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: _isAvailable ? AppColors.primary : AppColors.textHint,
+                color: isAvailable ? AppColors.primary : AppColors.textHint,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 6),
             Text(
-              _isAvailable ? 'Rảnh ✓' : 'Bận',
+              isAvailable ? 'Rảnh ✓' : 'Bận',
               style: GoogleFonts.beVietnamPro(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: _isAvailable ? AppColors.primary : AppColors.textHint,
+                color: isAvailable ? AppColors.primary : AppColors.textHint,
               ),
             ),
           ],

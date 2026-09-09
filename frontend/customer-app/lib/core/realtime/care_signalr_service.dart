@@ -39,13 +39,14 @@ class GpsUpdate {
   });
 
   factory GpsUpdate.fromJson(Map<String, dynamic> json) => GpsUpdate(
-        bookingId: json['bookingId'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
-        accuracyMeters: (json['accuracyMeters'] as num?)?.toDouble(),
-        speed: (json['speed'] as num?)?.toDouble(),
-        heading: (json['heading'] as num?)?.toDouble(),
-        recordedAt: DateTime.parse(json['recordedAt'] as String),
+        bookingId: _string(json['bookingId']) ?? '',
+        latitude: _double(json['latitude']),
+        longitude: _double(json['longitude']),
+        accuracyMeters: _nullableDouble(json['accuracyMeters']),
+        speed: _nullableDouble(json['speed']),
+        heading: _nullableDouble(json['heading']),
+        recordedAt: DateTime.tryParse(json['recordedAt']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -65,10 +66,11 @@ class BookingStatusChange {
 
   factory BookingStatusChange.fromJson(Map<String, dynamic> json) =>
       BookingStatusChange(
-        bookingId: json['bookingId'] as String,
-        oldStatus: json['oldStatus'] as String,
-        newStatus: json['newStatus'] as String,
-        changedAt: DateTime.parse(json['changedAt'] as String),
+        bookingId: _string(json['bookingId']) ?? '',
+        oldStatus: _string(json['oldStatus']) ?? '',
+        newStatus: _string(json['newStatus']) ?? '',
+        changedAt: DateTime.tryParse(json['changedAt']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -94,13 +96,14 @@ class TimelineEventUpdate {
 
   factory TimelineEventUpdate.fromJson(Map<String, dynamic> json) =>
       TimelineEventUpdate(
-        bookingId: json['bookingId'] as String,
-        eventType: json['eventType'] as String,
-        title: json['title'] as String?,
-        note: json['note'] as String?,
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
-        recordedAt: DateTime.parse(json['recordedAt'] as String),
+        bookingId: _string(json['bookingId']) ?? '',
+        eventType: _string(json['eventType']) ?? '',
+        title: _string(json['title']),
+        note: _string(json['note']),
+        latitude: _nullableDouble(json['latitude']),
+        longitude: _nullableDouble(json['longitude']),
+        recordedAt: DateTime.tryParse(json['recordedAt']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -134,8 +137,7 @@ class CareSignalRService {
   /// Danh sách booking ID đang theo dõi — dùng để re-join sau khi reconnect.
   final Set<String> _activeBookings = {};
 
-  bool get isConnected =>
-      _connection?.state == HubConnectionState.Connected;
+  bool get isConnected => _connection?.state == HubConnectionState.Connected;
 
   /// Kết nối tới Hub và đăng ký handlers.
   /// Tự động đính kèm JWT access token vào query string.
@@ -153,9 +155,8 @@ class CareSignalRService {
     _connection = HubConnectionBuilder()
         .withUrl(hubUrl)
         .withAutomaticReconnect(retryDelays: [
-          2000, 5000, 10000, 30000, // ms
-        ])
-        .build();
+      2000, 5000, 10000, 30000, // ms
+    ]).build();
 
     // ── Đăng ký event handlers ──────────────────────────────────────
 
@@ -201,7 +202,8 @@ class CareSignalRService {
 
     _connection!.onreconnected(({connectionId}) {
       // ignore: avoid_print
-      print('[SignalR] Reconnected: $connectionId — re-joining ${_activeBookings.length} groups');
+      print(
+          '[SignalR] Reconnected: $connectionId — re-joining ${_activeBookings.length} groups');
       // ⚠️ ConnectionId mới → group membership bị mất.
       // Phải re-invoke JoinBookingGroup cho mỗi booking đang active.
       for (final bid in _activeBookings) {
@@ -229,7 +231,8 @@ class CareSignalRService {
     await connect();
     if (!isConnected) return;
     try {
-      final result = await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
+      final result =
+          await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
       if (result == 'unauthorized') {
         // ignore: avoid_print
         print('[SignalR] joinBooking UNAUTHORIZED: $bookingId');
@@ -265,4 +268,20 @@ class CareSignalRService {
     await _statusController.close();
     await _timelineController.close();
   }
+}
+
+String? _string(Object? value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+double _double(Object? value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double? _nullableDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
 }

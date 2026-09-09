@@ -125,9 +125,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  MockData.currentUserPhone,
-                  style: TextStyle(
+                Text(
+                  profile.location == 'Chưa cập nhật'
+                      ? _shortIdLabel(profile.id)
+                      : profile.location,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
@@ -144,7 +146,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSection({required String title, required List<_SettingsItem> items}) {
+  String _shortIdLabel(String id) {
+    if (id.isEmpty) return 'Chưa có hồ sơ caregiver';
+    final shortId = id.length > 8 ? id.substring(0, 8) : id;
+    return 'ID hồ sơ: $shortId';
+  }
+
+  Widget _buildSection(
+      {required String title, required List<_SettingsItem> items}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,7 +183,8 @@ class SettingsScreen extends ConsumerWidget {
                 return Column(
                   children: [
                     ListTile(
-                      leading: Icon(e.value.icon, color: AppColors.textSecondary),
+                      leading:
+                          Icon(e.value.icon, color: AppColors.textSecondary),
                       title: Text(
                         e.value.title,
                         style: const TextStyle(
@@ -184,9 +194,12 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       subtitle: e.value.subtitle != null
-                          ? Text(e.value.subtitle!, style: const TextStyle(fontSize: 12, color: AppColors.primary))
+                          ? Text(e.value.subtitle!,
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.primary))
                           : null,
-                      trailing: const Icon(Icons.chevron_right, color: AppColors.textHint),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppColors.textHint),
                       onTap: e.value.onTap,
                     ),
                     if (!isLast) const Divider(height: 1, indent: 56),

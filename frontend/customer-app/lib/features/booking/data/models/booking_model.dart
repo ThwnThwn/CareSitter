@@ -72,7 +72,10 @@ class BookingModel {
 
   bool get isCompleted => status == 'completed';
   bool get isCancelled =>
-      status == 'cancelled' || status == 'disputed' || status == 'refunded';
+      status == 'cancelled' ||
+      status == 'matching_failed' ||
+      status == 'disputed' ||
+      status == 'refunded';
   bool get isPendingPayment => status == 'pending_payment';
   bool get isEnRoute => status == 'caregiver_en_route';
   bool get isInProgress => status == 'in_progress';
@@ -172,35 +175,57 @@ class BookingModel {
 
   // ── fromJson ─────────────────────────────────────────────────────────────
 
-  factory BookingModel.fromJson(Map<String, dynamic> json) => BookingModel(
-        id: json['id'] as String,
-        beneficiaryId: json['beneficiaryId'] as String,
-        caregiverId: json['caregiverId'] as String?,
-        addressId: json['addressId'] as String,
-        serviceTypeId: json['serviceTypeId'] as String,
-        scheduledStart: DateTime.parse(json['scheduledStart'] as String),
-        scheduledEnd: DateTime.parse(json['scheduledEnd'] as String),
-        actualStart: json['actualStart'] != null
-            ? DateTime.parse(json['actualStart'] as String)
-            : null,
-        actualEnd: json['actualEnd'] != null
-            ? DateTime.parse(json['actualEnd'] as String)
-            : null,
-        status: _normalizeStatus(json['status'] as String),
-        escrowAmount: json['escrowAmount'] as int,
-        platformFeeAmount: json['platformFeeAmount'] as int,
-        cancelledAt: json['cancelledAt'] != null
-            ? DateTime.parse(json['cancelledAt'] as String)
-            : null,
-        cancelReason: json['cancelReason'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-        caregiverName: json['caregiverName'] as String?,
-        caregiverAvatar: json['caregiverAvatar'] as String?,
-        beneficiaryName: json['beneficiaryName'] as String?,
-        addressText: json['addressText'] as String?,
-        serviceName: json['serviceName'] as String?,
-      );
+  factory BookingModel.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    final scheduledStart =
+        _parseNullableApiDateTime(json['scheduledStart']) ?? now;
+    final scheduledEnd = _parseNullableApiDateTime(json['scheduledEnd']) ??
+        scheduledStart.add(const Duration(hours: 1));
+
+    return BookingModel(
+      id: _string(json['id']) ?? '',
+      beneficiaryId: _string(json['beneficiaryId']) ?? '',
+      caregiverId: _string(json['caregiverId']),
+      addressId: _string(json['addressId']) ?? '',
+      serviceTypeId: _string(json['serviceTypeId']) ?? '',
+      scheduledStart: scheduledStart,
+      scheduledEnd: scheduledEnd,
+      actualStart: _parseNullableApiDateTime(json['actualStart']),
+      actualEnd: _parseNullableApiDateTime(json['actualEnd']),
+      status: _normalizeStatus(_string(json['status']) ?? 'draft'),
+      escrowAmount: _int(json['escrowAmount']),
+      platformFeeAmount: _int(json['platformFeeAmount']),
+      cancelledAt: _parseNullableApiDateTime(json['cancelledAt']),
+      cancelReason: _string(json['cancelReason']),
+      createdAt: _parseNullableApiDateTime(json['createdAt']) ?? now,
+      updatedAt: _parseNullableApiDateTime(json['updatedAt']) ?? now,
+      caregiverName: _string(json['caregiverName']),
+      caregiverAvatar: _string(json['caregiverAvatar']),
+      beneficiaryName: _string(json['beneficiaryName']),
+      addressText: _string(json['addressText']),
+      serviceName: _string(json['serviceName']),
+    );
+  }
+
+  static DateTime _parseApiDateTime(String value) =>
+      DateTime.tryParse(value)?.toLocal() ?? DateTime.now();
+
+  static DateTime? _parseNullableApiDateTime(Object? value) {
+    final text = value?.toString();
+    if (text == null || text.isEmpty) return null;
+    return _parseApiDateTime(text);
+  }
+
+  static String? _string(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  static int _int(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
 
   /// Chuyển status về lower_snake_case thống nhất.
   /// BE có thể trả UPPER_SNAKE (dữ liệu cũ/cache) hoặc lower_snake (mới).
@@ -253,18 +278,35 @@ class GpsTrackModel {
   });
 
   factory GpsTrackModel.fromJson(Map<String, dynamic> json) => GpsTrackModel(
-        id: json['id'] as String,
-        bookingId: json['bookingId'] as String,
-        caregiverId: json['caregiverId'] as String,
-        latitude: (json['latitude'] as num).toDouble(),
-        longitude: (json['longitude'] as num).toDouble(),
-        accuracyMeters: (json['accuracyMeters'] as num?)?.toDouble(),
-        speed: (json['speed'] as num?)?.toDouble(),
-        heading: (json['heading'] as num?)?.toDouble(),
-        recordedAt: DateTime.parse(json['recordedAt'] as String),
+        id: _string(json['id']) ?? '',
+        bookingId: _string(json['bookingId']) ?? '',
+        caregiverId: _string(json['caregiverId']) ?? '',
+        latitude: _double(json['latitude']),
+        longitude: _double(json['longitude']),
+        accuracyMeters: _nullableDouble(json['accuracyMeters']),
+        speed: _nullableDouble(json['speed']),
+        heading: _nullableDouble(json['heading']),
+        recordedAt: DateTime.tryParse(json['recordedAt']?.toString() ?? '') ??
+            DateTime.now(),
       );
 
   LatLng get latLng => LatLng(latitude, longitude);
+
+  static String? _string(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  static double _double(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static double? _nullableDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
 }
 
 // ── Booking list response (paginated) ──────────────────────────────────────
@@ -282,13 +324,25 @@ class BookingListResponse {
     required this.pageSize,
   });
 
-  factory BookingListResponse.fromJson(Map<String, dynamic> json) =>
-      BookingListResponse(
-        items: (json['items'] as List)
-            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        total: json['total'] as int,
-        page: json['page'] as int,
-        pageSize: json['pageSize'] as int,
-      );
+  factory BookingListResponse.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    final items = rawItems is List
+        ? rawItems
+            .whereType<Map<String, dynamic>>()
+            .map(BookingModel.fromJson)
+            .toList()
+        : <BookingModel>[];
+    return BookingListResponse(
+      items: items,
+      total: _int(json['total']) ?? items.length,
+      page: _int(json['page']) ?? 1,
+      pageSize: _int(json['pageSize']) ?? items.length,
+    );
+  }
+
+  static int? _int(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
 }

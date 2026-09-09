@@ -1,5 +1,8 @@
 using CareSitter.ApiHost.Jobs;
 using CareSitter.ApiHost.OpenApi;
+using CareSitter.ApiHost.Routing;
+using CareSitter.ApiHost.Routing.Geoapify;
+using CareSitter.ApiHost.Routing.OpenRouteService;
 using CareSitter.ApiHost.Security;
 using CareSitter.Infrastructure.Auth;
 using CareSitter.Infrastructure.Email;
@@ -9,10 +12,14 @@ using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Infrastructure.Media;
 using CareSitter.Modules.Booking;
+using CareSitter.ApiHost.Matching;
+using CareSitter.Contracts.Services;
 using Hangfire;
 using Hangfire.InMemory;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
+using CareSitter.Contracts.Services.Routing;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
 // TraversePath() tim .env tu thu muc hien tai len cac thu muc cha (repo root).
@@ -20,6 +27,41 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection("Matching"));
+builder.Services.Configure<RoutingOptions>(builder.Configuration.GetSection("Routing"));
+builder.Services.AddMetrics();
+builder.Services.AddSingleton<RoutingMetrics>();
+builder.Services.AddHttpClient<GeoapifyRouteMatrixService>((sp, client) =>
+{
+    var config = sp.GetRequiredService<IOptions<RoutingOptions>>().Value.Geoapify;
+    client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(config.BaseUrl)
+        ? "https://api.geoapify.com"
+        : config.BaseUrl);
+});
+builder.Services.AddHttpClient<OpenRouteServiceMatrixService>((sp, client) =>
+{
+    var config = sp.GetRequiredService<IOptions<RoutingOptions>>().Value.OpenRouteService;
+    client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(config.BaseUrl)
+        ? "https://api.openrouteservice.org"
+        : config.BaseUrl);
+    var apiKey = sp.GetRequiredService<IConfiguration>()["ORS_API_KEY"]
+        ?? sp.GetRequiredService<IConfiguration>()["OpenRouteService:ApiKey"];
+    if (!string.IsNullOrWhiteSpace(apiKey))
+        client.DefaultRequestHeaders.Add("Authorization", apiKey);
+});
+builder.Services.AddScoped<ResilientRouteMatrixService>();
+builder.Services.AddScoped<IRouteMatrixService>(sp =>
+{
+    var config = sp.GetRequiredService<IOptions<RoutingOptions>>().Value;
+    if (config.EnableBackupProvider || string.Equals(config.Provider, "Resilient", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<ResilientRouteMatrixService>();
+    if (string.Equals(config.Provider, "OpenRouteService", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<OpenRouteServiceMatrixService>();
+    return sp.GetRequiredService<GeoapifyRouteMatrixService>();
+});
+builder.Services.AddScoped<IMatchingService, MatchingService>();
+builder.Services.AddExceptionHandler<RoutingExceptionHandler>();
 
 // --- Shared infrastructure services ---
 builder.Services.AddSingleton<IClock, SystemClock>();
@@ -187,6 +229,12 @@ RecurringJob.AddOrUpdate<BookingJobsService>(
     recurringJobId: "auto-complete-shifts",
     methodCall: svc => svc.AutoCompleteExpiredShiftsAsync(),
     cronExpression: "*/5 * * * *", // Mỗi 5 phút
+    queue: "booking");
+
+RecurringJob.AddOrUpdate<BookingJobsService>(
+    recurringJobId: "expand-expired-booking-offers",
+    methodCall: svc => svc.ExpandExpiredBookingOffersAsync(),
+    cronExpression: "* * * * *", // Mỗi 1 phút
     queue: "booking");
 
 // --- Map Controllers ---

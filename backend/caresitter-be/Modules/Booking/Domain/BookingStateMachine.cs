@@ -11,7 +11,8 @@ public static class BookingStateMachine
         {
             [BookingStatus.Draft] = new[] { BookingStatus.PendingPayment, BookingStatus.Cancelled },
             [BookingStatus.PendingPayment] = new[] { BookingStatus.Confirmed, BookingStatus.Cancelled },
-            [BookingStatus.Confirmed] = new[] { BookingStatus.CaregiverAccepted, BookingStatus.Cancelled },
+            [BookingStatus.Confirmed] = new[] { BookingStatus.MatchingFailed, BookingStatus.CaregiverAccepted, BookingStatus.Cancelled },
+            [BookingStatus.MatchingFailed] = new[] { BookingStatus.Cancelled, BookingStatus.Refunded },
             [BookingStatus.CaregiverAccepted] = new[] { BookingStatus.CaregiverEnRoute, BookingStatus.Cancelled },
             [BookingStatus.CaregiverEnRoute] = new[] { BookingStatus.InProgress, BookingStatus.Cancelled },
             [BookingStatus.InProgress] = new[]

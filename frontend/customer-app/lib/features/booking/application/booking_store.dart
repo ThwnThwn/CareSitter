@@ -49,9 +49,16 @@ class BookingStore extends Notifier<List<BookingModel>> {
   // ── Lifecycle actions (gọi trực tiếp API, chờ response) ──────────────────
 
   Future<BookingModel> createBooking(BookingDraft draft) async {
-    final created = await _repo.createBooking(draft);
-    state = [created, ...state];
-    return created;
+    var created = await _repo.createBooking(draft);
+    if (!draft.isSystemMatched && draft.caregiverId != null) {
+      created = await _repo.selectCaregiver(
+        created.id,
+        caregiverId: draft.caregiverId!,
+      );
+    }
+    final confirmed = await _repo.confirmPayment(created.id);
+    state = [confirmed, ...state];
+    return confirmed;
   }
 
   Future<void> caregiverEnRoute(String bookingId) async {
@@ -121,13 +128,14 @@ class BookingStore extends Notifier<List<BookingModel>> {
     }
   }
 
-  Future<void> openDispute(String bookingId, String reason, {String? description}) async {
+  Future<void> openDispute(String bookingId, String reason,
+      {String? description}) async {
     try {
       await ref.read(reviewRepositoryProvider).createDispute(
-        bookingId: bookingId,
-        reason: reason,
-        description: description ?? reason,
-      );
+            bookingId: bookingId,
+            reason: reason,
+            description: description ?? reason,
+          );
       state = [
         for (final b in state)
           if (b.id == bookingId)
@@ -152,12 +160,12 @@ class BookingStore extends Notifier<List<BookingModel>> {
     try {
       if (caregiverId != null && rating != null && rating > 0) {
         await ref.read(reviewRepositoryProvider).createReview(
-          bookingId: bookingId,
-          caregiverId: caregiverId,
-          rating: rating,
-          comment: comment,
-          experienceTags: experienceTags,
-        );
+              bookingId: bookingId,
+              caregiverId: caregiverId,
+              rating: rating,
+              comment: comment,
+              experienceTags: experienceTags,
+            );
       }
       state = [
         for (final b in state)
@@ -181,12 +189,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
           b.copyWith(
             tasks: [
               for (int i = 0; i < b.tasks.length; i++)
-                if (i == taskIndex)
-                  (b.tasks[i] is dynamic && b.tasks[i].copyWith != null)
-                      ? b.tasks[i].copyWith(isCompleted: !(b.tasks[i].isCompleted as bool))
-                      : b.tasks[i]
-                else
-                  b.tasks[i],
+                if (i == taskIndex) _toggleTaskItem(b.tasks[i]) else b.tasks[i],
             ],
           )
         else
@@ -196,9 +199,19 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  dynamic _toggleTaskItem(dynamic task) {
+    try {
+      final isCompleted = task.isCompleted == true;
+      return task.copyWith(isCompleted: !isCompleted);
+    } catch (_) {
+      return task;
+    }
+  }
+
   void _applyUpdate(BookingModel updated) {
     state = [
-      for (final b in state) if (b.id == updated.id) updated else b,
+      for (final b in state)
+        if (b.id == updated.id) updated else b,
     ];
   }
 

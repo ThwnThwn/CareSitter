@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Represents a single availability time slot
+import '../../../../core/api/api_constants.dart';
+import '../../../../core/api/dio_client.dart';
+import '../../../../core/auth/auth_notifier.dart';
+
+/// Represents a single availability time slot.
 class AvailabilitySlot {
   final String id;
   final DateTime date;
@@ -44,7 +48,7 @@ class AvailabilitySlot {
   }
 }
 
-/// Represents a booked shift to display on the timeline
+/// Represents a booked shift to display on the timeline.
 class TimelineShift {
   final String id;
   final String beneficiaryName;
@@ -68,58 +72,62 @@ class TimelineShift {
 }
 
 class ScheduleNotifier extends StateNotifier<List<AvailabilitySlot>> {
-  ScheduleNotifier() : super([]) {
-    _init();
+  final Ref _ref;
+
+  ScheduleNotifier(this._ref) : super([]) {
+    _ref.listen(authStateProvider, (previous, next) {
+      if (next.value?.isAuthenticated ?? false) {
+        refresh();
+      } else {
+        state = [];
+      }
+    });
+    refresh();
   }
 
-  int _nextId = 10;
+  DioClient get _dio => _ref.read(dioClientProvider);
 
-  void _init() {
-    final today = DateTime.now();
-    final tomorrow = today.add(const Duration(days: 1));
-    final dayAfter = today.add(const Duration(days: 2));
+  Future<void> refresh() async {
+    if (kDebugBypassAuth) {
+      state = [];
+      return;
+    }
 
-    state = [
-      // Today's available slots
-      AvailabilitySlot(
-        id: 'avl_01',
-        date: DateTime(today.year, today.month, today.day),
-        startHour: 7,
-        endHour: 12,
-      ),
-      AvailabilitySlot(
-        id: 'avl_02',
-        date: DateTime(today.year, today.month, today.day),
-        startHour: 14,
-        endHour: 17,
-      ),
-      AvailabilitySlot(
-        id: 'avl_03',
-        date: DateTime(today.year, today.month, today.day),
-        startHour: 19,
-        endHour: 22,
-      ),
-      // Tomorrow's available slots
-      AvailabilitySlot(
-        id: 'avl_04',
-        date: DateTime(tomorrow.year, tomorrow.month, tomorrow.day),
-        startHour: 8,
-        endHour: 11,
-      ),
-      AvailabilitySlot(
-        id: 'avl_05',
-        date: DateTime(tomorrow.year, tomorrow.month, tomorrow.day),
-        startHour: 13,
-        endHour: 18,
-      ),
-      // Day after tomorrow
-      AvailabilitySlot(
-        id: 'avl_06',
-        date: DateTime(dayAfter.year, dayAfter.month, dayAfter.day),
-        startHour: 7,
-        endHour: 19,
-      ),
-    ];
+    final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    if (!isAuth) {
+      state = [];
+      return;
+    }
+
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+    final to = from.add(const Duration(days: 45));
+
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.myAvailability,
+        query: {
+          'from': from.toUtc().toIso8601String(),
+          'to': to.toUtc().toIso8601String(),
+        },
+      );
+      final rawSlots = response.data ?? const [];
+      state = rawSlots
+          .whereType<Map<String, dynamic>>()
+          .map(_mapSlot)
+          .whereType<AvailabilitySlot>()
+          .toList()
+        ..sort((a, b) {
+          final dateCompare = a.date.compareTo(b.date);
+          return dateCompare != 0
+              ? dateCompare
+              : a.startHour.compareTo(b.startHour);
+        });
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ScheduleNotifier] Lỗi tải lịch rảnh: $e');
+    }
   }
 
   List<AvailabilitySlot> getSlotsForDate(DateTime date) {
@@ -131,18 +139,61 @@ class ScheduleNotifier extends StateNotifier<List<AvailabilitySlot>> {
       ..sort((a, b) => a.startHour.compareTo(b.startHour));
   }
 
-  void addSlot(DateTime date, int startHour, int endHour) {
+  Future<void> addSlot(DateTime date, int startHour, int endHour) async {
+    final startAt = DateTime(date.year, date.month, date.day, startHour);
+    final endAt = DateTime(date.year, date.month, date.day, endHour);
+
+    if (!kDebugBypassAuth) {
+      try {
+        final response = await _dio.post<Map<String, dynamic>>(
+          ApiPaths.myAvailability,
+          data: {
+            'startAt': startAt.toUtc().toIso8601String(),
+            'endAt': endAt.toUtc().toIso8601String(),
+            'status': 'AVAILABLE',
+          },
+        );
+        final slot = _mapSlot(response.data ?? {});
+        if (slot != null) {
+          state = [...state.where((s) => s.id != slot.id), slot]..sort((a, b) {
+              final dateCompare = a.date.compareTo(b.date);
+              return dateCompare != 0
+                  ? dateCompare
+                  : a.startHour.compareTo(b.startHour);
+            });
+        } else {
+          await refresh();
+        }
+        return;
+      } catch (e) {
+        // ignore: avoid_print
+        print('[ScheduleNotifier] Lỗi thêm lịch rảnh: $e');
+        return;
+      }
+    }
+
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    final newSlot = AvailabilitySlot(
-      id: 'avl_${_nextId++}',
-      date: normalizedDate,
-      startHour: startHour,
-      endHour: endHour,
-    );
-    state = [...state, newSlot];
+    state = [
+      ...state,
+      AvailabilitySlot(
+        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+        date: normalizedDate,
+        startHour: startHour,
+        endHour: endHour,
+      ),
+    ];
   }
 
-  void removeSlot(String id) {
+  Future<void> removeSlot(String id) async {
+    if (!kDebugBypassAuth) {
+      try {
+        await _dio.delete<void>('${ApiPaths.myAvailability}/$id');
+      } catch (e) {
+        // ignore: avoid_print
+        print('[ScheduleNotifier] Lỗi xóa lịch rảnh: $e');
+        return;
+      }
+    }
     state = state.where((s) => s.id != id).toList();
   }
 
@@ -153,9 +204,37 @@ class ScheduleNotifier extends StateNotifier<List<AvailabilitySlot>> {
       return slotDate == target && hour >= s.startHour && hour < s.endHour;
     });
   }
+
+  AvailabilitySlot? _mapSlot(Map<String, dynamic> json) {
+    final id = _string(json['id'] ?? json['Id']);
+    final start = _date(json['startAt'] ?? json['StartAt']);
+    final end = _date(json['endAt'] ?? json['EndAt']);
+    if (id == null || start == null || end == null) return null;
+
+    return AvailabilitySlot(
+      id: id,
+      date: DateTime(start.year, start.month, start.day),
+      startHour: start.hour,
+      endHour: end.hour == 0 && end.day != start.day ? 24 : end.hour,
+      isBooked:
+          (_string(json['status'] ?? json['Status']) ?? '').toUpperCase() ==
+              'BLOCKED',
+    );
+  }
+
+  static DateTime? _date(Object? value) {
+    final text = value?.toString();
+    if (text == null || text.isEmpty) return null;
+    return DateTime.tryParse(text)?.toLocal();
+  }
+
+  static String? _string(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
 }
 
 final scheduleProvider =
     StateNotifierProvider<ScheduleNotifier, List<AvailabilitySlot>>((ref) {
-  return ScheduleNotifier();
+  return ScheduleNotifier(ref);
 });

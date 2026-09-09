@@ -172,15 +172,21 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   List<TimelineShift> _getShiftsForDate(List shifts) {
     final List<TimelineShift> result = [];
     for (final booking in shifts) {
+      // Lọc đúng ngày được chọn dựa trên scheduledStart (DateTime thật từ API).
+      // Fallback sang parse chuỗi date nếu scheduledStart chưa có.
+      final matchesDate = _bookingMatchesDate(booking, _selectedDate);
+      if (!matchesDate) continue;
+
       // Parse the time field "08:00 - 12:00"
       final timeParts = booking.time.split(' - ');
       if (timeParts.length == 2) {
         final startHour = int.tryParse(timeParts[0].split(':')[0]) ?? 0;
         final endHour = int.tryParse(timeParts[1].split(':')[0]) ?? 0;
 
-        // Check if the shift matches the selected date
         if (booking.status == 'confirmed' ||
+            booking.status == 'assigned' ||
             booking.status == 'in_progress' ||
+            booking.status == 'caregiver_en_route' ||
             booking.status == 'pending') {
           result.add(TimelineShift(
             id: booking.id,
@@ -196,6 +202,28 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       }
     }
     return result;
+  }
+
+  /// So sánh booking với ngày được chọn.
+  /// Ưu tiên scheduledStart (DateTime thật), fallback sang parse chuỗi date "dd/MM/yyyy".
+  bool _bookingMatchesDate(dynamic booking, DateTime date) {
+    final start = booking.scheduledStart as DateTime?;
+    if (start != null) {
+      return start.year == date.year &&
+          start.month == date.month &&
+          start.day == date.day;
+    }
+    // Fallback: parse "dd/MM/yyyy" từ booking.date
+    final parts = (booking.date as String).split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        return d == date.day && m == date.month && y == date.year;
+      }
+    }
+    return false;
   }
 
   // ────────────────────────────────────────────────────────────────

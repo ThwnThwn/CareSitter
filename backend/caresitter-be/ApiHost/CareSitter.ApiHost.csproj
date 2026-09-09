@@ -34,4 +34,9 @@
     <ProjectReference Include="..\Modules\Support\CareSitter.Modules.Support.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
+    <InternalsVisibleTo Include="CareSitter.Modules.Routing.UnitTests" />
+  </ItemGroup>
+
 </Project>

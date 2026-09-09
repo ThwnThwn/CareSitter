@@ -16,6 +16,9 @@ class ApiPaths {
   static const bookings = '/bookings';
   static String booking(String id) => '/bookings/$id';
   static String bookingCancel(String id) => '/bookings/$id/cancel';
+  static String bookingCaregiver(String id) => '/bookings/$id/caregiver';
+  static String caregiverSuggestions(String id) =>
+      '/bookings/$id/caregiver-suggestions';
 
   // ── Booking lifecycle ──────────────────────────────────────
   static String confirmPayment(String id) => '/bookings/$id/confirm-payment';
@@ -53,16 +56,19 @@ class ApiPaths {
   static String caregiver(String id) => '/caregivers/$id';
 
   // ── Auth ─────────────────────────────────────────────────
-  static const login = '/auth/login';             // POST: login bằng OTP
-  static const loginPassword = '/auth/login/password'; // POST: login bằng password
-  static const register = '/auth/register';        // POST: đăng ký
-  static const sendOtp = '/auth/send-otp';         // POST: gửi OTP qua email
-  static const logout = '/auth/logout';            // POST: đăng xuất
-  static const me = '/profile';                   // GET: thông tin user hiện tại (ProfileController)
+  static const login = '/auth/login'; // POST: login bằng OTP
+  static const loginPassword =
+      '/auth/login/password'; // POST: login bằng password
+  static const register = '/auth/register'; // POST: đăng ký
+  static const sendOtp = '/auth/send-otp'; // POST: gửi OTP qua email
+  static const logout = '/auth/logout'; // POST: đăng xuất
+  static const me =
+      '/profile'; // GET: thông tin user hiện tại (ProfileController)
 
   // ── Support / Review / Disputes ───────────────────────────
   static const reviews = '/reviews';
-  static String caregiverReviews(String caregiverId) => '/reviews/caregiver/$caregiverId';
+  static String caregiverReviews(String caregiverId) =>
+      '/reviews/caregiver/$caregiverId';
   static const disputes = '/disputes';
   static String dispute(String id) => '/disputes/$id';
 }

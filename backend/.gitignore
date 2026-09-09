@@ -1,6 +1,7 @@
 # Build output
 bin/
 obj/
+.tmp-build/
 
 # IDE
 .vs/

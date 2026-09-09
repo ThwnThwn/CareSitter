@@ -17,6 +17,39 @@ public sealed class CaregiverKycController(
     PeopleDbContext db, ICurrentUser currentUser, IEncryptionService encryption) : ControllerBase
 {
     /// <summary>
+    /// Caregiver xem hồ sơ của chính mình theo JWT hiện tại.
+    /// Dùng cho app caregiver để hiển thị đúng tên, rating, kỹ năng, khu vực và id profile.
+    /// </summary>
+    [HttpGet("api/v1/caregivers/me/profile")]
+    public async Task<IActionResult> GetMyProfile(CancellationToken ct)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+
+        var profile = await db.CaregiverProfiles.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
+        if (profile is null)
+            return NotFound(new { error = "Caregiver profile khong ton tai." });
+
+        return Ok(new
+        {
+            profile.Id,
+            profile.UserId,
+            profile.FullName,
+            profile.Gender,
+            profile.Bio,
+            profile.YearsOfExperience,
+            profile.HourlyRateExpected,
+            profile.RatingAvg,
+            profile.RatingCount,
+            profile.KycStatus,
+            profile.AvailabilityStatus,
+            profile.Skills,
+            profile.ServiceCity,
+            profile.ServiceDistrict
+        });
+    }
+
+    /// <summary>
     /// Caregiver nộp hồ sơ KYC (xác minh danh tính).
     /// Số CCCD được mã hóa AES (lưu vào DB) và tính HMAC (dùng kiểm tra trùng lặp) trước khi lưu.
     /// Sau khi nộp, trạng thái KYC chuyển sang PENDING — chờ Admin duyệt.
@@ -81,6 +114,27 @@ public sealed class CaregiverKycController(
     }
 
     /// <summary>
+    /// Caregiver cập nhật trạng thái sẵn sàng nhận việc (ONLINE, OFFLINE, BUSY).
+    /// </summary>
+    [HttpPut("api/v1/caregivers/me/status")]
+    public async Task<IActionResult> UpdateMyAvailabilityStatus(
+        [FromBody] UpdateCaregiverStatusRequest req, CancellationToken ct)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+
+        var profile = await db.CaregiverProfiles
+            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
+        if (profile is null)
+            return NotFound(new { error = "Caregiver profile khong ton tai." });
+
+        var result = profile.SetAvailabilityStatus(req.Status);
+        if (result.IsFailure) return Problem(result.Error);
+
+        await db.SaveChangesAsync(ct);
+        return Ok(new { profile.Id, profile.AvailabilityStatus });
+    }
+
+    /// <summary>
     /// Admin duyệt hồ sơ KYC của caregiver, chuyển trạng thái sang APPROVED.
     /// Sau khi APPROVED, caregiver có thể xuất hiện trong danh sách tìm kiếm và nhận ca.
     /// Chỉ tài khoản mang role ADMIN mới có quyền gọi endpoint này.
@@ -140,6 +194,7 @@ public sealed class CaregiverKycController(
 
 public sealed record SubmitKycRequest(string CccdNumber, string[]? CertificateUrls = null);
 public sealed record RejectKycRequest(string? Reason);
+public sealed record UpdateCaregiverStatusRequest(string Status);
 public sealed record UpdateCaregiverProfileRequest(
     string? FullName = null, string? Bio = null, int? YearsOfExperience = null,
     long? HourlyRateExpected = null, string? Skills = null,

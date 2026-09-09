@@ -99,7 +99,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     'Dịch vụ',
     'Người thân',
     'Lịch & địa chỉ',
-    'Caregiver',
+    'Chăm sóc viên',
     'Đồng ý',
     'Xác nhận'
   ];
@@ -600,7 +600,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             Text(
-              '${available.length} caregiver phù hợp với dịch vụ, lịch và khu vực',
+              '${available.length} chăm sóc viên phù hợp với dịch vụ, lịch và khu vực',
               style:
                   const TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
@@ -609,7 +609,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               GestureDetector(
                 onTap: () => setState(() {
                   _isSystemMatched = true;
-                  _selectedCaregiverId = available.first.id;
+                  // Không gán caregiverId cụ thể — backend tự match
+                  _selectedCaregiverId = null;
                 }),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 14),
@@ -641,7 +642,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                   color: AppColors.textPrimary),
                             ),
                             Text(
-                              '${available.first.displayName} • điểm phù hợp cao nhất',
+                              'Hệ thống sẽ chọn người phù hợp nhất cho bạn',
                               style: const TextStyle(
                                   fontSize: 12, color: AppColors.textSecondary),
                             ),
@@ -656,7 +657,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
               ),
               const Text(
-                'Hoặc tự chọn caregiver',
+                'Hoặc tự chọn chăm sóc viên',
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -1448,6 +1449,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             _buildConfirmRow(
               '👩',
               '${caregiver.displayName}${_isSystemMatched ? ' • Hệ thống gợi ý' : ''}',
+            )
+          else if (_isSystemMatched)
+            _buildConfirmRow(
+              '🤖',
+              'Hệ thống sẽ tự ghép chăm sóc viên phù hợp nhất',
             ),
         ]),
         const SizedBox(height: 10),
@@ -1674,12 +1680,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                         _submitBooking();
                       } else {
                         setState(() {
-                          if (_currentStep == 3 &&
-                              _selectedCaregiverId == null &&
-                              _matchedCaregivers.isNotEmpty) {
-                            _selectedCaregiverId = _matchedCaregivers.first.id;
-                            _isSystemMatched = true;
-                          }
+                          // Khi isSystemMatched=true: giữ caregiverId=null
+                          // Backend sẽ tự chọn caregiver phù hợp nhất.
+                          // Không force-set caregiverId ở đây.
                           // Nếu đang ở bước 0 và người thân đã được chọn sẵn từ ngoài
                           // → bỏ qua bước 1, nhảy thẳng sang bước 2
                           if (_currentStep == 0 &&
@@ -1748,6 +1751,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                   beneficiaryId: beneficiary.id,
                   serviceTypeId: service.id,
                   caregiverId: caregiver?.id,
+                  isSystemMatched: _isSystemMatched,
                   addressId: _selectedAddressId!,
                   scheduledStart: start,
                   scheduledEnd: end,
@@ -1784,14 +1788,15 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
     final isCaregiverConflict = e.statusCode == 409;
     final msg = isCaregiverConflict
-        ? 'Caregiver đã có lịch trong khung giờ này. Vui lòng chọn caregiver khác hoặc đổi giờ.'
+        ? 'Chăm sóc viên đã có lịch trong khung giờ này. Vui lòng chọn chăm sóc viên khác hoặc đổi giờ.'
         : e.message;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: AppColors.error,
-        duration: const Duration(seconds: 6),
+        duration: const Duration(seconds: 3),
+        dismissDirection: DismissDirection.horizontal,
         action: isCaregiverConflict
             ? SnackBarAction(
                 label: 'Chọn lại',
