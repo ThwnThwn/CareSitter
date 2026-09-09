@@ -30,6 +30,8 @@ CREATE INDEX idx_addresses_city ON catalog.addresses (city);
 
 CREATE INDEX idx_addresses_ward ON catalog.addresses (ward);
 
+CREATE INDEX idx_addresses_place_id ON catalog.addresses (place_id) WHERE place_id IS NOT NULL;
+
 CREATE INDEX idx_user_devices_user ON identity.user_devices (user_id);
 
 CREATE INDEX idx_user_devices_push ON identity.user_devices (push_token) WHERE push_token IS NOT NULL;

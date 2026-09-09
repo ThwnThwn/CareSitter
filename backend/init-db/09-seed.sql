@@ -187,11 +187,12 @@ VALUES ('a0000000-0000-0000-0000-0000000000e8', 'a0000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Dia chi mau cho customer Lan
-INSERT INTO catalog.addresses (id, owner_user_id, label, full_address, ward, district, city, location, note)
+INSERT INTO catalog.addresses (id, owner_user_id, label, full_address, ward, district, city, place_id, provider, verified_at, location, note)
 VALUES
     ('a0000000-0000-0000-0000-000000000071', 'a0000000-0000-0000-0000-0000000000c1',
      'Nha rieng', '123 Nguyen Hue, Phuong Ben Nghe, Quan 1, TP. Ho Chi Minh',
      'Ben Nghe', 'Quan 1', 'Ho Chi Minh',
+     'seed:nguyen-hue-q1-hcm', 'SEED', now(),
      ST_SetSRID(ST_MakePoint(106.702, 10.775), 4326)::geography, 'Chung cu lau 5')
 ON CONFLICT (id) DO NOTHING;
 

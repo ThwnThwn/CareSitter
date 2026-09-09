@@ -10,6 +10,13 @@ internal sealed class CatalogLookupService(CatalogDbContext db) : ICatalogLookup
         CancellationToken ct = default) => db.Addresses.AsNoTracking()
         .AnyAsync(x => x.Id == addressId && x.OwnerUserId == customerId, ct);
 
+    public Task<bool> AddressIsVerifiedForBookingAsync(Guid addressId, Guid customerId,
+        CancellationToken ct = default) => db.Addresses.AsNoTracking()
+        .AnyAsync(x => x.Id == addressId &&
+            x.OwnerUserId == customerId &&
+            x.PlaceId != null &&
+            x.VerifiedAt != null, ct);
+
     public Task<bool> ServiceIsActiveAsync(Guid serviceTypeId, CancellationToken ct = default) =>
         db.ServiceTypes.AsNoTracking().AnyAsync(x => x.Id == serviceTypeId && x.IsActive, ct);
 

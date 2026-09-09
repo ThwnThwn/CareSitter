@@ -18,6 +18,7 @@ public interface IPeopleLookupService
 public interface ICatalogLookupService
 {
     Task<bool> AddressBelongsToAsync(Guid addressId, Guid customerId, CancellationToken ct = default);
+    Task<bool> AddressIsVerifiedForBookingAsync(Guid addressId, Guid customerId, CancellationToken ct = default);
     Task<bool> ServiceIsActiveAsync(Guid serviceTypeId, CancellationToken ct = default);
     Task<AddressDisplaySummary?> GetAddressDisplayAsync(Guid addressId, CancellationToken ct = default);
     Task<ServiceDisplaySummary?> GetServiceDisplayAsync(Guid serviceTypeId, CancellationToken ct = default);

@@ -28,6 +28,9 @@ internal sealed class CreateBookingHandler(
             return Error.Validation("booking.beneficiary", "Nguoi duoc cham soc khong hop le.");
         if (!await catalog.AddressBelongsToAsync(request.AddressId, customerId, ct))
             return Error.Validation("booking.address", "Dia chi khong hop le.");
+        if (!await catalog.AddressIsVerifiedForBookingAsync(request.AddressId, customerId, ct))
+            return Error.Validation("booking.address_unverified",
+                "Vui long chon dia chi tu danh sach goi y truoc khi dat lich.");
         if (!await catalog.ServiceIsActiveAsync(request.ServiceTypeId, ct))
             return Error.Validation("booking.service", "Dich vu khong hoat dong.");
         if (request.CaregiverId is not null)

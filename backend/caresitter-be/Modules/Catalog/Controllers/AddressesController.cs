@@ -1,4 +1,6 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.Infrastructure.Time;
+using CareSitter.Modules.Catalog.Application;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Modules.Catalog.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -16,8 +18,57 @@ namespace CareSitter.Modules.Catalog.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/addresses")]
-public sealed class AddressesController(CatalogDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class AddressesController(
+    CatalogDbContext db,
+    ICurrentUser currentUser,
+    IPlaceAutocompleteService places,
+    IClock clock) : ControllerBase
 {
+    /// <summary>Gợi ý địa chỉ thật từ Geoapify. Chỉ gợi ý trong Việt Nam.</summary>
+    [HttpGet("autocomplete")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> Autocomplete(
+        [FromQuery] string input,
+        [FromQuery] string? sessionToken,
+        CancellationToken ct)
+    {
+        if (currentUser.UserId is null) return Unauthorized();
+        try
+        {
+            var suggestions = await places.AutocompleteAsync(input, sessionToken, ct);
+            return Ok(suggestions);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Resolve Place ID thành địa chỉ đã xác minh và tọa độ chuẩn.</summary>
+    [HttpGet("places/{placeId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetPlace(
+        string placeId,
+        [FromQuery] string? sessionToken,
+        CancellationToken ct)
+    {
+        if (currentUser.UserId is null) return Unauthorized();
+        try
+        {
+            var details = await places.GetDetailsAsync(placeId, sessionToken, ct);
+            return details is null
+                ? NotFound(new { error = "Dia chi khong hop le hoac khong thuoc Viet Nam." })
+                : Ok(details);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
+        }
+    }
+
     /// <summary>Lấy danh sách địa chỉ của user hiện tại, sắp xếp theo ngày cập nhật gần nhất.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -42,17 +93,31 @@ public sealed class AddressesController(CatalogDbContext db, ICurrentUser curren
         return entity is null ? NotFound() : Ok(ToResponse(entity));
     }
 
-    /// <summary>Tạo địa chỉ mới cho user. Toạ độ (Lat/Lng) được chuẩn hóa sang điểm PostGIS SRID 4326.</summary>
+    /// <summary>Tạo địa chỉ mới cho user từ Geoapify Place ID đã xác minh.</summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] AddressUpsertRequest request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
-        var point = CreatePoint(request.Latitude, request.Longitude);
+        VerifiedPlaceDetails? verified;
+        try
+        {
+            verified = await ResolvePlaceAsync(request.PlaceId, request.SessionToken, ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
+        }
+
+        if (verified is null)
+            return BadRequest(new { error = "Vui long chon dia chi tu danh sach goi y." });
+
+        var point = CreatePoint(verified.Latitude, verified.Longitude);
         if (point is null) return BadRequest(new { error = "Toa do khong hop le." });
-        var created = Address.Create(request.FullAddress, point, userId, request.Label,
-            request.Ward, request.District, request.City, request.Country, request.Note);
+        var created = Address.Create(verified.FormattedAddress, point, userId, request.Label,
+            verified.Ward, verified.District, verified.City, verified.Country, verified.PlaceId,
+            "GEOAPIFY", clock.UtcNow, request.Note);
         if (created.IsFailure) return BadRequest(new { error = created.Error.Message });
         db.Addresses.Add(created.Value);
         await db.SaveChangesAsync(ct);
@@ -69,10 +134,24 @@ public sealed class AddressesController(CatalogDbContext db, ICurrentUser curren
         var entity = await db.Addresses.SingleOrDefaultAsync(x =>
             x.Id == id && x.OwnerUserId == userId, ct);
         if (entity is null) return NotFound();
-        var point = CreatePoint(request.Latitude, request.Longitude);
+        VerifiedPlaceDetails? verified;
+        try
+        {
+            verified = await ResolvePlaceAsync(request.PlaceId, request.SessionToken, ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
+        }
+
+        if (verified is null)
+            return BadRequest(new { error = "Vui long chon dia chi tu danh sach goi y." });
+
+        var point = CreatePoint(verified.Latitude, verified.Longitude);
         if (point is null) return BadRequest(new { error = "Toa do khong hop le." });
-        var result = entity.Update(request.FullAddress, point, request.Label, request.Ward,
-            request.District, request.City, request.Country, request.Note);
+        var result = entity.Update(verified.FormattedAddress, point, request.Label,
+            verified.Ward, verified.District, verified.City, verified.Country,
+            verified.PlaceId, "GEOAPIFY", clock.UtcNow, request.Note);
         if (result.IsFailure) return BadRequest(new { error = result.Error.Message });
         await db.SaveChangesAsync(ct);
         return Ok(ToResponse(entity));
@@ -107,14 +186,34 @@ public sealed class AddressesController(CatalogDbContext db, ICurrentUser curren
         return new Point(longitude, latitude) { SRID = 4326 };
     }
 
+    private async Task<VerifiedPlaceDetails?> ResolvePlaceAsync(
+        string? placeId,
+        string? sessionToken,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(placeId)) return null;
+        try
+        {
+            return await places.GetDetailsAsync(placeId, sessionToken, ct);
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+    }
+
     private static AddressResponse ToResponse(Address x) => new(x.Id, x.FullAddress,
-        x.Location.Y, x.Location.X, x.Label, x.Ward, x.District, x.City, x.Country, x.Note);
+        x.Location.Y, x.Location.X, x.Label, x.Ward, x.District, x.City, x.Country,
+        x.PlaceId, x.Provider, x.VerifiedAt, x.IsVerified, x.Note);
 }
 
-public sealed record AddressUpsertRequest(string FullAddress, double Latitude,
-    double Longitude, string? Label, string? Ward, string? District, string? City,
-    string Country = "Vietnam", string? Note = null);
+public sealed record AddressUpsertRequest(
+    string PlaceId,
+    string? SessionToken,
+    string? Label,
+    string? Note = null);
 
 public sealed record AddressResponse(Guid Id, string FullAddress, double Latitude,
     double Longitude, string? Label, string? Ward, string? District, string? City,
-    string Country, string? Note);
+    string Country, string? PlaceId, string? Provider, DateTimeOffset? VerifiedAt,
+    bool IsVerified, string? Note);

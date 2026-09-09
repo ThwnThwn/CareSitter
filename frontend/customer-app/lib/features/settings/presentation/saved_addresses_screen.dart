@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../catalog/application/address_store.dart';
+import '../../catalog/presentation/widgets/verified_address_field.dart';
 
 class SavedAddressesScreen extends ConsumerStatefulWidget {
   final bool selectionMode;
@@ -21,70 +22,18 @@ class SavedAddressesScreen extends ConsumerStatefulWidget {
 }
 
 class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
-  static const double _defaultLatitude = 10.775;
-  static const double _defaultLongitude = 106.7;
-
   Future<void> _addNewAddress() async {
     final data = await showDialog<_AddressFormData>(
       context: context,
-      builder: (ctx) {
-        final titleCtrl = TextEditingController();
-        final addrCtrl = TextEditingController();
-
-        return AlertDialog(
-          title: const Text(
-            'Thêm địa chỉ mới',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Tên địa điểm (Ví dụ: Nhà riêng, Công ty)',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addrCtrl,
-                maxLines: 2,
-                decoration:
-                    const InputDecoration(labelText: 'Địa chỉ chi tiết'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Huỷ'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final title = titleCtrl.text.trim();
-                final address = addrCtrl.text.trim();
-                if (title.isEmpty || address.isEmpty) return;
-                Navigator.pop(
-                  ctx,
-                  _AddressFormData(title: title, address: address),
-                );
-              },
-              child: const Text('Lưu'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => const _AddressFormDialog(),
     );
-
     if (data == null) return;
 
     try {
       final created = await ref.read(addressStoreProvider.notifier).addAddress(
             label: data.title,
-            fullAddress: data.address,
-            latitude: _defaultLatitude,
-            longitude: _defaultLongitude,
-            city: 'Ho Chi Minh',
+            placeId: data.placeId,
+            sessionToken: data.sessionToken,
           );
 
       if (!mounted) return;
@@ -141,7 +90,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       body: addressesAsync.when(
         loading: _buildLoadingState,
         error: (_, __) => _buildErrorState(),
-        data: (addresses) => _buildAddressList(addresses),
+        data: _buildAddressList,
       ),
     );
   }
@@ -154,7 +103,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
           const Padding(
             padding: EdgeInsets.only(bottom: 12),
             child: Text(
-              'Chọn một địa chỉ để dùng cho lịch chăm sóc này.',
+              'Chọn một địa chỉ đã xác minh để dùng cho lịch chăm sóc này.',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
@@ -182,7 +131,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: widget.selectionMode
+          onTap: widget.selectionMode && address.isVerified
               ? () => Navigator.pop(context, address.id)
               : null,
           borderRadius: BorderRadius.circular(16),
@@ -208,12 +157,16 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
+                    color: address.isVerified
+                        ? AppColors.primaryContainer
+                        : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     _iconFor(address),
-                    color: AppColors.primary,
+                    color: address.isVerified
+                        ? AppColors.primary
+                        : AppColors.textHint,
                     size: 22,
                   ),
                 ),
@@ -226,14 +179,24 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                       const SizedBox(height: 6),
                       Text(
                         address.fullAddress,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: address.isVerified
+                              ? AppColors.textSecondary
+                              : AppColors.textHint,
                           fontSize: 13,
                           height: 1.3,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (!address.isVerified) ...[
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Cần chọn lại từ danh sách gợi ý trước khi đặt lịch.',
+                          style:
+                              TextStyle(color: AppColors.warning, fontSize: 12),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -243,7 +206,11 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                     isSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
-                    color: isSelected ? AppColors.primary : AppColors.textHint,
+                    color: isSelected
+                        ? AppColors.primary
+                        : address.isVerified
+                            ? AppColors.textHint
+                            : AppColors.divider,
                     size: 22,
                   )
                 else
@@ -276,7 +243,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
     );
 
     final isDefault = widget.selectedAddressId == address.id;
-    if (!isDefault) return title;
+    if (!isDefault && address.isVerified) return title;
 
     return Wrap(
       spacing: 8,
@@ -284,21 +251,38 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         title,
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: const Text(
-            'Đang chọn',
-            style: TextStyle(
-              fontSize: 10,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600,
+        if (isDefault)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Đang chọn',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
+        if (!address.isVerified)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Chưa xác minh',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -398,12 +382,94 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
   }
 }
 
+class _AddressFormDialog extends ConsumerStatefulWidget {
+  const _AddressFormDialog();
+
+  @override
+  ConsumerState<_AddressFormDialog> createState() => _AddressFormDialogState();
+}
+
+class _AddressFormDialogState extends ConsumerState<_AddressFormDialog> {
+  final _titleCtrl = TextEditingController();
+  VerifiedAddressSelection? _selectedPlace;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final contentHeight = (MediaQuery.sizeOf(context).height * 0.55)
+        .clamp(300.0, 420.0)
+        .toDouble();
+
+    return AlertDialog(
+      title: const Text(
+        'Thêm địa chỉ mới',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+      content: SizedBox(
+        width: double.infinity,
+        height: contentHeight,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Tên địa điểm (Ví dụ: Nhà riêng, Công ty)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              VerifiedAddressField(
+                onChanged: (value) => setState(() => _selectedPlace = value),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Bạn cần chọn một dòng gợi ý để CareSitter xác minh vị trí.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Huỷ'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedPlace == null
+              ? null
+              : () {
+                  final title = _titleCtrl.text.trim();
+                  Navigator.pop(
+                    context,
+                    _AddressFormData(
+                      title: title.isEmpty ? 'Địa chỉ chăm sóc' : title,
+                      placeId: _selectedPlace!.details.placeId,
+                      sessionToken: _selectedPlace!.sessionToken,
+                    ),
+                  );
+                },
+          child: const Text('Lưu'),
+        ),
+      ],
+    );
+  }
+}
+
 class _AddressFormData {
   final String title;
-  final String address;
+  final String placeId;
+  final String sessionToken;
 
   const _AddressFormData({
     required this.title,
-    required this.address,
+    required this.placeId,
+    required this.sessionToken,
   });
 }
