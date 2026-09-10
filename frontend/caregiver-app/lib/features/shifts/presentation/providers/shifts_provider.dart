@@ -1,16 +1,16 @@
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../../../core/auth/auth_notifier.dart';
 import '../../../../core/realtime/care_signalr_service.dart';
 import '../../data/gps_repository.dart';
+import '../../data/shift_model.dart';
 import '../../data/shift_repository.dart';
 
 /// ShiftsNotifier — quản lý state danh sách ca của caregiver.
 ///
-/// kDebugBypassAuth=true  → không gọi backend, danh sách ca để rỗng để tránh booking demo tự xuất hiện.
-/// kDebugBypassAuth=false → tải danh sách ca thật từ backend và gọi API mutations.
-class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
+/// Tải danh sách ca thật từ backend và gọi API mutations.
+class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   final Ref _ref;
   Timer? _gpsTimer;
   Timer? _refreshTimer;
@@ -49,16 +49,12 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
   ShiftRepository get _shiftRepo => _ref.read(shiftRepositoryProvider);
 
   void _init() {
-    if (kDebugBypassAuth) {
-      state = [];
-    } else {
-      refresh();
-      _startRefreshPolling();
-    }
+    refresh();
+    _startRefreshPolling();
   }
 
   void _startRefreshPolling() {
-    if (kDebugBypassAuth || _refreshTimer != null) return;
+    if (_refreshTimer != null) return;
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       refresh();
     });
@@ -71,11 +67,6 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   /// Tải danh sách ca từ backend
   Future<void> refresh() async {
-    if (kDebugBypassAuth) {
-      state = [];
-      return;
-    }
-
     final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) {
       state = [];
@@ -109,69 +100,57 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   /// Caregiver chấp nhận ca
   Future<void> acceptBooking(String id) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.acceptBooking(id);
-        await refresh();
-        return;
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] acceptBooking error: $e');
-        rethrow;
-      }
+    try {
+      await _shiftRepo.acceptBooking(id);
+      await refresh();
+      return;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] acceptBooking error: $e');
+      rethrow;
     }
-    _updateStatus(id, to: 'confirmed');
   }
 
   /// Caregiver từ chối ca
   Future<void> declineBooking(String id) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.declineBooking(id);
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] declineBooking error: $e');
-        rethrow;
-      }
+    try {
+      await _shiftRepo.declineBooking(id);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] declineBooking error: $e');
+      rethrow;
     }
     _removeShift(id);
   }
 
   /// Bắt đầu di chuyển đến nhà khách
   Future<void> startEnRoute(String bookingId) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.startEnRoute(bookingId);
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] startEnRoute error: $e');
-        return;
-      }
+    try {
+      await _shiftRepo.startEnRoute(bookingId);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] startEnRoute error: $e');
+      return;
     }
     _updateStatus(bookingId, to: 'caregiver_en_route');
     _startGpsPush(bookingId);
   }
 
-  /// GPS check-in tại địa điểm → status: in_progress
-  Future<void> checkIn(
-    String bookingId, {
-    double latitude = 10.7769,
-    double longitude = 106.6952,
-    double? accuracy,
-  }) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.checkIn(
-          bookingId,
-          latitude: latitude,
-          longitude: longitude,
-          accuracyMeters: accuracy,
-        );
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] checkIn error: $e');
-        return;
-      }
+  /// GPS check-in tại địa điểm → status: in_progress.
+  /// The server is the final authority for the 50m geofence.
+  Future<void> checkIn(String bookingId) async {
+    try {
+      final position = await _getCurrentPosition();
+      await _shiftRepo.checkIn(
+        bookingId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracyMeters: position.accuracy,
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] checkIn error: $e');
+      rethrow;
     }
     _stopGpsPush();
     _updateStatus(bookingId, to: 'in_progress');
@@ -179,14 +158,12 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   /// Yêu cầu kết thúc ca → booking status chuyển sang checkout_pending_review
   Future<void> checkOut(String bookingId) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.requestCheckout(bookingId);
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] checkOut error: $e');
-        return;
-      }
+    try {
+      await _shiftRepo.requestCheckout(bookingId);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] checkOut error: $e');
+      return;
     }
     state = [
       for (final b in state)
@@ -203,14 +180,12 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   /// Hoàn tất ca
   Future<void> completeShift(String bookingId) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _shiftRepo.completeBooking(bookingId);
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ShiftsNotifier] completeShift error: $e');
-        return;
-      }
+    try {
+      await _shiftRepo.completeBooking(bookingId);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] completeShift error: $e');
+      return;
     }
     state = [
       for (final b in state)
@@ -238,18 +213,51 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
 
   void _startGpsPush(String bookingId) {
     _stopGpsPush();
-    if (kDebugBypassAuth) return;
 
-    _gpsTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      const lat = 10.7650;
-      const lng = 106.6800;
+    _gpsTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
       try {
-        await _gps.postLocation(bookingId,
-            latitude: lat, longitude: lng, heading: 45.0);
+        final position = await _getCurrentPosition();
+        await _gps.postLocation(
+          bookingId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracyMeters: position.accuracy,
+          speed: position.speed >= 0 ? position.speed : null,
+          heading: position.heading >= 0 ? position.heading : null,
+        );
       } catch (_) {
-        // Bỏ qua lỗi network
+        // GPS/network can recover on the next foreground poll.
       }
     });
+  }
+
+  Future<Position> _getCurrentPosition() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw const LocationUnavailableException(
+        'Hãy bật Dịch vụ vị trí để check-in.',
+      );
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied) {
+      throw const LocationUnavailableException(
+        'Cần cấp quyền vị trí để check-in.',
+      );
+    }
+    if (permission == LocationPermission.deniedForever) {
+      throw const LocationUnavailableException(
+        'Quyền vị trí đang bị tắt. Hãy bật lại trong phần Cài đặt của thiết bị.',
+      );
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
+    );
   }
 
   void _stopGpsPush() {
@@ -273,7 +281,7 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
     ];
   }
 
-  MockBooking _mapFromApi(Map<String, dynamic> json) {
+  ShiftModel _mapFromApi(Map<String, dynamic> json) {
     final id = json['id']?.toString() ?? '';
     final rawStatus = json['status']?.toString().toLowerCase() ?? 'pending';
 
@@ -323,7 +331,30 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
       }
     }
 
-    return MockBooking(
+    DateTime? checkoutRequestedAt;
+    if (json['checkoutPendingReviewAt'] != null) {
+      checkoutRequestedAt =
+          DateTime.tryParse(json['checkoutPendingReviewAt'].toString())
+              ?.toLocal();
+    } else if (json['actualEnd'] != null) {
+      checkoutRequestedAt =
+          DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
+    }
+
+    DateTime? completedAt;
+    if (json['updatedAt'] != null && mappedStatus == 'completed') {
+      completedAt = DateTime.tryParse(json['updatedAt'].toString())?.toLocal();
+    }
+
+    final int? beneficiaryAge = (json['beneficiaryAge'] as num?)?.toInt();
+    final String? beneficiaryRelationship =
+        json['beneficiaryRelationship']?.toString();
+    final String? beneficiaryCondition =
+        json['beneficiaryCondition']?.toString();
+    final String? beneficiaryNotes =
+        json['beneficiaryNotes']?.toString() ?? json['note']?.toString();
+
+    return ShiftModel(
       id: id,
       beneficiaryId: json['beneficiaryId']?.toString(),
       beneficiaryName: _displayText(
@@ -351,14 +382,19 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
       ),
       customerNote: _displayText(json['note'], fallback: ''),
       isSystemMatched: json['caregiverId'] != null,
-      isDemoBooking: false,
+      checkoutRequestedAt: checkoutRequestedAt,
+      completedAt: completedAt,
+      beneficiaryAge: beneficiaryAge,
+      beneficiaryRelationship: beneficiaryRelationship,
+      beneficiaryCondition: beneficiaryCondition,
+      beneficiaryNotes: beneficiaryNotes,
       tasks: const [
-        MockCareTask(
+        CareTaskModel(
             title: 'Đo huyết áp & kiểm tra sức khoẻ', isCompleted: false),
-        MockCareTask(
+        CareTaskModel(
             title: 'Hỗ trợ vệ sinh sinh hoạt cá nhân', isCompleted: false),
-        MockCareTask(title: 'Nhắc uống thuốc theo toa', isCompleted: false),
-        MockCareTask(title: 'Chuẩn bị bữa ăn dinh dưỡng', isCompleted: false),
+        CareTaskModel(title: 'Nhắc uống thuốc theo toa', isCompleted: false),
+        CareTaskModel(title: 'Chuẩn bị bữa ăn dinh dưỡng', isCompleted: false),
       ],
     );
   }
@@ -397,7 +433,15 @@ class ShiftsNotifier extends StateNotifier<List<MockBooking>> {
   }
 }
 
+class LocationUnavailableException implements Exception {
+  final String message;
+  const LocationUnavailableException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 final shiftsProvider =
-    StateNotifierProvider<ShiftsNotifier, List<MockBooking>>((ref) {
+    StateNotifierProvider<ShiftsNotifier, List<ShiftModel>>((ref) {
   return ShiftsNotifier(ref);
 });

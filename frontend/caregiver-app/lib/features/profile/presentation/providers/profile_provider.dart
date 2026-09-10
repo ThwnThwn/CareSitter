@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/api_constants.dart';
 import '../../../../core/api/dio_client.dart';
 import '../../../../core/auth/auth_notifier.dart';
-import '../../../../core/mock/mock_data.dart';
+import '../../data/caregiver_profile_model.dart';
 
-class ProfileNotifier extends StateNotifier<MockCaregiver> {
+class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
   final Ref _ref;
 
   ProfileNotifier(this._ref) : super(_emptyProfile()) {
@@ -25,24 +25,6 @@ class ProfileNotifier extends StateNotifier<MockCaregiver> {
   DioClient get _dio => _ref.read(dioClientProvider);
 
   Future<void> refresh() async {
-    if (kDebugBypassAuth) {
-      state = const MockCaregiver(
-        id: 'mock_caregiver',
-        name: 'Caregiver Demo',
-        avatarInitial: 'CD',
-        rating: 0,
-        totalReviews: 0,
-        completedShifts: 0,
-        skills: [],
-        experience: 'Chưa cập nhật',
-        location: 'Chưa cập nhật',
-        hourlyRate: 0,
-        isAvailable: false,
-        certifications: '',
-      );
-      return;
-    }
-
     final auth = _ref.read(authStateProvider).value;
     if (!(auth?.isAuthenticated ?? false)) {
       state = _emptyProfile();
@@ -68,55 +50,37 @@ class ProfileNotifier extends StateNotifier<MockCaregiver> {
     required List<String> skills,
     required String certifications,
   }) async {
-    if (!kDebugBypassAuth) {
-      await _dio.put<Map<String, dynamic>>(
-        ApiPaths.myCaregiverProfile,
-        data: {
-          'fullName': name,
-          'yearsOfExperience': _parseYears(experience),
-          'hourlyRateExpected': hourlyRate.round(),
-          'skills': jsonEncode(skills),
-          'serviceCity': _extractCity(location),
-          'serviceDistrict': _extractDistrict(location),
-        },
-      );
-      await refresh();
-      return;
-    }
-
-    state = _copyProfile(
-      state,
-      name: name,
-      avatarInitial: _initials(name),
-      experience: experience,
-      location: location,
-      hourlyRate: hourlyRate,
-      skills: skills,
-      certifications: certifications,
+    await _dio.put<Map<String, dynamic>>(
+      ApiPaths.myCaregiverProfile,
+      data: {
+        'fullName': name,
+        'yearsOfExperience': _parseYears(experience),
+        'hourlyRateExpected': hourlyRate.round(),
+        'skills': jsonEncode(skills),
+        'serviceCity': _extractCity(location),
+        'serviceDistrict': _extractDistrict(location),
+      },
     );
+    await refresh();
   }
 
   Future<void> toggleAvailability() async {
     final nextStatus = state.isAvailable ? 'OFFLINE' : 'ONLINE';
-    if (!kDebugBypassAuth) {
-      try {
-        await _dio.put<Map<String, dynamic>>(
-          ApiPaths.myCaregiverStatus,
-          data: {'status': nextStatus},
-        );
-        await refresh();
-        return;
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ProfileNotifier] Lỗi cập nhật trạng thái: $e');
-        return;
-      }
+    try {
+      await _dio.put<Map<String, dynamic>>(
+        ApiPaths.myCaregiverStatus,
+        data: {'status': nextStatus},
+      );
+      await refresh();
+      return;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ProfileNotifier] Lỗi cập nhật trạng thái: $e');
+      return;
     }
-
-    state = _copyProfile(state, isAvailable: !state.isAvailable);
   }
 
-  MockCaregiver _mapProfile(
+  CaregiverProfileModel _mapProfile(
     Map<String, dynamic> json, {
     String? authDisplayName,
   }) {
@@ -134,7 +98,7 @@ class ProfileNotifier extends StateNotifier<MockCaregiver> {
     final hourlyRate =
         _num(json['hourlyRateExpected'] ?? json['HourlyRateExpected']);
 
-    return MockCaregiver(
+    return CaregiverProfileModel(
       id: _string(json['id'] ?? json['Id']) ?? '',
       name: name,
       avatarInitial: _initials(name),
@@ -153,38 +117,8 @@ class ProfileNotifier extends StateNotifier<MockCaregiver> {
     );
   }
 
-  static MockCaregiver _copyProfile(
-    MockCaregiver current, {
-    String? name,
-    String? avatarInitial,
-    double? rating,
-    int? totalReviews,
-    int? completedShifts,
-    List<String>? skills,
-    String? experience,
-    String? location,
-    double? hourlyRate,
-    bool? isAvailable,
-    String? certifications,
-  }) {
-    return MockCaregiver(
-      id: current.id,
-      name: name ?? current.name,
-      avatarInitial: avatarInitial ?? current.avatarInitial,
-      rating: rating ?? current.rating,
-      totalReviews: totalReviews ?? current.totalReviews,
-      completedShifts: completedShifts ?? current.completedShifts,
-      skills: skills ?? current.skills,
-      experience: experience ?? current.experience,
-      location: location ?? current.location,
-      hourlyRate: hourlyRate ?? current.hourlyRate,
-      isAvailable: isAvailable ?? current.isAvailable,
-      certifications: certifications ?? current.certifications,
-    );
-  }
-
-  static MockCaregiver _emptyProfile() {
-    return const MockCaregiver(
+  static CaregiverProfileModel _emptyProfile() {
+    return const CaregiverProfileModel(
       id: '',
       name: 'Caregiver',
       avatarInitial: 'CG',
@@ -277,6 +211,6 @@ class ProfileNotifier extends StateNotifier<MockCaregiver> {
 }
 
 final profileProvider =
-    StateNotifierProvider<ProfileNotifier, MockCaregiver>((ref) {
+    StateNotifierProvider<ProfileNotifier, CaregiverProfileModel>((ref) {
   return ProfileNotifier(ref);
 });

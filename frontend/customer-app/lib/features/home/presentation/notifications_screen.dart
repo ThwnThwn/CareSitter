@@ -1,112 +1,127 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 
-// ─── Mock notification model ──────────────────────────────────────────────────
 class _Notification {
   final String id;
+  final String type;
   final String title;
   final String body;
-  final String time;
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String? route; // nullable — nếu có thì navigate khi tap
+  final DateTime createdAt;
+  final String? route;
   bool isRead;
 
   _Notification({
     required this.id,
+    required this.type,
     required this.title,
     required this.body,
-    required this.time,
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
+    required this.createdAt,
     this.route,
     this.isRead = false,
   });
+
+  factory _Notification.fromJson(Map<String, dynamic> json) {
+    final data = _decodeData(json['data']);
+    return _Notification(
+      id: json['id']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'INFO',
+      title: json['title']?.toString() ?? 'Thông báo',
+      body: json['body']?.toString() ?? '',
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal() ??
+              DateTime.now(),
+      route: data['deepLink']?.toString(),
+      isRead: json['readAt'] != null,
+    );
+  }
+
+  static Map<String, dynamic> _decodeData(Object? raw) {
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) return decoded;
+      } catch (_) {}
+    }
+    return const {};
+  }
 }
 
-// ─── Static mock data ─────────────────────────────────────────────────────────
-final List<_Notification> _mockNotifications = [
-  _Notification(
-    id: 'n001',
-    title: 'Caregiver đã xác nhận lịch',
-    body: 'Nguyễn Thị Lan đã xác nhận ca chăm sóc ngày 02/07 lúc 08:00.',
-    time: '5 phút trước',
-    icon: Icons.check_circle_outline,
-    iconColor: const Color(0xFF27AE60),
-    iconBg: AppColors.primaryContainer,
-    route: '/bookings/bk001',
-  ),
-  _Notification(
-    id: 'n002',
-    title: 'Nhắc nhở: Ca chăm sóc sắp bắt đầu',
-    body: 'Ca "Đồng hành ban ngày" sẽ bắt đầu sau 1 giờ nữa.',
-    time: '30 phút trước',
-    icon: Icons.alarm_outlined,
-    iconColor: const Color(0xFFF39C12),
-    iconBg: const Color(0xFFFEF9E7),
-    route: '/bookings/bk001',
-  ),
-  _Notification(
-    id: 'n003',
-    title: 'Ca chăm sóc hoàn thành',
-    body: 'Ca "Đồng hành ban ngày" cho Nguyễn Văn An đã kết thúc. Hãy đánh giá dịch vụ!',
-    time: '2 giờ trước',
-    icon: Icons.star_outline,
-    iconColor: const Color(0xFFE67E22),
-    iconBg: const Color(0xFFFEF5E7),
-    route: '/bookings/bk002',
-  ),
-  _Notification(
-    id: 'n004',
-    title: 'Hồ sơ người thân được cập nhật',
-    body: 'Hồ sơ của Trần Thị Bình đã được cập nhật thành công.',
-    time: 'Hôm qua',
-    icon: Icons.person_outline,
-    iconColor: const Color(0xFF2980B9),
-    iconBg: const Color(0xFFEBF5FB),
-    isRead: true,
-  ),
-  _Notification(
-    id: 'n005',
-    title: 'Khuyến mãi đặc biệt',
-    body: 'Giảm 15% cho lần đặt lịch tiếp theo khi sử dụng mã CARE15.',
-    time: '2 ngày trước',
-    icon: Icons.local_offer_outlined,
-    iconColor: const Color(0xFF8E44AD),
-    iconBg: const Color(0xFFF4ECF7),
-    isRead: true,
-  ),
-];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  // Bản sao local để có thể đánh dấu đã đọc
-  final List<_Notification> _notifications =
-      List.from(_mockNotifications);
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  List<_Notification> _notifications = const [];
+  bool _isLoading = true;
 
   int get _unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  void _markAllRead() {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadNotifications);
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    try {
+      final dio = ref.read(dioClientProvider);
+      final resp = await dio.get<Map<String, dynamic>>(
+        '/notifications',
+        query: {'pageSize': 50},
+      );
+      final items = (resp.data?['items'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(_Notification.fromJson)
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    final previous = _notifications;
     setState(() {
       for (final n in _notifications) {
         n.isRead = true;
       }
     });
+    try {
+      await ref.read(dioClientProvider).put<void>('/notifications/read-all');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _notifications = previous);
+    }
   }
 
-  void _onTap(_Notification notif) {
+  Future<void> _onTap(_Notification notif) async {
+    final wasRead = notif.isRead;
     setState(() => notif.isRead = true);
+    if (!wasRead && notif.id.isNotEmpty) {
+      try {
+        await ref
+            .read(dioClientProvider)
+            .put<void>('/notifications/${notif.id}/read');
+      } catch (_) {}
+    }
+    if (!mounted) return;
     if (notif.route != null) {
       context.push(notif.route!);
     }
@@ -152,31 +167,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
         ],
       ),
-      body: _notifications.isEmpty
-          ? _buildEmpty()
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _notifications.length,
-              separatorBuilder: (_, __) => const Divider(
-                height: 1,
-                indent: 72,
-                endIndent: 16,
-                color: AppColors.divider,
-              ),
-              itemBuilder: (context, index) => FadeSlideStaggered(
-                index: index,
-                child: _buildItem(_notifications[index]),
-              ),
-            ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _notifications.isEmpty
+              ? _buildEmpty()
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _notifications.length,
+                  separatorBuilder: (_, __) => const Divider(
+                    height: 1,
+                    indent: 72,
+                    endIndent: 16,
+                    color: AppColors.divider,
+                  ),
+                  itemBuilder: (context, index) => FadeSlideStaggered(
+                    index: index,
+                    child: _buildItem(_notifications[index]),
+                  ),
+                ),
     );
   }
 
   Widget _buildItem(_Notification notif) {
+    final icon = _iconFor(notif.type);
+    final iconColor = _iconColorFor(notif.type);
     return InkWell(
       onTap: () => _onTap(notif),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        color: notif.isRead ? Colors.transparent : AppColors.primary.withOpacity(0.05),
+        color: notif.isRead
+            ? Colors.transparent
+            : AppColors.primary.withOpacity(0.05),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,10 +207,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: notif.iconBg,
+                color: iconColor.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(notif.icon, color: notif.iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 12),
             // Content
@@ -227,11 +248,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Text(
                     notif.body,
                     style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    notif.time,
+                    _relativeTime(notif.createdAt),
                     style: const TextStyle(
                         color: AppColors.textHint, fontSize: 11),
                   ),
@@ -248,6 +271,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
     );
+  }
+
+  IconData _iconFor(String type) {
+    final normalized = type.toLowerCase();
+    if (normalized.contains('booking')) return Icons.event_available_outlined;
+    if (normalized.contains('payment') || normalized.contains('wallet')) {
+      return Icons.account_balance_wallet_outlined;
+    }
+    if (normalized.contains('review')) return Icons.star_outline;
+    if (normalized.contains('sos') || normalized.contains('crisis')) {
+      return Icons.warning_amber_rounded;
+    }
+    return Icons.notifications_none_outlined;
+  }
+
+  Color _iconColorFor(String type) {
+    final normalized = type.toLowerCase();
+    if (normalized.contains('sos') || normalized.contains('crisis')) {
+      return AppColors.error;
+    }
+    if (normalized.contains('payment') || normalized.contains('wallet')) {
+      return const Color(0xFFE67E22);
+    }
+    if (normalized.contains('review')) return const Color(0xFFF39C12);
+    return AppColors.primary;
+  }
+
+  String _relativeTime(DateTime value) {
+    final diff = DateTime.now().difference(value);
+    if (diff.inMinutes < 1) return 'Vừa xong';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+    return '${value.day}/${value.month}/${value.year}';
   }
 
   Widget _buildEmpty() {

@@ -17,7 +17,6 @@ public static class BookingStateMachine
             [BookingStatus.CaregiverEnRoute] = new[] { BookingStatus.InProgress, BookingStatus.Cancelled },
             [BookingStatus.InProgress] = new[]
             {
-                BookingStatus.Completed,
                 BookingStatus.CheckoutPendingReview,
                 BookingStatus.Crisis
             },

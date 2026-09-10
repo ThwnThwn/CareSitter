@@ -58,36 +58,6 @@ public sealed class PaymentsController(PaymentsDbContext db, ICurrentUser curren
         return Ok(ToIntentResponse(intent));
     }
 
-    /// <summary>
-    /// Mock endpoint de test thanh toan thanh cong (khong can tich hop gateway that).
-    /// Ghi ledger ESCROW_LOCK khi thanh cong.
-    /// </summary>
-    /// <summary>
-    /// Giả lập thanh toán thành công để test (không cần tích hợp gateway thật).
-    /// Ghi ledger ESCROW_LOCK khi thành công.
-    /// </summary>
-    [HttpPost("api/v1/payments/intents/{id:guid}/mock-success")]
-    public async Task<IActionResult> MockSuccess(Guid id, CancellationToken ct)
-    {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var intent = await db.PaymentIntents
-            .SingleOrDefaultAsync(x => x.Id == id && x.CustomerId == userId, ct);
-        if (intent is null) return NotFound();
-
-        var result = intent.MarkSucceeded($"mock-txn-{Guid.NewGuid():N}",
-            "{\"mock\":true}");
-        if (result.IsFailure) return Problem(result.Error);
-
-        var ledgerResult = LedgerEntry.Create("ESCROW_LOCK",
-            $"customer:{userId}", "escrow:platform",
-            intent.Amount, intent.BookingId, intent.Id);
-        if (ledgerResult.IsSuccess)
-            db.LedgerEntries.Add(ledgerResult.Value);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(ToIntentResponse(intent));
-    }
-
     // ════════════════════════════════════════════
     //  WALLET
     // ════════════════════════════════════════════

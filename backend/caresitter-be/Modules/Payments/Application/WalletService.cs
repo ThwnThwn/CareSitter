@@ -10,7 +10,7 @@ namespace CareSitter.Modules.Payments.Application;
 /// Implement IWalletService (Contracts). Booking goi qua interface, khong cham DbContext Payments.
 /// MVP: ghi ledger that vao DB thay vi skeleton.
 /// </summary>
-internal sealed class WalletService(PaymentsDbContext db) : IWalletService
+internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService disputeLookup) : IWalletService
 {
     public async Task<Result> LockEscrowAsync(Guid bookingId, long amount, string idempotencyKey, CancellationToken ct = default)
     {
@@ -30,6 +30,8 @@ internal sealed class WalletService(PaymentsDbContext db) : IWalletService
     public async Task<Result> SettleAsync(Guid bookingId, Guid caregiverId, long escrowAmount, long platformFeeAmount,
         CancellationToken ct = default)
     {
+        if (await disputeLookup.HasOpenDisputeAsync(bookingId, ct))
+            return Error.Conflict("payments.dispute_open", "Booking dang co dispute mo, khong the giai ngan escrow.");
         // Idempotent check
         bool settled = await db.LedgerEntries.AsNoTracking()
             .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);

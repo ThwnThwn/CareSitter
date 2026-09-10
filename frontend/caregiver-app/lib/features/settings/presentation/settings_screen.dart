@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/auth/auth_notifier.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../profile/data/caregiver_profile_model.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../profile/presentation/providers/profile_provider.dart';
 
@@ -88,7 +88,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, MockCaregiver profile) {
+  Widget _buildProfileCard(
+      BuildContext context, CaregiverProfileModel profile) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

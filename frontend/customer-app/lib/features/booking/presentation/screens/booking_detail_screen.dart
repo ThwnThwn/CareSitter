@@ -199,7 +199,7 @@ class BookingDetailScreen extends ConsumerWidget {
                 FadeSlideStaggered(
                   index: 4,
                   child: _buildInfoCard(
-                    title: 'Ghi nhận tài chính • Prototype',
+                    title: 'Ghi nhận tài chính',
                     child: Column(
                       children: [
                         _buildPaymentRow('Doanh thu nền tảng (15%)',
@@ -221,7 +221,7 @@ class BookingDetailScreen extends ConsumerWidget {
                   children: [
                     if (booking.status == 'pending_payment' ||
                         booking.status == 'pending') ...[
-                      _buildDemoBanner(
+                      _buildStatusBanner(
                           'Đơn đang chờ bạn thanh toán ký quỹ (Escrow) để kích hoạt và thông báo cho người chăm sóc.'),
                       const SizedBox(height: 10),
                       ElevatedButton.icon(
@@ -238,41 +238,19 @@ class BookingDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
                     ] else if (isWaitingCaregiver) ...[
-                      _buildDemoBanner(
+                      _buildStatusBanner(
                           'Đã thanh toán ký quỹ. Lịch hẹn đang được gửi sang ứng dụng caregiver để người chăm sóc nhận ca.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
                     ] else if (booking.status == 'confirmed' ||
                         booking.status == 'caregiver_accepted' ||
                         booking.status == 'assigned') ...[
-                      _buildDemoBanner(
-                          'Ca đã được nhận. Mô phỏng caregiver đang di chuyển hoặc check-in GPS trực tiếp.'),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        onPressed: () => ref
-                            .read(bookingStoreProvider.notifier)
-                            .caregiverEnRoute(booking.id),
-                        icon: const Icon(Icons.directions_car_outlined),
-                        label: const Text('Mô phỏng caregiver đang di chuyển'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 52),
-                          backgroundColor: const Color(0xFFE67E22),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => ref
-                            .read(bookingStoreProvider.notifier)
-                            .caregiverCheckIn(booking.id),
-                        icon: const Icon(Icons.location_on_outlined),
-                        label: const Text('Mô phỏng GPS check-in ngay'),
-                        style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 52)),
-                      ),
+                      _buildStatusBanner(
+                          'Ca đã được nhận. Vui lòng chờ caregiver bắt đầu di chuyển hoặc check-in từ ứng dụng caregiver.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
                     ] else if (booking.status == 'caregiver_en_route') ...[
-                      _buildDemoBanner(
+                      _buildStatusBanner(
                           'Caregiver đang trên đường đến. Chờ caregiver GPS check-in tại địa điểm.'),
                       const SizedBox(height: 10),
                       ElevatedButton.icon(
@@ -283,17 +261,6 @@ class BookingDetailScreen extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 52),
                           backgroundColor: const Color(0xFFE67E22),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () => ref
-                            .read(bookingStoreProvider.notifier)
-                            .caregiverCheckIn(booking.id),
-                        icon: const Icon(Icons.location_on_outlined),
-                        label: const Text('Mô phỏng GPS check-in'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 52),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -309,17 +276,6 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: () => ref
-                            .read(bookingStoreProvider.notifier)
-                            .caregiverRequestCheckout(booking.id),
-                        icon: const Icon(Icons.logout),
-                        label:
-                            const Text('Mô phỏng caregiver yêu cầu kết thúc'),
-                        style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 52)),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton.icon(
                         onPressed: () => _showExtendShiftSheet(context),
                         icon: const Icon(Icons.add_alarm),
                         label: const Text('Gia hạn ca chăm sóc'),
@@ -328,7 +284,7 @@ class BookingDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     ] else if (booking.status == 'checkout_pending_review') ...[
-                      _buildDemoBanner(
+                      _buildStatusBanner(
                           'Caregiver đã gửi yêu cầu kết thúc ca. Hãy xác nhận để hoàn tất.'),
                       const SizedBox(height: 10),
                       ElevatedButton.icon(
@@ -363,7 +319,7 @@ class BookingDetailScreen extends ConsumerWidget {
                               minimumSize: const Size(double.infinity, 52)),
                         )
                       else
-                        _buildDemoBanner('Bạn đã đánh giá ca chăm sóc này.'),
+                        _buildStatusBanner('Bạn đã đánh giá ca chăm sóc này.'),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
                         onPressed: () => context.push('/booking/new'),
@@ -373,8 +329,8 @@ class BookingDetailScreen extends ConsumerWidget {
                             minimumSize: const Size(double.infinity, 52)),
                       ),
                     ] else if (booking.status == 'disputed') ...[
-                      _buildDemoBanner(
-                          'Ca đang được đánh dấu có vấn đề. Prototype tạm dừng ghi nhận tài chính.'),
+                      _buildStatusBanner(
+                          'Ca đang được đánh dấu có vấn đề. Ghi nhận tài chính sẽ chờ xử lý tranh chấp.'),
                     ],
                   ],
                 ),
@@ -460,7 +416,7 @@ class BookingDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDemoBanner(String message) {
+  Widget _buildStatusBanner(String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),

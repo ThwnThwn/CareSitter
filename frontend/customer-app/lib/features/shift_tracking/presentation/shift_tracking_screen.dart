@@ -28,7 +28,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   int _etaSeconds = 8 * 60; // ETA khởi tạo: 8 phút
   double _heading = 45.0;
 
-  // Điểm xuất phát demo của caregiver (cách đích ~1.5km)
+  // Điểm fallback của caregiver khi chưa nhận được GPS mới nhất từ backend.
   static const _caregiverStart = LatLng(10.7640, 106.6780);
 
   @override
@@ -161,7 +161,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                     label: const Text('Xem nhật ký chăm sóc'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary, width: 1.2),
+                      side: const BorderSide(
+                          color: AppColors.primary, width: 1.2),
                       backgroundColor: const Color(0xFFE8F5E9).withOpacity(0.5),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
@@ -734,7 +735,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
             child: LinearProgressIndicator(
               value: 0.75,
               backgroundColor: const Color(0xFFF5A623).withOpacity(0.18),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
               minHeight: 5,
             ),
           ),
@@ -857,8 +859,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border:
-                                Border.all(color: AppColors.primary, width: 2.5),
+                            border: Border.all(
+                                color: AppColors.primary, width: 2.5),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primary.withOpacity(0.4),
@@ -1104,7 +1106,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('💬 Kết nối liên hệ với ${bk.caregiverName}...'),
+                      content:
+                          Text('💬 Kết nối liên hệ với ${bk.caregiverName}...'),
                       backgroundColor: AppColors.primary,
                       duration: const Duration(seconds: 2),
                     ),
@@ -1113,7 +1116,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                   label: const Text('Liên hệ'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 1.2),
+                    side:
+                        const BorderSide(color: AppColors.primary, width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1125,7 +1129,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
               ElevatedButton.icon(
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('🚨 Đang kích hoạt tín hiệu SOS khẩn cấp 24/7...'),
+                    content:
+                        Text('🚨 Đang kích hoạt tín hiệu SOS khẩn cấp 24/7...'),
                     backgroundColor: AppColors.error,
                     duration: Duration(seconds: 3),
                   ),
@@ -1760,8 +1765,8 @@ class _BottomActionBar extends ConsumerWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            const Row(
+          children: const [
+            Row(
               children: [
                 Icon(Icons.lock_outline, size: 13, color: AppColors.textHint),
                 SizedBox(width: 6),
@@ -1772,41 +1777,6 @@ class _BottomActionBar extends ConsumerWidget {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: () => ref
-                    .read(bookingStoreProvider.notifier)
-                    .caregiverRequestCheckout(bk.id),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.textSecondary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.science_outlined, size: 15),
-                    SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Demo: Mô phỏng caregiver kết thúc ca',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -1860,7 +1830,8 @@ class _BottomActionBar extends ConsumerWidget {
             InkWell(
               onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('⚠️ Đang kết nối tổng đài giám sát viên 24/7...'),
+                  content:
+                      Text('⚠️ Đang kết nối tổng đài giám sát viên 24/7...'),
                   backgroundColor: AppColors.error,
                   duration: Duration(seconds: 2),
                 ),

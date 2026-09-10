@@ -1,11 +1,13 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/api/dio_client.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../../../core/router/navigation_helpers.dart';
-import '../../../core/mock/mock_data.dart';
+import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
 import '../../earnings/presentation/providers/earnings_provider.dart';
 
@@ -22,6 +24,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   // ── Check-in state ────────────────────────────────────────
   int _checkInStep = 0; // 0 = not started, 1 = selfie, 2 = gps, 3 = done
   bool _isCheckedIn = false;
+  bool _isSubmittingCheckIn = false;
   DateTime? _checkInTime;
 
   // ── Animated step transitions ─────────────────────────────
@@ -95,6 +98,31 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         _startTimer();
       }
     }
+  }
+
+  Future<void> _confirmGpsCheckIn(ShiftModel booking) async {
+    setState(() => _isSubmittingCheckIn = true);
+    try {
+      await ref.read(shiftsProvider.notifier).checkIn(booking.id);
+      if (!mounted) return;
+      await _advanceStep();
+    } catch (error) {
+      if (!mounted) return;
+      final message = _checkInErrorMessage(error);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmittingCheckIn = false);
+    }
+  }
+
+  String _checkInErrorMessage(Object error) {
+    if (error is LocationUnavailableException) return error.message;
+    if (error is DioException && error.error is AppApiException) {
+      return (error.error as AppApiException).message;
+    }
+    return 'Khong the lay vi tri GPS. Hay thu lai sau it phut.';
   }
 
   void _simulatePhotoCapture(String taskTitle) {
@@ -180,7 +208,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   @override
   Widget build(BuildContext context) {
     final shifts = ref.watch(shiftsProvider);
-    MockBooking? booking;
+    ShiftModel? booking;
     for (final b in shifts) {
       if (b.id == widget.id) {
         booking = b;
@@ -196,14 +224,13 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         ),
         body: const Center(
           child: Text('Không tìm thấy thông tin ca làm việc này.',
-              style:
-                  TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
         ),
       );
     }
 
-    final allDone = booking.tasks.isNotEmpty &&
-        booking.tasks.every((t) => t.isCompleted);
+    final allDone =
+        booking.tasks.isNotEmpty && booking.tasks.every((t) => t.isCompleted);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -215,8 +242,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           if (_isCheckedIn)
             Container(
               margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.circular(20),
@@ -240,8 +266,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.warning_amber_rounded,
-                color: AppColors.error),
+            icon:
+                const Icon(Icons.warning_amber_rounded, color: AppColors.error),
             tooltip: 'Báo cáo sự cố',
             onPressed: _showIncidentReport,
           ),
@@ -253,9 +279,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Check-in section ──
-            _isCheckedIn
-                ? _buildCheckedInBadge()
-                : _buildCheckInFlow(booking),
+            _isCheckedIn ? _buildCheckedInBadge() : _buildCheckInFlow(booking),
             const SizedBox(height: 24),
 
             // ── Checklist ──
@@ -317,7 +341,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   // ════════════════════════════════════════════════════════
   // CHECK-IN FLOW — 3 animated steps
   // ════════════════════════════════════════════════════════
-  Widget _buildCheckInFlow(MockBooking booking) {
+  Widget _buildCheckInFlow(ShiftModel booking) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -375,9 +399,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isCurrent
-                                  ? Colors.white
-                                  : AppColors.textHint,
+                              color:
+                                  isCurrent ? Colors.white : AppColors.textHint,
                             ),
                           ),
                   ),
@@ -414,7 +437,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     );
   }
 
-  Widget _buildStepContent(MockBooking booking) {
+  Widget _buildStepContent(ShiftModel booking) {
     switch (_checkInStep) {
       case 0:
         return _buildStep0Start(booking);
@@ -430,7 +453,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // Step 0 — Not started
-  Widget _buildStep0Start(MockBooking booking) {
+  Widget _buildStep0Start(ShiftModel booking) {
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -563,7 +586,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // Step 2 — GPS
-  Widget _buildStep2GPS(MockBooking booking) {
+  Widget _buildStep2GPS(ShiftModel booking) {
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -617,7 +640,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        '✅ Đúng địa điểm • Cách 48m',
+                        'Yêu cầu GPS chính xác trong 50m',
                         style: TextStyle(
                             fontSize: 11,
                             color: AppColors.success,
@@ -640,7 +663,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         ),
         const SizedBox(height: 4),
         const Text(
-          'Hệ thống đã phát hiện bạn đang ở gần\nđịa chỉ khách hàng. Xác nhận để tiếp tục.',
+          'Vị trí hiện tại sẽ được máy chủ xác thực\ntrong phạm vi 50m của địa chỉ khách hàng.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
@@ -648,9 +671,21 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.check_circle_outline_rounded),
-            label: const Text('Xác nhận vị trí'),
-            onPressed: _advanceStep,
+            icon: _isSubmittingCheckIn
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: Text(_isSubmittingCheckIn
+                ? 'Đang xác thực GPS...'
+                : 'Xác nhận vị trí'),
+            onPressed:
+                _isSubmittingCheckIn ? null : () => _confirmGpsCheckIn(booking),
           ),
         ),
       ],
@@ -739,7 +774,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                       color: AppColors.success),
                 ),
                 Text(
-                  'Lúc $_checkInTimeLabel • Cách 48m • Đã selfie + GPS',
+                  'Lúc $_checkInTimeLabel • GPS đã được xác thực • Đã selfie',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -772,7 +807,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // ── Progress bar ─────────────────────────────────────────
-  Widget _buildProgressBar(MockBooking booking) {
+  Widget _buildProgressBar(ShiftModel booking) {
     final done = booking.tasks.where((t) => t.isCompleted).length;
     final total = booking.tasks.length;
     final ratio = total == 0 ? 0.0 : done / total;
@@ -806,86 +841,88 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // ── Checklist item ────────────────────────────────────────
-  Widget _buildChecklistItem(MockBooking booking, MockCareTask task) {
+  Widget _buildChecklistItem(ShiftModel booking, CareTaskModel task) {
     final hasPhoto = _taskPhotos.containsKey(task.title);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
         color: task.isCompleted
             ? AppColors.success.withValues(alpha: 0.05)
             : AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              task.isCompleted ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
-        ),
-      ),
-      child: CheckboxListTile(
-        value: task.isCompleted,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                task.title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  decoration:
-                      task.isCompleted ? TextDecoration.lineThrough : null,
-                  color: task.isCompleted
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            if (hasPhoto)
-              Container(
-                margin: const EdgeInsets.only(left: 6),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.image_rounded,
-                        size: 11, color: AppColors.success),
-                    SizedBox(width: 3),
-                    Text('Ảnh',
-                        style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.success,
-                            fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        activeColor: AppColors.primary,
-        onChanged: _isCheckedIn
-            ? (val) {
-                if (val != null) {
-                  ref
-                      .read(shiftsProvider.notifier)
-                      .toggleTask(booking.id, task.title, val);
-                }
-              }
-            : null,
-        secondary: IconButton(
-          icon: Icon(
-            hasPhoto
-                ? Icons.camera_alt_rounded
-                : Icons.camera_alt_outlined,
-            color: hasPhoto ? AppColors.success : AppColors.textHint,
-            size: 22,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: task.isCompleted
+                ? AppColors.success.withValues(alpha: 0.3)
+                : AppColors.border,
           ),
-          tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
-          onPressed: _isCheckedIn
-              ? () => _simulatePhotoCapture(task.title)
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: CheckboxListTile(
+          value: task.isCompleted,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    decoration:
+                        task.isCompleted ? TextDecoration.lineThrough : null,
+                    color: task.isCompleted
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (hasPhoto)
+                Container(
+                  margin: const EdgeInsets.only(left: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.successLight,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.image_rounded,
+                          size: 11, color: AppColors.success),
+                      SizedBox(width: 3),
+                      Text('Ảnh',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          activeColor: AppColors.primary,
+          onChanged: _isCheckedIn
+              ? (val) {
+                  if (val != null) {
+                    ref
+                        .read(shiftsProvider.notifier)
+                        .toggleTask(booking.id, task.title, val);
+                  }
+                }
               : null,
+          secondary: IconButton(
+            icon: Icon(
+              hasPhoto ? Icons.camera_alt_rounded : Icons.camera_alt_outlined,
+              color: hasPhoto ? AppColors.success : AppColors.textHint,
+              size: 22,
+            ),
+            tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
+            onPressed:
+                _isCheckedIn ? () => _simulatePhotoCapture(task.title) : null,
+          ),
         ),
       ),
     );
@@ -914,8 +951,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           maxLines: 3,
           decoration: InputDecoration(
             hintText: 'Ví dụ: Bé ăn được 1 bát cháo, ngủ trưa 1 tiếng…',
-            hintStyle: const TextStyle(
-                fontSize: 13, color: AppColors.textHint),
+            hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
             filled: true,
             fillColor: AppColors.cardBackground,
             border: OutlineInputBorder(
@@ -928,8 +964,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 2),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             contentPadding: const EdgeInsets.all(14),
           ),
@@ -939,7 +974,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // ── Check-out button ─────────────────────────────────────
-  Widget _buildCheckOutButton(MockBooking booking, bool allDone) {
+  Widget _buildCheckOutButton(ShiftModel booking, bool allDone) {
     return Column(
       children: [
         if (!allDone)
@@ -949,8 +984,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             decoration: BoxDecoration(
               color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
             ),
             child: const Row(
               children: [
@@ -960,8 +995,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                 Expanded(
                   child: Text(
                     'Hoàn thành tất cả công việc để check-out',
-                    style: TextStyle(
-                        fontSize: 13, color: AppColors.warning),
+                    style: TextStyle(fontSize: 13, color: AppColors.warning),
                   ),
                 ),
               ],
@@ -973,9 +1007,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             label: '✅  Hoàn thành ca & Check-out',
             onPressed: allDone
                 ? () {
-                    ref
-                        .read(shiftsProvider.notifier)
-                        .checkOut(booking.id);
+                    ref.read(shiftsProvider.notifier).checkOut(booking.id);
                     ref.read(earningsProvider.notifier).addEarning(
                         booking.caregiverEarning,
                         booking.id,
@@ -985,9 +1017,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                       extra: {
                         'beneficiaryName': booking.beneficiaryName,
                         'caregiverEarning': booking.caregiverEarning,
-                        'completedTasks': booking.tasks
-                            .where((t) => t.isCompleted)
-                            .length,
+                        'completedTasks':
+                            booking.tasks.where((t) => t.isCompleted).length,
                         'totalTasks': booking.tasks.length,
                         'duration': booking.duration,
                         'checkInTime': _checkInTimeLabel,
@@ -1011,8 +1042,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Container(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -1020,13 +1050,12 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('🚨 Báo cáo sự cố',
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               const Text(
                   'Mô tả sự cố — hệ thống sẽ thông báo ngay đến khách hàng và admin.',
-                  style: TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary)),
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
               const TextField(
                 maxLines: 4,

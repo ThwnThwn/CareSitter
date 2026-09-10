@@ -22,6 +22,7 @@ public sealed class SupportModule : IModule
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", SupportDbContext.SchemaName)));
         services.AddScoped<IUserNotificationService, UserNotificationService>();
+        services.AddScoped<IDisputeLookupService, DisputeLookupService>();
 
         // Đăng ký Controllers nằm trong assembly của Support module
         services.AddControllers()

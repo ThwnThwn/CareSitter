@@ -3,17 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/dio_client.dart';
 import '../../../core/auth/auth_notifier.dart';
-import '../../../core/mock/mock_data.dart';
 import '../../catalog/application/address_store.dart';
+import '../data/beneficiary_model.dart';
+
+export '../data/beneficiary_model.dart';
 
 final beneficiaryStoreProvider =
-    NotifierProvider<BeneficiaryStore, List<MockBeneficiary>>(
+    NotifierProvider<BeneficiaryStore, List<BeneficiaryModel>>(
   BeneficiaryStore.new,
 );
 
-class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
+class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
   @override
-  List<MockBeneficiary> build() {
+  List<BeneficiaryModel> build() {
     // Lắng nghe đăng nhập để tải dữ liệu người thân của user thật
     ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
@@ -53,7 +55,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     }
   }
 
-  Future<MockBeneficiary> add({
+  Future<BeneficiaryModel> add({
     required String name,
     required int age,
     required String relation,
@@ -72,7 +74,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
         .take(3)
         .join();
     final localId = 'b${DateTime.now().millisecondsSinceEpoch}';
-    final beneficiary = MockBeneficiary(
+    final beneficiary = BeneficiaryModel(
       id: localId,
       name: name.trim(),
       age: age,
@@ -91,7 +93,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     return synced ?? beneficiary;
   }
 
-  Future<MockBeneficiary?> _syncAddToBackend(MockBeneficiary b) async {
+  Future<BeneficiaryModel?> _syncAddToBackend(BeneficiaryModel b) async {
     final dio = ref.read(dioClientProvider);
 
     final approxBirthYear = DateTime.now().year - b.age;
@@ -125,7 +127,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     List<EmergencyContact>? emergencyContacts,
     String? avatarPath,
   }) {
-    MockBeneficiary? updatedItem;
+    BeneficiaryModel? updatedItem;
     state = [
       for (final b in state)
         if (b.id == id)
@@ -160,7 +162,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     }
   }
 
-  Future<void> _syncUpdateToBackend(String id, MockBeneficiary b) async {
+  Future<void> _syncUpdateToBackend(String id, BeneficiaryModel b) async {
     final isGuid = RegExp(
             r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
         .hasMatch(id);
@@ -196,7 +198,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
     }
   }
 
-  MockBeneficiary _fromBackend(
+  BeneficiaryModel _fromBackend(
     Map<String, dynamic> map, {
     required Map<String, AddressModel> addressesById,
   }) {
@@ -233,7 +235,7 @@ class BeneficiaryStore extends Notifier<List<MockBeneficiary>> {
         .take(3)
         .join();
 
-    return MockBeneficiary(
+    return BeneficiaryModel(
       id: id,
       name: fullName,
       age: age,

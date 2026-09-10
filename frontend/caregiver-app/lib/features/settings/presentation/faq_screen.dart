@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
-import '../../../core/mock/mock_data.dart';
+import '../data/faq_item.dart';
 
 class FaqScreen extends StatefulWidget {
   const FaqScreen({super.key});
@@ -12,12 +12,12 @@ class FaqScreen extends StatefulWidget {
 
 class _FaqScreenState extends State<FaqScreen> {
   final _searchController = TextEditingController();
-  List<MockFaqItem> _filteredItems = [];
+  List<FaqItem> _filteredItems = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredItems = List.from(MockData.faqItems);
+    _filteredItems = List.from(caregiverFaqItems);
   }
 
   @override
@@ -29,9 +29,9 @@ class _FaqScreenState extends State<FaqScreen> {
   void _filterSearch(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredItems = List.from(MockData.faqItems);
+        _filteredItems = List.from(caregiverFaqItems);
       } else {
-        _filteredItems = MockData.faqItems
+        _filteredItems = caregiverFaqItems
             .where((item) =>
                 item.question.toLowerCase().contains(query.toLowerCase()) ||
                 item.answer.toLowerCase().contains(query.toLowerCase()))
@@ -58,7 +58,8 @@ class _FaqScreenState extends State<FaqScreen> {
               onChanged: _filterSearch,
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm câu hỏi...',
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppColors.textSecondary),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -87,7 +88,9 @@ class _FaqScreenState extends State<FaqScreen> {
                 ? const Center(
                     child: Text(
                       'Không tìm thấy câu hỏi phù hợp',
-                      style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500),
                     ),
                   )
                 : ListView.builder(
@@ -115,7 +118,8 @@ class _FaqScreenState extends State<FaqScreen> {
                             ),
                             iconColor: AppColors.primary,
                             collapsedIconColor: AppColors.textSecondary,
-                            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            childrenPadding:
+                                const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             children: [
                               const Divider(height: 1),
                               const SizedBox(height: 12),

@@ -131,11 +131,46 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
     {
         var beneficiary = await db.Beneficiaries.AsNoTracking()
             .Where(x => x.Id == beneficiaryId && x.DeletedAt == null)
-            .Select(x => new { x.Id, x.FullName })
+            .Select(x => new
+            {
+                x.Id,
+                x.FullName,
+                x.DateOfBirth,
+                x.Gender,
+                x.RelationshipToCustomer,
+                x.MobilityNote,
+                x.GeneralNote,
+                x.CareInstructions
+            })
             .SingleOrDefaultAsync(ct);
-        return beneficiary is null || string.IsNullOrWhiteSpace(beneficiary.FullName)
-            ? null
-            : new PeopleDisplaySummary(beneficiary.Id, beneficiary.FullName);
+
+        if (beneficiary is null || string.IsNullOrWhiteSpace(beneficiary.FullName))
+            return null;
+
+        int? age = null;
+        if (beneficiary.DateOfBirth.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            age = today.Year - beneficiary.DateOfBirth.Value.Year;
+            if (beneficiary.DateOfBirth.Value > today.AddYears(-age.Value)) age--;
+        }
+
+        var condition = !string.IsNullOrWhiteSpace(beneficiary.MobilityNote)
+            ? beneficiary.MobilityNote
+            : (!string.IsNullOrWhiteSpace(beneficiary.GeneralNote) ? beneficiary.GeneralNote : null);
+
+        var notes = !string.IsNullOrWhiteSpace(beneficiary.CareInstructions)
+            ? beneficiary.CareInstructions
+            : (!string.IsNullOrWhiteSpace(beneficiary.GeneralNote) ? beneficiary.GeneralNote : null);
+
+        return new PeopleDisplaySummary(
+            beneficiary.Id,
+            beneficiary.FullName,
+            age,
+            beneficiary.Gender,
+            beneficiary.RelationshipToCustomer,
+            condition,
+            notes);
     }
 
     public async Task<PeopleDisplaySummary?> GetCaregiverDisplayAsync(Guid caregiverId, CancellationToken ct = default)

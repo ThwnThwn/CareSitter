@@ -1,16 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../profile/presentation/providers/profile_provider.dart';
+import '../data/caregiver_review_model.dart';
 
-class ReviewsScreen extends StatelessWidget {
+class ReviewsScreen extends ConsumerStatefulWidget {
   const ReviewsScreen({super.key});
 
   @override
+  ConsumerState<ReviewsScreen> createState() => _ReviewsScreenState();
+}
+
+class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
+  List<CaregiverReviewModel> _reviews = const [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadReviews);
+  }
+
+  Future<void> _loadReviews() async {
+    final profile = ref.read(profileProvider);
+    if (profile.id.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    try {
+      final response = await ref
+          .read(dioClientProvider)
+          .get<List<dynamic>>('/reviews/caregiver/${profile.id}');
+      if (!mounted) return;
+      setState(() {
+        _reviews = (response.data ?? [])
+            .whereType<Map<String, dynamic>>()
+            .map(CaregiverReviewModel.fromJson)
+            .toList();
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const list = MockData.reviews;
-    const avgRating = 4.9;
-    const totalReviews = 23;
+    final totalReviews = _reviews.length;
+    final avgRating = totalReviews == 0
+        ? 0.0
+        : _reviews.fold<double>(0, (sum, item) => sum + item.rating) /
+            totalReviews;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -18,28 +61,31 @@ class ReviewsScreen extends StatelessWidget {
         title: const Text('Đánh giá & Nhận xét'),
         leading: const AppBackButton(fallbackRoute: '/settings'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // ── Rating Header Summary ──
-            _buildRatingSummaryCard(avgRating, totalReviews),
-            const SizedBox(height: 12),
-            // ── Reviews List ──
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final review = list[index];
-                return _buildReviewItem(review);
-              },
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // ── Rating Header Summary ──
+                  _buildRatingSummaryCard(avgRating, totalReviews),
+                  const SizedBox(height: 12),
+                  // ── Reviews List ──
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    itemCount: _reviews.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final review = _reviews[index];
+                      return _buildReviewItem(review);
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
     );
   }
 
@@ -75,7 +121,9 @@ class ReviewsScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (idx) {
                     return Icon(
-                      idx < avg.floor() ? Icons.star_rounded : Icons.star_border_rounded,
+                      idx < avg.floor()
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
                       color: const Color(0xFFF1C40F),
                       size: 20,
                     );
@@ -129,7 +177,10 @@ class ReviewsScreen extends StatelessWidget {
       children: [
         Text(
           '$stars',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary),
         ),
         const SizedBox(width: 4),
         const Icon(Icons.star_rounded, color: Color(0xFFF1C40F), size: 13),
@@ -149,7 +200,7 @@ class ReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(MockReview review) {
+  Widget _buildReviewItem(CaregiverReviewModel review) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -204,7 +255,9 @@ class ReviewsScreen extends StatelessWidget {
                   Row(
                     children: List.generate(5, (idx) {
                       return Icon(
-                        idx < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
+                        idx < review.rating
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
                         color: const Color(0xFFF1C40F),
                         size: 14,
                       );

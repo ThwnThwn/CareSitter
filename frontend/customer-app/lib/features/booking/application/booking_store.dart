@@ -13,7 +13,7 @@ final bookingStoreProvider =
     NotifierProvider<BookingStore, List<BookingModel>>(BookingStore.new);
 
 /// BookingStore — quản lý state danh sách booking của customer.
-/// Luôn dùng real backend API (không có mock).
+/// Luôn dùng backend API thật.
 class BookingStore extends Notifier<List<BookingModel>> {
   BookingRepository get _repo => ref.read(bookingRepositoryProvider);
 

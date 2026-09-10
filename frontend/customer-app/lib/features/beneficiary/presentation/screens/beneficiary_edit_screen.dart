@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../application/beneficiary_store.dart';
 
 // Helper: entry cho 1 liên hệ khẩn cấp
@@ -108,8 +107,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     );
     _nameCtrl.text = b.name;
     _ageCtrl.text = b.age.toString();
-    _addressCtrl.text =
-        b.address.isEmpty ? '123 Đường ABC, Quận XYZ, TP.HCM' : b.address;
+    _addressCtrl.text = b.address;
     _relation = b.relation;
     if (_relations.contains(_relation) == false) _relation = 'Khác';
     _careLevel = b.careLevel;
@@ -139,12 +137,6 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
       while (_contacts.length < 2) {
         _contacts.add(_ECEntry());
       }
-    } else {
-      // Defaults
-      _contacts[0].nameCtrl.text = 'Nguyễn Văn A';
-      _contacts[0].phoneCtrl.text = '0901234567';
-      _contacts[1].nameCtrl.text = 'Trần Thị B';
-      _contacts[1].phoneCtrl.text = '0987654321';
     }
     _initialFormState = _formState;
   }

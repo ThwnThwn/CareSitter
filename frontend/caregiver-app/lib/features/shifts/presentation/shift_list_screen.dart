@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/shift_status_style.dart';
 import '../../../core/widgets/app_widgets.dart';
-import '../../../core/mock/mock_data.dart';
+import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
 
 class ShiftListScreen extends ConsumerWidget {
@@ -44,7 +44,7 @@ class ShiftListScreen extends ConsumerWidget {
   }
 
   Widget _buildUpcomingShifts(
-      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+      BuildContext context, WidgetRef ref, List<ShiftModel> shifts) {
     final upcomingList = shifts
         .where((s) =>
             s.status == 'confirmed' ||
@@ -81,7 +81,7 @@ class ShiftListScreen extends ConsumerWidget {
   }
 
   Widget _buildPendingShifts(
-      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+      BuildContext context, WidgetRef ref, List<ShiftModel> shifts) {
     final pendingList = shifts
         .where((s) => s.status == 'pending' || s.status == 'open')
         .toList();
@@ -115,7 +115,7 @@ class ShiftListScreen extends ConsumerWidget {
   }
 
   Widget _buildHistoryShifts(
-      BuildContext context, WidgetRef ref, List<MockBooking> shifts) {
+      BuildContext context, WidgetRef ref, List<ShiftModel> shifts) {
     final historyList = shifts.where((s) => s.status == 'completed').toList();
 
     if (historyList.isEmpty) {

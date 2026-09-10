@@ -33,21 +33,11 @@ class ShiftCustomerReportScreen extends StatefulWidget {
       _ShiftCustomerReportScreenState();
 }
 
-class _ShiftCustomerReportScreenState
-    extends State<ShiftCustomerReportScreen> {
+class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
   int _starRating = 0;
   bool _ratingSubmitted = false;
 
-  // Mocked task names for demo
-  static const _demoTasks = [
-    'Hỗ trợ vệ sinh cá nhân',
-    'Cho ăn sáng và uống thuốc',
-    'Tập thể dục nhẹ',
-    'Dọn dẹp phòng',
-    'Đọc sách / trò chuyện',
-  ];
-
-  // Mocked evidence photos for demo (gradient placeholder)
+  // Visual placeholders are shown only when real evidence media has not loaded.
   static const _photoColors = [
     [Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
     [Color(0xFFF39C12), Color(0xFFE67E22)],
@@ -71,7 +61,8 @@ class _ShiftCustomerReportScreenState
     if (parts.length != 2) return '--:--';
     final h = int.tryParse(parts[0]) ?? 8;
     final m = int.tryParse(parts[1]) ?? 0;
-    final durHours = int.tryParse(widget.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
+    final durHours =
+        int.tryParse(widget.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
     final total = h * 60 + m + durHours * 60;
     return '${(total ~/ 60).toString().padLeft(2, '0')}:${(total % 60).toString().padLeft(2, '0')}';
   }
@@ -259,8 +250,8 @@ class _ShiftCustomerReportScreenState
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               const Text('Chi phí',
-                  style: TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary)),
+                  style:
+                      TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               Text(
                 '${_formatCurrency(widget.caregiverEarning)} đ',
                 style: const TextStyle(
@@ -333,22 +324,22 @@ class _ShiftCustomerReportScreenState
         Text(
           time,
           style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: color),
+              fontSize: 16, fontWeight: FontWeight.w800, color: color),
         ),
         Text(label,
-            style: const TextStyle(
-                fontSize: 11, color: AppColors.textSecondary)),
+            style:
+                const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
 
   // ─── Checklist ───────────────────────────────────────────
   Widget _buildChecklistSection() {
-    final tasks = widget.completedTasks > 0
-        ? _demoTasks.take(widget.totalTasks > 0 ? widget.totalTasks : 3).toList()
-        : _demoTasks.take(3).toList();
+    final total =
+        widget.totalTasks > 0 ? widget.totalTasks : widget.completedTasks;
+    final tasks = widget.taskPhotos.isNotEmpty
+        ? widget.taskPhotos
+        : List.generate(total, (index) => 'Nhiệm vụ ${index + 1}');
 
     return _buildSection(
       title: '✅ Checklist công việc',
@@ -398,8 +389,8 @@ class _ShiftCustomerReportScreenState
                 ),
                 if (hasPhoto || done)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.primaryContainer,
                       borderRadius: BorderRadius.circular(6),
@@ -487,8 +478,8 @@ class _ShiftCustomerReportScreenState
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -513,8 +504,8 @@ class _ShiftCustomerReportScreenState
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(6),
@@ -553,9 +544,7 @@ class _ShiftCustomerReportScreenState
               ? widget.caregiverNote
               : 'Bé ăn được 1 bát cháo thịt. Uống đủ thuốc buổi sáng. Ngủ trưa khoảng 45 phút. Tinh thần vui vẻ, nói chuyện nhiều.',
           style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-              height: 1.5),
+              fontSize: 14, color: AppColors.textPrimary, height: 1.5),
         ),
       ),
     );
@@ -571,8 +560,8 @@ class _ShiftCustomerReportScreenState
               decoration: BoxDecoration(
                 color: AppColors.success.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.success.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -594,8 +583,8 @@ class _ShiftCustomerReportScreenState
               children: [
                 const Text(
                   'Bạn hài lòng với dịch vụ hôm nay không?',
-                  style: TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+                  style:
+                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -605,8 +594,7 @@ class _ShiftCustomerReportScreenState
                     (i) => GestureDetector(
                       onTap: () => setState(() => _starRating = i + 1),
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
                           child: Icon(
@@ -648,8 +636,7 @@ class _ShiftCustomerReportScreenState
         minimumSize: const Size(double.infinity, 52),
         side: const BorderSide(color: AppColors.primary, width: 1.5),
         foregroundColor: AppColors.primary,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       onPressed: () {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -657,8 +644,8 @@ class _ShiftCustomerReportScreenState
             content: const Text('📤 Đã sao chép link báo cáo'),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       },

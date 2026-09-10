@@ -88,11 +88,6 @@ class ScheduleNotifier extends StateNotifier<List<AvailabilitySlot>> {
   DioClient get _dio => _ref.read(dioClientProvider);
 
   Future<void> refresh() async {
-    if (kDebugBypassAuth) {
-      state = [];
-      return;
-    }
-
     final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) {
       state = [];
@@ -143,56 +138,41 @@ class ScheduleNotifier extends StateNotifier<List<AvailabilitySlot>> {
     final startAt = DateTime(date.year, date.month, date.day, startHour);
     final endAt = DateTime(date.year, date.month, date.day, endHour);
 
-    if (!kDebugBypassAuth) {
-      try {
-        final response = await _dio.post<Map<String, dynamic>>(
-          ApiPaths.myAvailability,
-          data: {
-            'startAt': startAt.toUtc().toIso8601String(),
-            'endAt': endAt.toUtc().toIso8601String(),
-            'status': 'AVAILABLE',
-          },
-        );
-        final slot = _mapSlot(response.data ?? {});
-        if (slot != null) {
-          state = [...state.where((s) => s.id != slot.id), slot]..sort((a, b) {
-              final dateCompare = a.date.compareTo(b.date);
-              return dateCompare != 0
-                  ? dateCompare
-                  : a.startHour.compareTo(b.startHour);
-            });
-        } else {
-          await refresh();
-        }
-        return;
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ScheduleNotifier] Lỗi thêm lịch rảnh: $e');
-        return;
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.myAvailability,
+        data: {
+          'startAt': startAt.toUtc().toIso8601String(),
+          'endAt': endAt.toUtc().toIso8601String(),
+          'status': 'AVAILABLE',
+        },
+      );
+      final slot = _mapSlot(response.data ?? {});
+      if (slot != null) {
+        state = [...state.where((s) => s.id != slot.id), slot]..sort((a, b) {
+            final dateCompare = a.date.compareTo(b.date);
+            return dateCompare != 0
+                ? dateCompare
+                : a.startHour.compareTo(b.startHour);
+          });
+      } else {
+        await refresh();
       }
+      return;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ScheduleNotifier] Lỗi thêm lịch rảnh: $e');
+      return;
     }
-
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    state = [
-      ...state,
-      AvailabilitySlot(
-        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-        date: normalizedDate,
-        startHour: startHour,
-        endHour: endHour,
-      ),
-    ];
   }
 
   Future<void> removeSlot(String id) async {
-    if (!kDebugBypassAuth) {
-      try {
-        await _dio.delete<void>('${ApiPaths.myAvailability}/$id');
-      } catch (e) {
-        // ignore: avoid_print
-        print('[ScheduleNotifier] Lỗi xóa lịch rảnh: $e');
-        return;
-      }
+    try {
+      await _dio.delete<void>('${ApiPaths.myAvailability}/$id');
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ScheduleNotifier] Lỗi xóa lịch rảnh: $e');
+      return;
     }
     state = state.where((s) => s.id != id).toList();
   }
