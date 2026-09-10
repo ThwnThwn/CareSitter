@@ -30,6 +30,10 @@ class BookingModel {
   final String? addressText;
   final String? serviceName;
 
+  /// Version tăng mỗi khi booking được mutation trên server.
+  /// Dùng khi merge delta để bỏ qua update cũ / đến đảo thứ tự.
+  final int syncVersion;
+
   const BookingModel({
     required this.id,
     required this.beneficiaryId,
@@ -56,6 +60,7 @@ class BookingModel {
     this.serviceName,
     this.isReviewed = false,
     this.tasks = const [],
+    this.syncVersion = 0,
   });
 
   final bool isReviewed;
@@ -150,6 +155,7 @@ class BookingModel {
     DateTime? updatedAt,
     bool? isReviewed,
     List<dynamic>? tasks,
+    int? syncVersion,
   }) {
     return BookingModel(
       id: id,
@@ -178,6 +184,7 @@ class BookingModel {
       serviceName: serviceName,
       isReviewed: isReviewed ?? this.isReviewed,
       tasks: tasks ?? this.tasks,
+      syncVersion: syncVersion ?? this.syncVersion,
     );
   }
 
@@ -215,6 +222,7 @@ class BookingModel {
       beneficiaryName: _string(json['beneficiaryName']),
       addressText: _string(json['addressText']),
       serviceName: _string(json['serviceName']),
+      syncVersion: _int(json['syncVersion']),
     );
   }
 
@@ -328,11 +336,15 @@ class BookingListResponse {
   final int page;
   final int pageSize;
 
+  /// Cursor mới nhất của customer — client lưu để bắt đầu delta sync.
+  final int syncCursor;
+
   const BookingListResponse({
     required this.items,
     required this.total,
     required this.page,
     required this.pageSize,
+    this.syncCursor = 0,
   });
 
   factory BookingListResponse.fromJson(Map<String, dynamic> json) {
@@ -348,6 +360,7 @@ class BookingListResponse {
       total: _int(json['total']) ?? items.length,
       page: _int(json['page']) ?? 1,
       pageSize: _int(json['pageSize']) ?? items.length,
+      syncCursor: _int(json['syncCursor']) ?? 0,
     );
   }
 

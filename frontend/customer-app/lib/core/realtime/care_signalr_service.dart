@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import '../auth/auth_notifier.dart';
+import '../../features/booking/data/models/booking_sync_model.dart';
 
 /// URL của SignalR Hub trên backend.
 /// Phải là URL gốc (không có /api/v1) vì Hub nằm ở /hubs/care-tracking.
@@ -107,21 +108,42 @@ class TimelineEventUpdate {
       );
 }
 
+/// Trạng thái lifecycle của SignalR connection.
+enum SignalRConnectionState {
+  connecting,
+  connected,
+  reconnecting,
+  reconnected,
+  closed,
+}
+
 /// Quản lý kết nối SignalR với CareTrackingHub trên backend.
 ///
 /// Sử dụng:
 ///   final signalR = ref.read(careSignalRProvider);
 ///   await signalR.joinBooking(bookingId);
-///   signalR.gpsStream.listen(...);     // nhận GPS updates
-///   signalR.statusStream.listen(...);  // nhận status changes
+///   signalR.gpsStream.listen(...);          // nhận GPS updates
+///   signalR.statusStream.listen(...);       // nhận status changes
+///   signalR.customerSyncStream.listen(...); // nhận BookingListSync trigger
+///   signalR.onReconnected.listen(...);      // khi reconnect thành công
 class CareSignalRService {
   final Ref _ref;
   HubConnection? _connection;
+  Future<void>? _connectOperation;
 
   // Stream controllers
   final _gpsController = StreamController<GpsUpdate>.broadcast();
   final _statusController = StreamController<BookingStatusChange>.broadcast();
   final _timelineController = StreamController<TimelineEventUpdate>.broadcast();
+
+  /// Lifecycle stream — theo dõi trạng thái kết nối SignalR.
+  final _lifecycleController =
+      StreamController<SignalRConnectionState>.broadcast();
+
+  /// Stream SignalR event 'BookingListSync' — chỉ là tín hiệu kích hoạt sync,
+  /// không chứa full state. Backend join customer group tự động qua OnConnectedAsync.
+  final _customerSyncController =
+      StreamController<BookingListSyncSignal>.broadcast();
 
   /// Stream GPS updates — subscribe từ tracking screen.
   Stream<GpsUpdate> get gpsStream => _gpsController.stream;
@@ -132,6 +154,20 @@ class CareSignalRService {
   /// Stream timeline events — subscribe từ care timeline screen.
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
 
+  /// Stream trạng thái lifecycle (connecting / connected / reconnecting / ...).
+  Stream<SignalRConnectionState> get lifecycleStream =>
+      _lifecycleController.stream;
+
+  /// Stream shortcut: chỉ emit khi SignalR reconnect thành công.
+  /// BookingStore subscribe để trigger delta sync sau gián đoạn mạng.
+  Stream<void> get onReconnected => lifecycleStream
+      .where((s) => s == SignalRConnectionState.reconnected)
+      .map((_) {});
+
+  /// Stream 'BookingListSync' event từ customer group — dùng để trigger requestSync().
+  Stream<BookingListSyncSignal> get customerSyncStream =>
+      _customerSyncController.stream;
+
   CareSignalRService(this._ref);
 
   /// Danh sách booking ID đang theo dõi — dùng để re-join sau khi reconnect.
@@ -141,11 +177,14 @@ class CareSignalRService {
 
   /// Kết nối tới Hub và đăng ký handlers.
   /// Tự động đính kèm JWT access token vào query string.
-  Future<void> connect() async {
-    if (_connection != null &&
-        _connection!.state == HubConnectionState.Connected) {
-      return;
-    }
+  Future<void> connect() {
+    if (isConnected) return Future.value();
+    return _connectOperation ??=
+        _connectInternal().whenComplete(() => _connectOperation = null);
+  }
+
+  Future<void> _connectInternal() async {
+    if (isConnected) return;
 
     final token = _ref.read(authStateProvider).value?.accessToken;
     if (token == null) return; // Chưa login → không kết nối
@@ -190,22 +229,36 @@ class CareSignalRService {
       }
     });
 
+    // ── Handler BookingListSync (customer scope) ────────────────────────────
+    _connection!.on('BookingListSync', (args) {
+      if (args == null || args.isEmpty) return;
+      try {
+        final data = Map<String, dynamic>.from(args[0] as Map);
+        _customerSyncController.add(BookingListSyncSignal.fromJson(data));
+      } catch (e) {
+        // ignore parse error
+      }
+    });
+
     _connection!.onclose(({error}) {
       // ignore: avoid_print
       print('[SignalR] Connection closed: $error');
+      _lifecycleController.add(SignalRConnectionState.closed);
     });
 
     _connection!.onreconnecting(({error}) {
       // ignore: avoid_print
       print('[SignalR] Reconnecting: $error');
+      _lifecycleController.add(SignalRConnectionState.reconnecting);
     });
 
     _connection!.onreconnected(({connectionId}) {
       // ignore: avoid_print
       print(
           '[SignalR] Reconnected: $connectionId — re-joining ${_activeBookings.length} groups');
-      // ⚠️ ConnectionId mới → group membership bị mất.
-      // Phải re-invoke JoinBookingGroup cho mỗi booking đang active.
+      // ⚠️ ConnectionId mới → booking group membership bị mất.
+      // Customer group được backend tự join lại qua OnConnectedAsync khi reconnect.
+      // Chỉ cần re-join booking groups (tracking chi tiết).
       for (final bid in _activeBookings) {
         _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((e) {
           // ignore: avoid_print
@@ -213,15 +266,19 @@ class CareSignalRService {
           return null;
         });
       }
+      _lifecycleController.add(SignalRConnectionState.reconnected);
     });
 
+    _lifecycleController.add(SignalRConnectionState.connecting);
     try {
       await _connection!.start();
       // ignore: avoid_print
       print('[SignalR] Connected to CareTrackingHub');
+      _lifecycleController.add(SignalRConnectionState.connected);
     } catch (e) {
       // ignore: avoid_print
       print('[SignalR] Connection failed: $e');
+      _lifecycleController.add(SignalRConnectionState.closed);
     }
   }
 
@@ -267,6 +324,8 @@ class CareSignalRService {
     await _gpsController.close();
     await _statusController.close();
     await _timelineController.close();
+    await _lifecycleController.close();
+    await _customerSyncController.close();
   }
 }
 

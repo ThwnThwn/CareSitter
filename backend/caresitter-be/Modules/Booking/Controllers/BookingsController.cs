@@ -3,6 +3,7 @@ using CareSitter.Infrastructure.Hubs;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.CreateBooking;
+using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
@@ -32,6 +33,7 @@ public sealed class BookingsController(
     IDisputeLookupService disputeLookup,
     ISender sender,
     IHubContext<CareTrackingHub> hub,
+    BookingSyncService bookingSync,
     IUserNotificationService notifications) : ControllerBase
 {
     // ════════════════════════════════════════════
@@ -97,11 +99,18 @@ public sealed class BookingsController(
             query = query.Where(x => x.Status == parsed);
         }
 
+        // Capture the cursor before the list snapshot. A mutation after this
+        // point remains visible to the client's following delta request.
+        var syncCursor = 0L;
+        if (currentUser.IsInRole("CUSTOMER") && currentUser.UserId is { } cid)
+            syncCursor = await bookingSync.GetCurrentCursorAsync(cid, ct);
+
         var total = await query.CountAsync(ct);
         var items = await query.OrderByDescending(x => x.ScheduledStart)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
         var responses = await ToResponsesAsync(items, ct);
-        return Ok(new { items = responses, total, page, pageSize });
+
+        return Ok(new { items = responses, total, page, pageSize, syncCursor });
     }
 
     /// <summary>Xem chi tiết một booking theo ID, kiểm tra quyền theo Customer, Caregiver hoặc Admin.</summary>
@@ -126,6 +135,53 @@ public sealed class BookingsController(
             return Forbid();
 
         return Ok(await ToResponseAsync(entity, ct));
+    }
+
+    // ════════════════════════════════════════════
+    //  DELTA SYNC
+    // ════════════════════════════════════════════
+
+    /// <summary>
+    /// Delta sync cho customer app: trả danh sách booking đã thay đổi kể từ cursor X.
+    /// Client gọi sau khi nhận SignalR BookingListSync event, sau reconnect, hoặc theo polling 30s.
+    /// </summary>
+    [HttpGet("sync")]
+    public async Task<IActionResult> Sync([FromQuery] long cursor = 0, CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+        if (!currentUser.IsInRole("CUSTOMER") && !currentUser.IsInRole("ADMIN"))
+            return Forbid();
+
+        var delta = await bookingSync.GetDeltaAsync(userId, cursor, batchSize: 100, ct);
+
+        if (delta.ResetRequired)
+            return Ok(new { resetRequired = true, nextCursor = 0L, serverTime = DateTimeOffset.UtcNow });
+
+        if (delta.Events.Count == 0)
+            return Ok(new
+            {
+                items = Array.Empty<BookingResponse>(),
+                nextCursor = delta.NextCursor,
+                serverTime = DateTimeOffset.UtcNow,
+                hasMore = false,
+                resetRequired = false
+            });
+
+        // Lấy distinct booking IDs từ events và query full snapshot
+        var bookingIds = delta.Events.Select(e => e.BookingId).Distinct().ToList();
+        var bookings = await db.Bookings.AsNoTracking()
+            .Where(b => bookingIds.Contains(b.Id))
+            .ToListAsync(ct);
+        var responses = await ToResponsesAsync(bookings, ct);
+
+        return Ok(new
+        {
+            items = responses,
+            nextCursor = delta.NextCursor,
+            serverTime = DateTimeOffset.UtcNow,
+            hasMore = delta.HasMore,
+            resetRequired = false
+        });
     }
 
     /// <summary>
@@ -168,10 +224,12 @@ public sealed class BookingsController(
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.Cancel(userId, "CUSTOMER", request.Reason, clock.UtcNow);
         if (result.IsFailure) return Problem(result.Error);
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Cancelled);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, "cancelled", DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyCaregiverAsync(booking, "Lịch chăm sóc đã bị hủy",
             "Khách hàng đã hủy lịch chăm sóc.", ct);
         return Ok(await ToResponseAsync(booking, ct));
@@ -196,7 +254,9 @@ public sealed class BookingsController(
         if (changed.IsFailure) return Problem(changed.Error);
         booking.ApplyPricing(quote.Value.EscrowAmount, quote.Value.PlatformFeeAmount,
             quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson);
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Rescheduled);
         await db.SaveChangesAsync(ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         return Ok(await ToResponseAsync(booking, ct));
     }
 
@@ -216,7 +276,9 @@ public sealed class BookingsController(
             return Conflict(new { error = "Caregiver khong nam trong danh sach goi y phu hop cua ca nay." });
         var result = booking.SelectCaregiver(request.CaregiverId);
         if (result.IsFailure) return Problem(result.Error);
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverSelected);
         await db.SaveChangesAsync(ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         if (booking.Status == BookingStatus.Confirmed)
         {
             await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
@@ -243,7 +305,9 @@ public sealed class BookingsController(
 
         var result = booking.ConfirmPayment();
         if (result.IsFailure) return Problem(result.Error);
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
         await db.SaveChangesAsync(ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await matching.OfferTopCandidatesAsync(id, ct);
         await NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
             "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct);
@@ -316,6 +380,7 @@ public sealed class BookingsController(
             otherOffer.Cancel();
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKIN", "Caregiver da nhan ca"));
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverAccepted);
 
         try
         {
@@ -329,6 +394,7 @@ public sealed class BookingsController(
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, "caregiver_accepted", DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã nhận ca",
             "Caregiver đã xác nhận lịch chăm sóc của bạn.", ct);
         return Ok(await ToResponseAsync(booking, ct));
@@ -389,10 +455,12 @@ public sealed class BookingsController(
         if (result.IsFailure) return Problem(result.Error);
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKIN", "Caregiver dang tren duong den"));
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverEnRoute);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đang di chuyển",
             "Caregiver đang trên đường đến địa điểm chăm sóc.", ct);
         return Ok(await ToResponseAsync(booking, ct));
@@ -441,10 +509,12 @@ public sealed class BookingsController(
             latitude: request.Latitude, longitude: request.Longitude,
             distanceToAddressMeters: distance));
 
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CheckedIn);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã check-in",
             "Ca chăm sóc đã bắt đầu.", ct);
         return Ok(await ToResponseAsync(booking, ct));
@@ -471,10 +541,12 @@ public sealed class BookingsController(
         if (result.IsFailure) return Problem(result.Error);
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKOUT_MANUAL_REQUESTED", "Yeu cau checkout thu cong"));
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CheckoutRequested);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver yêu cầu checkout",
             "Vui lòng kiểm tra và xác nhận hoàn tất ca chăm sóc.", ct);
         return Ok(await ToResponseAsync(booking, ct));
@@ -512,10 +584,12 @@ public sealed class BookingsController(
 
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKOUT", "Ca cham soc hoan thanh"));
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Completed);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifyBookingUserAsync(booking.CustomerId, booking, "Ca chăm sóc đã hoàn tất",
             "Lịch chăm sóc đã được xác nhận hoàn tất.", ct);
         await NotifyCaregiverAsync(booking, "Ca chăm sóc đã hoàn tất",
@@ -549,15 +623,34 @@ public sealed class BookingsController(
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, booking.CaregiverId, "SOS",
             "Cấp cứu / tình huống khẩn cấp", note: $"SOS raised by user {userId}"));
+        bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CrisisRaised);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, BookingStatusCodec.ToApi(booking.Status), DateTimeOffset.UtcNow), ct);
+        await PublishCustomerSyncEventAsync(booking, ct);
         await NotifySosTargetsAsync(booking, userId, ct);
         return Ok(await ToResponseAsync(booking, ct));
     }
 
     // ── Helpers ──
+
+    /// <summary>
+    /// Publish BookingListSync tới customer-{customerId} group sau mỗi mutation.
+    /// Event chỉ là tín hiệu để client gọi delta sync — không chứa full state.
+    /// Gọi SAU SaveChangesAsync để cursor trong DB đã được commit.
+    /// </summary>
+    private async Task PublishCustomerSyncEventAsync(Domain.Booking booking, CancellationToken ct)
+    {
+        // Lấy cursor vừa được ghi (lớn nhất của customer này)
+        var cursor = await bookingSync.GetCurrentCursorAsync(booking.CustomerId, ct);
+        await hub.Clients.Group(CareTrackingHub.CustomerGroup(booking.CustomerId))
+            .SendAsync("BookingListSync", new BookingListSyncEvent(
+                booking.Id,
+                booking.SyncVersion,
+                cursor,
+                DateTimeOffset.UtcNow), ct);
+    }
 
     private Task NotifyBookingUserAsync(Guid userId, Domain.Booking booking,
         string title, string body, CancellationToken ct) =>

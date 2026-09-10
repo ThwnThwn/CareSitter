@@ -7,6 +7,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/dio_client.dart';
 import '../auth/auth_notifier.dart';
+import '../../features/booking/application/booking_store.dart';
+
+/// Top-level background message handler (phải là hàm top-level).
+/// Gọi khi app ở background hoặc terminated và nhận FCM data message.
+/// Không cần trigger BookingStore vì app sẽ sync tự động khi user mở lại app.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Background: đảm bảo Firebase khởi tạo trước khi xử lý message.
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
+  // Không cần làm gì thêm — BookingSyncWatchdog sẽ trigger requestSync khi resume.
+  debugPrint('[FCM Background] type=${message.data["type"]}');
+}
 
 final pushNotificationServiceProvider =
     Provider<PushNotificationService>((ref) {
@@ -74,6 +88,22 @@ class PushNotificationService {
 
     _tokenRefreshSub ??= messaging.onTokenRefresh.listen((newToken) {
       unawaited(_registerToken(newToken));
+    });
+
+    // ── Foreground data message handler ───────────────────────────────────
+    // Chỉ bắt data message type=booking_sync — trigger delta sync ngay.
+    // Notification UI cho các event quan trọ ng khác (caregiver_accepted,
+    // caregiver_en_route, ...) do FCM tự hiển thị qua notification payload.
+    FirebaseMessaging.onMessage.listen((message) {
+      if (message.data['type'] == 'booking_sync') {
+        final isAuth =
+            _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+        if (isAuth) {
+          unawaited(
+            _ref.read(bookingStoreProvider.notifier).requestSync(),
+          );
+        }
+      }
     });
   }
 

@@ -20,6 +20,7 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<CareTask> CareTasks => Set<CareTask>();
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
+    public DbSet<BookingSyncEvent> BookingSyncEvents => Set<BookingSyncEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,7 +61,23 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.CancelReason).HasColumnName("cancel_reason");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.Property(x => x.SyncVersion).HasColumnName("sync_version");
             b.Ignore(x => x.DomainEvents);
+        });
+
+        modelBuilder.Entity<BookingSyncEvent>(b =>
+        {
+            b.ToTable("booking_sync_events");
+            b.HasKey(x => x.Cursor);
+            b.Property(x => x.Cursor)
+                .HasColumnName("cursor")
+                .ValueGeneratedOnAdd();
+            b.Property(x => x.CustomerId).HasColumnName("customer_id");
+            b.Property(x => x.BookingId).HasColumnName("booking_id");
+            b.Property(x => x.BookingVersion).HasColumnName("booking_version");
+            b.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(50);
+            b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
+            b.HasIndex(x => new { x.CustomerId, x.Cursor }).HasDatabaseName("ix_bse_customer_cursor");
         });
 
         modelBuilder.Entity<BookingAssignment>(b =>

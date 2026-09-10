@@ -1,5 +1,6 @@
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Application;
+using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
@@ -32,6 +33,10 @@ public sealed class BookingModule : IModule
         // Hub resolve IBookingMembershipChecker (Shared interface) → implementation nằm ở đây.
         // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
         services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
+
+        // BookingSyncService: ghi sync event và query delta.
+        // Scoped vì inject BookingDbContext (Scoped).
+        services.AddScoped<BookingSyncService>();
     }
 
     // Controllers tự được map qua app.MapControllers() ở Program.cs
