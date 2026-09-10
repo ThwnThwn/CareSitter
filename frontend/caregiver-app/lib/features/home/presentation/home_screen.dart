@@ -7,7 +7,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/shift_status_style.dart';
 import '../../../core/auth/auth_notifier.dart';
-import '../../../core/mock/mock_data.dart';
+import '../../shifts/data/shift_model.dart';
 import '../../shifts/presentation/providers/shifts_provider.dart';
 import '../../earnings/presentation/providers/earnings_provider.dart';
 import '../../profile/presentation/providers/profile_provider.dart';
@@ -207,7 +207,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  bool _isOfferStatus(MockBooking shift) {
+  bool _isOfferStatus(ShiftModel shift) {
     return shift.status == 'pending' || shift.status == 'open';
   }
 
@@ -319,7 +319,7 @@ class HomeScreen extends ConsumerWidget {
 
   // ── New Booking Request Card (Pulse) ───────────────────
   Widget _buildNewBookingRequest(
-      BuildContext context, WidgetRef ref, MockBooking booking) {
+      BuildContext context, WidgetRef ref, ShiftModel booking) {
     final note = booking.customerNote?.trim();
 
     return _PulseCard(
@@ -627,7 +627,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   // ── Today Timeline ─────────────────────────────────────
-  Widget _buildTodayTimeline(BuildContext context, List<MockBooking> shifts) {
+  Widget _buildTodayTimeline(BuildContext context, List<ShiftModel> shifts) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -1009,7 +1009,7 @@ class HomeScreen extends ConsumerWidget {
     return price.toStringAsFixed(0);
   }
 
-  String _offerLocationLabel(MockBooking booking) {
+  String _offerLocationLabel(ShiftModel booking) {
     final address = booking.address.trim();
     if (address.isEmpty || address == 'Địa chỉ khách hàng đã đăng ký') {
       return 'Địa chỉ theo booking';

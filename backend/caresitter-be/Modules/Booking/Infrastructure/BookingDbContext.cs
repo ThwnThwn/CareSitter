@@ -39,6 +39,11 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.ScheduledEnd).HasColumnName("scheduled_end");
             b.Property(x => x.ActualStart).HasColumnName("actual_start");
             b.Property(x => x.ActualEnd).HasColumnName("actual_end");
+            b.Property(x => x.CheckoutPendingReviewAt).HasColumnName("checkout_pending_review_at");
+            b.Property(x => x.CheckoutSource)
+                .HasColumnName("checkout_source")
+                .HasConversion<string>()
+                .HasMaxLength(30);
             b.Property(x => x.RequiredSkills).HasColumnName("required_skills").HasColumnType("jsonb");
             b.Property(x => x.Status)
                 .HasColumnName("status")

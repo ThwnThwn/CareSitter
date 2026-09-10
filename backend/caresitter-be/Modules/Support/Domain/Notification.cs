@@ -28,7 +28,7 @@ public sealed class Notification : Entity
 
     public Guid UserId { get; private set; }
 
-    /// <summary>Allowed values: BOOKING, CARE_TIMELINE, PAYMENT, PROMOTION, SYSTEM, SOS.</summary>
+    /// <summary>Allowed values: BOOKING, CARE_TIMELINE, PAYMENT, PROMOTION, SYSTEM, SOS, BOOKING_OFFER, MATCHING_FAILED.</summary>
     public string Type { get; private set; } = "SYSTEM";
 
     public string Title { get; private set; } = string.Empty;

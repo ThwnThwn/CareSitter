@@ -11,19 +11,17 @@ using Microsoft.Extensions.Logging;
 namespace CareSitter.ApiHost.Jobs;
 
 /// <summary>
-/// Các Hangfire background jobs tự động xử lý vòng đời Booking.
-///
-/// Job 1 - ExpirePendingPayments (mỗi 1 phút):
-///   Tự động hủy các booking ở trạng thái PendingPayment sau 15 phút không thanh toán.
-///
-/// Job 2 - AlertLateCheckins (mỗi 5 phút):
-///   Phát hiện caregiver quá giờ chưa check-in → ghi timeline cảnh báo.
-///
-/// Job 3 - AutoCompleteExpiredShifts (mỗi 5 phút):
-///   Tự động hoàn thành ca nếu quá giờ kết thúc 30 phút mà caregiver chưa checkout.
+/// Hangfire background jobs for booking lifecycle automation.
+/// Jobs move bookings to review first; escrow settlement only happens after
+/// customer/admin confirmation or after the auto-confirm waiting period.
 /// </summary>
 public sealed class BookingJobsService
 {
+    private const int PaymentTimeoutMinutes = 15;
+    private const int LateCheckinGraceMinutes = 10;
+    private const int ShiftEndCheckoutGraceMinutes = 30;
+    private const int AutoConfirmCheckoutHours = 24;
+
     private readonly IServiceProvider _services;
     private readonly ILogger<BookingJobsService> _logger;
 
@@ -33,18 +31,9 @@ public sealed class BookingJobsService
         _logger = logger;
     }
 
-    // ════════════════════════════════════════════
-    //  JOB 1: Auto-cancel booking hết hạn thanh toán
-    // ════════════════════════════════════════════
-
-    /// <summary>
-    /// Quét booking ở PendingPayment quá 15 phút → tự động Cancel.
-    /// Chạy mỗi 1 phút qua Hangfire recurring job.
-    /// </summary>
     public async Task ExpirePendingPaymentsAsync()
     {
-        const int timeoutMinutes = 15;
-        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-timeoutMinutes);
+        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-PaymentTimeoutMinutes);
 
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
@@ -74,7 +63,6 @@ public sealed class BookingJobsService
                 continue;
             }
 
-            // Broadcast trạng thái mới qua SignalR
             await hub.Clients
                 .Group(CareTrackingHub.BookingGroup(booking.Id))
                 .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
@@ -88,18 +76,9 @@ public sealed class BookingJobsService
         _logger.LogInformation("[BookingJobs] Cancelled {Count} expired bookings", expiredBookings.Count);
     }
 
-    // ════════════════════════════════════════════
-    //  JOB 2: Cảnh báo caregiver quá giờ chưa check-in
-    // ════════════════════════════════════════════
-
-    /// <summary>
-    /// Quét booking CaregiverAccepted/CaregiverEnRoute mà ScheduledStart đã qua 10 phút
-    /// và chưa có GPS check-in → ghi timeline cảnh báo LATE_CHECKIN.
-    /// Chạy mỗi 5 phút.
-    /// </summary>
     public async Task AlertLateCheckinsAsync()
     {
-        var warningCutoff = DateTimeOffset.UtcNow.AddMinutes(-10);
+        var warningCutoff = DateTimeOffset.UtcNow.AddMinutes(-LateCheckinGraceMinutes);
 
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
@@ -113,7 +92,6 @@ public sealed class BookingJobsService
 
         foreach (var booking in lateBookings)
         {
-            // Tránh ghi nhiều lần: kiểm tra đã có LATE_CHECKIN event chưa
             bool alreadyWarned = await db.TimelineEvents.AnyAsync(e =>
                 e.BookingId == booking.Id && e.EventType == "LATE_CHECKIN");
 
@@ -132,7 +110,6 @@ public sealed class BookingJobsService
 
             db.TimelineEvents.Add(warnEvt);
 
-            // Notify qua SignalR
             await hub.Clients
                 .Group(CareTrackingHub.BookingGroup(booking.Id))
                 .SendAsync("TimelineEventAdded", new TimelineEventAddedEvent(
@@ -150,24 +127,14 @@ public sealed class BookingJobsService
             await db.SaveChangesAsync();
     }
 
-    // ════════════════════════════════════════════
-    //  JOB 3: Auto-complete ca hết giờ
-    // ════════════════════════════════════════════
-
-    /// <summary>
-    /// Quét booking InProgress mà ScheduledEnd đã qua 30 phút → tự động Complete.
-    /// Giải ngân escrow cho caregiver qua WalletService.
-    /// Chạy mỗi 5 phút.
-    /// </summary>
-    public async Task AutoCompleteExpiredShiftsAsync()
+    public async Task AutoRequestCheckoutExpiredShiftsAsync()
     {
-        const int gracePeriodMinutes = 30;
-        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-gracePeriodMinutes);
+        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-ShiftEndCheckoutGraceMinutes);
 
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
-        var walletService = scope.ServiceProvider.GetService<IWalletService>();
+        var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
 
         var expiredShifts = await db.Bookings
             .Where(b => b.Status == BookingStatus.InProgress && b.ScheduledEnd <= cutoff)
@@ -176,65 +143,154 @@ public sealed class BookingJobsService
         if (expiredShifts.Count == 0) return;
 
         _logger.LogInformation(
-            "[BookingJobs] AutoComplete: found {Count} shifts to complete", expiredShifts.Count);
+            "[BookingJobs] AutoRequestCheckout: found {Count} shifts to move to review", expiredShifts.Count);
 
         foreach (var booking in expiredShifts)
         {
-            var result = booking.Complete();
+            var oldStatus = ToApi(booking.Status);
+            var requestedAt = DateTimeOffset.UtcNow;
+            var result = booking.RequestSystemTimeoutCheckout(requestedAt);
             if (result.IsFailure)
             {
                 _logger.LogWarning(
-                    "[BookingJobs] Cannot auto-complete booking {Id}: {Error}", booking.Id, result.Error.Message);
+                    "[BookingJobs] Cannot move booking {Id} to checkout review: {Error}",
+                    booking.Id, result.Error.Message);
                 continue;
             }
 
-            // Ghi timeline
-            db.TimelineEvents.Add(CareTimelineEvent.Create(
-                booking.Id, booking.CaregiverId,
+            var evt = CareTimelineEvent.Create(
+                booking.Id,
+                booking.CaregiverId,
                 eventType: "AUTO_CHECKOUT",
-                title: "Ca tự động kết thúc",
-                note: $"Ca kết thúc tự động sau {gracePeriodMinutes} phút qua giờ dự kiến.",
-                source: "SYSTEM"));
+                title: "Ca chuyển sang chờ xác nhận tự động",
+                note: "session_timeout_auto_checkout: ca đã quá giờ dự kiến, hệ thống chuyển sang chờ gia đình xác nhận.",
+                source: "SYSTEM",
+                metadata: "{\"reason\":\"session_timeout_auto_checkout\"}");
+            db.TimelineEvents.Add(evt);
 
-            // Giải ngân escrow
-            if (walletService != null && booking.CaregiverId.HasValue)
-            {
-                try
-                {
-                    await walletService.SettleAsync(
-                        booking.Id, booking.CaregiverId.Value,
-                        booking.EscrowAmount, booking.PlatformFeeAmount,
-                        CancellationToken.None);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "[BookingJobs] Settle failed for booking {Id}", booking.Id);
-                }
-            }
-
-            // Broadcast trạng thái mới
             await hub.Clients
                 .Group(CareTrackingHub.BookingGroup(booking.Id))
                 .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                     booking.Id,
-                    OldStatus: "in_progress",
-                    NewStatus: "completed",
-                    ChangedAt: DateTimeOffset.UtcNow));
+                    OldStatus: oldStatus,
+                    NewStatus: "checkout_pending_review",
+                    ChangedAt: requestedAt));
+
+            await notifications.NotifyAsync(new UserNotificationMessage(
+                booking.CustomerId,
+                "BOOKING",
+                "Ca chăm sóc đã quá giờ dự kiến",
+                "Hệ thống đã chuyển ca sang chờ gia đình xác nhận do quá giờ. Escrow chưa được giải ngân cho đến khi ca được xác nhận hoàn tất.",
+                BookingNotificationData(booking)), CancellationToken.None);
         }
 
         await db.SaveChangesAsync();
-        _logger.LogInformation("[BookingJobs] Auto-completed {Count} expired shifts", expiredShifts.Count);
+        _logger.LogInformation("[BookingJobs] Moved {Count} expired shifts to checkout review", expiredShifts.Count);
     }
 
-    // ════════════════════════════════════════════
-    //  JOB 4: Mở rộng offer matching đã hết hạn
-    // ════════════════════════════════════════════
+    public async Task AutoConfirmPendingCheckoutsAsync()
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddHours(-AutoConfirmCheckoutHours);
 
-    /// <summary>
-    /// Đánh dấu offer hết hạn và mời batch caregiver phù hợp tiếp theo.
-    /// Chạy mỗi phút để booking không bị kẹt sau khi nhóm đầu không phản hồi.
-    /// </summary>
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
+        var wallet = scope.ServiceProvider.GetRequiredService<IWalletService>();
+        var disputeLookup = scope.ServiceProvider.GetRequiredService<IDisputeLookupService>();
+        var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
+
+        var candidateIds = await db.Bookings.AsNoTracking()
+            .Where(b => b.Status == BookingStatus.CheckoutPendingReview
+                && b.CheckoutPendingReviewAt != null
+                && b.CheckoutPendingReviewAt <= cutoff)
+            .Select(b => b.Id)
+            .ToListAsync();
+
+        if (candidateIds.Count == 0) return;
+
+        foreach (var bookingId in candidateIds)
+        {
+            if (await disputeLookup.HasOpenDisputeAsync(bookingId, CancellationToken.None))
+                continue;
+
+            await using var tx = await db.Database.BeginTransactionAsync();
+            var booking = await db.Bookings.SingleOrDefaultAsync(b =>
+                b.Id == bookingId && b.Status == BookingStatus.CheckoutPendingReview);
+            if (booking is null)
+            {
+                await tx.RollbackAsync();
+                continue;
+            }
+            if (booking.CaregiverId is not { } caregiverId)
+            {
+                await tx.RollbackAsync();
+                continue;
+            }
+
+            if (await disputeLookup.HasOpenDisputeAsync(booking.Id, CancellationToken.None))
+            {
+                await tx.RollbackAsync();
+                continue;
+            }
+
+            var oldStatus = ToApi(booking.Status);
+            var result = booking.Complete();
+            if (result.IsFailure)
+            {
+                await tx.RollbackAsync();
+                _logger.LogWarning(
+                    "[BookingJobs] Cannot auto-confirm checkout for booking {Id}: {Error}",
+                    booking.Id, result.Error.Message);
+                continue;
+            }
+
+            if (await disputeLookup.HasOpenDisputeAsync(booking.Id, CancellationToken.None))
+            {
+                await tx.RollbackAsync();
+                continue;
+            }
+
+            var settleResult = await wallet.SettleAsync(
+                booking.Id, caregiverId, booking.EscrowAmount, booking.PlatformFeeAmount,
+                CancellationToken.None);
+            if (settleResult.IsFailure)
+            {
+                await tx.RollbackAsync();
+                _logger.LogWarning(
+                    "[BookingJobs] Auto-confirm settle blocked for booking {Id}: {Error}",
+                    booking.Id, settleResult.Error.Message);
+                continue;
+            }
+
+            db.TimelineEvents.Add(CareTimelineEvent.Create(
+                booking.Id,
+                caregiverId,
+                eventType: "CHECKOUT",
+                title: "Ca tự động hoàn tất",
+                note: $"Auto-confirm sau {AutoConfirmCheckoutHours}h chờ gia đình xác nhận, không có dispute mở.",
+                source: "SYSTEM",
+                metadata: "{\"reason\":\"auto_confirm_after_customer_timeout\"}"));
+
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            await hub.Clients
+                .Group(CareTrackingHub.BookingGroup(booking.Id))
+                .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
+                    booking.Id,
+                    OldStatus: oldStatus,
+                    NewStatus: ToApi(booking.Status),
+                    ChangedAt: DateTimeOffset.UtcNow));
+
+            await notifications.NotifyAsync(new UserNotificationMessage(
+                booking.CustomerId,
+                "BOOKING",
+                "Ca chăm sóc đã tự động hoàn tất",
+                $"Ca đã được tự động xác nhận sau {AutoConfirmCheckoutHours}h chờ phản hồi và không có khiếu nại mở.",
+                BookingNotificationData(booking)), CancellationToken.None);
+        }
+    }
+
     public async Task ExpandExpiredBookingOffersAsync()
     {
         await using var scope = _services.CreateAsyncScope();
@@ -243,4 +299,30 @@ public sealed class BookingJobsService
         if (expanded > 0)
             _logger.LogInformation("[BookingJobs] Expanded {Count} expired caregiver offers", expanded);
     }
+
+    private static string ToApi(BookingStatus status) => status switch
+    {
+        BookingStatus.Draft => "draft",
+        BookingStatus.PendingPayment => "pending_payment",
+        BookingStatus.Confirmed => "confirmed",
+        BookingStatus.MatchingFailed => "matching_failed",
+        BookingStatus.CaregiverAccepted => "caregiver_accepted",
+        BookingStatus.CaregiverEnRoute => "caregiver_en_route",
+        BookingStatus.InProgress => "in_progress",
+        BookingStatus.CheckoutPendingReview => "checkout_pending_review",
+        BookingStatus.Completed => "completed",
+        BookingStatus.Crisis => "crisis",
+        BookingStatus.Cancelled => "cancelled",
+        BookingStatus.Disputed => "disputed",
+        BookingStatus.Refunded => "refunded",
+        _ => status.ToString().ToLowerInvariant()
+    };
+
+    private static IReadOnlyDictionary<string, string> BookingNotificationData(Booking booking) =>
+        new Dictionary<string, string>
+        {
+            ["bookingId"] = booking.Id.ToString(),
+            ["status"] = ToApi(booking.Status),
+            ["deepLink"] = $"/bookings/{booking.Id}"
+        };
 }

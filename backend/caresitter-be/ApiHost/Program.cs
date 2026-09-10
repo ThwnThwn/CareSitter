@@ -226,9 +226,15 @@ RecurringJob.AddOrUpdate<BookingJobsService>(
     queue: "booking");
 
 RecurringJob.AddOrUpdate<BookingJobsService>(
-    recurringJobId: "auto-complete-shifts",
-    methodCall: svc => svc.AutoCompleteExpiredShiftsAsync(),
+    recurringJobId: "auto-request-checkout-expired-shifts",
+    methodCall: svc => svc.AutoRequestCheckoutExpiredShiftsAsync(),
     cronExpression: "*/5 * * * *", // Mỗi 5 phút
+    queue: "booking");
+
+RecurringJob.AddOrUpdate<BookingJobsService>(
+    recurringJobId: "auto-confirm-pending-checkouts",
+    methodCall: svc => svc.AutoConfirmPendingCheckoutsAsync(),
+    cronExpression: "*/15 * * * *", // Mỗi 15 phút
     queue: "booking");
 
 RecurringJob.AddOrUpdate<BookingJobsService>(

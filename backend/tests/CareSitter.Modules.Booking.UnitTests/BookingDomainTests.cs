@@ -127,9 +127,62 @@ public class BookingDomainTests
     }
 
     [Fact]
-    public void Complete_FromInProgress_ShouldTransitionToCompletedAndSetActualEnd()
+    public void CheckIn_Over50Meters_ShouldFailEvenWhenLegacyRadiusIsLarger()
     {
-        // Arrange
+        var start = DateTimeOffset.UtcNow.AddHours(2);
+        var end = start.AddHours(4);
+        var booking = Domain.Booking.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), start, end,
+            geofenceRadiusMeters: 100).Value;
+        var caregiverId = Guid.NewGuid();
+
+        booking.SelectCaregiver(caregiverId);
+        booking.TransitionTo(BookingStatus.PendingPayment);
+        booking.TransitionTo(BookingStatus.Confirmed);
+        booking.AssignCaregiver(caregiverId);
+        booking.StartEnRoute();
+
+        var addressLocation = new GeoPoint(10.762622, 106.660172);
+        var caregiverLocation = new GeoPoint(10.763122, 106.660172); // about 56m away
+
+        var result = booking.CheckIn(caregiverLocation, addressLocation);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("booking.geofence", result.Error.Code);
+        Assert.Equal(BookingStatus.CaregiverEnRoute, booking.Status);
+    }
+
+    [Fact]
+    public void Complete_FromInProgress_ShouldFailUntilCheckoutPendingReview()
+    {
+        var booking = CreateInProgressBooking();
+
+        var result = booking.Complete();
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("booking.transition", result.Error.Code);
+        Assert.Equal(BookingStatus.InProgress, booking.Status);
+        Assert.Null(booking.ActualEnd);
+    }
+
+    [Fact]
+    public void Complete_FromCheckoutPendingReview_ShouldTransitionToCompletedAndSetActualEnd()
+    {
+        var booking = CreateInProgressBooking();
+
+        var checkoutResult = booking.RequestManualCheckout();
+        var result = booking.Complete();
+
+        Assert.True(checkoutResult.IsSuccess);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(BookingStatus.Completed, booking.Status);
+        Assert.NotNull(booking.ActualEnd);
+        Assert.NotNull(booking.CheckoutPendingReviewAt);
+        Assert.Equal(BookingCheckoutSource.CaregiverRequested, booking.CheckoutSource);
+    }
+
+    private static Domain.Booking CreateInProgressBooking()
+    {
         var start = DateTimeOffset.UtcNow.AddHours(2);
         var end = start.AddHours(4);
         var booking = Domain.Booking.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), start, end).Value;
@@ -140,16 +193,9 @@ public class BookingDomainTests
         booking.TransitionTo(BookingStatus.Confirmed);
         booking.AssignCaregiver(caregiverId);
         booking.StartEnRoute();
-        
+
         var location = new GeoPoint(10.762622, 106.660172);
-        booking.CheckIn(location, location); // -> InProgress
-
-        // Act
-        var result = booking.Complete();
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(BookingStatus.Completed, booking.Status);
-        Assert.NotNull(booking.ActualEnd);
+        booking.CheckIn(location, location);
+        return booking;
     }
 }

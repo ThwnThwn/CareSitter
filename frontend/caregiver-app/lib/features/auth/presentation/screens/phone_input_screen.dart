@@ -90,14 +90,6 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     }
   }
 
-  void _fillSampleAccount(String email) {
-    setState(() {
-      _identifierController.text = email;
-      _passwordController.text = 'Password123!';
-      _usePassword = true;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -333,8 +325,8 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                                     : Icons.visibility_outlined,
                                 color: AppColors.textSecondary,
                               ),
-                              onPressed: () => setState(() =>
-                                  _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
                           ),
                         ),
@@ -352,80 +344,6 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                             : Icons.send_rounded,
                       ),
                       const SizedBox(height: 20),
-
-                      // Gợi ý tài khoản kiểm thử
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F9FA),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.flash_on,
-                                    size: 16, color: Color(0xFFF39C12)),
-                                SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    'Tài khoản Caregiver mẫu (Mật khẩu: Password123!)',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                ActionChip(
-                                  avatar: const CircleAvatar(
-                                    radius: 10,
-                                    child: Text('1',
-                                        style: TextStyle(fontSize: 10)),
-                                  ),
-                                  label: const Text('Bích Ngọc',
-                                      style: TextStyle(fontSize: 11)),
-                                  onPressed: () => _fillSampleAccount(
-                                      'bichngoc@example.com'),
-                                ),
-                                ActionChip(
-                                  avatar: const CircleAvatar(
-                                    radius: 10,
-                                    child: Text('2',
-                                        style: TextStyle(fontSize: 10)),
-                                  ),
-                                  label: const Text('Lê Văn Hùng',
-                                      style: TextStyle(fontSize: 11)),
-                                  onPressed: () => _fillSampleAccount(
-                                      'levanhung@example.com'),
-                                ),
-                                ActionChip(
-                                  avatar: const CircleAvatar(
-                                    radius: 10,
-                                    child: Text('3',
-                                        style: TextStyle(fontSize: 10)),
-                                  ),
-                                  label: const Text('Cô Hoa',
-                                      style: TextStyle(fontSize: 11)),
-                                  onPressed: () => _fillSampleAccount(
-                                      'nguoicham@example.com'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),

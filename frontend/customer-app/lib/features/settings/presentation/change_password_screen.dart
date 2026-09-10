@@ -36,19 +36,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
-    await Future.delayed(const Duration(seconds: 1)); // Mock API delay
-
-    if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Đã đổi mật khẩu thành công!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-      popOrGo(context, fallbackRoute: '/settings');
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tính năng đổi mật khẩu chưa được backend hỗ trợ.'),
+        backgroundColor: AppColors.warning,
+      ),
+    );
   }
 
   @override
@@ -75,8 +68,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.warning.withOpacity(0.4)),
+                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
                 ),
                 child: const Row(
                   children: [

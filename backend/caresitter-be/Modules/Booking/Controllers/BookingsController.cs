@@ -29,6 +29,7 @@ public sealed class BookingsController(
     IPricingService pricing, IPeopleLookupService people,
     IWalletService wallet, ICatalogLookupService catalog,
     IMatchingService matching,
+    IDisputeLookupService disputeLookup,
     ISender sender,
     IHubContext<CareTrackingHub> hub,
     IUserNotificationService notifications) : ControllerBase
@@ -404,6 +405,12 @@ public sealed class BookingsController(
     [HttpPost("{id:guid}/check-in")]
     public async Task<IActionResult> CheckIn(Guid id, [FromBody] CheckInRequest request, CancellationToken ct)
     {
+        if (!IsValidLocation(request.Latitude, request.Longitude))
+            return BadRequest(new { error = "Toa do GPS khong hop le." });
+        if (request.AccuracyMeters is not null &&
+            (!double.IsFinite(request.AccuracyMeters.Value) || request.AccuracyMeters is <= 0 or > Domain.Booking.CheckInRadiusMeters))
+            return BadRequest(new { error = "Do chinh xac GPS phai nam trong khoang 1-50m de check-in." });
+
         if (currentUser.UserId is not { } userId) return Unauthorized();
         var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return NotFound();
@@ -427,7 +434,7 @@ public sealed class BookingsController(
             request.Latitude, request.Longitude, request.AccuracyMeters));
 
         double distance = caregiverGeo.DistanceMetersTo(addressGeo);
-        string eventType = distance <= booking.GeofenceRadiusMeters
+        string eventType = distance <= Domain.Booking.CheckInRadiusMeters
             ? "CHECKIN_VALID" : "CHECKIN_OUTSIDE_GEOFENCE";
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, eventType, "Caregiver da check-in",
@@ -442,6 +449,10 @@ public sealed class BookingsController(
             "Ca chăm sóc đã bắt đầu.", ct);
         return Ok(await ToResponseAsync(booking, ct));
     }
+
+    private static bool IsValidLocation(double latitude, double longitude) =>
+        double.IsFinite(latitude) && double.IsFinite(longitude) &&
+        latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
 
     /// <summary>Caregiver gửi yêu cầu checkout thủ công (khi chưa auto-checkout).</summary>
     [HttpPost("{id:guid}/checkout/request")]
@@ -470,8 +481,8 @@ public sealed class BookingsController(
     }
 
     /// <summary>
-    /// Hoàn tất ca chăm sóc. Giải ngân escrow cho caregiver qua WalletService.SettleAsync.
-    /// Cho phép customer xác nhận khi đang checkout_pending_review; caregiver/admin vẫn có thể hoàn tất theo lifecycle.
+    /// Customer/Admin xác nhận checkout rồi mới hoàn tất ca và giải ngân escrow.
+    /// Caregiver chỉ được yêu cầu checkout qua /checkout/request.
     /// </summary>
     [HttpPost("{id:guid}/complete")]
     public async Task<IActionResult> Complete(Guid id, CancellationToken ct)
@@ -482,12 +493,14 @@ public sealed class BookingsController(
         if (booking.CaregiverId is not { } caregiverId)
             return BadRequest(new { error = "Booking chua co caregiver." });
 
-        bool isCustomerApprover = booking.CustomerId == userId
-            && booking.Status == BookingStatus.CheckoutPendingReview;
-        bool isCaregiver = await people.IsCaregiverForBookingAsync(caregiverId, userId, ct);
+        bool isCustomerApprover = booking.CustomerId == userId;
         bool isAdmin = currentUser.IsInRole("ADMIN");
-        if (!isCustomerApprover && !isCaregiver && !isAdmin)
+        if (!isCustomerApprover && !isAdmin)
             return Forbid();
+        if (booking.Status != BookingStatus.CheckoutPendingReview)
+            return Conflict(new { error = "Chi co the hoan tat ca tu trang thai checkout_pending_review." });
+        if (await disputeLookup.HasOpenDisputeAsync(booking.Id, ct))
+            return Conflict(new { error = "Booking dang co dispute mo, khong the giai ngan tu dong." });
 
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.Complete();
@@ -633,9 +646,15 @@ public sealed class BookingsController(
 
         return new BookingResponse(x.Id, x.BeneficiaryId,
             x.CaregiverId, x.AddressId, x.ServiceTypeId, x.ScheduledStart, x.ScheduledEnd,
-            x.ActualStart, x.ActualEnd, BookingStatusCodec.ToApi(x.Status), x.EscrowAmount,
-            x.PlatformFeeAmount, x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt,
-            beneficiary?.DisplayName, caregiver?.DisplayName, address?.FullAddress, service?.Name);
+            x.ActualStart, x.ActualEnd, x.CheckoutPendingReviewAt, x.CheckoutSource?.ToString(),
+            BookingStatusCodec.ToApi(x.Status), x.EscrowAmount, x.PlatformFeeAmount,
+            x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt,
+            beneficiary?.DisplayName, caregiver?.DisplayName, address?.FullAddress, service?.Name,
+            beneficiary?.Notes,
+            beneficiary?.Age,
+            beneficiary?.Relationship,
+            beneficiary?.Condition,
+            beneficiary?.Notes);
     }
 
     private static CaregiverSuggestionResponse ToCaregiverSuggestion(
@@ -679,7 +698,17 @@ public sealed record CaregiverSuggestionResponse(
 
 public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? CaregiverId,
     Guid AddressId, Guid ServiceTypeId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd,
-    DateTimeOffset? ActualStart, DateTimeOffset? ActualEnd, string Status, long EscrowAmount,
-    long PlatformFeeAmount, DateTimeOffset? CancelledAt, string? CancelReason,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, string? BeneficiaryName = null,
-    string? CaregiverName = null, string? AddressText = null, string? ServiceName = null);
+    DateTimeOffset? ActualStart, DateTimeOffset? ActualEnd,
+    DateTimeOffset? CheckoutPendingReviewAt, string? CheckoutSource,
+    string Status, long EscrowAmount, long PlatformFeeAmount,
+    DateTimeOffset? CancelledAt, string? CancelReason,
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
+    string? BeneficiaryName = null,
+    string? CaregiverName = null,
+    string? AddressText = null,
+    string? ServiceName = null,
+    string? Note = null,
+    int? BeneficiaryAge = null,
+    string? BeneficiaryRelationship = null,
+    string? BeneficiaryCondition = null,
+    string? BeneficiaryNotes = null);

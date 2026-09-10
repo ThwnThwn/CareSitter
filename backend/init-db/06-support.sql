@@ -61,7 +61,7 @@ CREATE TABLE notifications (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    uuid NOT NULL REFERENCES identity.users(id) ON DELETE CASCADE,
   type       varchar(20) NOT NULL
-             CHECK (type IN ('BOOKING','CARE_TIMELINE','PAYMENT','PROMOTION','SYSTEM','SOS')),
+             CHECK (type IN ('BOOKING','CARE_TIMELINE','PAYMENT','PROMOTION','SYSTEM','SOS','BOOKING_OFFER','MATCHING_FAILED')),
   title      varchar(255) NOT NULL,
   body       text,
   data       jsonb,        -- payload + deep_link

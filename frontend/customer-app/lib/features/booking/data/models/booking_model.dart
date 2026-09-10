@@ -12,6 +12,8 @@ class BookingModel {
   final DateTime scheduledEnd;
   final DateTime? actualStart;
   final DateTime? actualEnd;
+  final DateTime? checkoutPendingReviewAt;
+  final String? checkoutSource;
   final String
       status; // pending | confirmed | caregiver_en_route | in_progress | ...
   final int escrowAmount;
@@ -38,6 +40,8 @@ class BookingModel {
     required this.scheduledEnd,
     this.actualStart,
     this.actualEnd,
+    this.checkoutPendingReviewAt,
+    this.checkoutSource,
     required this.status,
     required this.escrowAmount,
     required this.platformFeeAmount,
@@ -88,13 +92,12 @@ class BookingModel {
   String get address => addressText ?? 'Địa chỉ ca trực';
   double get totalPrice => escrowAmount.toDouble();
   String? get disputeReason => cancelReason;
-  bool get isDemoBooking => false;
   bool get isSystemMatched => true;
   String get paymentLabel => 'Ví CareSitter';
   double get platformRevenue => platformFeeAmount.toDouble();
   double get caregiverEarning => (escrowAmount - platformFeeAmount).toDouble();
   DateTime? get consentAcceptedAt => createdAt;
-  DateTime? get checkoutRequestedAt => actualEnd;
+  DateTime? get checkoutRequestedAt => checkoutPendingReviewAt;
   DateTime? get completedAt => isCompleted ? updatedAt : null;
 
   String get displayDate {
@@ -140,6 +143,8 @@ class BookingModel {
     String? caregiverAvatar,
     DateTime? actualStart,
     DateTime? actualEnd,
+    DateTime? checkoutPendingReviewAt,
+    String? checkoutSource,
     DateTime? cancelledAt,
     String? cancelReason,
     DateTime? updatedAt,
@@ -156,6 +161,9 @@ class BookingModel {
       scheduledEnd: scheduledEnd,
       actualStart: actualStart ?? this.actualStart,
       actualEnd: actualEnd ?? this.actualEnd,
+      checkoutPendingReviewAt:
+          checkoutPendingReviewAt ?? this.checkoutPendingReviewAt,
+      checkoutSource: checkoutSource ?? this.checkoutSource,
       status: status ?? this.status,
       escrowAmount: escrowAmount,
       platformFeeAmount: platformFeeAmount,
@@ -192,6 +200,9 @@ class BookingModel {
       scheduledEnd: scheduledEnd,
       actualStart: _parseNullableApiDateTime(json['actualStart']),
       actualEnd: _parseNullableApiDateTime(json['actualEnd']),
+      checkoutPendingReviewAt:
+          _parseNullableApiDateTime(json['checkoutPendingReviewAt']),
+      checkoutSource: _string(json['checkoutSource']),
       status: _normalizeStatus(_string(json['status']) ?? 'draft'),
       escrowAmount: _int(json['escrowAmount']),
       platformFeeAmount: _int(json['platformFeeAmount']),

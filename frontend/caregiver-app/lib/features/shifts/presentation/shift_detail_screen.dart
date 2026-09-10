@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/widgets/app_widgets.dart';
-import '../../../core/mock/mock_data.dart';
+import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
 import '../../earnings/presentation/providers/earnings_provider.dart';
 
@@ -17,7 +17,7 @@ class ShiftDetailScreen extends ConsumerWidget {
     final shifts = ref.watch(shiftsProvider);
 
     // Find the booking
-    MockBooking? booking;
+    ShiftModel? booking;
     for (final b in shifts) {
       if (b.id == id) {
         booking = b;
@@ -39,11 +39,8 @@ class ShiftDetailScreen extends ConsumerWidget {
       );
     }
 
-    // Find corresponding beneficiary
-    final beneficiary = MockData.beneficiaries.firstWhere(
-      (b) => b.name == booking!.beneficiaryName,
-      orElse: () => MockData.beneficiaries.first,
-    );
+    // Find corresponding beneficiary or construct dynamically from booking
+    final beneficiary = _resolveBeneficiary(booking);
 
     final isPending = booking.status == 'pending' || booking.status == 'open';
     final isUpcoming =
@@ -55,7 +52,7 @@ class ShiftDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Chi tiết ca (${booking.id})'),
+        title: const Text('Chi tiết ca'),
         leading: const AppBackButton(fallbackRoute: '/shifts'),
       ),
       body: SingleChildScrollView(
@@ -63,7 +60,7 @@ class ShiftDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBeneficiaryCard(beneficiary),
+            _buildBeneficiaryCard(beneficiary, booking),
             const SizedBox(height: 24),
             _buildTimeAndLocation(context, booking),
             const SizedBox(height: 24),
@@ -84,7 +81,53 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBeneficiaryCard(MockBeneficiary beneficiary) {
+  ShiftBeneficiaryModel _resolveBeneficiary(ShiftModel booking) {
+    final name = booking.beneficiaryName.trim().isNotEmpty
+        ? booking.beneficiaryName.trim()
+        : 'Người thân';
+
+    final initial = _getInitial(name);
+    final age = booking.beneficiaryAge ?? 65;
+    final relation = booking.beneficiaryRelationship?.isNotEmpty == true
+        ? booking.beneficiaryRelationship!
+        : 'Người thân';
+
+    final condition = booking.beneficiaryCondition?.isNotEmpty == true
+        ? booking.beneficiaryCondition!
+        : (booking.customerNote?.isNotEmpty == true
+            ? booking.customerNote!
+            : 'Cần đồng hành sinh hoạt và hỗ trợ theo dõi sức khoẻ.');
+
+    final notes = booking.beneficiaryNotes?.isNotEmpty == true
+        ? booking.beneficiaryNotes!
+        : (booking.customerNote?.isNotEmpty == true
+            ? booking.customerNote!
+            : 'Theo dõi tình trạng sức khoẻ và hỗ trợ các hoạt động thường nhật.');
+
+    return ShiftBeneficiaryModel(
+      id: booking.beneficiaryId ?? 'b_${booking.id}',
+      name: name,
+      age: age,
+      relation: relation,
+      avatarInitial: initial,
+      condition: condition,
+      careLevel: 'Tiêu chuẩn',
+      notes: notes,
+    );
+  }
+
+  String _getInitial(String name) {
+    final parts =
+        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'N';
+    return parts.first.substring(0, 1).toUpperCase();
+  }
+
+  Widget _buildBeneficiaryCard(
+      ShiftBeneficiaryModel beneficiary, ShiftModel booking) {
+    final displayAge = booking.beneficiaryAge ?? beneficiary.age;
+    final agePart = displayAge > 0 ? '$displayAge tuổi • ' : '';
+
     return Row(
       children: [
         CircleAvatar(
@@ -112,7 +155,7 @@ class ShiftDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${beneficiary.age} tuổi • Quan hệ: ${beneficiary.relation} • Mức độ: ${beneficiary.careLevel}',
+                '${agePart}Quan hệ: ${beneficiary.relation} • Mức độ: ${beneficiary.careLevel}',
                 style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textPrimary.withValues(alpha: 0.7)),
@@ -124,7 +167,7 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimeAndLocation(BuildContext context, MockBooking booking) {
+  Widget _buildTimeAndLocation(BuildContext context, ShiftModel booking) {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +237,7 @@ class ShiftDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildServiceDetails(
-      MockBeneficiary beneficiary, MockBooking booking) {
+      ShiftBeneficiaryModel beneficiary, ShiftModel booking) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -234,7 +277,7 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildChecklist(MockBooking booking) {
+  Widget _buildChecklist(ShiftModel booking) {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +434,7 @@ class ShiftDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildEnRouteBanner(
-      BuildContext context, WidgetRef ref, MockBooking booking) {
+      BuildContext context, WidgetRef ref, ShiftModel booking) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -479,7 +522,7 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompletedShiftCard(MockBooking booking) {
+  Widget _buildCompletedShiftCard(ShiftModel booking) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),

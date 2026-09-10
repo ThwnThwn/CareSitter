@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../application/booking_store.dart';
 import '../../../beneficiary/application/beneficiary_store.dart';
 import '../../../catalog/application/service_store.dart';
@@ -41,7 +40,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   bool _consentAccepted = false; // FR-CUS-09
   bool _isSystemMatched = true;
   bool _isSubmitting = false; // guard chống double-submit
-  String _bookingMode = 'demo';
   String? _selectedAddressId; // ID địa chỉ thật từ API
 
   bool get _hasUnsavedChanges =>
@@ -53,8 +51,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       _selectedAddressId != null ||
       _duration != 4 ||
       _consentAccepted ||
-      !_isSystemMatched ||
-      _bookingMode != 'demo';
+      !_isSystemMatched;
 
   @override
   void initState() {
@@ -113,7 +110,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         orElse: () => list.first);
   }
 
-  MockBeneficiary? get _selectedBeneficiary {
+  BeneficiaryModel? get _selectedBeneficiary {
     if (_selectedBeneficiaryId == null) return null;
     final all = ref.read(beneficiaryStoreProvider);
     if (all.isEmpty) return null;
@@ -1499,28 +1496,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             ),
         ]),
         const SizedBox(height: 16),
-        const Text(
-          'Hình thức xác nhận',
-          style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        _buildBookingModeTile(
-          value: 'demo',
-          icon: Icons.science_outlined,
-          title: 'Xác nhận booking demo',
-          subtitle: 'Không phát sinh thanh toán trong prototype',
-        ),
-        const SizedBox(height: 8),
-        _buildBookingModeTile(
-          value: 'mock_payment',
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Ví demo • giữ tiền mô phỏng',
-          subtitle: 'Mô phỏng bước thanh toán trước khi caregiver nhận ca',
-        ),
-        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1558,54 +1533,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBookingModeTile({
-    required String value,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final selected = _bookingMode == value;
-    return InkWell(
-      onTap: () => setState(() => _bookingMode = value),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color:
-              selected ? AppColors.primaryContainer : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 11)),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? AppColors.primary : AppColors.textHint,
-            ),
-          ],
-        ),
-      ),
     );
   }
 

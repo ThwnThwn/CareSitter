@@ -26,6 +26,13 @@ public interface ICatalogLookupService
     Task<(double Lat, double Lng)?> GetAddressLocationAsync(Guid addressId, CancellationToken ct = default);
 }
 
-public sealed record PeopleDisplaySummary(Guid Id, string DisplayName);
+public sealed record PeopleDisplaySummary(
+    Guid Id,
+    string DisplayName,
+    int? Age = null,
+    string? Gender = null,
+    string? Relationship = null,
+    string? Condition = null,
+    string? Notes = null);
 public sealed record AddressDisplaySummary(Guid Id, string FullAddress);
 public sealed record ServiceDisplaySummary(Guid Id, string Name);

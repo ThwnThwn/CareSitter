@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/api_constants.dart';
 import '../../../../core/api/dio_client.dart';
 import '../../../../core/auth/auth_notifier.dart';
-import '../../../../core/mock/mock_data.dart';
+import '../../../shifts/data/shift_model.dart';
 import '../../../shifts/presentation/providers/shifts_provider.dart';
 
 class EarningTransaction {
@@ -86,8 +86,6 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
   DioClient get _dio => _ref.read(dioClientProvider);
 
   Future<void> refreshWallet() async {
-    if (kDebugBypassAuth) return;
-
     final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) return;
 
@@ -103,7 +101,7 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
     }
   }
 
-  void _rebuildFromBookings(List<MockBooking> bookings) {
+  void _rebuildFromBookings(List<ShiftModel> bookings) {
     final completed =
         bookings.where((booking) => booking.status == 'completed').toList()
           ..sort((a, b) {
@@ -166,24 +164,44 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
     );
   }
 
-  bool withdraw(double amount, String bankName, String accountNumber) {
+  Future<bool> withdraw(
+    double amount,
+    String bankName,
+    String accountNumber, {
+    required String accountHolderName,
+  }) async {
     if (state.balance < amount) return false;
-    final formattedAmount = formatCurrency(amount);
-    final newTransaction = EarningTransaction(
-      title: 'Rút tiền về $bankName ($accountNumber)',
-      date: 'Hôm nay',
-      amount: '- $formattedAmount đ',
-      type: 'out',
-    );
-
-    state = state.copyWith(
-      balance: state.balance - amount,
-      transactions: [newTransaction, ...state.transactions],
-    );
-    return true;
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/payments/payouts',
+        data: {
+          'amount': amount.round(),
+          'bankName': bankName,
+          'accountHolderName': accountHolderName,
+          'accountNumber': accountNumber,
+        },
+      );
+      final formattedAmount = formatCurrency(amount);
+      final newTransaction = EarningTransaction(
+        title: 'Yêu cầu rút tiền về $bankName ($accountNumber)',
+        date: 'Hôm nay',
+        amount: '- $formattedAmount đ',
+        type: 'out',
+      );
+      state = state.copyWith(
+        balance: state.balance - amount,
+        transactions: [newTransaction, ...state.transactions],
+      );
+      await refreshWallet();
+      return true;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[EarningsNotifier] withdraw error: $e');
+      return false;
+    }
   }
 
-  static double _earningOf(MockBooking booking) {
+  static double _earningOf(ShiftModel booking) {
     return booking.caregiverEarning > 0
         ? booking.caregiverEarning
         : booking.totalPrice;

@@ -14,7 +14,7 @@ public class BookingStateMachineTests
     [InlineData(BookingStatus.MatchingFailed, BookingStatus.Cancelled, true)]
     [InlineData(BookingStatus.CaregiverAccepted, BookingStatus.CaregiverEnRoute, true)]
     [InlineData(BookingStatus.CaregiverEnRoute, BookingStatus.InProgress, true)]
-    [InlineData(BookingStatus.InProgress, BookingStatus.Completed, true)]
+    [InlineData(BookingStatus.InProgress, BookingStatus.Completed, false)]
     [InlineData(BookingStatus.InProgress, BookingStatus.CheckoutPendingReview, true)]
     [InlineData(BookingStatus.InProgress, BookingStatus.Crisis, true)]
     [InlineData(BookingStatus.Draft, BookingStatus.Completed, false)]

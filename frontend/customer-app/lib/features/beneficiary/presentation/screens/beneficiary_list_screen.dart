@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/mock/mock_data.dart';
 import '../../application/beneficiary_store.dart';
 import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
@@ -114,7 +113,8 @@ class BeneficiaryListScreen extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) => FadeSlideStaggered(
                       index: index,
-                      child: _buildBeneficiaryCard(beneficiaries[index], context),
+                      child:
+                          _buildBeneficiaryCard(beneficiaries[index], context),
                     ),
                   ),
           ),
@@ -130,7 +130,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBeneficiaryCard(MockBeneficiary b, BuildContext context) {
+  Widget _buildBeneficiaryCard(BeneficiaryModel b, BuildContext context) {
     final careColor = b.careLevel == 'Nặng'
         ? const Color(0xFFE74C3C)
         : b.careLevel == 'Trung bình'

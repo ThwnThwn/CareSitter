@@ -11,6 +11,8 @@ namespace CareSitter.Modules.Booking.Domain;
 /// </summary>
 public sealed class Booking : AggregateRoot
 {
+    public const int CheckInRadiusMeters = 50;
+
     private Booking() { } // EF
 
     private Booking(
@@ -45,6 +47,8 @@ public sealed class Booking : AggregateRoot
     public DateTimeOffset ScheduledEnd { get; private set; }
     public DateTimeOffset? ActualStart { get; private set; }
     public DateTimeOffset? ActualEnd { get; private set; }
+    public DateTimeOffset? CheckoutPendingReviewAt { get; private set; }
+    public BookingCheckoutSource? CheckoutSource { get; private set; }
     public string? RequiredSkills { get; private set; }
 
     public BookingStatus Status { get; private set; }
@@ -124,9 +128,12 @@ public sealed class Booking : AggregateRoot
             return Error.Conflict("booking.checkin", "Chi check-in khi CSV dang EN_ROUTE.");
 
         double distance = caregiverLocation.DistanceMetersTo(addressLocation);
-        if (!adminOverride && distance > GeofenceRadiusMeters)
+        // A booking created before the fixed-radius policy may retain a larger
+        // value in the database. Check-in is always capped at 50 metres.
+        int allowedRadiusMeters = Math.Min(GeofenceRadiusMeters, CheckInRadiusMeters);
+        if (!adminOverride && distance > allowedRadiusMeters)
             return Error.Validation("booking.geofence",
-                $"Ngoai ban kinh cho phep ({distance:F0}m > {GeofenceRadiusMeters}m).");
+                $"Ngoai ban kinh cho phep ({distance:F0}m > {allowedRadiusMeters}m).");
 
         ActualStart = DateTimeOffset.UtcNow;
         var result = TransitionTo(BookingStatus.InProgress);
@@ -146,7 +153,25 @@ public sealed class Booking : AggregateRoot
         return result;
     }
 
-    public Result RequestManualCheckout() => TransitionTo(BookingStatus.CheckoutPendingReview);
+    public Result RequestManualCheckout() =>
+        RequestCheckout(BookingCheckoutSource.CaregiverRequested, DateTimeOffset.UtcNow);
+
+    public Result RequestSystemTimeoutCheckout(DateTimeOffset requestedAt) =>
+        RequestCheckout(BookingCheckoutSource.SystemTimeout, requestedAt);
+
+    public Result RequestAdminOverrideCheckout(DateTimeOffset requestedAt) =>
+        RequestCheckout(BookingCheckoutSource.AdminOverride, requestedAt);
+
+    private Result RequestCheckout(BookingCheckoutSource source, DateTimeOffset requestedAt)
+    {
+        var result = TransitionTo(BookingStatus.CheckoutPendingReview);
+        if (result.IsFailure)
+            return result;
+
+        CheckoutPendingReviewAt = requestedAt;
+        CheckoutSource = source;
+        return Result.Success();
+    }
 
     public Result RaiseSos(Guid? raisedByUserId)
     {

@@ -20,6 +20,8 @@ CREATE TABLE bookings (
   scheduled_end            timestamptz NOT NULL,
   actual_start             timestamptz,
   actual_end               timestamptz,
+  checkout_pending_review_at timestamptz,
+  checkout_source          varchar(30) CHECK (checkout_source IN ('CaregiverRequested','SystemTimeout','AdminOverride')),
   duration_minutes         int,
   required_skills          jsonb,
   care_notes               text,
@@ -151,7 +153,9 @@ BEGIN
   IF NEW.status IS DISTINCT FROM OLD.status THEN
     INSERT INTO identity.audit_logs (actor_user_id, actor_role, action, entity_type, entity_id, after_data, created_at)
     VALUES (NULL, 'SYSTEM', 'booking.status_change', 'booking', NEW.id,
-            jsonb_build_object('from', OLD.status, 'to', NEW.status), now());
+            jsonb_build_object('from', OLD.status, 'to', NEW.status,
+                               'checkout_source', NEW.checkout_source,
+                               'checkout_pending_review_at', NEW.checkout_pending_review_at), now());
   END IF;
   RETURN NEW;
 END;
