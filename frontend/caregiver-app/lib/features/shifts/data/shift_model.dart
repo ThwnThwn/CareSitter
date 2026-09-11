@@ -44,6 +44,7 @@ class CareTaskModel {
   final bool requiresPhoto;
   final String status;
   final bool isCompleted;
+  final List<String> photoUrls;
 
   const CareTaskModel({
     required this.id,
@@ -53,6 +54,7 @@ class CareTaskModel {
     this.requiresPhoto = false,
     this.status = 'PENDING',
     this.isCompleted = false,
+    this.photoUrls = const [],
   });
 
   bool get isSkipped => status.toUpperCase() == 'SKIPPED';
@@ -68,10 +70,15 @@ class CareTaskModel {
       requiresPhoto: json['requiresPhoto'] as bool? ?? false,
       status: status,
       isCompleted: status == 'DONE',
+      photoUrls: (json['photoUrls'] as List<dynamic>? ?? [])
+          .map((value) => value.toString())
+          .where((value) => value.isNotEmpty)
+          .toList(growable: false),
     );
   }
 
-  CareTaskModel copyWith({String? status, bool? isCompleted}) {
+  CareTaskModel copyWith(
+      {String? status, bool? isCompleted, List<String>? photoUrls}) {
     final nextStatus = status ?? this.status;
     return CareTaskModel(
       id: id,
@@ -81,6 +88,7 @@ class CareTaskModel {
       requiresPhoto: requiresPhoto,
       status: nextStatus,
       isCompleted: isCompleted ?? nextStatus.toUpperCase() == 'DONE',
+      photoUrls: photoUrls ?? this.photoUrls,
     );
   }
 }

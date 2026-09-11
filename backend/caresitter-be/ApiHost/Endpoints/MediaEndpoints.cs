@@ -38,8 +38,13 @@ internal static class MediaEndpoints
             return Results.BadRequest(new { error = "Only image files are allowed." });
 
         using var stream = file.OpenReadStream();
-        var targetFolder = string.IsNullOrWhiteSpace(request.Folder) ? "general" : request.Folder;
-        targetFolder = $"{targetFolder}/{userId}";
+        var targetFolder = request.Folder?.Trim().ToLowerInvariant() switch
+        {
+            "avatars" or "avatar" => "CareSitter/Avatars",
+            "assetsproject" or "assets-project" or "project" => "CareSitter/AssetsProject",
+            "checklist" or "checklists" => "CareSitter/Checklist",
+            _ => "CareSitter/AssetsProject",
+        };
 
         var result = await mediaService.UploadImageAsync(stream, file.FileName, targetFolder, ct);
 

@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../application/profile_store.dart';
@@ -22,7 +22,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController _dobCtrl;
   String _gender = 'UNSPECIFIED';
   bool _isSaving = false;
-  File? _pendingAvatarFile; // ảnh mới chưa upload
+  XFile? _pendingAvatarFile; // ảnh mới chưa upload
   late final String _initialFormState;
 
   String get _formState => [
@@ -109,8 +109,43 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         maxHeight: 800,
         imageQuality: 85,
       );
-      if (image != null) {
-        setState(() => _pendingAvatarFile = File(image.path));
+      if (image == null || !mounted) return;
+
+      // Web: skip cropper (Cropper.js CDN thường chưa load kịp hoặc bị chặn)
+      // Mobile: crop bình thường
+      if (kIsWeb) {
+        setState(() => _pendingAvatarFile = image);
+      } else {
+        try {
+          final cropped = await ImageCropper().cropImage(
+            sourcePath: image.path,
+            compressQuality: 85,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Chỉnh ảnh đại diện',
+                toolbarColor: AppColors.primary,
+                toolbarWidgetColor: Colors.white,
+                lockAspectRatio: true,
+              ),
+              IOSUiSettings(
+                title: 'Chỉnh ảnh đại diện',
+                doneButtonTitle: 'Xong',
+                cancelButtonTitle: 'Hủy',
+                aspectRatioLockEnabled: true,
+              ),
+            ],
+          );
+          if (cropped == null || !mounted) return;
+          setState(() => _pendingAvatarFile = XFile(cropped.path));
+        } catch (cropError) {
+          // Fallback: nếu cropper lỗi, dùng ảnh gốc từ picker
+          debugPrint('[_pickAvatar] Cropper failed, using original: $cropError');
+          if (!mounted) return;
+          setState(() => _pendingAvatarFile = image);
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -128,13 +163,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     try {
       // Bước 1: Upload avatar trước (nếu có ảnh mới)
       if (_pendingAvatarFile != null) {
-        final uploaded = await ref
-            .read(profileStoreProvider.notifier)
-            .uploadAvatar(_pendingAvatarFile!);
+        final uploaded =
+            await ref.read(profileStoreProvider.notifier).uploadAvatar(
+                  await _pendingAvatarFile!.readAsBytes(),
+                  _pendingAvatarFile!.name,
+                );
         if (!uploaded && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Upload ảnh thất bại. Thông tin khác vẫn được lưu.'),
+              content:
+                  Text('⚠️ Upload ảnh thất bại. Thông tin khác vẫn được lưu.'),
               backgroundColor: AppColors.warning,
             ),
           );
@@ -143,13 +181,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
 
       // Bước 2: Cập nhật thông tin profile — chỉ update sau khi API thành công
-      final success = await ref.read(profileStoreProvider.notifier).updateProfile(
-            name: _nameCtrl.text.trim(),
-            displayName: _displayNameCtrl.text.trim(),
-            email: _emailCtrl.text.trim(),
-            dob: _dobCtrl.text.trim(),
-            gender: _gender,
-          );
+      final success =
+          await ref.read(profileStoreProvider.notifier).updateProfile(
+                name: _nameCtrl.text.trim(),
+                displayName: _displayNameCtrl.text.trim(),
+                email: _emailCtrl.text.trim(),
+                dob: _dobCtrl.text.trim(),
+                gender: _gender,
+              );
 
       if (!mounted) return;
 
@@ -342,7 +381,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               const SizedBox(height: 32),
 
               ElevatedButton(
-                onPressed: (_isSaving || isUploadingAvatar) ? null : _saveProfile,
+                onPressed:
+                    (_isSaving || isUploadingAvatar) ? null : _saveProfile,
                 child: (_isSaving || isUploadingAvatar)
                     ? const SizedBox(
                         width: 20,
@@ -376,9 +416,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
 // ── Avatar Widget ────────────────────────────────────────────────────────────
 
-class _AvatarWidget extends StatelessWidget {
+class _AvatarWidget extends StatefulWidget {
   final String? avatarUrl;
-  final File? localFile;
+  final XFile? localFile;
   final String initials;
   final bool isUploading;
 
@@ -390,14 +430,42 @@ class _AvatarWidget extends StatelessWidget {
   });
 
   @override
+  State<_AvatarWidget> createState() => _AvatarWidgetState();
+}
+
+class _AvatarWidgetState extends State<_AvatarWidget> {
+  Uint8List? _localBytes;
+
+  @override
+  void didUpdateWidget(covariant _AvatarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.localFile != oldWidget.localFile) {
+      _loadLocalBytes();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalBytes();
+  }
+
+  Future<void> _loadLocalBytes() async {
+    if (widget.localFile == null) {
+      if (_localBytes != null) setState(() => _localBytes = null);
+      return;
+    }
+    final bytes = await widget.localFile!.readAsBytes();
+    if (mounted) setState(() => _localBytes = bytes);
+  }
+
+  @override
   Widget build(BuildContext context) {
     ImageProvider? image;
-    if (localFile != null) {
-      image = kIsWeb
-          ? NetworkImage(localFile!.path) as ImageProvider
-          : FileImage(localFile!);
-    } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      image = NetworkImage(avatarUrl!);
+    if (_localBytes != null) {
+      image = MemoryImage(_localBytes!);
+    } else if (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty) {
+      image = NetworkImage(widget.avatarUrl!);
     }
 
     return Container(
@@ -412,14 +480,14 @@ class _AvatarWidget extends StatelessWidget {
             : null,
         color: image != null ? AppColors.surfaceVariant : null,
       ),
-      child: isUploading
+      child: widget.isUploading
           ? const Center(
               child: CircularProgressIndicator(
                   color: Colors.white, strokeWidth: 2.5))
           : image == null
               ? Center(
                   child: Text(
-                    initials,
+                    widget.initials,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/api/dio_client.dart';
@@ -37,7 +39,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   Duration _elapsed = Duration.zero;
 
   // ── Task photos ───────────────────────────────────────────
-  final Map<String, String> _taskPhotos = {};
+  final Map<String, List<String>> _taskPhotos = {};
+  final ImagePicker _imagePicker = ImagePicker();
 
   // ── Caregiver note ────────────────────────────────────────
   final TextEditingController _noteController = TextEditingController();
@@ -62,16 +65,24 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   void _startTimer([DateTime? startedAt]) {
-    _checkInTime = startedAt ?? DateTime.now();
-    _elapsed = DateTime.now().difference(_checkInTime!);
+    final now = DateTime.now();
+    final candidate = (startedAt ?? now).toLocal();
+    // A bad/future server timestamp must never render a negative duration.
+    _checkInTime = candidate.isAfter(now) ? now : candidate;
+    _elapsed = _durationSince(_checkInTime!, now);
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
-          _elapsed = DateTime.now().difference(_checkInTime!);
+          _elapsed = _durationSince(_checkInTime!, DateTime.now());
         });
       }
     });
+  }
+
+  Duration _durationSince(DateTime start, DateTime end) {
+    final elapsed = end.difference(start);
+    return elapsed.isNegative ? Duration.zero : elapsed;
   }
 
   void _restoreFromServerState(ShiftModel booking) {
@@ -87,10 +98,12 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     setState(() {
       _isCheckedIn = true;
       _checkInStep = 3;
-      _checkInTime = startedAt;
+      _checkInTime = startedAt != null && startedAt.isAfter(DateTime.now())
+          ? DateTime.now()
+          : startedAt;
       if (startedAt != null) {
         final end = booking.checkoutRequestedAt ?? DateTime.now();
-        _elapsed = end.difference(startedAt);
+        _elapsed = _durationSince(startedAt, end);
       }
     });
 
@@ -166,7 +179,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     return 'Khong the lay vi tri GPS. Hay thu lai sau it phut.';
   }
 
-  void _simulatePhotoCapture(String taskTitle) {
+  Future<void> _pickTaskPhoto(ShiftModel booking, CareTaskModel task) async {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -194,9 +207,9 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               ),
               title: const Text('Chụp ảnh minh chứng'),
               subtitle: const Text('Mở camera để chụp ngay'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                _savePhoto(taskTitle, 'photo_captured.jpg');
+                await _uploadTaskPhoto(booking, task, ImageSource.camera);
               },
             ),
             ListTile(
@@ -211,9 +224,9 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               ),
               title: const Text('Chọn từ Thư viện'),
               subtitle: const Text('Tải ảnh đã có sẵn'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                _savePhoto(taskTitle, 'photo_selected.jpg');
+                await _uploadTaskPhoto(booking, task, ImageSource.gallery);
               },
             ),
             const SizedBox(height: 8),
@@ -223,27 +236,88 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     );
   }
 
-  void _savePhoto(String taskTitle, String fileName) {
+  Future<void> _uploadTaskPhoto(
+      ShiftModel booking, CareTaskModel task, ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 82,
+      maxWidth: 1600,
+    );
+    if (picked == null || !mounted) return;
+
+    final cropped = await _cropImage(picked);
+    if (cropped == null || !mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Đang xử lý ảnh…'),
         duration: Duration(milliseconds: 600),
       ),
     );
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        setState(() => _taskPhotos[taskTitle] = fileName);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Đã đính kèm ảnh cho: $taskTitle'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    });
+    try {
+      final raw = await ref
+          .read(shiftsProvider.notifier)
+          .uploadTaskPhoto(booking.id, task.id, cropped);
+      final url = raw['url']?.toString();
+      if (!mounted || url == null || url.isEmpty) return;
+      setState(() => _taskPhotos[task.title] = [
+            ...?_taskPhotos[task.title],
+            url,
+          ]);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('✅ Đã tải ảnh minh chứng cho: ${task.title}'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Không thể tải ảnh lên: $error'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
+  Future<XFile?> _cropImage(XFile picked) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      compressQuality: 82,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Chỉnh ảnh minh chứng',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          activeControlsWidgetColor: AppColors.primary,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+        ),
+        IOSUiSettings(
+          title: 'Chỉnh ảnh minh chứng',
+          doneButtonTitle: 'Xong',
+          cancelButtonTitle: 'Hủy',
+        ),
+        WebUiSettings(
+          context: context,
+          // Trang riêng tránh lỗi layout của cropper dialog ở cửa sổ Web hẹp.
+          presentStyle: WebPresentStyle.page,
+          dragMode: WebDragMode.move,
+          viewwMode: WebViewMode.mode_1,
+          checkCrossOrigin: false,
+          checkOrientation: false,
+          zoomOnWheel: true,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+        ),
+      ],
+    );
+    if (croppedFile == null) return null;
+
+    return XFile.fromData(
+      await croppedFile.readAsBytes(),
+      name: croppedFile.path.split(RegExp(r'[/\\]')).last,
+    );
   }
 
   @override
@@ -281,8 +355,11 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
       });
     }
 
-    final allDone =
-        booking.tasks.isNotEmpty && booking.tasks.every((t) => t.isResolved);
+    final allDone = booking.tasks.isNotEmpty &&
+        booking.tasks.every((task) {
+          final urls = _taskPhotos[task.title] ?? task.photoUrls;
+          return task.isResolved && (!task.requiresPhoto || urls.isNotEmpty);
+        });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -894,7 +971,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
 
   // ── Checklist item ────────────────────────────────────────
   Widget _buildChecklistItem(ShiftModel booking, CareTaskModel task) {
-    final hasPhoto = _taskPhotos.containsKey(task.title);
+    final urls = _taskPhotos[task.title] ?? task.photoUrls;
+    final hasPhoto = urls.isNotEmpty;
     final isSkipped = task.isSkipped;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -960,13 +1038,19 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               ? const Text('Đã bỏ qua',
                   style:
                       TextStyle(fontSize: 12, color: AppColors.textSecondary))
-              : task.description == null || task.description!.trim().isEmpty
-                  ? null
-                  : Text(task.description!,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary)),
+              : task.requiresPhoto && !hasPhoto
+                  ? const Text(
+                      'Upload ảnh minh chứng trước khi tick hoàn thành',
+                      style: TextStyle(fontSize: 12, color: AppColors.warning))
+                  : task.description == null || task.description!.trim().isEmpty
+                      ? null
+                      : Text(task.description!,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary)),
           activeColor: AppColors.primary,
-          onChanged: _isCheckedIn && !task.isResolved
+          onChanged: _isCheckedIn &&
+                  !task.isResolved &&
+                  (!task.requiresPhoto || hasPhoto)
               ? (val) async {
                   if (val != true) return;
                   try {
@@ -995,9 +1079,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                     size: 22,
                   ),
                   tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
-                  onPressed: _isCheckedIn
-                      ? () => _simulatePhotoCapture(task.title)
-                      : null,
+                  onPressed:
+                      _isCheckedIn ? () => _pickTaskPhoto(booking, task) : null,
                 ),
               if (!task.isRequired && !task.isResolved)
                 IconButton(
@@ -1137,7 +1220,10 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                         'duration': booking.duration,
                         'checkInTime': _checkInTimeLabel,
                         'caregiverNote': _noteController.text,
-                        'taskPhotos': _taskPhotos.keys.toList(),
+                        'taskPhotos': [
+                          ..._taskPhotos.values.expand((urls) => urls),
+                          ...booking.tasks.expand((task) => task.photoUrls),
+                        ].toSet().toList(),
                         'checkoutPendingReview': true,
                       },
                     );

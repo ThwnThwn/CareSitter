@@ -18,7 +18,8 @@ class ShiftTrackingScreen extends ConsumerStatefulWidget {
       _ShiftTrackingScreenState();
 }
 
-class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
+class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
+    with TickerProviderStateMixin {
   // Vị trí caregiver — cập nhật qua SignalR GpsUpdated event
   LatLng? _caregiverPos;
   StreamSubscription<GpsUpdate>? _gpsSub;
@@ -26,11 +27,26 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   late final CareSignalRService _signalR;
   int? _etaSeconds;
   double? _heading;
+  final MapController _mapController = MapController();
+  final List<LatLng> _gpsHistory = [];
+  late final AnimationController _pulseController;
+  late final AnimationController _positionController;
+  LatLng? _animatedCaregiverPos;
+  LatLng? _positionFrom;
+  LatLng? _positionTo;
 
   @override
   void initState() {
     super.initState();
     _signalR = ref.read(careSignalRProvider);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _positionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    )..addListener(_onPositionAnimationTick);
     _connectSignalR();
   }
 
@@ -38,6 +54,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   void dispose() {
     _gpsSub?.cancel();
     _statusSub?.cancel();
+    _pulseController.dispose();
+    _positionController.dispose();
+    _mapController.dispose();
     // Rời group khi thoát màn hình
     _signalR.leaveBooking(widget.bookingId).ignore();
     super.dispose();
@@ -66,14 +85,20 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
         LatLng(gps.latitude, gps.longitude),
         dest,
       );
+      final next = LatLng(gps.latitude, gps.longitude);
+      if (_gpsHistory.isEmpty || _gpsHistory.last != next) {
+        _gpsHistory.add(next);
+        if (_gpsHistory.length > 250) _gpsHistory.removeAt(0);
+      }
       setState(() {
-        _caregiverPos = LatLng(gps.latitude, gps.longitude);
+        _caregiverPos = next;
         _heading = gps.heading ?? _heading;
         final speedMs = gps.speed;
         _etaSeconds = speedMs != null && speedMs > 0.5
             ? (distM / speedMs).round()
             : _etaSeconds;
       });
+      _animateCaregiverTo(next);
     });
 
     // ── Lắng nghe booking status changes ─────────────────────────
@@ -84,6 +109,33 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
       // Refresh booking store để UI cập nhật trạng thái
       ref.read(bookingStoreProvider.notifier).refresh();
     });
+  }
+
+  void _animateCaregiverTo(LatLng next) {
+    final from = _animatedCaregiverPos ?? _caregiverPos ?? next;
+    _positionFrom = from;
+    _positionTo = next;
+    _positionController
+      ..stop()
+      ..value = 0
+      ..forward();
+  }
+
+  void _onPositionAnimationTick() {
+    final from = _positionFrom;
+    final to = _positionTo;
+    if (!mounted || from == null || to == null) return;
+    final t = Curves.easeOutCubic.transform(_positionController.value);
+    final position = LatLng(
+      from.latitude + (to.latitude - from.latitude) * t,
+      from.longitude + (to.longitude - from.longitude) * t,
+    );
+    setState(() => _animatedCaregiverPos = position);
+    try {
+      _mapController.move(position, _mapController.camera.zoom);
+    } catch (_) {
+      // The first GPS update may arrive before FlutterMap attaches its controller.
+    }
   }
 
   String get _etaLabel {
@@ -434,32 +486,39 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
             child: FlutterMap(
               key: ValueKey(bk.id),
               options: MapOptions(
-                initialCenter: isEnRoute
-                    ? LatLng(
-                        (_caregiverPos?.latitude ?? destCoord.latitude),
-                        (_caregiverPos?.longitude ?? destCoord.longitude),
-                      )
-                    : destCoord,
+                initialCenter:
+                    _animatedCaregiverPos ?? _caregiverPos ?? destCoord,
                 initialZoom: isEnRoute ? 15 : 16,
+                onMapReady: () {
+                  final position = _animatedCaregiverPos ?? _caregiverPos;
+                  if (position != null) {
+                    _mapController.move(position, isEnRoute ? 15 : 16);
+                  }
+                },
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
                 ),
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.caresitter.customer',
-                  tileBuilder: _mapTileBuilder,
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                  subdomains: const ['a', 'b', 'c', 'd'],
+                  retinaMode: true,
+                  userAgentPackageName: 'com.caresitter.app',
                 ),
                 // Đường polyline từ caregiver đến nhà khách (en_route)
-                if (isEnRoute && _caregiverPos != null)
+                if (_gpsHistory.isNotEmpty)
                   PolylineLayer(
                     polylines: [
                       Polyline(
-                        points: [_caregiverPos!, destCoord],
+                        points: [
+                          ..._gpsHistory,
+                          if (_animatedCaregiverPos != null)
+                            _animatedCaregiverPos!,
+                        ],
                         color: AppColors.primary.withValues(alpha: 0.65),
                         strokeWidth: 4,
-                        pattern: const StrokePattern.dotted(),
                       ),
                     ],
                   ),
@@ -494,33 +553,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                       ),
                     ),
                     // Marker Caregiver đang di chuyển (chỉ hiện khi en_route)
-                    if (isEnRoute && _caregiverPos != null)
+                    if ((_animatedCaregiverPos ?? _caregiverPos) != null)
                       Marker(
-                        point: _caregiverPos!,
-                        width: 56,
-                        height: 56,
-                        child: Container(
-                          padding: const EdgeInsets.all(11),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.5),
-                                blurRadius: 18,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Transform.rotate(
-                            angle: (_heading ?? 0) * 3.14159 / 180,
-                            child: const Icon(
-                              Icons.navigation_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                        ),
+                        point: _animatedCaregiverPos ?? _caregiverPos!,
+                        width: 82,
+                        height: 92,
+                        child: _buildLiveHomeMarker(),
                       ),
                   ],
                 ),
@@ -625,8 +663,73 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
               ),
             ),
           ),
+          const Positioned(
+            right: 12,
+            bottom: 58,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xDFFFFFFF),
+                borderRadius: BorderRadius.all(Radius.circular(5)),
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                child: Text('© CARTO',
+                    style: TextStyle(fontSize: 9, color: Color(0xFF36514A))),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLiveHomeMarker() {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final pulse = _pulseController.value;
+        final scale = 0.72 + pulse * 0.62;
+        final opacity = (1 - pulse) * 0.32;
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Transform.scale(
+              scale: scale,
+              child: Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(opacity),
+                ),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.42),
+                        blurRadius: 14,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.home_rounded,
+                      color: Colors.white, size: 23),
+                ),
+                Container(width: 3, height: 11, color: AppColors.primary),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 

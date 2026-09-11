@@ -87,7 +87,11 @@ public sealed class ProfileController(
             return BadRequest(Problem(Error.Validation("avatar.too_large", "Ảnh không được vượt quá 5 MB.")));
 
         await using var stream = file.OpenReadStream();
-        var uploadResult = await mediaService.UploadImageAsync(stream, file.FileName, "avatars", ct);
+        var uploadResult = await mediaService.UploadImageAsync(
+            stream,
+            file.FileName,
+            "CareSitter/Avatars",
+            ct);
         if (uploadResult.IsFailure)
             return BadRequest(Problem(uploadResult.Error));
 

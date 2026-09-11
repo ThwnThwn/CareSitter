@@ -46,4 +46,10 @@ public sealed class CareTimelineEvent
             Metadata = metadata
         };
     }
+
+    public CareTimelineEvent WithMedia(Guid mediaId)
+    {
+        MediaId = mediaId;
+        return this;
+    }
 }

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/dio_client.dart';
@@ -11,6 +11,7 @@ class UserProfile {
   final String email;
   final String dob;
   final String gender;
+
   /// URL ảnh đại diện từ Cloudinary (null → hiện initials).
   final String? avatarUrl;
   final String? defaultAddressId;
@@ -186,18 +187,17 @@ class ProfileStore extends StateNotifier<UserProfile> {
 
   /// Upload ảnh đại diện lên Cloudinary qua backend.
   /// Chặn double-upload bằng [avatarUploadingProvider].
-  Future<bool> uploadAvatar(File imageFile) async {
+  Future<bool> uploadAvatar(Uint8List imageBytes, String fileName) async {
     if (_ref.read(avatarUploadingProvider)) return false;
     _ref.read(avatarUploadingProvider.notifier).state = true;
 
     try {
       final dio = _ref.read(dioClientProvider);
-      final fileName = imageFile.path.split(Platform.pathSeparator).last;
-
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          imageFile.path,
+        'file': MultipartFile.fromBytes(
+          imageBytes,
           filename: fileName,
+          contentType: DioMediaType('image', _mimeSubtype(fileName)),
         ),
       });
 
@@ -211,11 +211,21 @@ class ProfileStore extends StateNotifier<UserProfile> {
         return true;
       }
       return false;
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('[uploadAvatar] ❌ Exception: $e');
       return false;
     } finally {
       _ref.read(avatarUploadingProvider.notifier).state = false;
     }
+  }
+
+  String _mimeSubtype(String fileName) {
+    return switch (fileName.split('.').last.toLowerCase()) {
+      'png' => 'png',
+      'webp' => 'webp',
+      _ => 'jpeg',
+    };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

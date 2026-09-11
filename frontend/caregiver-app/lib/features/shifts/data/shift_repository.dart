@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/api/api_constants.dart';
 
@@ -118,6 +120,36 @@ class ShiftRepository {
       ApiPaths.taskComplete(bookingId, taskId),
     );
     return resp.data ?? {};
+  }
+
+  Future<Map<String, dynamic>> uploadTaskPhoto(
+      String bookingId, String taskId, XFile image) async {
+    final mimeType = image.mimeType ?? _mimeTypeFor(image.name);
+    final mimeParts = mimeType.split('/');
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        await image.readAsBytes(),
+        filename: image.name,
+        contentType: DioMediaType(
+          mimeParts.first,
+          mimeParts.length > 1 ? mimeParts[1] : 'octet-stream',
+        ),
+      ),
+    });
+    final resp = await _dio.postForm<Map<String, dynamic>>(
+      ApiPaths.taskPhotos(bookingId, taskId),
+      formData,
+    );
+    return resp.data ?? {};
+  }
+
+  String _mimeTypeFor(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    return switch (extension) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'image/jpeg',
+    };
   }
 
   Future<Map<String, dynamic>> skipTask(String bookingId, String taskId) async {
