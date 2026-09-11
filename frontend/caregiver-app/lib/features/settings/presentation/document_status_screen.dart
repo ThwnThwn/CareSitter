@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
+import '../../../core/widgets/app_widgets.dart';
+import '../../profile/presentation/providers/profile_provider.dart';
 
-class DocumentStatusScreen extends StatelessWidget {
+class DocumentStatusScreen extends ConsumerWidget {
   const DocumentStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileProvider);
+    final status = profile.kycStatus.toUpperCase();
+    final statusText = switch (status) {
+      'APPROVED' => 'Hồ sơ đã được duyệt',
+      'PENDING' => 'Hồ sơ đang chờ duyệt',
+      'REJECTED' => 'Hồ sơ cần được cập nhật',
+      'SUSPENDED' => 'Hồ sơ đang bị tạm ngưng',
+      _ => 'Chưa có dữ liệu hồ sơ',
+    };
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -19,48 +31,13 @@ class DocumentStatusScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildOverallStatus(),
+            _buildOverallStatus(statusText, status == 'APPROVED'),
             const SizedBox(height: 24),
-            const Text(
-              'Tài liệu bắt buộc',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 16),
-            _buildDocumentItem(
-              context: context,
-              title: 'Căn cước công dân (CCCD)',
-              status: 'approved',
-              updatedAt: '10/05/2026',
-            ),
-            _buildDocumentItem(
-              context: context,
-              title: 'Ảnh chân dung',
-              status: 'approved',
-              updatedAt: '10/05/2026',
-            ),
-            _buildDocumentItem(
-              context: context,
-              title: 'Giấy khám sức khỏe',
-              status: 'expiring',
-              updatedAt: '01/01/2026',
-              note: 'Hết hạn vào 01/07/2026 (còn 3 ngày)',
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Chứng chỉ liên quan (Tùy chọn)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 16),
-            _buildDocumentItem(
-              context: context,
-              title: 'Chứng chỉ sơ cấp cứu',
-              status: 'pending',
-              updatedAt: '25/06/2026',
-            ),
-            _buildDocumentItem(
-              context: context,
-              title: 'Bằng điều dưỡng',
-              status: 'missing',
+            const AppEmptyState(
+              icon: Icons.description_outlined,
+              title: 'Chưa có danh sách tài liệu',
+              message:
+                  'Thông tin từng tài liệu sẽ hiển thị sau khi backend cung cấp dữ liệu hồ sơ.',
             ),
           ],
         ),
@@ -68,7 +45,7 @@ class DocumentStatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOverallStatus() {
+  Widget _buildOverallStatus(String statusText, bool approved) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -78,20 +55,32 @@ class DocumentStatusScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 40),
+          Icon(
+              approved
+                  ? Icons.verified_user_rounded
+                  : Icons.info_outline_rounded,
+              color: AppColors.primary,
+              size: 40),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Hồ sơ đã duyệt',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Bạn đủ điều kiện nhận ca. Vui lòng cập nhật các giấy tờ sắp hết hạn.',
-                  style: TextStyle(fontSize: 13, color: AppColors.primary.withValues(alpha: 0.8)),
+                  approved
+                      ? 'Bạn đủ điều kiện nhận ca theo trạng thái từ hệ thống.'
+                      : 'Hãy cập nhật hồ sơ khi backend cung cấp yêu cầu bổ sung.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primary.withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -154,27 +143,38 @@ class DocumentStatusScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   statusText,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: statusColor),
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor),
                 ),
                 if (note != null) ...[
                   const SizedBox(height: 2),
-                  Text(note, style: const TextStyle(fontSize: 12, color: AppColors.error)),
+                  Text(note,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.error)),
                 ],
                 if (updatedAt != null) ...[
                   const SizedBox(height: 2),
-                  Text('Cập nhật: $updatedAt', style: const TextStyle(fontSize: 12, color: AppColors.textHint)),
+                  Text('Cập nhật: $updatedAt',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textHint)),
                 ],
               ],
             ),
           ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-            onPressed: () => context.push('/settings/documents/upload', extra: title),
+            onPressed: () =>
+                context.push('/settings/documents/upload', extra: title),
           ),
         ],
       ),

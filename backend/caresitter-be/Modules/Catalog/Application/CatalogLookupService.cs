@@ -35,11 +35,11 @@ internal sealed class CatalogLookupService(CatalogDbContext db) : ICatalogLookup
     {
         var service = await db.ServiceTypes.AsNoTracking()
             .Where(x => x.Id == serviceTypeId && x.IsActive)
-            .Select(x => new { x.Id, x.Name })
+            .Select(x => new { x.Id, x.Name, x.Description })
             .SingleOrDefaultAsync(ct);
         return service is null
             ? null
-            : new ServiceDisplaySummary(service.Id, service.Name);
+            : new ServiceDisplaySummary(service.Id, service.Name, service.Description);
     }
 
     public async Task<(double Lat, double Lng)?> GetAddressLocationAsync(Guid addressId, CancellationToken ct = default)

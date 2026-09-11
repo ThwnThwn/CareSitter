@@ -25,8 +25,13 @@ public sealed class CareTasksController(
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
         var booking = await db.Bookings.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id && x.CustomerId == userId, ct);
+            .SingleOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return NotFound();
+
+        var canRead = booking.CustomerId == userId;
+        if (!canRead && booking.CaregiverId is { } caregiverId)
+            canRead = await people.IsCaregiverForBookingAsync(caregiverId, userId, ct);
+        if (!canRead) return Forbid();
 
         var tasks = await db.CareTasks.AsNoTracking()
             .Where(x => x.BookingId == id)

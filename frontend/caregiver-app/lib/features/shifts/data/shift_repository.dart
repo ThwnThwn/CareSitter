@@ -95,4 +95,35 @@ class ShiftRepository {
     final resp = await _dio.post<Map<String, dynamic>>(ApiPaths.complete(id));
     return resp.data ?? {};
   }
+
+  Future<void> raiseSos(String id) async {
+    await _dio.post<void>(ApiPaths.raiseSos(id));
+  }
+
+  Future<void> addTimelineNote(String id, String note) async {
+    await _dio.post<void>(
+      ApiPaths.timeline(id),
+      data: {'title': 'Ghi chú cuối ca', 'note': note},
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getTasks(String bookingId) async {
+    final resp = await _dio.get<List<dynamic>>(ApiPaths.tasks(bookingId));
+    return (resp.data ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> completeTask(
+      String bookingId, String taskId) async {
+    final resp = await _dio.put<Map<String, dynamic>>(
+      ApiPaths.taskComplete(bookingId, taskId),
+    );
+    return resp.data ?? {};
+  }
+
+  Future<Map<String, dynamic>> skipTask(String bookingId, String taskId) async {
+    final resp = await _dio.put<Map<String, dynamic>>(
+      ApiPaths.taskSkip(bookingId, taskId),
+    );
+    return resp.data ?? {};
+  }
 }

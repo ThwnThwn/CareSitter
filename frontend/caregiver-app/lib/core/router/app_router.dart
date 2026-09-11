@@ -123,8 +123,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return ShiftMapScreen(
             bookingId: id,
-            beneficiaryName: extra['beneficiaryName'] as String? ?? 'Khách hàng',
+            beneficiaryName:
+                extra['beneficiaryName'] as String? ?? 'Khách hàng',
             address: extra['address'] as String? ?? 'Địa chỉ khách hàng',
+            destinationLatitude: (extra['addressLatitude'] as num?)?.toDouble(),
+            destinationLongitude:
+                (extra['addressLongitude'] as num?)?.toDouble(),
           );
         },
       ),
@@ -136,8 +140,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return ShiftSummaryScreen(
             bookingId: id,
-            beneficiaryName: extra['beneficiaryName'] as String? ?? 'Khách hàng',
-            caregiverName: extra['caregiverName'] as String? ?? 'Người chăm sóc',
+            beneficiaryName:
+                extra['beneficiaryName'] as String? ?? 'Khách hàng',
+            caregiverName:
+                extra['caregiverName'] as String? ?? 'Người chăm sóc',
             caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
             completedTasks: extra['completedTasks'] as int? ?? 0,
             totalTasks: extra['totalTasks'] as int? ?? 0,
@@ -146,6 +152,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             caregiverNote: extra['caregiverNote'] as String? ?? '',
             taskPhotos:
                 (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
+            checkoutPendingReview:
+                extra['checkoutPendingReview'] as bool? ?? false,
           );
         },
       ),
@@ -157,8 +165,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return ShiftCustomerReportScreen(
             bookingId: id,
-            beneficiaryName: extra['beneficiaryName'] as String? ?? 'Khách hàng',
-            caregiverName: extra['caregiverName'] as String? ?? 'Người chăm sóc',
+            beneficiaryName:
+                extra['beneficiaryName'] as String? ?? 'Khách hàng',
+            caregiverName:
+                extra['caregiverName'] as String? ?? 'Người chăm sóc',
             caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
             completedTasks: extra['completedTasks'] as int? ?? 0,
             totalTasks: extra['totalTasks'] as int? ?? 0,

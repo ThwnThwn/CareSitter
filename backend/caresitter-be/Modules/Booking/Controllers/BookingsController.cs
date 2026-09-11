@@ -776,6 +776,7 @@ public sealed class BookingsController(
             ? await people.GetCaregiverDisplayAsync(caregiverId, ct)
             : null;
         var address = await catalog.GetAddressDisplayAsync(x.AddressId, ct);
+        var addressLocation = await catalog.GetAddressLocationAsync(x.AddressId, ct);
         var service = await catalog.GetServiceDisplayAsync(x.ServiceTypeId, ct);
 
         return new BookingResponse(x.Id, x.BeneficiaryId,
@@ -785,11 +786,14 @@ public sealed class BookingsController(
             x.CaregiverEarningAmount,
             x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt,
             beneficiary?.DisplayName, caregiver?.DisplayName, address?.FullAddress, service?.Name,
+            service?.Description,
             beneficiary?.Notes,
             beneficiary?.Age,
             beneficiary?.Relationship,
             beneficiary?.Condition,
-            beneficiary?.Notes);
+            beneficiary?.Notes,
+            addressLocation?.Lat,
+            addressLocation?.Lng);
     }
 
     private static CaregiverSuggestionResponse ToCaregiverSuggestion(
@@ -842,8 +846,11 @@ public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? Caregive
     string? CaregiverName = null,
     string? AddressText = null,
     string? ServiceName = null,
+    string? ServiceDescription = null,
     string? Note = null,
     int? BeneficiaryAge = null,
     string? BeneficiaryRelationship = null,
     string? BeneficiaryCondition = null,
-    string? BeneficiaryNotes = null);
+    string? BeneficiaryNotes = null,
+    double? AddressLatitude = null,
+    double? AddressLongitude = null);

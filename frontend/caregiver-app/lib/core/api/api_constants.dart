@@ -21,6 +21,8 @@ class ApiPaths {
   static String checkIn(String id) => '/bookings/$id/check-in';
   static String checkoutRequest(String id) => '/bookings/$id/checkout/request';
   static String complete(String id) => '/bookings/$id/complete';
+  static String raiseSos(String id) => '/bookings/$id/sos';
+  static String timeline(String id) => '/bookings/$id/timeline';
 
   // ── GPS push ──────────────────────────────────────────────
   static String postGps(String id) => '/bookings/$id/gps';
@@ -37,6 +39,8 @@ class ApiPaths {
   static String tasks(String id) => '/bookings/$id/tasks';
   static String taskComplete(String id, String taskId) =>
       '/bookings/$id/tasks/$taskId/complete';
+  static String taskSkip(String id, String taskId) =>
+      '/bookings/$id/tasks/$taskId/skip';
 
   // ── Auth ─────────────────────────────────────────────────
   static const login = '/auth/login';
