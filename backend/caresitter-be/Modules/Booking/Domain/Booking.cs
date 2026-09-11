@@ -53,6 +53,15 @@ public sealed class Booking : AggregateRoot
 
     public BookingStatus Status { get; private set; }
 
+    /// <summary>
+    /// Tăng mỗi khi booking bị mutation. Client dùng để bỏ qua update cũ / đến đảo thứ tự.
+    /// Tương ứng cột sync_version trong bảng bookings.
+    /// </summary>
+    public long SyncVersion { get; private set; } = 1;
+
+    /// <summary>Gọi trong service layer trước khi ghi BookingSyncEvent.</summary>
+    internal void IncrementSyncVersion() => SyncVersion++;
+
     public long EscrowAmount { get; private set; }
     public long PlatformFeeAmount { get; private set; }
     public long CaregiverEarningAmount { get; private set; }

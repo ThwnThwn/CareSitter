@@ -5,6 +5,8 @@ class ServiceModel {
   final String name;
   final String? description;
   final int defaultDurationMinutes;
+  final int baseHourlyPrice;
+  final double platformFeePercent;
 
   const ServiceModel({
     required this.id,
@@ -12,6 +14,8 @@ class ServiceModel {
     required this.name,
     this.description,
     required this.defaultDurationMinutes,
+    this.baseHourlyPrice = 0,
+    this.platformFeePercent = 0,
   });
 
   /// Icon tương ứng với code gói
@@ -25,10 +29,7 @@ class ServiceModel {
   String get category => 'Gói Genki';
 
   double get pricePerHour {
-    if (code.contains('DUONG')) return 100000.0;
-    if (code.contains('AN')) return 120000.0;
-    if (code.contains('TAM')) return 150000.0;
-    return 120000.0;
+    return baseHourlyPrice.toDouble();
   }
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) => ServiceModel(
@@ -38,5 +39,13 @@ class ServiceModel {
         description: json['description'] as String? ?? json['Description'] as String?,
         defaultDurationMinutes:
             json['defaultDurationMinutes'] as int? ?? json['DefaultDurationMinutes'] as int? ?? 60,
+        baseHourlyPrice: (json['baseHourlyPrice'] as num? ??
+                json['BaseHourlyPrice'] as num?)
+            ?.toInt() ??
+            0,
+        platformFeePercent: (json['platformFeePercent'] as num? ??
+                json['PlatformFeePercent'] as num?)
+            ?.toDouble() ??
+            0,
       );
 }

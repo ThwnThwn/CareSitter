@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/api/api_constants.dart';
 import 'models/booking_model.dart';
+import 'models/booking_sync_model.dart';
 
 /// Dữ liệu cần thiết để tạo một booking mới.
 class BookingDraft {
@@ -34,6 +35,15 @@ class BookingRepository {
   final DioClient _dio;
   const BookingRepository(this._dio);
 
+  /// Tạo hoặc lấy lại PaymentIntent VNPay theo booking, không gửi amount từ app.
+  Future<PaymentIntentModel> createVnPayIntent(String bookingId) async {
+    final resp = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.paymentIntents,
+      data: {'bookingId': bookingId},
+    );
+    return PaymentIntentModel.fromJson(resp.data ?? {});
+  }
+
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   /// Tạo booking mới từ BookingDraft.
@@ -54,9 +64,7 @@ class BookingRepository {
   // ── Queries ─────────────────────────────────────────────────────────────────
 
   /// Lấy danh sách booking của customer hiện tại.
-  /// [status] có thể là: pending_payment | confirmed | caregiver_accepted |
-  ///                     caregiver_en_route | in_progress |
-  ///                     checkout_pending_review | completed | cancelled | disputed
+  /// Response bao gồm syncCursor để client dùng làm mốc bắt đầu delta sync.
   Future<BookingListResponse> getBookings({
     String? status,
     int page = 1,
@@ -71,6 +79,44 @@ class BookingRepository {
       },
     );
     return BookingListResponse.fromJson(resp.data ?? {});
+  }
+
+  /// Delta sync: lấy danh sách booking thay đổi kể từ [cursor].
+  /// Gọi sau khi nhận SignalR event, sau reconnect, hoặc theo polling 30s.
+  /// Client merge result theo syncVersion (không ghi đè nếu đến cũ).
+  Future<BookingSyncResponse> syncBookings(int cursor) async {
+    final resp = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.bookings}/sync',
+      query: {'cursor': cursor},
+    );
+    final data = resp.data ?? {};
+    final resetRequired = data['resetRequired'] == true;
+    final nextCursor = (data['nextCursor'] as num?)?.toInt() ?? cursor;
+    final serverTime =
+        DateTime.tryParse(data['serverTime']?.toString() ?? '') ??
+            DateTime.now().toUtc();
+    final hasMore = data['hasMore'] == true;
+
+    if (resetRequired) {
+      return BookingSyncResponse(
+        items: const [],
+        nextCursor: 0,
+        serverTime: serverTime,
+        hasMore: false,
+        resetRequired: true,
+      );
+    }
+
+    final rawItems = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final items = rawItems.map(BookingModel.fromJson).toList();
+
+    return BookingSyncResponse(
+      items: items,
+      nextCursor: nextCursor,
+      serverTime: serverTime,
+      hasMore: hasMore,
+      resetRequired: false,
+    );
   }
 
   /// Lấy chi tiết một booking theo ID.
@@ -183,5 +229,27 @@ class BookingRepository {
       },
     );
     return GpsTrackModel.fromJson(resp.data ?? {});
+  }
+}
+
+/// Dữ liệu URL và trạng thái thanh toán VNPay trả về cho customer app.
+class PaymentIntentModel {
+  final String id;
+  final String status;
+  final String paymentUrl;
+
+  const PaymentIntentModel({
+    required this.id,
+    required this.status,
+    required this.paymentUrl,
+  });
+
+  /// Parse response payment intent từ backend.
+  factory PaymentIntentModel.fromJson(Map<String, dynamic> json) {
+    return PaymentIntentModel(
+      id: json['id']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      paymentUrl: json['paymentUrl']?.toString() ?? '',
+    );
   }
 }

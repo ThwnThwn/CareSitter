@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/realtime/care_signalr_service.dart';
 import '../../review/data/review_repository.dart';
 import '../data/booking_repository.dart';
 import '../data/models/booking_model.dart';
@@ -17,21 +19,75 @@ final bookingStoreProvider =
 class BookingStore extends Notifier<List<BookingModel>> {
   BookingRepository get _repo => ref.read(bookingRepositoryProvider);
 
+  // ── Sync engine state ───────────────────────────────────────────────────
+  int _lastCursor = 0;
+  bool _isSyncing = false;
+  bool _syncPending = false;
+
+  // Subscription realtime — giữ để cancel khi logout/dispose.
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
+  bool _realtimeSubscribed = false;
+
   @override
   List<BookingModel> build() {
+    _cancelRealtimeSubscriptions();
+    _lastCursor = 0;
+    _isSyncing = false;
+    _syncPending = false;
+
     ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
       if (isAuth) {
-        _loadFromApi();
+        unawaited(_initializeAuthenticated());
       } else {
+        _cancelRealtimeSubscriptions();
+        _lastCursor = 0;
         state = const [];
       }
     });
-    _loadFromApi();
+
+    // ref.onDispose để cancel subscriptions khi provider bị destroy
+    ref.onDispose(() {
+      _cancelRealtimeSubscriptions();
+    });
+
+    unawaited(_initializeAuthenticated());
     return const [];
   }
 
-  /// Fetch danh sách booking từ API và cập nhật state.
+  Future<void> _initializeAuthenticated() async {
+    await _loadFromApi();
+    await _startRealtime();
+  }
+
+  /// Mở hub rồi mới subscribe. Customer group được server tự join khi connect.
+  Future<void> _startRealtime() async {
+    final signalR = ref.read(careSignalRProvider);
+    await signalR.connect();
+    if (!signalR.isConnected || _realtimeSubscribed) return;
+
+    _realtimeSubscribed = true;
+    _subscriptions.add(
+      signalR.customerSyncStream.listen((_) => requestSync()),
+    );
+    _subscriptions.add(
+      signalR.onReconnected.listen((_) => requestSync()),
+    );
+
+    // Bù khoảng thời gian từ lúc initial load đến lúc hub vừa connected.
+    unawaited(requestSync());
+  }
+
+  void _cancelRealtimeSubscriptions() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+    _realtimeSubscribed = false;
+  }
+
+  /// Fetch toàn bộ booking từ API và cập nhật state.
+  /// Gọi khi lần đầu vào hoặc khi `resetRequired == true`.
   Future<void> refresh() => _loadFromApi();
 
   Future<void> _loadFromApi() async {
@@ -40,10 +96,66 @@ class BookingStore extends Notifier<List<BookingModel>> {
     try {
       final response = await _repo.getBookings(pageSize: 50);
       state = response.items;
+      // Đặt cursor từ response initial load — dùng làm mốc bắt đầu delta sync.
+      _lastCursor = response.syncCursor;
     } catch (e) {
       // ignore: avoid_print
       print('[BookingStore] Lỗi load bookings: $e');
     }
+  }
+
+  // ── Sync engine ──────────────────────────────────────────────────────
+
+  /// Kích hoạt delta sync. Nếu đang sync thì ghi nhớ pendng để chạy sau.
+  /// Gọi an toàn nhiều lần liên tiếp — mutex đảm bảo chỉ 1 request active.
+  Future<void> requestSync() async {
+    if (_isSyncing) {
+      _syncPending = true;
+      return;
+    }
+    await _syncUntilCaughtUp();
+  }
+
+  Future<void> _syncUntilCaughtUp() async {
+    _isSyncing = true;
+    try {
+      bool hasMore = true;
+      while (hasMore) {
+        final result = await _repo.syncBookings(_lastCursor);
+        if (result.resetRequired) {
+          await _loadFromApi(); // full refresh, reset cursor
+          return;
+        }
+        _mergeItems(result.items.cast<BookingModel>());
+        _lastCursor = result.nextCursor;
+        hasMore = result.hasMore;
+      }
+    } catch (e) {
+      // Lỗi network — giữ cursor cũ, retry tick kế tiếp (silent).
+      // ignore: avoid_print
+      print('[BookingStore] sync error (cursor=$_lastCursor): $e');
+    } finally {
+      _isSyncing = false;
+      if (_syncPending) {
+        _syncPending = false;
+        unawaited(requestSync()); // drain pending request
+      }
+    }
+  }
+
+  /// Merge danh sách incoming vào state hiện tại.
+  /// Chỉ cập nhật khi syncVersion của booking đến cao hơn bản đang lưu.
+  void _mergeItems(List<BookingModel> incoming) {
+    if (incoming.isEmpty) return;
+    final map = {for (final b in state) b.id: b};
+    for (final b in incoming) {
+      final existing = map[b.id];
+      if (existing == null || b.syncVersion > existing.syncVersion) {
+        map[b.id] = b;
+      }
+    }
+    state = map.values.toList()
+      ..sort((a, b) => b.scheduledStart.compareTo(a.scheduledStart));
   }
 
   // ── Lifecycle actions (gọi trực tiếp API, chờ response) ──────────────────
@@ -56,10 +168,13 @@ class BookingStore extends Notifier<List<BookingModel>> {
         caregiverId: draft.caregiverId!,
       );
     }
-    final confirmed = await _repo.confirmPayment(created.id);
-    state = [confirmed, ...state];
-    return confirmed;
+    state = [created, ...state];
+    return created;
   }
+
+  /// Tạo PaymentIntent VNPay và trả về URL để mở Sandbox checkout.
+  Future<PaymentIntentModel> createVnPayPayment(String bookingId) =>
+      _repo.createVnPayIntent(bookingId);
 
   Future<void> caregiverEnRoute(String bookingId) async {
     try {

@@ -52,6 +52,6 @@ internal sealed class UpdateProfileHandler(
         await db.SaveChangesAsync(ct);
 
         return new ProfileResponse(user.Id, user.Phone, user.Email, user.FullName!, user.DisplayName!,
-            user.DateOfBirth, user.Gender, user.AvatarMediaId, user.DefaultAddressId, user.Roles);
+            user.DateOfBirth, user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles);
     }
 }

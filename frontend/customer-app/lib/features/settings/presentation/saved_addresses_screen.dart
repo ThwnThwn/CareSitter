@@ -5,6 +5,7 @@ import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../catalog/application/address_store.dart';
 import '../../catalog/presentation/widgets/verified_address_field.dart';
+import '../../settings/application/profile_store.dart';
 
 class SavedAddressesScreen extends ConsumerStatefulWidget {
   final bool selectionMode;
@@ -74,9 +75,33 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
     }
   }
 
+  Future<void> _setAsDefault(AddressModel address) async {
+    try {
+      await ref.read(addressStoreProvider.notifier).setDefaultAddress(address.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã đặt "${address.displayLabel}" làm mặc định'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể cập nhật. Vui lòng thử lại.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final addressesAsync = ref.watch(addressStoreProvider);
+    final defaultAddressId = ref.watch(
+      profileStoreProvider.select((p) => p.defaultAddressId),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -90,12 +115,12 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       body: addressesAsync.when(
         loading: _buildLoadingState,
         error: (_, __) => _buildErrorState(),
-        data: _buildAddressList,
+        data: (addresses) => _buildAddressList(addresses, defaultAddressId),
       ),
     );
   }
 
-  Widget _buildAddressList(List<AddressModel> addresses) {
+  Widget _buildAddressList(List<AddressModel> addresses, String? defaultAddressId) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -108,7 +133,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
             ),
           ),
         if (addresses.isEmpty) _buildEmptyState(),
-        ...addresses.map(_buildAddressCard),
+        ...addresses.map((a) => _buildAddressCard(a, defaultAddressId)),
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: _addNewAddress,
@@ -122,7 +147,8 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
     );
   }
 
-  Widget _buildAddressCard(AddressModel address) {
+  Widget _buildAddressCard(AddressModel address, String? defaultAddressId) {
+    final isDefault = defaultAddressId == address.id;
     final isSelected = widget.selectedAddressId == address.id;
 
     return Padding(
@@ -175,7 +201,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildAddressHeader(address, isSelected),
+                      _buildAddressHeader(address, isSelected, isDefault: isDefault),
                       const SizedBox(height: 6),
                       Text(
                         address.fullAddress,
@@ -195,6 +221,27 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                           'Cần chọn lại từ danh sách gợi ý trước khi đặt lịch.',
                           style:
                               TextStyle(color: AppColors.warning, fontSize: 12),
+                        ),
+                      ],
+                      if (!widget.selectionMode && !isDefault && address.isVerified) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () => _setAsDefault(address),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star_border, size: 16, color: AppColors.primary),
+                              SizedBox(width: 4),
+                              Text(
+                                'Đặt làm mặc định',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ],
@@ -230,7 +277,11 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
     );
   }
 
-  Widget _buildAddressHeader(AddressModel address, bool isSelected) {
+  Widget _buildAddressHeader(
+    AddressModel address,
+    bool isSelected, {
+    required bool isDefault,
+  }) {
     final title = Text(
       address.displayLabel,
       style: TextStyle(
@@ -242,9 +293,6 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       overflow: TextOverflow.ellipsis,
     );
 
-    final isDefault = widget.selectedAddressId == address.id;
-    if (!isDefault && address.isVerified) return title;
-
     return Wrap(
       spacing: 8,
       runSpacing: 4,
@@ -252,6 +300,22 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       children: [
         title,
         if (isDefault)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Mặc định',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        if (isSelected)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(

@@ -38,6 +38,8 @@ public sealed class WebhookController(PaymentsDbContext db) : ControllerBase
         {
             var intent = await db.PaymentIntents
                 .FirstOrDefaultAsync(x => x.Provider == req.Provider
+                    && (req.ProviderOrderRef != null && x.ProviderOrderRef == req.ProviderOrderRef
+                        || req.ProviderTransactionId != null && x.ProviderTransactionId == req.ProviderTransactionId)
                     && x.Status != "SUCCEEDED" && x.Status != "FAILED", ct);
 
             if (intent is not null && !string.IsNullOrWhiteSpace(req.ProviderTransactionId))
@@ -57,6 +59,8 @@ public sealed class WebhookController(PaymentsDbContext db) : ControllerBase
         {
             var intent = await db.PaymentIntents
                 .FirstOrDefaultAsync(x => x.Provider == req.Provider
+                    && (req.ProviderOrderRef != null && x.ProviderOrderRef == req.ProviderOrderRef
+                        || req.ProviderTransactionId != null && x.ProviderTransactionId == req.ProviderTransactionId)
                     && x.Status != "SUCCEEDED" && x.Status != "FAILED", ct);
             intent?.MarkFailed(req.Payload);
             webhook.Value.MarkProcessed();
@@ -73,4 +77,5 @@ public sealed class WebhookController(PaymentsDbContext db) : ControllerBase
 
 // ── DTOs ──
 public sealed record WebhookRequest(string Provider, string ProviderEventId,
-    string? EventType = null, string? ProviderTransactionId = null, string? Payload = null);
+    string? EventType = null, string? ProviderTransactionId = null,
+    string? ProviderOrderRef = null, string? Payload = null);

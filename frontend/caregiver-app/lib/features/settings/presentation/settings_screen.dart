@@ -103,14 +103,19 @@ class SettingsScreen extends ConsumerWidget {
           CircleAvatar(
             radius: 30,
             backgroundColor: AppColors.primaryContainer,
-            child: Text(
-              profile.avatarInitial,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                ? NetworkImage(profile.avatarUrl!)
+                : null,
+            child: (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
+                ? Text(
+                    profile.initials,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -118,7 +123,7 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  profile.name,
+                  profile.displayName,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -127,9 +132,9 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  profile.location == 'Chưa cập nhật'
+                  profile.locationText == 'Chưa cập nhật'
                       ? _shortIdLabel(profile.id)
-                      : profile.location,
+                      : profile.locationText,
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,

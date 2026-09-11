@@ -1,6 +1,8 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/api/dio_client.dart';
 import '../data/address_repository.dart';
+import '../../settings/application/profile_store.dart';
 
 export '../data/address_repository.dart'
     show AddressModel, PlaceSuggestionModel, VerifiedPlaceDetailsModel;
@@ -53,5 +55,13 @@ class AddressStore extends AsyncNotifier<List<AddressModel>> {
     await _repo.deleteAddress(id);
     final current = state.valueOrNull ?? const <AddressModel>[];
     state = AsyncData(current.where((address) => address.id != id).toList());
+  }
+
+  /// Đặt địa chỉ làm mặc định — gọi PUT /profile/default-address/{id}.
+  Future<void> setDefaultAddress(String id) async {
+    final dio = ref.read(dioClientProvider);
+    await dio.put<void>('/profile/default-address/$id');
+    // Refresh profile để cập nhật defaultAddressId
+    await ref.read(profileStoreProvider.notifier).fetchProfile();
   }
 }

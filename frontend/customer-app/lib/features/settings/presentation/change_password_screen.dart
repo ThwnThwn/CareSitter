@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/dio_client.dart';
+import '../../../core/auth/auth_notifier.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
+class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _oldPassCtrl = TextEditingController();
   final _newPassCtrl = TextEditingController();
@@ -35,13 +38,56 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tính năng đổi mật khẩu chưa được backend hỗ trợ.'),
-        backgroundColor: AppColors.warning,
-      ),
-    );
+    String? errorMsg;
+    try {
+      final dio = ref.read(dioClientProvider);
+      final resp = await dio.put<Map<String, dynamic>>(
+        '/profile/password',
+        data: {
+          'CurrentPassword': _oldPassCtrl.text,
+          'NewPassword': _newPassCtrl.text,
+        },
+      );
+      if (resp.statusCode == 200) {
+        // Đổi thành công → logout → về login
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Đổi mật khẩu thành công! Vui lòng đăng nhập lại.'),
+            backgroundColor: AppColors.primary,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        await Future.delayed(const Duration(seconds: 1));
+        await ref.read(authStateProvider.notifier).logout();
+        return;
+      }
+    } catch (e) {
+      // Parse error message từ server
+      final err = e.toString();
+      if (err.contains('password.incorrect')) {
+        errorMsg = 'Mật khẩu hiện tại không chính xác.';
+      } else if (err.contains('password.policy')) {
+        errorMsg = 'Mật khẩu mới không đáp ứng yêu cầu.';
+      } else if (err.contains('password.no_password')) {
+        errorMsg = 'Tài khoản Google không hỗ trợ đổi mật khẩu.';
+      } else {
+        errorMsg = 'Không thể đổi mật khẩu. Vui lòng thử lại.';
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+
+    if (errorMsg != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override

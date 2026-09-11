@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,8 +52,14 @@ class SettingsScreen extends ConsumerWidget {
                     _SettingsItem(
                       icon: Icons.person_outline,
                       title: 'Thông tin cá nhân',
-                      subtitle: 'Tên, số điện thoại, địa chỉ',
+                      subtitle: 'Tên, số điện thoại, ngày sinh',
                       onTap: () => context.push('/settings/profile/edit'),
+                    ),
+                    _SettingsItem(
+                      icon: Icons.notifications_outlined,
+                      title: 'Cài đặt thông báo',
+                      subtitle: 'Lịch hẹn, thanh toán, nhắc nhở',
+                      onTap: () => context.push('/settings/notifications'),
                     ),
                     _SettingsItem(
                       icon: Icons.credit_card_outlined,
@@ -66,7 +70,7 @@ class SettingsScreen extends ConsumerWidget {
                     _SettingsItem(
                       icon: Icons.location_on_outlined,
                       title: 'Địa chỉ đã lưu',
-                      subtitle: '3 địa chỉ',
+                      subtitle: 'Địa chỉ nhận dịch vụ',
                       onTap: () => context.push('/settings/addresses'),
                     ),
                   ]),
@@ -153,7 +157,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildProfileCard(BuildContext context, WidgetRef ref,
       UserProfile profile, int bookingCount, double totalSpent) {
     final hasAvatar =
-        profile.avatarPath != null && profile.avatarPath!.isNotEmpty;
+        profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty;
     final initials = profile.name
         .trim()
         .split(RegExp(r'\s+'))
@@ -175,9 +179,7 @@ class SettingsScreen extends ConsumerWidget {
               radius: 46,
               backgroundColor: AppColors.primaryContainer,
               backgroundImage: hasAvatar
-                  ? (kIsWeb
-                      ? NetworkImage(profile.avatarPath!)
-                      : FileImage(File(profile.avatarPath!))) as ImageProvider
+                  ? NetworkImage(profile.avatarUrl!) as ImageProvider
                   : null,
               child: hasAvatar
                   ? null

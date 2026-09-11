@@ -52,12 +52,14 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3).IsFixedLength();
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
             b.Property(x => x.ProviderTransactionId).HasColumnName("provider_transaction_id").HasMaxLength(255);
+            b.Property(x => x.ProviderOrderRef).HasColumnName("provider_order_ref").HasMaxLength(100);
             b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(255);
             b.Property(x => x.RequestPayload).HasColumnName("request_payload").HasColumnType("jsonb");
             b.Property(x => x.ResponsePayload).HasColumnName("response_payload").HasColumnType("jsonb");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.HasIndex(x => x.IdempotencyKey).IsUnique();
+            b.HasIndex(x => new { x.Provider, x.ProviderOrderRef }).IsUnique();
             b.Ignore(x => x.DomainEvents);
         });
 
@@ -93,6 +95,10 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.Metadata).HasColumnName("metadata").HasColumnType("jsonb");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Ignore(x => x.UpdatedAt); // ledger_entries has no updated_at column
+            b.HasIndex(x => new { x.BookingId, x.TransactionType })
+                .IsUnique()
+                .HasFilter("booking_id IS NOT NULL AND transaction_type IN ('ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING')")
+                .HasDatabaseName("ux_ledger_booking_transaction_type");
         });
 
         modelBuilder.Entity<PayoutRequest>(b =>

@@ -42,6 +42,7 @@ public sealed class PaymentIntent : AggregateRoot
     public string Status { get; private set; } = null!;
 
     public string? ProviderTransactionId { get; private set; }
+    public string? ProviderOrderRef { get; private set; }
     public string IdempotencyKey { get; private set; } = null!;
     public string? RequestPayload { get; private set; }
     public string? ResponsePayload { get; private set; }
@@ -88,6 +89,17 @@ public sealed class PaymentIntent : AggregateRoot
         if (Status != "CREATED")
             return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> PENDING.");
         Status = "PENDING";
+        return Result.Success();
+    }
+
+    /// <summary>Gán mã đơn hàng duy nhất dùng để đối chiếu callback từ cổng thanh toán.</summary>
+    public Result SetProviderOrderRef(string providerOrderRef)
+    {
+        if (string.IsNullOrWhiteSpace(providerOrderRef))
+            return Error.Validation("payment_intent.provider_order_ref", "provider_order_ref khong duoc rong.");
+        if (ProviderOrderRef is not null && ProviderOrderRef != providerOrderRef)
+            return Error.Conflict("payment_intent.provider_order_ref", "Payment intent da co provider order ref.");
+        ProviderOrderRef = providerOrderRef;
         return Result.Success();
     }
 }

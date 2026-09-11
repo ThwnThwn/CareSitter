@@ -6,6 +6,7 @@ import 'core/auth/auth_notifier.dart';
 import 'core/push/firebase_push_notifications.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/booking/application/booking_sync_watchdog.dart';
 
 class CareSitterApp extends ConsumerStatefulWidget {
   const CareSitterApp({super.key});
@@ -36,11 +37,16 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
     });
 
     final router = ref.watch(appRouterProvider);
-    return MaterialApp.router(
-      title: 'CareSitter',
-      theme: AppTheme.lightTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    // BookingSyncWatchdog bọc ngoài toàn bộ app:
+    // — polling 30s khi foreground
+    // — trigger requestSync ngay khi app resume
+    return BookingSyncWatchdog(
+      child: MaterialApp.router(
+        title: 'CareSitter',
+        theme: AppTheme.lightTheme,
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

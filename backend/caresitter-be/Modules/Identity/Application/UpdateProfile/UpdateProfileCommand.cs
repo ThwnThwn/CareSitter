@@ -8,4 +8,4 @@ public sealed record UpdateProfileCommand(string FullName, string Email, string?
 
 public sealed record ProfileResponse(Guid Id, string? Phone, string Email, string FullName,
     string DisplayName, DateOnly? DateOfBirth, string? Gender, Guid? AvatarMediaId,
-    Guid? DefaultAddressId, string[] Roles);
+    string? AvatarUrl, Guid? DefaultAddressId, string[] Roles);

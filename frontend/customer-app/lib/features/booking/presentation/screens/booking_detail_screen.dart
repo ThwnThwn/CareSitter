@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -150,7 +151,8 @@ class BookingDetailScreen extends ConsumerWidget {
                       _buildPaymentRow(
                           'Dịch vụ (${booking.duration})', booking.totalPrice),
                       const Divider(height: 16, color: AppColors.divider),
-                      _buildPaymentRow('Phí nền tảng', 0),
+                      _buildPaymentRow('Phí nền tảng (đã gồm trong tổng)',
+                          booking.platformRevenue),
                       const Divider(height: 16, color: AppColors.divider),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -276,7 +278,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: () => _showExtendShiftSheet(context),
+                        onPressed: () => _showExtendShiftSheet(context, booking),
                         icon: const Icon(Icons.add_alarm),
                         label: const Text('Gia hạn ca chăm sóc'),
                         style: OutlinedButton.styleFrom(
@@ -1353,14 +1355,18 @@ class BookingDetailScreen extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref
+        final intent = await ref
             .read(bookingStoreProvider.notifier)
-            .confirmPayment(booking.id);
+            .createVnPayPayment(booking.id);
+        final uri = Uri.tryParse(intent.paymentUrl);
+        if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          throw Exception('Không mở được trang thanh toán VNPay Sandbox.');
+        }
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                  '✅ Thanh toán ký quỹ thành công! Lịch hẹn đã được xác nhận.'),
+                  'Đã mở VNPay Sandbox. Sau khi thanh toán, quay lại app để cập nhật trạng thái.'),
               backgroundColor: AppColors.success,
               duration: Duration(seconds: 3),
             ),
@@ -1385,8 +1391,11 @@ class BookingDetailScreen extends ConsumerWidget {
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
   }
 
-  void _showExtendShiftSheet(BuildContext context) {
+  void _showExtendShiftSheet(BuildContext context, BookingModel booking) {
     int selectedHours = 1;
+    // Dùng đơn giá hiệu lực của booking hiện tại thay vì giá fallback cố định.
+    final bookedHours = booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
+    final effectiveHourlyRate = bookedHours > 0 ? booking.totalPrice / bookedHours : 0.0;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1445,7 +1454,7 @@ class BookingDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Phí ước tính thêm: ~${selectedHours * 120000}đ',
+              Text('Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ',
                   style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,

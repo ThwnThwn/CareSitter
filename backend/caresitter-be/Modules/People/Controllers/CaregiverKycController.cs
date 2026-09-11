@@ -30,12 +30,25 @@ public sealed class CaregiverKycController(
         if (profile is null)
             return NotFound(new { error = "Caregiver profile khong ton tai." });
 
+        string? avatarUrl = null;
+        try
+        {
+            avatarUrl = await db.Database
+                .SqlQueryRaw<string>("SELECT avatar_url AS \"Value\" FROM identity.users WHERE id = {0}", userId)
+                .FirstOrDefaultAsync(ct);
+        }
+        catch
+        {
+            // fallback if cross-schema query fails
+        }
+
         return Ok(new
         {
             profile.Id,
             profile.UserId,
             profile.FullName,
             profile.Gender,
+            DateOfBirth = profile.DateOfBirth?.ToString("yyyy-MM-dd"),
             profile.Bio,
             profile.YearsOfExperience,
             profile.HourlyRateExpected,
@@ -45,7 +58,8 @@ public sealed class CaregiverKycController(
             profile.AvailabilityStatus,
             profile.Skills,
             profile.ServiceCity,
-            profile.ServiceDistrict
+            profile.ServiceDistrict,
+            AvatarUrl = avatarUrl
         });
     }
 
@@ -107,9 +121,18 @@ public sealed class CaregiverKycController(
         await db.SaveChangesAsync(ct);
         return Ok(new
         {
-            profile.Id, profile.FullName, profile.Bio, profile.YearsOfExperience,
-            profile.HourlyRateExpected, profile.KycStatus, profile.AvailabilityStatus,
-            profile.ServiceCity, profile.ServiceDistrict
+            profile.Id,
+            profile.FullName,
+            profile.Bio,
+            profile.YearsOfExperience,
+            profile.HourlyRateExpected,
+            profile.KycStatus,
+            profile.AvailabilityStatus,
+            profile.ServiceCity,
+            profile.ServiceDistrict,
+            profile.Gender,
+            DateOfBirth = profile.DateOfBirth?.ToString("yyyy-MM-dd"),
+            profile.Skills
         });
     }
 

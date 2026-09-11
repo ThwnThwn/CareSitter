@@ -34,12 +34,14 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.Email).HasColumnName("email").HasMaxLength(255);
             b.Property(x => x.DisplayName).HasColumnName("display_name").HasMaxLength(255);
             b.Property(x => x.AvatarMediaId).HasColumnName("avatar_media_id");
+            b.Property(x => x.AvatarUrl).HasColumnName("avatar_url").HasMaxLength(2048);
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(50);
             b.Property(x => x.Roles).HasColumnName("roles").HasColumnType("varchar[]");
             b.Property(x => x.FullName).HasColumnName("full_name").HasMaxLength(255);
             b.Property(x => x.DateOfBirth).HasColumnName("date_of_birth");
             b.Property(x => x.Gender).HasColumnName("gender").HasMaxLength(20);
             b.Property(x => x.DefaultAddressId).HasColumnName("default_address_id");
+            b.Property(x => x.NotificationPrefs).HasColumnName("notification_prefs").HasColumnType("jsonb");
             b.Property(x => x.AdminDepartment).HasColumnName("admin_department").HasMaxLength(50);
             b.Property(x => x.AdminRole).HasColumnName("admin_role").HasMaxLength(50);
             b.Property(x => x.AdminPermissions).HasColumnName("admin_permissions").HasColumnType("jsonb");
