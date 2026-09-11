@@ -21,7 +21,9 @@ class DioClient {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
-        'Content-Type': 'application/json',
+        // Không set Content-Type cứng ở đây!
+        // Dio tự set 'application/json' cho Map/String body,
+        // và 'multipart/form-data' cho FormData.
         'Accept': 'application/json',
         'Accept-Language': 'vi',
       },

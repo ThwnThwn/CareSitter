@@ -39,6 +39,8 @@ class ApiPaths {
   static String tasks(String id) => '/bookings/$id/tasks';
   static String taskComplete(String id, String taskId) =>
       '/bookings/$id/tasks/$taskId/complete';
+  static String taskPhotos(String id, String taskId) =>
+      '/bookings/$id/tasks/$taskId/photos';
   static String taskSkip(String id, String taskId) =>
       '/bookings/$id/tasks/$taskId/skip';
 

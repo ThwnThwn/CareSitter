@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_notifier.dart';
@@ -244,6 +245,25 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       print('[ShiftsNotifier] completeTask error: $e');
       rethrow;
     }
+  }
+
+  Future<Map<String, dynamic>> uploadTaskPhoto(
+      String bookingId, String taskId, XFile image) async {
+    final raw = await _shiftRepo.uploadTaskPhoto(bookingId, taskId, image);
+    final task = state
+        .firstWhere((booking) => booking.id == bookingId)
+        .tasks
+        .firstWhere((task) => task.id == taskId);
+    final url = raw['url']?.toString();
+    if (url != null && url.isNotEmpty) {
+      _replaceTask(
+          bookingId,
+          task.copyWith(photoUrls: [
+            ...task.photoUrls,
+            url,
+          ]));
+    }
+    return raw;
   }
 
   Future<void> skipTask(String bookingId, String taskId) async {

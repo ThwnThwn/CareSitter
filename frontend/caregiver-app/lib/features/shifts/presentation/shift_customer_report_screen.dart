@@ -12,7 +12,7 @@ class ShiftCustomerReportScreen extends StatefulWidget {
   final String duration;
   final String checkInTime;
   final String caregiverNote;
-  final List<String> taskPhotos; // task titles that have photos
+  final List<String> taskPhotos; // Cloudinary URLs
 
   const ShiftCustomerReportScreen({
     super.key,
@@ -36,14 +36,6 @@ class ShiftCustomerReportScreen extends StatefulWidget {
 class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
   int _starRating = 0;
   bool _ratingSubmitted = false;
-
-  // Visual placeholders are shown only when real evidence media has not loaded.
-  static const _photoColors = [
-    [Color(0xFF2F7F7F), Color(0xFF3A8D8C)],
-    [Color(0xFFF39C12), Color(0xFFE67E22)],
-    [Color(0xFF2ECC71), Color(0xFF27AE60)],
-    [Color(0xFF3498DB), Color(0xFF2980B9)],
-  ];
 
   String _formatCurrency(double amount) {
     final str = amount.round().toString();
@@ -337,9 +329,7 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
   Widget _buildChecklistSection() {
     final total =
         widget.totalTasks > 0 ? widget.totalTasks : widget.completedTasks;
-    final tasks = widget.taskPhotos.isNotEmpty
-        ? widget.taskPhotos
-        : List.generate(total, (index) => 'Nhiệm vụ ${index + 1}');
+    final tasks = List.generate(total, (index) => 'Nhiệm vụ ${index + 1}');
 
     return _buildSection(
       title: '✅ Checklist công việc',
@@ -349,7 +339,7 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
           final i = e.key;
           final title = e.value;
           final done = i < widget.completedTasks;
-          final hasPhoto = widget.taskPhotos.contains(title);
+          final hasPhoto = i < widget.taskPhotos.length;
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -419,111 +409,44 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
 
   // ─── Photo gallery ────────────────────────────────────────
   Widget _buildPhotoGallery() {
+    final urls =
+        widget.taskPhotos.where((url) => url.startsWith('http')).toList();
     return _buildSection(
       title: '📷 Ảnh minh chứng',
-      subtitle: '${_photoColors.length} ảnh',
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.3,
-        ),
-        itemCount: _photoColors.length,
-        itemBuilder: (ctx, i) {
-          final photoLabels = [
-            'Check-in selfie',
-            'Bữa ăn sáng',
-            'Tập thể dục',
-            'Phòng sau dọn',
-          ];
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: _photoColors[i],
-                    ),
-                  ),
-                ),
-                // Overlay icon
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+      subtitle: '${urls.length} ảnh',
+      child: urls.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Text('Chưa có ảnh minh chứng được tải lên.',
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            )
+          : GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.3,
+              ),
+              itemCount: urls.length,
+              itemBuilder: (ctx, i) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Icon(
-                        i == 0
-                            ? Icons.face_rounded
-                            : i == 1
-                                ? Icons.restaurant_rounded
-                                : i == 2
-                                    ? Icons.fitness_center_rounded
-                                    : Icons.cleaning_services_rounded,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        size: 28,
-                      ),
+                      Image.network(urls[i],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.broken_image_outlined,
+                                  color: AppColors.textHint))),
                     ],
                   ),
-                ),
-                // Label bottom
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.5),
-                        ],
-                      ),
-                    ),
-                    child: Text(
-                      photoLabels[i],
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-                // Timestamp top-right
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${(8 + i).toString().padLeft(2, '0')}:${(5 + i * 12).toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 

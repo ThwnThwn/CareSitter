@@ -148,10 +148,10 @@ public sealed record CaregiverResponse(
     decimal RatingAvg, int RatingCount,
     string AvailabilityStatus, JsonElement? Skills,
     string? ServiceCity, string? ServiceDistrict,
-    /// Vĩ độ tâm vùng phục vụ (null nếu caregiver chưa khai báo)
+    // Vĩ độ tâm vùng phục vụ (null nếu caregiver chưa khai báo)
     double? ServiceCenterLat, double? ServiceCenterLng,
     int? ServiceRadiusMeters,
-    /// Khoảng cách (mét) từ điểm khách hàng — chỉ có khi gọi với lat/lng
+    // Khoảng cách (mét) từ điểm khách hàng — chỉ có khi gọi với lat/lng
     int? DistanceMeters);
 
 public sealed record AvailabilityResponse(Guid Id, DateTimeOffset StartAt,

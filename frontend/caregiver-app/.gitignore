@@ -45,7 +45,6 @@ app.*.map.json
 **/linux/flutter/ephemeral/
 
 # ---------- Web ----------
-lib/generated_plugin_registrant.dart
 
 # ---------- Last build IDs ----------
 **/ios/Flutter/.last_build_id
