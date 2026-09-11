@@ -53,12 +53,11 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
         if (!caregiver)
             return false;
 
-        // Nếu caregiver chưa setup slot nào → coi là rảnh toàn thời gian (prototype fallback).
-        // Khi production, caregiver sẽ tự đăng ký slot trước; lúc đó bỏ fallback này.
+        // Không có availability trong DB thì không đủ căn cứ để nhận ca.
         var hasAnySlot = await db.CaregiverAvailabilities.AsNoTracking()
             .AnyAsync(x => x.CaregiverId == caregiverId, ct);
         if (!hasAnySlot)
-            return true;
+            return false;
 
         var hasBlockedSlot = await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
             x.CaregiverId == caregiverId && x.Status == "BLOCKED" &&

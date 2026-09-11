@@ -22,8 +22,14 @@ class BookingDetailScreen extends ConsumerWidget {
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final booking = matches.first;
-    final isWaitingCaregiver =
-        booking.status == 'confirmed' && booking.caregiverId == null;
+    // Chỉ hiển thị hồ sơ và nút liên hệ khi API đã trả về đủ người nhận ca.
+    // Điều này tránh biến dữ liệu enrichment còn thiếu thành một caregiver giả.
+    final hasCaregiverProfile = booking.caregiverId != null &&
+        booking.caregiverName?.trim().isNotEmpty == true;
+    final isWaitingCaregiver = !hasCaregiverProfile &&
+        !booking.isPendingPayment &&
+        !booking.isCancelled &&
+        !booking.isCompleted;
     final statusConfig = isWaitingCaregiver
         ? _waitingCaregiverStatusConfig()
         : _getStatusConfig(booking.status);
@@ -151,9 +157,6 @@ class BookingDetailScreen extends ConsumerWidget {
                       _buildPaymentRow(
                           'Dịch vụ (${booking.duration})', booking.totalPrice),
                       const Divider(height: 16, color: AppColors.divider),
-                      _buildPaymentRow('Phí nền tảng (đã gồm trong tổng)',
-                          booking.platformRevenue),
-                      const Divider(height: 16, color: AppColors.divider),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -278,7 +281,8 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: () => _showExtendShiftSheet(context, booking),
+                        onPressed: () =>
+                            _showExtendShiftSheet(context, booking),
                         icon: const Icon(Icons.add_alarm),
                         label: const Text('Gia hạn ca chăm sóc'),
                         style: OutlinedButton.styleFrom(
@@ -886,12 +890,8 @@ class BookingDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildCaregiverHeroCard(BuildContext context, BookingModel booking) {
-    final caregiverName = booking.caregiverName ?? 'Lê Kim Oanh';
-    String? avatarUrl = booking.caregiverAvatar;
-    if (avatarUrl == null || !avatarUrl.startsWith('http')) {
-      avatarUrl =
-          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200';
-    }
+    final caregiverName = booking.caregiverName ?? 'Chăm sóc viên';
+    final avatarUrl = booking.caregiverAvatar;
 
     return Container(
       width: double.infinity,
@@ -923,48 +923,16 @@ class BookingDetailScreen extends ConsumerWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      avatarUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F7F0),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Text(
-                              booking.caregiverInitials,
-                              style: const TextStyle(
-                                color: Color(0xFF006A43),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.verified,
-                        size: 18,
-                        color: Color(0xFF00B4A0),
-                      ),
-                    ),
+                    child: avatarUrl != null && avatarUrl.startsWith('http')
+                        ? Image.network(
+                            avatarUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildCaregiverInitials(booking),
+                          )
+                        : _buildCaregiverInitials(booking),
                   ),
                 ],
               ),
@@ -986,7 +954,7 @@ class BookingDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Điều dưỡng viên đồng hành',
+                      'Chăm sóc viên CareSitter',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -998,46 +966,15 @@ class BookingDetailScreen extends ConsumerWidget {
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.star,
-                                  size: 13, color: Color(0xFFD97706)),
-                              SizedBox(width: 3),
-                              Text(
-                                '4.9 (128 đánh giá)',
-                                style: TextStyle(
-                                  color: Color(0xFF92400E),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F7F0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Đã xác minh tư pháp',
+                        if (booking.caregiverName == null)
+                          const Text(
+                            'Thông tin hồ sơ đang cập nhật',
                             style: TextStyle(
-                              color: Color(0xFF006A43),
+                              color: Color(0xFF5A7272),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -1139,6 +1076,27 @@ class BookingDetailScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildCaregiverInitials(BookingModel booking) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F7F0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          booking.caregiverInitials,
+          style: const TextStyle(
+            color: Color(0xFF006A43),
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildWaitingCaregiverCard(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1155,45 +1113,69 @@ class BookingDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.person_search_outlined,
-                color: Color(0xFFD97706),
-                size: 28,
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.person_search_outlined,
+                    color: Color(0xFFD97706),
+                    size: 28,
+                  ),
+                ),
               ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Đang tìm chăm sóc viên phù hợp',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0B1F17),
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Hệ thống đang tìm người gần địa điểm và phù hợp với khung giờ của bạn.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: const LinearProgressIndicator(
+              minHeight: 5,
+              backgroundColor: Color(0xFFE8F1ED),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Đang điều phối người chăm sóc',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0B1F17),
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Hệ thống đang kết nối điều dưỡng viên phù hợp nhất gần bạn.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          const Text(
+            'Bạn sẽ nhận thông báo ngay khi có người nhận ca.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1359,7 +1341,8 @@ class BookingDetailScreen extends ConsumerWidget {
             .read(bookingStoreProvider.notifier)
             .createVnPayPayment(booking.id);
         final uri = Uri.tryParse(intent.paymentUrl);
-        if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (uri == null ||
+            !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
           throw Exception('Không mở được trang thanh toán VNPay Sandbox.');
         }
         if (context.mounted) {
@@ -1394,8 +1377,10 @@ class BookingDetailScreen extends ConsumerWidget {
   void _showExtendShiftSheet(BuildContext context, BookingModel booking) {
     int selectedHours = 1;
     // Dùng đơn giá hiệu lực của booking hiện tại thay vì giá fallback cố định.
-    final bookedHours = booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
-    final effectiveHourlyRate = bookedHours > 0 ? booking.totalPrice / bookedHours : 0.0;
+    final bookedHours =
+        booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
+    final effectiveHourlyRate =
+        bookedHours > 0 ? booking.totalPrice / bookedHours : 0.0;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1454,7 +1439,8 @@ class BookingDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ',
+              Text(
+                  'Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ',
                   style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,

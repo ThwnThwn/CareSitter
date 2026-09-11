@@ -14,6 +14,7 @@ class ShiftSummaryScreen extends StatelessWidget {
   final String checkInTime;
   final String caregiverNote;
   final List<String> taskPhotos;
+  final bool checkoutPendingReview;
 
   const ShiftSummaryScreen({
     super.key,
@@ -27,6 +28,7 @@ class ShiftSummaryScreen extends StatelessWidget {
     this.checkInTime = '08:05',
     this.caregiverNote = '',
     this.taskPhotos = const [],
+    this.checkoutPendingReview = false,
   });
 
   String _formatCurrency(double amount) {
@@ -59,21 +61,31 @@ class ShiftSummaryScreen extends StatelessWidget {
                   color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.success,
+                child: Icon(
+                  checkoutPendingReview
+                      ? Icons.hourglass_top_rounded
+                      : Icons.check_circle_rounded,
+                  color: checkoutPendingReview
+                      ? AppColors.warning
+                      : AppColors.success,
                   size: 80,
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Hoàn thành ca làm việc!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              Text(
+                checkoutPendingReview
+                    ? 'Đã gửi yêu cầu checkout'
+                    : 'Hoàn thành ca làm việc!',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
                 'Báo cáo tổng kết ca $bookingId',
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 32),
 
@@ -109,9 +121,13 @@ class ShiftSummaryScreen extends StatelessWidget {
                     const Divider(height: 24),
                     _buildSummaryRow(
                       icon: Icons.monetization_on_outlined,
-                      label: 'Thu nhập nhận được',
+                      label: checkoutPendingReview
+                          ? 'Thu nhập dự kiến'
+                          : 'Thu nhập nhận được',
                       value: '${_formatCurrency(caregiverEarning)} đ',
-                      valueColor: AppColors.primary,
+                      valueColor: checkoutPendingReview
+                          ? AppColors.textSecondary
+                          : AppColors.primary,
                       isBold: true,
                     ),
                   ],
@@ -179,7 +195,8 @@ class ShiftSummaryScreen extends StatelessWidget {
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style:
+                const TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ),
         const SizedBox(width: 8),

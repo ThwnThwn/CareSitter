@@ -188,8 +188,8 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   Future<void> caregiverCheckIn(
     String bookingId, {
-    double latitude = 10.7769,
-    double longitude = 106.6952,
+    required double latitude,
+    required double longitude,
   }) async {
     try {
       final updated = await _repo.checkIn(bookingId,

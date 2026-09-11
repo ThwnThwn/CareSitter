@@ -35,4 +35,4 @@ public sealed record PeopleDisplaySummary(
     string? Condition = null,
     string? Notes = null);
 public sealed record AddressDisplaySummary(Guid Id, string FullAddress);
-public sealed record ServiceDisplaySummary(Guid Id, string Name);
+public sealed record ServiceDisplaySummary(Guid Id, string Name, string? Description = null);

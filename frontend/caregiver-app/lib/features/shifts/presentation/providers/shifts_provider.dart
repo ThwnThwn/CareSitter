@@ -76,6 +76,10 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     try {
       final rawAssignedShifts = await _shiftRepo.getShifts(pageSize: 50);
       final rawOpenOffers = await _shiftRepo.getOpenOffers(pageSize: 20);
+      final previousTasks = <String, List<CareTaskModel>>{
+        for (final shift in state)
+          if (shift.tasks.isNotEmpty) shift.id: shift.tasks,
+      };
       final merged = <String, Map<String, dynamic>>{};
       for (final item in [...rawAssignedShifts, ...rawOpenOffers]) {
         final id = item['id']?.toString();
@@ -85,7 +89,10 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       }
 
       if (merged.isNotEmpty) {
-        state = merged.values.map(_mapFromApi).toList();
+        state = merged.values.map((item) {
+          final mapped = _mapFromApi(item);
+          return mapped.copyWith(tasks: previousTasks[mapped.id]);
+        }).toList();
       } else {
         // Nếu caregiver mới chưa có ca nào trong DB, giữ danh sách rỗng hoặc ca mở
         state = [];
@@ -130,7 +137,7 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftsNotifier] startEnRoute error: $e');
-      return;
+      rethrow;
     }
     _updateStatus(bookingId, to: 'caregiver_en_route');
     _startGpsPush(bookingId);
@@ -139,21 +146,31 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   /// GPS check-in tại địa điểm → status: in_progress.
   /// The server is the final authority for the 50m geofence.
   Future<void> checkIn(String bookingId) async {
+    DateTime? actualStart;
     try {
       final position = await _getCurrentPosition();
-      await _shiftRepo.checkIn(
+      final raw = await _shiftRepo.checkIn(
         bookingId,
         latitude: position.latitude,
         longitude: position.longitude,
         accuracyMeters: position.accuracy,
       );
+      actualStart =
+          DateTime.tryParse(raw['actualStart']?.toString() ?? '')?.toLocal();
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftsNotifier] checkIn error: $e');
       rethrow;
     }
     _stopGpsPush();
-    _updateStatus(bookingId, to: 'in_progress');
+    state = [
+      for (final b in state)
+        if (b.id == bookingId)
+          b.copyWith(
+              status: 'in_progress', actualStart: actualStart ?? DateTime.now())
+        else
+          b,
+    ];
   }
 
   /// Yêu cầu kết thúc ca → booking status chuyển sang checkout_pending_review
@@ -196,13 +213,64 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     ];
   }
 
-  void toggleTask(String bookingId, String taskTitle, bool done) {
+  Future<void> addTimelineNote(String bookingId, String note) async {
+    if (note.trim().isEmpty) return;
+    await _shiftRepo.addTimelineNote(bookingId, note.trim());
+  }
+
+  Future<void> raiseSos(String bookingId) async {
+    await _shiftRepo.raiseSos(bookingId);
+    _updateStatus(bookingId, to: 'crisis');
+  }
+
+  Future<void> loadTasks(String bookingId) async {
+    try {
+      final rawTasks = await _shiftRepo.getTasks(bookingId);
+      final tasks = rawTasks.map(CareTaskModel.fromApi).toList();
+      _replaceTasks(bookingId, tasks);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] loadTasks error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> completeTask(String bookingId, String taskId) async {
+    try {
+      final raw = await _shiftRepo.completeTask(bookingId, taskId);
+      _replaceTask(bookingId, CareTaskModel.fromApi(raw));
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] completeTask error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> skipTask(String bookingId, String taskId) async {
+    try {
+      final raw = await _shiftRepo.skipTask(bookingId, taskId);
+      _replaceTask(bookingId, CareTaskModel.fromApi(raw));
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] skipTask error: $e');
+      rethrow;
+    }
+  }
+
+  void _replaceTasks(String bookingId, List<CareTaskModel> tasks) {
+    state = [
+      for (final b in state)
+        if (b.id == bookingId) b.copyWith(tasks: tasks) else b,
+    ];
+  }
+
+  void _replaceTask(String bookingId, CareTaskModel task) {
     state = [
       for (final b in state)
         if (b.id == bookingId)
           b.copyWith(tasks: [
-            for (final t in b.tasks)
-              if (t.title == taskTitle) t.copyWith(isCompleted: done) else t,
+            for (final current in b.tasks)
+              if (current.id == task.id) task else current,
           ])
         else
           b,
@@ -356,6 +424,12 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     final String? beneficiaryNotes =
         json['beneficiaryNotes']?.toString() ?? json['note']?.toString();
 
+    DateTime? actualStart;
+    if (json['actualStart'] != null) {
+      actualStart =
+          DateTime.tryParse(json['actualStart'].toString())?.toLocal();
+    }
+
     return ShiftModel(
       id: id,
       beneficiaryId: json['beneficiaryId']?.toString(),
@@ -368,8 +442,11 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       caregiverAvatar:
           _initials(_displayText(json['caregiverName'], fallback: 'CG')),
       serviceId: json['serviceTypeId']?.toString(),
-      serviceName:
-          _displayText(json['serviceName'], fallback: 'Gói Chăm sóc Genki'),
+      serviceName: _displayText(
+        json['serviceName'],
+        fallback: 'Dịch vụ chưa cập nhật',
+      ),
+      serviceDescription: _nullableDisplayText(json['serviceDescription']),
       date: dateStr,
       time: timeStr,
       duration: durationStr,
@@ -382,28 +459,29 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
         json['addressText'],
         fallback: 'Địa chỉ khách hàng đã đăng ký',
       ),
+      addressLatitude: (json['addressLatitude'] as num?)?.toDouble(),
+      addressLongitude: (json['addressLongitude'] as num?)?.toDouble(),
       customerNote: _displayText(json['note'], fallback: ''),
       isSystemMatched: json['caregiverId'] != null,
+      actualStart: actualStart,
       checkoutRequestedAt: checkoutRequestedAt,
       completedAt: completedAt,
       beneficiaryAge: beneficiaryAge,
       beneficiaryRelationship: beneficiaryRelationship,
       beneficiaryCondition: beneficiaryCondition,
       beneficiaryNotes: beneficiaryNotes,
-      tasks: const [
-        CareTaskModel(
-            title: 'Đo huyết áp & kiểm tra sức khoẻ', isCompleted: false),
-        CareTaskModel(
-            title: 'Hỗ trợ vệ sinh sinh hoạt cá nhân', isCompleted: false),
-        CareTaskModel(title: 'Nhắc uống thuốc theo toa', isCompleted: false),
-        CareTaskModel(title: 'Chuẩn bị bữa ăn dinh dưỡng', isCompleted: false),
-      ],
+      tasks: const [],
     );
   }
 
   String _displayText(Object? value, {required String fallback}) {
     final text = value?.toString().trim();
     return text == null || text.isEmpty ? fallback : text;
+  }
+
+  String? _nullableDisplayText(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 
   String _shortIdLabel(String label, Object? rawId) {

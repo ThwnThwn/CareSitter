@@ -9,7 +9,6 @@ import '../../../core/widgets/app_widgets.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
-import '../../earnings/presentation/providers/earnings_provider.dart';
 
 class ShiftActiveScreen extends ConsumerStatefulWidget {
   final String id;
@@ -26,6 +25,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   bool _isCheckedIn = false;
   bool _isSubmittingCheckIn = false;
   DateTime? _checkInTime;
+  bool _didRestoreServerState = false;
+  bool _didRequestTasks = false;
 
   // ── Animated step transitions ─────────────────────────────
   late AnimationController _stepAnim;
@@ -60,8 +61,10 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     super.dispose();
   }
 
-  void _startTimer() {
-    _checkInTime = DateTime.now();
+  void _startTimer([DateTime? startedAt]) {
+    _checkInTime = startedAt ?? DateTime.now();
+    _elapsed = DateTime.now().difference(_checkInTime!);
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) {
         setState(() {
@@ -69,6 +72,44 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         });
       }
     });
+  }
+
+  void _restoreFromServerState(ShiftModel booking) {
+    if (_didRestoreServerState) return;
+    _didRestoreServerState = true;
+
+    final wasCheckedIn = booking.status == 'in_progress' ||
+        booking.status == 'checkout_pending_review' ||
+        booking.status == 'completed';
+    if (!wasCheckedIn) return;
+
+    final startedAt = booking.actualStart ?? booking.scheduledStart;
+    setState(() {
+      _isCheckedIn = true;
+      _checkInStep = 3;
+      _checkInTime = startedAt;
+      if (startedAt != null) {
+        final end = booking.checkoutRequestedAt ?? DateTime.now();
+        _elapsed = end.difference(startedAt);
+      }
+    });
+
+    if (booking.status == 'in_progress' && startedAt != null) {
+      _startTimer(startedAt);
+    }
+  }
+
+  Future<void> _loadTasks() async {
+    if (_didRequestTasks) return;
+    _didRequestTasks = true;
+    try {
+      await ref.read(shiftsProvider.notifier).loadTasks(widget.id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể tải checklist công việc.')),
+      );
+    }
   }
 
   String get _elapsedLabel {
@@ -229,8 +270,19 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
       );
     }
 
+    if (!_didRestoreServerState) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _restoreFromServerState(booking!);
+      });
+    }
+    if (!_didRequestTasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadTasks();
+      });
+    }
+
     final allDone =
-        booking.tasks.isNotEmpty && booking.tasks.every((t) => t.isCompleted);
+        booking.tasks.isNotEmpty && booking.tasks.every((t) => t.isResolved);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -808,7 +860,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
 
   // ── Progress bar ─────────────────────────────────────────
   Widget _buildProgressBar(ShiftModel booking) {
-    final done = booking.tasks.where((t) => t.isCompleted).length;
+    final done = booking.tasks.where((t) => t.isResolved).length;
     final total = booking.tasks.length;
     final ratio = total == 0 ? 0.0 : done / total;
     return Column(
@@ -843,6 +895,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   // ── Checklist item ────────────────────────────────────────
   Widget _buildChecklistItem(ShiftModel booking, CareTaskModel task) {
     final hasPhoto = _taskPhotos.containsKey(task.title);
+    final isSkipped = task.isSkipped;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -871,8 +924,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     decoration:
-                        task.isCompleted ? TextDecoration.lineThrough : null,
-                    color: task.isCompleted
+                        task.isResolved ? TextDecoration.lineThrough : null,
+                    color: task.isResolved
                         ? AppColors.textSecondary
                         : AppColors.textPrimary,
                   ),
@@ -903,25 +956,71 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                 ),
             ],
           ),
+          subtitle: isSkipped
+              ? const Text('Đã bỏ qua',
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textSecondary))
+              : task.description == null || task.description!.trim().isEmpty
+                  ? null
+                  : Text(task.description!,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary)),
           activeColor: AppColors.primary,
-          onChanged: _isCheckedIn
-              ? (val) {
-                  if (val != null) {
-                    ref
+          onChanged: _isCheckedIn && !task.isResolved
+              ? (val) async {
+                  if (val != true) return;
+                  try {
+                    await ref
                         .read(shiftsProvider.notifier)
-                        .toggleTask(booking.id, task.title, val);
+                        .completeTask(booking.id, task.id);
+                  } catch (_) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Không thể cập nhật công việc.')),
+                    );
                   }
                 }
               : null,
-          secondary: IconButton(
-            icon: Icon(
-              hasPhoto ? Icons.camera_alt_rounded : Icons.camera_alt_outlined,
-              color: hasPhoto ? AppColors.success : AppColors.textHint,
-              size: 22,
-            ),
-            tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
-            onPressed:
-                _isCheckedIn ? () => _simulatePhotoCapture(task.title) : null,
+          secondary: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (task.requiresPhoto)
+                IconButton(
+                  icon: Icon(
+                    hasPhoto
+                        ? Icons.camera_alt_rounded
+                        : Icons.camera_alt_outlined,
+                    color: hasPhoto ? AppColors.success : AppColors.textHint,
+                    size: 22,
+                  ),
+                  tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
+                  onPressed: _isCheckedIn
+                      ? () => _simulatePhotoCapture(task.title)
+                      : null,
+                ),
+              if (!task.isRequired && !task.isResolved)
+                IconButton(
+                  icon: const Icon(Icons.skip_next_rounded,
+                      color: AppColors.textHint, size: 22),
+                  tooltip: 'Bỏ qua công việc tùy chọn',
+                  onPressed: _isCheckedIn
+                      ? () async {
+                          try {
+                            await ref
+                                .read(shiftsProvider.notifier)
+                                .skipTask(booking.id, task.id);
+                          } catch (_) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Không thể bỏ qua công việc.')),
+                            );
+                          }
+                        }
+                      : null,
+                ),
+            ],
           ),
         ),
       ),
@@ -1006,24 +1105,40 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           child: AppButton(
             label: '✅  Hoàn thành ca & Check-out',
             onPressed: allDone
-                ? () {
-                    ref.read(shiftsProvider.notifier).checkOut(booking.id);
-                    ref.read(earningsProvider.notifier).addEarning(
-                        booking.caregiverEarning,
-                        booking.id,
-                        booking.beneficiaryName);
+                ? () async {
+                    try {
+                      await ref.read(shiftsProvider.notifier).addTimelineNote(
+                            booking.id,
+                            _noteController.text,
+                          );
+                      await ref
+                          .read(shiftsProvider.notifier)
+                          .checkOut(booking.id);
+                    } catch (error) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Chưa gửi được yêu cầu checkout: $error'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+                    if (!mounted) return;
                     context.go(
                       '/shifts/${booking.id}/summary',
                       extra: {
                         'beneficiaryName': booking.beneficiaryName,
                         'caregiverEarning': booking.caregiverEarning,
                         'completedTasks':
-                            booking.tasks.where((t) => t.isCompleted).length,
+                            booking.tasks.where((t) => t.isResolved).length,
                         'totalTasks': booking.tasks.length,
                         'duration': booking.duration,
                         'checkInTime': _checkInTimeLabel,
                         'caregiverNote': _noteController.text,
                         'taskPhotos': _taskPhotos.keys.toList(),
+                        'checkoutPendingReview': true,
                       },
                     );
                   }
@@ -1036,6 +1151,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
 
   // ── Incident report ───────────────────────────────────────
   void _showIncidentReport() {
+    final incidentController = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1057,9 +1173,10 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                   style:
                       TextStyle(fontSize: 13, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
-              const TextField(
+              TextField(
+                controller: incidentController,
                 maxLines: 4,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Mô tả vấn đề khẩn cấp…',
                   border: OutlineInputBorder(),
                 ),
@@ -1068,20 +1185,37 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               AppButton(
                 label: 'Gửi báo cáo khẩn cấp',
                 backgroundColor: AppColors.error,
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã gửi báo cáo khẩn cấp'),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
+                onPressed: () async {
+                  try {
+                    await ref.read(shiftsProvider.notifier).raiseSos(widget.id);
+                    await ref.read(shiftsProvider.notifier).addTimelineNote(
+                          widget.id,
+                          incidentController.text,
+                        );
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Đã gửi báo cáo khẩn cấp đến khách hàng và admin.'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  } catch (error) {
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                          content: Text('Chưa gửi được báo cáo: $error'),
+                          backgroundColor: AppColors.error),
+                    );
+                  }
                 },
               ),
             ],
           ),
         ),
       ),
-    );
+    ).whenComplete(incidentController.dispose);
   }
 }

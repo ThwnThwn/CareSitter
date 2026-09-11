@@ -28,6 +28,8 @@ class BookingModel {
   final String? caregiverAvatar;
   final String? beneficiaryName;
   final String? addressText;
+  final double? addressLatitude;
+  final double? addressLongitude;
   final String? serviceName;
 
   /// Version tăng mỗi khi booking được mutation trên server.
@@ -57,6 +59,8 @@ class BookingModel {
     this.caregiverAvatar,
     this.beneficiaryName,
     this.addressText,
+    this.addressLatitude,
+    this.addressLongitude,
     this.serviceName,
     this.isReviewed = false,
     this.tasks = const [],
@@ -181,6 +185,8 @@ class BookingModel {
       caregiverAvatar: caregiverAvatar ?? this.caregiverAvatar,
       beneficiaryName: beneficiaryName,
       addressText: addressText,
+      addressLatitude: addressLatitude,
+      addressLongitude: addressLongitude,
       serviceName: serviceName,
       isReviewed: isReviewed ?? this.isReviewed,
       tasks: tasks ?? this.tasks,
@@ -221,6 +227,8 @@ class BookingModel {
       caregiverAvatar: _string(json['caregiverAvatar']),
       beneficiaryName: _string(json['beneficiaryName']),
       addressText: _string(json['addressText']),
+      addressLatitude: _double(json['addressLatitude']),
+      addressLongitude: _double(json['addressLongitude']),
       serviceName: _string(json['serviceName']),
       syncVersion: _int(json['syncVersion']),
     );
@@ -244,6 +252,11 @@ class BookingModel {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static double? _double(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
   }
 
   /// Chuyển status về lower_snake_case thống nhất.

@@ -37,18 +37,50 @@ class ShiftBeneficiaryModel {
 }
 
 class CareTaskModel {
+  final String id;
   final String title;
+  final String? description;
+  final bool isRequired;
+  final bool requiresPhoto;
+  final String status;
   final bool isCompleted;
 
   const CareTaskModel({
+    required this.id,
     required this.title,
+    this.description,
+    this.isRequired = false,
+    this.requiresPhoto = false,
+    this.status = 'PENDING',
     this.isCompleted = false,
   });
 
-  CareTaskModel copyWith({bool? isCompleted}) {
+  bool get isSkipped => status.toUpperCase() == 'SKIPPED';
+  bool get isResolved => isCompleted || isSkipped;
+
+  factory CareTaskModel.fromApi(Map<String, dynamic> json) {
+    final status = json['status']?.toString().toUpperCase() ?? 'PENDING';
     return CareTaskModel(
+      id: json['id']?.toString() ?? '',
+      title: json['name']?.toString() ?? 'Nhiệm vụ chăm sóc',
+      description: json['description']?.toString(),
+      isRequired: json['isRequired'] as bool? ?? false,
+      requiresPhoto: json['requiresPhoto'] as bool? ?? false,
+      status: status,
+      isCompleted: status == 'DONE',
+    );
+  }
+
+  CareTaskModel copyWith({String? status, bool? isCompleted}) {
+    final nextStatus = status ?? this.status;
+    return CareTaskModel(
+      id: id,
       title: title,
-      isCompleted: isCompleted ?? this.isCompleted,
+      description: description,
+      isRequired: isRequired,
+      requiresPhoto: requiresPhoto,
+      status: nextStatus,
+      isCompleted: isCompleted ?? nextStatus.toUpperCase() == 'DONE',
     );
   }
 }
@@ -62,6 +94,7 @@ class ShiftModel {
   final String caregiverAvatar;
   final String? serviceId;
   final String serviceName;
+  final String? serviceDescription;
   final String date;
   final String time;
   final String duration;
@@ -70,10 +103,13 @@ class ShiftModel {
   final String status;
   final double totalPrice;
   final String address;
+  final double? addressLatitude;
+  final double? addressLongitude;
   final String? customerNote;
   final bool isSystemMatched;
   final String paymentLabel;
   final DateTime? consentAcceptedAt;
+  final DateTime? actualStart;
   final DateTime? checkoutRequestedAt;
   final DateTime? completedAt;
   final bool isReviewed;
@@ -95,6 +131,7 @@ class ShiftModel {
     required this.caregiverAvatar,
     this.serviceId,
     required this.serviceName,
+    this.serviceDescription,
     required this.date,
     required this.time,
     required this.duration,
@@ -103,10 +140,13 @@ class ShiftModel {
     required this.status,
     required this.totalPrice,
     required this.address,
+    this.addressLatitude,
+    this.addressLongitude,
     this.customerNote,
     this.isSystemMatched = false,
     this.paymentLabel = 'Ví CareSitter',
     this.consentAcceptedAt,
+    this.actualStart,
     this.checkoutRequestedAt,
     this.completedAt,
     this.isReviewed = false,
@@ -122,6 +162,7 @@ class ShiftModel {
 
   ShiftModel copyWith({
     String? status,
+    DateTime? actualStart,
     DateTime? checkoutRequestedAt,
     DateTime? completedAt,
     bool? isReviewed,
@@ -143,6 +184,7 @@ class ShiftModel {
       caregiverAvatar: caregiverAvatar,
       serviceId: serviceId,
       serviceName: serviceName,
+      serviceDescription: serviceDescription,
       date: date,
       time: time,
       duration: duration,
@@ -151,10 +193,13 @@ class ShiftModel {
       status: status ?? this.status,
       totalPrice: totalPrice,
       address: address,
+      addressLatitude: addressLatitude,
+      addressLongitude: addressLongitude,
       customerNote: customerNote,
       isSystemMatched: isSystemMatched,
       paymentLabel: paymentLabel,
       consentAcceptedAt: consentAcceptedAt,
+      actualStart: actualStart ?? this.actualStart,
       checkoutRequestedAt: checkoutRequestedAt ?? this.checkoutRequestedAt,
       completedAt: completedAt ?? this.completedAt,
       isReviewed: isReviewed ?? this.isReviewed,
