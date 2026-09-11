@@ -180,6 +180,29 @@ public sealed class AddressesController(
         }
     }
 
+    /// <summary>
+    /// Xác nhận địa chỉ này thuộc user và đánh dấu để set làm default.
+    /// Dùng kèm với PUT /api/v1/profile/default-address/{id} ở Identity module.
+    /// Endpoint này chỉ validate ownership, trả về 200 nếu hợp lệ.
+    /// </summary>
+    [HttpPut("{id:guid}/default")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetDefault(Guid id, CancellationToken ct)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+
+        // Validate: address tồn tại và thuộc user này
+        var exists = await db.Addresses.AsNoTracking()
+            .AnyAsync(x => x.Id == id && x.OwnerUserId == userId, ct);
+        if (!exists) return NotFound();
+
+        // NOTE: DefaultAddressId được update ở identity.users
+        // Flutter gọi đây để validate rồi gọi tiếp PUT /profile/default-address/{id}
+        // Hoặc backend có thể dùng Shared DB connection để cross-schema update
+        return Ok(new { defaultAddressId = id, validated = true });
+    }
+
     private static Point? CreatePoint(double latitude, double longitude)
     {
         if (latitude is < -90 or > 90 || longitude is < -180 or > 180) return null;

@@ -83,6 +83,9 @@ CREATE INDEX idx_assign_status ON booking.booking_assignments (status);
 
 CREATE INDEX idx_assign_expires ON booking.booking_assignments (expires_at);
 
+CREATE INDEX idx_slot_hold_caregiver_status_expiry
+  ON booking.caregiver_slot_holds (caregiver_id, status, expires_at);
+
 CREATE UNIQUE INDEX uq_one_accepted_assignment_per_booking
   ON booking.booking_assignments (booking_id)
   WHERE status = 'ACCEPTED';
@@ -108,6 +111,10 @@ CREATE INDEX idx_payint_booking ON payments.payment_intents (booking_id);
 CREATE INDEX idx_payint_customer ON payments.payment_intents (customer_id);
 
 CREATE INDEX idx_payint_status ON payments.payment_intents (status);
+
+CREATE UNIQUE INDEX uq_payint_provider_order_ref
+  ON payments.payment_intents (provider, provider_order_ref)
+  WHERE provider_order_ref IS NOT NULL;
 
 CREATE INDEX idx_payint_ptxn ON payments.payment_intents (provider_transaction_id) WHERE provider_transaction_id IS NOT NULL;
 

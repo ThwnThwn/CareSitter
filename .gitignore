@@ -21,6 +21,7 @@ firebase-service-account*.json
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 **/macos/Runner/GoogleService-Info.plist
+.build-check
 
 # ---------- OS ----------
 .DS_Store

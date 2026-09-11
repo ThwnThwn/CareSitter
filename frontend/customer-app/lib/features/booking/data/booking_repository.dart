@@ -35,6 +35,15 @@ class BookingRepository {
   final DioClient _dio;
   const BookingRepository(this._dio);
 
+  /// Tạo hoặc lấy lại PaymentIntent VNPay theo booking, không gửi amount từ app.
+  Future<PaymentIntentModel> createVnPayIntent(String bookingId) async {
+    final resp = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.paymentIntents,
+      data: {'bookingId': bookingId},
+    );
+    return PaymentIntentModel.fromJson(resp.data ?? {});
+  }
+
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   /// Tạo booking mới từ BookingDraft.
@@ -220,5 +229,27 @@ class BookingRepository {
       },
     );
     return GpsTrackModel.fromJson(resp.data ?? {});
+  }
+}
+
+/// Dữ liệu URL và trạng thái thanh toán VNPay trả về cho customer app.
+class PaymentIntentModel {
+  final String id;
+  final String status;
+  final String paymentUrl;
+
+  const PaymentIntentModel({
+    required this.id,
+    required this.status,
+    required this.paymentUrl,
+  });
+
+  /// Parse response payment intent từ backend.
+  factory PaymentIntentModel.fromJson(Map<String, dynamic> json) {
+    return PaymentIntentModel(
+      id: json['id']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      paymentUrl: json['paymentUrl']?.toString() ?? '',
+    );
   }
 }

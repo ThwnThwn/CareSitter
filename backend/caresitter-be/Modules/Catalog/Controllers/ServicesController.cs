@@ -19,12 +19,28 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
+        var now = DateTimeOffset.UtcNow;
         var items = await db.ServiceTypes.AsNoTracking().Where(x => x.IsActive)
             .OrderBy(x => x.Name).Select(x => new
             {
-                x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes
+                x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes,
+                pricing = db.PricingRules.AsNoTracking()
+                    .Where(p => p.ServiceTypeId == x.Id && p.IsActive &&
+                        p.EffectiveFrom <= now && (p.EffectiveTo == null || p.EffectiveTo > now))
+                    .OrderByDescending(p => p.EffectiveFrom)
+                    .Select(p => new { p.BaseHourlyPrice, p.PlatformFeePercent })
+                    .FirstOrDefault()
             }).ToListAsync(ct);
-        return Ok(items);
+        return Ok(items.Select(x => new
+        {
+            x.Id,
+            x.Code,
+            x.Name,
+            x.Description,
+            x.DefaultDurationMinutes,
+            BaseHourlyPrice = x.pricing?.BaseHourlyPrice ?? 0,
+            PlatformFeePercent = x.pricing?.PlatformFeePercent ?? 0m
+        }));
     }
 
     /// <summary>Xem chi tiết một dịch vụ theo ID. Trả về 404 nếu không tồn tại hoặc đã vô hiệu hóa.</summary>
@@ -33,10 +49,28 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
+        var now = DateTimeOffset.UtcNow;
         var item = await db.ServiceTypes.AsNoTracking().Where(x => x.Id == id && x.IsActive)
             .Select(x => new { x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes })
             .SingleOrDefaultAsync(ct);
-        return item is null ? NotFound() : Ok(item);
+        if (item is null) return NotFound();
+
+        var pricing = await db.PricingRules.AsNoTracking()
+            .Where(p => p.ServiceTypeId == id && p.IsActive &&
+                p.EffectiveFrom <= now && (p.EffectiveTo == null || p.EffectiveTo > now))
+            .OrderByDescending(p => p.EffectiveFrom)
+            .Select(p => new { p.BaseHourlyPrice, p.PlatformFeePercent })
+            .FirstOrDefaultAsync(ct);
+        return Ok(new
+        {
+            item.Id,
+            item.Code,
+            item.Name,
+            item.Description,
+            item.DefaultDurationMinutes,
+            BaseHourlyPrice = pricing?.BaseHourlyPrice ?? 0,
+            PlatformFeePercent = pricing?.PlatformFeePercent ?? 0m
+        });
     }
 
     /// <summary>

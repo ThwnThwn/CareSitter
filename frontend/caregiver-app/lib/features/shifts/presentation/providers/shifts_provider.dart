@@ -306,7 +306,9 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
 
     final escrow = (json['escrowAmount'] as num?)?.toDouble() ?? 0.0;
     final fee = (json['platformFeeAmount'] as num?)?.toDouble() ?? 0.0;
-    final earning = escrow > 0 ? (escrow - fee) : 0.0;
+    // Dùng số tiền backend chốt; fallback chỉ để tương thích API cũ.
+    final earning = (json['caregiverEarningAmount'] as num?)?.toDouble() ??
+        (escrow > 0 ? (escrow - fee) : 0.0);
 
     DateTime? start;
     if (json['scheduledStart'] != null) {

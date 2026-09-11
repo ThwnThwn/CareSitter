@@ -23,7 +23,17 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
             "customer:escrow", "escrow:platform", amount, bookingId);
         if (entry.IsFailure) return entry.Error;
         db.LedgerEntries.Add(entry.Value);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Hai IPN đồng thời có thể cùng qua bước AnyAsync; unique index là chốt race cuối.
+            var committedByOtherRequest = await db.LedgerEntries.AsNoTracking()
+                .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "ESCROW_LOCK", ct);
+            if (!committedByOtherRequest) throw;
+        }
         return Result.Success();
     }
 
@@ -54,7 +64,17 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
                 x.AccountType == "CAREGIVER", ct);
         // Note: in production, would lookup by caregiverId -> userId -> wallet
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Request complete lặp lại chỉ cần xác nhận settlement đã được ghi bởi request thắng race.
+            var committedByOtherRequest = await db.LedgerEntries.AsNoTracking()
+                .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);
+            if (!committedByOtherRequest) throw;
+        }
         return Result.Success();
     }
 }

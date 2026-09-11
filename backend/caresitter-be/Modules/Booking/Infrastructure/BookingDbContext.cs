@@ -17,6 +17,7 @@ public sealed class BookingDbContext : ModuleDbContext
 
     public DbSet<Domain.Booking> Bookings => Set<Domain.Booking>();
     public DbSet<BookingAssignment> BookingAssignments => Set<BookingAssignment>();
+    public DbSet<CaregiverSlotHold> CaregiverSlotHolds => Set<CaregiverSlotHold>();
     public DbSet<CareTask> CareTasks => Set<CareTask>();
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
@@ -77,6 +78,13 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.BookingVersion).HasColumnName("booking_version");
             b.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(50);
             b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
+            // Khai báo quan hệ để EF sắp xếp INSERT booking trước sync event
+            // khi tạo booking và event trong cùng một SaveChangesAsync.
+            b.HasOne<Domain.Booking>()
+                .WithMany()
+                .HasForeignKey(x => x.BookingId)
+                .HasPrincipalKey(x => x.Id)
+                .OnDelete(DeleteBehavior.Cascade);
             b.HasIndex(x => new { x.CustomerId, x.Cursor }).HasDatabaseName("ix_bse_customer_cursor");
         });
 
@@ -96,6 +104,26 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.OfferedAt).HasColumnName("offered_at");
             b.Property(x => x.RespondedAt).HasColumnName("responded_at");
             b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        });
+
+        modelBuilder.Entity<CaregiverSlotHold>(b =>
+        {
+            b.ToTable("caregiver_slot_holds");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.BookingId).HasColumnName("booking_id");
+            b.Property(x => x.CaregiverId).HasColumnName("caregiver_id");
+            b.Property(x => x.ScheduledStart).HasColumnName("scheduled_start");
+            b.Property(x => x.ScheduledEnd).HasColumnName("scheduled_end");
+            b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.Property(x => x.ReleasedAt).HasColumnName("released_at");
+            b.Ignore(x => x.UpdatedAt); // bảng hold không cần updated_at
+            b.HasIndex(x => new { x.BookingId, x.Status })
+                .HasDatabaseName("ix_slot_hold_booking_status");
+            b.HasIndex(x => new { x.CaregiverId, x.Status, x.ExpiresAt })
+                .HasDatabaseName("ix_slot_hold_caregiver_status_expiry");
         });
 
         modelBuilder.Entity<CareTask>(b =>

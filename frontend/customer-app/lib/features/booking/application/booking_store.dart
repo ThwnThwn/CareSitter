@@ -168,10 +168,13 @@ class BookingStore extends Notifier<List<BookingModel>> {
         caregiverId: draft.caregiverId!,
       );
     }
-    final confirmed = await _repo.confirmPayment(created.id);
-    state = [confirmed, ...state];
-    return confirmed;
+    state = [created, ...state];
+    return created;
   }
+
+  /// Tạo PaymentIntent VNPay và trả về URL để mở Sandbox checkout.
+  Future<PaymentIntentModel> createVnPayPayment(String bookingId) =>
+      _repo.createVnPayIntent(bookingId);
 
   Future<void> caregiverEnRoute(String bookingId) async {
     try {

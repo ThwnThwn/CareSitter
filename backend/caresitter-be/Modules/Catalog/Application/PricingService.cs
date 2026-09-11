@@ -8,6 +8,11 @@ namespace CareSitter.Modules.Catalog.Application;
 
 internal sealed class PricingService(CatalogDbContext db) : IPricingService
 {
+    /// <summary>Múi giờ nghiệp vụ của lịch chăm sóc tại Việt Nam.</summary>
+    private static TimeZoneInfo VietnamTimeZone =>
+        TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Ho_Chi_Minh");
+
     public async Task<Result<PriceQuote>> QuoteAsync(Guid serviceTypeId, DateTimeOffset start,
         DateTimeOffset end, CancellationToken ct = default)
     {
@@ -26,7 +31,12 @@ internal sealed class PricingService(CatalogDbContext db) : IPricingService
             return Error.NotFound("pricing.rule", "Chua co bang gia hieu luc cho dich vu.");
 
         var hours = (decimal)(end - start).TotalHours;
-        var multiplier = start.Hour >= 22 || start.Hour < 6 ? rule.NightMultiplier : 1m;
+        var localStart = TimeZoneInfo.ConvertTime(start, VietnamTimeZone);
+        var nightMultiplier = localStart.Hour >= 22 || localStart.Hour < 6
+            ? rule.NightMultiplier
+            : 1m;
+        var holidayMultiplier = ResolveHolidayMultiplier(rule.Holidays, localStart.Date);
+        var multiplier = nightMultiplier * holidayMultiplier;
         var escrow = (long)Math.Round(hours * rule.BaseHourlyPrice * multiplier);
         var fee = (long)Math.Round(escrow * rule.PlatformFeePercent / 100m);
         var snapshot = JsonSerializer.Serialize(new
@@ -34,9 +44,42 @@ internal sealed class PricingService(CatalogDbContext db) : IPricingService
             ruleId = rule.Id,
             rule.BaseHourlyPrice,
             hours,
+            localStart = localStart.ToString("yyyy-MM-dd HH:mm zzz"),
+            nightMultiplier,
+            holidayMultiplier,
             multiplier,
             rule.PlatformFeePercent
         });
         return new PriceQuote(escrow, fee, escrow - fee, rule.DisputeWindowHours, snapshot);
+    }
+
+    /// <summary>Đọc hệ số ngày lễ theo ngày địa phương từ cấu hình JSON của pricing rule.</summary>
+    private static decimal ResolveHolidayMultiplier(string? holidays, DateTime localDate)
+    {
+        if (string.IsNullOrWhiteSpace(holidays)) return 1m;
+
+        try
+        {
+            using var document = JsonDocument.Parse(holidays);
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return 1m;
+
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("date", out var dateElement) ||
+                    !DateTime.TryParse(dateElement.GetString(), out var date) ||
+                    date.Date != localDate.Date)
+                    continue;
+
+                if (item.TryGetProperty("multiplier", out var multiplierElement) &&
+                    multiplierElement.TryGetDecimal(out var multiplier) && multiplier > 0m)
+                    return multiplier;
+            }
+        }
+        catch (JsonException)
+        {
+            // Cấu hình ngày lễ lỗi không được làm hỏng việc báo giá; dùng giá thường.
+        }
+
+        return 1m;
     }
 }

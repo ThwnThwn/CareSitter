@@ -1,11 +1,15 @@
 using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
+using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Booking.Infrastructure;
+using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Payments.Controllers;
 
@@ -15,8 +19,14 @@ namespace CareSitter.Modules.Payments.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
-public sealed class PaymentsController(PaymentsDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class PaymentsController(
+    PaymentsDbContext db,
+    BookingDbContext bookingDb,
+    ICurrentUser currentUser,
+    IVNPayService vnPay,
+    IOptions<VNPayOptions> vnPayOptions) : ControllerBase
 {
+    private const int PaymentTimeoutMinutes = 15;
     // ════════════════════════════════════════════
     //  PAYMENT INTENTS
     // ════════════════════════════════════════════
@@ -30,21 +40,76 @@ public sealed class PaymentsController(PaymentsDbContext db, ICurrentUser curren
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
 
-        var idempotencyKey = $"pi-{req.BookingId}-{userId}";
+        var booking = await bookingDb.Bookings.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == req.BookingId && x.CustomerId == userId, ct);
+        if (booking is null) return NotFound();
+        var idempotencyKey = $"pi-{req.BookingId}-{userId}-VNPAY";
 
         var existing = await db.PaymentIntents.AsNoTracking()
             .FirstOrDefaultAsync(x => x.IdempotencyKey == idempotencyKey, ct);
         if (existing is not null)
-            return Ok(ToIntentResponse(existing));
+            return Ok(ToIntentResponse(existing, vnPay, vnPayOptions.Value));
+
+        if (booking.Status != BookingStatus.PendingPayment)
+            return Conflict(new { error = "Booking khong o trang thai cho thanh toan." });
+
+        CaregiverSlotHold? createdHold = null;
+        if (booking.CaregiverId is { } caregiverId)
+        {
+            var holdResult = CaregiverSlotHold.Create(
+                booking.Id,
+                caregiverId,
+                booking.ScheduledStart,
+                booking.ScheduledEnd,
+                DateTimeOffset.UtcNow.AddMinutes(PaymentTimeoutMinutes));
+            if (holdResult.IsFailure) return Problem(holdResult.Error);
+
+            createdHold = holdResult.Value;
+            bookingDb.CaregiverSlotHolds.Add(createdHold);
+            try
+            {
+                // Exclusion constraint trên caregiver + time range quyết định request thắng race.
+                await bookingDb.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new
+                {
+                    error = "Caregiver da duoc giu cho booking khac trong cung khung gio.",
+                    code = "CAREGIVER_TIME_SLOT_HELD"
+                });
+            }
+        }
 
         var created = PaymentIntent.Create(req.BookingId, userId,
-            req.Provider ?? "MOMO", req.Amount, idempotencyKey);
+            "VNPAY", booking.EscrowAmount, idempotencyKey);
         if (created.IsFailure) return Problem(created.Error);
 
+        var orderRef = $"CS{created.Value.Id:N}"[..34];
+        var orderRefResult = created.Value.SetProviderOrderRef(orderRef);
+        if (orderRefResult.IsFailure) return Problem(orderRefResult.Error);
+        var pendingResult = created.Value.MarkPending();
+        if (pendingResult.IsFailure) return Problem(pendingResult.Error);
         db.PaymentIntents.Add(created.Value);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            if (createdHold is not null)
+            {
+                createdHold.Release();
+                await bookingDb.SaveChangesAsync(ct);
+            }
+            var raced = await db.PaymentIntents.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.IdempotencyKey == idempotencyKey, ct);
+            if (raced is not null)
+                return Ok(ToIntentResponse(raced, vnPay, vnPayOptions.Value));
+            throw;
+        }
         return Created($"/api/v1/payments/intents/{created.Value.Id}",
-            ToIntentResponse(created.Value));
+            ToIntentResponse(created.Value, vnPay, vnPayOptions.Value));
     }
 
     /// <summary>Xem chi tiết một Payment Intent theo ID, chỉ hiển thị nếu thuộc user hiện tại.</summary>
@@ -106,9 +171,14 @@ public sealed class PaymentsController(PaymentsDbContext db, ICurrentUser curren
 
     // ── Helpers ──
 
-    private static PaymentIntentResponse ToIntentResponse(PaymentIntent pi) =>
+    private static PaymentIntentResponse ToIntentResponse(
+        PaymentIntent pi, IVNPayService? vnPay = null, VNPayOptions? options = null) =>
         new(pi.Id, pi.BookingId, pi.CustomerId, pi.Provider, pi.Amount, pi.Currency,
-            pi.Status, pi.ProviderTransactionId, pi.IdempotencyKey, pi.CreatedAt);
+            pi.Status, pi.ProviderTransactionId, pi.IdempotencyKey, pi.CreatedAt,
+            pi.ProviderOrderRef is not null && vnPay is not null && options is not null
+                ? vnPay.BuildPaymentUrl(pi, options)
+                : null,
+            pi.ProviderOrderRef);
 
     private IActionResult Problem(Error error) => error.Type switch
     {
@@ -120,10 +190,11 @@ public sealed class PaymentsController(PaymentsDbContext db, ICurrentUser curren
 }
 
 // ── DTOs ──
-public sealed record CreatePaymentIntentRequest(Guid BookingId, long Amount, string? Provider = "MOMO");
+public sealed record CreatePaymentIntentRequest(Guid BookingId);
 public sealed record PaymentIntentResponse(Guid Id, Guid BookingId, Guid CustomerId,
     string Provider, long Amount, string Currency, string Status,
-    string? ProviderTransactionId, string IdempotencyKey, DateTimeOffset CreatedAt);
+    string? ProviderTransactionId, string IdempotencyKey, DateTimeOffset CreatedAt,
+    string? PaymentUrl = null, string? ProviderOrderRef = null);
 public sealed record WalletResponse(Guid? Id, long AvailableBalance, long PendingBalance, string Currency);
 public sealed record LedgerEntryResponse(Guid Id, Guid? BookingId, Guid? PaymentIntentId,
     string TransactionType, string DebitAccount, string CreditAccount,

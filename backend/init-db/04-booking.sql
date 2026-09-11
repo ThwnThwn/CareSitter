@@ -52,6 +52,33 @@ CREATE TABLE bookings (
   CONSTRAINT bookings_schedule_window_check CHECK (scheduled_end > scheduled_start)
 );
 
+-- Giữ tạm khung giờ caregiver trong thời gian khách đang thanh toán.
+-- Exclusion constraint chống overlap ngay tại PostgreSQL khi request chạy đồng thời.
+CREATE TABLE caregiver_slot_holds (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_id      uuid NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  caregiver_id    uuid NOT NULL REFERENCES people.caregiver_profiles(id),
+  scheduled_start timestamptz NOT NULL,
+  scheduled_end   timestamptz NOT NULL,
+  expires_at      timestamptz NOT NULL,
+  status          varchar(20) NOT NULL DEFAULT 'HELD'
+                  CHECK (status IN ('HELD','COMMITTED','RELEASED')),
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  released_at     timestamptz,
+  CONSTRAINT caregiver_slot_hold_schedule_check CHECK (scheduled_end > scheduled_start)
+);
+
+CREATE UNIQUE INDEX uq_active_slot_hold_booking
+  ON caregiver_slot_holds (booking_id)
+  WHERE status IN ('HELD','COMMITTED');
+
+ALTER TABLE caregiver_slot_holds
+  ADD CONSTRAINT ex_active_caregiver_slot_hold_overlap
+  EXCLUDE USING gist (
+    caregiver_id WITH =,
+    tstzrange(scheduled_start, scheduled_end, '[)') WITH &&
+  ) WHERE (status IN ('HELD','COMMITTED'));
+
 CREATE TABLE booking_assignments (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id      uuid NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,

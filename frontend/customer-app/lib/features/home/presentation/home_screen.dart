@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -72,12 +70,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Header ─────────────────────────────────────────────────────────────────
   Widget _buildHeader(
       BuildContext context, UserProfile profile, double topPadding) {
-    final avatarPath = profile.avatarPath?.trim() ?? '';
+    final avatarUrl = profile.avatarUrl?.trim() ?? '';
     ImageProvider? avatarImage;
-    if (avatarPath.startsWith('http')) {
-      avatarImage = NetworkImage(avatarPath);
-    } else if (avatarPath.isNotEmpty && !kIsWeb) {
-      avatarImage = FileImage(File(avatarPath));
+    if (avatarUrl.startsWith('http')) {
+      avatarImage = NetworkImage(avatarUrl);
     }
     final initials = profile.name
         .trim()

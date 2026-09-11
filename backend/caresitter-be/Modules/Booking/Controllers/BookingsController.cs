@@ -224,6 +224,12 @@ public sealed class BookingsController(
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.Cancel(userId, "CUSTOMER", request.Reason, clock.UtcNow);
         if (result.IsFailure) return Problem(result.Error);
+        var slotHolds = await db.CaregiverSlotHolds
+            .Where(x => x.BookingId == booking.Id &&
+                (x.Status == "HELD" || x.Status == "COMMITTED"))
+            .ToListAsync(ct);
+        foreach (var slotHold in slotHolds)
+            slotHold.Release();
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Cancelled);
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
@@ -299,13 +305,48 @@ public sealed class BookingsController(
         var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id && x.CustomerId == userId, ct);
         if (booking is null) return NotFound();
 
+        CaregiverSlotHold? slotHold = null;
+        if (booking.CaregiverId is { } caregiverId && booking.Status == BookingStatus.PendingPayment)
+        {
+            var holdResult = CaregiverSlotHold.Create(booking.Id, caregiverId,
+                booking.ScheduledStart, booking.ScheduledEnd,
+                DateTimeOffset.UtcNow.AddMinutes(15));
+            if (holdResult.IsFailure) return Problem(holdResult.Error);
+            slotHold = holdResult.Value;
+            db.CaregiverSlotHolds.Add(slotHold);
+            try
+            {
+                // PostgreSQL exclusion constraint chặn hai request giữ cùng caregiver + time range.
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new
+                {
+                    error = "Caregiver da duoc giu cho booking khac trong cung khung gio.",
+                    code = "CAREGIVER_TIME_SLOT_HELD"
+                });
+            }
+        }
+
         var lockResult = await wallet.LockEscrowAsync(booking.Id, booking.EscrowAmount,
             $"booking-escrow-{booking.Id}", ct);
-        if (lockResult.IsFailure) return Problem(lockResult.Error);
+        if (lockResult.IsFailure)
+        {
+            slotHold?.Release();
+            if (slotHold is not null) await db.SaveChangesAsync(ct);
+            return Problem(lockResult.Error);
+        }
 
         var result = booking.ConfirmPayment();
-        if (result.IsFailure) return Problem(result.Error);
+        if (result.IsFailure)
+        {
+            slotHold?.Release();
+            if (slotHold is not null) await db.SaveChangesAsync(ct);
+            return Problem(result.Error);
+        }
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
+        slotHold?.Commit();
         await db.SaveChangesAsync(ct);
         await PublishCustomerSyncEventAsync(booking, ct);
         await matching.OfferTopCandidatesAsync(id, ct);
@@ -741,6 +782,7 @@ public sealed class BookingsController(
             x.CaregiverId, x.AddressId, x.ServiceTypeId, x.ScheduledStart, x.ScheduledEnd,
             x.ActualStart, x.ActualEnd, x.CheckoutPendingReviewAt, x.CheckoutSource?.ToString(),
             BookingStatusCodec.ToApi(x.Status), x.EscrowAmount, x.PlatformFeeAmount,
+            x.CaregiverEarningAmount,
             x.CancelledAt, x.CancelReason, x.CreatedAt, x.UpdatedAt,
             beneficiary?.DisplayName, caregiver?.DisplayName, address?.FullAddress, service?.Name,
             beneficiary?.Notes,
@@ -793,7 +835,7 @@ public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? Caregive
     Guid AddressId, Guid ServiceTypeId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd,
     DateTimeOffset? ActualStart, DateTimeOffset? ActualEnd,
     DateTimeOffset? CheckoutPendingReviewAt, string? CheckoutSource,
-    string Status, long EscrowAmount, long PlatformFeeAmount,
+    string Status, long EscrowAmount, long PlatformFeeAmount, long CaregiverEarningAmount,
     DateTimeOffset? CancelledAt, string? CancelReason,
     DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
     string? BeneficiaryName = null,

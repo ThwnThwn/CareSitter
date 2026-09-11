@@ -1551,6 +1551,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
   // ── Extend shift sheet ─────────────────────────────────────────────────────
   void _showExtendShiftSheet(BuildContext context, BookingModel bk) {
     int selectedHours = 1;
+    // Dùng đơn giá hiệu lực của booking hiện tại để tránh lệch với backend.
+    final bookedHours = bk.scheduledEnd.difference(bk.scheduledStart).inMinutes / 60;
+    final effectiveHourlyRate = bookedHours > 0 ? bk.totalPrice / bookedHours : 0.0;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1647,7 +1650,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen> {
                         size: 16, color: AppColors.secondary),
                     const SizedBox(width: 8),
                     Text(
-                      'Phí ước tính: ${_formatCurrency(selectedHours * 120000.0)}',
+                      'Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}',
                       style: const TextStyle(
                           color: AppColors.secondary,
                           fontWeight: FontWeight.w700,

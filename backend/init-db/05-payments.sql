@@ -33,6 +33,7 @@ CREATE TABLE payment_intents (
   status                  varchar(20) NOT NULL DEFAULT 'CREATED'
                           CHECK (status IN ('CREATED','PENDING','SUCCEEDED','FAILED','CANCELLED','EXPIRED')),
   provider_transaction_id varchar(255),
+  provider_order_ref      varchar(100),
   idempotency_key         varchar(255) NOT NULL UNIQUE,
   request_payload         jsonb,
   response_payload        jsonb,
@@ -69,6 +70,11 @@ CREATE TABLE ledger_entries (
   metadata          jsonb,
   created_at        timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX uq_ledger_booking_transaction_type
+  ON payments.ledger_entries (booking_id, transaction_type)
+  WHERE booking_id IS NOT NULL
+    AND transaction_type IN ('ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING');
 
 CREATE TABLE payout_requests (
   id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),

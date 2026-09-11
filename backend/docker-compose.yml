@@ -55,6 +55,18 @@ services:
     volumes:
       - caresitter-redisinsight-data:/data
 
+  # Public HTTPS tunnel cho VNPay Sandbox gọi IPN vào backend local.
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: caresitter-ngrok
+    restart: unless-stopped
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: ["http", "--log=stdout", "host.docker.internal:5033"]
+    ports:
+      - "4040:4040"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 volumes:
   caresitter-pgdata:
   caresitter-redisinsight-data:

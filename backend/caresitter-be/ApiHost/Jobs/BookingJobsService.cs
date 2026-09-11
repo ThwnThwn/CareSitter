@@ -43,7 +43,13 @@ public sealed class BookingJobsService
             .Where(b => b.Status == BookingStatus.PendingPayment && b.CreatedAt <= cutoff)
             .ToListAsync();
 
-        if (expiredBookings.Count == 0) return;
+        var expiredSlotHolds = await db.CaregiverSlotHolds
+            .Where(h => h.Status == "HELD" && h.ExpiresAt <= DateTimeOffset.UtcNow)
+            .ToListAsync();
+        foreach (var hold in expiredSlotHolds)
+            hold.Release();
+
+        if (expiredBookings.Count == 0 && expiredSlotHolds.Count == 0) return;
 
         _logger.LogInformation(
             "[BookingJobs] ExpirePendingPayments: found {Count} bookings to cancel", expiredBookings.Count);
@@ -73,7 +79,9 @@ public sealed class BookingJobsService
         }
 
         await db.SaveChangesAsync();
-        _logger.LogInformation("[BookingJobs] Cancelled {Count} expired bookings", expiredBookings.Count);
+        _logger.LogInformation(
+            "[BookingJobs] Cancelled {BookingCount} expired bookings and released {HoldCount} caregiver slot holds",
+            expiredBookings.Count, expiredSlotHolds.Count);
     }
 
     public async Task AlertLateCheckinsAsync()

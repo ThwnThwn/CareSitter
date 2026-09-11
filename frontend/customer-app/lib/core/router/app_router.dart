@@ -29,6 +29,7 @@ import '../../features/settings/presentation/change_password_screen.dart';
 import '../../features/settings/presentation/two_factor_auth_screen.dart';
 import '../../features/settings/presentation/faq_screen.dart';
 import '../../features/settings/presentation/support_screen.dart';
+import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
 import '../auth/auth_notifier.dart';
 import 'shell_scaffold.dart';
@@ -359,6 +360,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const ChangePasswordScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings/notifications',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const NotificationSettingsScreen(),
         ),
       ),
       GoRoute(

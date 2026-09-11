@@ -23,6 +23,9 @@ public sealed class PaymentsModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", PaymentsDbContext.SchemaName)));
 
         services.AddScoped<IWalletService, WalletService>();
+        services.AddOptions<VNPayOptions>()
+            .Bind(configuration.GetSection(VNPayOptions.SectionName));
+        services.AddSingleton<IVNPayService, VNPayService>();
 
         // Đăng ký Controllers nằm trong assembly của Payments module
         services.AddControllers()

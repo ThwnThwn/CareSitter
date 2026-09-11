@@ -16,6 +16,8 @@ public sealed class User : AggregateRoot
     public string Email { get; private set; } = null!;
     public string? DisplayName { get; private set; }
     public Guid? AvatarMediaId { get; private set; }
+    /// <summary>URL ảnh đại diện trên Cloudinary. Ưu tiên dùng cái này để render.</summary>
+    public string? AvatarUrl { get; private set; }
 
     /// <summary>Allowed values: ACTIVE, SUSPENDED, LOCKED, DELETED.</summary>
     public string Status { get; private set; } = "ACTIVE";
@@ -30,6 +32,9 @@ public sealed class User : AggregateRoot
     /// <summary>Allowed values: MALE, FEMALE, OTHER, UNSPECIFIED.</summary>
     public string? Gender { get; private set; }
     public Guid? DefaultAddressId { get; private set; }
+
+    /// <summary>jsonb: cài đặt thông báo push (serialized NotificationPrefs).</summary>
+    public string? NotificationPrefs { get; private set; }
 
     // admin fields (chi set khi la admin)
     /// <summary>Allowed values: OPERATIONS, CSKH, ACCOUNTING, MANAGEMENT.</summary>
@@ -124,11 +129,35 @@ public sealed class User : AggregateRoot
     }
 
     /// <summary>
+    /// Cập nhật URL ảnh đại diện (Cloudinary secure URL).
+    /// </summary>
+    /// <summary>
+    /// Lưu cài đặt thông báo push (JSON string dạng camelCase).
+    /// </summary>
+    public void SetNotificationPrefs(string prefsJson)
+    {
+        NotificationPrefs = prefsJson;
+    }
+
+    public void SetAvatar(string avatarUrl)
+    {
+        AvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim();
+    }
+
+    /// <summary>
     /// Thiết lập mật khẩu đã được hash bằng BCrypt cho tài khoản.
     /// </summary>
     public void SetPassword(string passwordHash)
     {
         PasswordHash = passwordHash;
+    }
+
+    /// <summary>
+    /// Đặt địa chỉ mặc định cho user (dùng khi booking).
+    /// </summary>
+    public void SetDefaultAddress(Guid addressId)
+    {
+        DefaultAddressId = addressId;
     }
 
     /// <summary>

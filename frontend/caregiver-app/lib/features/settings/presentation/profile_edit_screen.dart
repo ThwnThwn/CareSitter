@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../profile/presentation/providers/profile_provider.dart';
@@ -14,57 +16,157 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _bioController;
   late TextEditingController _expController;
-  late TextEditingController _locationController;
   late TextEditingController _rateController;
-  late TextEditingController _certController;
+  late TextEditingController _cityController;
+  late TextEditingController _districtController;
+  late TextEditingController _dobController;
   late List<String> _skills;
+  String _gender = 'UNSPECIFIED';
+  bool _isSaving = false;
 
   final _skillInputController = TextEditingController();
+  final _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     final profile = ref.read(profileProvider);
-    _nameController = TextEditingController(text: profile.name);
-    _expController = TextEditingController(text: profile.experience);
-    _locationController = TextEditingController(text: profile.location);
-    _rateController = TextEditingController(text: profile.hourlyRate.toInt().toString());
-    _certController = TextEditingController(text: profile.certifications);
+    _nameController = TextEditingController(text: profile.fullName ?? '');
+    _bioController = TextEditingController(text: profile.bio ?? '');
+    _expController = TextEditingController(
+      text: profile.yearsOfExperience != null ? profile.yearsOfExperience.toString() : '',
+    );
+    _rateController = TextEditingController(
+      text: profile.hourlyRateExpected != null ? profile.hourlyRateExpected.toString() : '',
+    );
+    _cityController = TextEditingController(text: profile.serviceCity ?? '');
+    _districtController = TextEditingController(text: profile.serviceDistrict ?? '');
+    _dobController = TextEditingController(text: profile.dateOfBirth ?? '');
     _skills = List.from(profile.skills);
+    _gender = profile.gender ?? 'UNSPECIFIED';
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _bioController.dispose();
     _expController.dispose();
-    _locationController.dispose();
     _rateController.dispose();
-    _certController.dispose();
+    _cityController.dispose();
+    _districtController.dispose();
+    _dobController.dispose();
     _skillInputController.dispose();
     super.dispose();
   }
 
-  void _saveProfile() {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _pickAndUploadAvatar() async {
+    final isUploading = ref.read(caregiverAvatarUploadingProvider);
+    if (isUploading) return;
 
-    ref.read(profileProvider.notifier).updateProfile(
-          name: _nameController.text.trim(),
-          experience: _expController.text.trim(),
-          location: _locationController.text.trim(),
-          hourlyRate: double.tryParse(_rateController.text.trim()) ?? 0,
+    try {
+      final picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final success = await ref
+          .read(profileProvider.notifier)
+          .uploadAvatar(File(picked.path));
+
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã cập nhật ảnh đại diện thành công'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tải ảnh thất bại. Vui lòng thử lại.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    DateTime initial = DateTime.now().subtract(const Duration(days: 365 * 25));
+    if (_dobController.text.isNotEmpty) {
+      final parsed = DateTime.tryParse(_dobController.text);
+      if (parsed != null) initial = parsed;
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1940),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+    );
+
+    if (picked != null) {
+      final yyyy = picked.year.toString().padLeft(4, '0');
+      final mm = picked.month.toString().padLeft(2, '0');
+      final dd = picked.day.toString().padLeft(2, '0');
+      setState(() {
+        _dobController.text = '$yyyy-$mm-$dd';
+      });
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate() || _isSaving) return;
+
+    setState(() => _isSaving = true);
+
+    final success = await ref.read(profileProvider.notifier).updateProfile(
+          fullName: _nameController.text.trim(),
+          bio: _bioController.text.trim(),
+          yearsOfExperience: int.tryParse(_expController.text.trim()),
+          hourlyRateExpected: int.tryParse(_rateController.text.trim()),
           skills: _skills,
-          certifications: _certController.text.trim(),
+          serviceCity: _cityController.text.trim().isNotEmpty ? _cityController.text.trim() : null,
+          serviceDistrict: _districtController.text.trim().isNotEmpty ? _districtController.text.trim() : null,
+          gender: _gender,
+          dateOfBirth: _dobController.text.trim().isNotEmpty ? _dobController.text.trim() : null,
         );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã cập nhật thông tin cá nhân thành công'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.pop(context);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật thông tin cá nhân thành công'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cập nhật thất bại. Vui lòng kiểm tra lại kết nối.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _addSkill() {
@@ -85,6 +187,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final isUploadingAvatar = ref.watch(caregiverAvatarUploadingProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -92,15 +197,21 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         leading: const AppBackButton(fallbackRoute: '/settings'),
         actions: [
           TextButton(
-            onPressed: _saveProfile,
-            child: const Text(
-              'Lưu',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            onPressed: _isSaving ? null : _saveProfile,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  )
+                : const Text(
+                    'Lưu',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -113,44 +224,59 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             children: [
               // ── Profile Photo Editor ──
               Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: AppColors.primaryContainer,
-                      child: Text(
-                        _nameController.text.isNotEmpty
-                            ? _nameController.text.split(' ').last.substring(0, 1).toUpperCase()
-                            : 'CG',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
+                child: GestureDetector(
+                  onTap: isUploadingAvatar ? null : _pickAndUploadAvatar,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 52,
+                        backgroundColor: AppColors.primaryContainer,
+                        backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                            ? NetworkImage(profile.avatarUrl!)
+                            : null,
+                        child: isUploadingAvatar
+                            ? const CircularProgressIndicator(color: AppColors.primary)
+                            : (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
+                                ? Text(
+                                    profile.initials,
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text(
+                  'Chạm để đổi ảnh đại diện',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 28),
 
-              // ── Fields ──
+              // ── Basic Info ──
               _buildSectionTitle('Thông tin cơ bản'),
               const SizedBox(height: 12),
               _buildTextField(
@@ -158,38 +284,122 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: 'Họ và tên',
                 hint: 'Nhập họ và tên đầy đủ',
                 icon: Icons.person_outline,
-                validator: (val) => val == null || val.isEmpty ? 'Họ tên không được trống' : null,
+                validator: (val) => val == null || val.trim().isEmpty ? 'Họ tên không được trống' : null,
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                controller: _locationController,
-                label: 'Khu vực hoạt động',
-                hint: 'Ví dụ: Quận 5, TP.HCM',
-                icon: Icons.location_on_outlined,
-                validator: (val) => val == null || val.isEmpty ? 'Khu vực không được trống' : null,
+                controller: _bioController,
+                label: 'Giới thiệu bản thân',
+                hint: 'Tóm tắt kinh nghiệm và phong cách làm việc của bạn',
+                icon: Icons.article_outlined,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+
+              // ── Gender & DOB ──
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: ['MALE', 'FEMALE', 'OTHER', 'UNSPECIFIED'].contains(_gender)
+                          ? _gender
+                          : 'UNSPECIFIED',
+                      decoration: InputDecoration(
+                        labelText: 'Giới tính',
+                        prefixIcon: const Icon(Icons.transgender, color: AppColors.textSecondary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'MALE', child: Text('Nam')),
+                        DropdownMenuItem(value: 'FEMALE', child: Text('Nữ')),
+                        DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
+                        DropdownMenuItem(value: 'UNSPECIFIED', child: Text('Chưa rõ')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _gender = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _selectDateOfBirth,
+                      child: AbsorbPointer(
+                        child: _buildTextField(
+                          controller: _dobController,
+                          label: 'Ngày sinh',
+                          hint: 'YYYY-MM-DD',
+                          icon: Icons.calendar_today_outlined,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ── Location & Experience ──
+              _buildSectionTitle('Khu vực & Kinh nghiệm'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _districtController,
+                      label: 'Quận/Huyện',
+                      hint: 'Ví dụ: Quận 5',
+                      icon: Icons.location_city_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _cityController,
+                      label: 'Tỉnh/Thành phố',
+                      hint: 'Ví dụ: TP.HCM',
+                      icon: Icons.map_outlined,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _expController,
-                label: 'Kinh nghiệm',
-                hint: 'Ví dụ: 3 năm kinh nghiệm',
+                label: 'Số năm kinh nghiệm',
+                hint: 'Ví dụ: 3',
                 icon: Icons.workspace_premium_outlined,
+                keyboardType: TextInputType.number,
+                validator: (val) {
+                  if (val != null && val.isNotEmpty && int.tryParse(val) == null) {
+                    return 'Vui lòng nhập số nguyên';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _rateController,
-                label: 'Mức lương mong muốn (đ/giờ)',
+                label: 'Mức giá mong muốn (đ/giờ)',
                 hint: 'Ví dụ: 80000',
                 icon: Icons.monetization_on_outlined,
                 keyboardType: TextInputType.number,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Vui lòng nhập giá';
-                  if (double.tryParse(val) == null) return 'Mức lương không hợp lệ';
+                  if (val != null && val.isNotEmpty && int.tryParse(val) == null) {
+                    return 'Vui lòng nhập số nguyên hợp lệ';
+                  }
                   return null;
                 },
               ),
+              const Padding(
+                padding: EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  '💡 Mức giá mong muốn chỉ là thông tin tham khảo trên hồ sơ, không thay đổi biểu phí dịch vụ tiêu chuẩn của ứng dụng.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                ),
+              ),
               const SizedBox(height: 24),
 
+              // ── Skills ──
               _buildSectionTitle('Kỹ năng chuyên môn'),
               const SizedBox(height: 12),
               Row(
@@ -198,7 +408,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     child: _buildTextField(
                       controller: _skillInputController,
                       label: 'Thêm kỹ năng',
-                      hint: 'Ví dụ: Chăm trẻ sơ sinh',
+                      hint: 'Ví dụ: Chăm sóc người cao tuổi, tiêm insulin...',
                       icon: Icons.star_outline_rounded,
                     ),
                   ),
@@ -240,17 +450,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     ),
                   );
                 }).toList(),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionTitle('Bằng cấp & Chứng chỉ'),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _certController,
-                label: 'Chứng chỉ',
-                hint: 'Nhập các bằng cấp, chứng chỉ cách nhau bởi dấu phẩy',
-                icon: Icons.description_outlined,
-                maxLines: 3,
               ),
               const SizedBox(height: 40),
             ],
