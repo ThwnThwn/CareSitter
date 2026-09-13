@@ -71,6 +71,11 @@ class ProfileStore extends StateNotifier<UserProfile> {
     // Tự reload khi auth thay đổi
     _ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
+      if (isAuth &&
+          prev?.value?.isAuthenticated == true &&
+          prev?.value?.userId == next.value?.userId) {
+        return;
+      }
       if (isAuth) {
         fetchProfile();
       } else {

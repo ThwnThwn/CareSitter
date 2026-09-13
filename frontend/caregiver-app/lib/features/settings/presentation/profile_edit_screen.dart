@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_theme.dart';
@@ -36,13 +37,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _nameController = TextEditingController(text: profile.fullName ?? '');
     _bioController = TextEditingController(text: profile.bio ?? '');
     _expController = TextEditingController(
-      text: profile.yearsOfExperience != null ? profile.yearsOfExperience.toString() : '',
+      text: profile.yearsOfExperience != null
+          ? profile.yearsOfExperience.toString()
+          : '',
     );
     _rateController = TextEditingController(
-      text: profile.hourlyRateExpected != null ? profile.hourlyRateExpected.toString() : '',
+      text: profile.hourlyRateExpected != null
+          ? profile.hourlyRateExpected.toString()
+          : '',
     );
     _cityController = TextEditingController(text: profile.serviceCity ?? '');
-    _districtController = TextEditingController(text: profile.serviceDistrict ?? '');
+    _districtController =
+        TextEditingController(text: profile.serviceDistrict ?? '');
     _dobController = TextEditingController(text: profile.dateOfBirth ?? '');
     _skills = List.from(profile.skills);
     _gender = profile.gender ?? 'UNSPECIFIED';
@@ -140,10 +146,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           yearsOfExperience: int.tryParse(_expController.text.trim()),
           hourlyRateExpected: int.tryParse(_rateController.text.trim()),
           skills: _skills,
-          serviceCity: _cityController.text.trim().isNotEmpty ? _cityController.text.trim() : null,
-          serviceDistrict: _districtController.text.trim().isNotEmpty ? _districtController.text.trim() : null,
+          serviceCity: _cityController.text.trim().isNotEmpty
+              ? _cityController.text.trim()
+              : null,
+          serviceDistrict: _districtController.text.trim().isNotEmpty
+              ? _districtController.text.trim()
+              : null,
           gender: _gender,
-          dateOfBirth: _dobController.text.trim().isNotEmpty ? _dobController.text.trim() : null,
+          dateOfBirth: _dobController.text.trim().isNotEmpty
+              ? _dobController.text.trim()
+              : null,
         );
 
     if (!mounted) return;
@@ -202,7 +214,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primary),
                   )
                 : const Text(
                     'Lưu',
@@ -231,12 +244,17 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       CircleAvatar(
                         radius: 52,
                         backgroundColor: AppColors.primaryContainer,
-                        backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
-                            ? NetworkImage(profile.avatarUrl!)
+                        backgroundImage: profile.avatarUrl != null &&
+                                profile.avatarUrl!.isNotEmpty
+                            ? ResizeImage(
+                                CachedNetworkImageProvider(profile.avatarUrl!),
+                                width: 192)
                             : null,
                         child: isUploadingAvatar
-                            ? const CircularProgressIndicator(color: AppColors.primary)
-                            : (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
+                            ? const CircularProgressIndicator(
+                                color: AppColors.primary)
+                            : (profile.avatarUrl == null ||
+                                    profile.avatarUrl!.isEmpty)
                                 ? Text(
                                     profile.initials,
                                     style: const TextStyle(
@@ -271,7 +289,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               const Center(
                 child: Text(
                   'Chạm để đổi ảnh đại diện',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
               const SizedBox(height: 28),
@@ -284,7 +303,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 label: 'Họ và tên',
                 hint: 'Nhập họ và tên đầy đủ',
                 icon: Icons.person_outline,
-                validator: (val) => val == null || val.trim().isEmpty ? 'Họ tên không được trống' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Họ tên không được trống'
+                    : null,
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -301,19 +322,23 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: ['MALE', 'FEMALE', 'OTHER', 'UNSPECIFIED'].contains(_gender)
+                      initialValue: ['MALE', 'FEMALE', 'OTHER', 'UNSPECIFIED']
+                              .contains(_gender)
                           ? _gender
                           : 'UNSPECIFIED',
                       decoration: InputDecoration(
                         labelText: 'Giới tính',
-                        prefixIcon: const Icon(Icons.transgender, color: AppColors.textSecondary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.transgender,
+                            color: AppColors.textSecondary),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'MALE', child: Text('Nam')),
                         DropdownMenuItem(value: 'FEMALE', child: Text('Nữ')),
                         DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
-                        DropdownMenuItem(value: 'UNSPECIFIED', child: Text('Chưa rõ')),
+                        DropdownMenuItem(
+                            value: 'UNSPECIFIED', child: Text('Chưa rõ')),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _gender = val);
@@ -370,7 +395,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: Icons.workspace_premium_outlined,
                 keyboardType: TextInputType.number,
                 validator: (val) {
-                  if (val != null && val.isNotEmpty && int.tryParse(val) == null) {
+                  if (val != null &&
+                      val.isNotEmpty &&
+                      int.tryParse(val) == null) {
                     return 'Vui lòng nhập số nguyên';
                   }
                   return null;
@@ -384,7 +411,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: Icons.monetization_on_outlined,
                 keyboardType: TextInputType.number,
                 validator: (val) {
-                  if (val != null && val.isNotEmpty && int.tryParse(val) == null) {
+                  if (val != null &&
+                      val.isNotEmpty &&
+                      int.tryParse(val) == null) {
                     return 'Vui lòng nhập số nguyên hợp lệ';
                   }
                   return null;
@@ -394,7 +423,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 padding: EdgeInsets.only(top: 6, left: 4),
                 child: Text(
                   '💡 Mức giá mong muốn chỉ là thông tin tham khảo trên hồ sơ, không thay đổi biểu phí dịch vụ tiêu chuẩn của ứng dụng.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.3),
                 ),
               ),
               const SizedBox(height: 24),
@@ -442,7 +474,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    deleteIcon: const Icon(Icons.cancel, size: 16, color: AppColors.primary),
+                    deleteIcon: const Icon(Icons.cancel,
+                        size: 16, color: AppColors.primary),
                     onDeleted: () => _removeSkill(skill),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -500,7 +533,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }

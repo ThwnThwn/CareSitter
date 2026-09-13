@@ -1,13 +1,13 @@
 using BCrypt.Net;
-using CareSitter.Infrastructure.Auth;
+using CareSitter.Modules.Identity.Application.AuthSessions;
 using CareSitter.Modules.Identity.Domain;
 using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Infrastructure;
+using CareSitter.Modules.People.Domain;
+using CareSitter.Modules.People.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Identity.Application.Register;
 
@@ -17,25 +17,23 @@ namespace CareSitter.Modules.Identity.Application.Register;
 internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<LoginResponse>>
 {
     private readonly IdentityDbContext _db;
-    private readonly IDistributedCache _cache;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly JwtSettings _jwtSettings;
+    private readonly PeopleDbContext _peopleDb;
+    private readonly RefreshTokenSessionService _sessions;
 
-    private static readonly string[] AllowedRoles = { "CUSTOMER", "CAREGIVER", "ADMIN" };
+    // Endpoint đăng ký là public nên tuyệt đối không cho tự cấp quyền ADMIN.
+    private static readonly string[] AllowedRoles = { "CUSTOMER", "CAREGIVER" };
 
     /// <summary>
     /// Khởi tạo RegisterHandler với DbContext, JWT token service và Redis cache.
     /// </summary>
     public RegisterHandler(
         IdentityDbContext db,
-        IDistributedCache cache,
-        IJwtTokenService jwtTokenService,
-        IOptions<JwtSettings> jwtSettingsOptions)
+        PeopleDbContext peopleDb,
+        RefreshTokenSessionService sessions)
     {
         _db = db;
-        _cache = cache;
-        _jwtTokenService = jwtTokenService;
-        _jwtSettings = jwtSettingsOptions.Value;
+        _peopleDb = peopleDb;
+        _sessions = sessions;
     }
 
     /// <summary>
@@ -86,7 +84,7 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         {
             if (!AllowedRoles.Contains(role.ToUpper()))
             {
-                return Error.Validation("auth.invalid_role", $"Vai trò '{role}' không hợp lệ. Các vai trò cho phép: CUSTOMER, CAREGIVER, ADMIN.");
+                return Error.Validation("auth.invalid_role", $"Vai trò '{role}' không hợp lệ. Các vai trò cho phép: CUSTOMER, CAREGIVER.");
             }
         }
 
@@ -129,20 +127,20 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
-        // Sinh token
-        var accessToken  = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken();
-
-        // Lưu refresh token vào Redis (giống LoginHandler)
-        var hashed = _jwtTokenService.HashRefreshToken(refreshToken);
-        await _cache.SetStringAsync(
-            JwtRevocationCacheKeys.RefreshToken(hashed),
-            user.Id.ToString(),
-            new DistributedCacheEntryOptions
+        // Tự động tạo CaregiverProfile nếu user đăng ký với vai trò CAREGIVER.
+        if (user.Roles.Contains("CAREGIVER", StringComparer.OrdinalIgnoreCase))
+        {
+            var profileResult = CaregiverProfile.Create(user.Id);
+            if (profileResult.IsSuccess)
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
-            }, ct);
+                // Gán fullName ngay từ lúc đăng ký để profile không rỗng.
+                profileResult.Value.UpdateProfile(fullName: request.FullName?.Trim());
+                _peopleDb.CaregiverProfiles.Add(profileResult.Value);
+                await _peopleDb.SaveChangesAsync(ct);
+            }
+        }
 
-        return new LoginResponse(accessToken, refreshToken, user.Id, user.Roles, user.DisplayName);
+        var tokens = await _sessions.IssueAsync(user, ct);
+        return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
 }

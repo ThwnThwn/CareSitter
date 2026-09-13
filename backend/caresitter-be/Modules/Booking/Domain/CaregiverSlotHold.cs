@@ -68,4 +68,11 @@ public sealed class CaregiverSlotHold : Entity
     {
         if (Status == "HELD") Status = "COMMITTED";
     }
+
+    /// <summary>Gia han hold den het payment deadline va grace period doi soat.</summary>
+    public void ExtendUntil(DateTimeOffset expiresAt)
+    {
+        if (Status == "HELD" && expiresAt > ExpiresAt)
+            ExpiresAt = expiresAt;
+    }
 }

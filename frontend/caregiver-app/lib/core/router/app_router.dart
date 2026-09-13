@@ -6,6 +6,7 @@ import 'shell_scaffold.dart';
 
 import '../../features/auth/presentation/screens/phone_input_screen.dart';
 import '../../features/auth/presentation/screens/otp_verify_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/notifications_screen.dart';
 import '../../features/shifts/presentation/shift_list_screen.dart';
@@ -54,9 +55,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/otp',
         builder: (ctx, state) {
-          final phone = state.extra as String? ?? '';
-          return OtpVerifyScreen(phone: phone);
+          final email = state.extra as String? ?? '';
+          return OtpVerifyScreen(email: email);
         },
+      ),
+      GoRoute(
+        path: '/auth/register',
+        builder: (ctx, state) => const RegisterScreen(),
       ),
 
       // ── Shell (Bottom Nav) ───────────────────────

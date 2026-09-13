@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/auth/auth_notifier.dart';
 import 'core/push/firebase_push_notifications.dart';
+import 'core/push/notification_deep_link_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/booking/application/booking_sync_watchdog.dart';
@@ -19,6 +20,7 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
   @override
   void initState() {
     super.initState();
+    ref.read(notificationDeepLinkServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(
           ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
@@ -33,6 +35,7 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
         unawaited(ref
             .read(pushNotificationServiceProvider)
             .syncTokenForCurrentUser());
+        unawaited(ref.read(notificationDeepLinkServiceProvider).flushPending());
       }
     });
 
@@ -45,6 +48,7 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
         title: 'CareSitter',
         theme: AppTheme.lightTheme,
         routerConfig: router,
+        scaffoldMessengerKey: notificationMessengerKey,
         debugShowCheckedModeBanner: false,
       ),
     );

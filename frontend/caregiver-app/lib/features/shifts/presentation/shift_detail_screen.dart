@@ -253,7 +253,7 @@ class ShiftDetailScreen extends ConsumerWidget {
         children: [
           Text(booking.serviceName,
               style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (booking.serviceDescription?.trim().isNotEmpty == true) ...[
             const Text('Mô tả dịch vụ:',
@@ -491,7 +491,7 @@ class ShiftDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Khách hàng đang theo dõi vị trí của bạn trực tiếp.\nHãy check-in khi đến nơi (trong bán kính 50m).',
+            'Khách hàng đang theo dõi vị trí của bạn trực tiếp.\nHãy check-in khi đến nơi, trong bán kính được quy định.',
             style: TextStyle(
                 fontSize: 13, color: AppColors.textSecondary, height: 1.4),
           ),

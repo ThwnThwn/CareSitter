@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,11 +15,33 @@ import '../../earnings/presentation/providers/earnings_provider.dart';
 import '../../profile/presentation/providers/profile_provider.dart';
 import 'providers/notifications_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  Timer? _countdownTimer;
+  String? _processingOfferId;
+
+  @override
+  void initState() {
+    super.initState();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final shifts = ref.watch(shiftsProvider);
     final earnings = ref.watch(earningsProvider);
     final profile = ref.watch(profileProvider);
@@ -37,7 +61,20 @@ class HomeScreen extends ConsumerWidget {
           start.month == now.month &&
           start.day == now.day;
     }).toList();
-    final pendingShifts = shifts.where(_isOfferStatus).toList();
+    final pendingShifts = shifts.where(_isOfferStatus).toList()
+      ..sort((a, b) {
+        final startOrder = (a.scheduledStart ?? DateTime.utc(9999))
+            .compareTo(b.scheduledStart ?? DateTime.utc(9999));
+        if (startOrder != 0) return startOrder;
+        return (a.offerExpiresAt ?? DateTime.utc(9999))
+            .compareTo(b.offerExpiresAt ?? DateTime.utc(9999));
+      });
+    final scheduledOrActiveShifts = shifts
+        .where((shift) =>
+            shift.status == 'confirmed' ||
+            shift.status == 'caregiver_en_route' ||
+            shift.status == 'in_progress')
+        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -56,7 +93,13 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 if (pendingShifts.isNotEmpty) ...[
-                  _buildNewBookingRequest(context, ref, pendingShifts.first),
+                  _buildNewBookingRequest(
+                    context,
+                    ref,
+                    pendingShifts.first,
+                    pendingCount: pendingShifts.length,
+                    scheduledOrActiveShifts: scheduledOrActiveShifts,
+                  ),
                   const SizedBox(height: 16),
                 ],
                 _buildTodayTimeline(context, todayShifts),
@@ -208,7 +251,11 @@ class HomeScreen extends ConsumerWidget {
   }
 
   bool _isOfferStatus(ShiftModel shift) {
-    return shift.status == 'pending' || shift.status == 'open';
+    final expiresAt = shift.offerExpiresAt;
+    return shift.offerId != null &&
+        expiresAt != null &&
+        expiresAt.isAfter(DateTime.now()) &&
+        (shift.status == 'pending' || shift.status == 'open');
   }
 
   String _shortName(String displayName) {
@@ -319,8 +366,16 @@ class HomeScreen extends ConsumerWidget {
 
   // ── New Booking Request Card (Pulse) ───────────────────
   Widget _buildNewBookingRequest(
-      BuildContext context, WidgetRef ref, ShiftModel booking) {
+      BuildContext context, WidgetRef ref, ShiftModel booking,
+      {required int pendingCount,
+      required List<ShiftModel> scheduledOrActiveShifts}) {
     final note = booking.customerNote?.trim();
+    final remaining = booking.offerExpiresAt?.difference(DateTime.now());
+    final isExpired = remaining != null && remaining <= Duration.zero;
+    final isProcessing = _processingOfferId == booking.id;
+    final countdownLabel = _countdownLabel(remaining);
+    final turnaroundWarning =
+        _turnaroundWarning(booking, scheduledOrActiveShifts);
 
     return _PulseCard(
       child: Column(
@@ -377,7 +432,9 @@ class HomeScreen extends ConsumerWidget {
                                   color: AppColors.error, size: 14),
                               const SizedBox(width: 4),
                               Text(
-                                'Đang chờ',
+                                isExpired
+                                    ? 'Đang cập nhật'
+                                    : countdownLabel ?? 'Đang chờ',
                                 style: GoogleFonts.beVietnamPro(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -389,6 +446,25 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    if (pendingCount > 1)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () => context.go('/shifts'),
+                          icon: const Icon(Icons.format_list_bulleted_rounded,
+                              size: 16),
+                          label: Text('+${pendingCount - 1} lịch khác'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            minimumSize: const Size(44, 40),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            textStyle: GoogleFonts.beVietnamPro(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 12),
                     const Divider(color: AppColors.border, height: 1),
                     const SizedBox(height: 12),
@@ -521,6 +597,40 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
 
+                    if (turnaroundWarning != null) ...[
+                      Semantics(
+                        liveRegion: true,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.warning_amber_rounded,
+                                  color: AppColors.warning, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  turnaroundWarning,
+                                  style: GoogleFonts.beVietnamPro(
+                                    fontSize: 12,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
                     // Note
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -549,23 +659,28 @@ class HomeScreen extends ConsumerWidget {
                 child: SizedBox(
                   height: 48,
                   child: OutlinedButton.icon(
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(shiftsProvider.notifier)
-                            .declineBooking(booking.id);
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Chưa từ chối được ca: $e'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: isExpired || isProcessing
+                        ? null
+                        : () async {
+                            final reason = await _selectDeclineReason(context);
+                            if (reason == null || !context.mounted) return;
+                            await _runOfferAction(
+                              context,
+                              booking.id,
+                              successMessage:
+                                  'Đã từ chối ca. Hệ thống sẽ tìm người phù hợp khác.',
+                              action: () => ref
+                                  .read(shiftsProvider.notifier)
+                                  .declineBooking(booking.id, reason: reason),
+                            );
+                          },
+                    icon: isProcessing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.close_rounded, size: 18),
                     label: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -593,32 +708,27 @@ class HomeScreen extends ConsumerWidget {
                 child: SizedBox(
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(shiftsProvider.notifier)
-                            .acceptBooking(booking.id);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Đã nhận ca. Ca nằm trong lịch sắp tới.'),
-                              backgroundColor: AppColors.success,
+                    onPressed: isExpired || isProcessing
+                        ? null
+                        : () => _runOfferAction(
+                              context,
+                              booking.id,
+                              successMessage:
+                                  'Đã nhận ca. Ca nằm trong lịch sắp tới.',
+                              action: () => ref
+                                  .read(shiftsProvider.notifier)
+                                  .acceptBooking(booking.id),
                             ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Chưa nhận được ca: $e'),
-                              backgroundColor: AppColors.error,
+                    icon: isProcessing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.check_circle_rounded, size: 18),
+                          )
+                        : const Icon(Icons.check_circle_rounded, size: 18),
                     label: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -644,6 +754,114 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  String? _countdownLabel(Duration? remaining) {
+    if (remaining == null) return null;
+    if (remaining <= Duration.zero) return null;
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds.remainder(60);
+    return 'Còn ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String? _turnaroundWarning(
+    ShiftModel offer,
+    List<ShiftModel> scheduledOrActiveShifts,
+  ) {
+    final offerStart = offer.scheduledStart;
+    final offerEnd = offer.scheduledEnd;
+    if (offerStart == null || offerEnd == null) return null;
+
+    for (final shift in scheduledOrActiveShifts) {
+      final start = shift.scheduledStart;
+      final end = shift.scheduledEnd;
+      if (start == null || end == null) continue;
+      final gapBefore = offerStart.difference(end);
+      final gapAfter = start.difference(offerEnd);
+      final nearestGap = gapBefore >= Duration.zero ? gapBefore : gapAfter;
+      if (nearestGap >= Duration.zero &&
+          nearestGap <= const Duration(minutes: 30)) {
+        return 'Ca này cách ca “${shift.serviceName}” chưa đến 30 phút. Hãy kiểm tra thời gian di chuyển trước khi nhận.';
+      }
+    }
+    return null;
+  }
+
+  Future<void> _runOfferAction(
+    BuildContext context,
+    String bookingId, {
+    required String successMessage,
+    required Future<void> Function() action,
+  }) async {
+    setState(() => _processingOfferId = bookingId);
+    try {
+      await action();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(successMessage), backgroundColor: AppColors.success),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _processingOfferId = null);
+    }
+  }
+
+  Future<String?> _selectDeclineReason(BuildContext context) {
+    const reasons = <String>[
+      'Trùng lịch',
+      'Địa điểm quá xa',
+      'Không phù hợp kỹ năng',
+      'Không thể nhận ca trong thời gian này',
+    ];
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Lý do từ chối ca',
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Thông tin này giúp hệ thống ghép ca phù hợp hơn cho bạn.',
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final reason in reasons)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                minVerticalPadding: 4,
+                title:
+                    Text(reason, style: GoogleFonts.beVietnamPro(fontSize: 15)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(sheetContext).pop(reason),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1044,7 +1262,6 @@ class HomeScreen extends ConsumerWidget {
     if (parts.length >= 2) return parts.take(2).join(', ');
     return address;
   }
-
 }
 
 // ═══════════════════════════════════════════════════════════

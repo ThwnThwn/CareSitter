@@ -20,10 +20,7 @@ VALUES
     ('a0000000-0000-0000-0000-000000000001', NULL, 'PLATFORM', 0, 'VND')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Loai dich vu (3 goi cham soc nguoi cao tuoi chuan Genki: Duong - An - Tam)
-DELETE FROM catalog.pricing_rules WHERE service_type_id IN ('a0000000-0000-0000-0000-0000000000f4', 'a0000000-0000-0000-0000-0000000000f5');
-DELETE FROM catalog.service_types WHERE id IN ('a0000000-0000-0000-0000-0000000000f4', 'a0000000-0000-0000-0000-0000000000f5');
-
+-- 2. Loai dich vu (6 goi cham soc nguoi cao tuoi chuan Genki)
 INSERT INTO catalog.service_types (id, code, name, description, default_duration_minutes, is_active)
 VALUES
     ('a0000000-0000-0000-0000-0000000000f1', 'GENKI_DUONG',
@@ -31,7 +28,13 @@ VALUES
     ('a0000000-0000-0000-0000-0000000000f2', 'GENKI_AN',
      'Gói AN (Trí lực & Thư giãn)', 'Gói Dưỡng + Kích hoạt trí não (chơi cờ, vẽ tranh, đọc sách), xoa bóp bấm huyệt, đo huyết áp', 240, TRUE),
     ('a0000000-0000-0000-0000-0000000000f3', 'GENKI_TAM',
-     'Gói TÂM (Toàn diện & Phục hồi)', 'Gói An + Hỗ trợ phục hồi chức năng, lăn trở chống loét, chế độ ăn bệnh lý, Caregiver chuẩn Kaigo 1:1', 480, TRUE)
+     'Gói TÂM (Toàn diện & Phục hồi)', 'Gói An + Hỗ trợ phục hồi chức năng, lăn trở chống loét, chế độ ăn bệnh lý, Caregiver chuẩn Kaigo 1:1', 480, TRUE),
+    ('a0000000-0000-0000-0000-0000000000f4', 'GENKI_PHUCHOI',
+     'Gói PHỤC HỒI (Vận động & Trị liệu)', 'Phục hồi chức năng sau tai biến/chấn thương, bài tập vận động Kaigo, xoa bóp bấm huyệt lưu thông khí huyết', 120, TRUE),
+    ('a0000000-0000-0000-0000-0000000000f5', 'GENKI_DONGHANH',
+     'Gói ĐỒNG HÀNH (Khám bệnh & Tản bộ)', 'Đồng hành cùng người cao tuổi đi khám bệnh định kỳ, nhận thuốc, tản bộ ngoài trời, hỗ trợ xe lăn an toàn', 180, TRUE),
+    ('a0000000-0000-0000-0000-0000000000f6', 'GENKI_DEM',
+     'Gói ĐÊM (Trực đêm & Giấc ngủ)', 'Chăm sóc và túc trực ban đêm (22h - 6h), hỗ trợ đi vệ sinh đêm chống té ngã, nhắc uống thuốc và xử lý khẩn cấp', 480, TRUE)
 ON CONFLICT (id) DO UPDATE SET
     code = EXCLUDED.code,
     name = EXCLUDED.name,
@@ -52,6 +55,15 @@ VALUES
      'a0000000-0000-0000-0000-0000000000a1'),
     ('a0000000-0000-0000-0000-0000000000d3', 'Giá Gói TÂM',
      'a0000000-0000-0000-0000-0000000000f3', 130000, 1.30, 1.50, 15.00, 48,
+     'a0000000-0000-0000-0000-0000000000a1'),
+    ('a0000000-0000-0000-0000-0000000000d4', 'Giá Gói PHỤC HỒI',
+     'a0000000-0000-0000-0000-0000000000f4', 110000, 1.30, 1.50, 15.00, 48,
+     'a0000000-0000-0000-0000-0000000000a1'),
+    ('a0000000-0000-0000-0000-0000000000d5', 'Giá Gói ĐỒNG HÀNH',
+     'a0000000-0000-0000-0000-0000000000f5', 85000, 1.30, 1.50, 15.00, 48,
+     'a0000000-0000-0000-0000-0000000000a1'),
+    ('a0000000-0000-0000-0000-0000000000d6', 'Giá Gói ĐÊM',
+     'a0000000-0000-0000-0000-0000000000f6', 105000, 1.30, 1.50, 15.00, 48,
      'a0000000-0000-0000-0000-0000000000a1')
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,

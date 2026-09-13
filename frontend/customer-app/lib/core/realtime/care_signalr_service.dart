@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import '../auth/auth_notifier.dart';
@@ -168,7 +169,12 @@ class CareSignalRService {
   Stream<BookingListSyncSignal> get customerSyncStream =>
       _customerSyncController.stream;
 
-  CareSignalRService(this._ref);
+  CareSignalRService(this._ref) {
+    _authNotifier = _ref.read(authStateProvider.notifier);
+    _authNotifier.registerLogoutCleanup(disconnect);
+  }
+
+  late final AuthNotifier _authNotifier;
 
   /// Danh sách booking ID đang theo dõi — dùng để re-join sau khi reconnect.
   final Set<String> _activeBookings = {};
@@ -189,10 +195,20 @@ class CareSignalRService {
     final token = _ref.read(authStateProvider).value?.accessToken;
     if (token == null) return; // Chưa login → không kết nối
 
-    final hubUrl = '$_hubBaseUrl/hubs/care-tracking?access_token=$token';
+    if (_connection != null) {
+      try {
+        await _connection!.stop();
+      } catch (_) {}
+    }
 
     _connection = HubConnectionBuilder()
-        .withUrl(hubUrl)
+        .withUrl(
+      '$_hubBaseUrl/hubs/care-tracking',
+      options: HttpConnectionOptions(
+        accessTokenFactory: () async =>
+            _ref.read(authStateProvider).value?.accessToken ?? '',
+      ),
+    )
         .withAutomaticReconnect(retryDelays: [
       2000, 5000, 10000, 30000, // ms
     ]).build();
@@ -241,28 +257,24 @@ class CareSignalRService {
     });
 
     _connection!.onclose(({error}) {
-      // ignore: avoid_print
-      print('[SignalR] Connection closed: $error');
+      debugPrint('[SignalR] Connection closed.');
       _lifecycleController.add(SignalRConnectionState.closed);
     });
 
     _connection!.onreconnecting(({error}) {
-      // ignore: avoid_print
-      print('[SignalR] Reconnecting: $error');
+      debugPrint('[SignalR] Reconnecting.');
       _lifecycleController.add(SignalRConnectionState.reconnecting);
     });
 
     _connection!.onreconnected(({connectionId}) {
-      // ignore: avoid_print
-      print(
+      debugPrint(
           '[SignalR] Reconnected: $connectionId — re-joining ${_activeBookings.length} groups');
       // ⚠️ ConnectionId mới → booking group membership bị mất.
       // Customer group được backend tự join lại qua OnConnectedAsync khi reconnect.
       // Chỉ cần re-join booking groups (tracking chi tiết).
       for (final bid in _activeBookings) {
-        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((e) {
-          // ignore: avoid_print
-          print('[SignalR] Re-join failed for $bid: $e');
+        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((_) {
+          debugPrint('[SignalR] Re-join failed for $bid.');
           return null;
         });
       }
@@ -272,12 +284,11 @@ class CareSignalRService {
     _lifecycleController.add(SignalRConnectionState.connecting);
     try {
       await _connection!.start();
-      // ignore: avoid_print
-      print('[SignalR] Connected to CareTrackingHub');
+      debugPrint('[SignalR] Connected to CareTrackingHub');
       _lifecycleController.add(SignalRConnectionState.connected);
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SignalR] Connection failed: $e');
+    } catch (_) {
+      // SignalR errors may contain the full negotiation URL with access_token.
+      debugPrint('[SignalR] Connection failed; retry will continue.');
       _lifecycleController.add(SignalRConnectionState.closed);
     }
   }
@@ -291,17 +302,14 @@ class CareSignalRService {
       final result =
           await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
       if (result == 'unauthorized') {
-        // ignore: avoid_print
-        print('[SignalR] joinBooking UNAUTHORIZED: $bookingId');
+        debugPrint('[SignalR] joinBooking UNAUTHORIZED: $bookingId');
         return;
       }
       // Lưu lại để re-join sau khi reconnect
       _activeBookings.add(bookingId);
-      // ignore: avoid_print
-      print('[SignalR] Joined booking group: $bookingId');
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SignalR] joinBooking error: $e');
+      debugPrint('[SignalR] Joined booking group: $bookingId');
+    } catch (_) {
+      debugPrint('[SignalR] Could not join booking group.');
     }
   }
 
@@ -316,11 +324,22 @@ class CareSignalRService {
     }
   }
 
+  Future<void> disconnect() async {
+    _activeBookings.clear();
+    final connection = _connection;
+    _connection = null;
+    try {
+      await connection?.stop();
+    } catch (_) {}
+    if (!_lifecycleController.isClosed) {
+      _lifecycleController.add(SignalRConnectionState.closed);
+    }
+  }
+
   /// Dừng kết nối và đóng stream controllers.
   Future<void> dispose() async {
-    try {
-      await _connection?.stop();
-    } catch (_) {}
+    _authNotifier.unregisterLogoutCleanup(disconnect);
+    await disconnect();
     await _gpsController.close();
     await _statusController.close();
     await _timelineController.close();

@@ -177,15 +177,15 @@ class AppTheme {
     return GoogleFonts.beVietnamProTextTheme(
       TextTheme(
         // display-lg: 32/700, -0.02em
-        displayLarge:
-            _textStyle(32, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.02 * 32),
-        displayMedium:
-            _textStyle(28, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.02 * 28),
-        displaySmall:
-            _textStyle(24, AppColors.textPrimary, weight: FontWeight.w700, letterSpacing: -0.01 * 24),
+        displayLarge: _textStyle(32, AppColors.textPrimary,
+            weight: FontWeight.w700, letterSpacing: -0.02 * 32),
+        displayMedium: _textStyle(28, AppColors.textPrimary,
+            weight: FontWeight.w700, letterSpacing: -0.02 * 28),
+        displaySmall: _textStyle(24, AppColors.textPrimary,
+            weight: FontWeight.w700, letterSpacing: -0.01 * 24),
         // headline-lg: 24/600, -0.01em
-        headlineLarge:
-            _textStyle(24, AppColors.textPrimary, weight: FontWeight.w600, letterSpacing: -0.01 * 24),
+        headlineLarge: _textStyle(24, AppColors.textPrimary,
+            weight: FontWeight.w600, letterSpacing: -0.01 * 24),
         // headline-md: 20/600
         headlineMedium:
             _textStyle(20, AppColors.textPrimary, weight: FontWeight.w600),
@@ -206,14 +206,14 @@ class AppTheme {
         // body-sm: 12/400
         bodySmall: _textStyle(12, AppColors.textSecondary),
         // label-lg: 15/600, 0.01em
-        labelLarge:
-            _textStyle(15, AppColors.textPrimary, weight: FontWeight.w600, letterSpacing: 0.01 * 15),
+        labelLarge: _textStyle(15, AppColors.textPrimary,
+            weight: FontWeight.w600, letterSpacing: 0.01 * 15),
         // label-md: 13/500
         labelMedium:
             _textStyle(13, AppColors.textSecondary, weight: FontWeight.w500),
         // label-sm: 11/600, 0.02em
-        labelSmall:
-            _textStyle(11, AppColors.textHint, weight: FontWeight.w600, letterSpacing: 0.02 * 11),
+        labelSmall: _textStyle(11, AppColors.textHint,
+            weight: FontWeight.w600, letterSpacing: 0.02 * 11),
       ),
     );
   }

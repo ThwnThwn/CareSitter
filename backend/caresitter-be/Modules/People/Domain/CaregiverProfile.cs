@@ -16,6 +16,7 @@ public sealed class CaregiverProfile : AggregateRoot
     private CaregiverProfile(Guid id, Guid userId) : base(id)
     {
         UserId = userId;
+        CertificateUrls = "[]";
     }
 
     public Guid UserId { get; private set; }
@@ -26,6 +27,9 @@ public sealed class CaregiverProfile : AggregateRoot
     public string? Gender { get; private set; }
     public string? CccdNumberEncrypted { get; private set; }
     public string? CccdHash { get; private set; }
+    public string? CccdFrontUrl { get; private set; }
+    public string? CccdBackUrl { get; private set; }
+    public string? CertificateUrls { get; private set; } = "[]";
     public string? Bio { get; private set; }
     public int? YearsOfExperience { get; private set; }
     public long? HourlyRateExpected { get; private set; }
@@ -57,7 +61,12 @@ public sealed class CaregiverProfile : AggregateRoot
         return new CaregiverProfile(Guid.NewGuid(), userId);
     }
 
-    public Result SubmitKyc(string cccdEncrypted, string cccdHash)
+    public Result SubmitKyc(
+        string cccdEncrypted,
+        string cccdHash,
+        string cccdFrontUrl,
+        string cccdBackUrl,
+        string? certificateUrls = null)
     {
         if (KycStatus is not ("DRAFT" or "REJECTED"))
             return Error.Conflict("caregiver.kyc_status", $"Khong the nop KYC khi trang thai la {KycStatus}.");
@@ -65,9 +74,16 @@ public sealed class CaregiverProfile : AggregateRoot
             return Error.Validation("caregiver.cccd", "cccd_number_encrypted la bat buoc.");
         if (string.IsNullOrWhiteSpace(cccdHash))
             return Error.Validation("caregiver.cccd_hash", "cccd_hash la bat buoc.");
+        if (string.IsNullOrWhiteSpace(cccdFrontUrl))
+            return Error.Validation("caregiver.cccd_front", "Anh mat truoc CCCD la bat buoc.");
+        if (string.IsNullOrWhiteSpace(cccdBackUrl))
+            return Error.Validation("caregiver.cccd_back", "Anh mat sau CCCD la bat buoc.");
 
         CccdNumberEncrypted = cccdEncrypted;
         CccdHash = cccdHash;
+        CccdFrontUrl = cccdFrontUrl;
+        CccdBackUrl = cccdBackUrl;
+        CertificateUrls = string.IsNullOrWhiteSpace(certificateUrls) ? "[]" : certificateUrls;
         KycStatus = "PENDING";
         return Result.Success();
     }

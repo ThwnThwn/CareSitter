@@ -78,11 +78,7 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
                 width: double.infinity,
                 height: 260,
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0D4F2C), Color(0xFF1E7A52), Color(0xFF2D9E6B)],
-                  ),
+                  gradient: AppColors.heroGradient,
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(36),
                     bottomRight: Radius.circular(36),
@@ -246,11 +242,13 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
                           fillColor: AppColors.cardBackground,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -301,7 +299,8 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
                           TextButton(
                             onPressed: () => context.push('/auth/register'),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
                               minimumSize: Size.zero,
                             ),
                             child: const Text(

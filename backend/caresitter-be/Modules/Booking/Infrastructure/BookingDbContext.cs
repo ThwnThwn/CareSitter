@@ -39,6 +39,7 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.ServiceTypeId).HasColumnName("service_type_id");
             b.Property(x => x.ScheduledStart).HasColumnName("scheduled_start");
             b.Property(x => x.ScheduledEnd).HasColumnName("scheduled_end");
+            b.Property(x => x.PaymentDeadline).HasColumnName("payment_deadline");
             b.Property(x => x.ActualStart).HasColumnName("actual_start");
             b.Property(x => x.ActualEnd).HasColumnName("actual_end");
             b.Property(x => x.CheckoutPendingReviewAt).HasColumnName("checkout_pending_review_at");
@@ -104,6 +105,7 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.OfferedAt).HasColumnName("offered_at");
             b.Property(x => x.RespondedAt).HasColumnName("responded_at");
             b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            b.Property(x => x.DeclineReason).HasColumnName("decline_reason").HasMaxLength(200);
         });
 
         modelBuilder.Entity<CaregiverSlotHold>(b =>

@@ -75,6 +75,8 @@ class BookingModel {
   bool get isActive => const {
         'draft',
         'pending_payment',
+        'payment_reconciliation_pending',
+        'needs_manual_review',
         'confirmed',
         'caregiver_accepted',
         'caregiver_en_route',

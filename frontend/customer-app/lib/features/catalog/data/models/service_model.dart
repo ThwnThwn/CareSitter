@@ -23,6 +23,9 @@ class ServiceModel {
     if (code.contains('DUONG')) return '🌱';
     if (code.contains('AN')) return '🌿';
     if (code.contains('TAM')) return '🌸';
+    if (code.contains('PHUCHOI')) return '🍀';
+    if (code.contains('DONGHANH')) return '🌻';
+    if (code.contains('DEM')) return '🌙';
     return '🏥';
   }
 
@@ -36,16 +39,18 @@ class ServiceModel {
         id: (json['id'] ?? json['Id'])?.toString() ?? '',
         code: (json['code'] ?? json['Code']) as String? ?? '',
         name: (json['name'] ?? json['Name']) as String? ?? 'Dịch vụ',
-        description: json['description'] as String? ?? json['Description'] as String?,
-        defaultDurationMinutes:
-            json['defaultDurationMinutes'] as int? ?? json['DefaultDurationMinutes'] as int? ?? 60,
-        baseHourlyPrice: (json['baseHourlyPrice'] as num? ??
-                json['BaseHourlyPrice'] as num?)
-            ?.toInt() ??
-            0,
+        description:
+            json['description'] as String? ?? json['Description'] as String?,
+        defaultDurationMinutes: json['defaultDurationMinutes'] as int? ??
+            json['DefaultDurationMinutes'] as int? ??
+            60,
+        baseHourlyPrice:
+            (json['baseHourlyPrice'] as num? ?? json['BaseHourlyPrice'] as num?)
+                    ?.toInt() ??
+                0,
         platformFeePercent: (json['platformFeePercent'] as num? ??
-                json['PlatformFeePercent'] as num?)
-            ?.toDouble() ??
+                    json['PlatformFeePercent'] as num?)
+                ?.toDouble() ??
             0,
       );
 }

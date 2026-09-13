@@ -57,8 +57,13 @@ class ShiftRepository {
   }
 
   /// Caregiver từ chối ca → POST /bookings/{id}/decline
-  Future<void> declineBooking(String id) async {
-    await _dio.post<void>(ApiPaths.declineBooking(id));
+  Future<void> declineBooking(String id, {String? reason}) async {
+    await _dio.post<void>(
+      ApiPaths.declineBooking(id),
+      data: {
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim()
+      },
+    );
   }
 
   /// Bắt đầu di chuyển → POST /bookings/{id}/en-route

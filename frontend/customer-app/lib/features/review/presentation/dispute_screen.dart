@@ -104,7 +104,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(12),
                 border:
-                    Border.all(color: AppColors.warning.withOpacity(0.4)),
+                    Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
               ),
               child: const Row(children: [
                 Icon(Icons.info_outline, color: AppColors.warning, size: 20),

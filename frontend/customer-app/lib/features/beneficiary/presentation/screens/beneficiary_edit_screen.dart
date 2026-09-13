@@ -219,14 +219,12 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
           avatarPath: _avatarPath,
         );
 
-    await Future.delayed(const Duration(milliseconds: 600));
-
     if (mounted) {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Đã cập nhật hồ sơ người thân thành công!'),
-          backgroundColor: AppColors.success,
+          content: Text('Hồ sơ đã được cập nhật trên thiết bị.'),
+          backgroundColor: AppColors.warning,
         ),
       );
       popOrGo(context, fallbackRoute: '/beneficiaries/${widget.id}');

@@ -8,8 +8,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/auth_repository.dart';
 
 class OtpVerifyScreen extends ConsumerStatefulWidget {
-  final String phone;
-  const OtpVerifyScreen({super.key, required this.phone});
+  final String email;
+  const OtpVerifyScreen({super.key, required this.email});
 
   @override
   ConsumerState<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
@@ -22,6 +22,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   int _countdown = 60;
   Timer? _timer;
   bool _isVerifying = false;
+  bool _isResending = false;
 
   @override
   void initState() {
@@ -72,7 +73,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   Future<void> _verify() async {
     setState(() => _isVerifying = true);
     try {
-      await ref.read(authRepositoryProvider).loginWithOtp(widget.phone, _otp);
+      await ref.read(authRepositoryProvider).loginWithOtp(widget.email, _otp);
       if (mounted) {
         setState(() => _isVerifying = false);
         context.go('/home');
@@ -87,6 +88,25 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _resendOtp() async {
+    setState(() => _isResending = true);
+    try {
+      await ref.read(authRepositoryProvider).requestOtp(widget.email);
+      if (mounted) _startCountdown();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể gửi lại OTP: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResending = false);
     }
   }
 
@@ -138,7 +158,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                   children: [
                     const TextSpan(text: 'Mã OTP đã được gửi đến\n'),
                     TextSpan(
-                      text: widget.phone,
+                      text: widget.email,
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
@@ -199,10 +219,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                         ),
                       )
                     : TextButton(
-                        onPressed: _startCountdown,
-                        child: const Text(
-                          'Gửi lại mã OTP',
-                          style: TextStyle(
+                        onPressed: _isResending ? null : _resendOtp,
+                        child: Text(
+                          _isResending ? 'Đang gửi lại...' : 'Gửi lại mã OTP',
+                          style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w700),
                         ),

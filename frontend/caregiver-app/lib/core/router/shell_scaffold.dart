@@ -10,9 +10,13 @@ class ShellScaffold extends StatelessWidget {
   static const _tabs = [
     _NavItem(icon: Icons.home_rounded, label: 'Trang chủ', path: '/home'),
     _NavItem(
-        icon: Icons.work_history_rounded, label: 'Ca làm việc', path: '/shifts'),
+        icon: Icons.work_history_rounded,
+        label: 'Ca làm việc',
+        path: '/shifts'),
     _NavItem(
-        icon: Icons.calendar_month_rounded, label: 'Lịch rảnh', path: '/schedule'),
+        icon: Icons.calendar_month_rounded,
+        label: 'Lịch rảnh',
+        path: '/schedule'),
     _NavItem(icon: Icons.person_rounded, label: 'Cài đặt', path: '/settings'),
   ];
 

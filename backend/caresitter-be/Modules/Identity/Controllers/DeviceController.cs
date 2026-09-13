@@ -41,13 +41,31 @@ public sealed class DeviceController : ControllerBase
 
         var platform = req.Platform.Trim().ToUpper();
 
-        // Upsert: tìm thiết bị cùng userId + platform — single query
+        var pushToken = string.IsNullOrWhiteSpace(req.PushToken)
+            ? null
+            : req.PushToken.Trim();
+
+        // Một FCM token chỉ được thuộc một tài khoản. Khi cùng thiết bị đăng
+        // nhập tài khoản mới, gỡ token khỏi owner cũ trước khi upsert.
+        UserDevice? tokenOwner = null;
+        if (pushToken is not null)
+        {
+            tokenOwner = await _db.UserDevices
+                .FirstOrDefaultAsync(x => x.PushToken == pushToken, ct);
+            if (tokenOwner is not null && tokenOwner.UserId != userId)
+            {
+                _db.UserDevices.Remove(tokenOwner);
+                tokenOwner = null;
+            }
+        }
+
+        // Upsert theo user + platform cho phiên đăng nhập hiện tại.
         var existing = await _db.UserDevices
             .FirstOrDefaultAsync(x => x.UserId == userId && x.Platform == platform, ct);
 
         if (existing is not null)
         {
-            existing.UpdatePushToken(req.PushToken);
+            existing.UpdatePushToken(pushToken);
             if (req.DeviceName is not null) existing.UpdateDeviceName(req.DeviceName);
             await _db.SaveChangesAsync(ct);
             return Ok(ToResponse(existing));
@@ -62,7 +80,7 @@ public sealed class DeviceController : ControllerBase
                 Detail = device.Error.Message
             });
 
-        device.Value.UpdatePushToken(req.PushToken);
+        device.Value.UpdatePushToken(pushToken);
         if (req.DeviceName is not null) device.Value.UpdateDeviceName(req.DeviceName);
 
         _db.UserDevices.Add(device.Value);

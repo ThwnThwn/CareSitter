@@ -24,9 +24,9 @@ public sealed class PaymentsController(
     BookingDbContext bookingDb,
     ICurrentUser currentUser,
     IVNPayService vnPay,
+    IPaymentFinalizationService finalizer,
     IOptions<VNPayOptions> vnPayOptions) : ControllerBase
 {
-    private const int PaymentTimeoutMinutes = 15;
     // ════════════════════════════════════════════
     //  PAYMENT INTENTS
     // ════════════════════════════════════════════
@@ -43,44 +43,145 @@ public sealed class PaymentsController(
         var booking = await bookingDb.Bookings.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == req.BookingId && x.CustomerId == userId, ct);
         if (booking is null) return NotFound();
-        var idempotencyKey = $"pi-{req.BookingId}-{userId}-VNPAY";
-
-        var existing = await db.PaymentIntents.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.IdempotencyKey == idempotencyKey, ct);
-        if (existing is not null)
-            return Ok(ToIntentResponse(existing, vnPay, vnPayOptions.Value));
-
         if (booking.Status != BookingStatus.PendingPayment)
             return Conflict(new { error = "Booking khong o trang thai cho thanh toan." });
+        var now = DateTimeOffset.UtcNow;
+        if (booking.PaymentDeadline <= now)
+            return Conflict(new
+            {
+                error = "Booking da het thoi han thanh toan va dang cho doi soat.",
+                code = "BOOKING_PAYMENT_DEADLINE_EXPIRED",
+                paymentDeadline = booking.PaymentDeadline
+            });
+        var paymentTimeout = TimeSpan.FromMinutes(
+            Math.Clamp(vnPayOptions.Value.PaymentTimeoutMinutes, 1, 60));
+
+        // VNPay khong cho dung lai vnp_TxnRef. Chi tao ref moi khi attempt cu
+        // da that bai/het han; neu van con trong cua so xu ly thi bao ro cho user.
+        var latestAttempt = await db.PaymentIntents
+            .Where(x => x.BookingId == req.BookingId && x.CustomerId == userId && x.Provider == "VNPAY")
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (latestAttempt?.Status == "SUCCEEDED")
+            return Conflict(new { error = "Booking da thanh toan thanh cong.", code = "PAYMENT_ALREADY_SUCCEEDED" });
+        if (latestAttempt?.Status == "PENDING")
+        {
+            VNPayQueryResult query;
+            try
+            {
+                query = await vnPay.QueryTransactionAsync(latestAttempt, vnPayOptions.Value, ct);
+            }
+            catch
+            {
+                return Conflict(new
+                {
+                    error = "Chua the xac minh trang thai giao dich truoc. Vui long thu lai sau.",
+                    code = "PAYMENT_STATUS_UNKNOWN"
+                });
+            }
+
+            if (query.State == VNPayQueryState.Succeeded)
+            {
+                var finalized = await finalizer.FinalizeSuccessfulPaymentAsync(latestAttempt.Id,
+                    query.TransactionId, query.RawPayload, PaymentFinalizationSource.RetryPreflight, ct);
+                return Conflict(new
+                {
+                    error = finalized.Succeeded
+                        ? "Giao dich truoc da thanh toan thanh cong."
+                        : "Giao dich da thanh cong nhung booking chua the chot tu dong.",
+                    code = finalized.Succeeded ? "PAYMENT_ALREADY_SUCCEEDED" : "PAYMENT_NEEDS_REVIEW"
+                });
+            }
+            if (query.State is VNPayQueryState.Processing or VNPayQueryState.Unknown)
+            {
+                var expiresAt = latestAttempt.CreatedAt.Add(paymentTimeout);
+                return Conflict(new
+                {
+                    error = query.State == VNPayQueryState.Processing
+                        ? "Giao dich truoc van dang duoc VNPay xu ly."
+                        : "VNPay chua tra ve trang thai chac chan cho giao dich truoc.",
+                    code = query.State == VNPayQueryState.Processing
+                        ? "PAYMENT_IN_PROGRESS"
+                        : "PAYMENT_STATUS_UNKNOWN",
+                    expiresAt
+                });
+            }
+
+            await using var closeTx = await bookingDb.Database.BeginTransactionAsync(ct);
+            var lockedBooking = await bookingDb.Bookings.FromSqlInterpolated(
+                $"SELECT * FROM booking.bookings WHERE id = {booking.Id} FOR UPDATE")
+                .SingleAsync(ct);
+            if (lockedBooking.Status != BookingStatus.PendingPayment)
+                return Conflict(new
+                {
+                    error = "Booking da duoc tien trinh doi soat khac xu ly.",
+                    code = "PAYMENT_STATE_CHANGED"
+                });
+            var closedStatus = query.State == VNPayQueryState.NotFound ? "EXPIRED" : "FAILED";
+            var updated = await bookingDb.Database.ExecuteSqlInterpolatedAsync($$"""
+                UPDATE payments.payment_intents
+                SET status = {{closedStatus}}, response_payload = CAST({{query.RawPayload}} AS jsonb),
+                    finalized_source = 'RetryPreflight', next_reconciliation_at = NULL,
+                    updated_at = now()
+                WHERE id = {{latestAttempt.Id}} AND status = 'PENDING'
+                """, ct);
+            if (updated == 0)
+                return Conflict(new
+                {
+                    error = "Trang thai giao dich vua thay doi. Vui long tai lai booking.",
+                    code = "PAYMENT_STATE_CHANGED"
+                });
+            await closeTx.CommitAsync(ct);
+            db.ChangeTracker.Clear();
+        }
 
         CaregiverSlotHold? createdHold = null;
         if (booking.CaregiverId is { } caregiverId)
         {
-            var holdResult = CaregiverSlotHold.Create(
-                booking.Id,
-                caregiverId,
-                booking.ScheduledStart,
-                booking.ScheduledEnd,
-                DateTimeOffset.UtcNow.AddMinutes(PaymentTimeoutMinutes));
-            if (holdResult.IsFailure) return Problem(holdResult.Error);
-
-            createdHold = holdResult.Value;
-            bookingDb.CaregiverSlotHolds.Add(createdHold);
-            try
+            var holdUntil = booking.PaymentDeadline.AddMinutes(
+                Math.Clamp(vnPayOptions.Value.ReconciliationWindowMinutes, 1, 60));
+            var existingHold = await bookingDb.CaregiverSlotHolds
+                .SingleOrDefaultAsync(x => x.BookingId == booking.Id && x.Status == "HELD", ct);
+            if (existingHold is not null && existingHold.CaregiverId == caregiverId)
             {
-                // Exclusion constraint trên caregiver + time range quyết định request thắng race.
+                existingHold.ExtendUntil(holdUntil);
                 await bookingDb.SaveChangesAsync(ct);
             }
-            catch (DbUpdateException)
+            else if (existingHold is not null)
             {
-                return Conflict(new
+                existingHold.Release();
+                await bookingDb.SaveChangesAsync(ct);
+            }
+
+            if (existingHold is null || existingHold.CaregiverId != caregiverId)
+            {
+                var holdResult = CaregiverSlotHold.Create(
+                    booking.Id,
+                    caregiverId,
+                    booking.ScheduledStart,
+                    booking.ScheduledEnd,
+                    holdUntil);
+                if (holdResult.IsFailure) return Problem(holdResult.Error);
+
+                createdHold = holdResult.Value;
+                bookingDb.CaregiverSlotHolds.Add(createdHold);
+                try
                 {
-                    error = "Caregiver da duoc giu cho booking khac trong cung khung gio.",
-                    code = "CAREGIVER_TIME_SLOT_HELD"
-                });
+                    // Exclusion constraint trên caregiver + time range quyết định request thắng race.
+                    await bookingDb.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException)
+                {
+                    return Conflict(new
+                    {
+                        error = "Caregiver da duoc giu cho booking khac trong cung khung gio.",
+                        code = "CAREGIVER_TIME_SLOT_HELD"
+                    });
+                }
             }
         }
 
+        var idempotencyKey = $"pi-{req.BookingId}-{userId}-VNPAY-{Guid.NewGuid():N}";
         var created = PaymentIntent.Create(req.BookingId, userId,
             "VNPAY", booking.EscrowAmount, idempotencyKey);
         if (created.IsFailure) return Problem(created.Error);
@@ -97,15 +198,19 @@ public sealed class PaymentsController(
         }
         catch (DbUpdateException)
         {
+            db.ChangeTracker.Clear();
+            var raced = await db.PaymentIntents.AsNoTracking()
+                .Where(x => x.BookingId == req.BookingId && x.CustomerId == userId &&
+                    x.Provider == "VNPAY" && x.Status == "PENDING")
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+            if (raced is not null)
+                return Ok(ToIntentResponse(raced, vnPay, vnPayOptions.Value));
             if (createdHold is not null)
             {
                 createdHold.Release();
                 await bookingDb.SaveChangesAsync(ct);
             }
-            var raced = await db.PaymentIntents.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.IdempotencyKey == idempotencyKey, ct);
-            if (raced is not null)
-                return Ok(ToIntentResponse(raced, vnPay, vnPayOptions.Value));
             throw;
         }
         return Created($"/api/v1/payments/intents/{created.Value.Id}",

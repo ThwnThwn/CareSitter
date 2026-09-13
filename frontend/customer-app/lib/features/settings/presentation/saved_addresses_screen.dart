@@ -77,7 +77,9 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
 
   Future<void> _setAsDefault(AddressModel address) async {
     try {
-      await ref.read(addressStoreProvider.notifier).setDefaultAddress(address.id);
+      await ref
+          .read(addressStoreProvider.notifier)
+          .setDefaultAddress(address.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,7 +122,8 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
     );
   }
 
-  Widget _buildAddressList(List<AddressModel> addresses, String? defaultAddressId) {
+  Widget _buildAddressList(
+      List<AddressModel> addresses, String? defaultAddressId) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -201,7 +204,8 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildAddressHeader(address, isSelected, isDefault: isDefault),
+                      _buildAddressHeader(address, isSelected,
+                          isDefault: isDefault),
                       const SizedBox(height: 6),
                       Text(
                         address.fullAddress,
@@ -223,14 +227,17 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                               TextStyle(color: AppColors.warning, fontSize: 12),
                         ),
                       ],
-                      if (!widget.selectionMode && !isDefault && address.isVerified) ...[
+                      if (!widget.selectionMode &&
+                          !isDefault &&
+                          address.isVerified) ...[
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _setAsDefault(address),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.star_border, size: 16, color: AppColors.primary),
+                              Icon(Icons.star_border,
+                                  size: 16, color: AppColors.primary),
                               SizedBox(width: 4),
                               Text(
                                 'Đặt làm mặc định',

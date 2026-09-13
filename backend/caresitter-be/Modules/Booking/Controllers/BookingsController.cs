@@ -2,6 +2,7 @@ using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
+using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.CreateBooking;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Booking.Controllers;
 
@@ -34,7 +36,8 @@ public sealed class BookingsController(
     ISender sender,
     IHubContext<CareTrackingHub> hub,
     BookingSyncService bookingSync,
-    IUserNotificationService notifications) : ControllerBase
+    IUserNotificationService notifications,
+    IOptions<CheckInOptions> checkInOptions) : ControllerBase
 {
     // ════════════════════════════════════════════
     //  CRUD
@@ -63,6 +66,7 @@ public sealed class BookingsController(
 
         IQueryable<Domain.Booking> query;
         Guid? caregiverProfileId = null;
+        var isOfferInbox = false;
 
         if (currentUser.IsInRole("ADMIN"))
         {
@@ -80,6 +84,7 @@ public sealed class BookingsController(
                 var personalizedIds = await matching.GetOpenBookingIdsForCaregiverAsync(
                     caregiverProfileId.Value, ct);
                 query = db.Bookings.AsNoTracking().Where(x => personalizedIds.Contains(x.Id));
+                isOfferInbox = true;
                 status = null; // đã filter xong
             }
             else
@@ -106,9 +111,13 @@ public sealed class BookingsController(
             syncCursor = await bookingSync.GetCurrentCursorAsync(cid, ct);
 
         var total = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(x => x.ScheduledStart)
+        var orderedQuery = isOfferInbox
+            ? query.OrderBy(x => x.ScheduledStart)
+            : query.OrderByDescending(x => x.ScheduledStart);
+        var items = await orderedQuery
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        var responses = await ToResponsesAsync(items, ct);
+        var responses = await ToResponsesAsync(items, ct,
+            offerCaregiverId: isOfferInbox ? caregiverProfileId : null);
 
         return Ok(new { items = responses, total, page, pageSize, syncCursor });
     }
@@ -128,7 +137,14 @@ public sealed class BookingsController(
         if (!isCustomer && !isAdmin && currentUser.IsInRole("CAREGIVER"))
         {
             var caregiverProfileId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
-            isCaregiver = caregiverProfileId.HasValue && entity.CaregiverId == caregiverProfileId.Value;
+            if (caregiverProfileId.HasValue)
+            {
+                isCaregiver = entity.CaregiverId == caregiverProfileId.Value
+                    || await db.BookingAssignments.AsNoTracking().AnyAsync(x =>
+                        x.BookingId == entity.Id && x.CaregiverId == caregiverProfileId.Value
+                        && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
+                        && x.ExpiresAt != null && x.ExpiresAt > clock.UtcNow, ct);
+            }
         }
 
         if (!isCustomer && !isCaregiver && !isAdmin)
@@ -380,7 +396,7 @@ public sealed class BookingsController(
             var offer = await db.BookingAssignments.AsNoTracking().SingleOrDefaultAsync(x =>
                 x.BookingId == id && x.CaregiverId == caregiverId
                 && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
-                && (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow), ct);
+                && x.ExpiresAt != null && x.ExpiresAt > DateTimeOffset.UtcNow, ct);
             var hasAnyAssignment = await db.BookingAssignments.AsNoTracking()
                 .AnyAsync(x => x.BookingId == id, ct);
             if (offer is null && hasAnyAssignment)
@@ -432,6 +448,10 @@ public sealed class BookingsController(
             return Conflict(new { error = "Ca này vừa được nhận bởi người chăm sóc khác." });
         }
 
+        await PublishOfferChangedAsync(caregiverId, id, "accepted", ct);
+        foreach (var otherOffer in otherOffers)
+            await PublishOfferChangedAsync(otherOffer.CaregiverId, id, "cancelled", ct);
+
         await hub.Clients.Group(CareTrackingHub.BookingGroup(id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 id, oldStatus, "caregiver_accepted", DateTimeOffset.UtcNow), ct);
@@ -443,7 +463,8 @@ public sealed class BookingsController(
 
     /// <summary>Caregiver từ chối một ca mở để ca đó không hiển thị lại cho caregiver này.</summary>
     [HttpPost("{id:guid}/decline")]
-    public async Task<IActionResult> Decline(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Decline(Guid id, [FromBody] DeclineBookingRequest? request,
+        CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
         if (!currentUser.IsInRole("CAREGIVER")) return Forbid();
@@ -454,6 +475,10 @@ public sealed class BookingsController(
         var booking = await db.Bookings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return NotFound();
 
+        var reason = request?.Reason?.Trim();
+        if (reason is { Length: > 200 })
+            return BadRequest(new { error = "Ly do tu choi toi da 200 ky tu." });
+
         if (booking.CaregiverId.HasValue || booking.Status != BookingStatus.Confirmed)
             return Conflict(new { error = "Ca nay khong con mo de tu choi." });
 
@@ -462,17 +487,18 @@ public sealed class BookingsController(
 
         if (assignment is null)
         {
-            db.BookingAssignments.Add(BookingAssignment.CreateRejected(id, caregiverId.Value));
+            db.BookingAssignments.Add(BookingAssignment.CreateRejected(id, caregiverId.Value, reason));
         }
         else
         {
-            assignment.Reject();
+            assignment.Reject(reason);
         }
 
         await db.SaveChangesAsync(ct);
+        await PublishOfferChangedAsync(caregiverId.Value, id, "declined", ct);
         var hasActiveOffer = await db.BookingAssignments.AsNoTracking().AnyAsync(x =>
             x.BookingId == id && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
-            && (x.ExpiresAt == null || x.ExpiresAt > DateTimeOffset.UtcNow), ct);
+            && x.ExpiresAt != null && x.ExpiresAt > DateTimeOffset.UtcNow, ct);
         if (!hasActiveOffer)
             await matching.OfferTopCandidatesAsync(id, ct);
 
@@ -514,11 +540,12 @@ public sealed class BookingsController(
     [HttpPost("{id:guid}/check-in")]
     public async Task<IActionResult> CheckIn(Guid id, [FromBody] CheckInRequest request, CancellationToken ct)
     {
+        var policy = checkInOptions.Value;
         if (!IsValidLocation(request.Latitude, request.Longitude))
             return BadRequest(new { error = "Toa do GPS khong hop le." });
         if (request.AccuracyMeters is not null &&
-            (!double.IsFinite(request.AccuracyMeters.Value) || request.AccuracyMeters is <= 0 or > Domain.Booking.CheckInRadiusMeters))
-            return BadRequest(new { error = "Do chinh xac GPS phai nam trong khoang 1-50m de check-in." });
+            (!double.IsFinite(request.AccuracyMeters.Value) || request.AccuracyMeters <= 0 || request.AccuracyMeters > policy.MaxDistanceMeters))
+            return BadRequest(new { error = $"Do chinh xac GPS phai nam trong khoang 1-{policy.MaxDistanceMeters}m de check-in." });
 
         if (currentUser.UserId is not { } userId) return Unauthorized();
         var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id, ct);
@@ -536,14 +563,20 @@ public sealed class BookingsController(
         var addressGeo = new GeoPoint(addressLocation.Value.Lat, addressLocation.Value.Lng);
 
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
-        var result = booking.CheckIn(caregiverGeo, addressGeo);
+        // Luon lay thoi gian server; khong nhan timestamp check-in tu client.
+        var result = booking.CheckIn(
+            caregiverGeo,
+            addressGeo,
+            checkedInAt: DateTimeOffset.UtcNow,
+            earlyWindow: TimeSpan.FromMinutes(policy.EarlyWindowMinutes),
+            checkInRadiusMeters: policy.MaxDistanceMeters);
         if (result.IsFailure) return Problem(result.Error);
 
         db.GpsTracks.Add(GpsTrack.Create(booking.Id, caregiverId,
             request.Latitude, request.Longitude, request.AccuracyMeters));
 
         double distance = caregiverGeo.DistanceMetersTo(addressGeo);
-        string eventType = distance <= Domain.Booking.CheckInRadiusMeters
+        string eventType = distance <= policy.MaxDistanceMeters
             ? "CHECKIN_VALID" : "CHECKIN_OUTSIDE_GEOFENCE";
         db.TimelineEvents.Add(CareTimelineEvent.Create(
             booking.Id, caregiverId, eventType, "Caregiver da check-in",
@@ -761,12 +794,62 @@ public sealed class BookingsController(
         };
 
     private async Task<IReadOnlyList<BookingResponse>> ToResponsesAsync(
-        IReadOnlyList<Domain.Booking> bookings, CancellationToken ct)
+        IReadOnlyList<Domain.Booking> bookings, CancellationToken ct, Guid? offerCaregiverId = null)
     {
         var responses = new List<BookingResponse>(bookings.Count);
+        var offersByBookingId = new Dictionary<Guid, OfferMetadata>();
+        if (offerCaregiverId is not null && bookings.Count > 0)
+        {
+            var bookingIds = bookings.Select(booking => booking.Id).ToArray();
+            var offerRows = await db.BookingAssignments.AsNoTracking()
+                .Where(x => x.CaregiverId == offerCaregiverId.Value
+                    && bookingIds.Contains(x.BookingId)
+                    && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
+                    && x.ExpiresAt != null && x.ExpiresAt > clock.UtcNow)
+                .ToListAsync(ct);
+            offersByBookingId = offerRows
+                .GroupBy(x => x.BookingId)
+                .ToDictionary(
+                    group => group.Key,
+                    group =>
+                    {
+                        var offer = group.OrderByDescending(x => x.OfferedAt).First();
+                        return new OfferMetadata(offer.Id, offer.ExpiresAt, offer.Rank);
+                    });
+        }
+        // Only cache within this response: shared resources are read once,
+        // with no stale data or cross-user cache between HTTP requests.
+        var beneficiaries = new Dictionary<Guid, PeopleDisplaySummary?>();
+        var caregivers = new Dictionary<Guid, PeopleDisplaySummary?>();
+        var addresses = new Dictionary<Guid, AddressDisplaySummary?>();
+        var locations = new Dictionary<Guid, (double Lat, double Lng)?>();
+        var services = new Dictionary<Guid, ServiceDisplaySummary?>();
         foreach (var booking in bookings)
-            responses.Add(await ToResponseAsync(booking, ct));
+        {
+            var beneficiary = await LookupOnce(beneficiaries, booking.BeneficiaryId,
+                id => people.GetBeneficiaryDisplayAsync(id, ct));
+            var caregiver = booking.CaregiverId is { } caregiverId
+                ? await LookupOnce(caregivers, caregiverId, id => people.GetCaregiverDisplayAsync(id, ct))
+                : null;
+            var address = await LookupOnce(addresses, booking.AddressId,
+                id => catalog.GetAddressDisplayAsync(id, ct));
+            var location = await LookupOnce(locations, booking.AddressId,
+                id => catalog.GetAddressLocationAsync(id, ct));
+            var service = await LookupOnce(services, booking.ServiceTypeId,
+                id => catalog.GetServiceDisplayAsync(id, ct));
+            offersByBookingId.TryGetValue(booking.Id, out var offer);
+            responses.Add(MapResponse(booking, beneficiary, caregiver, address, location, service, offer));
+        }
         return responses;
+    }
+
+    private static async Task<T> LookupOnce<T>(Dictionary<Guid, T> cache,
+        Guid id, Func<Guid, Task<T>> fetch)
+    {
+        if (cache.TryGetValue(id, out var value)) return value;
+        value = await fetch(id);
+        cache[id] = value;
+        return value;
     }
 
     private async Task<BookingResponse> ToResponseAsync(Domain.Booking x, CancellationToken ct)
@@ -779,6 +862,14 @@ public sealed class BookingsController(
         var addressLocation = await catalog.GetAddressLocationAsync(x.AddressId, ct);
         var service = await catalog.GetServiceDisplayAsync(x.ServiceTypeId, ct);
 
+        return MapResponse(x, beneficiary, caregiver, address, addressLocation, service);
+    }
+
+    private static BookingResponse MapResponse(Domain.Booking x,
+        PeopleDisplaySummary? beneficiary, PeopleDisplaySummary? caregiver,
+        AddressDisplaySummary? address, (double Lat, double Lng)? addressLocation,
+        ServiceDisplaySummary? service, OfferMetadata? offer = null)
+    {
         return new BookingResponse(x.Id, x.BeneficiaryId,
             x.CaregiverId, x.AddressId, x.ServiceTypeId, x.ScheduledStart, x.ScheduledEnd,
             x.ActualStart, x.ActualEnd, x.CheckoutPendingReviewAt, x.CheckoutSource?.ToString(),
@@ -793,8 +884,23 @@ public sealed class BookingsController(
             beneficiary?.Condition,
             beneficiary?.Notes,
             addressLocation?.Lat,
-            addressLocation?.Lng);
+            addressLocation?.Lng,
+            offer?.Id,
+            offer?.ExpiresAt,
+            offer?.Rank);
     }
+
+    private async Task PublishOfferChangedAsync(Guid caregiverId, Guid bookingId,
+        string changeType, CancellationToken ct)
+    {
+        var caregiverUserId = await people.GetUserIdByCaregiverProfileIdAsync(caregiverId, ct);
+        if (caregiverUserId is null) return;
+        await hub.Clients.Group(CareTrackingHub.CaregiverGroup(caregiverUserId.Value))
+            .SendAsync("BookingOfferChanged", new BookingOfferChangedEvent(
+                bookingId, changeType, clock.UtcNow), ct);
+    }
+
+    private sealed record OfferMetadata(Guid Id, DateTimeOffset? ExpiresAt, int? Rank);
 
     private static CaregiverSuggestionResponse ToCaregiverSuggestion(
         MatchingCandidate candidate,
@@ -825,6 +931,7 @@ public sealed record CancelBookingRequest(string? Reason);
 public sealed record RescheduleBookingRequest(DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);
 public sealed record SelectCaregiverRequest(Guid CaregiverId);
 public sealed record CheckInRequest(double Latitude, double Longitude, double? AccuracyMeters = null);
+public sealed record DeclineBookingRequest(string? Reason);
 
 public sealed record CaregiverSuggestionResponse(
     Guid CaregiverId,
@@ -853,4 +960,7 @@ public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? Caregive
     string? BeneficiaryCondition = null,
     string? BeneficiaryNotes = null,
     double? AddressLatitude = null,
-    double? AddressLongitude = null);
+    double? AddressLongitude = null,
+    Guid? OfferId = null,
+    DateTimeOffset? OfferExpiresAt = null,
+    int? OfferRank = null);

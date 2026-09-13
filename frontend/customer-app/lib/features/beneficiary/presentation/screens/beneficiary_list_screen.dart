@@ -35,16 +35,12 @@ class BeneficiaryListScreen extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF1A5C5C)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              gradient: AppColors.heroGradient,
             ),
             child: Text(
               '${beneficiaries.length} hồ sơ đang quản lý',
               style: TextStyle(
-                  color: Colors.white.withOpacity(0.85), fontSize: 13),
+                  color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
             ),
           ),
           // List or Empty State
@@ -146,7 +142,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 3)),
           ],
@@ -188,7 +184,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: careColor.withOpacity(0.12),
+                          color: careColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

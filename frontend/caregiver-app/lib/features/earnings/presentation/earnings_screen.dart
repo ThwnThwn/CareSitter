@@ -80,7 +80,8 @@ class EarningsScreen extends ConsumerWidget {
               const SizedBox(width: 4),
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text('₫', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                child: Text('₫',
+                    style: TextStyle(fontSize: 16, color: Colors.white70)),
               ),
             ],
           ),
@@ -133,7 +134,9 @@ class EarningsScreen extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                  isIn
+                      ? Icons.arrow_downward_rounded
+                      : Icons.arrow_upward_rounded,
                   color: amountColor,
                   size: 20,
                 ),

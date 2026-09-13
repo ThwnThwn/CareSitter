@@ -46,25 +46,23 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0D4F2C), Color(0xFF1E7A52), Color(0xFF2D9E6B)],
-                  ),
+                  gradient: AppColors.heroGradient,
                 ),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 48),
                       (() {
-                        final hasAvatar = b.avatarPath != null && b.avatarPath!.isNotEmpty;
+                        final hasAvatar =
+                            b.avatarPath != null && b.avatarPath!.isNotEmpty;
                         return CircleAvatar(
                           radius: 46,
                           backgroundColor: Colors.white.withValues(alpha: 0.22),
                           backgroundImage: hasAvatar
                               ? (kIsWeb
                                   ? NetworkImage(b.avatarPath!) as ImageProvider
-                                  : FileImage(File(b.avatarPath!)) as ImageProvider)
+                                  : FileImage(File(b.avatarPath!))
+                                      as ImageProvider)
                               : null,
                           child: hasAvatar
                               ? null
@@ -84,7 +82,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text('${b.age} tuổi · ${b.relation}',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 13)),
                     ]),
               ),
@@ -99,10 +97,10 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: careLevelColor.withOpacity(0.1),
+                      color: careLevelColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: careLevelColor.withOpacity(0.3)),
+                          color: careLevelColor.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -135,7 +133,8 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => context.push('/booking/new?beneficiaryId=${b.id}'),
+                      onPressed: () =>
+                          context.push('/booking/new?beneficiaryId=${b.id}'),
                       icon: const Icon(Icons.add),
                       label: Text('Đặt lịch cho ${b.name}'),
                     ),
@@ -151,7 +150,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                         color: AppColors.cardBackground,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: AppColors.error.withOpacity(0.25)),
+                            color: AppColors.error.withValues(alpha: 0.25)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

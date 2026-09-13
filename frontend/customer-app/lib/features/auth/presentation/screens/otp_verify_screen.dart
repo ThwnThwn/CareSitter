@@ -108,7 +108,8 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _errorMessage = 'Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.';
+          _errorMessage =
+              'Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.';
           for (final c in _controllers) {
             c.clear();
           }
@@ -164,7 +165,8 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                       fontSize: 14,
                       height: 1.5),
                   children: [
-                    const TextSpan(text: 'Mã xác thực 6 chữ số đã được gửi đến\n'),
+                    const TextSpan(
+                        text: 'Mã xác thực 6 chữ số đã được gửi đến\n'),
                     TextSpan(
                       text: widget.email,
                       style: const TextStyle(
@@ -176,7 +178,6 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               if (_errorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -207,7 +208,6 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) => _buildOtpBox(index)),

@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/api/dio_client.dart';
+import '../../../core/push/notification_deep_link_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 
@@ -122,9 +122,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       } catch (_) {}
     }
     if (!mounted) return;
-    if (notif.route != null) {
-      context.push(notif.route!);
-    }
+    await ref.read(notificationDeepLinkServiceProvider).handle({
+      'type': notif.type,
+      if (notif.route != null) 'deepLink': notif.route,
+    });
   }
 
   @override
@@ -149,7 +150,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               Text(
                 '$_unreadCount chưa đọc',
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.8), fontSize: 12),
+                    color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
               ),
           ],
         ),
@@ -197,7 +198,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         duration: const Duration(milliseconds: 200),
         color: notif.isRead
             ? Colors.transparent
-            : AppColors.primary.withOpacity(0.05),
+            : AppColors.primary.withValues(alpha: 0.05),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +208,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.12),
+                color: iconColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor, size: 22),
@@ -315,7 +316,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primaryLight,
               shape: BoxShape.circle,
             ),

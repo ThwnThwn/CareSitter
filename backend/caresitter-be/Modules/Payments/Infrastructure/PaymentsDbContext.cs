@@ -56,10 +56,21 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(255);
             b.Property(x => x.RequestPayload).HasColumnName("request_payload").HasColumnType("jsonb");
             b.Property(x => x.ResponsePayload).HasColumnName("response_payload").HasColumnType("jsonb");
+            b.Property(x => x.ReconciliationAttempts).HasColumnName("reconciliation_attempts");
+            b.Property(x => x.ReconciliationStartedAt).HasColumnName("reconciliation_started_at");
+            b.Property(x => x.LastReconciliationAt).HasColumnName("last_reconciliation_at");
+            b.Property(x => x.NextReconciliationAt).HasColumnName("next_reconciliation_at");
+            b.Property(x => x.LastReconciliationError).HasColumnName("last_reconciliation_error");
+            b.Property(x => x.FinalizedSource).HasColumnName("finalized_source");
+            b.Property(x => x.ManualReviewReason).HasColumnName("manual_review_reason");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.HasIndex(x => x.IdempotencyKey).IsUnique();
             b.HasIndex(x => new { x.Provider, x.ProviderOrderRef }).IsUnique();
+            b.HasIndex(x => new { x.BookingId, x.Provider })
+                .IsUnique()
+                .HasFilter("status = 'PENDING'")
+                .HasDatabaseName("ux_payment_intent_one_pending_per_booking");
             b.Ignore(x => x.DomainEvents);
         });
 

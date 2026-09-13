@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/dio_client.dart';
 import '../auth/auth_notifier.dart';
 import '../../features/booking/application/booking_store.dart';
+import 'notification_deep_link_service.dart';
 
 /// Top-level background message handler (phải là hàm top-level).
 /// Gọi khi app ở background hoặc terminated và nhận FCM data message.
@@ -59,9 +60,18 @@ class FirebasePushNotifications {
 class PushNotificationService {
   final Ref _ref;
   StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
+  StreamSubscription<RemoteMessage>? _openedMessageSub;
   String? _lastRegisteredToken;
+  String? _registeredDeviceId;
+  bool _initialMessageHandled = false;
 
-  PushNotificationService(this._ref);
+  PushNotificationService(this._ref) {
+    _authNotifier = _ref.read(authStateProvider.notifier);
+    _authNotifier.registerLogoutCleanup(unregisterCurrentDevice);
+  }
+
+  late final AuthNotifier _authNotifier;
 
   Future<void> syncTokenForCurrentUser() async {
     final auth = _ref.read(authStateProvider).value;
@@ -90,35 +100,78 @@ class PushNotificationService {
       unawaited(_registerToken(newToken));
     });
 
-    // ── Foreground data message handler ───────────────────────────────────
-    // Chỉ bắt data message type=booking_sync — trigger delta sync ngay.
-    // Notification UI cho các event quan trọ ng khác (caregiver_accepted,
-    // caregiver_en_route, ...) do FCM tự hiển thị qua notification payload.
-    FirebaseMessaging.onMessage.listen((message) {
-      if (message.data['type'] == 'booking_sync') {
-        final isAuth =
-            _ref.read(authStateProvider).value?.isAuthenticated ?? false;
-        if (isAuth) {
-          unawaited(
-            _ref.read(bookingStoreProvider.notifier).requestSync(),
-          );
-        }
+    _foregroundMessageSub ??=
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    _openedMessageSub ??=
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
+
+    if (!_initialMessageHandled) {
+      _initialMessageHandled = true;
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) {
+        await _handleOpenedMessage(initialMessage);
       }
-    });
+    }
   }
 
   Future<void> _registerToken(String token) async {
     if (token == _lastRegisteredToken) return;
 
     try {
-      await _ref.read(dioClientProvider).post('/auth/devices', data: {
+      final response = await _ref
+          .read(dioClientProvider)
+          .post<Map<String, dynamic>>('/auth/devices', data: {
         'platform': _platform,
         'pushToken': token,
         'deviceName': defaultTargetPlatform.name,
       });
       _lastRegisteredToken = token;
+      _registeredDeviceId = response.data?['id']?.toString();
     } catch (e) {
       debugPrint('FCM token registration failed: $e');
+    }
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    final isAuthenticated =
+        _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    if (!isAuthenticated) return;
+
+    await _ref.read(bookingStoreProvider.notifier).requestSync();
+    final notification = message.notification;
+    _ref.read(notificationDeepLinkServiceProvider).showForeground(
+          title: notification?.title ?? 'CareSitter',
+          body: notification?.body ?? '',
+          data: Map<String, dynamic>.from(message.data),
+          deliveryId: message.data['eventId']?.toString() ?? message.messageId,
+        );
+  }
+
+  Future<void> _handleOpenedMessage(RemoteMessage message) =>
+      _ref.read(notificationDeepLinkServiceProvider).handle(
+            Map<String, dynamic>.from(message.data),
+            deliveryId:
+                message.data['eventId']?.toString() ?? message.messageId,
+          );
+
+  Future<void> unregisterCurrentDevice() async {
+    final deviceId = _registeredDeviceId;
+    try {
+      if (deviceId != null && deviceId.isNotEmpty) {
+        await _ref
+            .read(dioClientProvider)
+            .delete<void>('/auth/devices/$deviceId');
+      }
+    } catch (e) {
+      debugPrint('FCM device cleanup failed: $e');
+    } finally {
+      try {
+        if (await FirebasePushNotifications.initialize()) {
+          await FirebaseMessaging.instance.deleteToken();
+        }
+      } catch (_) {}
+      _registeredDeviceId = null;
+      _lastRegisteredToken = null;
     }
   }
 
@@ -134,6 +187,9 @@ class PushNotificationService {
   }
 
   void dispose() {
+    _authNotifier.unregisterLogoutCleanup(unregisterCurrentDevice);
     unawaited(_tokenRefreshSub?.cancel());
+    unawaited(_foregroundMessageSub?.cancel());
+    unawaited(_openedMessageSub?.cancel());
   }
 }

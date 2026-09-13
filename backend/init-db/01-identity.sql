@@ -61,6 +61,31 @@ CREATE TABLE user_devices (
   created_at        timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX ux_user_devices_push_token
+  ON user_devices(push_token)
+  WHERE push_token IS NOT NULL;
+
+-- PostgreSQL is the source of truth for refresh-token sessions. Redis only
+-- caches token_hash -> session id and may be rebuilt after restart/eviction.
+CREATE TABLE refresh_tokens (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash     varchar(64) NOT NULL,
+  device_id      varchar(255),
+  device_info    varchar(500),
+  issued_at      timestamptz NOT NULL DEFAULT now(),
+  expires_at     timestamptz NOT NULL,
+  revoked_at     timestamptz,
+  replaced_by_id uuid REFERENCES refresh_tokens(id) ON DELETE SET NULL,
+  ip_address     varchar(45),
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX ux_refresh_tokens_hash ON refresh_tokens(token_hash);
+CREATE INDEX ix_refresh_tokens_active_user
+  ON refresh_tokens(user_id)
+  WHERE revoked_at IS NULL;
+
 -- audit_logs (gom booking_status_history + kyc history). MVP: bang thuong, partition khi scale.
 CREATE TABLE audit_logs (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),

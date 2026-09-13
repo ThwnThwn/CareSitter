@@ -29,7 +29,13 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
 
   String? _validateIdentifier(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Vui lòng nhập email hoặc số điện thoại';
+      return _usePassword
+          ? 'Vui lòng nhập email hoặc số điện thoại'
+          : 'Vui lòng nhập email';
+    }
+    if (!_usePassword &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) {
+      return 'Email không hợp lệ';
     }
     return null;
   }
@@ -73,9 +79,9 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final phone = _identifierController.text.trim();
-      await ref.read(authRepositoryProvider).requestOtp(phone);
-      if (mounted) context.push('/auth/otp', extra: phone);
+      final email = _identifierController.text.trim().toLowerCase();
+      await ref.read(authRepositoryProvider).requestOtp(email);
+      if (mounted) context.push('/auth/otp', extra: email);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -196,7 +202,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                       Text(
                         _usePassword
                             ? 'Nhập email hoặc số điện thoại và mật khẩu'
-                            : 'Nhập số điện thoại để nhận mã OTP qua SMS',
+                            : 'Nhập email để nhận mã OTP',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
@@ -276,7 +282,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                         controller: _identifierController,
                         keyboardType: _usePassword
                             ? TextInputType.emailAddress
-                            : TextInputType.phone,
+                            : TextInputType.emailAddress,
                         validator: _validateIdentifier,
                         style: const TextStyle(
                           fontSize: 15,
@@ -286,14 +292,14 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                         decoration: InputDecoration(
                           labelText: _usePassword
                               ? 'Email hoặc Số điện thoại'
-                              : 'Số điện thoại',
+                              : 'Email',
                           hintText: _usePassword
                               ? 'bichngoc@example.com hoặc 0912333444'
-                              : '0912333444',
+                              : 'bichngoc@example.com',
                           prefixIcon: Icon(
                             _usePassword
                                 ? Icons.person_outline
-                                : Icons.phone_android,
+                                : Icons.email_outlined,
                             color: AppColors.primary,
                           ),
                         ),
@@ -344,6 +350,21 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                             : Icons.send_rounded,
                       ),
                       const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Bạn chưa có tài khoản?',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                          TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => context.push('/auth/register'),
+                            child: const Text('Đăng ký Caregiver'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

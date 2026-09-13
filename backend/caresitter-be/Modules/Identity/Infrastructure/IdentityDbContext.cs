@@ -17,6 +17,7 @@ public sealed class IdentityDbContext : ModuleDbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<UserDevice> UserDevices => Set<UserDevice>();
+    public DbSet<RefreshTokenSession> RefreshTokenSessions => Set<RefreshTokenSession>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -71,6 +72,9 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.BiometricEnabled).HasColumnName("biometric_enabled");
             b.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.HasIndex(x => x.PushToken)
+                .IsUnique()
+                .HasFilter("push_token IS NOT NULL");
         });
 
         modelBuilder.Entity<AuditLog>(b =>
@@ -94,6 +98,31 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.IpAddress).HasColumnName("ip_address").HasColumnType("text");
             b.Property(x => x.UserAgent).HasColumnName("user_agent");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<RefreshTokenSession>(b =>
+        {
+            b.ToTable("refresh_tokens");
+            b.HasKey(x => x.Id);
+            b.Ignore(x => x.UpdatedAt);
+
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.UserId).HasColumnName("user_id");
+            b.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(64);
+            b.Property(x => x.DeviceId).HasColumnName("device_id").HasMaxLength(255);
+            b.Property(x => x.DeviceInfo).HasColumnName("device_info").HasMaxLength(500);
+            b.Property(x => x.IssuedAt).HasColumnName("issued_at");
+            b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            b.Property(x => x.RevokedAt).HasColumnName("revoked_at");
+            b.Property(x => x.ReplacedById).HasColumnName("replaced_by_id");
+            b.Property(x => x.IpAddress).HasColumnName("ip_address").HasMaxLength(45);
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+
+            b.HasIndex(x => x.TokenHash).IsUnique();
+            b.HasIndex(x => x.UserId).HasFilter("revoked_at IS NULL");
+            b.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<RefreshTokenSession>().WithMany().HasForeignKey(x => x.ReplacedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

@@ -107,7 +107,8 @@ class BookingRepository {
       );
     }
 
-    final rawItems = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final rawItems =
+        (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final items = rawItems.map(BookingModel.fromJson).toList();
 
     return BookingSyncResponse(

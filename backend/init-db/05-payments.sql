@@ -31,15 +31,26 @@ CREATE TABLE payment_intents (
   amount                  bigint NOT NULL CHECK (amount >= 0),
   currency                char(3) NOT NULL DEFAULT 'VND',
   status                  varchar(20) NOT NULL DEFAULT 'CREATED'
-                          CHECK (status IN ('CREATED','PENDING','SUCCEEDED','FAILED','CANCELLED','EXPIRED')),
+                          CHECK (status IN ('CREATED','PENDING','SUCCEEDED','FAILED','CANCELLED','EXPIRED','SUPERSEDED')),
   provider_transaction_id varchar(255),
   provider_order_ref      varchar(100),
   idempotency_key         varchar(255) NOT NULL UNIQUE,
   request_payload         jsonb,
   response_payload        jsonb,
+  reconciliation_attempts int NOT NULL DEFAULT 0,
+  reconciliation_started_at timestamptz,
+  last_reconciliation_at  timestamptz,
+  next_reconciliation_at  timestamptz,
+  last_reconciliation_error text,
+  finalized_source        varchar(30),
+  manual_review_reason    text,
   created_at              timestamptz NOT NULL DEFAULT now(),
   updated_at              timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX ux_payment_intent_one_pending_per_booking
+  ON payment_intents (booking_id, provider)
+  WHERE status = 'PENDING';
 
 CREATE TABLE payment_webhooks (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),

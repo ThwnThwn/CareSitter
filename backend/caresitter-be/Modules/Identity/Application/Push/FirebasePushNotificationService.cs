@@ -37,7 +37,9 @@ internal sealed class FirebasePushNotificationService(
 
         var data = new Dictionary<string, string>(message.Data ?? new Dictionary<string, string>())
         {
-            ["type"] = message.Type
+            ["type"] = message.Type,
+            ["eventId"] = (message.EventId ?? Guid.NewGuid()).ToString(),
+            ["occurredAt"] = (message.OccurredAt ?? DateTimeOffset.UtcNow).ToString("O")
         };
 
         var multicast = new MulticastMessage
@@ -60,12 +62,39 @@ internal sealed class FirebasePushNotificationService(
             {
                 logger.LogWarning("Firebase push sent to user {UserId} with {FailureCount}/{TotalCount} failures.",
                     message.UserId, response.FailureCount, tokens.Count);
+
+                var staleTokens = response.Responses
+                    .Select((result, index) => new
+                    {
+                        Result = result,
+                        Token = tokens[index]
+                    })
+                    .Where(x => !x.Result.IsSuccess && IsPermanentTokenFailure(x.Result.Exception))
+                    .Select(x => x.Token)
+                    .ToArray();
+
+                if (staleTokens.Length > 0)
+                {
+                    var staleDevices = await db.UserDevices
+                        .Where(x => x.PushToken != null && staleTokens.Contains(x.PushToken))
+                        .ToListAsync(ct);
+                    db.UserDevices.RemoveRange(staleDevices);
+                    await db.SaveChangesAsync(ct);
+                    logger.LogInformation("Removed {Count} invalid Firebase device tokens.",
+                        staleDevices.Count);
+                }
             }
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Firebase push failed for user {UserId}.", message.UserId);
         }
+    }
+
+    private static bool IsPermanentTokenFailure(FirebaseMessagingException? exception)
+    {
+        var code = exception?.MessagingErrorCode?.ToString();
+        return code is "Unregistered" or "InvalidArgument" or "SenderIdMismatch";
     }
 
     private FirebaseApp? GetOrCreateFirebaseApp()

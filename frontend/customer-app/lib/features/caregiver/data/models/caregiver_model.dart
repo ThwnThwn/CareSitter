@@ -30,11 +30,13 @@ class CaregiverModel {
 
   String get displayName => fullName ?? 'Người chăm sóc';
   String get initials {
-    final parts = displayName.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    final parts =
+        displayName.trim().split(' ').where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
+
   bool get isOnline => availabilityStatus == 'ONLINE';
   String get location => [serviceDistrict, serviceCity]
       .where((s) => s != null && s.isNotEmpty)
@@ -45,15 +47,23 @@ class CaregiverModel {
         userId: (json['userId'] ?? json['UserId'])?.toString() ?? '',
         fullName: json['fullName'] as String? ?? json['FullName'] as String?,
         bio: json['bio'] as String? ?? json['Bio'] as String?,
-        yearsOfExperience: json['yearsOfExperience'] as int? ?? json['YearsOfExperience'] as int?,
-        hourlyRateExpected: json['hourlyRateExpected'] as int? ?? json['HourlyRateExpected'] as int?,
-        ratingAvg: ((json['ratingAvg'] ?? json['RatingAvg']) as num?)?.toDouble() ?? 0.0,
-        ratingCount: json['ratingCount'] as int? ?? json['RatingCount'] as int? ?? 0,
-        availabilityStatus:
-            (json['availabilityStatus'] ?? json['AvailabilityStatus']) as String? ?? 'OFFLINE',
+        yearsOfExperience: json['yearsOfExperience'] as int? ??
+            json['YearsOfExperience'] as int?,
+        hourlyRateExpected: json['hourlyRateExpected'] as int? ??
+            json['HourlyRateExpected'] as int?,
+        ratingAvg:
+            ((json['ratingAvg'] ?? json['RatingAvg']) as num?)?.toDouble() ??
+                0.0,
+        ratingCount:
+            json['ratingCount'] as int? ?? json['RatingCount'] as int? ?? 0,
+        availabilityStatus: (json['availabilityStatus'] ??
+                json['AvailabilityStatus']) as String? ??
+            'OFFLINE',
         skills: _parseSkills(json['skills'] ?? json['Skills']),
-        serviceCity: json['serviceCity'] as String? ?? json['ServiceCity'] as String?,
-        serviceDistrict: json['serviceDistrict'] as String? ?? json['ServiceDistrict'] as String?,
+        serviceCity:
+            json['serviceCity'] as String? ?? json['ServiceCity'] as String?,
+        serviceDistrict: json['serviceDistrict'] as String? ??
+            json['ServiceDistrict'] as String?,
       );
 
   static List<String> _parseSkills(dynamic raw) {

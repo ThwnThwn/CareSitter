@@ -33,13 +33,27 @@ public sealed class AuditLog : Entity
     public string? IpAddress { get; private set; }
     public string? UserAgent { get; private set; }
 
-    public static Result<AuditLog> Create(string action, string entityType)
+    public static Result<AuditLog> Create(
+        string action,
+        string entityType,
+        Guid? actorUserId = null,
+        Guid? entityId = null,
+        string? afterData = null,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
         if (string.IsNullOrWhiteSpace(action))
             return Error.Validation("audit_log.action", "action la bat buoc.");
         if (string.IsNullOrWhiteSpace(entityType))
             return Error.Validation("audit_log.entity_type", "entity_type la bat buoc.");
 
-        return new AuditLog(Guid.NewGuid(), action.Trim(), entityType.Trim());
+        return new AuditLog(Guid.NewGuid(), action.Trim(), entityType.Trim())
+        {
+            ActorUserId = actorUserId,
+            EntityId = entityId,
+            AfterData = afterData,
+            IpAddress = ipAddress,
+            UserAgent = userAgent
+        };
     }
 }

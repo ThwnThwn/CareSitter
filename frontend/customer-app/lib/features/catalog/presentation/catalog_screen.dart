@@ -15,7 +15,6 @@ class CatalogScreen extends ConsumerStatefulWidget {
 }
 
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
-  String _selectedCategory = 'Tất cả';
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
@@ -56,9 +55,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 const SizedBox(height: 8),
                 FadeSlideStaggered(index: 2, child: _buildBanner()),
                 const SizedBox(height: 20),
-                FadeSlideStaggered(
+                const FadeSlideStaggered(
                   index: 3,
-                  child: const Text(
+                  child: Text(
                     'Dịch vụ chăm sóc',
                     style: TextStyle(
                       color: AppColors.textPrimary,
@@ -195,7 +194,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 Text(
                   'Gọi để được hỗ trợ chọn dịch vụ phù hợp',
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 12),
                 ),
                 const SizedBox(height: 10),
@@ -203,7 +202,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -233,7 +232,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 3)),
         ],
@@ -297,6 +296,35 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_formatVnd(service.baseHourlyPrice)}/giờ',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '• tối thiểu ${service.defaultDurationMinutes ~/ 60}h',
+                      style: const TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 FilledButton(
                   onPressed: () =>
                       context.push('/booking/new?serviceId=${service.id}'),
@@ -314,5 +342,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         ],
       ),
     );
+  }
+
+  String _formatVnd(int amount) {
+    if (amount == 0) return 'Liên hệ';
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return '$bufđ';
   }
 }

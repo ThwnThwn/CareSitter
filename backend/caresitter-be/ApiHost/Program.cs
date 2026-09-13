@@ -213,9 +213,10 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 // --- Đăng ký Hangfire Recurring Jobs ---
+RecurringJob.RemoveIfExists("expire-pending-payments");
 RecurringJob.AddOrUpdate<BookingJobsService>(
-    recurringJobId: "expire-pending-payments",
-    methodCall: svc => svc.ExpirePendingPaymentsAsync(),
+    recurringJobId: "reconcile-pending-payments",
+    methodCall: svc => svc.ReconcilePendingPaymentsAsync(),
     cronExpression: "* * * * *",   // Mỗi 1 phút
     queue: "booking");
 

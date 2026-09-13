@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/api/dio_client.dart' show AppApiException;
 import '../../application/booking_store.dart';
 
 import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
@@ -242,6 +244,17 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
+                    ] else if (booking.status ==
+                        'payment_reconciliation_pending') ...[
+                      _buildStatusBanner(
+                          'Hệ thống đang đối soát giao dịch gần nhất với VNPay. Vui lòng chưa tạo thêm thanh toán để tránh bị trừ tiền hai lần.'),
+                      const SizedBox(height: 10),
+                      _buildCancelButton(context, ref, booking),
+                    ] else if (booking.status == 'needs_manual_review') ...[
+                      _buildStatusBanner(
+                          'Giao dịch chưa thể xác minh tự động. Bộ phận vận hành đang kiểm tra và sẽ cập nhật booking sau khi đối chiếu.'),
+                      const SizedBox(height: 10),
+                      _buildCancelButton(context, ref, booking),
                     ] else if (isWaitingCaregiver) ...[
                       _buildStatusBanner(
                           'Đã thanh toán ký quỹ. Lịch hẹn đang được gửi sang ứng dụng caregiver để người chăm sóc nhận ca.'),
@@ -429,7 +442,8 @@ class BookingDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFEF9E7),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFF39C12).withOpacity(0.3)),
+        border:
+            Border.all(color: const Color(0xFFF39C12).withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,6 +568,30 @@ class BookingDetailScreen extends ConsumerWidget {
           'bg': const Color(0xFFFEF3C7),
           'currentStep': 0,
           'description': 'Đang chờ hoàn tất thủ tục đặt lịch ca hẹn.',
+        };
+      case 'payment_reconciliation_pending':
+        return {
+          'label': 'Đang đối soát thanh toán',
+          'shortLabel': 'Đang đối soát',
+          'emoji': '🔎',
+          'icon': Icons.manage_search_rounded,
+          'color': const Color(0xFF0369A1),
+          'bg': const Color(0xFFE0F2FE),
+          'currentStep': 0,
+          'description':
+              'Hệ thống đang xác minh trạng thái giao dịch trực tiếp với VNPay.',
+        };
+      case 'needs_manual_review':
+        return {
+          'label': 'Cần kiểm tra thanh toán',
+          'shortLabel': 'Chờ kiểm tra',
+          'emoji': '🛡️',
+          'icon': Icons.admin_panel_settings_outlined,
+          'color': const Color(0xFFB45309),
+          'bg': const Color(0xFFFFF7ED),
+          'currentStep': 0,
+          'description':
+              'Bộ phận vận hành đang kiểm tra giao dịch trước khi xác nhận hoặc hủy booking.',
         };
       case 'completed':
         return {
@@ -1215,7 +1253,8 @@ class BookingDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FBF4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.success.withOpacity(0.25)),
+                border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.25)),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1298,7 +1337,8 @@ class BookingDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEBF5FB),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25)),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1357,15 +1397,35 @@ class BookingDetailScreen extends ConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
+          final message = _paymentErrorMessage(e);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Lỗi xác nhận thanh toán: $e'),
-              backgroundColor: AppColors.error,
+              content: Text(message),
+              backgroundColor: AppColors.textPrimary,
+              duration: const Duration(seconds: 6),
             ),
           );
         }
       }
     }
+  }
+
+  String _paymentErrorMessage(Object error) {
+    final apiError = error is DioException && error.error is AppApiException
+        ? error.error as AppApiException
+        : error is AppApiException
+            ? error
+            : null;
+    if (apiError?.code == 'PAYMENT_IN_PROGRESS') {
+      final expiresAt = DateTime.tryParse(
+        apiError?.details?['expiresAt']?.toString() ?? '',
+      )?.toLocal();
+      final retryAt = expiresAt == null
+          ? ''
+          : ' Bạn có thể thử lại lúc ${expiresAt.hour.toString().padLeft(2, '0')}:${expiresAt.minute.toString().padLeft(2, '0')}.';
+      return 'Giao dịch trước vẫn đang được xử lý.$retryAt Nếu tab VNPay còn mở, hãy hoàn tất tại đó.';
+    }
+    return apiError?.message ?? 'Không thể mở cổng thanh toán. Vui lòng thử lại.';
   }
 
   String _formatCurrency(double amount) {

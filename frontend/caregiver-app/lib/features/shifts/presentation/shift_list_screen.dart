@@ -62,6 +62,8 @@ class ShiftListScreen extends ConsumerWidget {
     }
 
     return ListView.builder(
+      key: const PageStorageKey('upcoming-shifts'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: upcomingList.length,
       itemBuilder: (context, index) {
@@ -95,6 +97,8 @@ class ShiftListScreen extends ConsumerWidget {
     }
 
     return ListView.builder(
+      key: const PageStorageKey('pending-shifts'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: pendingList.length,
       itemBuilder: (context, index) {
@@ -127,6 +131,8 @@ class ShiftListScreen extends ConsumerWidget {
     }
 
     return ListView.builder(
+      key: const PageStorageKey('history-shifts'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: historyList.length,
       itemBuilder: (context, index) {

@@ -15,6 +15,7 @@ import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/booking/presentation/screens/booking_wizard_screen.dart';
 import '../../features/booking/presentation/screens/booking_list_screen.dart';
 import '../../features/booking/presentation/screens/booking_detail_screen.dart';
+import '../../features/booking/presentation/screens/payment_result_screen.dart';
 import '../../features/caregiver/presentation/caregiver_list_screen.dart';
 import '../../features/caregiver/presentation/caregiver_profile_screen.dart';
 import '../../features/shift_tracking/presentation/shift_tracking_screen.dart';
@@ -267,6 +268,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: BookingWizardScreen(
             initialServiceId: state.uri.queryParameters['serviceId'],
             initialBeneficiaryId: state.uri.queryParameters['beneficiaryId'],
+          ),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/payment-result',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: PaymentResultScreen(
+            bookingId: state.uri.queryParameters['bookingId'],
+            result: state.uri.queryParameters['result'] ?? 'failed',
           ),
         ),
       ),

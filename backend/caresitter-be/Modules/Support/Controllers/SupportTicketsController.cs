@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace CareSitter.Modules.Support.Controllers;
 
@@ -23,12 +24,22 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
 
-        var ticket = SupportTicket.Create(userId, req.Type, req.Priority ?? "MEDIUM", req.BookingId);
+        var attachmentUrls = (req.AttachmentUrls ?? Array.Empty<string>())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (attachmentUrls.Length > 5 || attachmentUrls.Any(x => !IsHttpUrl(x)))
+            return BadRequest(new { error = "Danh sach tep dinh kem khong hop le hoac vuot qua 5 tep." });
+
+        var ticket = SupportTicket.Create(
+            userId, req.Type, req.Priority ?? "MEDIUM", req.BookingId,
+            req.Title, req.Description, JsonSerializer.Serialize(attachmentUrls));
         if (ticket.IsFailure) return Problem(ticket.Error);
 
         db.SupportTickets.Add(ticket.Value);
 
-        if (req.Type == "SOS" || req.Priority == "CRITICAL")
+        if (ticket.Value.Type == "SOS" || ticket.Value.Priority == "CRITICAL")
         {
             var notif = Notification.Create(userId, "SOS",
                 "Ticket khan cap can xu ly",
@@ -69,10 +80,17 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
         var items = await query.OrderByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(x => new TicketResponse(x.Id, x.UserId, x.BookingId,
-                x.Type, x.Status, x.Priority, x.AssignedAdminId, x.CreatedAt, x.UpdatedAt))
+                x.Type, x.Status, x.Priority, x.Title, x.Description,
+                x.AttachmentUrls, x.AssignedAdminId, x.CreatedAt, x.UpdatedAt))
             .ToListAsync(ct);
 
-        return Ok(new { items, total, page, pageSize });
+        return Ok(new
+        {
+            items = items.Select(ToApiResponse),
+            total,
+            page,
+            pageSize
+        });
     }
 
     /// <summary>Xem chi tiet ticket (user chi xem cua minh, admin xem tat ca).</summary>
@@ -124,8 +142,36 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
         return Ok(ToResponse(ticket));
     }
 
-    private static TicketResponse ToResponse(SupportTicket t) => new(t.Id, t.UserId,
-        t.BookingId, t.Type, t.Status, t.Priority, t.AssignedAdminId, t.CreatedAt, t.UpdatedAt);
+    private static object ToResponse(SupportTicket t) => ToApiResponse(new TicketResponse(
+        t.Id, t.UserId, t.BookingId, t.Type, t.Status, t.Priority,
+        t.Title, t.Description, t.AttachmentUrls, t.AssignedAdminId, t.CreatedAt, t.UpdatedAt));
+
+    private static object ToApiResponse(TicketResponse t) => new
+    {
+        t.Id,
+        t.UserId,
+        t.BookingId,
+        t.Type,
+        t.Status,
+        t.Priority,
+        t.Title,
+        t.Description,
+        AttachmentUrls = DeserializeUrls(t.AttachmentUrlsJson),
+        t.AssignedAdminId,
+        t.CreatedAt,
+        t.UpdatedAt
+    };
+
+    private static bool IsHttpUrl(string value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        && uri.Scheme is "http" or "https";
+
+    private static string[] DeserializeUrls(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return Array.Empty<string>();
+        try { return JsonSerializer.Deserialize<string[]>(json) ?? Array.Empty<string>(); }
+        catch (JsonException) { return Array.Empty<string>(); }
+    }
 
     private IActionResult Problem(Error error) => error.Type switch
     {
@@ -136,9 +182,15 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
     };
 }
 
-public sealed record CreateTicketRequest(string Type, string? Priority = "MEDIUM",
-    Guid? BookingId = null);
+public sealed record CreateTicketRequest(
+    string Type,
+    string Title,
+    string Description,
+    string? Priority = "MEDIUM",
+    Guid? BookingId = null,
+    string[]? AttachmentUrls = null);
 public sealed record UpdateTicketStatusRequest(string Status);
 public sealed record TicketResponse(Guid Id, Guid UserId, Guid? BookingId,
-    string Type, string Status, string Priority, Guid? AssignedAdminId,
+    string Type, string Status, string Priority, string Title, string Description,
+    string? AttachmentUrlsJson, Guid? AssignedAdminId,
     DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);

@@ -169,7 +169,7 @@ class CareTimelineScreen extends ConsumerWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: event.isDone
-                    ? event.color.withOpacity(0.15)
+                    ? event.color.withValues(alpha: 0.15)
                     : AppColors.surfaceVariant,
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -185,7 +185,7 @@ class CareTimelineScreen extends ConsumerWidget {
                 width: 2,
                 height: 60,
                 color: event.isDone
-                    ? event.color.withOpacity(0.2)
+                    ? event.color.withValues(alpha: 0.2)
                     : AppColors.border,
               ),
           ],

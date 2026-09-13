@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -73,7 +74,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final avatarUrl = profile.avatarUrl?.trim() ?? '';
     ImageProvider? avatarImage;
     if (avatarUrl.startsWith('http')) {
-      avatarImage = NetworkImage(avatarUrl);
+      avatarImage =
+          ResizeImage(CachedNetworkImageProvider(avatarUrl), width: 192);
     }
     final initials = profile.name
         .trim()
@@ -348,7 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               error: (_, __) => const SizedBox.shrink(),
               data: (services) {
-                final featured = services.take(4).toList();
+                final featured = services;
                 if (featured.isEmpty) {
                   return const SizedBox.shrink();
                 }
@@ -423,16 +425,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const Spacer(),
-            Text(
-              '${service.defaultDurationMinutes} phút',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: accent.color,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+            if (service.baseHourlyPrice > 0)
+              Text(
+                '${_formatVnd(service.baseHourlyPrice)}/giờ',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: accent.color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              )
+            else
+              Text(
+                '${service.defaultDurationMinutes} phút',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: accent.color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -445,8 +459,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _ServiceAccent(Color(0xFFE67E22), Color(0xFFFFF3E0)),
       _ServiceAccent(Color(0xFF1976D2), Color(0xFFE3F0FC)),
       _ServiceAccent(Color(0xFF7B1FA2), Color(0xFFF3E5F5)),
+      _ServiceAccent(Color(0xFF00897B), Color(0xFFE0F2F1)),
+      _ServiceAccent(Color(0xFF5C6BC0), Color(0xFFEDE7F6)),
     ];
     return accents[index % accents.length];
+  }
+
+  String _formatVnd(int amount) {
+    if (amount == 0) return 'Liên hệ';
+    final s = amount.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return '$bufđ';
   }
 
   // ── Caregiver Section ───────────────────────────────────────────────────────
@@ -718,10 +745,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SizedBox(
             height: 320,
             width: double.infinity,
-            child: Image.network(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuB_gclqxTQn4Hcbz-83_gEg_MI4goQwj5nYiQZUd0zrWDfoybrs5j468EvYpccjQIJJFrVTI67wuoh7Z0NRIGF9MxbDKSyHNoKOlk8yxNHqzA_mqeKF7jbE0KUjwdrUuQMtcP4g5I-YO-UoQ_iiLGbRsTCfz0c2CEvq8BKN0pgJWk0gyVm9-tgZPvsg7bkPlycqYWLBLVb3r6bsGe--8-MHnPdrZh43tjpZrrx2BFVCpqArNmmv3QK9',
+            child: CachedNetworkImage(
+              imageUrl:
+                  'https://lh3.googleusercontent.com/aida-public/AB6AXuB_gclqxTQn4Hcbz-83_gEg_MI4goQwj5nYiQZUd0zrWDfoybrs5j468EvYpccjQIJJFrVTI67wuoh7Z0NRIGF9MxbDKSyHNoKOlk8yxNHqzA_mqeKF7jbE0KUjwdrUuQMtcP4g5I-YO-UoQ_iiLGbRsTCfz0c2CEvq8BKN0pgJWk0gyVm9-tgZPvsg7bkPlycqYWLBLVb3r6bsGe--8-MHnPdrZh43tjpZrrx2BFVCpqArNmmv3QK9',
+              memCacheWidth: 1200,
+              fadeInDuration: Duration.zero,
+              placeholder: (_, __) =>
+                  const ColoredBox(color: AppColors.primaryContainer),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorWidget: (_, __, ___) => Container(
                 color: AppColors.primaryContainer,
                 child: const Icon(Icons.elderly_woman_rounded,
                     size: 80, color: AppColors.primary),

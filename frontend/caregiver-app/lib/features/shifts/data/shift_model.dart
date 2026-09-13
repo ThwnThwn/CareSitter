@@ -114,6 +114,9 @@ class ShiftModel {
   final double? addressLatitude;
   final double? addressLongitude;
   final String? customerNote;
+  final String? offerId;
+  final DateTime? offerExpiresAt;
+  final int? offerRank;
   final bool isSystemMatched;
   final String paymentLabel;
   final DateTime? consentAcceptedAt;
@@ -151,6 +154,9 @@ class ShiftModel {
     this.addressLatitude,
     this.addressLongitude,
     this.customerNote,
+    this.offerId,
+    this.offerExpiresAt,
+    this.offerRank,
     this.isSystemMatched = false,
     this.paymentLabel = 'Ví CareSitter',
     this.consentAcceptedAt,
@@ -175,6 +181,9 @@ class ShiftModel {
     DateTime? completedAt,
     bool? isReviewed,
     String? disputeReason,
+    String? offerId,
+    DateTime? offerExpiresAt,
+    int? offerRank,
     List<CareTaskModel>? tasks,
     double? platformRevenue,
     double? caregiverEarning,
@@ -204,6 +213,9 @@ class ShiftModel {
       addressLatitude: addressLatitude,
       addressLongitude: addressLongitude,
       customerNote: customerNote,
+      offerId: offerId ?? this.offerId,
+      offerExpiresAt: offerExpiresAt ?? this.offerExpiresAt,
+      offerRank: offerRank ?? this.offerRank,
       isSystemMatched: isSystemMatched,
       paymentLabel: paymentLabel,
       consentAcceptedAt: consentAcceptedAt,

@@ -9,7 +9,8 @@ namespace CareSitter.Infrastructure.Hubs;
 ///
 /// Groups được quản lý:
 ///   - booking-{bookingId} : tracking chi tiết GPS/timeline của 1 ca (join qua JoinBookingGroup)
-///   - customer-{userId}   : delta sync danh sách booking (tự động join khi connect nếu là CUSTOMER)
+///   - customer-{userId}   : delta sync danh sách booking (tự động join nếu là CUSTOMER)
+///   - caregiver-{userId}  : thay đổi offer của caregiver (tự động join nếu là CAREGIVER)
 ///
 /// URL: ws://localhost:5033/hubs/care-tracking
 /// Auth: JWT Bearer token (query string: ?access_token=xxx hoặc Header Authorization)
@@ -36,6 +37,10 @@ public sealed class CareTrackingHub : Hub
         if (userId.HasValue && IsCustomer())
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, CustomerGroup(userId.Value));
+        }
+        if (userId.HasValue && IsCaregiver())
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, CaregiverGroup(userId.Value));
         }
     }
 
@@ -88,6 +93,7 @@ public sealed class CareTrackingHub : Hub
     /// <summary>Tên group theo customer user ID — dùng cho delta sync danh sách booking.</summary>
     public static string CustomerGroup(Guid customerId) => $"customer-{customerId:D}";
     public static string CustomerGroup(string customerId) => $"customer-{customerId}";
+    public static string CaregiverGroup(Guid caregiverUserId) => $"caregiver-{caregiverUserId:D}";
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
@@ -101,6 +107,9 @@ public sealed class CareTrackingHub : Hub
 
     private bool IsCustomer() =>
         Context.User?.IsInRole("CUSTOMER") == true;
+
+    private bool IsCaregiver() =>
+        Context.User?.IsInRole("CAREGIVER") == true;
 }
 
 /// <summary>
@@ -129,6 +138,15 @@ public sealed record BookingStatusChangedEvent(
     Guid BookingId,
     string OldStatus,
     string NewStatus,
+    DateTimeOffset ChangedAt);
+
+/// <summary>
+/// Lightweight caregiver inbox signal. Client refetches its offer list rather
+/// than relying on a partial booking payload that may be stale.
+/// </summary>
+public sealed record BookingOfferChangedEvent(
+    Guid BookingId,
+    string ChangeType,
     DateTimeOffset ChangedAt);
 
 public sealed record TimelineEventAddedEvent(

@@ -18,6 +18,7 @@ CREATE TABLE bookings (
   service_type_id          uuid NOT NULL REFERENCES catalog.service_types(id),
   scheduled_start          timestamptz NOT NULL,
   scheduled_end            timestamptz NOT NULL,
+  payment_deadline         timestamptz NOT NULL DEFAULT (now() + interval '30 minutes'),
   actual_start             timestamptz,
   actual_end               timestamptz,
   checkout_pending_review_at timestamptz,
@@ -26,7 +27,7 @@ CREATE TABLE bookings (
   required_skills          jsonb,
   care_notes               text,
   status                   varchar(50) NOT NULL DEFAULT 'DRAFT'
-                           CHECK (status IN ('DRAFT','PENDING_PAYMENT','CONFIRMED','CAREGIVER_ACCEPTED',
+                           CHECK (status IN ('DRAFT','PENDING_PAYMENT','PAYMENT_RECONCILIATION_PENDING','NEEDS_MANUAL_REVIEW','CONFIRMED','CAREGIVER_ACCEPTED',
                                   'MATCHING_FAILED',
                                   'CAREGIVER_EN_ROUTE','IN_PROGRESS','CHECKOUT_PENDING_REVIEW',
                                   'COMPLETED','CANCELLED','CRISIS','DISPUTED','REFUNDED')),
@@ -93,7 +94,8 @@ CREATE TABLE booking_assignments (
   score_breakdown jsonb,
   offered_at      timestamptz NOT NULL DEFAULT now(),
   responded_at    timestamptz,
-  expires_at      timestamptz
+  expires_at      timestamptz,
+  decline_reason  varchar(200)
 );
 
 -- HARDENING: 1 booking chi co 1 assignment ACCEPTED

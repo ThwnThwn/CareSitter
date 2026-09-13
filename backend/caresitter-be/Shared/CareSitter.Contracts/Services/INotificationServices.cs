@@ -5,7 +5,9 @@ public sealed record UserNotificationMessage(
     string Type,
     string Title,
     string? Body = null,
-    IReadOnlyDictionary<string, string>? Data = null);
+    IReadOnlyDictionary<string, string>? Data = null,
+    Guid? EventId = null,
+    DateTimeOffset? OccurredAt = null);
 
 public interface IUserNotificationService
 {

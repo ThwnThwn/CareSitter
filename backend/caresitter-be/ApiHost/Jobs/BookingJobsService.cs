@@ -3,10 +3,14 @@ using CareSitter.ApiHost.Matching;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
+using CareSitter.Modules.Booking.Application.Sync;
+using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.ApiHost.Jobs;
 
@@ -17,7 +21,6 @@ namespace CareSitter.ApiHost.Jobs;
 /// </summary>
 public sealed class BookingJobsService
 {
-    private const int PaymentTimeoutMinutes = 15;
     private const int LateCheckinGraceMinutes = 10;
     private const int ShiftEndCheckoutGraceMinutes = 30;
     private const int AutoConfirmCheckoutHours = 24;
@@ -31,57 +34,188 @@ public sealed class BookingJobsService
         _logger = logger;
     }
 
-    public async Task ExpirePendingPaymentsAsync()
+    public async Task ReconcilePendingPaymentsAsync()
     {
-        var cutoff = DateTimeOffset.UtcNow.AddMinutes(-PaymentTimeoutMinutes);
-
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        var paymentsDb = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+        var vnPay = scope.ServiceProvider.GetRequiredService<IVNPayService>();
+        var vnPayOptions = scope.ServiceProvider.GetRequiredService<IOptions<VNPayOptions>>().Value;
+        var finalizer = scope.ServiceProvider.GetRequiredService<IPaymentFinalizationService>();
+        var bookingSync = scope.ServiceProvider.GetRequiredService<BookingSyncService>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
-
-        var expiredBookings = await db.Bookings
-            .Where(b => b.Status == BookingStatus.PendingPayment && b.CreatedAt <= cutoff)
+        var now = DateTimeOffset.UtcNow;
+        var dueBookingIds = await db.Bookings.AsNoTracking()
+            .Where(b => (b.Status == BookingStatus.PendingPayment && b.PaymentDeadline <= now) ||
+                b.Status == BookingStatus.PaymentReconciliationPending)
+            .Select(b => b.Id)
+            .Take(100)
             .ToListAsync();
 
-        var expiredSlotHolds = await db.CaregiverSlotHolds
-            .Where(h => h.Status == "HELD" && h.ExpiresAt <= DateTimeOffset.UtcNow)
-            .ToListAsync();
-        foreach (var hold in expiredSlotHolds)
-            hold.Release();
-
-        if (expiredBookings.Count == 0 && expiredSlotHolds.Count == 0) return;
-
-        _logger.LogInformation(
-            "[BookingJobs] ExpirePendingPayments: found {Count} bookings to cancel", expiredBookings.Count);
-
-        foreach (var booking in expiredBookings)
+        foreach (var bookingId in dueBookingIds)
         {
-            var result = booking.Cancel(
-                userId: booking.CustomerId,
-                role: "SYSTEM",
-                reason: "AUTO_EXPIRED_PAYMENT_TIMEOUT",
-                cancelledAt: DateTimeOffset.UtcNow);
+            var succeededIntent = await paymentsDb.PaymentIntents
+                .Where(x => x.BookingId == bookingId && x.Provider == "VNPAY")
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync(x => x.Status == "SUCCEEDED");
 
-            if (result.IsFailure)
+            if (succeededIntent is not null)
             {
-                _logger.LogWarning(
-                    "[BookingJobs] Cannot cancel booking {Id}: {Error}", booking.Id, result.Error.Message);
+                var finalized = await finalizer.FinalizeSuccessfulPaymentAsync(succeededIntent.Id,
+                    succeededIntent.ProviderTransactionId, succeededIntent.ResponsePayload,
+                    PaymentFinalizationSource.ReconciliationJob);
+                if (!finalized.Succeeded)
+                    _logger.LogWarning("Could not finalize successful VNPay intent {IntentId}: {Message}",
+                        succeededIntent.Id, finalized.Message);
                 continue;
             }
 
-            await hub.Clients
-                .Group(CareTrackingHub.BookingGroup(booking.Id))
-                .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
-                    booking.Id,
-                    OldStatus: "pending_payment",
-                    NewStatus: "cancelled",
-                    ChangedAt: DateTimeOffset.UtcNow));
-        }
+            var intent = await paymentsDb.PaymentIntents
+                .Where(x => x.BookingId == bookingId && x.Provider == "VNPAY" && x.Status == "PENDING")
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
 
+            if (intent is null)
+            {
+                await CancelExpiredBookingAsync(db, bookingSync, hub, bookingId, now);
+                continue;
+            }
+            if (intent.NextReconciliationAt is { } next && next > now) continue;
+
+            await MoveToReconciliationAsync(db, bookingSync, hub, bookingId, now);
+            VNPayQueryResult query;
+            try
+            {
+                query = await vnPay.QueryTransactionAsync(intent, vnPayOptions);
+            }
+            catch (Exception ex)
+            {
+                query = new(VNPayQueryState.Unknown, null, "NETWORK", null, "{}", ex.Message);
+            }
+
+            if (query.State == VNPayQueryState.Succeeded)
+            {
+                var finalized = await finalizer.FinalizeSuccessfulPaymentAsync(intent.Id, query.TransactionId,
+                    query.RawPayload, PaymentFinalizationSource.ReconciliationJob);
+                if (!finalized.Succeeded)
+                    _logger.LogWarning("Could not finalize reconciled VNPay intent {IntentId}: {Message}",
+                        intent.Id, finalized.Message);
+                continue;
+            }
+            if (query.State is VNPayQueryState.Failed or VNPayQueryState.NotFound)
+            {
+                await CloseDefinitiveFailureAsync(db, bookingSync, hub, bookingId,
+                    intent.Id, query, now);
+                continue;
+            }
+
+            var startedAt = intent.ReconciliationStartedAt ?? now;
+            var reachedLimit = intent.ReconciliationAttempts + 1 >= vnPayOptions.MaxReconciliationAttempts ||
+                now - startedAt >= TimeSpan.FromMinutes(vnPayOptions.ReconciliationWindowMinutes);
+            intent.RecordReconciliationAttempt(now,
+                reachedLimit ? null : now.AddMinutes(intent.ReconciliationAttempts switch { 0 => 1, 1 => 3, _ => 6 }),
+                query.Message ?? $"VNPay state: {query.State}");
+            if (reachedLimit)
+                intent.SetManualReviewReason(intent.LastReconciliationError ?? "VNPay query inconclusive");
+            await paymentsDb.SaveChangesAsync();
+            if (reachedLimit)
+                await MoveToManualReviewAsync(db, bookingSync, hub, bookingId, now);
+        }
+    }
+
+    private static async Task MoveToReconciliationAsync(BookingDbContext db, BookingSyncService sync,
+        IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync();
+        if (booking?.Status != BookingStatus.PendingPayment) return;
+        booking.BeginPaymentReconciliation();
+        sync.WriteSyncEvent(booking, "PAYMENT_RECONCILIATION_STARTED");
         await db.SaveChangesAsync();
-        _logger.LogInformation(
-            "[BookingJobs] Cancelled {BookingCount} expired bookings and released {HoldCount} caregiver slot holds",
-            expiredBookings.Count, expiredSlotHolds.Count);
+        await tx.CommitAsync();
+        await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync(
+            "BookingStatusChanged", new BookingStatusChangedEvent(bookingId, "pending_payment",
+                "payment_reconciliation_pending", now));
+    }
+
+    private static async Task CancelExpiredBookingAsync(BookingDbContext db, BookingSyncService sync,
+        IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync();
+        if (booking is null || booking.Status is not (BookingStatus.PendingPayment or BookingStatus.PaymentReconciliationPending)) return;
+        var oldStatus = ToApi(booking.Status);
+        var result = booking.Cancel(booking.CustomerId, "SYSTEM", "AUTO_EXPIRED_PAYMENT_RECONCILED", now);
+        if (result.IsFailure) return;
+        var holds = await db.CaregiverSlotHolds.Where(x => x.BookingId == bookingId && x.Status == "HELD").ToListAsync();
+        foreach (var hold in holds) hold.Release();
+        sync.WriteSyncEvent(booking, "PAYMENT_EXPIRED");
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync(
+            "BookingStatusChanged", new BookingStatusChangedEvent(bookingId, oldStatus, "cancelled", now));
+    }
+
+    private static async Task CloseDefinitiveFailureAsync(
+        BookingDbContext db,
+        BookingSyncService sync,
+        IHubContext<CareTrackingHub> hub,
+        Guid bookingId,
+        Guid intentId,
+        VNPayQueryResult query,
+        DateTimeOffset now)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync();
+        if (booking is null || booking.Status is not
+            (BookingStatus.PendingPayment or BookingStatus.PaymentReconciliationPending))
+            return;
+
+        var closedStatus = query.State == VNPayQueryState.NotFound ? "EXPIRED" : "FAILED";
+        var error = query.Message ?? $"VNPay state: {query.State}";
+        var updated = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+            UPDATE payments.payment_intents
+            SET status = {{closedStatus}}, response_payload = CAST({{query.RawPayload}} AS jsonb),
+                reconciliation_attempts = reconciliation_attempts + 1,
+                reconciliation_started_at = COALESCE(reconciliation_started_at, {{now}}),
+                last_reconciliation_at = {{now}}, next_reconciliation_at = NULL,
+                last_reconciliation_error = {{error}}, finalized_source = 'ReconciliationJob',
+                updated_at = now()
+            WHERE id = {{intentId}} AND status = 'PENDING'
+            """);
+        if (updated == 0) return;
+
+        var oldStatus = ToApi(booking.Status);
+        var cancelled = booking.Cancel(
+            booking.CustomerId, "SYSTEM", "AUTO_EXPIRED_PAYMENT_RECONCILED", now);
+        if (cancelled.IsFailure) return;
+        var holds = await db.CaregiverSlotHolds
+            .Where(x => x.BookingId == bookingId && x.Status == "HELD").ToListAsync();
+        foreach (var hold in holds) hold.Release();
+        sync.WriteSyncEvent(booking, "PAYMENT_EXPIRED");
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync(
+            "BookingStatusChanged", new BookingStatusChangedEvent(bookingId, oldStatus, "cancelled", now));
+    }
+
+    private static async Task MoveToManualReviewAsync(BookingDbContext db, BookingSyncService sync,
+        IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync();
+        if (booking?.Status != BookingStatus.PaymentReconciliationPending) return;
+        booking.MarkPaymentNeedsManualReview();
+        sync.WriteSyncEvent(booking, "PAYMENT_NEEDS_MANUAL_REVIEW");
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync(
+            "BookingStatusChanged", new BookingStatusChangedEvent(bookingId,
+                "payment_reconciliation_pending", "needs_manual_review", now));
     }
 
     public async Task AlertLateCheckinsAsync()
@@ -312,6 +446,8 @@ public sealed class BookingJobsService
     {
         BookingStatus.Draft => "draft",
         BookingStatus.PendingPayment => "pending_payment",
+        BookingStatus.PaymentReconciliationPending => "payment_reconciliation_pending",
+        BookingStatus.NeedsManualReview => "needs_manual_review",
         BookingStatus.Confirmed => "confirmed",
         BookingStatus.MatchingFailed => "matching_failed",
         BookingStatus.CaregiverAccepted => "caregiver_accepted",

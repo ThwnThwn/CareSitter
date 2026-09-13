@@ -12,6 +12,7 @@ namespace CareSitter.Modules.Booking.Domain;
 public sealed class Booking : AggregateRoot
 {
     public const int CheckInRadiusMeters = 50;
+    public static readonly TimeSpan CheckInEarlyWindow = TimeSpan.FromMinutes(30);
 
     private Booking() { } // EF
 
@@ -23,6 +24,7 @@ public sealed class Booking : AggregateRoot
         Guid serviceTypeId,
         DateTimeOffset scheduledStart,
         DateTimeOffset scheduledEnd,
+        DateTimeOffset paymentDeadline,
         int geofenceRadiusMeters,
         string? requiredSkills) : base(id)
     {
@@ -32,6 +34,7 @@ public sealed class Booking : AggregateRoot
         ServiceTypeId = serviceTypeId;
         ScheduledStart = scheduledStart;
         ScheduledEnd = scheduledEnd;
+        PaymentDeadline = paymentDeadline;
         GeofenceRadiusMeters = geofenceRadiusMeters;
         RequiredSkills = requiredSkills;
         Status = BookingStatus.Draft;
@@ -45,6 +48,7 @@ public sealed class Booking : AggregateRoot
 
     public DateTimeOffset ScheduledStart { get; private set; }
     public DateTimeOffset ScheduledEnd { get; private set; }
+    public DateTimeOffset PaymentDeadline { get; private set; }
     public DateTimeOffset? ActualStart { get; private set; }
     public DateTimeOffset? ActualEnd { get; private set; }
     public DateTimeOffset? CheckoutPendingReviewAt { get; private set; }
@@ -79,6 +83,7 @@ public sealed class Booking : AggregateRoot
         Guid serviceTypeId,
         DateTimeOffset scheduledStart,
         DateTimeOffset scheduledEnd,
+        DateTimeOffset? paymentDeadline = null,
         int geofenceRadiusMeters = 50,
         string? requiredSkills = null)
     {
@@ -86,7 +91,8 @@ public sealed class Booking : AggregateRoot
             return Error.Validation("booking.schedule", "scheduled_end phai sau scheduled_start.");
 
         var booking = new Booking(Guid.NewGuid(), customerId, beneficiaryId, addressId, serviceTypeId,
-            scheduledStart, scheduledEnd, geofenceRadiusMeters, requiredSkills);
+            scheduledStart, scheduledEnd, paymentDeadline ?? DateTimeOffset.UtcNow.AddMinutes(15),
+            geofenceRadiusMeters, requiredSkills);
         return booking;
     }
 
@@ -130,21 +136,35 @@ public sealed class Booking : AggregateRoot
         return TransitionTo(BookingStatus.CaregiverAccepted);
     }
 
-    /// <summary>Check-in: chi hop le khi GPS trong ban kinh geofence (tru khi admin override).</summary>
-    public Result CheckIn(GeoPoint caregiverLocation, GeoPoint addressLocation, bool adminOverride = false)
+    /// <summary>
+    /// Check-in chi hop le tu 30 phut truoc gio bat dau ca, va khi GPS nam trong geofence.
+    /// <paramref name="checkedInAt"/> phai do server cap; khong dung timestamp tu client.
+    /// </summary>
+    public Result CheckIn(
+        GeoPoint caregiverLocation,
+        GeoPoint addressLocation,
+        bool adminOverride = false,
+        DateTimeOffset? checkedInAt = null,
+        TimeSpan? earlyWindow = null,
+        int? checkInRadiusMeters = null)
     {
         if (Status != BookingStatus.CaregiverEnRoute)
             return Error.Conflict("booking.checkin", "Chi check-in khi CSV dang EN_ROUTE.");
 
+        var serverNow = checkedInAt ?? DateTimeOffset.UtcNow;
+        var allowedEarlyWindow = earlyWindow ?? CheckInEarlyWindow;
+        var earliestCheckIn = ScheduledStart - allowedEarlyWindow;
+        if (serverNow < earliestCheckIn)
+            return Error.Validation("booking.checkin_too_early",
+                $"Chi duoc check-in tu {earliestCheckIn:HH:mm dd/MM/yyyy}, toi da 30 phut truoc gio bat dau ca.");
+
         double distance = caregiverLocation.DistanceMetersTo(addressLocation);
-        // A booking created before the fixed-radius policy may retain a larger
-        // value in the database. Check-in is always capped at 50 metres.
-        int allowedRadiusMeters = Math.Min(GeofenceRadiusMeters, CheckInRadiusMeters);
+        int allowedRadiusMeters = checkInRadiusMeters ?? CheckInRadiusMeters;
         if (!adminOverride && distance > allowedRadiusMeters)
             return Error.Validation("booking.geofence",
                 $"Ngoai ban kinh cho phep ({distance:F0}m > {allowedRadiusMeters}m).");
 
-        ActualStart = DateTimeOffset.UtcNow;
+        ActualStart = serverNow;
         var result = TransitionTo(BookingStatus.InProgress);
         if (result.IsSuccess)
             Raise(new BookingCheckedIn(Id, CaregiverId!.Value, distance));
@@ -192,6 +212,8 @@ public sealed class Booking : AggregateRoot
 
     public Result StartEnRoute() => TransitionTo(BookingStatus.CaregiverEnRoute);
     public Result ConfirmPayment() => TransitionTo(BookingStatus.Confirmed);
+    public Result BeginPaymentReconciliation() => TransitionTo(BookingStatus.PaymentReconciliationPending);
+    public Result MarkPaymentNeedsManualReview() => TransitionTo(BookingStatus.NeedsManualReview);
     public Result MarkMatchingFailed() => TransitionTo(BookingStatus.MatchingFailed);
     public Result Cancel(Guid userId, string role, string? reason, DateTimeOffset cancelledAt)
     {

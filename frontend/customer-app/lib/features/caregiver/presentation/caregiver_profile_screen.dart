@@ -142,7 +142,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 44,
-                      backgroundColor: Colors.white.withOpacity(0.25),
+                      backgroundColor: Colors.white.withValues(alpha: 0.25),
                       child: Text(
                         caregiver.initials,
                         style: const TextStyle(
@@ -181,7 +181,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
                       ? '● Đang rảnh${caregiver.yearsOfExperience != null ? ' • ${caregiver.yearsOfExperience} năm kinh nghiệm' : ''}'
                       : '○ Hiện đang bận',
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.85), fontSize: 13),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -226,7 +227,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 2)),
         ],
@@ -239,7 +240,9 @@ class CaregiverProfileScreen extends ConsumerWidget {
           _buildDivider(),
           _buildStatItem('🛡️ 100%', 'Xác minh KYC'),
           _buildDivider(),
-          _buildStatItem('📍 ${caregiver.location.isNotEmpty ? caregiver.location : 'TP.HCM'}', 'Khu vực'),
+          _buildStatItem(
+              '📍 ${caregiver.location.isNotEmpty ? caregiver.location : 'TP.HCM'}',
+              'Khu vực'),
         ],
       ),
     );
@@ -312,8 +315,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: AppColors.primaryContainer,
             borderRadius: BorderRadius.circular(10),
-            border:
-                Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+            border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -345,7 +348,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -371,7 +374,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -395,8 +398,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Trần Hữu',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 13)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   Row(
                     children: [
                       Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
@@ -466,7 +469,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
         color: AppColors.cardBackground,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, -4)),
         ],

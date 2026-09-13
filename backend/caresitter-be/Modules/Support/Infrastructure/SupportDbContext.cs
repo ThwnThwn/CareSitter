@@ -57,6 +57,9 @@ public sealed class SupportDbContext : ModuleDbContext
             b.Property(x => x.Type).HasColumnName("type").HasMaxLength(20);
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
             b.Property(x => x.Priority).HasColumnName("priority").HasMaxLength(20);
+            b.Property(x => x.Title).HasColumnName("title").HasMaxLength(255);
+            b.Property(x => x.Description).HasColumnName("description");
+            b.Property(x => x.AttachmentUrls).HasColumnName("attachment_urls").HasColumnType("jsonb");
             b.Property(x => x.AssignedAdminId).HasColumnName("assigned_admin_id");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");

@@ -61,6 +61,9 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.Gender).HasColumnName("gender").HasMaxLength(20);
             b.Property(x => x.CccdNumberEncrypted).HasColumnName("cccd_number_encrypted");
             b.Property(x => x.CccdHash).HasColumnName("cccd_hash");
+            b.Property(x => x.CccdFrontUrl).HasColumnName("cccd_front_url");
+            b.Property(x => x.CccdBackUrl).HasColumnName("cccd_back_url");
+            b.Property(x => x.CertificateUrls).HasColumnName("certificate_urls").HasColumnType("jsonb");
             b.Property(x => x.Bio).HasColumnName("bio");
             b.Property(x => x.YearsOfExperience).HasColumnName("years_of_experience");
             b.Property(x => x.HourlyRateExpected).HasColumnName("hourly_rate_expected");

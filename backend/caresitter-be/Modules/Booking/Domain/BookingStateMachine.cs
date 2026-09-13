@@ -10,7 +10,9 @@ public static class BookingStateMachine
         new Dictionary<BookingStatus, BookingStatus[]>
         {
             [BookingStatus.Draft] = new[] { BookingStatus.PendingPayment, BookingStatus.Cancelled },
-            [BookingStatus.PendingPayment] = new[] { BookingStatus.Confirmed, BookingStatus.Cancelled },
+            [BookingStatus.PendingPayment] = new[] { BookingStatus.PaymentReconciliationPending, BookingStatus.Confirmed, BookingStatus.Cancelled },
+            [BookingStatus.PaymentReconciliationPending] = new[] { BookingStatus.Confirmed, BookingStatus.NeedsManualReview, BookingStatus.Cancelled },
+            [BookingStatus.NeedsManualReview] = new[] { BookingStatus.Confirmed, BookingStatus.Cancelled },
             [BookingStatus.Confirmed] = new[] { BookingStatus.MatchingFailed, BookingStatus.CaregiverAccepted, BookingStatus.Cancelled },
             [BookingStatus.MatchingFailed] = new[] { BookingStatus.Cancelled, BookingStatus.Refunded },
             [BookingStatus.CaregiverAccepted] = new[] { BookingStatus.CaregiverEnRoute, BookingStatus.Cancelled },

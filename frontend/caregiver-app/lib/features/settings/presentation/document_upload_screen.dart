@@ -1,51 +1,88 @@
-import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/router/navigation_helpers.dart';
-import '../../../core/widgets/app_widgets.dart';
+import 'dart:io';
 
-class DocumentUploadScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../core/api/dio_client.dart';
+import '../../../core/router/navigation_helpers.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_widgets.dart';
+import '../../profile/presentation/providers/profile_provider.dart';
+
+class DocumentUploadScreen extends ConsumerStatefulWidget {
   final String docTitle;
 
   const DocumentUploadScreen({super.key, required this.docTitle});
 
   @override
-  State<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
+  ConsumerState<DocumentUploadScreen> createState() =>
+      _DocumentUploadScreenState();
 }
 
-class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
-  bool _hasImage = false;
-  bool _isUploading = false;
-  String? _selectedFileName;
+class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _cccdController = TextEditingController();
+  final _picker = ImagePicker();
+  XFile? _front;
+  XFile? _back;
+  final List<XFile> _certificates = [];
+  bool _submitting = false;
 
-  void _pickImage(String source) {
-    setState(() => _isUploading = true);
-    // Simulate image loading/uploading
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-          _hasImage = true;
-          _selectedFileName = source == 'camera' ? 'IMG_CAMERA_0823.JPG' : 'DOC_SCAN_PREVIEW.PNG';
-        });
-      }
-    });
+  @override
+  void dispose() {
+    _cccdController.dispose();
+    super.dispose();
   }
 
-  void _submitDocument() {
-    setState(() => _isUploading = true);
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã gửi tài liệu "${widget.docTitle}" để duyệt'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        Navigator.pop(context);
-      }
-    });
+  Future<void> _pickRequiredImage(bool front) async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 88,
+      maxWidth: 1800,
+    );
+    if (file == null || !mounted) return;
+    setState(() => front ? _front = file : _back = file);
+  }
+
+  Future<void> _pickCertificates() async {
+    final files =
+        await _picker.pickMultiImage(imageQuality: 88, maxWidth: 1800);
+    if (!mounted || files.isEmpty) return;
+    setState(() => _certificates.addAll(files.take(10 - _certificates.length)));
+  }
+
+  Future<void> _submit() async {
+    if (_submitting || !_formKey.currentState!.validate()) return;
+    if (_front == null || _back == null) {
+      _showMessage('Vui lòng chọn đủ mặt trước và mặt sau CCCD.', true);
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      await ref.read(profileProvider.notifier).submitKyc(
+            cccdNumber: _cccdController.text,
+            cccdFront: File(_front!.path),
+            cccdBack: File(_back!.path),
+            certificates: _certificates.map((file) => File(file.path)).toList(),
+          );
+      if (!mounted) return;
+      _showMessage('Hồ sơ KYC đã được gửi và đang chờ duyệt.', false);
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) _showMessage(apiErrorMessage(error), true);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  void _showMessage(String message, bool error) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: error ? AppColors.error : AppColors.success,
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   @override
@@ -53,194 +90,139 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.docTitle),
+        title: const Text('Nộp hồ sơ KYC'),
         leading: const AppBackButton(fallbackRoute: '/settings/documents'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(24),
           children: [
-            // ── Instructions ──
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+            const Text(
+              'Ảnh phải rõ nét, không bị che góc. Hồ sơ chỉ chuyển sang chờ duyệt sau khi máy chủ nhận đủ dữ liệu.',
+              style: TextStyle(color: AppColors.textSecondary, height: 1.45),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _cccdController,
+              keyboardType: TextInputType.number,
+              maxLength: 12,
+              decoration: const InputDecoration(
+                labelText: 'Số CCCD',
+                hintText: 'Nhập 9 hoặc 12 chữ số',
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 28),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Vui lòng tải lên ảnh chụp mặt trước rõ nét của ${widget.docTitle}. Đảm bảo đủ ánh sáng, không bị lóa và rõ chữ.',
-                      style: const TextStyle(fontSize: 13, color: AppColors.primary, height: 1.4),
-                    ),
+              validator: (value) {
+                final text = value?.trim() ?? '';
+                return RegExp(r'^(\d{9}|\d{12})$').hasMatch(text)
+                    ? null
+                    : 'Số CCCD phải gồm 9 hoặc 12 chữ số';
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _ImagePickerCard(
+                    label: 'Mặt trước CCCD',
+                    file: _front,
+                    onTap: () => _pickRequiredImage(true),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ImagePickerCard(
+                    label: 'Mặt sau CCCD',
+                    file: _back,
+                    onTap: () => _pickRequiredImage(false),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-
-            // ── Upload Card ──
-            Center(
-              child: _buildUploadCard(),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Chứng chỉ chuyên môn (không bắt buộc)',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+                Text('${_certificates.length}/10',
+                    style: const TextStyle(color: AppColors.textSecondary)),
+              ],
             ),
-            const SizedBox(height: 40),
-
-            // ── Submit Button ──
+            const SizedBox(height: 12),
             AppButton(
-              label: 'Gửi yêu cầu phê duyệt',
-              onPressed: _hasImage && !_isUploading ? _submitDocument : null,
-              isLoading: _isUploading,
+              label: 'Chọn ảnh chứng chỉ',
+              icon: Icons.add_photo_alternate_outlined,
+              isOutlined: true,
+              onPressed: _certificates.length < 10 ? _pickCertificates : null,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUploadCard() {
-    if (_isUploading) {
-      return Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: AppColors.primary),
-              SizedBox(height: 16),
-              Text(
-                'Đang xử lý ảnh...',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            if (_certificates.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(_certificates.length, (index) {
+                  return InputChip(
+                    label: Text('Chứng chỉ ${index + 1}'),
+                    onDeleted: _submitting
+                        ? null
+                        : () => setState(() => _certificates.removeAt(index)),
+                  );
+                }),
               ),
             ],
-          ),
-        ),
-      );
-    }
-
-    if (_hasImage) {
-      return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary),
-          boxShadow: AppShadows.card,
-        ),
-        child: Column(
-          children: [
-            // Preview box
-            Container(
-              height: 180,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.file_present_rounded, size: 56, color: AppColors.primary),
-                    const SizedBox(height: 8),
-                    Text(
-                      _selectedFileName ?? 'document.jpg',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Ảnh đã chọn thành công',
-                    style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _hasImage = false;
-                        _selectedFileName = null;
-                      });
-                    },
-                    child: const Text('Thay đổi', style: TextStyle(color: AppColors.error)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () => _showPickOptions(),
-      child: Container(
-        height: 220,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo_outlined, size: 48, color: AppColors.textHint),
-            SizedBox(height: 16),
-            Text(
-              'Chạm để chụp hoặc chọn ảnh',
-              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 6),
-            Text(
-              'Hỗ trợ JPG, PNG (Tối đa 5MB)',
-              style: TextStyle(color: AppColors.textHint, fontSize: 12),
+            const SizedBox(height: 32),
+            AppButton(
+              label: 'Gửi hồ sơ KYC',
+              icon: Icons.cloud_upload_outlined,
+              isLoading: _submitting,
+              onPressed: _submitting ? null : _submit,
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  void _showPickOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
-        child: Wrap(
+class _ImagePickerCard extends StatelessWidget {
+  final String label;
+  final XFile? file;
+  final VoidCallback onTap;
+
+  const _ImagePickerCard(
+      {required this.label, required this.file, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: file == null ? AppColors.border : AppColors.primary),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
-              title: const Text('Chụp ảnh bằng Camera'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage('camera');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-              title: const Text('Chọn ảnh từ Thư viện'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage('gallery');
-              },
-            ),
+            Icon(file == null ? Icons.add_a_photo_outlined : Icons.check_circle,
+                color: file == null ? AppColors.textHint : AppColors.primary,
+                size: 36),
+            const SizedBox(height: 10),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(file == null ? 'Chạm để chọn ảnh' : file!.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 11)),
           ],
         ),
       ),
