@@ -20,6 +20,8 @@ internal static class BookingStatusCodec
     {
         BookingStatus.Draft => "DRAFT",
         BookingStatus.PendingPayment => "PENDING_PAYMENT",
+        BookingStatus.PaymentReconciliationPending => "PAYMENT_RECONCILIATION_PENDING",
+        BookingStatus.NeedsManualReview => "NEEDS_MANUAL_REVIEW",
         BookingStatus.Confirmed => "CONFIRMED",
         BookingStatus.MatchingFailed => "MATCHING_FAILED",
         BookingStatus.CaregiverAccepted => "CAREGIVER_ACCEPTED",
@@ -42,6 +44,8 @@ internal static class BookingStatusCodec
     {
         BookingStatus.Draft => "draft",
         BookingStatus.PendingPayment => "pending_payment",
+        BookingStatus.PaymentReconciliationPending => "payment_reconciliation_pending",
+        BookingStatus.NeedsManualReview => "needs_manual_review",
         BookingStatus.Confirmed => "confirmed",
         BookingStatus.MatchingFailed => "matching_failed",
         BookingStatus.CaregiverAccepted => "caregiver_accepted",
@@ -64,6 +68,8 @@ internal static class BookingStatusCodec
     {
         "draft" => BookingStatus.Draft,
         "pending_payment" => BookingStatus.PendingPayment,
+        "payment_reconciliation_pending" => BookingStatus.PaymentReconciliationPending,
+        "needs_manual_review" => BookingStatus.NeedsManualReview,
         "confirmed" => BookingStatus.Confirmed,
         "matching_failed" => BookingStatus.MatchingFailed,
         "caregiver_accepted" => BookingStatus.CaregiverAccepted,

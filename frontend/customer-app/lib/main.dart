@@ -12,4 +12,3 @@ Future<void> main() async {
   await FirebasePushNotifications.initialize();
   runApp(const ProviderScope(child: CareSitterApp()));
 }
-

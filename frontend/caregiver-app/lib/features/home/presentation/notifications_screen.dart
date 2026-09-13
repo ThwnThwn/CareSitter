@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../../core/push/notification_deep_link_service.dart';
 import '../../../core/theme/app_theme.dart';
 import 'providers/notifications_provider.dart';
 
@@ -40,11 +40,14 @@ class NotificationsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none_rounded, size: 64, color: AppColors.textHint),
+                  Icon(Icons.notifications_none_rounded,
+                      size: 64, color: AppColors.textHint),
                   SizedBox(height: 16),
                   Text(
                     'Không có thông báo nào',
-                    style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -59,114 +62,116 @@ class NotificationsScreen extends ConsumerWidget {
                 final iconData = _getIconForType(notif.type);
 
                 return Container(
-                  color: isRead ? Colors.transparent : AppColors.primary.withValues(alpha: 0.04),
+                  color: isRead
+                      ? Colors.transparent
+                      : AppColors.primary.withValues(alpha: 0.04),
                   child: Material(
                     color: Colors.transparent,
                     child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: iconData['bg'] as Color,
-                        shape: BoxShape.circle,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: iconData['bg'] as Color,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(iconData['icon'] as IconData,
+                            color: iconData['color'] as Color),
                       ),
-                      child: Icon(iconData['icon'] as IconData, color: iconData['color'] as Color),
-                    ),
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            notif.title,
-                            style: TextStyle(
-                              fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              notif.title,
+                              style: TextStyle(
+                                fontWeight:
+                                    isRead ? FontWeight.w500 : FontWeight.w700,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                        if (!isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(left: 8),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
+                          if (!isRead)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            notif.body,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
                             ),
                           ),
-                      ],
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(
-                          notif.body,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
+                          const SizedBox(height: 6),
+                          Text(
+                            notif.time,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textHint,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          notif.time,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      onTap: () {
+                        notifier.markAsRead(notif.id);
+                        ref.read(notificationDeepLinkServiceProvider).handle({
+                          'type': notif.type,
+                          if (notif.deepLink != null)
+                            'deepLink': notif.deepLink,
+                        });
+                      },
                     ),
-                    onTap: () {
-                      notifier.markAsRead(notif.id);
-                      _handleNotificationTap(context, notif.type);
-                    },
                   ),
-                ),
-              );
+                );
               },
             ),
     );
   }
 
-  void _handleNotificationTap(BuildContext context, String type) {
-    switch (type) {
-      case 'shift':
-        context.push('/shifts/bk001/active');
-        break;
-      case 'booking':
-        context.push('/shifts/bk002');
-        break;
-      case 'payment':
-        context.push('/earnings');
-        break;
-      default:
-        // Do nothing for system/other types
-        break;
-    }
-  }
-
   Map<String, dynamic> _getIconForType(String type) {
-    switch (type) {
-      case 'shift':
+    switch (type.toUpperCase()) {
+      case 'SHIFT':
+      case 'CARE_TIMELINE':
         return {
           'icon': Icons.directions_run_rounded,
           'bg': const Color(0xFFE8F8F0),
           'color': const Color(0xFF27AE60),
         };
-      case 'booking':
+      case 'BOOKING':
+      case 'BOOKING_OFFER':
+      case 'MATCHING_FAILED':
         return {
           'icon': Icons.calendar_month_rounded,
           'bg': const Color(0xFFFFF3DC),
           'color': const Color(0xFFE67E22),
         };
-      case 'payment':
+      case 'PAYMENT':
+      case 'PAYOUT':
         return {
           'icon': Icons.account_balance_wallet_rounded,
           'bg': const Color(0xFFEBF5FB),
           'color': const Color(0xFF2980B9),
+        };
+      case 'SOS':
+        return {
+          'icon': Icons.sos_rounded,
+          'bg': AppColors.errorLight,
+          'color': AppColors.error,
         };
       default:
         return {

@@ -116,7 +116,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
     /// <summary>
     /// Hash raw refresh token bằng SHA-256, trả về chuỗi hex lowercase.
-    /// Dùng để làm Redis key — đảm bảo raw token không bị lộ nếu Redis bị inspect.
+    /// Dùng để lưu DB/cache mà không làm lộ raw refresh token.
     /// </summary>
     public string HashRefreshToken(string rawToken)
     {

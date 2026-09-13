@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import '../auth/auth_notifier.dart';
@@ -39,6 +41,28 @@ class BookingStatusChange {
       );
 }
 
+/// A lightweight caregiver inbox signal. The offer itself is always refetched
+/// so expiry and rank remain server-authoritative.
+class BookingOfferChange {
+  final String bookingId;
+  final String changeType;
+  final DateTime changedAt;
+
+  const BookingOfferChange({
+    required this.bookingId,
+    required this.changeType,
+    required this.changedAt,
+  });
+
+  factory BookingOfferChange.fromJson(Map<String, dynamic> json) =>
+      BookingOfferChange(
+        bookingId: json['bookingId']?.toString() ?? '',
+        changeType: json['changeType']?.toString() ?? 'changed',
+        changedAt: DateTime.tryParse(json['changedAt']?.toString() ?? '') ??
+            DateTime.now(),
+      );
+}
+
 /// Timeline event mới từ server (ví dụ LATE_CHECKIN từ Hangfire job).
 class TimelineEventUpdate {
   final String bookingId;
@@ -65,47 +89,90 @@ class TimelineEventUpdate {
       );
 }
 
+enum SignalRConnectionState {
+  connecting,
+  connected,
+  reconnecting,
+  reconnected,
+  closed,
+}
+
 /// Quản lý kết nối SignalR cho Caregiver App.
 /// Caregiver join group → nhận BookingStatusChanged và TimelineEventAdded.
 class CareSignalRService {
   final Ref _ref;
   HubConnection? _connection;
+  Future<void>? _connectOperation;
 
   final _statusController = StreamController<BookingStatusChange>.broadcast();
+  final _offerController = StreamController<BookingOfferChange>.broadcast();
   final _timelineController = StreamController<TimelineEventUpdate>.broadcast();
+  final _lifecycleController =
+      StreamController<SignalRConnectionState>.broadcast();
 
   Stream<BookingStatusChange> get statusStream => _statusController.stream;
+  Stream<BookingOfferChange> get offerStream => _offerController.stream;
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
+  Stream<SignalRConnectionState> get lifecycleStream =>
+      _lifecycleController.stream;
+  Stream<void> get onReconnected => lifecycleStream
+      .where((state) => state == SignalRConnectionState.reconnected)
+      .map((_) {});
 
-  CareSignalRService(this._ref);
+  CareSignalRService(this._ref) {
+    _authNotifier = _ref.read(authStateProvider.notifier);
+    _authNotifier.registerLogoutCleanup(disconnect);
+  }
 
-  bool get isConnected =>
-      _connection?.state == HubConnectionState.Connected;
+  late final AuthNotifier _authNotifier;
+
+  bool get isConnected => _connection?.state == HubConnectionState.Connected;
 
   /// Danh sách booking đang theo dõi — dùng để re-join sau khi reconnect.
   final Set<String> _activeBookings = {};
 
-  Future<void> connect() async {
-    if (_connection != null &&
-        _connection!.state == HubConnectionState.Connected) {
-      return;
-    }
+  Future<void> connect() {
+    if (isConnected) return Future.value();
+    return _connectOperation ??=
+        _connectInternal().whenComplete(() => _connectOperation = null);
+  }
+
+  Future<void> _connectInternal() async {
+    if (isConnected) return;
 
     final token = _ref.read(authStateProvider).value?.accessToken;
     if (token == null) return;
 
-    final hubUrl = '$_hubBaseUrl/hubs/care-tracking?access_token=$token';
+    if (_connection != null) {
+      try {
+        await _connection!.stop();
+      } catch (_) {}
+    }
 
     _connection = HubConnectionBuilder()
-        .withUrl(hubUrl)
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 30000])
-        .build();
+        .withUrl(
+      '$_hubBaseUrl/hubs/care-tracking',
+      options: HttpConnectionOptions(
+        accessTokenFactory: () async =>
+            _ref.read(authStateProvider).value?.accessToken ?? '',
+      ),
+    )
+        .withAutomaticReconnect(
+            retryDelays: [1000, 2000, 5000, 10000, 30000]).build();
 
     _connection!.on('BookingStatusChanged', (args) {
       if (args == null || args.isEmpty) return;
       try {
         final data = Map<String, dynamic>.from(args[0] as Map);
         _statusController.add(BookingStatusChange.fromJson(data));
+      } catch (_) {}
+    });
+
+    _connection!.on('BookingOfferChanged', (args) {
+      if (args == null || args.isEmpty) return;
+      try {
+        final data = Map<String, dynamic>.from(args[0] as Map);
+        _offerController.add(BookingOfferChange.fromJson(data));
       } catch (_) {}
     });
 
@@ -117,24 +184,38 @@ class CareSignalRService {
       } catch (_) {}
     });
 
+    _connection!.onclose(({error}) {
+      debugPrint('[SignalR-Caregiver] Connection closed.');
+      _lifecycleController.add(SignalRConnectionState.closed);
+    });
+
+    _connection!.onreconnecting(({error}) {
+      debugPrint('[SignalR-Caregiver] Reconnecting.');
+      _lifecycleController.add(SignalRConnectionState.reconnecting);
+    });
+
     _connection!.onreconnected(({connectionId}) {
-      // ignore: avoid_print
-      print('[SignalR-Caregiver] Reconnected — re-joining ${_activeBookings.length} groups');
+      debugPrint(
+          '[SignalR-Caregiver] Reconnected — re-joining ${_activeBookings.length} groups');
       for (final bid in _activeBookings) {
-        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((e) {
-          print('[SignalR-Caregiver] Re-join failed for $bid: $e');
+        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((_) {
+          debugPrint('[SignalR-Caregiver] Re-join failed for $bid.');
           return null;
         });
       }
+      _lifecycleController.add(SignalRConnectionState.reconnected);
     });
 
+    _lifecycleController.add(SignalRConnectionState.connecting);
     try {
       await _connection!.start();
-      // ignore: avoid_print
-      print('[SignalR-Caregiver] Connected');
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SignalR-Caregiver] Connection failed: $e');
+      debugPrint('[SignalR-Caregiver] Connected');
+      _lifecycleController.add(SignalRConnectionState.connected);
+    } catch (_) {
+      // SignalR exceptions can include the full URL with access_token. Never
+      // write it to terminal logs or crash reports.
+      debugPrint('[SignalR-Caregiver] Connection failed; retry will continue.');
+      _lifecycleController.add(SignalRConnectionState.closed);
     }
   }
 
@@ -142,16 +223,15 @@ class CareSignalRService {
     await connect();
     if (!isConnected) return;
     try {
-      final result = await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
+      final result =
+          await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
       if (result == 'unauthorized') {
-        // ignore: avoid_print
-        print('[SignalR-Caregiver] joinBooking UNAUTHORIZED: $bookingId');
+        debugPrint('[SignalR-Caregiver] joinBooking UNAUTHORIZED: $bookingId');
         return;
       }
       _activeBookings.add(bookingId);
-    } catch (e) {
-      // ignore: avoid_print
-      print('[SignalR-Caregiver] joinBooking error: $e');
+    } catch (_) {
+      debugPrint('[SignalR-Caregiver] Could not join booking group.');
     }
   }
 
@@ -163,11 +243,24 @@ class CareSignalRService {
     } catch (_) {}
   }
 
-  Future<void> dispose() async {
+  Future<void> disconnect() async {
+    _activeBookings.clear();
+    final connection = _connection;
+    _connection = null;
     try {
-      await _connection?.stop();
+      await connection?.stop();
     } catch (_) {}
+    if (!_lifecycleController.isClosed) {
+      _lifecycleController.add(SignalRConnectionState.closed);
+    }
+  }
+
+  Future<void> dispose() async {
+    _authNotifier.unregisterLogoutCleanup(disconnect);
+    await disconnect();
     await _statusController.close();
+    await _offerController.close();
     await _timelineController.close();
+    await _lifecycleController.close();
   }
 }

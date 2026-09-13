@@ -217,7 +217,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(
                           color: AppColors.primary, width: 1.2),
-                      backgroundColor: const Color(0xFFE8F5E9).withOpacity(0.5),
+                      backgroundColor:
+                          const Color(0xFFE8F5E9).withValues(alpha: 0.5),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
@@ -373,10 +374,10 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         decoration: BoxDecoration(
           color: const Color(0xFFE8F5E9),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -392,7 +393,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(v),
+                  color: AppColors.primary.withValues(alpha: v),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -416,11 +417,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.white.withValues(alpha: 0.95),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border.withOpacity(0.8)),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
             ],
           ),
           child: const AppBackButton(
@@ -434,11 +436,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           padding: const EdgeInsets.all(8),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withValues(alpha: 0.95),
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border.withOpacity(0.8)),
+              border:
+                  Border.all(color: AppColors.border.withValues(alpha: 0.8)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
               ],
             ),
             child: Stack(
@@ -538,7 +542,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.45),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.45),
                                   blurRadius: 16,
                                   spreadRadius: 4,
                                 ),
@@ -573,12 +578,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.92),
+                color: Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border.withOpacity(0.8)),
+                border:
+                    Border.all(color: AppColors.border.withValues(alpha: 0.8)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -611,12 +617,14 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.96),
+                  color: Colors.white.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border.withOpacity(0.8)),
+                  border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.8)),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.12), blurRadius: 10)
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 10)
                   ],
                 ),
                 child: Row(
@@ -700,7 +708,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 height: 62,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(opacity),
+                  color: AppColors.primary.withValues(alpha: opacity),
                 ),
               ),
             ),
@@ -715,7 +723,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.42),
+                        color: AppColors.primary.withValues(alpha: 0.42),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),
@@ -754,12 +762,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         color: const Color(0xFFFEF7EC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFF5A623).withOpacity(0.55),
+          color: const Color(0xFFF5A623).withValues(alpha: 0.55),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF5A623).withOpacity(0.12),
+            color: const Color(0xFFF5A623).withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -774,7 +782,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5A623).withOpacity(0.2),
+                  color: const Color(0xFFF5A623).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -826,11 +834,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5A623).withOpacity(v),
+                    color: const Color(0xFFF5A623).withValues(alpha: v),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF5A623).withOpacity(v * 0.5),
+                        color:
+                            const Color(0xFFF5A623).withValues(alpha: v * 0.5),
                         blurRadius: 6,
                         spreadRadius: 2,
                       ),
@@ -846,198 +855,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: 0.75,
-              backgroundColor: const Color(0xFFF5A623).withOpacity(0.18),
+              backgroundColor: const Color(0xFFF5A623).withValues(alpha: 0.18),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
               minHeight: 5,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ── Static map placeholder (web & desktop) ──────────────────────────────────────
-  Widget _buildStaticMapPlaceholder(
-      {bool isEnRoute = false, required BookingModel bk}) {
-    return Container(
-      width: double.infinity,
-      height: isEnRoute ? 280 : 230,
-      decoration: const BoxDecoration(
-        color: Color(0xFFE5ECE7),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _VectorMapPainter(isEnRoute: isEnRoute),
-            ),
-          ),
-          // Destination Pin (Nhà khách)
-          Positioned(
-            left: 210,
-            top: 68,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.7), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.home_rounded,
-                          color: Colors.white, size: 11),
-                      const SizedBox(width: 3),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 100),
-                        child: Text(
-                          'Nhà ${bk.beneficiaryName?.split(' ').last ?? 'khách'}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.35),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.location_on_rounded,
-                      color: AppColors.primary, size: 18),
-                ),
-              ],
-            ),
-          ),
-          // Caregiver Moving Marker (en_route)
-          if (isEnRoute)
-            Positioned(
-              left: 90,
-              top: 130,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.8, end: 1.2),
-                    duration: const Duration(milliseconds: 1000),
-                    builder: (_, scale, __) => Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Transform.scale(
-                          scale: scale,
-                          child: Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primary.withOpacity(0.25),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.primary, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              bk.caregiverInitials,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5A623),
-                              shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            child: const Icon(Icons.navigation_rounded,
-                                size: 8, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A2E25),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.18),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      'Caregiver đang di chuyển',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -1058,7 +881,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: AppColors.border, width: 0.9),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A2E25).withOpacity(0.05),
+            color: const Color(0xFF1A2E25).withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -1140,7 +963,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 decoration: BoxDecoration(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1245,7 +1069,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 Text(
                   '${bk.serviceName} • ${bk.duration}',
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.8), fontSize: 12),
+                      color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
                 ),
                 const SizedBox(height: 5),
                 Text(
@@ -1260,7 +1084,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: pct,
-                    backgroundColor: Colors.white.withOpacity(0.25),
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
                     valueColor:
                         const AlwaysStoppedAnimation<Color>(Colors.white),
                     minHeight: 6,
@@ -1282,7 +1106,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       fontWeight: FontWeight.w600)),
               Text(bk.date,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.75), fontSize: 11)),
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontSize: 11)),
             ],
           ),
         ],
@@ -1309,7 +1134,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: AppColors.border, width: 0.8),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 3))
         ],
@@ -1424,7 +1249,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               Icon(
                 Icons.radio_button_unchecked,
                 color: canToggle
-                    ? AppColors.primary.withOpacity(0.5)
+                    ? AppColors.primary.withValues(alpha: 0.5)
                     : AppColors.textHint,
                 size: 20,
               ),
@@ -1538,7 +1363,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: AppColors.border, width: 0.9),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1596,7 +1421,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       decoration: BoxDecoration(
         color: const Color(0xFFFEF7EC),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF5A623).withOpacity(0.3)),
+        border:
+            Border.all(color: const Color(0xFFF5A623).withValues(alpha: 0.3)),
       ),
       child: const Row(
         children: [
@@ -1785,7 +1611,7 @@ class _BottomActionBar extends ConsumerWidget {
           color: AppColors.cardBackground,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, -4))
           ],
@@ -1832,14 +1658,14 @@ class _BottomActionBar extends ConsumerWidget {
           border: const Border(top: BorderSide(color: AppColors.border)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -3))
           ],
         ),
-        child: Column(
+        child: const Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Row(
               children: [
                 Icon(Icons.lock_outline, size: 13, color: AppColors.textHint),
@@ -1865,7 +1691,7 @@ class _BottomActionBar extends ConsumerWidget {
           border: const Border(top: BorderSide(color: AppColors.border)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
@@ -1970,7 +1796,8 @@ class _BottomActionBar extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FBF4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.success.withOpacity(0.25)),
+                border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.25)),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2017,178 +1844,4 @@ class _BottomActionBar extends ConsumerWidget {
       ),
     );
   }
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-LatLng _coordsForAddress(String address) {
-  if (address.contains('Nguyễn Trãi')) return const LatLng(10.7527, 106.6602);
-  if (address.contains('Lê Lợi')) return const LatLng(10.7769, 106.7009);
-  if (address.contains('Cách Mạng')) return const LatLng(10.7701, 106.6889);
-  if (address.contains('Điện Biên')) return const LatLng(10.7870, 106.7160);
-  return const LatLng(10.7769, 106.6952);
-}
-
-Widget _mapTileBuilder(
-    BuildContext context, Widget tileWidget, TileImage tile) {
-  return tileWidget;
-}
-
-// ── Vector map painter (web & desktop placeholder) ───────────────────────────
-class _VectorMapPainter extends CustomPainter {
-  final bool isEnRoute;
-  const _VectorMapPainter({this.isEnRoute = false});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-
-    // 1. Base canvas background
-    final bgPaint = Paint()..color = const Color(0xFFE5ECE7);
-    canvas.drawRect(Offset.zero & size, bgPaint);
-
-    // 2. Green Parks & Natural Zones
-    final parkPaint = Paint()
-      ..color = const Color(0xFFD2E8DA)
-      ..style = PaintingStyle.fill;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width * 0.42, size.height * 0.32),
-        const Radius.circular(16),
-      ),
-      parkPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.62, size.height * 0.58, size.width * 0.38,
-            size.height * 0.42),
-        const Radius.circular(20),
-      ),
-      parkPaint,
-    );
-
-    // 3. Water Canal with gentle curved ribbon
-    final waterPaint = Paint()
-      ..color = const Color(0xFFBCE3DF)
-      ..style = PaintingStyle.fill;
-    final riverPath = Path();
-    riverPath.moveTo(0, size.height * 0.82);
-    riverPath.cubicTo(
-      size.width * 0.25,
-      size.height * 0.78,
-      size.width * 0.45,
-      size.height * 0.88,
-      size.width * 0.75,
-      size.height * 0.80,
-    );
-    riverPath.cubicTo(
-      size.width * 0.90,
-      size.height * 0.76,
-      size.width,
-      size.height * 0.84,
-      size.width,
-      size.height * 0.84,
-    );
-    riverPath.lineTo(size.width, size.height * 0.94);
-    riverPath.cubicTo(
-      size.width * 0.88,
-      size.height * 0.88,
-      size.width * 0.75,
-      size.height * 0.90,
-      size.width * 0.45,
-      size.height * 0.96,
-    );
-    riverPath.cubicTo(
-      size.width * 0.25,
-      size.height * 0.88,
-      0,
-      size.height * 0.92,
-      0,
-      size.height * 0.92,
-    );
-    riverPath.close();
-    canvas.drawPath(riverPath, waterPaint);
-
-    // 4. City Blocks / Buildings (Light soft rects)
-    final blockPaint = Paint()
-      ..color = const Color(0xFFF9FAF8)
-      ..style = PaintingStyle.fill;
-    final blockBorder = Paint()
-      ..color = const Color(0xFFD3DFD7)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final blocks = [
-      Rect.fromLTWH(16, 16, 42, 32),
-      Rect.fromLTWH(68, 20, 36, 28),
-      Rect.fromLTWH(116, 14, 52, 38),
-      Rect.fromLTWH(size.width - 70, 24, 48, 32),
-      Rect.fromLTWH(20, 110, 44, 34),
-      Rect.fromLTWH(size.width - 80, 100, 56, 40),
-    ];
-    for (final b in blocks) {
-      final r = RRect.fromRectAndRadius(b, const Radius.circular(6));
-      canvas.drawRRect(r, blockPaint);
-      canvas.drawRRect(r, blockBorder);
-    }
-
-    // 5. Street Network
-    final roadBorderPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 12.0
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final roadSurfacePaint = Paint()
-      ..color = const Color(0xFFEAEFE9)
-      ..strokeWidth = 8.0
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    // Horizontal roads
-    canvas.drawLine(Offset(0, size.height * 0.35),
-        Offset(size.width, size.height * 0.35), roadBorderPaint);
-    canvas.drawLine(Offset(0, size.height * 0.35),
-        Offset(size.width, size.height * 0.35), roadSurfacePaint);
-
-    // Vertical roads
-    canvas.drawLine(Offset(size.width * 0.45, 0),
-        Offset(size.width * 0.45, size.height), roadBorderPaint);
-    canvas.drawLine(Offset(size.width * 0.45, 0),
-        Offset(size.width * 0.45, size.height), roadSurfacePaint);
-
-    canvas.drawLine(Offset(size.width * 0.18, size.height * 0.35),
-        Offset(size.width * 0.18, size.height), roadBorderPaint);
-    canvas.drawLine(Offset(size.width * 0.18, size.height * 0.35),
-        Offset(size.width * 0.18, size.height), roadSurfacePaint);
-
-    // 6. Navigation Route (Caregiver -> Destination)
-    if (isEnRoute) {
-      final routePath = Path();
-      routePath.moveTo(105, 145);
-      routePath.quadraticBezierTo(
-          size.width * 0.35, 145, size.width * 0.45, 120);
-      routePath.lineTo(size.width * 0.45, size.height * 0.35);
-      routePath.lineTo(225, size.height * 0.35);
-
-      final routeGlow = Paint()
-        ..color = AppColors.primary.withOpacity(0.35)
-        ..strokeWidth = 8.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-      canvas.drawPath(routePath, routeGlow);
-
-      final routeLine = Paint()
-        ..color = AppColors.primary
-        ..strokeWidth = 4.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-      canvas.drawPath(routePath, routeLine);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _VectorMapPainter oldDelegate) =>
-      oldDelegate.isEnRoute != isEnRoute;
 }

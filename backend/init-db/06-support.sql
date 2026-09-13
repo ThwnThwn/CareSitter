@@ -36,6 +36,9 @@ CREATE TABLE support_tickets (
                     CHECK (status IN ('NEW','IN_PROGRESS','RESOLVED','CLOSED')),
   priority          varchar(20) NOT NULL DEFAULT 'MEDIUM'
                     CHECK (priority IN ('LOW','MEDIUM','HIGH','CRITICAL')),
+  title             varchar(255) NOT NULL,
+  description       text NOT NULL,
+  attachment_urls   jsonb NOT NULL DEFAULT '[]'::jsonb,
   assigned_admin_id uuid REFERENCES identity.users(id),
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now()

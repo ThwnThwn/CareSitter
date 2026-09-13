@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/dio_client.dart';
@@ -9,7 +10,8 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() =>
+      _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
@@ -64,18 +66,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         await ref.read(authStateProvider.notifier).logout();
         return;
       }
-    } catch (e) {
-      // Parse error message từ server
-      final err = e.toString();
-      if (err.contains('password.incorrect')) {
-        errorMsg = 'Mật khẩu hiện tại không chính xác.';
-      } else if (err.contains('password.policy')) {
-        errorMsg = 'Mật khẩu mới không đáp ứng yêu cầu.';
-      } else if (err.contains('password.no_password')) {
-        errorMsg = 'Tài khoản Google không hỗ trợ đổi mật khẩu.';
-      } else {
-        errorMsg = 'Không thể đổi mật khẩu. Vui lòng thử lại.';
-      }
+    } on DioException catch (e) {
+      final apiError = e.error;
+      errorMsg = apiError is AppApiException
+          ? apiError.message
+          : 'Không thể đổi mật khẩu. Vui lòng thử lại.';
+    } catch (_) {
+      errorMsg = 'Không thể đổi mật khẩu. Vui lòng thử lại.';
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -114,7 +111,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.4)),
                 ),
                 child: const Row(
                   children: [

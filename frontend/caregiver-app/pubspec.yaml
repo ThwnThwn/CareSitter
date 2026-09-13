@@ -74,6 +74,7 @@ dependencies:
   uuid: ^4.5.1
   timeago: ^3.7.0
   collection: ^1.19.1
+  app_links: ^7.2.1
 
 dev_dependencies:
   flutter_test:

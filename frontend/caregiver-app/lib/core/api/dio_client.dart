@@ -17,9 +17,11 @@ class DioClient {
     _dio = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {
-        'Content-Type': 'application/json',
+        // Dio tự chọn application/json hoặc multipart/form-data theo body.
+        // Không set cứng Content-Type để upload FormData hoạt động đúng.
         'Accept': 'application/json',
         'Accept-Language': 'vi',
       },
@@ -106,7 +108,7 @@ class _AuthInterceptor extends Interceptor {
       _isRefreshing = true;
       try {
         final dio = Dio(BaseOptions(baseUrl: _baseUrl));
-        // BE stateful: chỉ cần refreshToken — userId lấy từ Redis, không cần accessToken
+        // Chỉ cần refreshToken; backend tra session DB, không cần accessToken.
         final resp = await dio
             .post('/auth/refresh', data: {'refreshToken': refreshToken});
         final newAccess = resp.data['accessToken'] as String;
@@ -154,6 +156,10 @@ class _AuthInterceptor extends Interceptor {
 class _ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.error is AppApiException) {
+      handler.next(err);
+      return;
+    }
     final message = _parseMessage(err);
     handler.next(DioException(
       requestOptions: err.requestOptions,
@@ -165,25 +171,47 @@ class _ErrorInterceptor extends Interceptor {
   }
 
   String _parseMessage(DioException err) {
-    try {
-      final data = err.response?.data;
-      if (data is Map) {
-        return data['detail'] as String? ??
-            data['title'] as String? ??
-            data['message'] as String? ??
-            'Đã xảy ra lỗi, vui lòng thử lại.';
+    final data = err.response?.data;
+    if (data is Map) {
+      for (final key in const ['detail', 'message', 'error', 'title']) {
+        final value = data[key]?.toString().trim();
+        if (value != null && value.isNotEmpty) return value;
       }
-    } catch (_) {}
+      final errors = data['errors'];
+      if (errors is Map) {
+        for (final value in errors.values) {
+          if (value is Iterable && value.isNotEmpty) {
+            final message = value.first.toString().trim();
+            if (message.isNotEmpty) return message;
+          }
+          final message = value?.toString().trim();
+          if (message != null && message.isNotEmpty) return message;
+        }
+      }
+    }
     switch (err.type) {
       case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         return 'Kết nối quá chậm, vui lòng kiểm tra mạng.';
       case DioExceptionType.connectionError:
-        return 'Không có kết nối internet.';
+        return 'Không thể kết nối máy chủ. Vui lòng kiểm tra backend và thử lại.';
       default:
-        return 'Đã xảy ra lỗi, vui lòng thử lại.';
+        return _messageForStatus(err.response?.statusCode);
     }
   }
+
+  String _messageForStatus(int? statusCode) => switch (statusCode ?? 0) {
+        400 || 422 => 'Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại.',
+        401 => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+        403 => 'Bạn không có quyền thực hiện thao tác này.',
+        404 => 'Không tìm thấy dữ liệu yêu cầu.',
+        409 => 'Dữ liệu đã thay đổi. Vui lòng tải lại và thử lại.',
+        413 => 'Tệp tải lên vượt quá dung lượng cho phép.',
+        429 => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.',
+        >= 500 => 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
+        _ => 'Đã xảy ra lỗi, vui lòng thử lại.',
+      };
 }
 
 class AppApiException implements Exception {
@@ -193,4 +221,12 @@ class AppApiException implements Exception {
 
   @override
   String toString() => 'AppApiException($statusCode): $message';
+}
+
+String apiErrorMessage(Object error) {
+  if (error is DioException && error.error is AppApiException) {
+    return (error.error as AppApiException).message;
+  }
+  if (error is AppApiException) return error.message;
+  return 'Đã xảy ra lỗi, vui lòng thử lại.';
 }

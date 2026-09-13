@@ -37,6 +37,11 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
     ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
+      if (isAuth &&
+          prev?.value?.isAuthenticated == true &&
+          prev?.value?.userId == next.value?.userId) {
+        return;
+      }
       if (isAuth) {
         unawaited(_initializeAuthenticated());
       } else {

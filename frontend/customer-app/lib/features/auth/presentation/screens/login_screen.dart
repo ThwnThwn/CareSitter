@@ -104,13 +104,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Title
-                      FadeSlideStaggered(
+                      const FadeSlideStaggered(
                         index: 1,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 28),
-                            const Text(
+                            SizedBox(height: 28),
+                            Text(
                               'Chào mừng trở lại!',
                               style: TextStyle(
                                 fontSize: 26,
@@ -119,15 +119,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
+                            SizedBox(height: 6),
+                            Text(
                               'Đăng nhập để tiếp tục chăm sóc người thân',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF6B7280),
                               ),
                             ),
-                            const SizedBox(height: 28),
+                            SizedBox(height: 28),
                           ],
                         ),
                       ),
@@ -230,11 +230,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       width: double.infinity,
       height: 240,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF00B14F), Color(0xFF00843A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(32),
           bottomRight: Radius.circular(32),
@@ -502,20 +498,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildDivider() {
-    return Row(
+    return const Row(
       children: [
-        const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
+        Expanded(child: Divider(color: Color(0xFFE5E7EB))),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'hoặc',
             style: TextStyle(
-              color: const Color(0xFF9CA3AF),
+              color: Color(0xFF9CA3AF),
               fontSize: 13,
             ),
           ),
         ),
-        const Expanded(child: Divider(color: Color(0xFFE5E7EB))),
+        Expanded(child: Divider(color: Color(0xFFE5E7EB))),
       ],
     );
   }

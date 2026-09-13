@@ -14,6 +14,27 @@ class AuthRepository {
 
   AuthRepository(this._dio, this._ref);
 
+  /// Tạo tài khoản dành riêng cho ứng dụng Caregiver.
+  Future<void> register({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/auth/register',
+      data: {
+        'fullName': fullName.trim(),
+        'email': email.trim().toLowerCase(),
+        'phone': phone.trim(),
+        'password': password,
+        'confirmPassword': confirmPassword,
+        'roles': const [_requiredRole],
+      },
+    );
+  }
+
   /// Đăng nhập bằng Email hoặc SĐT + Password → POST /auth/login/password
   Future<Map<String, dynamic>> loginWithPassword(
     String identifier,
@@ -40,8 +61,8 @@ class AuthRepository {
     );
   }
 
-  /// Alias tương thích với UI cũ
-  Future<void> requestOtp(String phone) => sendOtp(phone);
+  /// Alias dùng bởi màn hình đăng nhập OTP.
+  Future<void> requestOtp(String email) => sendOtp(email);
 
   /// Đăng nhập bằng OTP → POST /auth/login
   Future<Map<String, dynamic>> loginWithOtp(
@@ -61,7 +82,7 @@ class AuthRepository {
     return data;
   }
 
-  /// Đăng xuất → POST /auth/logout (gửi refreshToken để server xóa khỏi Redis)
+  /// Đăng xuất → POST /auth/logout để revoke refresh session trong PostgreSQL.
   Future<void> logout() async {
     final authNotifier = _ref.read(authStateProvider.notifier);
     var refreshToken = authNotifier.refreshToken;

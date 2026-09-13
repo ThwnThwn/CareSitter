@@ -1,5 +1,6 @@
 
 using CareSitter.Modules.Identity.Application.Push;
+using CareSitter.Modules.Identity.Application.AuthSessions;
 using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.Contracts.Services;
 using CareSitter.SharedKernel.Modules;
@@ -25,6 +26,7 @@ public sealed class IdentityModule : IModule
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<IdentityModule>());
         services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
+        services.AddScoped<RefreshTokenSessionService>();
 
         // Đăng ký Controllers nằm trong assembly của Identity module
         // (AuthController được khai báo trong project này, không phải ApiHost)

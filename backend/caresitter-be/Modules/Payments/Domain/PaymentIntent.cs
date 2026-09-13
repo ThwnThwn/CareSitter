@@ -38,7 +38,7 @@ public sealed class PaymentIntent : AggregateRoot
     public long Amount { get; private set; }
     public string Currency { get; private set; } = null!;
 
-    /// <summary>Allowed values: 'CREATED', 'PENDING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED'.</summary>
+    /// <summary>Allowed values: 'CREATED', 'PENDING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED', 'SUPERSEDED'.</summary>
     public string Status { get; private set; } = null!;
 
     public string? ProviderTransactionId { get; private set; }
@@ -46,6 +46,13 @@ public sealed class PaymentIntent : AggregateRoot
     public string IdempotencyKey { get; private set; } = null!;
     public string? RequestPayload { get; private set; }
     public string? ResponsePayload { get; private set; }
+    public int ReconciliationAttempts { get; private set; }
+    public DateTimeOffset? ReconciliationStartedAt { get; private set; }
+    public DateTimeOffset? LastReconciliationAt { get; private set; }
+    public DateTimeOffset? NextReconciliationAt { get; private set; }
+    public string? LastReconciliationError { get; private set; }
+    public string? FinalizedSource { get; private set; }
+    public string? ManualReviewReason { get; private set; }
 
     public static Result<PaymentIntent> Create(
         Guid bookingId,
@@ -65,22 +72,27 @@ public sealed class PaymentIntent : AggregateRoot
         return new PaymentIntent(Guid.NewGuid(), bookingId, customerId, provider, amount, currency, idempotencyKey);
     }
 
-    public Result MarkSucceeded(string? providerTransactionId = null, string? responsePayload = null)
+    public Result MarkSucceeded(string? providerTransactionId = null, string? responsePayload = null,
+        string? finalizedSource = null)
     {
         if (Status is not ("CREATED" or "PENDING"))
             return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> SUCCEEDED.");
         Status = "SUCCEEDED";
         ProviderTransactionId = providerTransactionId;
         ResponsePayload = responsePayload;
+        FinalizedSource = finalizedSource;
+        NextReconciliationAt = null;
         return Result.Success();
     }
 
-    public Result MarkFailed(string? responsePayload = null)
+    public Result MarkFailed(string? responsePayload = null, string? finalizedSource = null)
     {
         if (Status is not ("CREATED" or "PENDING"))
             return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> FAILED.");
         Status = "FAILED";
         ResponsePayload = responsePayload;
+        FinalizedSource = finalizedSource;
+        NextReconciliationAt = null;
         return Result.Success();
     }
 
@@ -90,6 +102,45 @@ public sealed class PaymentIntent : AggregateRoot
             return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> PENDING.");
         Status = "PENDING";
         return Result.Success();
+    }
+
+    public Result MarkExpired(string? finalizedSource = null)
+    {
+        if (Status != "PENDING")
+            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> EXPIRED.");
+        Status = "EXPIRED";
+        FinalizedSource = finalizedSource;
+        NextReconciliationAt = null;
+        return Result.Success();
+    }
+
+    public Result RecordReconciliationAttempt(
+        DateTimeOffset attemptedAt,
+        DateTimeOffset? nextAttemptAt,
+        string? error = null)
+    {
+        if (Status != "PENDING")
+            return Error.Conflict("payment_intent.status", "Chi doi soat payment intent dang PENDING.");
+        ReconciliationStartedAt ??= attemptedAt;
+        LastReconciliationAt = attemptedAt;
+        NextReconciliationAt = nextAttemptAt;
+        LastReconciliationError = error;
+        ReconciliationAttempts++;
+        return Result.Success();
+    }
+
+    public Result MarkSuperseded()
+    {
+        if (Status != "PENDING") return Result.Success();
+        Status = "SUPERSEDED";
+        NextReconciliationAt = null;
+        return Result.Success();
+    }
+
+    public void SetManualReviewReason(string reason)
+    {
+        ManualReviewReason = reason.Trim();
+        NextReconciliationAt = null;
     }
 
     /// <summary>Gán mã đơn hàng duy nhất dùng để đối chiếu callback từ cổng thanh toán.</summary>

@@ -41,12 +41,14 @@ internal sealed class SendOtpHandler : IRequestHandler<SendOtpCommand, Result>
             return Error.Validation("otp.email_required", "Địa chỉ email là bắt buộc.");
 
         var cacheKey = $"otp:{email}";
+        var cooldownKey = $"otp:cooldown:{email}";
 
-        // Rate limit: nếu đã có OTP còn hiệu lực trong Redis → từ chối gửi thêm
-        var existingOtp = await _cache.GetStringAsync(cacheKey, ct);
-        if (existingOtp is not null)
+        // Chặn spam trong 60 giây nhưng vẫn cho phép gửi mã mới trước khi OTP cũ
+        // hết hạn 10 phút. Mã mới sẽ thay thế mã cũ.
+        var cooldown = await _cache.GetStringAsync(cooldownKey, ct);
+        if (cooldown is not null)
         {
-            return Error.Validation("otp.rate_limit", "Mã OTP trước đó vẫn còn hiệu lực. Vui lòng chờ trước khi yêu cầu mã mới.");
+            return Error.Validation("otp.rate_limit", "Vui lòng chờ 60 giây trước khi yêu cầu mã mới.");
         }
 
         // Sinh OTP 6 chữ số bảo mật bằng RandomNumberGenerator
@@ -56,6 +58,10 @@ internal sealed class SendOtpHandler : IRequestHandler<SendOtpCommand, Result>
         await _cache.SetStringAsync(cacheKey, code, new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = OtpTtl
+        }, ct);
+        await _cache.SetStringAsync(cooldownKey, "1", new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60)
         }, ct);
 
         // Gửi email
@@ -72,6 +78,7 @@ internal sealed class SendOtpHandler : IRequestHandler<SendOtpCommand, Result>
             try
             {
                 await _cache.RemoveAsync(cacheKey, CancellationToken.None);
+                await _cache.RemoveAsync(cooldownKey, CancellationToken.None);
             }
             catch (Exception cleanupException)
             {

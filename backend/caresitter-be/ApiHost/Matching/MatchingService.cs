@@ -180,53 +180,14 @@ public sealed class MatchingService(
         var activeOfferIds = await bookingDb.BookingAssignments.AsNoTracking()
             .Where(x => x.CaregiverId == caregiverId
                 && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
-                && (x.ExpiresAt == null || x.ExpiresAt > now))
+                && x.ExpiresAt != null && x.ExpiresAt > now)
             .Join(openBookingsQuery, x => x.BookingId, x => x.Id, (_, booking) => booking.Id)
             .ToListAsync(ct);
 
-        var profile = await peopleDb.CaregiverProfiles.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == caregiverId && x.DeletedAt == null, ct);
-        if (profile is null || profile.KycStatus != "APPROVED" || profile.AvailabilityStatus != "ONLINE")
-            return activeOfferIds.Distinct().ToArray();
-
-        var legacyOpenBookings = await openBookingsQuery
-            .Where(x => !bookingDb.BookingAssignments.Any(a => a.BookingId == x.Id))
-            .ToListAsync(ct);
-        if (legacyOpenBookings.Count == 0)
-            return activeOfferIds.Distinct().ToArray();
-
-        var addressIds = legacyOpenBookings.Select(x => x.AddressId).Distinct().ToArray();
-        var addresses = await catalogDb.Addresses.AsNoTracking()
-            .Where(x => addressIds.Contains(x.Id))
-            .Select(x => new { x.Id, x.District, x.City, x.Location })
-            .ToDictionaryAsync(x => x.Id, x => new AddressMatchData(x.District, x.City, x.Location), ct);
-
-        var minStart = legacyOpenBookings.Min(x => x.ScheduledStart);
-        var maxEnd = legacyOpenBookings.Max(x => x.ScheduledEnd);
-        var hasConfiguredSlots = await peopleDb.CaregiverAvailabilities.AsNoTracking()
-            .AnyAsync(x => x.CaregiverId == caregiverId, ct);
-        var availability = await peopleDb.CaregiverAvailabilities.AsNoTracking()
-            .Where(x => x.CaregiverId == caregiverId && x.StartAt < maxEnd && x.EndAt > minStart)
-            .ToListAsync(ct);
-        var conflicts = await bookingDb.Bookings.AsNoTracking()
-            .Where(x => x.CaregiverId == caregiverId
-                && x.Status != BookingStatus.Completed
-                && x.Status != BookingStatus.Cancelled
-                && x.Status != BookingStatus.Refunded
-                && x.Status != BookingStatus.MatchingFailed
-                && x.ScheduledStart < maxEnd
-                && x.ScheduledEnd > minStart)
-            .Select(x => new BookingWindow(x.Id, x.ScheduledStart, x.ScheduledEnd))
-            .ToListAsync(ct);
-
-        var fallbackIds = legacyOpenBookings
-            .Where(x => addresses.TryGetValue(x.AddressId, out var address)
-                && IsEligible(profile, x, address, hasConfiguredSlots,
-                    availability.Where(a => a.StartAt < x.ScheduledEnd && a.EndAt > x.ScheduledStart).ToList(),
-                    conflicts))
-            .Select(x => x.Id);
-
-        return activeOfferIds.Concat(fallbackIds).Distinct().ToArray();
+        // A caregiver's "open" inbox is strictly the offers explicitly created
+        // by matching. Returning every otherwise-eligible legacy booking makes it
+        // impossible for clients to show a trustworthy response deadline.
+        return activeOfferIds.Distinct().ToArray();
     }
 
     public async Task<IReadOnlyList<MatchingCandidate>> OfferTopCandidatesAsync(
@@ -267,21 +228,7 @@ public sealed class MatchingService(
         await bookingDb.SaveChangesAsync(ct);
 
         foreach (var candidate in selected)
-        {
-            var userId = await peopleLookup.GetUserIdByCaregiverProfileIdAsync(candidate.CaregiverId, ct);
-            if (userId is null) continue;
-            await notifications.NotifyAsync(new UserNotificationMessage(
-                userId.Value,
-                "BOOKING_OFFER",
-                "Bạn có ca chăm sóc phù hợp",
-                "Một khách hàng đang cần bạn xác nhận ca chăm sóc.",
-                new Dictionary<string, string>
-                {
-                    ["bookingId"] = bookingId.ToString(),
-                    ["status"] = "confirmed",
-                    ["deepLink"] = $"/bookings/{bookingId}"
-                }), ct);
-        }
+            await NotifyOfferAsync(bookingId, candidate, ct);
 
         logger.LogInformation("Created {Count} caregiver offers for booking {BookingId}.",
             selected.Length, bookingId);
@@ -317,6 +264,9 @@ public sealed class MatchingService(
             foreach (var assignment in expired)
                 assignment.MarkExpired();
             await bookingDb.SaveChangesAsync(ct);
+
+            foreach (var assignment in expired)
+                await PublishOfferChangedAsync(assignment.CaregiverId, bookingId, "expired", ct);
 
             var offers = await OfferExpansionBatchAsync(bookingId, ct);
             expanded += offers.Count;
@@ -408,8 +358,21 @@ public sealed class MatchingService(
             {
                 ["bookingId"] = bookingId.ToString(),
                 ["status"] = "confirmed",
-                ["deepLink"] = $"/bookings/{bookingId}"
+                ["deepLink"] = $"/shifts/{bookingId}"
             }), ct);
+        await hub.Clients.Group(CareTrackingHub.CaregiverGroup(userId.Value))
+            .SendAsync("BookingOfferChanged", new BookingOfferChangedEvent(
+                bookingId, "created", DateTimeOffset.UtcNow), ct);
+    }
+
+    private async Task PublishOfferChangedAsync(Guid caregiverId, Guid bookingId,
+        string changeType, CancellationToken ct)
+    {
+        var userId = await peopleLookup.GetUserIdByCaregiverProfileIdAsync(caregiverId, ct);
+        if (userId is null) return;
+        await hub.Clients.Group(CareTrackingHub.CaregiverGroup(userId.Value))
+            .SendAsync("BookingOfferChanged", new BookingOfferChangedEvent(
+                bookingId, changeType, DateTimeOffset.UtcNow), ct);
     }
 
     internal static bool HasAvailability(bool hasConfiguredSlots, bool allowWithoutSlots,

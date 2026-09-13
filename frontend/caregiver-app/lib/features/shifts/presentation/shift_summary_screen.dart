@@ -76,7 +76,7 @@ class ShiftSummaryScreen extends StatelessWidget {
                 checkoutPendingReview
                     ? 'Đã gửi yêu cầu checkout'
                     : 'Hoàn thành ca làm việc!',
-                style: TextStyle(
+                style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary),

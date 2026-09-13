@@ -24,8 +24,21 @@ public sealed class PaymentsModule : IModule
 
         services.AddScoped<IWalletService, WalletService>();
         services.AddOptions<VNPayOptions>()
-            .Bind(configuration.GetSection(VNPayOptions.SectionName));
-        services.AddSingleton<IVNPayService, VNPayService>();
+            .Bind(configuration.GetSection(VNPayOptions.SectionName))
+            .Validate(options => options.PaymentTimeoutMinutes is >= 5 and <= 60,
+                "Payments:VNPay:PaymentTimeoutMinutes phai nam trong khoang 5-60.")
+            .Validate(options => options.BookingPaymentDeadlineMinutes is >= 5 and <= 180,
+                "Payments:VNPay:BookingPaymentDeadlineMinutes phai nam trong khoang 5-180.")
+            .Validate(options => options.BookingPaymentDeadlineMinutes >= options.PaymentTimeoutMinutes,
+                "BookingPaymentDeadlineMinutes phai lon hon hoac bang PaymentTimeoutMinutes.")
+            .Validate(options => options.MaxReconciliationAttempts is >= 1 and <= 10,
+                "Payments:VNPay:MaxReconciliationAttempts phai nam trong khoang 1-10.")
+            .Validate(options => options.ReconciliationWindowMinutes is >= 1 and <= 60,
+                "Payments:VNPay:ReconciliationWindowMinutes phai nam trong khoang 1-60.")
+            .ValidateOnStart();
+        services.AddHttpClient<IVNPayService, VNPayService>(client =>
+            client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddScoped<IPaymentFinalizationService, PaymentFinalizationService>();
 
         // Đăng ký Controllers nằm trong assembly của Payments module
         services.AddControllers()

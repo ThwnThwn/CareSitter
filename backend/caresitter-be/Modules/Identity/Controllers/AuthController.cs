@@ -75,14 +75,14 @@ public sealed class AuthController : ControllerBase
         }
 
         var expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expUnixSeconds);
-        // Gửi refreshToken (nếu có) để server xóa khỏi Redis → logout thật
+        // Gửi refreshToken (nếu có) để server revoke session bền vững trong PostgreSQL.
         var result = await _sender.Send(new LogoutCommand(jti, expiresAtUtc, body?.RefreshToken));
 
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
 
     /// <summary>
-    /// Đăng ký tài khoản người dùng mới (CUSTOMER, CAREGIVER hoặc ADMIN).
+    /// Đăng ký tài khoản người dùng mới (CUSTOMER hoặc CAREGIVER).
     /// Trả về JWT Access Token và Refresh Token khi thành công.
     /// </summary>
     /// <param name="command">Thông tin đăng ký gồm Phone, FullName, Email và Roles. Password là tuỳ chọn.</param>
@@ -114,10 +114,10 @@ public sealed class AuthController : ControllerBase
 
     /// <summary>
     /// Làm mới Access Token và Refresh Token từ refresh token hiện tại.
-    /// Chiến lược Redis stateful với token rotation:
+    /// Chiến lược PostgreSQL-authoritative với Redis lookup cache:
     ///   - Client chỉ gửi refreshToken (không cần accessToken).
-    ///   - Server tìm và xóa key cũ, cấp cặp token mới.
-    ///   - Refresh token cũ bị vô hiệu ngay sau rotation.
+    ///   - Server kiểm tra session DB, revoke token cũ và tạo session mới trong transaction.
+    ///   - Redis miss sẽ fallback DB và tự làm ấm lại cache.
     /// </summary>
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
@@ -162,6 +162,6 @@ public sealed class AuthController : ControllerBase
 
 /// <summary>
 /// Body cho POST /auth/logout.
-/// RefreshToken là tùy chọn — nếu gửi, server sẽ xóa khỏi Redis để đảm bảo logout thật.
+/// RefreshToken là tùy chọn — nếu gửi, server sẽ revoke session trong PostgreSQL.
 /// </summary>
 public sealed record LogoutRequest(string? RefreshToken = null);

@@ -90,7 +90,7 @@ public class BookingDomainTests
         var caregiverLocation = new GeoPoint(10.762630, 106.660180);
 
         // Act
-        var result = booking.CheckIn(caregiverLocation, addressLocation);
+        var result = booking.CheckIn(caregiverLocation, addressLocation, checkedInAt: start.AddMinutes(-30));
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -118,7 +118,7 @@ public class BookingDomainTests
         var caregiverLocation = new GeoPoint(10.850000, 106.750000);
 
         // Act
-        var result = booking.CheckIn(caregiverLocation, addressLocation);
+        var result = booking.CheckIn(caregiverLocation, addressLocation, checkedInAt: start);
 
         // Assert
         Assert.True(result.IsFailure);
@@ -145,11 +145,39 @@ public class BookingDomainTests
         var addressLocation = new GeoPoint(10.762622, 106.660172);
         var caregiverLocation = new GeoPoint(10.763122, 106.660172); // about 56m away
 
-        var result = booking.CheckIn(caregiverLocation, addressLocation);
+        var result = booking.CheckIn(caregiverLocation, addressLocation, checkedInAt: start);
 
         Assert.True(result.IsFailure);
         Assert.Equal("booking.geofence", result.Error.Code);
         Assert.Equal(BookingStatus.CaregiverEnRoute, booking.Status);
+    }
+
+    [Fact]
+    public void CheckIn_MoreThan30MinutesBeforeShift_ShouldFailValidation()
+    {
+        var start = DateTimeOffset.UtcNow.AddHours(2);
+        var booking = CreateEnRouteBooking(start);
+        var location = new GeoPoint(10.762622, 106.660172);
+
+        var result = booking.CheckIn(location, location, checkedInAt: start.AddMinutes(-31));
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("booking.checkin_too_early", result.Error.Code);
+        Assert.Equal(BookingStatus.CaregiverEnRoute, booking.Status);
+        Assert.Null(booking.ActualStart);
+    }
+
+    [Fact]
+    public void CheckIn_Exactly30MinutesBeforeShift_ShouldSucceed()
+    {
+        var start = DateTimeOffset.UtcNow.AddHours(2);
+        var booking = CreateEnRouteBooking(start);
+        var location = new GeoPoint(10.762622, 106.660172);
+
+        var result = booking.CheckIn(location, location, checkedInAt: start.AddMinutes(-30));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(start.AddMinutes(-30), booking.ActualStart);
     }
 
     [Fact]
@@ -181,9 +209,35 @@ public class BookingDomainTests
         Assert.Equal(BookingCheckoutSource.CaregiverRequested, booking.CheckoutSource);
     }
 
+    [Fact]
+    public void PaymentReconciliation_CanReachManualReviewThenConfirm()
+    {
+        var start = DateTimeOffset.UtcNow.AddHours(2);
+        var booking = Domain.Booking.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), start, start.AddHours(2)).Value;
+        booking.TransitionTo(BookingStatus.PendingPayment);
+
+        var reconciling = booking.BeginPaymentReconciliation();
+        var manualReview = booking.MarkPaymentNeedsManualReview();
+        var confirmed = booking.ConfirmPayment();
+
+        Assert.True(reconciling.IsSuccess);
+        Assert.True(manualReview.IsSuccess);
+        Assert.True(confirmed.IsSuccess);
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+    }
+
     private static Domain.Booking CreateInProgressBooking()
     {
         var start = DateTimeOffset.UtcNow.AddHours(2);
+        var booking = CreateEnRouteBooking(start);
+        var location = new GeoPoint(10.762622, 106.660172);
+        booking.CheckIn(location, location, checkedInAt: start);
+        return booking;
+    }
+
+    private static Domain.Booking CreateEnRouteBooking(DateTimeOffset start)
+    {
         var end = start.AddHours(4);
         var booking = Domain.Booking.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), start, end).Value;
         var caregiverId = Guid.NewGuid();
@@ -193,9 +247,6 @@ public class BookingDomainTests
         booking.TransitionTo(BookingStatus.Confirmed);
         booking.AssignCaregiver(caregiverId);
         booking.StartEnRoute();
-
-        var location = new GeoPoint(10.762622, 106.660172);
-        booking.CheckIn(location, location);
         return booking;
     }
 }

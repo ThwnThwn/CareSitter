@@ -167,10 +167,12 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary),
                 validator: (val) {
-                  if (val == null || val.isEmpty)
+                  if (val == null || val.isEmpty) {
                     return 'Vui lòng nhập số tiền';
-                  if (double.tryParse(val) == null)
+                  }
+                  if (double.tryParse(val) == null) {
                     return 'Số tiền không hợp lệ';
+                  }
                   return null;
                 },
                 decoration: InputDecoration(

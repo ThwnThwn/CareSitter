@@ -1220,10 +1220,10 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                         'duration': booking.duration,
                         'checkInTime': _checkInTimeLabel,
                         'caregiverNote': _noteController.text,
-                        'taskPhotos': [
+                        'taskPhotos': <dynamic>{
                           ..._taskPhotos.values.expand((urls) => urls),
                           ...booking.tasks.expand((task) => task.photoUrls),
-                        ].toSet().toList(),
+                        }.toList(),
                         'checkoutPendingReview': true,
                       },
                     );

@@ -224,6 +224,29 @@ public sealed class CareTasksController(
                 new DefaultCareTask("Lăn trở và kiểm tra tư thế", "Hỗ trợ đổi tư thế an toàn và ghi nhận tình trạng sau khi thực hiện.", true, true),
                 new DefaultCareTask("Ghi nhận chỉ số theo hướng dẫn", "Chỉ ghi nhận thông tin được gia đình yêu cầu; không chẩn đoán hay điều trị.", true, true),
             }).ToArray();
+        if (string.Equals(serviceCode, "GENKI_PHUCHOI", StringComparison.OrdinalIgnoreCase))
+            return duong.Concat(new[]
+            {
+                new DefaultCareTask("Bài tập vận động Kaigo", "Hướng dẫn và hỗ trợ bài tập phục hồi chức năng nhẹ nhàng theo hướng dẫn.", true, true),
+                new DefaultCareTask("Xoa bóp bấm huyệt phục hồi", "Xoa bóp cơ bắp, hỗ trợ lưu thông khí huyết và giảm căng cứng cơ.", true, true),
+                new DefaultCareTask("Ghi nhận phản ứng vận động", "Ghi chú mức độ linh hoạt và phản ứng của người thân sau buổi tập.", true, false),
+            }).ToArray();
+        if (string.Equals(serviceCode, "GENKI_DONGHANH", StringComparison.OrdinalIgnoreCase))
+            return new[]
+            {
+                new DefaultCareTask("Chuẩn bị trước khi di chuyển", "Kiểm tra sổ khám, thẻ BHYT, thuốc và hỗ trợ trang phục phù hợp.", true, false),
+                new DefaultCareTask("Đồng hành và hỗ trợ di chuyển", "Hỗ trợ đi lại an toàn, xe lăn hoặc dìu đỡ khi lên xuống xe.", true, true),
+                new DefaultCareTask("Ghi chú dặn dò y tế", "Ghi lại hướng dẫn, lời dặn của bác sĩ hoặc lịch tái khám gửi người thân.", true, true),
+                new DefaultCareTask("Hỗ trợ sau khi về nhà", "Giúp cởi áo khoác, nghỉ ngơi, chuẩn bị nước ấm và sắp xếp thuốc mới.", true, false),
+            };
+        if (string.Equals(serviceCode, "GENKI_DEM", StringComparison.OrdinalIgnoreCase))
+            return new[]
+            {
+                new DefaultCareTask("Hỗ trợ chuẩn bị trước giờ ngủ", "Vệ sinh cá nhân, thay đồ ngủ, chuẩn bị nước ấm và kiểm tra phòng ngủ an toàn.", true, true),
+                new DefaultCareTask("Túc trực và theo dõi giấc ngủ", "Quan sát giấc ngủ, kiểm tra nhiệt độ phòng và tiếng động bất thường.", true, false),
+                new DefaultCareTask("Hỗ trợ vệ sinh ban đêm", "Dìu đỡ đi vệ sinh đêm cẩn thận, bật đèn chống trượt ngã.", true, true),
+                new DefaultCareTask("Hỗ trợ buổi sáng sớm", "Hỗ trợ thức giấc nhẹ nhàng, đo huyết áp/thân nhiệt và ghi chú ca trực đêm.", true, true),
+            };
         return Array.Empty<DefaultCareTask>();
     }
 

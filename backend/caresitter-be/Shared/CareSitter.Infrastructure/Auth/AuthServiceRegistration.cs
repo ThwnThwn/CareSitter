@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CareSitter.Infrastructure.Auth;
@@ -78,9 +79,16 @@ public static class AuthServiceRegistration
                     {
                         throw;
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        context.Fail("Token revocation check failed.");
+                        // Access tokens are short-lived. If Redis is unavailable,
+                        // continue normal JWT validation instead of taking the API
+                        // offline; durable refresh-session revocation lives in DB.
+                        var logger = context.HttpContext.RequestServices
+                            .GetService<ILoggerFactory>()?
+                            .CreateLogger("CareSitter.Auth.TokenRevocation");
+                        logger?.LogWarning(ex,
+                            "Access-token blacklist check unavailable; accepting valid short-lived JWT.");
                     }
                 }
             };

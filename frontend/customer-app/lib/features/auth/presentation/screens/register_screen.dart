@@ -61,8 +61,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _validatePassword(String? v) {
     if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
     if (v.length < 8) return 'Mật khẩu tối thiểu 8 ký tự';
-    if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Mật khẩu phải có ít nhất 1 chữ hoa';
-    if (!RegExp(r'[0-9]').hasMatch(v)) return 'Mật khẩu phải có ít nhất 1 chữ số';
+    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ hoa';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(v)) {
+      return 'Mật khẩu phải có ít nhất 1 chữ số';
+    }
     return null;
   }
 
@@ -76,8 +80,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
-      setState(
-          () => _errorMessage = 'Vui lòng đồng ý với điều khoản sử dụng');
+      setState(() => _errorMessage = 'Vui lòng đồng ý với điều khoản sử dụng');
       return;
     }
     setState(() => _isLoading = true);
@@ -312,7 +315,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.favorite_rounded, color: AppColors.primary, size: 14),
+                Icon(Icons.favorite_rounded,
+                    color: AppColors.primary, size: 14),
                 SizedBox(width: 5),
                 Text(
                   'CareSitter',
@@ -331,12 +335,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Widget _buildTitle() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Tạo tài khoản',
             style: TextStyle(
               fontSize: 26,
@@ -345,12 +349,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'Điền thông tin để bắt đầu chăm sóc người thân',
             style: TextStyle(
               fontSize: 14,
-              color: const Color(0xFF6B7280),
+              color: Color(0xFF6B7280),
             ),
           ),
         ],
@@ -475,9 +479,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             color: AppColors.primary, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
-            obscure
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
+            obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             color: const Color(0xFF9CA3AF),
             size: 20,
           ),
@@ -532,31 +534,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF6B7280),
-                    height: 1.4),
+              text: const TextSpan(
+                style: TextStyle(
+                    fontSize: 13, color: Color(0xFF6B7280), height: 1.4),
                 children: [
-                  const TextSpan(text: 'Tôi đồng ý với '),
+                  TextSpan(text: 'Tôi đồng ý với '),
                   TextSpan(
                     text: 'Điều khoản sử dụng',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                  const TextSpan(text: ' và '),
+                  TextSpan(text: ' và '),
                   TextSpan(
                     text: 'Chính sách bảo mật',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                  const TextSpan(text: ' của CareSitter'),
+                  TextSpan(text: ' của CareSitter'),
                 ],
               ),
             ),

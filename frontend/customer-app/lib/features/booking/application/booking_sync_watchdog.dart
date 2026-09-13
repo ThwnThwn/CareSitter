@@ -71,8 +71,7 @@ class _BookingSyncWatchdogState extends ConsumerState<BookingSyncWatchdog>
   void _stopPolling() => _pollTimer?.cancel();
 
   void _triggerSyncIfAuth() {
-    final isAuth =
-        ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) return;
     // Gọi requestSync — mutex trong BookingStore đảm bảo không có request trùng.
     ref.read(bookingStoreProvider.notifier).requestSync();

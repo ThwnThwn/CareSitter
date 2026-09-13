@@ -19,8 +19,9 @@ public sealed class BookingAssignment
     public DateTimeOffset OfferedAt { get; private set; }
     public DateTimeOffset? RespondedAt { get; private set; }
     public DateTimeOffset? ExpiresAt { get; private set; }
+    public string? DeclineReason { get; private set; }
 
-    public static BookingAssignment CreateRejected(Guid bookingId, Guid caregiverId)
+    public static BookingAssignment CreateRejected(Guid bookingId, Guid caregiverId, string? reason = null)
     {
         return new BookingAssignment
         {
@@ -29,7 +30,8 @@ public sealed class BookingAssignment
             CaregiverId = caregiverId,
             Status = "REJECTED",
             RespondedAt = DateTimeOffset.UtcNow,
-            OfferedAt = DateTimeOffset.UtcNow
+            OfferedAt = DateTimeOffset.UtcNow,
+            DeclineReason = NormalizeDeclineReason(reason)
         };
     }
 
@@ -70,9 +72,16 @@ public sealed class BookingAssignment
             Status = "CANCELLED";
     }
 
-    public void Reject()
+    public void Reject(string? reason = null)
     {
         Status = "REJECTED";
         RespondedAt = DateTimeOffset.UtcNow;
+        DeclineReason = NormalizeDeclineReason(reason);
+    }
+
+    private static string? NormalizeDeclineReason(string? reason)
+    {
+        var normalized = reason?.Trim();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

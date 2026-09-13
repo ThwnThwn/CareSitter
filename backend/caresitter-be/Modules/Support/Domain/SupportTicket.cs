@@ -16,12 +16,18 @@ public sealed class SupportTicket : AggregateRoot
         Guid userId,
         Guid? bookingId,
         string type,
-        string priority) : base(id)
+        string priority,
+        string title,
+        string description,
+        string? attachmentUrls) : base(id)
     {
         UserId = userId;
         BookingId = bookingId;
         Type = type;
         Priority = priority;
+        Title = title;
+        Description = description;
+        AttachmentUrls = attachmentUrls;
         Status = "NEW";
     }
 
@@ -36,6 +42,9 @@ public sealed class SupportTicket : AggregateRoot
 
     /// <summary>Allowed values: LOW, MEDIUM, HIGH, CRITICAL.</summary>
     public string Priority { get; private set; } = "MEDIUM";
+    public string Title { get; private set; } = null!;
+    public string Description { get; private set; } = null!;
+    public string? AttachmentUrls { get; private set; }
 
     public Guid? AssignedAdminId { get; private set; }
 
@@ -43,7 +52,10 @@ public sealed class SupportTicket : AggregateRoot
         Guid userId,
         string type,
         string priority = "MEDIUM",
-        Guid? bookingId = null)
+        Guid? bookingId = null,
+        string? title = null,
+        string? description = null,
+        string? attachmentUrls = null)
     {
         if (userId == Guid.Empty)
             return Error.Validation("ticket.user", "user_id khong duoc rong.");
@@ -51,8 +63,21 @@ public sealed class SupportTicket : AggregateRoot
             return Error.Validation("ticket.type", "type khong duoc rong.");
         if (string.IsNullOrWhiteSpace(priority))
             return Error.Validation("ticket.priority", "priority khong duoc rong.");
+        var normalizedType = type.Trim().ToUpperInvariant();
+        var normalizedPriority = priority.Trim().ToUpperInvariant();
+        if (normalizedType is not ("COMPLAINT" or "SOS" or "PAYMENT" or "KYC" or "CHECKOUT_REVIEW" or "GENERAL"))
+            return Error.Validation("ticket.type", "type khong hop le.");
+        if (normalizedPriority is not ("LOW" or "MEDIUM" or "HIGH" or "CRITICAL"))
+            return Error.Validation("ticket.priority", "priority khong hop le.");
+        var normalizedTitle = title?.Trim() ?? string.Empty;
+        var normalizedDescription = description?.Trim() ?? string.Empty;
+        if (normalizedTitle.Length is < 3 or > 255)
+            return Error.Validation("ticket.title", "Tieu de phai tu 3 den 255 ky tu.");
+        if (normalizedDescription.Length is < 10 or > 5000)
+            return Error.Validation("ticket.description", "Mo ta phai tu 10 den 5000 ky tu.");
 
-        return new SupportTicket(Guid.NewGuid(), userId, bookingId, type, priority);
+        return new SupportTicket(Guid.NewGuid(), userId, bookingId,
+            normalizedType, normalizedPriority, normalizedTitle, normalizedDescription, attachmentUrls);
     }
 
     public Result AssignAdmin(Guid adminId)

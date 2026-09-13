@@ -103,7 +103,7 @@ class ActivityScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -184,15 +184,11 @@ class ActivityScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, Color(0xFF27AE60)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF27AE60).withOpacity(0.35),
+              color: AppColors.primary.withValues(alpha: 0.28),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -207,7 +203,7 @@ class ActivityScreen extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
@@ -239,7 +235,7 @@ class ActivityScreen extends ConsumerWidget {
                       Text(
                         'Cho: ${booking.beneficiaryName ?? "Người thân"}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.82),
+                          color: Colors.white.withValues(alpha: 0.82),
                           fontSize: 13,
                         ),
                       ),
@@ -250,7 +246,7 @@ class ActivityScreen extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.chevron_right_rounded,
@@ -263,7 +259,7 @@ class ActivityScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -286,7 +282,7 @@ class ActivityScreen extends ConsumerWidget {
                     child: Text(
                       booking.serviceName ?? 'Dịch vụ chăm sóc',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.88),
+                        color: Colors.white.withValues(alpha: 0.88),
                         fontSize: 13,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -535,6 +531,18 @@ class ActivityScreen extends ConsumerWidget {
           'shortLabel': 'Chờ xác nhận',
           'color': const Color(0xFF7F8C8D),
           'bg': const Color(0xFFF4F6F6),
+        };
+      case 'payment_reconciliation_pending':
+        return {
+          'shortLabel': 'Đang đối soát',
+          'color': const Color(0xFF0369A1),
+          'bg': const Color(0xFFE0F2FE),
+        };
+      case 'needs_manual_review':
+        return {
+          'shortLabel': 'Chờ kiểm tra',
+          'color': const Color(0xFFB45309),
+          'bg': const Color(0xFFFFF7ED),
         };
       case 'completed':
         return {

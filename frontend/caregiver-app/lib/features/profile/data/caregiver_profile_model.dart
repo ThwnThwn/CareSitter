@@ -8,12 +8,15 @@ class CaregiverProfileModel {
   final String? fullName;
   final String? bio;
   final int? yearsOfExperience;
+
   /// Giá mong muốn (VND/giờ) — KHÔNG dùng để tính booking price.
   final int? hourlyRateExpected;
   final double ratingAvg;
   final int ratingCount;
+
   /// DRAFT | PENDING | APPROVED | REJECTED | SUSPENDED
   final String kycStatus;
+
   /// ONLINE | OFFLINE | BUSY
   final String availabilityStatus;
   final List<String> skills;
@@ -21,8 +24,12 @@ class CaregiverProfileModel {
   final String? serviceDistrict;
   final String? gender;
   final String? dateOfBirth;
+
   /// URL ảnh đại diện từ Cloudinary (nullable)
   final String? avatarUrl;
+  final String? cccdFrontUrl;
+  final String? cccdBackUrl;
+  final List<String> certificateUrls;
 
   const CaregiverProfileModel({
     required this.id,
@@ -41,23 +48,30 @@ class CaregiverProfileModel {
     this.gender,
     this.dateOfBirth,
     this.avatarUrl,
+    this.cccdFrontUrl,
+    this.cccdBackUrl,
+    this.certificateUrls = const [],
   });
 
   bool get isOnline => availabilityStatus == 'ONLINE';
   bool get isApproved => kycStatus == 'APPROVED';
 
-  String get displayName => fullName?.isNotEmpty == true ? fullName! : 'Caregiver';
+  String get displayName =>
+      fullName?.isNotEmpty == true ? fullName! : 'Caregiver';
 
   String get initials {
     final parts = displayName.trim().split(RegExp(r'\s+'));
     if (parts.length == 1) {
-      return displayName.substring(0, displayName.length < 2 ? displayName.length : 2).toUpperCase();
+      return displayName
+          .substring(0, displayName.length < 2 ? displayName.length : 2)
+          .toUpperCase();
     }
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 
-  String get experienceText =>
-      yearsOfExperience == null ? 'Chưa cập nhật' : '$yearsOfExperience năm kinh nghiệm';
+  String get experienceText => yearsOfExperience == null
+      ? 'Chưa cập nhật'
+      : '$yearsOfExperience năm kinh nghiệm';
 
   String get locationText {
     final parts = [serviceDistrict, serviceCity]
@@ -82,19 +96,27 @@ class CaregiverProfileModel {
       userId: _str(json['userId'] ?? json['UserId']) ?? '',
       fullName: _str(json['fullName'] ?? json['FullName']),
       bio: _str(json['bio'] ?? json['Bio']),
-      yearsOfExperience: _int(json['yearsOfExperience'] ?? json['YearsOfExperience']),
-      hourlyRateExpected: _int(json['hourlyRateExpected'] ?? json['HourlyRateExpected']),
+      yearsOfExperience:
+          _int(json['yearsOfExperience'] ?? json['YearsOfExperience']),
+      hourlyRateExpected:
+          _int(json['hourlyRateExpected'] ?? json['HourlyRateExpected']),
       ratingAvg: _dbl(json['ratingAvg'] ?? json['RatingAvg']),
       ratingCount: _int(json['ratingCount'] ?? json['RatingCount']) ?? 0,
       kycStatus: _str(json['kycStatus'] ?? json['KycStatus']) ?? 'DRAFT',
       availabilityStatus:
-          _str(json['availabilityStatus'] ?? json['AvailabilityStatus']) ?? 'OFFLINE',
+          _str(json['availabilityStatus'] ?? json['AvailabilityStatus']) ??
+              'OFFLINE',
       skills: _parseSkills(json['skills'] ?? json['Skills']),
       serviceCity: _str(json['serviceCity'] ?? json['ServiceCity']),
       serviceDistrict: _str(json['serviceDistrict'] ?? json['ServiceDistrict']),
       gender: _str(json['gender'] ?? json['Gender']),
       dateOfBirth: _str(json['dateOfBirth'] ?? json['DateOfBirth']),
       avatarUrl: _str(json['avatarUrl'] ?? json['AvatarUrl']),
+      cccdFrontUrl: _str(json['cccdFrontUrl'] ?? json['CccdFrontUrl']),
+      cccdBackUrl: _str(json['cccdBackUrl'] ?? json['CccdBackUrl']),
+      certificateUrls: _parseStringList(
+        json['certificateUrls'] ?? json['CertificateUrls'],
+      ),
     );
   }
 
@@ -105,14 +127,32 @@ class CaregiverProfileModel {
 
   static List<String> _parseSkills(Object? raw) {
     if (raw == null) return const [];
-    if (raw is List) return raw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    if (raw is List) {
+      return raw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    }
     final text = raw.toString().trim();
     if (text.isEmpty) return const [];
     try {
       final decoded = jsonDecode(text);
-      if (decoded is List) return decoded.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+      if (decoded is List) {
+        return decoded
+            .map((e) => e.toString())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
     } catch (_) {}
-    return text.split(RegExp(r'[,;]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return text
+        .split(RegExp(r'[,;]'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  static List<String> _parseStringList(Object? raw) {
+    if (raw is List) {
+      return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
+    return const [];
   }
 
   static String? _str(Object? v) {

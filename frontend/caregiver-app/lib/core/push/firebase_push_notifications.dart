@@ -5,9 +5,19 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../firebase_options.dart';
 import '../api/dio_client.dart';
 import '../auth/auth_notifier.dart';
+import '../../features/home/presentation/providers/notifications_provider.dart';
+import '../../features/shifts/presentation/providers/shifts_provider.dart';
+import 'notification_deep_link_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
+  debugPrint('[FCM Background] type=${message.data["type"]}');
+}
 
 final pushNotificationServiceProvider =
     Provider<PushNotificationService>((ref) {
@@ -25,10 +35,13 @@ class FirebasePushNotifications {
     if (_initializationFailed) return false;
 
     try {
+      if (kIsWeb) {
+        _initializationFailed = true;
+        return false;
+      }
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+        // Android/iOS read google-services.json / GoogleService-Info.plist.
+        await Firebase.initializeApp();
       }
       _initialized = true;
       return true;
@@ -43,9 +56,18 @@ class FirebasePushNotifications {
 class PushNotificationService {
   final Ref _ref;
   StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
+  StreamSubscription<RemoteMessage>? _openedMessageSub;
   String? _lastRegisteredToken;
+  String? _registeredDeviceId;
+  bool _initialMessageHandled = false;
 
-  PushNotificationService(this._ref);
+  PushNotificationService(this._ref) {
+    _authNotifier = _ref.read(authStateProvider.notifier);
+    _authNotifier.registerLogoutCleanup(unregisterCurrentDevice);
+  }
+
+  late final AuthNotifier _authNotifier;
 
   Future<void> syncTokenForCurrentUser() async {
     final auth = _ref.read(authStateProvider).value;
@@ -73,20 +95,82 @@ class PushNotificationService {
     _tokenRefreshSub ??= messaging.onTokenRefresh.listen((newToken) {
       unawaited(_registerToken(newToken));
     });
+
+    _foregroundMessageSub ??=
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    _openedMessageSub ??=
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
+
+    if (!_initialMessageHandled) {
+      _initialMessageHandled = true;
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) {
+        await _handleOpenedMessage(initialMessage);
+      }
+    }
   }
 
   Future<void> _registerToken(String token) async {
     if (token == _lastRegisteredToken) return;
 
     try {
-      await _ref.read(dioClientProvider).post('/auth/devices', data: {
+      final response = await _ref
+          .read(dioClientProvider)
+          .post<Map<String, dynamic>>('/auth/devices', data: {
         'platform': _platform,
         'pushToken': token,
         'deviceName': defaultTargetPlatform.name,
       });
       _lastRegisteredToken = token;
+      _registeredDeviceId = response.data?['id']?.toString();
     } catch (e) {
       debugPrint('FCM token registration failed: $e');
+    }
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    final isAuthenticated =
+        _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+    if (!isAuthenticated) return;
+
+    await Future.wait([
+      _ref.read(shiftsProvider.notifier).refresh(),
+      _ref.read(notificationsProvider.notifier).refresh(),
+    ]);
+    final notification = message.notification;
+    _ref.read(notificationDeepLinkServiceProvider).showForeground(
+          title: notification?.title ?? 'CareSitter',
+          body: notification?.body ?? '',
+          data: Map<String, dynamic>.from(message.data),
+          deliveryId: message.data['eventId']?.toString() ?? message.messageId,
+        );
+  }
+
+  Future<void> _handleOpenedMessage(RemoteMessage message) =>
+      _ref.read(notificationDeepLinkServiceProvider).handle(
+            Map<String, dynamic>.from(message.data),
+            deliveryId:
+                message.data['eventId']?.toString() ?? message.messageId,
+          );
+
+  Future<void> unregisterCurrentDevice() async {
+    final deviceId = _registeredDeviceId;
+    try {
+      if (deviceId != null && deviceId.isNotEmpty) {
+        await _ref
+            .read(dioClientProvider)
+            .delete<void>('/auth/devices/$deviceId');
+      }
+    } catch (e) {
+      debugPrint('FCM device cleanup failed: $e');
+    } finally {
+      try {
+        if (await FirebasePushNotifications.initialize()) {
+          await FirebaseMessaging.instance.deleteToken();
+        }
+      } catch (_) {}
+      _registeredDeviceId = null;
+      _lastRegisteredToken = null;
     }
   }
 
@@ -102,6 +186,9 @@ class PushNotificationService {
   }
 
   void dispose() {
+    _authNotifier.unregisterLogoutCleanup(unregisterCurrentDevice);
     unawaited(_tokenRefreshSub?.cancel());
+    unawaited(_foregroundMessageSub?.cancel());
+    unawaited(_openedMessageSub?.cancel());
   }
 }

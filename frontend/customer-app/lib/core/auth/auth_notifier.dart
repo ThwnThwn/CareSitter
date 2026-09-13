@@ -14,6 +14,9 @@ final authStateProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 );
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  final Set<Future<void> Function()> _logoutCleanups = {};
+  bool _isLoggingOut = false;
+
   @override
   Future<AuthState> build() async {
     return _loadFromStorage();
@@ -68,8 +71,29 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await _storage.deleteAll();
-    state = const AsyncData(AuthState.initial());
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    try {
+      for (final cleanup in List.of(_logoutCleanups)) {
+        try {
+          await cleanup();
+        } catch (_) {
+          // Logout must still clear the local session when remote cleanup fails.
+        }
+      }
+      await _storage.deleteAll();
+      state = const AsyncData(AuthState.initial());
+    } finally {
+      _isLoggingOut = false;
+    }
+  }
+
+  void registerLogoutCleanup(Future<void> Function() cleanup) {
+    _logoutCleanups.add(cleanup);
+  }
+
+  void unregisterLogoutCleanup(Future<void> Function() cleanup) {
+    _logoutCleanups.remove(cleanup);
   }
 
   String? get accessToken => state.value?.accessToken;

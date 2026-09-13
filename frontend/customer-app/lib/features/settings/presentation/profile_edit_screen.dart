@@ -142,7 +142,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           setState(() => _pendingAvatarFile = XFile(cropped.path));
         } catch (cropError) {
           // Fallback: nếu cropper lỗi, dùng ảnh gốc từ picker
-          debugPrint('[_pickAvatar] Cropper failed, using original: $cropError');
+          debugPrint(
+              '[_pickAvatar] Cropper failed, using original: $cropError');
           if (!mounted) return;
           setState(() => _pendingAvatarFile = image);
         }

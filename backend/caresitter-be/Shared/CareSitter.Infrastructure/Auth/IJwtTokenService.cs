@@ -31,7 +31,7 @@ public interface IJwtTokenService
     ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
 
     /// <summary>
-    /// Hash raw refresh token bằng SHA-256 để dùng làm Redis key.
+    /// Hash raw refresh token bằng SHA-256 để lưu DB và dùng làm Redis cache key.
     /// Đảm bảo raw token không bị lộ nếu Redis bị xâm phạm.
     /// </summary>
     /// <param name="rawToken">Refresh token gốc (opaque string).</param>

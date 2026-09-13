@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Auth;
+using CareSitter.Modules.Identity.Application.AuthSessions;
 using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Domain;
 using CareSitter.Modules.Identity.Infrastructure;
@@ -6,9 +6,7 @@ using CareSitter.SharedKernel.Results;
 using Google.Apis.Auth;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 
@@ -19,9 +17,7 @@ namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, Result<GoogleLoginResponse>>
 {
     private readonly IdentityDbContext _db;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly IDistributedCache _cache;
-    private readonly JwtSettings _jwtSettings;
+    private readonly RefreshTokenSessionService _sessions;
     private readonly string _googleClientId;
 
     private static readonly string[] DefaultRoles = { "CUSTOMER" };
@@ -29,15 +25,11 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
 
     public GoogleLoginHandler(
         IdentityDbContext db,
-        IJwtTokenService jwtTokenService,
-        IDistributedCache cache,
-        IOptions<JwtSettings> jwtSettingsOptions,
+        RefreshTokenSessionService sessions,
         IConfiguration configuration)
     {
         _db = db;
-        _jwtTokenService = jwtTokenService;
-        _cache = cache;
-        _jwtSettings = jwtSettingsOptions.Value;
+        _sessions = sessions;
         _googleClientId = configuration["Google:ClientId"]
             ?? throw new InvalidOperationException("Google:ClientId chưa được cấu hình trong appsettings / .env.");
     }
@@ -135,21 +127,10 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
         user.RecordLogin(now);
         await _db.SaveChangesAsync(ct);
 
-        var accessToken  = _jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName);
-        var refreshToken = _jwtTokenService.GenerateRefreshToken();
-
-        // Lưu refresh token vào Redis (stateful)
-        var hashed = _jwtTokenService.HashRefreshToken(refreshToken);
-        await _cache.SetStringAsync(
-            JwtRevocationCacheKeys.RefreshToken(hashed),
-            user.Id.ToString(),
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
-            }, ct);
+        var tokens = await _sessions.IssueAsync(user, ct);
 
         return new GoogleLoginResponse(
-            accessToken, refreshToken,
+            tokens.AccessToken, tokens.RefreshToken,
             user.Id, user.Roles, user.DisplayName,
             isNewUser);
     }

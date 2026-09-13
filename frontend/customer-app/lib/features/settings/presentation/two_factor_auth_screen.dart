@@ -37,7 +37,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child:
@@ -61,7 +61,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                             ? 'Tài khoản của bạn đang được bảo vệ an toàn.'
                             : 'Bật 2FA để thêm một lớp bảo mật.',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 13),
                       ),
                     ],

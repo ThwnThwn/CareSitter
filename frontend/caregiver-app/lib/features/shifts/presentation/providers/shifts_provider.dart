@@ -16,10 +16,18 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   Timer? _gpsTimer;
   Timer? _refreshTimer;
   StreamSubscription<BookingStatusChange>? _signalRSub;
+  StreamSubscription<BookingOfferChange>? _offerSignalRSub;
+  StreamSubscription<void>? _reconnectSignalRSub;
 
   ShiftsNotifier(this._ref) : super([]) {
     _ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
+      // Refresh tokens do not change which user's data needs loading.
+      if (isAuth &&
+          prev?.value?.isAuthenticated == true &&
+          prev?.value?.userId == next.value?.userId) {
+        return;
+      }
       if (isAuth) {
         refresh();
         _startRefreshPolling();
@@ -28,6 +36,8 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
         state = [];
         _stopRefreshPolling();
         _signalRSub?.cancel();
+        _offerSignalRSub?.cancel();
+        _reconnectSignalRSub?.cancel();
       }
     });
     _init();
@@ -42,6 +52,16 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     _signalRSub?.cancel();
     _signalRSub = signalR.statusStream.listen((_) {
       // Bất kỳ booking nào đổi trạng thái → refresh list
+      refresh();
+    });
+    _offerSignalRSub?.cancel();
+    _offerSignalRSub = signalR.offerStream.listen((_) {
+      // SignalR sends a hint only; a refetch prevents partial/stale offers.
+      refresh();
+    });
+    _reconnectSignalRSub?.cancel();
+    _reconnectSignalRSub = signalR.onReconnected.listen((_) {
+      // Recover any updates missed while the device was offline.
       refresh();
     });
   }
@@ -75,8 +95,18 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     }
 
     try {
-      final rawAssignedShifts = await _shiftRepo.getShifts(pageSize: 50);
-      final rawOpenOffers = await _shiftRepo.getOpenOffers(pageSize: 20);
+      final userId = _ref.read(authStateProvider).value?.userId;
+      final results = await Future.wait([
+        _shiftRepo.getShifts(pageSize: 50),
+        _shiftRepo.getOpenOffers(pageSize: 20),
+      ]);
+      if (!mounted ||
+          _ref.read(authStateProvider).value?.isAuthenticated != true ||
+          _ref.read(authStateProvider).value?.userId != userId) {
+        return;
+      }
+      final rawAssignedShifts = results[0];
+      final rawOpenOffers = results[1];
       final previousTasks = <String, List<CareTaskModel>>{
         for (final shift in state)
           if (shift.tasks.isNotEmpty) shift.id: shift.tasks,
@@ -113,6 +143,9 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       await refresh();
       return;
     } catch (e) {
+      // A rejected mutation commonly means this offer changed concurrently.
+      // Refetch so stale cards disappear instead of inviting repeated taps.
+      await refresh();
       // ignore: avoid_print
       print('[ShiftsNotifier] acceptBooking error: $e');
       rethrow;
@@ -120,10 +153,11 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   }
 
   /// Caregiver từ chối ca
-  Future<void> declineBooking(String id) async {
+  Future<void> declineBooking(String id, {String? reason}) async {
     try {
-      await _shiftRepo.declineBooking(id);
+      await _shiftRepo.declineBooking(id, reason: reason);
     } catch (e) {
+      await refresh();
       // ignore: avoid_print
       print('[ShiftsNotifier] declineBooking error: $e');
       rethrow;
@@ -482,6 +516,11 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       addressLatitude: (json['addressLatitude'] as num?)?.toDouble(),
       addressLongitude: (json['addressLongitude'] as num?)?.toDouble(),
       customerNote: _displayText(json['note'], fallback: ''),
+      offerId: json['offerId']?.toString(),
+      offerExpiresAt: json['offerExpiresAt'] == null
+          ? null
+          : DateTime.tryParse(json['offerExpiresAt'].toString())?.toLocal(),
+      offerRank: (json['offerRank'] as num?)?.toInt(),
       isSystemMatched: json['caregiverId'] != null,
       actualStart: actualStart,
       checkoutRequestedAt: checkoutRequestedAt,
@@ -529,6 +568,9 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   void dispose() {
     _stopGpsPush();
     _stopRefreshPolling();
+    _signalRSub?.cancel();
+    _offerSignalRSub?.cancel();
+    _reconnectSignalRSub?.cancel();
     super.dispose();
   }
 }

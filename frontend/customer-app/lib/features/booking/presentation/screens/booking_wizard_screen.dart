@@ -931,53 +931,79 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 20),
         Row(
           children: [
-            const Text('Thời lượng (giờ)',
-                style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            const Text(
+              'Thời lượng (giờ)',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: 8),
-            Text(
-              '(mặc định: ${defaultDurationHrs}h)',
-              style: const TextStyle(color: AppColors.textHint, fontSize: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'Mặc định: ${defaultDurationHrs}h',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [1, 2, 3, 4, 6, 8, 12].map((h) {
+        Row(
+          children: [1, 2, 3, 4, 6, 8, 12].asMap().entries.map((entry) {
+            final i = entry.key;
+            final h = entry.value;
             final isSelected = _duration == h;
-            final isDefault = h == defaultDurationHrs;
-            return GestureDetector(
-              onTap: () => setState(() => _duration = h),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color:
-                      isSelected ? AppColors.primary : AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : isDefault
-                            ? AppColors.primaryLight
-                            : AppColors.border,
-                    width: isDefault && !isSelected ? 2 : 1,
-                  ),
-                  boxShadow: isSelected ? AppShadows.card : [],
-                ),
-                child: Center(
-                  child: Text(
-                    '$h',
-                    style: TextStyle(
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
+                child: GestureDetector(
+                  onTap: () => setState(() => _duration = h),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
                         color:
-                            isSelected ? Colors.white : AppColors.textSecondary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700),
+                            isSelected ? AppColors.primary : AppColors.border,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$h',
+                        style: TextStyle(
+                          color:
+                              isSelected ? Colors.white : AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

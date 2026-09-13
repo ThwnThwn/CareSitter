@@ -17,6 +17,14 @@ public sealed class BookingModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<CheckInOptions>()
+            .Bind(configuration.GetSection(CheckInOptions.SectionName))
+            .Validate(options => options.EarlyWindowMinutes is >= 0 and <= 180,
+                "CheckIn:EarlyWindowMinutes phai nam trong khoang 0-180.")
+            .Validate(options => options.MaxDistanceMeters is >= 10 and <= 1_000,
+                "CheckIn:MaxDistanceMeters phai nam trong khoang 10-1000.")
+            .ValidateOnStart();
+
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),

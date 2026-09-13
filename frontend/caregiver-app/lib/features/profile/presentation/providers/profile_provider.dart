@@ -21,6 +21,11 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
   ProfileNotifier(this._ref) : super(CaregiverProfileModel.empty()) {
     _ref.listen(authStateProvider, (previous, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
+      if (isAuth &&
+          previous?.value?.isAuthenticated == true &&
+          previous?.value?.userId == next.value?.userId) {
+        return;
+      }
       if (isAuth) {
         refresh();
       } else {
@@ -47,7 +52,21 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
       if (response.data != null) {
         state = CaregiverProfileModel.fromJson(response.data!);
       }
-    } catch (e) {
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        try {
+          final created = await _dio.post<Map<String, dynamic>>(
+            ApiPaths.myCaregiverProfile,
+            data: {'fullName': auth?.phone},
+          );
+          if (created.data != null) {
+            state = CaregiverProfileModel.fromJson(created.data!);
+          }
+          return;
+        } catch (_) {
+          // Fall through to the diagnostic log below.
+        }
+      }
       // ignore: avoid_print
       print('[ProfileNotifier] Lỗi tải hồ sơ caregiver: $e');
     }
@@ -74,7 +93,8 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
           if (bio != null) 'bio': bio,
           if (yearsOfExperience != null) 'yearsOfExperience': yearsOfExperience,
           // hourlyRateExpected chỉ là giá mong muốn — không dùng để tính booking price
-          if (hourlyRateExpected != null) 'hourlyRateExpected': hourlyRateExpected,
+          if (hourlyRateExpected != null)
+            'hourlyRateExpected': hourlyRateExpected,
           if (skills != null) 'skills': skills.join(','),
           if (serviceCity != null) 'serviceCity': serviceCity,
           if (serviceDistrict != null) 'serviceDistrict': serviceDistrict,
@@ -114,7 +134,8 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
     try {
       final fileName = imageFile.path.split(Platform.pathSeparator).last;
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(imageFile.path, filename: fileName),
+        'file':
+            await MultipartFile.fromFile(imageFile.path, filename: fileName),
       });
       final resp = await _dio.postForm<Map<String, dynamic>>(
         '/profile/avatar',
@@ -130,5 +151,46 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
     } finally {
       _ref.read(caregiverAvatarUploadingProvider.notifier).state = false;
     }
+  }
+
+  Future<String> uploadKycImage(File imageFile) async {
+    final fileName = imageFile.path.split(Platform.pathSeparator).last;
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(imageFile.path, filename: fileName),
+      'folder': 'kyc',
+    });
+    final response = await _dio.postForm<Map<String, dynamic>>(
+      '/media/upload',
+      formData,
+    );
+    final url = response.data?['url']?.toString().trim();
+    if (url == null || url.isEmpty) {
+      throw const AppApiException(message: 'Máy chủ không trả về URL ảnh KYC.');
+    }
+    return url;
+  }
+
+  Future<void> submitKyc({
+    required String cccdNumber,
+    required File cccdFront,
+    required File cccdBack,
+    List<File> certificates = const [],
+  }) async {
+    final frontUrl = await uploadKycImage(cccdFront);
+    final backUrl = await uploadKycImage(cccdBack);
+    final certificateUrls = <String>[];
+    for (final certificate in certificates) {
+      certificateUrls.add(await uploadKycImage(certificate));
+    }
+    await _dio.post<Map<String, dynamic>>(
+      '/caregivers/me/kyc',
+      data: {
+        'cccdNumber': cccdNumber.trim(),
+        'cccdFrontUrl': frontUrl,
+        'cccdBackUrl': backUrl,
+        'certificateUrls': certificateUrls,
+      },
+    );
+    await refresh();
   }
 }

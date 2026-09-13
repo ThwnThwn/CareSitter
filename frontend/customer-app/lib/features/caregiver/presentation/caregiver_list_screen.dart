@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/loading_list.dart';
 import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 import '../application/caregiver_store.dart';
 import '../data/models/caregiver_model.dart';
@@ -51,14 +52,37 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: caregiverAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(child: Text('Lỗi: $e')),
+        skipError: true,
+        loading: () => const SafeArea(child: LoadingList()),
+        error: (e, _) => Center(
+            child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Chưa tải được danh sách chăm sóc viên.'),
+            TextButton(
+                onPressed: () =>
+                    ref.read(caregiverStoreProvider.notifier).refresh(),
+                child: const Text('Thử lại')),
+          ],
+        )),
         data: (allCaregivers) {
           final filtered = _filtered(allCaregivers);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (caregiverAsync.isLoading) const LinearProgressIndicator(),
+              if (caregiverAsync.hasError)
+                SafeArea(
+                    bottom: false,
+                    child: ListTile(
+                      title: const Text(
+                          'Chưa cập nhật được. Đang hiển thị dữ liệu đã tải.'),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            ref.read(caregiverStoreProvider.notifier).refresh(),
+                        child: const Text('Thử lại'),
+                      ),
+                    )),
               // ── Flat header ──
               Container(
                 color: Colors.white,
@@ -242,6 +266,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                         ),
                       )
                     : ListView.builder(
+                        key: const PageStorageKey('caregiver-list'),
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                         itemCount: filtered.length + 1,
                         itemBuilder: (context, index) {
@@ -253,6 +278,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                           }
                           final i = index - 1;
                           return FadeSlideStaggered(
+                            key: ValueKey(filtered[i].id),
                             index: i,
                             child: _buildCaregiverCard(filtered[i], context),
                           );

@@ -84,7 +84,7 @@ class AuthRepository {
         }
       }
 
-      // Gửi refreshToken mới nhất để server xóa khỏi Redis → logout thật.
+      // Gửi refreshToken mới nhất để server revoke session trong PostgreSQL.
       await _dio.post<dynamic>(
         '/auth/logout',
         data: refreshToken != null ? {'refreshToken': refreshToken} : null,

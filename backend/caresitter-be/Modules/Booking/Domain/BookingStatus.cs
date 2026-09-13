@@ -5,6 +5,8 @@ public enum BookingStatus
 {
     Draft,
     PendingPayment,
+    PaymentReconciliationPending,
+    NeedsManualReview,
     Confirmed,
     MatchingFailed,
     CaregiverAccepted,

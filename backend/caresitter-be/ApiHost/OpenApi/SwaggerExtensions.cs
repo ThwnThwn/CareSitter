@@ -20,19 +20,19 @@ internal static class SwaggerExtensions
             // --- Thông tin API ---
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title       = "CareSitter API",
-                Version     = "v1",
+                Title = "CareSitter API",
+                Version = "v1",
                 Description = "API quản lý dịch vụ chăm sóc người thân CareSitter."
             });
 
             // --- JWT Bearer security definition ---
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Name        = "Authorization",
-                Type        = SecuritySchemeType.Http,
-                Scheme      = "bearer",
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
                 BearerFormat = "JWT",
-                In          = ParameterLocation.Header,
+                In = ParameterLocation.Header,
                 Description = "Nhập JWT token vào đây. Ví dụ: eyJhbGci..."
             });
 
@@ -123,7 +123,7 @@ internal sealed class FormFileOperationFilter : IOperationFilter
             {
                 properties[p.Name] = new OpenApiSchema
                 {
-                    Type   = "string",
+                    Type = "string",
                     Format = "binary",
                     Description = "File upload"
                 };
@@ -132,7 +132,7 @@ internal sealed class FormFileOperationFilter : IOperationFilter
             {
                 properties[p.Name] = new OpenApiSchema
                 {
-                    Type     = p.ModelMetadata?.ModelType == typeof(string) ? "string" : "object",
+                    Type = p.ModelMetadata?.ModelType == typeof(string) ? "string" : "object",
                     Nullable = true
                 };
             }
@@ -141,7 +141,7 @@ internal sealed class FormFileOperationFilter : IOperationFilter
         operation.RequestBody = new OpenApiRequestBody
         {
             Required = true,
-            Content  =
+            Content =
             {
                 ["multipart/form-data"] = new OpenApiMediaType
                 {

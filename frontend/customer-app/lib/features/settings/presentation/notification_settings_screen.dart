@@ -35,8 +35,7 @@ class NotificationPrefs {
       scheduleReminder:
           (json['scheduleReminder'] ?? json['ScheduleReminder'] ?? true) ==
               true,
-      chatMessage:
-          (json['chatMessage'] ?? json['ChatMessage'] ?? true) == true,
+      chatMessage: (json['chatMessage'] ?? json['ChatMessage'] ?? true) == true,
       promotion: (json['promotion'] ?? json['Promotion'] ?? false) == true,
     );
   }
@@ -61,17 +60,16 @@ class NotificationPrefs {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final notificationPrefsProvider =
-    StateNotifierProvider<NotificationPrefsNotifier, AsyncValue<NotificationPrefs>>(
-        (ref) => NotificationPrefsNotifier(ref));
+final notificationPrefsProvider = StateNotifierProvider<
+    NotificationPrefsNotifier,
+    AsyncValue<NotificationPrefs>>((ref) => NotificationPrefsNotifier(ref));
 
 class NotificationPrefsNotifier
     extends StateNotifier<AsyncValue<NotificationPrefs>> {
   final Ref _ref;
   Timer? _debounce;
 
-  NotificationPrefsNotifier(this._ref)
-      : super(const AsyncLoading()) {
+  NotificationPrefsNotifier(this._ref) : super(const AsyncLoading()) {
     _load();
   }
 
@@ -84,8 +82,8 @@ class NotificationPrefsNotifier
   Future<void> _load() async {
     try {
       final dio = _ref.read(dioClientProvider);
-      final resp = await dio.get<Map<String, dynamic>>(
-          '/profile/notification-preferences');
+      final resp = await dio
+          .get<Map<String, dynamic>>('/profile/notification-preferences');
       if (resp.data != null) {
         state = AsyncData(NotificationPrefs.fromJson(resp.data!));
       } else {
@@ -221,14 +219,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
               onChanged: (v) => _toggle(ref, prefs.copyWith(promotion: v)),
             ),
             const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Thay đổi được tự động lưu. Bạn vẫn có thể nhận thông báo hệ thống bắt buộc (OTP, bảo mật).',
                 style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    height: 1.5),
+                    fontSize: 12, color: AppColors.textSecondary, height: 1.5),
               ),
             ),
             const SizedBox(height: 32),
@@ -276,16 +272,19 @@ class NotificationSettingsScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon,
-            size: 20, color: value ? AppColors.primary : AppColors.textSecondary),
+            size: 20,
+            color: value ? AppColors.primary : AppColors.textSecondary),
       ),
       title: Text(title,
           style: const TextStyle(
-              fontWeight: FontWeight.w500, fontSize: 14, color: AppColors.textPrimary)),
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: AppColors.textPrimary)),
       subtitle: Text(subtitle,
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
     );
   }
 }

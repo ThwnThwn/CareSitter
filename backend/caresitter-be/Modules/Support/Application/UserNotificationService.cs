@@ -13,14 +13,27 @@ internal sealed class UserNotificationService(
 {
     public async Task NotifyAsync(UserNotificationMessage message, CancellationToken ct = default)
     {
+        var normalized = message with
+        {
+            EventId = message.EventId ?? Guid.NewGuid(),
+            OccurredAt = message.OccurredAt ?? DateTimeOffset.UtcNow
+        };
+        var payload = new Dictionary<string, string>(
+            normalized.Data ?? new Dictionary<string, string>())
+        {
+            ["eventId"] = normalized.EventId.Value.ToString(),
+            ["occurredAt"] = normalized.OccurredAt.Value.ToString("O"),
+            ["type"] = normalized.Type
+        };
+
         try
         {
-            var data = message.Data is null ? null : JsonSerializer.Serialize(message.Data);
+            var data = JsonSerializer.Serialize(payload);
             var notification = Notification.Create(
-                message.UserId,
-                message.Type,
-                message.Title,
-                message.Body,
+                normalized.UserId,
+                normalized.Type,
+                normalized.Title,
+                normalized.Body,
                 data);
 
             if (notification.IsSuccess)
@@ -34,6 +47,6 @@ internal sealed class UserNotificationService(
             logger.LogWarning(ex, "Failed to persist notification for user {UserId}.", message.UserId);
         }
 
-        await push.SendToUserAsync(message, ct);
+        await push.SendToUserAsync(normalized with { Data = payload }, ct);
     }
 }

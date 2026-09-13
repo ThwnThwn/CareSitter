@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/auth/auth_notifier.dart';
 import '../../profile/data/caregiver_profile_model.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../auth/data/auth_repository.dart';
 import '../../profile/presentation/providers/profile_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -71,9 +72,9 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.logout_rounded,
                 backgroundColor: AppColors.errorLight,
                 foregroundColor: AppColors.error,
-                onPressed: () {
-                  ref.read(authStateProvider.notifier).logout();
-                  context.go('/auth/phone');
+                onPressed: () async {
+                  await ref.read(authRepositoryProvider).logout();
+                  if (context.mounted) context.go('/auth/phone');
                 },
               ),
             ),
@@ -103,8 +104,10 @@ class SettingsScreen extends ConsumerWidget {
           CircleAvatar(
             radius: 30,
             backgroundColor: AppColors.primaryContainer,
-            backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
-                ? NetworkImage(profile.avatarUrl!)
+            backgroundImage: profile.avatarUrl != null &&
+                    profile.avatarUrl!.isNotEmpty
+                ? ResizeImage(CachedNetworkImageProvider(profile.avatarUrl!),
+                    width: 192)
                 : null,
             child: (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
                 ? Text(

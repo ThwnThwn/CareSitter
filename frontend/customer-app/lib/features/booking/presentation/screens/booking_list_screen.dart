@@ -113,6 +113,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
               'draft',
               'pending',
               'pending_payment',
+              'payment_reconciliation_pending',
+              'needs_manual_review',
               'confirmed',
               'caregiver_accepted',
               'caregiver_en_route',
@@ -151,11 +153,13 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
               ),
             )
           : ListView.separated(
+              key: PageStorageKey(statuses.join(',')),
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
               itemCount: filtered.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) => FadeSlideStaggered(
+                key: ValueKey(filtered[index].id),
                 index: index,
                 child: _buildBookingCard(filtered[index]),
               ),
@@ -210,8 +214,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   }
 
   Widget _buildBookingCard(BookingModel booking) {
-    final isWaitingCaregiver =
-        booking.status.toLowerCase() == 'confirmed' && booking.caregiverId == null;
+    final isWaitingCaregiver = booking.status.toLowerCase() == 'confirmed' &&
+        booking.caregiverId == null;
     final statusConfig = isWaitingCaregiver
         ? {
             'label': 'Chờ ghép CSV',
@@ -361,7 +365,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                                   child: Text(
                                     isWaitingCaregiver
                                         ? 'Hệ thống đang ghép chăm sóc viên'
-                                        : (booking.caregiverName ?? 'Chăm sóc viên'),
+                                        : (booking.caregiverName ??
+                                            'Chăm sóc viên'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -479,6 +484,18 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
           'label': 'Chờ thanh toán',
           'color': const Color(0xFFF39C12),
           'bg': const Color(0xFFFFF8E6),
+        };
+      case 'payment_reconciliation_pending':
+        return {
+          'label': 'Đang đối soát',
+          'color': const Color(0xFF0369A1),
+          'bg': const Color(0xFFE0F2FE),
+        };
+      case 'needs_manual_review':
+        return {
+          'label': 'Chờ kiểm tra',
+          'color': const Color(0xFFB45309),
+          'bg': const Color(0xFFFFF7ED),
         };
       case 'draft':
         return {

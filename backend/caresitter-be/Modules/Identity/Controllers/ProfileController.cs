@@ -1,6 +1,7 @@
 using BCrypt.Net;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Identity.Application.UpdateProfile;
+using CareSitter.Modules.Identity.Application.AuthSessions;
 using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.Infrastructure.Security;
 using CareSitter.SharedKernel.Results;
@@ -19,7 +20,8 @@ public sealed class ProfileController(
     ISender sender,
     IdentityDbContext db,
     ICurrentUser currentUser,
-    IMediaService mediaService) : ControllerBase
+    IMediaService mediaService,
+    RefreshTokenSessionService sessions) : ControllerBase
 {
     // ── GET /api/v1/profile ──────────────────────────────────────────────────
 
@@ -134,7 +136,7 @@ public sealed class ProfileController(
 
     /// <summary>
     /// Đổi mật khẩu. Yêu cầu xác minh mật khẩu hiện tại bằng BCrypt.
-    /// Sau khi đổi: refresh token Redis cũ bị xóa → client phải login lại.
+    /// Sau khi đổi: toàn bộ refresh session trong PostgreSQL bị revoke → client phải login lại.
     /// </summary>
     [HttpPut("password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -178,11 +180,7 @@ public sealed class ProfileController(
         var newHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
         user.SetPassword(newHash);
         await db.SaveChangesAsync(ct);
-
-        // Revoke refresh token hiện tại (client phải login lại)
-        // Lấy jti từ claims để blacklist access token hiện tại
-        // Refresh token revoke: client sẽ nhận 401 ở lần refresh tiếp theo
-        // (Redis key sẽ expired tự nhiên sau 7 ngày nếu không xóa được ngay)
+        await sessions.RevokeAllForUserAsync(userId, ct);
 
         return Ok(new { message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại." });
     }
