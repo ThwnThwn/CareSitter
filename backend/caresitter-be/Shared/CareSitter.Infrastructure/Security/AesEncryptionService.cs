@@ -1,10 +1,10 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace CareSitter.Infrastructure.Security;
 
 /// <summary>
-/// AES-256-CBC + HMAC-SHA256. MVP doc key tu cau hinh; production thay bang KMS/envelope encryption.
+/// AES-256-CBC + HMAC-SHA256. MVP doc key tu cấu hình; production thay bang KMS/envelope encryption.
 /// Dinh dang ciphertext: base64(iv) + ':' + base64(cipher).
 /// </summary>
 public sealed class AesEncryptionService : IEncryptionService

@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Support.Domain;
@@ -47,11 +47,11 @@ public sealed class Review : Entity
         string? experienceTags = null)
     {
         if (bookingId == Guid.Empty)
-            return Error.Validation("review.booking", "booking_id khong duoc rong.");
+            return Error.Validation("review.booking", "booking_id không được rỗng.");
         if (caregiverId == Guid.Empty)
-            return Error.Validation("review.caregiver", "caregiver_id khong duoc rong.");
+            return Error.Validation("review.caregiver", "caregiver_id không được rỗng.");
         if (customerId == Guid.Empty)
-            return Error.Validation("review.customer", "customer_id khong duoc rong.");
+            return Error.Validation("review.customer", "customer_id không được rỗng.");
         if (rating is < 1 or > 5)
             return Error.Validation("review.rating", "rating phai trong khoang 1..5.");
 

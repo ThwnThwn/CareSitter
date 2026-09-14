@@ -1,10 +1,10 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Identity.Domain;
 
 /// <summary>
-/// Thiet bi cua nguoi dung (push token, biometric). Map sang bang user_devices.
+/// Thiet bi cua người dùng (push token, biometric). Map sang bang user_devices.
 /// Bang khong co updated_at.
 /// </summary>
 public sealed class UserDevice : Entity

@@ -19,6 +19,7 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<BookingAssignment> BookingAssignments => Set<BookingAssignment>();
     public DbSet<CaregiverSlotHold> CaregiverSlotHolds => Set<CaregiverSlotHold>();
     public DbSet<CareTask> CareTasks => Set<CareTask>();
+    public DbSet<PackageTaskTemplate> PackageTaskTemplates => Set<PackageTaskTemplate>();
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
     public DbSet<BookingSyncEvent> BookingSyncEvents => Set<BookingSyncEvent>();
@@ -47,6 +48,8 @@ public sealed class BookingDbContext : ModuleDbContext
                 .HasColumnName("checkout_source")
                 .HasConversion<string>()
                 .HasMaxLength(30);
+            b.Property(x => x.NeedsReview).HasColumnName("needs_review");
+            b.Property(x => x.AllowAdHocTasks).HasColumnName("allow_ad_hoc_tasks");
             b.Property(x => x.RequiredSkills).HasColumnName("required_skills").HasColumnType("jsonb");
             b.Property(x => x.Status)
                 .HasColumnName("status")
@@ -141,6 +144,26 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.SortOrder).HasColumnName("sort_order");
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
             b.Property(x => x.CompletedAt).HasColumnName("completed_at");
+            b.Property(x => x.CompletedBy).HasColumnName("completed_by");
+            b.Property(x => x.SkipReason).HasColumnName("skip_reason").HasMaxLength(500);
+            b.Property(x => x.Source).HasColumnName("source").HasMaxLength(30);
+            b.Property(x => x.TemplateId).HasColumnName("template_id");
+            b.Property(x => x.CreatedBy).HasColumnName("created_by");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<PackageTaskTemplate>(b =>
+        {
+            b.ToTable("package_task_templates");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.ServiceTypeId).HasColumnName("service_type_id");
+            b.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
+            b.Property(x => x.Description).HasColumnName("description");
+            b.Property(x => x.IsRequired).HasColumnName("is_required");
+            b.Property(x => x.RequiresPhoto).HasColumnName("requires_photo");
+            b.Property(x => x.SortOrder).HasColumnName("sort_order");
+            b.Property(x => x.IsActive).HasColumnName("is_active");
         });
 
         modelBuilder.Entity<CareTimelineEvent>(b =>

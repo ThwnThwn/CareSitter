@@ -4,9 +4,9 @@ using CareSitter.SharedKernel.Results;
 namespace CareSitter.Modules.People.Domain;
 
 /// <summary>
-/// Aggregate root cho nguoi duoc cham soc (beneficiary). Map sang bang people.beneficiaries.
-/// Du lieu y te nhay cam (health_history, allergies, chronic_conditions, medications) duoc
-/// bao ve bang Row-Level Security theo customer_id. Cac cot jsonb giu nguyen dang string?.
+/// Aggregate root cho người được chăm sóc (beneficiary). Map sang bảng people.beneficiaries.
+/// Dữ liệu y tế nhạy cảm (health_history, allergies, chronic_conditions, medications) được
+/// bảo vệ bằng Row-Level Security theo customer_id. Các cột jsonb giữ nguyên dạng string?.
 /// </summary>
 public sealed class Beneficiary : AggregateRoot
 {
@@ -51,9 +51,9 @@ public sealed class Beneficiary : AggregateRoot
     public static Result<Beneficiary> Create(Guid customerId, string fullName)
     {
         if (customerId == Guid.Empty)
-            return Error.Validation("beneficiary.customer", "customer_id la bat buoc.");
+            return Error.Validation("beneficiary.customer", "customer_id là bắt buộc.");
         if (string.IsNullOrWhiteSpace(fullName))
-            return Error.Validation("beneficiary.full_name", "full_name la bat buoc.");
+            return Error.Validation("beneficiary.full_name", "full_name là bắt buộc.");
 
         return new Beneficiary(Guid.NewGuid(), customerId, fullName);
     }
@@ -64,7 +64,7 @@ public sealed class Beneficiary : AggregateRoot
         string? careInstructions, string? emergencyContacts, string? medications)
     {
         if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length > 255)
-            return Error.Validation("beneficiary.full_name", "Ho ten khong hop le.");
+            return Error.Validation("beneficiary.full_name", "Họ tên không hợp lệ.");
 
         FullName = fullName.Trim();
         DateOfBirth = dateOfBirth;

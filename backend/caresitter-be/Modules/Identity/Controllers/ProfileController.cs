@@ -1,4 +1,4 @@
-using BCrypt.Net;
+﻿using BCrypt.Net;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Identity.Application.UpdateProfile;
 using CareSitter.Modules.Identity.Application.AuthSessions;
@@ -42,7 +42,7 @@ public sealed class ProfileController(
             .SingleOrDefaultAsync(ct);
 
         return profile is null
-            ? NotFound(Problem(Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan nguoi dung.")))
+            ? NotFound(Problem(Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan người dùng.")))
             : Ok(profile);
     }
 

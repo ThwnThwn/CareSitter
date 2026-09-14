@@ -1,10 +1,10 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Catalog.Domain;
 
 /// <summary>
-/// Loai dich vu cham soc. Map sang bang service_types. Bang KHONG co created_at/updated_at
+/// Loai dich vu chăm sóc. Map sang bang service_types. Bang KHONG co created_at/updated_at
 /// -> Ignore ca CreatedAt lan UpdatedAt.
 /// </summary>
 public sealed class ServiceType : Entity

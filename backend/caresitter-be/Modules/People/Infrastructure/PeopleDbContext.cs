@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.People.Infrastructure;
 
-/// <summary>DbContext module People — schema "people" (beneficiaries, caregiver_profiles, availability).</summary>
+/// <summary>DbContext module People — schema "people" (beneficiaries, caregiver_profiles).</summary>
 public sealed class PeopleDbContext : ModuleDbContext
 {
     public const string SchemaName = "people";
@@ -16,8 +16,8 @@ public sealed class PeopleDbContext : ModuleDbContext
     protected override string Schema => SchemaName;
 
     public DbSet<Beneficiary> Beneficiaries => Set<Beneficiary>();
+    public DbSet<FamilyContact> FamilyContacts => Set<FamilyContact>();
     public DbSet<CaregiverProfile> CaregiverProfiles => Set<CaregiverProfile>();
-    public DbSet<CaregiverAvailability> CaregiverAvailabilities => Set<CaregiverAvailability>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +47,21 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at"); // trg_beneficiaries_updated
             b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
             b.Ignore(x => x.DomainEvents);
+        });
+
+        modelBuilder.Entity<FamilyContact>(b =>
+        {
+            b.ToTable("family_contacts");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.CustomerId).HasColumnName("customer_id");
+            b.Property(x => x.FullName).HasColumnName("full_name").HasMaxLength(255);
+            b.Property(x => x.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20);
+            b.Property(x => x.Note).HasColumnName("note").HasMaxLength(500);
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+            b.HasIndex(x => new { x.CustomerId, x.PhoneNumber }).HasFilter("deleted_at IS NULL").IsUnique();
         });
 
         modelBuilder.Entity<CaregiverProfile>(b =>
@@ -84,21 +99,5 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Ignore(x => x.DomainEvents);
         });
 
-        modelBuilder.Entity<CaregiverAvailability>(b =>
-        {
-            b.ToTable("caregiver_availability");
-            b.HasKey(x => x.Id);
-            b.Property(x => x.Id).HasColumnName("id");
-            b.Property(x => x.CaregiverId).HasColumnName("caregiver_id");
-            b.Property(x => x.StartAt).HasColumnName("start_at");
-            b.Property(x => x.EndAt).HasColumnName("end_at");
-            b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
-            b.Property(x => x.Source).HasColumnName("source").HasMaxLength(20);
-            // OMIT time_range: GENERATED ALWAYS AS (tstzrange(start_at, end_at, '[)')) STORED.
-            // Purely DB-generated (feeds the EXCLUDE gist constraint chong double-book) -> not mapped.
-            // Table has no created_at/updated_at (no trg_*_updated trigger) -> Ignore both.
-            b.Ignore(x => x.CreatedAt);
-            b.Ignore(x => x.UpdatedAt);
-        });
     }
 }

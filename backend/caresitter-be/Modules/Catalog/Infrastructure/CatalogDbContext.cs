@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Persistence;
+﻿using CareSitter.Infrastructure.Persistence;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Catalog.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -72,7 +72,7 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.Ignore(x => x.IsVerified);
             // OMIT latitude & longitude: cot GENERATED ALWAYS AS (ST_Y/ST_X(location)) STORED,
-            // khong ghi duoc va suy ra tu Location nen khong map vao entity.
+            // không ghi được và suy ra từ Location nên không map vào entity.
         });
 
         modelBuilder.Entity<ServiceType>(b =>

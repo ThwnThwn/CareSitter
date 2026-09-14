@@ -139,7 +139,7 @@ public sealed class CaregiverKycController(
             profile.CccdFrontUrl,
             profile.CccdBackUrl,
             CertificateUrls = certificateUrls,
-            message = "Ho so KYC da duoc nop."
+            message = "Hồ sơ KYC đã được nộp."
         });
     }
 

@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+﻿using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.Modules.Support.Infrastructure;
 using CareSitter.SharedKernel.Results;
@@ -109,7 +109,7 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
         return Ok(ToResponse(ticket));
     }
 
-    /// <summary>Admin cap nhat trang thai ticket (NEW -> IN_PROGRESS -> RESOLVED -> CLOSED).</summary>
+    /// <summary>Admin cap nhat trạng thái ticket (NEW -> IN_PROGRESS -> RESOLVED -> CLOSED).</summary>
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateTicketStatusRequest req, CancellationToken ct)
     {

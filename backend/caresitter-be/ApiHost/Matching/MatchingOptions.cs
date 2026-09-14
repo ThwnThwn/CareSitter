@@ -7,7 +7,6 @@ public sealed class MatchingOptions
     public int OfferLifetimeMinutes { get; set; } = 10;
     public int MaxDistanceMeters { get; set; } = 10000;
     public decimal MinimumRating { get; set; } = 3.5m;
-    public bool AllowCaregiversWithoutAvailabilitySlots { get; set; } = true;
     public MatchingWeights Weights { get; set; } = new();
 }
 

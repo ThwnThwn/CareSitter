@@ -6,8 +6,8 @@ using CareSitter.SharedKernel.ValueObjects;
 namespace CareSitter.Modules.Booking.Domain;
 
 /// <summary>
-/// Aggregate root cho 1 don cham soc. Bao ve bat bien: chuyen trang thai hop le,
-/// geofence khi check-in, escrow snapshot. Map sang bang bookings.
+/// Aggregate root cho một đơn chăm sóc. Bảo vệ bất biến: chuyển trạng thái hợp lệ,
+/// geofence khi check-in, escrow snapshot. Map sang bảng bookings.
 /// </summary>
 public sealed class Booking : AggregateRoot
 {
@@ -53,6 +53,9 @@ public sealed class Booking : AggregateRoot
     public DateTimeOffset? ActualEnd { get; private set; }
     public DateTimeOffset? CheckoutPendingReviewAt { get; private set; }
     public BookingCheckoutSource? CheckoutSource { get; private set; }
+    public bool NeedsReview { get; private set; }
+    /// <summary>Snapshot quyền thêm công việc phát sinh của gói tại thời điểm thanh toán.</summary>
+    public bool AllowAdHocTasks { get; private set; }
     public string? RequiredSkills { get; private set; }
 
     public BookingStatus Status { get; private set; }
@@ -88,7 +91,7 @@ public sealed class Booking : AggregateRoot
         string? requiredSkills = null)
     {
         if (scheduledEnd <= scheduledStart)
-            return Error.Validation("booking.schedule", "scheduled_end phai sau scheduled_start.");
+            return Error.Validation("booking.schedule", "scheduled_end phải sau scheduled_start.");
 
         var booking = new Booking(Guid.NewGuid(), customerId, beneficiaryId, addressId, serviceTypeId,
             scheduledStart, scheduledEnd, paymentDeadline ?? DateTimeOffset.UtcNow.AddMinutes(15),
@@ -99,7 +102,7 @@ public sealed class Booking : AggregateRoot
     public Result ApplyPricing(long escrow, long platformFee, long caregiverEarning, string? snapshot = null)
     {
         if (escrow < 0 || platformFee < 0 || caregiverEarning < 0)
-            return Error.Validation("booking.pricing", "So tien khong duoc am.");
+            return Error.Validation("booking.pricing", "Số tiền không được âm.");
 
         EscrowAmount = escrow;
         PlatformFeeAmount = platformFee;
@@ -111,7 +114,7 @@ public sealed class Booking : AggregateRoot
     public Result SelectCaregiver(Guid caregiverId)
     {
         if (caregiverId == Guid.Empty || Status is not (BookingStatus.Draft or BookingStatus.PendingPayment or BookingStatus.Confirmed))
-            return Error.Conflict("booking.select_caregiver", "Khong the chon caregiver o trang thai hien tai.");
+            return Error.Conflict("booking.select_caregiver", "Không thể chọn caregiver ở trạng thái hiện tại.");
         CaregiverId = caregiverId;
         return Result.Success();
     }
@@ -119,9 +122,9 @@ public sealed class Booking : AggregateRoot
     public Result Reschedule(DateTimeOffset start, DateTimeOffset end)
     {
         if (end <= start)
-            return Error.Validation("booking.schedule", "Thoi gian ket thuc phai sau thoi gian bat dau.");
+            return Error.Validation("booking.schedule", "Thời gian kết thúc phải sau thời gian bắt đầu.");
         if (Status is not (BookingStatus.Draft or BookingStatus.PendingPayment or BookingStatus.Confirmed))
-            return Error.Conflict("booking.reschedule", "Khong the doi lich o trang thai hien tai.");
+            return Error.Conflict("booking.reschedule", "Không thể dời lịch ở trạng thái hiện tại.");
         ScheduledStart = start;
         ScheduledEnd = end;
         return Result.Success();
@@ -130,15 +133,15 @@ public sealed class Booking : AggregateRoot
     public Result AssignCaregiver(Guid caregiverId)
     {
         if (Status is not (BookingStatus.Confirmed or BookingStatus.Crisis))
-            return Error.Conflict("booking.assign", "Chi gan CSV khi don da CONFIRMED hoac dang CRISIS.");
+            return Error.Conflict("booking.assign", "Chỉ gán caregiver khi đơn đã CONFIRMED hoặc đang CRISIS.");
 
         CaregiverId = caregiverId;
         return TransitionTo(BookingStatus.CaregiverAccepted);
     }
 
     /// <summary>
-    /// Check-in chi hop le tu 30 phut truoc gio bat dau ca, va khi GPS nam trong geofence.
-    /// <paramref name="checkedInAt"/> phai do server cap; khong dung timestamp tu client.
+    /// Check-in chỉ hợp lệ từ 30 phút trước giờ bắt đầu ca, và khi GPS nằm trong geofence.
+    /// <paramref name="checkedInAt"/> phải do server cấp; không dùng timestamp từ client.
     /// </summary>
     public Result CheckIn(
         GeoPoint caregiverLocation,
@@ -149,20 +152,20 @@ public sealed class Booking : AggregateRoot
         int? checkInRadiusMeters = null)
     {
         if (Status != BookingStatus.CaregiverEnRoute)
-            return Error.Conflict("booking.checkin", "Chi check-in khi CSV dang EN_ROUTE.");
+            return Error.Conflict("booking.checkin", "Chỉ check-in khi caregiver đang EN_ROUTE.");
 
         var serverNow = checkedInAt ?? DateTimeOffset.UtcNow;
         var allowedEarlyWindow = earlyWindow ?? CheckInEarlyWindow;
         var earliestCheckIn = ScheduledStart - allowedEarlyWindow;
         if (serverNow < earliestCheckIn)
             return Error.Validation("booking.checkin_too_early",
-                $"Chi duoc check-in tu {earliestCheckIn:HH:mm dd/MM/yyyy}, toi da 30 phut truoc gio bat dau ca.");
+                $"Chỉ được check-in từ {earliestCheckIn:HH:mm dd/MM/yyyy}, tối đa 30 phút trước giờ bắt đầu ca.");
 
         double distance = caregiverLocation.DistanceMetersTo(addressLocation);
         int allowedRadiusMeters = checkInRadiusMeters ?? CheckInRadiusMeters;
         if (!adminOverride && distance > allowedRadiusMeters)
             return Error.Validation("booking.geofence",
-                $"Ngoai ban kinh cho phep ({distance:F0}m > {allowedRadiusMeters}m).");
+                $"Ngoài bán kính cho phép ({distance:F0}m > {allowedRadiusMeters}m).");
 
         ActualStart = serverNow;
         var result = TransitionTo(BookingStatus.InProgress);
@@ -184,6 +187,9 @@ public sealed class Booking : AggregateRoot
 
     public Result RequestManualCheckout() =>
         RequestCheckout(BookingCheckoutSource.CaregiverRequested, DateTimeOffset.UtcNow);
+
+    public void MarkNeedsReview() => NeedsReview = true;
+    public void SnapshotChecklistPolicy(bool allowAdHocTasks) => AllowAdHocTasks = allowAdHocTasks;
 
     public Result RequestSystemTimeoutCheckout(DateTimeOffset requestedAt) =>
         RequestCheckout(BookingCheckoutSource.SystemTimeout, requestedAt);
@@ -230,7 +236,7 @@ public sealed class Booking : AggregateRoot
     public Result TransitionTo(BookingStatus next)
     {
         if (!BookingStateMachine.CanTransition(Status, next))
-            return Error.Conflict("booking.transition", $"Khong the chuyen {Status} -> {next}.");
+            return Error.Conflict("booking.transition", $"Không thể chuyển {Status} -> {next}.");
 
         var from = Status;
         Status = next;

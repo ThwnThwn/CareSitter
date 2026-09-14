@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Domain;
@@ -63,11 +63,11 @@ public sealed class PaymentIntent : AggregateRoot
         string currency = "VND")
     {
         if (string.IsNullOrWhiteSpace(provider))
-            return Error.Validation("payment_intent.provider", "provider khong duoc rong.");
+            return Error.Validation("payment_intent.provider", "provider không được rỗng.");
         if (amount < 0)
-            return Error.Validation("payment_intent.amount", "amount khong duoc am.");
+            return Error.Validation("payment_intent.amount", "amount không được âm.");
         if (string.IsNullOrWhiteSpace(idempotencyKey))
-            return Error.Validation("payment_intent.idempotency_key", "idempotency_key khong duoc rong.");
+            return Error.Validation("payment_intent.idempotency_key", "idempotency_key không được rỗng.");
 
         return new PaymentIntent(Guid.NewGuid(), bookingId, customerId, provider, amount, currency, idempotencyKey);
     }
@@ -76,7 +76,7 @@ public sealed class PaymentIntent : AggregateRoot
         string? finalizedSource = null)
     {
         if (Status is not ("CREATED" or "PENDING"))
-            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> SUCCEEDED.");
+            return Error.Conflict("payment_intent.status", $"không thể chuyen {Status} -> SUCCEEDED.");
         Status = "SUCCEEDED";
         ProviderTransactionId = providerTransactionId;
         ResponsePayload = responsePayload;
@@ -88,7 +88,7 @@ public sealed class PaymentIntent : AggregateRoot
     public Result MarkFailed(string? responsePayload = null, string? finalizedSource = null)
     {
         if (Status is not ("CREATED" or "PENDING"))
-            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> FAILED.");
+            return Error.Conflict("payment_intent.status", $"không thể chuyen {Status} -> FAILED.");
         Status = "FAILED";
         ResponsePayload = responsePayload;
         FinalizedSource = finalizedSource;
@@ -99,7 +99,7 @@ public sealed class PaymentIntent : AggregateRoot
     public Result MarkPending()
     {
         if (Status != "CREATED")
-            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> PENDING.");
+            return Error.Conflict("payment_intent.status", $"không thể chuyen {Status} -> PENDING.");
         Status = "PENDING";
         return Result.Success();
     }
@@ -107,7 +107,7 @@ public sealed class PaymentIntent : AggregateRoot
     public Result MarkExpired(string? finalizedSource = null)
     {
         if (Status != "PENDING")
-            return Error.Conflict("payment_intent.status", $"Khong the chuyen {Status} -> EXPIRED.");
+            return Error.Conflict("payment_intent.status", $"không thể chuyen {Status} -> EXPIRED.");
         Status = "EXPIRED";
         FinalizedSource = finalizedSource;
         NextReconciliationAt = null;
@@ -147,7 +147,7 @@ public sealed class PaymentIntent : AggregateRoot
     public Result SetProviderOrderRef(string providerOrderRef)
     {
         if (string.IsNullOrWhiteSpace(providerOrderRef))
-            return Error.Validation("payment_intent.provider_order_ref", "provider_order_ref khong duoc rong.");
+            return Error.Validation("payment_intent.provider_order_ref", "provider_order_ref không được rỗng.");
         if (ProviderOrderRef is not null && ProviderOrderRef != providerOrderRef)
             return Error.Conflict("payment_intent.provider_order_ref", "Payment intent da co provider order ref.");
         ProviderOrderRef = providerOrderRef;

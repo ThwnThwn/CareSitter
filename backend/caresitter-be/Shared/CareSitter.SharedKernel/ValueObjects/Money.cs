@@ -1,4 +1,4 @@
-namespace CareSitter.SharedKernel.ValueObjects;
+﻿namespace CareSitter.SharedKernel.ValueObjects;
 
 /// <summary>
 /// Tien VND luu bang so nguyen (dong). Khong dung float/decimal cho luong tien noi bo.
@@ -24,7 +24,7 @@ public readonly record struct Money(long Amount, string Currency = "VND")
     private static void EnsureSameCurrency(Money a, Money b)
     {
         if (a.Currency != b.Currency)
-            throw new InvalidOperationException($"Khong the cong tru tien khac don vi: {a.Currency} vs {b.Currency}.");
+            throw new InvalidOperationException($"không thể cong tru tien khac don vi: {a.Currency} vs {b.Currency}.");
     }
 
     public override string ToString() => $"{Amount} {Currency}";

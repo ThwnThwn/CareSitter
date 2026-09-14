@@ -42,6 +42,9 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   final Map<String, List<String>> _taskPhotos = {};
   final ImagePicker _imagePicker = ImagePicker();
 
+  // ── Per-task submit lock (prevent double-tap) ─────────────
+  final Set<String> _submittingTaskIds = {};
+
   // ── Caregiver note ────────────────────────────────────────
   final TextEditingController _noteController = TextEditingController();
 
@@ -355,12 +358,6 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
       });
     }
 
-    final allDone = booking.tasks.isNotEmpty &&
-        booking.tasks.every((task) {
-          final urls = _taskPhotos[task.title] ?? task.photoUrls;
-          return task.isResolved && (!task.requiresPhoto || urls.isNotEmpty);
-        });
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -412,37 +409,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             const SizedBox(height: 24),
 
             // ── Checklist ──
-            Row(
-              children: [
-                const Text(
-                  'Checklist công việc',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary),
-                ),
-                const Spacer(),
-                if (booking.tasks.isNotEmpty)
-                  Text(
-                    '${booking.tasks.where((t) => t.isCompleted).length}/${booking.tasks.length}',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (booking.tasks.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text('Không có checklist công việc đặc biệt.',
-                    style: TextStyle(
-                        fontSize: 14, color: AppColors.textSecondary)),
-              )
-            else
-              ...booking.tasks
-                  .map((task) => _buildChecklistItem(booking!, task)),
+            _buildChecklistSection(context, booking),
 
             // ── Caregiver note ──
             if (_isCheckedIn) ...[
@@ -459,7 +426,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             const SizedBox(height: 24),
 
             // ── Check-out button ──
-            if (_isCheckedIn) _buildCheckOutButton(booking, allDone),
+            if (_isCheckedIn) _buildCheckOutButton(booking),
             const SizedBox(height: 32),
           ],
         ),
@@ -969,145 +936,646 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     );
   }
 
-  // ── Checklist item ────────────────────────────────────────
-  Widget _buildChecklistItem(ShiftModel booking, CareTaskModel task) {
-    final urls = _taskPhotos[task.title] ?? task.photoUrls;
-    final hasPhoto = urls.isNotEmpty;
-    final isSkipped = task.isSkipped;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: task.isCompleted
-            ? AppColors.success.withValues(alpha: 0.05)
-            : AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: task.isCompleted
-                ? AppColors.success.withValues(alpha: 0.3)
-                : AppColors.border,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: CheckboxListTile(
-          value: task.isCompleted,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          title: Row(
-            children: [
-              Expanded(
+  // ── Checklist section (header + list + add-task button) ─────────────────
+  Widget _buildChecklistSection(BuildContext context, ShiftModel booking) {
+    final completedCount = booking.tasks.where((t) => t.isCompleted).length;
+    final skippedCount = booking.tasks.where((t) => t.isSkipped).length;
+    final total = booking.tasks.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header row
+        Row(
+          children: [
+            const Text(
+              'Checklist công việc',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary),
+            ),
+            const Spacer(),
+            if (total > 0)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: completedCount == total
+                      ? AppColors.successLight
+                      : AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Text(
-                  task.title,
+                  '$completedCount / $total',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    decoration:
-                        task.isResolved ? TextDecoration.lineThrough : null,
-                    color: task.isResolved
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: completedCount == total
+                        ? AppColors.success
+                        : AppColors.primary,
                   ),
                 ),
               ),
-              if (hasPhoto)
-                Container(
-                  margin: const EdgeInsets.only(left: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.successLight,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.image_rounded,
-                          size: 11, color: AppColors.success),
-                      SizedBox(width: 3),
-                      Text('Ảnh',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          subtitle: isSkipped
-              ? const Text('Đã bỏ qua',
+          ],
+        ),
+        if (!_isCheckedIn)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.lock_outline_rounded,
+                    size: 14, color: AppColors.textHint),
+                const SizedBox(width: 4),
+                Text(
+                  'Checklist sẽ mở sau khi bạn check-in.',
                   style:
-                      TextStyle(fontSize: 12, color: AppColors.textSecondary))
-              : task.requiresPhoto && !hasPhoto
-                  ? const Text(
-                      'Upload ảnh minh chứng trước khi tick hoàn thành',
-                      style: TextStyle(fontSize: 12, color: AppColors.warning))
-                  : task.description == null || task.description!.trim().isEmpty
-                      ? null
-                      : Text(task.description!,
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.textSecondary)),
-          activeColor: AppColors.primary,
-          onChanged: _isCheckedIn &&
-                  !task.isResolved &&
-                  (!task.requiresPhoto || hasPhoto)
-              ? (val) async {
-                  if (val != true) return;
-                  try {
-                    await ref
-                        .read(shiftsProvider.notifier)
-                        .completeTask(booking.id, task.id);
-                  } catch (_) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Không thể cập nhật công việc.')),
-                    );
-                  }
-                }
-              : null,
-          secondary: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (task.requiresPhoto)
-                IconButton(
-                  icon: Icon(
-                    hasPhoto
-                        ? Icons.camera_alt_rounded
-                        : Icons.camera_alt_outlined,
-                    color: hasPhoto ? AppColors.success : AppColors.textHint,
-                    size: 22,
-                  ),
-                  tooltip: hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
-                  onPressed:
-                      _isCheckedIn ? () => _pickTaskPhoto(booking, task) : null,
+                      const TextStyle(fontSize: 12, color: AppColors.textHint),
                 ),
-              if (!task.isRequired && !task.isResolved)
-                IconButton(
-                  icon: const Icon(Icons.skip_next_rounded,
-                      color: AppColors.textHint, size: 22),
-                  tooltip: 'Bỏ qua công việc tùy chọn',
-                  onPressed: _isCheckedIn
-                      ? () async {
-                          try {
-                            await ref
-                                .read(shiftsProvider.notifier)
-                                .skipTask(booking.id, task.id);
-                          } catch (_) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Không thể bỏ qua công việc.')),
-                            );
-                          }
-                        }
-                      : null,
+              ],
+            ),
+          ),
+        if (skippedCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '$skippedCount việc không thực hiện được',
+              style: const TextStyle(fontSize: 12, color: AppColors.warning),
+            ),
+          ),
+        const SizedBox(height: 12),
+
+        // Task items
+        if (booking.tasks.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text('Không có checklist công việc đặc biệt.',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          )
+        else
+          ...booking.tasks
+              .toList()
+              .map((task) => _buildChecklistItem(booking, task)),
+
+        // ➕ Add task button (only when checked-in + package allows)
+        if (_isCheckedIn && booking.allowAdHocTasks)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: OutlinedButton.icon(
+              onPressed: () => _showAddTaskSheet(booking),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Thêm việc phát sinh'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ── Checklist item ────────────────────────────────────────
+  Widget _buildChecklistItem(ShiftModel booking, CareTaskModel task) {
+    final urls =
+        _taskPhotos[task.id] ?? _taskPhotos[task.title] ?? task.photoUrls;
+    final hasPhoto = urls.isNotEmpty;
+    final isSkipped = task.isSkipped;
+    final isLocked = _submittingTaskIds.contains(task.id);
+    final canAct = _isCheckedIn && !task.isTerminal && !isLocked;
+
+    Color cardBg = AppColors.cardBackground;
+    Color borderColor = AppColors.border;
+    if (task.isCompleted) {
+      cardBg = AppColors.success.withValues(alpha: 0.05);
+      borderColor = AppColors.success.withValues(alpha: 0.3);
+    } else if (isSkipped) {
+      cardBg = AppColors.warning.withValues(alpha: 0.05);
+      borderColor = AppColors.warning.withValues(alpha: 0.3);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: borderColor),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Checkbox / status icon ─────────────────
+              GestureDetector(
+                onTap: canAct && (!task.requiresPhoto || hasPhoto)
+                    ? () => _onCompleteTask(booking, task)
+                    : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.only(top: 2, right: 10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: task.isCompleted
+                        ? AppColors.success
+                        : isSkipped
+                            ? AppColors.warning.withValues(alpha: 0.2)
+                            : canAct
+                                ? AppColors.primaryContainer
+                                : AppColors.border.withValues(alpha: 0.5),
+                    border: Border.all(
+                      color: task.isCompleted
+                          ? AppColors.success
+                          : isSkipped
+                              ? AppColors.warning
+                              : canAct
+                                  ? AppColors.primary.withValues(alpha: 0.5)
+                                  : AppColors.border,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: isLocked
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary),
+                        )
+                      : task.isCompleted
+                          ? const Icon(Icons.check_rounded,
+                              size: 14, color: Colors.white)
+                          : isSkipped
+                              ? const Icon(Icons.remove_rounded,
+                                  size: 14, color: AppColors.warning)
+                              : null,
+                ),
+              ),
+
+              // ── Content ──────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            task.title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              decoration: task.isTerminal
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: task.isTerminal
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        // Source badge (ad-hoc)
+                        if (task.isAdHoc)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Phát sinh',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary),
+                            ),
+                          ),
+                        // Required badge
+                        if (task.isRequired && !task.isTerminal)
+                          Container(
+                            margin: const EdgeInsets.only(left: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text(
+                              'Bắt buộc',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                      ],
+                    ),
+                    // Subtitle
+                    if (isSkipped && task.skipReason != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          'Bỏ qua: ${task.skipReason}',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.warning),
+                        ),
+                      )
+                    else if (task.requiresPhoto &&
+                        !hasPhoto &&
+                        !task.isTerminal)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3),
+                        child: Text(
+                          'Upload ảnh minh chứng trước khi tick hoàn thành',
+                          style:
+                              TextStyle(fontSize: 11, color: AppColors.warning),
+                        ),
+                      )
+                    else if (task.description != null &&
+                        task.description!.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          task.description!,
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    // Photo row
+                    if (hasPhoto)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.image_rounded,
+                                size: 11, color: AppColors.success),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${urls.length} ảnh đã đính kèm',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // ── Action buttons ────────────────────────────
+              if (!task.isTerminal)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Photo button
+                    if (task.requiresPhoto)
+                      IconButton(
+                        icon: Icon(
+                          hasPhoto
+                              ? Icons.camera_alt_rounded
+                              : Icons.camera_alt_outlined,
+                          color:
+                              hasPhoto ? AppColors.success : AppColors.textHint,
+                          size: 20,
+                        ),
+                        tooltip:
+                            hasPhoto ? 'Xem/đổi ảnh' : 'Chụp ảnh minh chứng',
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: _isCheckedIn
+                            ? () => _pickTaskPhoto(booking, task)
+                            : null,
+                      ),
+                    // Skip button (all tasks can be skipped, requires reason)
+                    if (_isCheckedIn)
+                      IconButton(
+                        icon: const Icon(Icons.skip_next_rounded,
+                            color: AppColors.textHint, size: 20),
+                        tooltip: 'Bỏ qua công việc (cần ghi lý do)',
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: isLocked
+                            ? null
+                            : () => _showSkipBottomSheet(booking, task),
+                      ),
+                  ],
                 ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // ── Complete task (per-task lock) ─────────────────────────
+  Future<void> _onCompleteTask(ShiftModel booking, CareTaskModel task) async {
+    if (_submittingTaskIds.contains(task.id)) return;
+    setState(() => _submittingTaskIds.add(task.id));
+    try {
+      await ref.read(shiftsProvider.notifier).completeTask(booking.id, task.id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể cập nhật công việc. Thử lại.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submittingTaskIds.remove(task.id));
+    }
+  }
+
+  // ── Skip bottom sheet (all tasks, mandatory reason) ───────
+  void _showSkipBottomSheet(ShiftModel booking, CareTaskModel task) {
+    const reasons = [
+      'Khách từ chối',
+      'Không phù hợp điều kiện thực tế',
+      'Gia đình đã tự thực hiện',
+      'Khách vắng mặt / không thể phối hợp',
+    ];
+    String? selectedReason;
+    final otherController = TextEditingController();
+    bool isOther = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.skip_next_rounded,
+                          color: AppColors.warning, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Bỏ qua công việc',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary)),
+                          Text(task.title,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('Chọn lý do bỏ qua:',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 8),
+                ...reasons.map((reason) => RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(reason, style: const TextStyle(fontSize: 13)),
+                      value: reason,
+                      groupValue: isOther ? null : selectedReason,
+                      activeColor: AppColors.primary,
+                      onChanged: (val) => setModalState(() {
+                        selectedReason = val;
+                        isOther = false;
+                      }),
+                    )),
+                RadioListTile<String>(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Khác…', style: TextStyle(fontSize: 13)),
+                  value: 'other',
+                  groupValue: isOther ? 'other' : null,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) => setModalState(() {
+                    isOther = true;
+                    selectedReason = null;
+                  }),
+                ),
+                if (isOther)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TextField(
+                      controller: otherController,
+                      autofocus: true,
+                      maxLength: 200,
+                      decoration: const InputDecoration(
+                        hintText: 'Mô tả lý do…',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      onChanged: (val) =>
+                          setModalState(() => selectedReason = val.trim()),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.warning,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                    onPressed: selectedReason != null &&
+                            selectedReason!.trim().isNotEmpty
+                        ? () async {
+                            final reason = selectedReason!.trim();
+                            Navigator.pop(ctx);
+                            setState(() => _submittingTaskIds.add(task.id));
+                            try {
+                              await ref
+                                  .read(shiftsProvider.notifier)
+                                  .skipTask(booking.id, task.id, reason);
+                            } catch (_) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Không thể bỏ qua công việc. Thử lại.'),
+                                    backgroundColor: AppColors.error),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(
+                                    () => _submittingTaskIds.remove(task.id));
+                              }
+                            }
+                          }
+                        : null,
+                    child: const Text('Xác nhận bỏ qua',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).whenComplete(otherController.dispose);
+  }
+
+  // ── Add task bottom sheet ─────────────────────────────────
+  void _showAddTaskSheet(ShiftModel booking) {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Thêm việc phát sinh',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 4),
+                const Text(
+                    'Việc bạn thêm sẽ được ghi nhận vào báo cáo cuối ca.',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  maxLength: 255,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên công việc *',
+                    hintText: 'Ví dụ: Đo huyết áp…',
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descController,
+                  maxLines: 2,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú (tùy chọn)',
+                    hintText: 'Mô tả thêm về công việc này…',
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            if (name.length < 3) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Tên công việc phải ít nhất 3 ký tự.')),
+                              );
+                              return;
+                            }
+                            setModalState(() => isSubmitting = true);
+                            try {
+                              await ref
+                                  .read(shiftsProvider.notifier)
+                                  .createTask(
+                                    booking.id,
+                                    name,
+                                    description: descController.text.trim(),
+                                  );
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                            } catch (_) {
+                              if (!ctx.mounted) return;
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Không thể thêm việc. Thử lại.'),
+                                    backgroundColor: AppColors.error),
+                              );
+                            } finally {
+                              setModalState(() => isSubmitting = false);
+                            }
+                          },
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Thêm việc',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).whenComplete(() {
+      nameController.dispose();
+      descController.dispose();
+    });
   }
 
   // ── Caregiver note ────────────────────────────────────────
@@ -1132,7 +1600,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           controller: _noteController,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'Ví dụ: Bé ăn được 1 bát cháo, ngủ trưa 1 tiếng…',
+            hintText: 'Ví dụ: Bé ăn được 1 bát cháo, ngủ trưa 1 tiếng\u2026',
             hintStyle: const TextStyle(fontSize: 13, color: AppColors.textHint),
             filled: true,
             fillColor: AppColors.cardBackground,
@@ -1156,10 +1624,16 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // ── Check-out button ─────────────────────────────────────
-  Widget _buildCheckOutButton(ShiftModel booking, bool allDone) {
+  Widget _buildCheckOutButton(ShiftModel booking) {
+    final pendingCount =
+        booking.tasks.where((t) => t.status == 'PENDING').length;
+    final requiredSkippedCount =
+        booking.tasks.where((t) => t.isSkipped && t.isRequired).length;
+    final canCheckout = pendingCount == 0;
+
     return Column(
       children: [
-        if (!allDone)
+        if (pendingCount > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.only(bottom: 12),
@@ -1169,15 +1643,42 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               border:
                   Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline_rounded,
+                const Icon(Icons.info_outline_rounded,
                     size: 18, color: AppColors.warning),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Hoàn thành tất cả công việc để check-out',
-                    style: TextStyle(fontSize: 13, color: AppColors.warning),
+                    'Còn $pendingCount công việc chưa hoàn thành hoặc bỏ qua.',
+                    style:
+                        const TextStyle(fontSize: 13, color: AppColors.warning),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (requiredSkippedCount > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 18, color: AppColors.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$requiredSkippedCount công việc bắt buộc bỏ qua. '
+                    'Ca sẽ được chuyển sang chế độ xét duyệt.',
+                    style:
+                        const TextStyle(fontSize: 13, color: AppColors.error),
                   ),
                 ),
               ],
@@ -1186,8 +1687,8 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         SizedBox(
           width: double.infinity,
           child: AppButton(
-            label: '✅  Hoàn thành ca & Check-out',
-            onPressed: allDone
+            label: '\u2705  Hoàn thành ca & Check-out',
+            onPressed: canCheckout
                 ? () async {
                     try {
                       await ref.read(shiftsProvider.notifier).addTimelineNote(
@@ -1215,7 +1716,9 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                         'beneficiaryName': booking.beneficiaryName,
                         'caregiverEarning': booking.caregiverEarning,
                         'completedTasks':
-                            booking.tasks.where((t) => t.isResolved).length,
+                            booking.tasks.where((t) => t.isCompleted).length,
+                        'skippedTasks':
+                            booking.tasks.where((t) => t.isSkipped).length,
                         'totalTasks': booking.tasks.length,
                         'duration': booking.duration,
                         'checkInTime': _checkInTimeLabel,
@@ -1251,7 +1754,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('🚨 Báo cáo sự cố',
+              const Text('\uD83D\uDEA8 Báo cáo sự cố',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               const Text(
@@ -1263,7 +1766,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                 controller: incidentController,
                 maxLines: 4,
                 decoration: const InputDecoration(
-                  hintText: 'Mô tả vấn đề khẩn cấp…',
+                  hintText: 'Mô tả vấn đề khẩn cấp\u2026',
                   border: OutlineInputBorder(),
                 ),
               ),

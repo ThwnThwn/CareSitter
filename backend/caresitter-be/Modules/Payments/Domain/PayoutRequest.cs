@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Domain;
@@ -56,13 +56,13 @@ public sealed class PayoutRequest : Entity
         string accountNumberEncrypted)
     {
         if (amount < 0)
-            return Error.Validation("payout.amount", "amount khong duoc am.");
+            return Error.Validation("payout.amount", "amount không được âm.");
         if (string.IsNullOrWhiteSpace(bankName))
-            return Error.Validation("payout.bank_name", "bank_name khong duoc rong.");
+            return Error.Validation("payout.bank_name", "bank_name không được rỗng.");
         if (string.IsNullOrWhiteSpace(accountHolderName))
-            return Error.Validation("payout.account_holder_name", "account_holder_name khong duoc rong.");
+            return Error.Validation("payout.account_holder_name", "account_holder_name không được rỗng.");
         if (string.IsNullOrWhiteSpace(accountNumberEncrypted))
-            return Error.Validation("payout.account_number", "account_number_encrypted khong duoc rong.");
+            return Error.Validation("payout.account_number", "account_number_encrypted không được rỗng.");
 
         return new PayoutRequest(Guid.NewGuid(), caregiverId, walletAccountId, amount,
             bankName, accountHolderName, accountNumberEncrypted);
@@ -71,7 +71,7 @@ public sealed class PayoutRequest : Entity
     public Result Approve(Guid adminId)
     {
         if (Status != "PENDING")
-            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> APPROVED.");
+            return Error.Conflict("payout.status", $"không thể chuyen {Status} -> APPROVED.");
         Status = "APPROVED";
         ReviewedByAdminId = adminId;
         ReviewedAt = DateTimeOffset.UtcNow;
@@ -81,7 +81,7 @@ public sealed class PayoutRequest : Entity
     public Result Reject(Guid adminId, string? reason = null)
     {
         if (Status != "PENDING")
-            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> REJECTED.");
+            return Error.Conflict("payout.status", $"không thể chuyen {Status} -> REJECTED.");
         Status = "REJECTED";
         ReviewedByAdminId = adminId;
         ReviewedAt = DateTimeOffset.UtcNow;
@@ -92,7 +92,7 @@ public sealed class PayoutRequest : Entity
     public Result MarkProcessing()
     {
         if (Status != "APPROVED")
-            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> PROCESSING.");
+            return Error.Conflict("payout.status", $"không thể chuyen {Status} -> PROCESSING.");
         Status = "PROCESSING";
         return Result.Success();
     }
@@ -100,7 +100,7 @@ public sealed class PayoutRequest : Entity
     public Result MarkPaid()
     {
         if (Status is not ("APPROVED" or "PROCESSING"))
-            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> PAID.");
+            return Error.Conflict("payout.status", $"không thể chuyen {Status} -> PAID.");
         Status = "PAID";
         return Result.Success();
     }
@@ -108,7 +108,7 @@ public sealed class PayoutRequest : Entity
     public Result MarkFailed()
     {
         if (Status is not ("APPROVED" or "PROCESSING"))
-            return Error.Conflict("payout.status", $"Khong the chuyen {Status} -> FAILED.");
+            return Error.Conflict("payout.status", $"không thể chuyen {Status} -> FAILED.");
         Status = "FAILED";
         return Result.Success();
     }

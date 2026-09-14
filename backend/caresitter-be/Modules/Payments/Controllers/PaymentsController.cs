@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+﻿using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
 using CareSitter.Modules.Payments.Application;
@@ -44,7 +44,7 @@ public sealed class PaymentsController(
             .SingleOrDefaultAsync(x => x.Id == req.BookingId && x.CustomerId == userId, ct);
         if (booking is null) return NotFound();
         if (booking.Status != BookingStatus.PendingPayment)
-            return Conflict(new { error = "Booking khong o trang thai cho thanh toan." });
+            return Conflict(new { error = "Booking khong o trạng thái cho thanh toan." });
         var now = DateTimeOffset.UtcNow;
         if (booking.PaymentDeadline <= now)
             return Conflict(new
@@ -57,13 +57,13 @@ public sealed class PaymentsController(
             Math.Clamp(vnPayOptions.Value.PaymentTimeoutMinutes, 1, 60));
 
         // VNPay khong cho dung lai vnp_TxnRef. Chi tao ref moi khi attempt cu
-        // da that bai/het han; neu van con trong cua so xu ly thi bao ro cho user.
+        // da thất bại/het han; neu van con trong cua so xu ly thi bao ro cho user.
         var latestAttempt = await db.PaymentIntents
             .Where(x => x.BookingId == req.BookingId && x.CustomerId == userId && x.Provider == "VNPAY")
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(ct);
         if (latestAttempt?.Status == "SUCCEEDED")
-            return Conflict(new { error = "Booking da thanh toan thanh cong.", code = "PAYMENT_ALREADY_SUCCEEDED" });
+            return Conflict(new { error = "Booking da thanh toan thành công.", code = "PAYMENT_ALREADY_SUCCEEDED" });
         if (latestAttempt?.Status == "PENDING")
         {
             VNPayQueryResult query;
@@ -75,7 +75,7 @@ public sealed class PaymentsController(
             {
                 return Conflict(new
                 {
-                    error = "Chua the xac minh trang thai giao dich truoc. Vui long thu lai sau.",
+                    error = "Chua the xac minh trạng thái giao dịch truoc. Vui long thu lai sau.",
                     code = "PAYMENT_STATUS_UNKNOWN"
                 });
             }
@@ -87,8 +87,8 @@ public sealed class PaymentsController(
                 return Conflict(new
                 {
                     error = finalized.Succeeded
-                        ? "Giao dich truoc da thanh toan thanh cong."
-                        : "Giao dich da thanh cong nhung booking chua the chot tu dong.",
+                        ? "giao dịch truoc da thanh toan thành công."
+                        : "giao dịch da thành công nhung booking chua the chot tu dong.",
                     code = finalized.Succeeded ? "PAYMENT_ALREADY_SUCCEEDED" : "PAYMENT_NEEDS_REVIEW"
                 });
             }
@@ -98,8 +98,8 @@ public sealed class PaymentsController(
                 return Conflict(new
                 {
                     error = query.State == VNPayQueryState.Processing
-                        ? "Giao dich truoc van dang duoc VNPay xu ly."
-                        : "VNPay chua tra ve trang thai chac chan cho giao dich truoc.",
+                        ? "Giao dịch trước vẫn đang được VNPay xử lý."
+                        : "VNPay chưa trả về trạng thái chắc chắn cho giao dịch trước.",
                     code = query.State == VNPayQueryState.Processing
                         ? "PAYMENT_IN_PROGRESS"
                         : "PAYMENT_STATUS_UNKNOWN",
@@ -114,7 +114,7 @@ public sealed class PaymentsController(
             if (lockedBooking.Status != BookingStatus.PendingPayment)
                 return Conflict(new
                 {
-                    error = "Booking da duoc tien trinh doi soat khac xu ly.",
+                    error = "Booking đã được tiến trình đối soát khác xử lý.",
                     code = "PAYMENT_STATE_CHANGED"
                 });
             var closedStatus = query.State == VNPayQueryState.NotFound ? "EXPIRED" : "FAILED";
@@ -128,7 +128,7 @@ public sealed class PaymentsController(
             if (updated == 0)
                 return Conflict(new
                 {
-                    error = "Trang thai giao dich vua thay doi. Vui long tai lai booking.",
+                    error = "Trạng thái giao dịch vừa thay đổi. Vui lòng tải lại booking.",
                     code = "PAYMENT_STATE_CHANGED"
                 });
             await closeTx.CommitAsync(ct);
@@ -174,7 +174,7 @@ public sealed class PaymentsController(
                 {
                     return Conflict(new
                     {
-                        error = "Caregiver da duoc giu cho booking khac trong cung khung gio.",
+                        error = "Caregiver đã được giữ chỗ cho booking khác trong cùng khung giờ.",
                         code = "CAREGIVER_TIME_SLOT_HELD"
                     });
                 }

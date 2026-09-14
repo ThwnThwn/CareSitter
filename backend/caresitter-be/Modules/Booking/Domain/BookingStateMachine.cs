@@ -1,7 +1,7 @@
-namespace CareSitter.Modules.Booking.Domain;
+﻿namespace CareSitter.Modules.Booking.Domain;
 
 /// <summary>
-/// Bang chuyen trang thai booking (BUSINESS_FLOW §3). Thuan domain, khong phu thuoc ha tang
+/// Bang chuyen trạng thái booking (BUSINESS_FLOW §3). Thuan domain, khong phu thuoc ha tang
 /// -> de unit test. Moi chuyen hop le phai nam trong bang nay.
 /// </summary>
 public static class BookingStateMachine

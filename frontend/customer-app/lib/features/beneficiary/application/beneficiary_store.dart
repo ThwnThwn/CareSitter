@@ -62,7 +62,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     required String condition,
     required String careLevel,
     required String notes,
-    required String address,
+    required AddressModel defaultAddress,
     required List<EmergencyContact> emergencyContacts,
     String? avatarPath,
   }) async {
@@ -83,14 +83,21 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
       condition: condition.isEmpty ? 'Chưa có ghi chú' : condition,
       careLevel: careLevel,
       notes: notes.trim(),
-      address: address.trim(),
+      address: defaultAddress.fullAddress,
+      defaultAddressId: defaultAddress.id,
       emergencyContacts: [...emergencyContacts],
       avatarPath: avatarPath,
     );
+    final previousState = state;
     state = [...state, beneficiary];
 
-    final synced = await _syncAddToBackend(beneficiary);
-    return synced ?? beneficiary;
+    try {
+      final synced = await _syncAddToBackend(beneficiary);
+      return synced ?? beneficiary;
+    } catch (_) {
+      state = previousState;
+      rethrow;
+    }
   }
 
   Future<BeneficiaryModel?> _syncAddToBackend(BeneficiaryModel b) async {
@@ -103,6 +110,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
       'RelationshipToCustomer': b.relation,
       'GeneralNote': b.condition,
       'CareInstructions': b.notes,
+      'DefaultAddressId': b.defaultAddressId,
     });
 
     final synced = resp.data == null
@@ -115,7 +123,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     return synced;
   }
 
-  void update(
+  Future<void> update(
     String id, {
     String? name,
     int? age,
@@ -123,10 +131,11 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     String? condition,
     String? careLevel,
     String? notes,
-    String? address,
+    required AddressModel defaultAddress,
     List<EmergencyContact>? emergencyContacts,
     String? avatarPath,
-  }) {
+  }) async {
+    final previousState = state;
     BeneficiaryModel? updatedItem;
     state = [
       for (final b in state)
@@ -146,7 +155,8 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
               condition: condition,
               careLevel: careLevel,
               notes: notes,
-              address: address,
+              address: defaultAddress.fullAddress,
+              defaultAddressId: defaultAddress.id,
               emergencyContacts: emergencyContacts,
               avatarPath: avatarPath,
             );
@@ -157,8 +167,13 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
           b
     ];
 
-    if (updatedItem != null) {
-      unawaited(_syncUpdateToBackend(id, updatedItem!));
+    if (updatedItem == null) return;
+
+    try {
+      await _syncUpdateToBackend(id, updatedItem!);
+    } catch (_) {
+      state = previousState;
+      rethrow;
     }
   }
 
@@ -168,19 +183,17 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
         .hasMatch(id);
     if (!isGuid) return;
 
-    try {
-      final dio = ref.read(dioClientProvider);
-      final approxBirthYear = DateTime.now().year - b.age;
-      await dio.put('/beneficiaries/$id', data: {
-        'FullName': b.name,
-        'DateOfBirth': '$approxBirthYear-01-01',
-        'RelationshipToCustomer': b.relation,
-        'GeneralNote': b.condition,
-        'CareInstructions': b.notes,
-        if (b.defaultAddressId != null) 'DefaultAddressId': b.defaultAddressId,
-      });
-      await _loadFromBackend();
-    } catch (_) {}
+    final dio = ref.read(dioClientProvider);
+    final approxBirthYear = DateTime.now().year - b.age;
+    await dio.put('/beneficiaries/$id', data: {
+      'FullName': b.name,
+      'DateOfBirth': '$approxBirthYear-01-01',
+      'RelationshipToCustomer': b.relation,
+      'GeneralNote': b.condition,
+      'CareInstructions': b.notes,
+      'DefaultAddressId': b.defaultAddressId,
+    });
+    await _loadFromBackend();
   }
 
   void delete(String id) {

@@ -7,7 +7,7 @@ SET search_path = payments, public;
 
 
 -- =====================================================================
--- 3. wallet_accounts + people.caregiver_profiles + people.caregiver_availability
+-- 3. wallet_accounts + people.caregiver_profiles
 -- =====================================================================
 CREATE TABLE wallet_accounts (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),

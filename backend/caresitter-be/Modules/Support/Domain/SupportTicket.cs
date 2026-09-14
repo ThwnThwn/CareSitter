@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Support.Domain;
@@ -58,11 +58,11 @@ public sealed class SupportTicket : AggregateRoot
         string? attachmentUrls = null)
     {
         if (userId == Guid.Empty)
-            return Error.Validation("ticket.user", "user_id khong duoc rong.");
+            return Error.Validation("ticket.user", "user_id không được rỗng.");
         if (string.IsNullOrWhiteSpace(type))
-            return Error.Validation("ticket.type", "type khong duoc rong.");
+            return Error.Validation("ticket.type", "type không được rỗng.");
         if (string.IsNullOrWhiteSpace(priority))
-            return Error.Validation("ticket.priority", "priority khong duoc rong.");
+            return Error.Validation("ticket.priority", "priority không được rỗng.");
         var normalizedType = type.Trim().ToUpperInvariant();
         var normalizedPriority = priority.Trim().ToUpperInvariant();
         if (normalizedType is not ("COMPLAINT" or "SOS" or "PAYMENT" or "KYC" or "CHECKOUT_REVIEW" or "GENERAL"))
@@ -72,9 +72,9 @@ public sealed class SupportTicket : AggregateRoot
         var normalizedTitle = title?.Trim() ?? string.Empty;
         var normalizedDescription = description?.Trim() ?? string.Empty;
         if (normalizedTitle.Length is < 3 or > 255)
-            return Error.Validation("ticket.title", "Tieu de phai tu 3 den 255 ky tu.");
+            return Error.Validation("ticket.title", "Tieu de phai tu 3 den 255 ký tự.");
         if (normalizedDescription.Length is < 10 or > 5000)
-            return Error.Validation("ticket.description", "Mo ta phai tu 10 den 5000 ky tu.");
+            return Error.Validation("ticket.description", "Mo ta phai tu 10 den 5000 ký tự.");
 
         return new SupportTicket(Guid.NewGuid(), userId, bookingId,
             normalizedType, normalizedPriority, normalizedTitle, normalizedDescription, attachmentUrls);
@@ -83,7 +83,7 @@ public sealed class SupportTicket : AggregateRoot
     public Result AssignAdmin(Guid adminId)
     {
         if (adminId == Guid.Empty)
-            return Error.Validation("ticket.admin", "admin_id khong duoc rong.");
+            return Error.Validation("ticket.admin", "admin_id không được rỗng.");
         AssignedAdminId = adminId;
         if (Status == "NEW") Status = "IN_PROGRESS";
         return Result.Success();
@@ -92,7 +92,7 @@ public sealed class SupportTicket : AggregateRoot
     public Result UpdateStatus(string newStatus)
     {
         if (string.IsNullOrWhiteSpace(newStatus))
-            return Error.Validation("ticket.status", "status khong duoc rong.");
+            return Error.Validation("ticket.status", "status không được rỗng.");
 
         var allowed = Status switch
         {
@@ -103,7 +103,7 @@ public sealed class SupportTicket : AggregateRoot
         };
 
         if (!allowed.Contains(newStatus))
-            return Error.Conflict("ticket.status", $"Khong the chuyen {Status} -> {newStatus}.");
+            return Error.Conflict("ticket.status", $"không thể chuyen {Status} -> {newStatus}.");
 
         Status = newStatus;
         return Result.Success();

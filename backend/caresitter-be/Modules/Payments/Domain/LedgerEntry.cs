@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Domain;
@@ -61,13 +61,13 @@ public sealed class LedgerEntry : Entity
         string? metadata = null)
     {
         if (string.IsNullOrWhiteSpace(transactionType))
-            return Error.Validation("ledger.transaction_type", "transaction_type khong duoc rong.");
+            return Error.Validation("ledger.transaction_type", "transaction_type không được rỗng.");
         if (string.IsNullOrWhiteSpace(debitAccount))
-            return Error.Validation("ledger.debit_account", "debit_account khong duoc rong.");
+            return Error.Validation("ledger.debit_account", "debit_account không được rỗng.");
         if (string.IsNullOrWhiteSpace(creditAccount))
-            return Error.Validation("ledger.credit_account", "credit_account khong duoc rong.");
+            return Error.Validation("ledger.credit_account", "credit_account không được rỗng.");
         if (amount < 0)
-            return Error.Validation("ledger.amount", "amount khong duoc am.");
+            return Error.Validation("ledger.amount", "amount không được âm.");
 
         return new LedgerEntry(Guid.NewGuid(), bookingId, paymentIntentId, transactionType,
             debitAccount, creditAccount, amount, currency, metadata);

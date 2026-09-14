@@ -1,11 +1,11 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 using NetTopologySuite.Geometries;
 
 namespace CareSitter.Modules.Catalog.Domain;
 
 /// <summary>
-/// Dia chi cham soc (geo-coded). Map sang bang addresses. Co created_at + updated_at
+/// Dia chi chăm sóc (geo-coded). Map sang bang addresses. Co created_at + updated_at
 /// (trg_addresses_updated). Cot latitude/longitude la GENERATED ALWAYS tu location nen
 /// bi OMIT khoi entity (xem CatalogDbContext).
 /// </summary>

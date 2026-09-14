@@ -54,6 +54,10 @@ class ApiPaths {
   static const addressAutocomplete = '/addresses/autocomplete';
   static String addressPlace(String placeId) => '/addresses/places/$placeId';
 
+  // ── Family contacts ─────────────────────────────────────
+  static const familyContacts = '/family-contacts';
+  static String familyContact(String id) => '/family-contacts/$id';
+
   // ── Caregivers ───────────────────────────────────────────
   static const caregivers = '/caregivers';
   static String caregiver(String id) => '/caregivers/$id';

@@ -43,9 +43,7 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     _init();
   }
 
-  /// Lắng nghe BookingStatusChanged qua SignalR —
-  /// khi backend có sự kiện (auto-complete, cancel, check-in)
-  /// thì tự động refresh danh sách ca.
+  /// Lắng nghe BookingStatusChanged + CareTaskUpdated qua SignalR
   Future<void> _subscribeSignalR() async {
     final signalR = _ref.read(careSignalRProvider);
     await signalR.connect();
@@ -63,6 +61,22 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     _reconnectSignalRSub = signalR.onReconnected.listen((_) {
       // Recover any updates missed while the device was offline.
       refresh();
+      // Reload tasks cho ca đang in_progress
+      for (final shift in state) {
+        if (shift.status == 'in_progress') {
+          loadTasks(shift.id);
+        }
+      }
+    });
+    // Subscribe CareTaskUpdated — patch task realtime
+    signalR.onTaskUpdated.listen((event) {
+      final bookingId = event['bookingId']?.toString();
+      final taskJson = event['task'];
+      if (bookingId == null || taskJson == null) return;
+      try {
+        final task = CareTaskModel.fromApi(taskJson as Map<String, dynamic>);
+        _upsertTask(bookingId, task);
+      } catch (_) {}
     });
   }
 
@@ -300,13 +314,25 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     return raw;
   }
 
-  Future<void> skipTask(String bookingId, String taskId) async {
+  Future<void> skipTask(String bookingId, String taskId, String reason) async {
     try {
-      final raw = await _shiftRepo.skipTask(bookingId, taskId);
+      final raw = await _shiftRepo.skipTask(bookingId, taskId, reason);
       _replaceTask(bookingId, CareTaskModel.fromApi(raw));
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftsNotifier] skipTask error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> createTask(String bookingId, String name, {String? description}) async {
+    try {
+      final raw = await _shiftRepo.createTask(bookingId, name, description: description);
+      final task = CareTaskModel.fromApi(raw);
+      _upsertTask(bookingId, task);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ShiftsNotifier] createTask error: $e');
       rethrow;
     }
   }
@@ -326,6 +352,27 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
             for (final current in b.tasks)
               if (current.id == task.id) task else current,
           ])
+        else
+          b,
+    ];
+  }
+
+  /// Upsert: nếu task đã có thì replace, nếu chưa có (ad-hoc mới) thì append.
+  void _upsertTask(String bookingId, CareTaskModel task) {
+    state = [
+      for (final b in state)
+        if (b.id == bookingId)
+          () {
+            final existing = b.tasks.indexWhere((t) => t.id == task.id);
+            if (existing >= 0) {
+              return b.copyWith(tasks: [
+                for (final t in b.tasks)
+                  if (t.id == task.id) task else t,
+              ]);
+            } else {
+              return b.copyWith(tasks: [...b.tasks, task]);
+            }
+          }()
         else
           b,
     ];
@@ -530,6 +577,8 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       beneficiaryCondition: beneficiaryCondition,
       beneficiaryNotes: beneficiaryNotes,
       tasks: const [],
+      allowAdHocTasks: json['allowAdHocTasks'] as bool? ?? false,
+      needsReview: json['needsReview'] as bool? ?? false,
     );
   }
 

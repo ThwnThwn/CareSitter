@@ -136,6 +136,8 @@ class CareSignalRService {
   final _gpsController = StreamController<GpsUpdate>.broadcast();
   final _statusController = StreamController<BookingStatusChange>.broadcast();
   final _timelineController = StreamController<TimelineEventUpdate>.broadcast();
+  final _taskUpdateController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   /// Lifecycle stream — theo dõi trạng thái kết nối SignalR.
   final _lifecycleController =
@@ -154,6 +156,9 @@ class CareSignalRService {
 
   /// Stream timeline events — subscribe từ care timeline screen.
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
+
+  /// Stream cho CareTaskUpdated — payload: { bookingId, task }
+  Stream<Map<String, dynamic>> get onTaskUpdated => _taskUpdateController.stream;
 
   /// Stream trạng thái lifecycle (connecting / connected / reconnecting / ...).
   Stream<SignalRConnectionState> get lifecycleStream =>
@@ -256,6 +261,14 @@ class CareSignalRService {
       }
     });
 
+    _connection!.on('CareTaskUpdated', (args) {
+      if (args == null || args.isEmpty) return;
+      try {
+        final data = Map<String, dynamic>.from(args[0] as Map);
+        _taskUpdateController.add(data);
+      } catch (_) {}
+    });
+
     _connection!.onclose(({error}) {
       debugPrint('[SignalR] Connection closed.');
       _lifecycleController.add(SignalRConnectionState.closed);
@@ -345,6 +358,7 @@ class CareSignalRService {
     await _timelineController.close();
     await _lifecycleController.close();
     await _customerSyncController.close();
+    await _taskUpdateController.close();
   }
 }
 

@@ -48,7 +48,6 @@ Hồ sơ chi tiết của **người được chăm sóc** và **caregiver** (da
 |---|---|
 | `beneficiaries` | Người được chăm sóc: bệnh sử, dị ứng, thuốc men (jsonb) — RLS theo customer |
 | `caregiver_profiles` | Hồ sơ CSV: KYC, CCCD mã hóa, rating, vùng phục vụ, ví |
-| `caregiver_availability` | Lịch rảnh/bận (có EXCLUDE constraint chống double-book) |
 
 ## 4. Booking — *"trái tim nghiệp vụ"*
 

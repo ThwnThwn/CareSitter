@@ -55,10 +55,6 @@ CREATE INDEX idx_caregiver_service_loc ON people.caregiver_profiles USING gist (
 CREATE UNIQUE INDEX uq_caregiver_cccd_hash
   ON people.caregiver_profiles (cccd_hash) WHERE cccd_hash IS NOT NULL;
 
-CREATE INDEX idx_avail_caregiver_time ON people.caregiver_availability (caregiver_id, start_at, end_at);
-
-CREATE INDEX idx_avail_status ON people.caregiver_availability (status);
-
 CREATE INDEX idx_beneficiaries_customer ON people.beneficiaries (customer_id);
 
 CREATE INDEX idx_service_active ON catalog.service_types (is_active);

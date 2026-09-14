@@ -15,7 +15,7 @@ class ShellScaffold extends StatelessWidget {
         path: '/shifts'),
     _NavItem(
         icon: Icons.calendar_month_rounded,
-        label: 'Lịch rảnh',
+        label: 'Lịch trình',
         path: '/schedule'),
     _NavItem(icon: Icons.person_rounded, label: 'Cài đặt', path: '/settings'),
   ];

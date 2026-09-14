@@ -1,11 +1,11 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 using NetTopologySuite.Geometries;
 
 namespace CareSitter.Modules.People.Domain;
 
 /// <summary>
-/// Aggregate root cho ho so nguoi cham soc (caregiver). Map sang bang people.caregiver_profiles.
+/// Aggregate root cho ho so nguoi chăm sóc (caregiver). Map sang bang people.caregiver_profiles.
 /// user_id unique (1-1 voi identity.users). CCCD luu dang encrypted + hash. Vi tri phuc vu
 /// dung geography(Point,4326) cho truy van khong gian.
 /// </summary>
@@ -69,7 +69,7 @@ public sealed class CaregiverProfile : AggregateRoot
         string? certificateUrls = null)
     {
         if (KycStatus is not ("DRAFT" or "REJECTED"))
-            return Error.Conflict("caregiver.kyc_status", $"Khong the nop KYC khi trang thai la {KycStatus}.");
+            return Error.Conflict("caregiver.kyc_status", $"không thể nop KYC khi trạng thái la {KycStatus}.");
         if (string.IsNullOrWhiteSpace(cccdEncrypted))
             return Error.Validation("caregiver.cccd", "cccd_number_encrypted la bat buoc.");
         if (string.IsNullOrWhiteSpace(cccdHash))
@@ -91,7 +91,7 @@ public sealed class CaregiverProfile : AggregateRoot
     public Result ApproveKyc()
     {
         if (KycStatus != "PENDING")
-            return Error.Conflict("caregiver.kyc_status", $"Khong the duyet KYC khi trang thai la {KycStatus}.");
+            return Error.Conflict("caregiver.kyc_status", $"không thể duyet KYC khi trạng thái la {KycStatus}.");
         KycStatus = "APPROVED";
         return Result.Success();
     }
@@ -99,7 +99,7 @@ public sealed class CaregiverProfile : AggregateRoot
     public Result RejectKyc()
     {
         if (KycStatus != "PENDING")
-            return Error.Conflict("caregiver.kyc_status", $"Khong the tu choi KYC khi trang thai la {KycStatus}.");
+            return Error.Conflict("caregiver.kyc_status", $"không thể tu choi KYC khi trạng thái la {KycStatus}.");
         KycStatus = "REJECTED";
         return Result.Success();
     }
@@ -126,7 +126,7 @@ public sealed class CaregiverProfile : AggregateRoot
     {
         var normalized = status?.Trim().ToUpperInvariant();
         if (normalized is not ("ONLINE" or "OFFLINE" or "BUSY"))
-            return Error.Validation("caregiver.availability_status", "Trang thai phai la ONLINE, OFFLINE hoac BUSY.");
+            return Error.Validation("caregiver.availability_status", "trạng thái phai la ONLINE, OFFLINE hoac BUSY.");
         AvailabilityStatus = normalized;
         return Result.Success();
     }

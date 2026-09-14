@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Domain;
@@ -44,9 +44,9 @@ public sealed class PaymentWebhook : Entity
         string? payload = null)
     {
         if (string.IsNullOrWhiteSpace(provider))
-            return Error.Validation("webhook.provider", "provider khong duoc rong.");
+            return Error.Validation("webhook.provider", "provider không được rỗng.");
         if (string.IsNullOrWhiteSpace(providerEventId))
-            return Error.Validation("webhook.provider_event_id", "provider_event_id khong duoc rong.");
+            return Error.Validation("webhook.provider_event_id", "provider_event_id không được rỗng.");
 
         return new PaymentWebhook(Guid.NewGuid(), provider, providerEventId, eventType, payload);
     }
@@ -54,7 +54,7 @@ public sealed class PaymentWebhook : Entity
     public Result MarkProcessed()
     {
         if (Status != "RECEIVED")
-            return Error.Conflict("webhook.status", $"Khong the chuyen {Status} -> PROCESSED.");
+            return Error.Conflict("webhook.status", $"không thể chuyen {Status} -> PROCESSED.");
         Status = "PROCESSED";
         ProcessedAt = DateTimeOffset.UtcNow;
         return Result.Success();
@@ -63,7 +63,7 @@ public sealed class PaymentWebhook : Entity
     public Result MarkFailed()
     {
         if (Status != "RECEIVED")
-            return Error.Conflict("webhook.status", $"Khong the chuyen {Status} -> FAILED.");
+            return Error.Conflict("webhook.status", $"không thể chuyen {Status} -> FAILED.");
         Status = "FAILED";
         ProcessedAt = DateTimeOffset.UtcNow;
         return Result.Success();

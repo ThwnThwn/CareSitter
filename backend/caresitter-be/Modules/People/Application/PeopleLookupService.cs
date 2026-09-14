@@ -32,18 +32,14 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
     }
 
     /// <summary>
-    /// Kiểm tra caregiver có profile đã được duyệt (KYC APPROVED) và có slot
-    /// khả dụng phủ toàn bộ khoảng thời gian yêu cầu hay không.
-    /// Dùng khi đặt lịch hoặc dời lịch để đảm bảo caregiver thực sự rảnh.
+    /// Kiểm tra caregiver có profile đã được duyệt, đang ONLINE và chưa bị xóa.
+    /// Việc kiểm tra trùng lịch thực tế được thực hiện trên booking khi nhận ca.
     /// </summary>
     /// <param name="caregiverId">ID của CaregiverProfile.</param>
     /// <param name="start">Thời điểm bắt đầu ca cần kiểm tra.</param>
     /// <param name="end">Thời điểm kết thúc ca cần kiểm tra.</param>
     /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
-    /// <returns>
-    /// <c>true</c> khi caregiver đã được duyệt KYC VÀ có ít nhất 1 slot khả dụng
-    /// phủ kín khoảng [<paramref name="start"/>, <paramref name="end"/>].
-    /// </returns>
+    /// <returns><c>true</c> khi caregiver đã được duyệt KYC và đang ONLINE.</returns>
     public async Task<bool> CaregiverIsAvailableAsync(Guid caregiverId, DateTimeOffset start,
         DateTimeOffset end, CancellationToken ct = default)
     {
@@ -53,21 +49,7 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
         if (!caregiver)
             return false;
 
-        // Không có availability trong DB thì không đủ căn cứ để nhận ca.
-        var hasAnySlot = await db.CaregiverAvailabilities.AsNoTracking()
-            .AnyAsync(x => x.CaregiverId == caregiverId, ct);
-        if (!hasAnySlot)
-            return false;
-
-        var hasBlockedSlot = await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
-            x.CaregiverId == caregiverId && x.Status == "BLOCKED" &&
-            x.StartAt < end && x.EndAt > start, ct);
-        if (hasBlockedSlot)
-            return false;
-
-        return await db.CaregiverAvailabilities.AsNoTracking().AnyAsync(x =>
-            x.CaregiverId == caregiverId && x.Status == "AVAILABLE" &&
-            x.StartAt <= start && x.EndAt >= end, ct);
+        return caregiver;
     }
 
     /// <summary>

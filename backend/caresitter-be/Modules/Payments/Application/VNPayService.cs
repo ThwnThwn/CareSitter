@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -21,7 +21,7 @@ public sealed class VNPayOptions
     /// De trong thi trang return dung deep-link mobile caresitter-customer://.
     /// </summary>
     public string CustomerWebUrl { get; set; } = string.Empty;
-    /// <summary>Thoi gian toi da cho mot URL VNPay truoc khi phai tao attempt moi.</summary>
+    /// <summary>Thoi gian tối đa cho mot URL VNPay truoc khi phai tao attempt moi.</summary>
     public int PaymentTimeoutMinutes { get; set; } = 15;
     /// <summary>
     /// Thoi han tong the cua booking de khach co the tao nhieu lan thanh toan.
@@ -60,7 +60,7 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
     public string BuildPaymentUrl(PaymentIntent intent, VNPayOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.TmnCode) || string.IsNullOrWhiteSpace(options.HashSecret))
-            throw new InvalidOperationException("VNPay TmnCode va HashSecret chua duoc cau hinh.");
+            throw new InvalidOperationException("VNPay TmnCode và HashSecret chưa được cấu hình.");
         if (string.IsNullOrWhiteSpace(intent.ProviderOrderRef))
             throw new InvalidOperationException("PaymentIntent chua co ProviderOrderRef.");
 
@@ -79,7 +79,7 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             ["vnp_CurrCode"] = intent.Currency,
             ["vnp_IpAddr"] = "127.0.0.1",
             ["vnp_Locale"] = options.Locale,
-            ["vnp_OrderInfo"] = $"CareSitter - Thanh toan dat lich cham soc. Ma booking: {intent.BookingId}. So tien: {intent.Amount:#,##0} VND",
+            ["vnp_OrderInfo"] = $"CareSitter - Thanh toan dat lich chăm sóc. Ma booking: {intent.BookingId}. So tien: {intent.Amount:#,##0} VND",
             ["vnp_OrderType"] = options.OrderType,
             ["vnp_ReturnUrl"] = options.ReturnUrl,
             ["vnp_TxnRef"] = intent.ProviderOrderRef
@@ -112,9 +112,9 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
         PaymentIntent intent, VNPayOptions options, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(options.TmnCode) || string.IsNullOrWhiteSpace(options.HashSecret))
-            throw new InvalidOperationException("VNPay TmnCode va HashSecret chua duoc cau hinh.");
+            throw new InvalidOperationException("VNPay TmnCode và HashSecret chưa được cấu hình.");
         if (string.IsNullOrWhiteSpace(options.QueryUrl))
-            throw new InvalidOperationException("VNPay QueryUrl chua duoc cau hinh.");
+            throw new InvalidOperationException("VNPay QueryUrl chưa được cấu hình.");
         if (string.IsNullOrWhiteSpace(intent.ProviderOrderRef))
             throw new InvalidOperationException("PaymentIntent chua co vnp_TxnRef.");
 
@@ -124,7 +124,7 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
         var requestId = Guid.NewGuid().ToString("N");
         var createDate = now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         const string command = "querydr";
-        var orderInfo = $"Doi soat giao dich {intent.ProviderOrderRef}";
+        var orderInfo = $"Doi soat giao dịch {intent.ProviderOrderRef}";
         const string ipAddress = "127.0.0.1";
         var hashData = string.Join('|', requestId, options.Version, command, options.TmnCode,
             intent.ProviderOrderRef, transactionDate, createDate, ipAddress, orderInfo);

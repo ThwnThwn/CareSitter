@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Support.Domain;
@@ -47,11 +47,11 @@ public sealed class Notification : Entity
         string? data = null)
     {
         if (userId == Guid.Empty)
-            return Error.Validation("notification.user", "user_id khong duoc rong.");
+            return Error.Validation("notification.user", "user_id không được rỗng.");
         if (string.IsNullOrWhiteSpace(type))
-            return Error.Validation("notification.type", "type khong duoc rong.");
+            return Error.Validation("notification.type", "type không được rỗng.");
         if (string.IsNullOrWhiteSpace(title))
-            return Error.Validation("notification.title", "title khong duoc rong.");
+            return Error.Validation("notification.title", "title không được rỗng.");
 
         return new Notification(Guid.NewGuid(), userId, type, title, body, data);
     }

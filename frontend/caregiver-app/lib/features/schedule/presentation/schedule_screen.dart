@@ -162,8 +162,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Thêm lịch rảnh',
-            style: TextStyle(fontWeight: FontWeight.w600)),
+        label: const Text(
+          'Thêm lịch rảnh',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         onPressed: () => _showAddAvailabilitySheet(context),
       ),
     );
