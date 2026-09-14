@@ -3,10 +3,11 @@ using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace CareSitter.Modules.Catalog.Application;
 
-internal sealed class PricingService(CatalogDbContext db) : IPricingService
+internal sealed class PricingService(CatalogDbContext db, IConfiguration configuration) : IPricingService
 {
     /// <summary>Múi giờ nghiệp vụ của lịch chăm sóc tại Việt Nam.</summary>
     private static TimeZoneInfo VietnamTimeZone =>
@@ -32,10 +33,13 @@ internal sealed class PricingService(CatalogDbContext db) : IPricingService
 
         var hours = (decimal)(end - start).TotalHours;
         var localStart = TimeZoneInfo.ConvertTime(start, VietnamTimeZone);
-        var nightMultiplier = localStart.Hour >= 22 || localStart.Hour < 6
+        var enableTimeMultipliers = configuration.GetValue<bool>("Pricing:EnableTimeMultipliers");
+        var nightMultiplier = enableTimeMultipliers && (localStart.Hour >= 22 || localStart.Hour < 6)
             ? rule.NightMultiplier
             : 1m;
-        var holidayMultiplier = ResolveHolidayMultiplier(rule.Holidays, localStart.Date);
+        var holidayMultiplier = enableTimeMultipliers
+            ? ResolveHolidayMultiplier(rule.Holidays, localStart.Date)
+            : 1m;
         var multiplier = nightMultiplier * holidayMultiplier;
         var escrow = (long)Math.Round(hours * rule.BaseHourlyPrice * multiplier);
         var fee = (long)Math.Round(escrow * rule.PlatformFeePercent / 100m);
@@ -45,6 +49,7 @@ internal sealed class PricingService(CatalogDbContext db) : IPricingService
             rule.BaseHourlyPrice,
             hours,
             localStart = localStart.ToString("yyyy-MM-dd HH:mm zzz"),
+            pricingMode = enableTimeMultipliers ? "TIME_MULTIPLIERS" : "BASE_ONLY",
             nightMultiplier,
             holidayMultiplier,
             multiplier,

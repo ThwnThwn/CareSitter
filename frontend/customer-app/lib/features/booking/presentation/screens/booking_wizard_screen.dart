@@ -36,7 +36,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   String? _selectedCaregiverId;
   DateTime? _selectedDate;
   TimeOfDay? _startTime;
-  int _duration = 4; // hours
+  int _duration = 2; // hours
   bool _consentAccepted = false; // FR-CUS-09
   bool _isSystemMatched = true;
   bool _isSubmitting = false; // guard chống double-submit
@@ -49,7 +49,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       _selectedDate != null ||
       _startTime != null ||
       _selectedAddressId != null ||
-      _duration != 4 ||
+      _duration != 2 ||
       _consentAccepted ||
       !_isSystemMatched;
 
@@ -58,6 +58,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     super.initState();
     _selectedServiceId = widget.initialServiceId;
     _selectedBeneficiaryId = widget.initialBeneficiaryId;
+
 
     // Nếu có initialBeneficiaryId, auto-set địa chỉ mặc định và bỏ qua bước chọn người thân
     if (_selectedBeneficiaryId != null) {
@@ -789,11 +790,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     });
   }
 
+
   Widget _buildTimeStep() {
     final addressAsync = ref.watch(addressStoreProvider);
-    // Khi service thay doi, dat duration mac dinh theo service
-    final defaultDurationHrs =
-        (_selectedService?.defaultDurationMinutes ?? 240) ~/ 60;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,19 +805,23 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 4),
         const Text('Chọn ngày và giờ bắt đầu ca chăm sóc',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 16),
-        // Date picker
+        const SizedBox(height: 20),
+
+        // ── Ngày ──────────────────────────────────────────────────────────
         GestureDetector(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: DateTime.now().add(const Duration(days: 1)),
+              initialDate: _selectedDate ?? DateTime.now(),
               firstDate: DateTime.now(),
               lastDate: DateTime.now().add(const Duration(days: 90)),
-              builder: (ctx, child) => Theme(
-                data: Theme.of(ctx).copyWith(
-                  colorScheme:
-                      const ColorScheme.light(primary: AppColors.primary),
+              builder: (context, child) => Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: AppColors.primary,
+                    onPrimary: Colors.white,
+                    surface: AppColors.cardBackground,
+                  ),
                 ),
                 child: child!,
               ),
@@ -826,99 +829,177 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             if (picked != null) {
               setState(() {
                 _selectedDate = picked;
+                _startTime = null;
                 _selectedCaregiverId = null;
               });
             }
           },
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: _selectedDate != null
-                      ? AppColors.primary
-                      : AppColors.border,
-                  width: _selectedDate != null ? 2 : 1),
+                color: _selectedDate != null
+                    ? AppColors.primary
+                    : AppColors.border,
+                width: _selectedDate != null ? 1.5 : 1,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_month_outlined,
-                    color: AppColors.primary),
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 20,
+                  color: _selectedDate != null
+                      ? AppColors.primary
+                      : AppColors.textHint,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _selectedDate != null
-                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                        : 'Chọn ngày...',
+                    _selectedDate == null
+                        ? 'Chọn ngày'
+                        : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                     style: TextStyle(
-                        color: _selectedDate != null
-                            ? AppColors.textPrimary
-                            : AppColors.textHint,
-                        fontSize: 14),
+                      fontSize: 15,
+                      fontWeight: _selectedDate != null
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: _selectedDate != null
+                          ? AppColors.textPrimary
+                          : AppColors.textHint,
+                    ),
                   ),
                 ),
-                if (_selectedDate != null)
-                  const Icon(Icons.check_circle,
-                      color: AppColors.primary, size: 18),
+                const Icon(Icons.chevron_right,
+                    size: 18, color: AppColors.textHint),
               ],
             ),
           ),
         ),
         const SizedBox(height: 12),
+
+        // ── Giờ bắt đầu ───────────────────────────────────────────────────
         GestureDetector(
-          onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: const TimeOfDay(hour: 8, minute: 0),
-              builder: (ctx, child) => Theme(
-                data: Theme.of(ctx).copyWith(
-                    colorScheme:
-                        const ColorScheme.light(primary: AppColors.primary)),
-                child: child!,
-              ),
-            );
-            if (picked != null) {
-              setState(() {
-                _startTime = picked;
-                _selectedCaregiverId = null;
-              });
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
+          onTap: _selectedDate == null
+              ? null
+              : () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _startTime ?? const TimeOfDay(hour: 8, minute: 0),
+                    builder: (context, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: AppColors.primary,
+                          onPrimary: Colors.white,
+                          surface: AppColors.cardBackground,
+                          onSurface: AppColors.textPrimary,
+                        ),
+                        timePickerTheme: TimePickerThemeData(
+                          dialBackgroundColor:
+                              const Color(0xFFEEEEEE),
+                          dialHandColor: AppColors.primary,
+                          dialTextColor: WidgetStateColor.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                          ),
+                          hourMinuteColor: WidgetStateColor.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? AppColors.primaryContainer
+                                : const Color(0xFFEEEEEE),
+                          ),
+                          hourMinuteTextColor:
+                              WidgetStateColor.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? AppColors.primaryDark
+                                : AppColors.textPrimary,
+                          ),
+                          dayPeriodColor: WidgetStateColor.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? AppColors.primaryContainer
+                                : Colors.white,
+                          ),
+                          dayPeriodTextColor:
+                              WidgetStateColor.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? AppColors.primaryDark
+                                : AppColors.textSecondary,
+                          ),
+                          dayPeriodBorderSide: const BorderSide(
+                            color: Color(0xFFCCCCCC),
+                            width: 1,
+                          ),
+                          entryModeIconColor: AppColors.primary,
+                          helpTextStyle: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _startTime = picked;
+                      _selectedCaregiverId = null;
+                    });
+                  }
+                },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: _selectedDate == null
+                  ? AppColors.surfaceVariant.withValues(alpha: 0.5)
+                  : AppColors.cardBackground,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color:
-                      _startTime != null ? AppColors.primary : AppColors.border,
-                  width: _startTime != null ? 2 : 1),
+                color: _startTime != null
+                    ? AppColors.primary
+                    : AppColors.border,
+                width: _startTime != null ? 1.5 : 1,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.access_time_outlined,
-                    color: AppColors.primary),
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 20,
+                  color: _startTime != null
+                      ? AppColors.primary
+                      : AppColors.textHint,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _startTime != null
-                        ? _startTime!.format(context)
-                        : 'Chọn giờ bắt đầu...',
+                    _startTime == null
+                        ? (_selectedDate == null
+                            ? 'Chọn ngày trước'
+                            : 'Chọn giờ bắt đầu')
+                        : _startTime!.format(context),
                     style: TextStyle(
-                        color: _startTime != null
-                            ? AppColors.textPrimary
-                            : AppColors.textHint,
-                        fontSize: 14),
+                      fontSize: 15,
+                      fontWeight: _startTime != null
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: _startTime != null
+                          ? AppColors.textPrimary
+                          : AppColors.textHint,
+                    ),
                   ),
                 ),
-                if (_startTime != null)
-                  const Icon(Icons.check_circle,
-                      color: AppColors.primary, size: 18),
+                const Icon(Icons.chevron_right,
+                    size: 18, color: AppColors.textHint),
               ],
             ),
           ),
         ),
+
         if (_selectedDate != null &&
             _startTime != null &&
             !_hasValidSchedule) ...[
@@ -928,90 +1009,342 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             style: TextStyle(color: AppColors.error, fontSize: 12),
           ),
         ],
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            const Text(
-              'Thời lượng (giờ)',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        const SizedBox(height: 24),
+
+        // ── Thời lượng ca chăm sóc (Theo thiết kế Stitch) ─────────────────
+        Builder(
+          builder: (context) {
+            final rate = _selectedService?.pricePerHour ?? 110000;
+            final isCustom = _duration != 2 && _duration != 4 && _duration != 8 && _duration != 12;
+            final totalDurationPrice = (rate * _duration).toInt();
+            final totalFormatted = '${totalDurationPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ';
+            final rateFormatted = '${rate.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ/h';
+
+            String helperText;
+            switch (_duration) {
+              case 2:
+                helperText = 'Ca ngắn / Hỗ trợ nhanh';
+                break;
+              case 3:
+                helperText = 'Hỗ trợ buổi sáng/chiều';
+                break;
+              case 4:
+                helperText = 'Nửa ngày tiêu chuẩn';
+                break;
+              case 5:
+                helperText = 'Phù hợp nửa ngày + ăn trưa';
+                break;
+              case 6:
+                helperText = 'Hơn nửa ngày làm việc';
+                break;
+              case 7:
+                helperText = 'Ca gần trọn ngày';
+                break;
+              case 8:
+                helperText = 'Trọn 1 ca hành chính';
+                break;
+              case 12:
+                helperText = 'Ca trọn ngày 12 giờ';
+                break;
+              default:
+                helperText = 'Linh hoạt theo nhu cầu';
+            }
+
+            return Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(6),
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Text(
-                'Mặc định: ${defaultDurationHrs}h',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [1, 2, 3, 4, 6, 8, 12].asMap().entries.map((entry) {
-            final i = entry.key;
-            final h = entry.value;
-            final isSelected = _duration == h;
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
-                child: GestureDetector(
-                  onTap: () => setState(() => _duration = h),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color:
-                            isSelected ? AppColors.primary : AppColors.border,
-                        width: isSelected ? 1.5 : 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Tiêu đề
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.hourglass_top_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Thời lượng ca chăm sóc',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$h',
+                      Text(
+                        'Linh hoạt theo giờ',
                         style: TextStyle(
-                          color:
-                              isSelected ? Colors.white : AppColors.textPrimary,
-                          fontSize: 15,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w600,
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2. 4 Gói presets (2h, 4h, 8h, 12h)
+                  Row(
+                    children: [
+                      _buildDurationPresetItem(
+                        label: '2h',
+                        hours: 2,
+                        isSelected: _duration == 2,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildDurationPresetItem(
+                        label: '4h',
+                        hours: 4,
+                        isSelected: _duration == 4,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildDurationPresetItem(
+                        label: '8h',
+                        hours: 8,
+                        isSelected: _duration == 8,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildDurationPresetItem(
+                        label: '12h',
+                        hours: 12,
+                        isSelected: _duration == 12,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 3. Card Tùy chỉnh số giờ
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isCustom
+                          ? AppColors.primaryContainer.withValues(alpha: 0.35)
+                          : const Color(0xFFF9FBF9),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isCustom ? AppColors.primary : AppColors.border,
+                        width: isCustom ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Hàng tiêu đề tùy chỉnh + Tổng tiền
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: isCustom
+                                        ? AppColors.primary
+                                        : AppColors.border,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isCustom
+                                      ? 'Tùy chỉnh số giờ (Đang chọn)'
+                                      : 'Tùy chỉnh số giờ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isCustom
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              totalFormatted,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Khung tăng giảm stepper + Đơn giá / gợi ý
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // Nút Giảm [-]
+                              InkWell(
+                                onTap: _duration > 2
+                                    ? () => setState(() => _duration--)
+                                    : null,
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: _duration > 2
+                                        ? const Color(0xFFEEEEEE)
+                                        : const Color(0xFFF5F5F5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.remove,
+                                    size: 18,
+                                    color: _duration > 2
+                                        ? AppColors.textPrimary
+                                        : AppColors.textHint,
+                                  ),
+                                ),
+                              ),
+
+                              // Số giờ
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '$_duration',
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primary,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Giờ chăm sóc',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Nút Tăng [+]
+                              InkWell(
+                                onTap: _duration < 12
+                                    ? () => setState(() => _duration++)
+                                    : null,
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: _duration < 12
+                                        ? AppColors.primaryContainer
+                                        : const Color(0xFFF5F5F5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 18,
+                                    color: _duration < 12
+                                        ? AppColors.primaryDark
+                                        : AppColors.textHint,
+                                  ),
+                                ),
+                              ),
+
+                              // Đường kẻ phân cách dọc
+                              Container(
+                                width: 1,
+                                height: 38,
+                                color: AppColors.border,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                              ),
+
+                              // Thông tin đơn giá & gợi ý bên phải
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      rateFormatted,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      helperText,
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Ghi chú dưới cùng
+                        const Text(
+                          'Linh hoạt từ 2 – 12 giờ theo nhu cầu gia đình. Có thể thỏa thuận thêm thời gian phát sinh.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
             );
-          }).toList(),
+          },
         ),
-        const SizedBox(height: 20),
-        // ── Dia chi cham soc — lay tu API ──────────────────────────────────
+        const SizedBox(height: 24),
+
+        // ── Địa chỉ chăm sóc ────────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1023,10 +1356,12 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             TextButton.icon(
               onPressed: _openAddressSelector,
               icon: const Icon(Icons.location_on_outlined, size: 16),
-              label: const Text('Chọn / thêm', style: TextStyle(fontSize: 13)),
+              label:
+                  const Text('Chọn / thêm', style: TextStyle(fontSize: 13)),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -1044,7 +1379,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3F3),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1054,7 +1390,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 const Expanded(
                   child: Text(
                     'Không tải được danh sách địa chỉ. Thử lại?',
-                    style: TextStyle(color: AppColors.error, fontSize: 13),
+                    style:
+                        TextStyle(color: AppColors.error, fontSize: 13),
                   ),
                 ),
                 TextButton(
@@ -1138,7 +1475,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Ước tính chi phí:',
-                    style: TextStyle(color: AppColors.primary, fontSize: 13)),
+                    style:
+                        TextStyle(color: AppColors.primary, fontSize: 13)),
                 Text(
                   '${(_selectedService!.pricePerHour * _duration).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ',
                   style: const TextStyle(
@@ -1151,6 +1489,44 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildDurationPresetItem({
+    required String label,
+    required int hours,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _duration = hours),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primaryContainer.withValues(alpha: 0.5)
+                : AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.border,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected
+                    ? AppColors.primaryDark
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

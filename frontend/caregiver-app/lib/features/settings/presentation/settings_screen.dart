@@ -36,6 +36,12 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => context.push('/settings/profile/edit'),
                 ),
                 _SettingsItem(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Thu nhập & ví',
+                  subtitle: 'Xem số dư, lịch sử và yêu cầu rút tiền',
+                  onTap: () => context.push('/earnings'),
+                ),
+                _SettingsItem(
                   icon: Icons.badge_outlined,
                   title: 'Hồ sơ & Giấy tờ',
                   subtitle: 'Đã duyệt • Còn hạn',

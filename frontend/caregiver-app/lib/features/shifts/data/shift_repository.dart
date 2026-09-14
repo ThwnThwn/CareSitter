@@ -90,6 +90,20 @@ class ShiftRepository {
     return resp.data ?? {};
   }
 
+  /// Upload ảnh selfie minh chứng trước khi gọi check-in GPS.
+  Future<Map<String, dynamic>> uploadCheckInSelfie(
+      String id, XFile image) async {
+    final bytes = await image.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: image.name),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.checkInSelfie(id),
+      data: formData,
+    );
+    return response.data ?? {};
+  }
+
   /// Yêu cầu checkout → POST /bookings/{id}/checkout/request
   Future<Map<String, dynamic>> requestCheckout(String id) async {
     final resp =
@@ -166,8 +180,8 @@ class ShiftRepository {
     return resp.data ?? {};
   }
 
-  Future<Map<String, dynamic>> createTask(
-      String bookingId, String name, {String? description}) async {
+  Future<Map<String, dynamic>> createTask(String bookingId, String name,
+      {String? description}) async {
     final resp = await _dio.post<Map<String, dynamic>>(
       ApiPaths.tasks(bookingId),
       data: {

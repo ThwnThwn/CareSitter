@@ -81,7 +81,6 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.CertificateUrls).HasColumnName("certificate_urls").HasColumnType("jsonb");
             b.Property(x => x.Bio).HasColumnName("bio");
             b.Property(x => x.YearsOfExperience).HasColumnName("years_of_experience");
-            b.Property(x => x.HourlyRateExpected).HasColumnName("hourly_rate_expected");
             b.Property(x => x.RatingAvg).HasColumnName("rating_avg").HasColumnType("numeric(3,2)");
             b.Property(x => x.RatingCount).HasColumnName("rating_count");
             b.Property(x => x.KycStatus).HasColumnName("kyc_status").HasMaxLength(50);

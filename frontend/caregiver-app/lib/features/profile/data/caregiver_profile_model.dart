@@ -9,8 +9,6 @@ class CaregiverProfileModel {
   final String? bio;
   final int? yearsOfExperience;
 
-  /// Giá mong muốn (VND/giờ) — KHÔNG dùng để tính booking price.
-  final int? hourlyRateExpected;
   final double ratingAvg;
   final int ratingCount;
 
@@ -37,7 +35,6 @@ class CaregiverProfileModel {
     this.fullName,
     this.bio,
     this.yearsOfExperience,
-    this.hourlyRateExpected,
     this.ratingAvg = 0,
     this.ratingCount = 0,
     this.kycStatus = 'DRAFT',
@@ -88,7 +85,6 @@ class CaregiverProfileModel {
   String get location => locationText;
   String get avatarInitial => initials;
   String get experience => experienceText;
-  double get hourlyRate => (hourlyRateExpected ?? 0).toDouble();
 
   factory CaregiverProfileModel.fromJson(Map<String, dynamic> json) {
     return CaregiverProfileModel(
@@ -98,8 +94,6 @@ class CaregiverProfileModel {
       bio: _str(json['bio'] ?? json['Bio']),
       yearsOfExperience:
           _int(json['yearsOfExperience'] ?? json['YearsOfExperience']),
-      hourlyRateExpected:
-          _int(json['hourlyRateExpected'] ?? json['HourlyRateExpected']),
       ratingAvg: _dbl(json['ratingAvg'] ?? json['RatingAvg']),
       ratingCount: _int(json['ratingCount'] ?? json['RatingCount']) ?? 0,
       kycStatus: _str(json['kycStatus'] ?? json['KycStatus']) ?? 'DRAFT',

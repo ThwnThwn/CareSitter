@@ -13,4 +13,31 @@ public sealed class PackageTaskTemplate
     public bool RequiresPhoto { get; private set; }
     public int SortOrder { get; private set; }
     public bool IsActive { get; private set; }
+
+    public static PackageTaskTemplate Create(Guid serviceTypeId, string name, string? description,
+        bool isRequired, bool requiresPhoto, int sortOrder)
+    {
+        return new PackageTaskTemplate
+        {
+            Id = Guid.NewGuid(),
+            ServiceTypeId = serviceTypeId,
+            Name = name.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            IsRequired = isRequired,
+            RequiresPhoto = requiresPhoto,
+            SortOrder = sortOrder,
+            IsActive = true
+        };
+    }
+
+    public void Update(string name, string? description, bool isRequired, bool requiresPhoto, int sortOrder)
+    {
+        Name = name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        IsRequired = isRequired;
+        RequiresPhoto = requiresPhoto;
+        SortOrder = sortOrder;
+    }
+
+    public void SetActive(bool isActive) => IsActive = isActive;
 }

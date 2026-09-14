@@ -13,7 +13,7 @@ namespace CareSitter.Modules.Booking.Controllers;
 
 /// <summary>
 /// Theo dõi thời gian thực của ca chăm sóc:
-/// ghi timeline sự kiện (note, check-in, checkout...) và GPS track của caregiver.
+/// ghi timeline sự kiện (note, check-in, checkout...) và đọc GPS track lịch sử.
 ///
 /// Phân quyền:
 ///   - Xem timeline/GPS: Customer của booking, Caregiver được assign, hoặc Admin.
@@ -97,42 +97,16 @@ public sealed class BookingTrackingController(
     // ════════════════════════════════════════════
 
     /// <summary>
-    /// Caregiver gửi vị trí GPS hiện tại. Chỉ caregiver được assign mới được push GPS.
+    /// Endpoint GPS tracking cũ. Không còn nhận điểm GPS định kỳ để tránh thu thập
+    /// vị trí không cần thiết; GPS chỉ được kiểm tra ở endpoint check-in.
     /// </summary>
     [HttpPost("gps")]
-    public async Task<IActionResult> PostGps(Guid id, [FromBody] PostGpsRequest request, CancellationToken ct)
+    public IActionResult PostGps(Guid id)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        var booking = await db.Bookings.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (booking is null) return NotFound();
-
-        if (booking.CaregiverId is not { } caregiverId)
-            return BadRequest(new { error = "Booking chưa có caregiver." });
-
-        // Chỉ caregiver được assign mới được push GPS
-        if (!await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
-            return Forbid();
-
-        var track = GpsTrack.Create(id, caregiverId,
-            request.Latitude, request.Longitude,
-            request.AccuracyMeters, request.Speed, request.Heading);
-        db.GpsTracks.Add(track);
-        await db.SaveChangesAsync(ct);
-
-        // ── SignalR: broadcast GPS mới cho tất cả viewer đang theo dõi booking ──
-        await hub.Clients
-            .Group(CareTrackingHub.BookingGroup(id))
-            .SendAsync("GpsUpdated", new GpsUpdatedEvent(
-                id, caregiverId,
-                track.Latitude, track.Longitude,
-                track.AccuracyMeters, track.Speed, track.Heading,
-                track.RecordedAt), ct);
-
-        return Ok(new GpsTrackResponse(track.Id, track.BookingId, track.CaregiverId,
-            track.Latitude, track.Longitude, track.AccuracyMeters,
-            track.Speed, track.Heading, track.RecordedAt));
+        return StatusCode(StatusCodes.Status410Gone, new
+        {
+            error = "GPS tracking liên tục đã bị tắt. Hệ thống chỉ dùng GPS lúc check-in để xác thực khoảng cách."
+        });
     }
 
     /// <summary>

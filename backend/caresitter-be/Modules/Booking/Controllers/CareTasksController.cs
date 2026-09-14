@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 
 namespace CareSitter.Modules.Booking.Controllers;
 
@@ -26,7 +27,8 @@ public sealed class CareTasksController(
     ICurrentUser currentUser,
     IPeopleLookupService people,
     IMediaService mediaService,
-    IHubContext<CareTrackingHub> hub) : ControllerBase
+    IHubContext<CareTrackingHub> hub,
+    ILogger<CareTasksController> logger) : ControllerBase
 {
     /// <summary>Lấy toàn bộ task của booking, sắp xếp theo SortOrder.</summary>
     [HttpGet]
@@ -88,7 +90,7 @@ public sealed class CareTasksController(
         db.CareTasks.Add(task);
         await db.SaveChangesAsync(ct);
         var response = ToResponse(task, Array.Empty<string>());
-        await BroadcastTaskUpdate(id, response, ct);
+        await RunPostCommitActionAsync("created care task broadcast", () => BroadcastTaskUpdate(id, response, ct));
         return Created($"/api/v1/bookings/{id}/tasks/{task.Id}", response);
     }
 
@@ -118,7 +120,7 @@ public sealed class CareTasksController(
 
         await db.SaveChangesAsync(ct);
         var response = ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct));
-        await BroadcastTaskUpdate(id, response, ct);
+        await RunPostCommitActionAsync("completed care task broadcast", () => BroadcastTaskUpdate(id, response, ct));
         return Ok(response);
     }
 
@@ -172,6 +174,8 @@ public sealed class CareTasksController(
         db.TimelineEvents.Add(evt.WithMedia(assetResult.Value.Id));
         await db.SaveChangesAsync(ct);
 
+        var taskResponse = ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct));
+        await RunPostCommitActionAsync("care task photo broadcast", () => BroadcastTaskUpdate(id, taskResponse, ct));
         return Ok(new CareTaskPhotoResponse(taskId, assetResult.Value.Id, upload.Value, evt.RecordedAt));
     }
 
@@ -209,7 +213,7 @@ public sealed class CareTasksController(
             request.SkipReason.Trim(), taskId: taskId));
         await db.SaveChangesAsync(ct);
         var response = ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct));
-        await BroadcastTaskUpdate(id, response, ct);
+        await RunPostCommitActionAsync("skipped care task broadcast", () => BroadcastTaskUpdate(id, response, ct));
         return Ok(response);
     }
 
@@ -243,6 +247,18 @@ public sealed class CareTasksController(
         await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync("CareTaskUpdated",
             new { bookingId, completed = counts?.Completed ?? 0, total = counts?.Total ?? 0,
                 skipped = counts?.Skipped ?? 0, task }, ct);
+    }
+
+    private async Task RunPostCommitActionAsync(string action, Func<Task> operation)
+    {
+        try
+        {
+            await operation();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Checklist was committed, but post-commit action {PostCommitAction} failed.", action);
+        }
     }
 }
 

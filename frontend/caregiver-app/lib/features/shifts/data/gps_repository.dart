@@ -6,12 +6,12 @@ final gpsRepositoryProvider = Provider<GpsRepository>(
   (ref) => GpsRepository(ref.read(dioClientProvider)),
 );
 
-/// Push vị trí GPS của caregiver lên backend.
+/// API GPS legacy. GPS tracking định kỳ đã bị tắt; app chỉ lấy GPS một lần khi check-in.
 class GpsRepository {
   final DioClient _dio;
   const GpsRepository(this._dio);
 
-  /// Gửi tọa độ GPS hiện tại → POST /bookings/{id}/gps
+  /// Không gọi trong luồng hiện tại. Backend trả 410 để ngăn lưu GPS tracking định kỳ.
   Future<void> postLocation(
     String bookingId, {
     required double latitude,

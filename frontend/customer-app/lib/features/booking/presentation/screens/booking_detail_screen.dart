@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/presentation/widgets/app_toast.dart';
 import '../../../../core/api/dio_client.dart' show AppApiException;
 import '../../application/booking_store.dart';
 
@@ -1283,18 +1284,21 @@ class BookingDetailScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-            onPressed: () {
-              ref
-                  .read(bookingStoreProvider.notifier)
-                  .confirmCompleted(booking.id);
+            onPressed: () async {
               Navigator.pop(dCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Đã xác nhận hoàn thành ca! Cảm ơn bạn.'),
-                  backgroundColor: AppColors.success,
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              AppToast.loading(context, 'Đang xác nhận hoàn tất ca…');
+              try {
+                await ref
+                    .read(bookingStoreProvider.notifier)
+                    .confirmCompleted(booking.id);
+                if (!context.mounted) return;
+                AppToast.success(
+                    context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
+              } catch (_) {
+                if (!context.mounted) return;
+                AppToast.error(
+                    context, 'Không thể xác nhận lúc này. Vui lòng thử lại.');
+              }
             },
             child: const Text('Xác nhận'),
           ),
@@ -1425,18 +1429,17 @@ class BookingDetailScreen extends ConsumerWidget {
           : ' Bạn có thể thử lại lúc ${expiresAt.hour.toString().padLeft(2, '0')}:${expiresAt.minute.toString().padLeft(2, '0')}.';
       return 'Giao dịch trước vẫn đang được xử lý.$retryAt Nếu tab VNPay còn mở, hãy hoàn tất tại đó.';
     }
-    return apiError?.message ?? 'Không thể mở cổng thanh toán. Vui lòng thử lại.';
+    return apiError?.message ??
+        'Không thể mở cổng thanh toán. Vui lòng thử lại.';
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 1000000) return '${(amount / 1000000).toStringAsFixed(1)}M';
     return amount.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
   }
 
   void _showExtendShiftSheet(BuildContext context, BookingModel booking) {
     int selectedHours = 1;
-    // Dùng đơn giá hiệu lực của booking hiện tại thay vì giá fallback cố định.
     final bookedHours =
         booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
     final effectiveHourlyRate =
@@ -1444,9 +1447,6 @@ class BookingDetailScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.fromLTRB(
@@ -1454,25 +1454,8 @@ class BookingDetailScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2)),
-              ),
-              const SizedBox(height: 16),
               const Text('Gia hạn ca chăm sóc',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 8),
-              const Text(
-                  'Yêu cầu sẽ được gửi đến caregiver.\nCa gia hạn bắt đầu ngay sau ca hiện tại.',
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1499,26 +1482,18 @@ class BookingDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                  'Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ',
-                  style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14)),
+              Text('Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ'),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          '✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
+                      content: Text('✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
                       backgroundColor: AppColors.primary,
                     ),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52)),
                 child: const Text('Gửi yêu cầu gia hạn'),
               ),
             ],

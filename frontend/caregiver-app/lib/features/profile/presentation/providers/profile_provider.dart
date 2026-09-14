@@ -78,7 +78,6 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
     String? fullName,
     String? bio,
     int? yearsOfExperience,
-    int? hourlyRateExpected,
     List<String>? skills,
     String? serviceCity,
     String? serviceDistrict,
@@ -92,9 +91,6 @@ class ProfileNotifier extends StateNotifier<CaregiverProfileModel> {
           if (fullName != null) 'fullName': fullName,
           if (bio != null) 'bio': bio,
           if (yearsOfExperience != null) 'yearsOfExperience': yearsOfExperience,
-          // hourlyRateExpected chỉ là giá mong muốn — không dùng để tính booking price
-          if (hourlyRateExpected != null)
-            'hourlyRateExpected': hourlyRateExpected,
           if (skills != null) 'skills': skills.join(','),
           if (serviceCity != null) 'serviceCity': serviceCity,
           if (serviceDistrict != null) 'serviceDistrict': serviceDistrict,

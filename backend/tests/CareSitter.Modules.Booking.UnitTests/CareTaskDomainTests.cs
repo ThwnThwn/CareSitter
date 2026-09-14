@@ -24,16 +24,16 @@ public class CareTaskDomainTests
     }
 
     [Fact]
-    public void MarkDone_ShouldUpdateStatusAndCompletedAt()
+    public void MarkCompleted_ShouldUpdateStatusAndCompletedAt()
     {
         // Arrange
         var task = CareTask.Create(Guid.NewGuid(), "Uong Thuoc");
 
         // Act
-        task.MarkDone();
+        task.MarkCompleted(Guid.NewGuid());
 
         // Assert
-        Assert.Equal("DONE", task.Status);
+        Assert.Equal("COMPLETED", task.Status);
         Assert.NotNull(task.CompletedAt);
     }
 
@@ -44,7 +44,7 @@ public class CareTaskDomainTests
         var task = CareTask.Create(Guid.NewGuid(), "Tắm Rửa", isRequired: false);
 
         // Act
-        task.Skip();
+        task.Skip("Khách hàng không yêu cầu thực hiện");
 
         // Assert
         Assert.Equal("SKIPPED", task.Status);

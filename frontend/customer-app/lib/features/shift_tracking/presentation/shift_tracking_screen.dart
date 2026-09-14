@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/realtime/care_signalr_service.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/presentation/widgets/app_toast.dart';
 import '../../booking/application/booking_store.dart';
 
 class ShiftTrackingScreen extends ConsumerStatefulWidget {
@@ -1792,10 +1793,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     );
   }
 
-  // ── Extend shift sheet ─────────────────────────────────────────────────────
   void _showExtendShiftSheet(BuildContext context, BookingModel bk) {
     int selectedHours = 1;
-    // Dùng đơn giá hiệu lực của booking hiện tại để tránh lệch với backend.
     final bookedHours =
         bk.scheduledEnd.difference(bk.scheduledStart).inMinutes / 60;
     final effectiveHourlyRate =
@@ -1813,117 +1812,47 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2)),
-              ),
-              const SizedBox(height: 20),
               const Text('Gia hạn ca chăm sóc',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 6),
-              const Text(
-                'Yêu cầu sẽ được gửi đến người chăm sóc.\nCa gia hạn bắt đầu ngay sau ca hiện tại.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 32),
-                      color: selectedHours > 1
-                          ? AppColors.primary
-                          : AppColors.textHint,
-                      onPressed: selectedHours > 1
-                          ? () => setSheetState(() => selectedHours--)
-                          : null,
-                    ),
-                    const SizedBox(width: 24),
-                    Column(
-                      children: [
-                        Text(
-                          '$selectedHours',
-                          style: const TextStyle(
-                              fontSize: 38,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary),
-                        ),
-                        const Text('giờ',
-                            style: TextStyle(
-                                fontSize: 13, color: AppColors.textSecondary)),
-                      ],
-                    ),
-                    const SizedBox(width: 24),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 32),
-                      color: selectedHours < 4
-                          ? AppColors.primary
-                          : AppColors.textHint,
-                      onPressed: selectedHours < 4
-                          ? () => setSheetState(() => selectedHours++)
-                          : null,
-                    ),
-                  ],
-                ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 32),
+                    onPressed: selectedHours > 1
+                        ? () => setSheetState(() => selectedHours--)
+                        : null,
+                  ),
+                  const SizedBox(width: 24),
+                  Text('$selectedHours giờ',
+                      style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary)),
+                  const SizedBox(width: 24),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, size: 32),
+                    onPressed: selectedHours < 4
+                        ? () => setSheetState(() => selectedHours++)
+                        : null,
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.payments_outlined,
-                        size: 16, color: AppColors.secondary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}',
-                      style: const TextStyle(
-                          color: AppColors.secondary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
+              Text('Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}'),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          '✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
+                      content: Text('✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
                       backgroundColor: AppColors.primary,
                     ),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('Gửi yêu cầu gia hạn',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text('Gửi yêu cầu gia hạn'),
               ),
             ],
           ),
@@ -1933,14 +1862,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1).replaceAll('.', ',')}M ₫';
-    }
     return '${amount.toInt().toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m[1]}.',
         )} ₫';
   }
+
 }
 
 // ── Bottom action bar ──────────────────────────────────────────────────────────
@@ -2175,17 +2102,22 @@ class _BottomActionBar extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-            onPressed: () {
-              ref.read(bookingStoreProvider.notifier).confirmCompleted(bk.id);
+            onPressed: () async {
               Navigator.pop(dCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Đã xác nhận hoàn thành ca! Cảm ơn bạn.'),
-                  backgroundColor: AppColors.success,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-              popOrGo(context, fallbackRoute: '/bookings');
+              AppToast.loading(context, 'Đang xác nhận hoàn tất ca…');
+              try {
+                await ref
+                    .read(bookingStoreProvider.notifier)
+                    .confirmCompleted(bk.id);
+                if (!context.mounted) return;
+                AppToast.success(
+                    context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
+                popOrGo(context, fallbackRoute: '/bookings');
+              } catch (_) {
+                if (!context.mounted) return;
+                AppToast.error(
+                    context, 'Không thể xác nhận lúc này. Vui lòng thử lại.');
+              }
             },
             child: const Text('Xác nhận'),
           ),

@@ -7,6 +7,8 @@ using CareSitter.Modules.Booking.Application.CreateBooking;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
+using CareSitter.Modules.Catalog.Domain;
+using CareSitter.Modules.Catalog.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using CareSitter.SharedKernel.ValueObjects;
 using MediatR;
@@ -32,6 +34,7 @@ public sealed class BookingsController(
     BookingDbContext db, ICurrentUser currentUser, IClock clock,
     IPricingService pricing, IPeopleLookupService people,
     IWalletService wallet, ICatalogLookupService catalog,
+    CatalogDbContext catalogDb, IMediaService mediaService,
     IMatchingService matching,
     IDisputeLookupService disputeLookup,
     ISender sender,
@@ -441,45 +444,6 @@ public sealed class BookingsController(
         return Ok(await ToResponseAsync(booking, ct));
     }
 
-    /// <summary>Caregiver chấp nhận ca, chuyển booking sang ASSIGNED và ghi timeline CHECKIN.</summary>
-    [HttpPost("{id:guid}/accept")]
-    public async Task<IActionResult> Accept(Guid id, CancellationToken ct)
-    {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (booking is null) return NotFound();
-        if (!currentUser.IsInRole("CAREGIVER")) return Forbid();
-
-        Guid caregiverId;
-        if (booking.CaregiverId is { } assignedCaregiverId)
-        {
-            if (!await people.IsCaregiverForBookingAsync(assignedCaregiverId, userId, ct))
-                return Forbid();
-            caregiverId = assignedCaregiverId;
-        }
-        else
-        {
-            var currentCaregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
-            if (currentCaregiverId is null) return Forbid();
-            caregiverId = currentCaregiverId.Value;
-
-            var offer = await db.BookingAssignments.AsNoTracking().SingleOrDefaultAsync(x =>
-                x.BookingId == id && x.CaregiverId == caregiverId
-                && (x.Status == "OFFERED" || x.Status == "SUGGESTED")
-                && x.ExpiresAt != null && x.ExpiresAt > DateTimeOffset.UtcNow, ct);
-            var hasAnyAssignment = await db.BookingAssignments.AsNoTracking()
-                .AnyAsync(x => x.BookingId == id, ct);
-            if (offer is null && hasAnyAssignment)
-                return Conflict(new { error = "Ca này không còn offer hợp lệ cho caregiver này." });
-
-            if (offer is null)
-            {
-                var eligible = await matching.GetEligibleCaregiversAsync(id, ct);
-                if (!eligible.Any(x => x.CaregiverId == caregiverId))
-                    return Conflict(new { error = "Caregiver không nằm trong tập phù hợp của ca này." });
-            }
-        }
-
     [HttpPost("{id:guid}/accept")]
     public async Task<IActionResult> Accept(Guid id, CancellationToken ct)
     {
@@ -628,11 +592,6 @@ public sealed class BookingsController(
         if (!await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
             return Forbid();
 
-        if (await db.CareTasks.AnyAsync(x => x.BookingId == id && x.Status == "PENDING", ct))
-            return Conflict(new { error = "Cần hoàn thành hoặc bỏ qua có lý do tất cả công việc trước khi checkout." });
-        if (await db.CareTasks.AnyAsync(x => x.BookingId == id && x.IsRequired && x.Status == "SKIPPED", ct))
-            booking.MarkNeedsReview();
-
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.StartEnRoute();
         if (result.IsFailure) return Problem(result.Error);
@@ -691,9 +650,6 @@ public sealed class BookingsController(
             checkInRadiusMeters: policy.MaxDistanceMeters);
         if (result.IsFailure) return Problem(result.Error);
 
-        db.GpsTracks.Add(GpsTrack.Create(booking.Id, caregiverId,
-            request.Latitude, request.Longitude, request.AccuracyMeters));
-
         double distance = caregiverGeo.DistanceMetersTo(addressGeo);
         string eventType = distance <= policy.MaxDistanceMeters
             ? "CHECKIN_VALID" : "CHECKIN_OUTSIDE_GEOFENCE";
@@ -720,6 +676,43 @@ public sealed class BookingsController(
         double.IsFinite(latitude) && double.IsFinite(longitude) &&
         latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
 
+    /// <summary>Caregiver upload selfie minh chứng trước khi check-in GPS.</summary>
+    [HttpPost("{id:guid}/check-in/selfie")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> UploadCheckInSelfie(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+        if (file is null || file.Length == 0) return BadRequest(new { error = "Vui lòng chọn ảnh selfie." });
+        if (file.Length > 10 * 1024 * 1024) return BadRequest(new { error = "Ảnh không được vượt quá 10 MB." });
+        if (file.ContentType is not ("image/jpeg" or "image/png" or "image/webp"))
+            return BadRequest(new { error = "Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP." });
+
+        var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (booking is null) return NotFound();
+        if (booking.CaregiverId is not { } caregiverId ||
+            !await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
+            return Forbid();
+        if (booking.Status != BookingStatus.CaregiverEnRoute)
+            return Conflict(new { error = "Chỉ có thể gửi selfie khi đang di chuyển đến ca chăm sóc." });
+
+        await using var stream = file.OpenReadStream();
+        var upload = await mediaService.UploadImageAsync(stream, file.FileName,
+            $"CareSitter/CheckIn/{booking.Id}", ct);
+        if (upload.IsFailure) return Problem(upload.Error);
+
+        var assetResult = MediaAsset.Create("CLOUDINARY", "caresitter", upload.Value, "PHOTO",
+            ownerUserId: userId, bookingId: booking.Id, url: upload.Value,
+            mimeType: file.ContentType, sizeBytes: file.Length);
+        if (assetResult.IsFailure) return Problem(assetResult.Error);
+        catalogDb.MediaAssets.Add(assetResult.Value);
+        await catalogDb.SaveChangesAsync(ct);
+
+        db.TimelineEvents.Add(CareTimelineEvent.Create(booking.Id, caregiverId, "PHOTO_UPLOADED",
+            "Selfie check-in", taskId: null, source: "ONLINE").WithMedia(assetResult.Value.Id));
+        await db.SaveChangesAsync(ct);
+        return Ok(new CheckInSelfieResponse(assetResult.Value.Id, upload.Value, DateTimeOffset.UtcNow));
+    }
+
     /// <summary>Caregiver gửi yêu cầu checkout thủ công (khi chưa auto-checkout).</summary>
     [HttpPost("{id:guid}/checkout/request")]
     public async Task<IActionResult> RequestCheckout(Guid id, CancellationToken ct)
@@ -731,6 +724,10 @@ public sealed class BookingsController(
             return BadRequest(new { error = "Booking chưa có caregiver." });
         if (!await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
             return Forbid();
+        if (await db.CareTasks.AnyAsync(x => x.BookingId == id && x.Status == "PENDING", ct))
+            return Conflict(new { error = "Cần hoàn thành hoặc bỏ qua có lý do tất cả công việc trước khi yêu cầu checkout." });
+        if (await db.CareTasks.AnyAsync(x => x.BookingId == id && x.IsRequired && x.Status == "SKIPPED", ct))
+            booking.MarkNeedsReview();
 
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.RequestManualCheckout();
@@ -1078,6 +1075,7 @@ public sealed record CancelBookingRequest(string? Reason);
 public sealed record RescheduleBookingRequest(DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);
 public sealed record SelectCaregiverRequest(Guid CaregiverId);
 public sealed record CheckInRequest(double Latitude, double Longitude, double? AccuracyMeters = null);
+public sealed record CheckInSelfieResponse(Guid MediaId, string Url, DateTimeOffset UploadedAt);
 public sealed record DeclineBookingRequest(string? Reason);
 
 public sealed record CaregiverSuggestionResponse(

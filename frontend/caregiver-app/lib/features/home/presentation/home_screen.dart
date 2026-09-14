@@ -105,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildTodayTimeline(context, todayShifts),
                 const SizedBox(height: 16),
                 _buildEarningsChart(
+                  context: context,
                   last7Days: earnings.last7Days,
                   completedShifts: earnings.completedShifts,
                   monthTotal: earnings.monthTotal,
@@ -976,6 +977,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ── Earnings Bar Chart ─────────────────────────────────
   Widget _buildEarningsChart({
+    required BuildContext context,
     required List<double> last7Days,
     required int completedShifts,
     required double monthTotal,
@@ -1044,7 +1046,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () => context.push('/earnings'),
                 child: Row(
                   children: [
                     Text(
