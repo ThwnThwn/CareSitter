@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/widgets/app_widgets.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/router/navigation_helpers.dart';
 import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
@@ -26,6 +27,9 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   int _checkInStep = 0; // 0 = not started, 1 = selfie, 2 = gps, 3 = done
   bool _isCheckedIn = false;
   bool _isSubmittingCheckIn = false;
+  bool _isUploadingCheckInSelfie = false;
+  bool _isSubmittingCheckout = false;
+  String? _checkInSelfieUrl;
   DateTime? _checkInTime;
   bool _didRestoreServerState = false;
   bool _didRequestTasks = false;
@@ -538,7 +542,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
       case 0:
         return _buildStep0Start(booking);
       case 1:
-        return _buildStep1Selfie();
+        return _buildStep1Selfie(booking);
       case 2:
         return _buildStep2GPS(booking);
       case 3:
@@ -612,7 +616,32 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
   }
 
   // Step 1 — Selfie
-  Widget _buildStep1Selfie() {
+  Future<void> _captureCheckInSelfie(
+      ShiftModel booking, ImageSource source) async {
+    final image = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1440,
+    );
+    if (image == null || !mounted) return;
+
+    setState(() => _isUploadingCheckInSelfie = true);
+    try {
+      final url = await ref
+          .read(shiftsProvider.notifier)
+          .uploadCheckInSelfie(booking.id, image);
+      if (!mounted) return;
+      setState(() => _checkInSelfieUrl = url);
+      await _advanceStep();
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(context, 'Không thể tải selfie lên. Vui lòng thử lại.');
+    } finally {
+      if (mounted) setState(() => _isUploadingCheckInSelfie = false);
+    }
+  }
+
+  Widget _buildStep1Selfie(ShiftModel booking) {
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -627,19 +656,27 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.face_retouching_natural_rounded,
-                    size: 40, color: AppColors.primary),
-              ),
+              if (_checkInSelfieUrl == null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.face_retouching_natural_rounded,
+                      size: 40, color: AppColors.primary),
+                )
+              else
+                const Icon(Icons.verified_rounded,
+                    size: 52, color: AppColors.success),
               const SizedBox(height: 8),
-              const Text('Khung chụp selfie',
-                  style:
-                      TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Text(
+                _checkInSelfieUrl == null
+                    ? 'Khung chụp selfie'
+                    : 'Selfie đã được tải lên',
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
+              ),
             ],
           ),
         ),
@@ -664,15 +701,20 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.photo_library_outlined, size: 18),
                 label: const Text('Thư viện'),
-                onPressed: _advanceStep,
+                onPressed: _isUploadingCheckInSelfie
+                    ? null
+                    : () => _captureCheckInSelfie(booking, ImageSource.gallery),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                label: const Text('Chụp ảnh'),
-                onPressed: _advanceStep,
+                label:
+                    Text(_isUploadingCheckInSelfie ? 'Đang tải…' : 'Chụp ảnh'),
+                onPressed: _isUploadingCheckInSelfie
+                    ? null
+                    : () => _captureCheckInSelfie(booking, ImageSource.camera),
               ),
             ),
           ],
@@ -870,7 +912,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
                       color: AppColors.success),
                 ),
                 Text(
-                  'Lúc $_checkInTimeLabel • GPS đã được xác thực • Đã selfie',
+                  'Lúc $_checkInTimeLabel • GPS đã được xác thực${_checkInSelfieUrl != null ? ' • Selfie đã lưu' : ''}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1688,28 +1730,32 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
           width: double.infinity,
           child: AppButton(
             label: '\u2705  Hoàn thành ca & Check-out',
-            onPressed: canCheckout
+            onPressed: canCheckout && !_isSubmittingCheckout
                 ? () async {
+                    setState(() => _isSubmittingCheckout = true);
                     try {
                       await ref.read(shiftsProvider.notifier).addTimelineNote(
                             booking.id,
                             _noteController.text,
                           );
+                      if (!mounted) return;
+                      AppToast.loading(context, 'Đang gửi yêu cầu checkout…');
                       await ref
                           .read(shiftsProvider.notifier)
                           .checkOut(booking.id);
                     } catch (error) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              Text('Chưa gửi được yêu cầu checkout: $error'),
-                          backgroundColor: AppColors.error,
-                        ),
-                      );
+                      AppToast.error(context,
+                          'Chưa gửi được yêu cầu checkout. Vui lòng thử lại.');
                       return;
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isSubmittingCheckout = false);
+                      }
                     }
                     if (!mounted) return;
+                    AppToast.success(
+                        context, 'Đã gửi yêu cầu checkout đến khách hàng.');
                     context.go(
                       '/shifts/${booking.id}/summary',
                       extra: {

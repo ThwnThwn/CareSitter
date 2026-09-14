@@ -34,9 +34,6 @@ class ShiftCustomerReportScreen extends StatefulWidget {
 }
 
 class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
-  int _starRating = 0;
-  bool _ratingSubmitted = false;
-
   String _formatCurrency(double amount) {
     final str = amount.round().toString();
     final buf = StringBuffer();
@@ -82,8 +79,6 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
                   const SizedBox(height: 20),
                   _buildNoteCard(),
                 ],
-                const SizedBox(height: 20),
-                _buildRatingSection(),
                 const SizedBox(height: 28),
                 _buildShareButton(),
               ]),
@@ -470,83 +465,6 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
               fontSize: 14, color: AppColors.textPrimary, height: 1.5),
         ),
       ),
-    );
-  }
-
-  // ─── Rating section ───────────────────────────────────────
-  Widget _buildRatingSection() {
-    return _buildSection(
-      title: '⭐ Đánh giá người chăm sóc',
-      child: _ratingSubmitted
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border:
-                    Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle_rounded,
-                      color: AppColors.success),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Cảm ơn! Bạn đã đánh giá $_starRating ⭐',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.success),
-                  ),
-                ],
-              ),
-            )
-          : Column(
-              children: [
-                const Text(
-                  'Bạn hài lòng với dịch vụ hôm nay không?',
-                  style:
-                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    5,
-                    (i) => GestureDetector(
-                      onTap: () => setState(() => _starRating = i + 1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            i < _starRating
-                                ? Icons.star_rounded
-                                : Icons.star_border_rounded,
-                            key: ValueKey('$i-${_starRating > i}'),
-                            size: 40,
-                            color: i < _starRating
-                                ? AppColors.secondary
-                                : AppColors.border,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _starRating > 0
-                        ? () => setState(() => _ratingSubmitted = true)
-                        : null,
-                    child: const Text('Gửi đánh giá'),
-                  ),
-                ),
-              ],
-            ),
     );
   }
 

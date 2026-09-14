@@ -31,6 +31,9 @@ public sealed class ServiceType : Entity
     public string? Description { get; private set; }
     public int DefaultDurationMinutes { get; private set; }
     public bool IsActive { get; private set; }
+    public bool AllowAdHocTasks { get; private set; }
+
+    public void SetAllowAdHocTasks(bool allowAdHocTasks) => AllowAdHocTasks = allowAdHocTasks;
 
     public static Result<ServiceType> Create(
         string code,

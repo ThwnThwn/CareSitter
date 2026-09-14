@@ -48,6 +48,10 @@ public sealed class BookingJobsService
         var dueBookingIds = await db.Bookings.AsNoTracking()
             .Where(b => (b.Status == BookingStatus.PendingPayment && b.PaymentDeadline <= now) ||
                 b.Status == BookingStatus.PaymentReconciliationPending)
+            // Keep reconciliation batches deterministic. Without an explicit order,
+            // SQL is free to return any 100 matching bookings.
+            .OrderBy(b => b.PaymentDeadline)
+            .ThenBy(b => b.Id)
             .Select(b => b.Id)
             .Take(100)
             .ToListAsync();

@@ -19,6 +19,7 @@ class ApiPaths {
   static String declineBooking(String id) => '/bookings/$id/decline';
   static String enRoute(String id) => '/bookings/$id/en-route';
   static String checkIn(String id) => '/bookings/$id/check-in';
+  static String checkInSelfie(String id) => '/bookings/$id/check-in/selfie';
   static String checkoutRequest(String id) => '/bookings/$id/checkout/request';
   static String complete(String id) => '/bookings/$id/complete';
   static String raiseSos(String id) => '/bookings/$id/sos';
@@ -29,7 +30,6 @@ class ApiPaths {
 
   // ── Caregiver profile / availability ──────────────────────
   static const myCaregiverProfile = '/caregivers/me/profile';
-  static const myAvailability = '/caregivers/me/availability';
   static const myCaregiverStatus = '/caregivers/me/status';
 
   // ── Wallet / earnings ─────────────────────────────────────

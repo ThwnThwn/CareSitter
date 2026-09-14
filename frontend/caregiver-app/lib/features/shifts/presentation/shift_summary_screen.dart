@@ -102,7 +102,7 @@ class ShiftSummaryScreen extends StatelessWidget {
                   children: [
                     _buildSummaryRow(
                       icon: Icons.person_outline_rounded,
-                      label: 'Khách hàng',
+                      label: 'Người được chăm sóc',
                       value: beneficiaryName,
                     ),
                     const Divider(height: 24),

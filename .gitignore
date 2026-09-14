@@ -62,6 +62,7 @@ Desktop.ini
 **/.skills/
 .playwright-mcp/
 **/*.local.json
+.codex-build/
 
 # =====================  BACKEND (.NET)  =====================
 [Bb]in/

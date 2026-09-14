@@ -32,7 +32,6 @@ public sealed class CaregiverProfile : AggregateRoot
     public string? CertificateUrls { get; private set; } = "[]";
     public string? Bio { get; private set; }
     public int? YearsOfExperience { get; private set; }
-    public long? HourlyRateExpected { get; private set; }
     public decimal RatingAvg { get; private set; }
     public int RatingCount { get; private set; }
 
@@ -106,14 +105,13 @@ public sealed class CaregiverProfile : AggregateRoot
 
     public Result UpdateProfile(
         string? fullName = null, string? bio = null, int? yearsOfExperience = null,
-        long? hourlyRateExpected = null, string? skills = null,
+        string? skills = null,
         string? serviceCity = null, string? serviceDistrict = null,
         string? gender = null, DateOnly? dateOfBirth = null)
     {
         if (fullName is not null) FullName = fullName;
         if (bio is not null) Bio = bio;
         if (yearsOfExperience.HasValue) YearsOfExperience = yearsOfExperience.Value;
-        if (hourlyRateExpected.HasValue) HourlyRateExpected = hourlyRateExpected.Value;
         if (skills is not null) Skills = skills;
         if (serviceCity is not null) ServiceCity = serviceCity;
         if (serviceDistrict is not null) ServiceDistrict = serviceDistrict;

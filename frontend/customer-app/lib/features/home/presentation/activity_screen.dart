@@ -576,9 +576,6 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1).replaceAll('.', ',')}M ₫';
-    }
     return '${amount.toInt().toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m[1]}.',

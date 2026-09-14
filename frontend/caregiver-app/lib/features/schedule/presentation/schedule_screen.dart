@@ -45,7 +45,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   void _scrollToCurrentHour() {
     final now = DateTime.now();
-    final targetOffset = (now.hour - 1).clamp(0, 23) * 80.0;
+    final targetOffset = now.hour.clamp(0, 23) * 80.0;
     if (_timelineScrollController.hasClients) {
       _timelineScrollController.animateTo(
         targetOffset,
@@ -158,16 +158,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Thêm lịch rảnh',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        onPressed: () => _showAddAvailabilitySheet(context),
-      ),
     );
   }
 
@@ -255,7 +245,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               children: [
                 // Month + toggle chevron
                 GestureDetector(
-                  onTap: () => setState(() => _isMonthView = !_isMonthView),
+                  onTap: _pickDate,
                   child: Row(
                     children: [
                       Text(
@@ -316,20 +306,12 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             ],
           ),
           const SizedBox(width: 4),
-          // Calendar / list toggle icon
+          // Mở date picker giống customer
           IconButton(
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                _isMonthView
-                    ? Icons.calendar_view_week_rounded
-                    : Icons.calendar_month_rounded,
-                key: ValueKey(_isMonthView),
-                color: AppColors.textSecondary,
-              ),
-            ),
-            tooltip: _isMonthView ? 'Xem theo tuần' : 'Xem cả tháng',
-            onPressed: () => setState(() => _isMonthView = !_isMonthView),
+            icon: const Icon(Icons.calendar_month_rounded,
+                color: AppColors.textSecondary),
+            tooltip: 'Chọn ngày',
+            onPressed: _pickDate,
           ),
         ],
       ),
@@ -349,6 +331,26 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         child: Icon(icon, size: 20, color: AppColors.textSecondary),
       ),
     );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+            surface: AppColors.cardBackground,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) _selectDate(picked);
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -561,9 +563,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     return ListView.builder(
       controller: _timelineScrollController,
       padding: const EdgeInsets.only(top: 8, bottom: 100),
-      itemCount: 18, // Show 5:00 AM to 22:00 (5..22)
+      itemCount: 24, // Hiển thị đủ 00:00 đến 23:00 trong ngày
       itemBuilder: (context, index) {
-        final hour = index + 5; // Start from 5 AM
+        final hour = index;
         final timeLabel = '${hour.toString().padLeft(2, '0')}:00';
 
         // Check if this hour falls within an availability slot
@@ -876,24 +878,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ),
     );
   }
-
-  // ────────────────────────────────────────────────────────────────
-  // ADD AVAILABILITY BOTTOM SHEET — modeled after the reference
-  // image "Select Date" screen with time period chips
-  // ────────────────────────────────────────────────────────────────
-  void _showAddAvailabilitySheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _AddAvailabilitySheet(
-        selectedDate: _selectedDate,
-        onAdd: (date, startHour, endHour) {
-          ref.read(scheduleProvider.notifier).addSlot(date, startHour, endHour);
-        },
-      ),
-    );
-  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1012,12 +996,27 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${_getMonthName(_sheetDate.month)} ${_sheetDate.year}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                InkWell(
+                  onTap: _pickSheetDate,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_getMonthName(_sheetDate.month)} ${_sheetDate.year}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.expand_more_rounded,
+                            size: 18, color: AppColors.primary),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1256,6 +1255,31 @@ class _AddAvailabilitySheetState extends State<_AddAvailabilitySheet> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickSheetDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _sheetDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+            surface: AppColors.cardBackground,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _sheetDate = picked;
+        _sheetWeekStart = _getWeekStart(picked);
+      });
+    }
   }
 
   Widget _buildTimePeriodSection(String title, IconData icon, List<int> hours) {

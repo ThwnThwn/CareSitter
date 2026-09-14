@@ -4,6 +4,7 @@ using CareSitter.Modules.Payments.Infrastructure;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.Booking.Domain;
+using CareSitter.Contracts.Services;
 using CareSitter.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,6 +23,7 @@ namespace CareSitter.Modules.Payments.Controllers;
 public sealed class PaymentsController(
     PaymentsDbContext db,
     BookingDbContext bookingDb,
+    IPeopleLookupService people,
     ICurrentUser currentUser,
     IVNPayService vnPay,
     IPaymentFinalizationService finalizer,
@@ -43,6 +45,7 @@ public sealed class PaymentsController(
         var booking = await bookingDb.Bookings.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == req.BookingId && x.CustomerId == userId, ct);
         if (booking is null) return NotFound();
+        var beneficiaryName = (await people.GetBeneficiaryDisplayAsync(booking.BeneficiaryId, ct))?.DisplayName;
         if (booking.Status != BookingStatus.PendingPayment)
             return Conflict(new { error = "Booking khong o trạng thái cho thanh toan." });
         var now = DateTimeOffset.UtcNow;
@@ -205,7 +208,7 @@ public sealed class PaymentsController(
                 .OrderByDescending(x => x.CreatedAt)
                 .FirstOrDefaultAsync(ct);
             if (raced is not null)
-                return Ok(ToIntentResponse(raced, vnPay, vnPayOptions.Value));
+                return Ok(ToIntentResponse(raced, vnPay, vnPayOptions.Value, beneficiaryName));
             if (createdHold is not null)
             {
                 createdHold.Release();
@@ -214,7 +217,7 @@ public sealed class PaymentsController(
             throw;
         }
         return Created($"/api/v1/payments/intents/{created.Value.Id}",
-            ToIntentResponse(created.Value, vnPay, vnPayOptions.Value));
+            ToIntentResponse(created.Value, vnPay, vnPayOptions.Value, beneficiaryName));
     }
 
     /// <summary>Xem chi tiết một Payment Intent theo ID, chỉ hiển thị nếu thuộc user hiện tại.</summary>
@@ -277,11 +280,12 @@ public sealed class PaymentsController(
     // ── Helpers ──
 
     private static PaymentIntentResponse ToIntentResponse(
-        PaymentIntent pi, IVNPayService? vnPay = null, VNPayOptions? options = null) =>
+        PaymentIntent pi, IVNPayService? vnPay = null, VNPayOptions? options = null,
+        string? beneficiaryName = null) =>
         new(pi.Id, pi.BookingId, pi.CustomerId, pi.Provider, pi.Amount, pi.Currency,
             pi.Status, pi.ProviderTransactionId, pi.IdempotencyKey, pi.CreatedAt,
             pi.ProviderOrderRef is not null && vnPay is not null && options is not null
-                ? vnPay.BuildPaymentUrl(pi, options)
+                ? vnPay.BuildPaymentUrl(pi, options, beneficiaryName)
                 : null,
             pi.ProviderOrderRef);
 

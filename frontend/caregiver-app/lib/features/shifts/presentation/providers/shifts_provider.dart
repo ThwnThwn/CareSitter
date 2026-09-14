@@ -4,7 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_notifier.dart';
 import '../../../../core/realtime/care_signalr_service.dart';
-import '../../data/gps_repository.dart';
 import '../../data/shift_model.dart';
 import '../../data/shift_repository.dart';
 
@@ -13,7 +12,6 @@ import '../../data/shift_repository.dart';
 /// Tải danh sách ca thật từ backend và gọi API mutations.
 class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
   final Ref _ref;
-  Timer? _gpsTimer;
   Timer? _refreshTimer;
   StreamSubscription<BookingStatusChange>? _signalRSub;
   StreamSubscription<BookingOfferChange>? _offerSignalRSub;
@@ -80,7 +78,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     });
   }
 
-  GpsRepository get _gps => _ref.read(gpsRepositoryProvider);
   ShiftRepository get _shiftRepo => _ref.read(shiftRepositoryProvider);
 
   void _init() {
@@ -189,7 +186,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       rethrow;
     }
     _updateStatus(bookingId, to: 'caregiver_en_route');
-    _startGpsPush(bookingId);
   }
 
   /// GPS check-in tại địa điểm → status: in_progress.
@@ -211,7 +207,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
       print('[ShiftsNotifier] checkIn error: $e');
       rethrow;
     }
-    _stopGpsPush();
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -222,6 +217,15 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     ];
   }
 
+  Future<String> uploadCheckInSelfie(String bookingId, XFile image) async {
+    final raw = await _shiftRepo.uploadCheckInSelfie(bookingId, image);
+    final url = raw['url']?.toString();
+    if (url == null || url.isEmpty) {
+      throw StateError('Máy chủ không trả về ảnh selfie.');
+    }
+    return url;
+  }
+
   /// Yêu cầu kết thúc ca → booking status chuyển sang checkout_pending_review
   Future<void> checkOut(String bookingId) async {
     try {
@@ -229,7 +233,7 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftsNotifier] checkOut error: $e');
-      return;
+      rethrow;
     }
     state = [
       for (final b in state)
@@ -325,9 +329,11 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     }
   }
 
-  Future<void> createTask(String bookingId, String name, {String? description}) async {
+  Future<void> createTask(String bookingId, String name,
+      {String? description}) async {
     try {
-      final raw = await _shiftRepo.createTask(bookingId, name, description: description);
+      final raw = await _shiftRepo.createTask(bookingId, name,
+          description: description);
       final task = CareTaskModel.fromApi(raw);
       _upsertTask(bookingId, task);
     } catch (e) {
@@ -378,28 +384,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
     ];
   }
 
-  // ── GPS push (background timer) ───────────────────────────────────────────
-
-  void _startGpsPush(String bookingId) {
-    _stopGpsPush();
-
-    _gpsTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
-      try {
-        final position = await _getCurrentPosition();
-        await _gps.postLocation(
-          bookingId,
-          latitude: position.latitude,
-          longitude: position.longitude,
-          accuracyMeters: position.accuracy,
-          speed: position.speed >= 0 ? position.speed : null,
-          heading: position.heading >= 0 ? position.heading : null,
-        );
-      } catch (_) {
-        // GPS/network can recover on the next foreground poll.
-      }
-    });
-  }
-
   Future<Position> _getCurrentPosition() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const LocationUnavailableException(
@@ -427,11 +411,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
         accuracy: LocationAccuracy.high,
       ),
     );
-  }
-
-  void _stopGpsPush() {
-    _gpsTimer?.cancel();
-    _gpsTimer = null;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -615,7 +594,6 @@ class ShiftsNotifier extends StateNotifier<List<ShiftModel>> {
 
   @override
   void dispose() {
-    _stopGpsPush();
     _stopRefreshPolling();
     _signalRSub?.cancel();
     _offerSignalRSub?.cancel();

@@ -108,7 +108,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO people.caregiver_profiles (id, user_id, full_name, gender, bio,
-                                years_of_experience, hourly_rate_expected,
+                                years_of_experience,
                                 kyc_status, availability_status, skills,
                                 service_city, service_district,
                                 service_center_location, service_radius_meters,
@@ -116,7 +116,7 @@ INSERT INTO people.caregiver_profiles (id, user_id, full_name, gender, bio,
 VALUES
     ('a0000000-0000-0000-0000-0000000000e2', 'a0000000-0000-0000-0000-0000000000e1',
      'Tran Thi Hoa', 'FEMALE', 'Nguoi cham 5 nam kinh nghiem, chuyen cham soc nguoi cao tuoi tai nha',
-     5, 75000, 'APPROVED', 'ONLINE',
+     5, 'APPROVED', 'ONLINE',
      '["cham soc tai nha nguoi cao tuoi","ho tro ve sinh ca nhan","chuan bi bua an","nhac lich uong thuoc","don dep sinh hoat","so cuu co ban"]'::jsonb,
      'Ho Chi Minh', 'Quan 1',
      ST_SetSRID(ST_MakePoint(106.700, 10.776), 4326)::geography, 5000,
@@ -134,14 +134,14 @@ VALUES ('a0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO people.caregiver_profiles (id, user_id, full_name, gender, bio,
-                                years_of_experience, hourly_rate_expected,
+                                years_of_experience,
                                 kyc_status, availability_status, skills,
                                 service_city, service_district,
                                 service_center_location, service_radius_meters,
                                 wallet_account_id)
 VALUES ('a0000000-0000-0000-0000-0000000000e4', 'a0000000-0000-0000-0000-0000000000e3',
         'Nguyen Thi Bich Ngoc', 'FEMALE', 'Caregiver 5 nam kinh nghiem, chuyen cham soc tre em va nguoi cao tuoi, co chung chi Montessori',
-        5, 85000, 'APPROVED', 'ONLINE',
+        5, 'APPROVED', 'ONLINE',
         '["cham soc tre em","dong hanh nguoi cao tuoi","nau an","day ky nang song","ho tro ve sinh ca nhan"]'::jsonb,
         'Ho Chi Minh', 'Quan 3',
         ST_SetSRID(ST_MakePoint(106.688, 10.782), 4326)::geography, 6000,
@@ -159,14 +159,14 @@ VALUES ('a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO people.caregiver_profiles (id, user_id, full_name, gender, bio,
-                                years_of_experience, hourly_rate_expected,
+                                years_of_experience,
                                 kyc_status, availability_status, skills,
                                 service_city, service_district,
                                 service_center_location, service_radius_meters,
                                 wallet_account_id)
 VALUES ('a0000000-0000-0000-0000-0000000000e6', 'a0000000-0000-0000-0000-0000000000e5',
         'Le Van Hung', 'MALE', 'Caregiver 3 nam kinh nghiem, dong hanh nguoi lon tuoi, lai xe dua don, nau an theo khau vi',
-        3, 75000, 'APPROVED', 'ONLINE',
+        3, 'APPROVED', 'ONLINE',
         '["dong hanh nguoi cao tuoi","lai xe dua don","nau an","don dep nha","ho tro van dong nhe"]'::jsonb,
         'Ho Chi Minh', 'Binh Thanh',
         ST_SetSRID(ST_MakePoint(106.712, 10.804), 4326)::geography, 7000,
@@ -184,14 +184,14 @@ VALUES ('a0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO people.caregiver_profiles (id, user_id, full_name, gender, bio,
-                                years_of_experience, hourly_rate_expected,
+                                years_of_experience,
                                 kyc_status, availability_status, skills,
                                 service_city, service_district,
                                 service_center_location, service_radius_meters,
                                 wallet_account_id)
 VALUES ('a0000000-0000-0000-0000-0000000000e8', 'a0000000-0000-0000-0000-0000000000e7',
         'Tran Thi Thanh Mai', 'FEMALE', 'Cu nhan Giao duc Mam non 7 nam kinh nghiem, chuyen trong tre so sinh va tre nho, chung chi Montessori',
-        7, 95000, 'APPROVED', 'ONLINE',
+        7, 'APPROVED', 'ONLINE',
         '["trong tre so sinh","trong tre nho","giao duc som","to chuc hoat dong vui choi","cham soc nguoi cao tuoi"]'::jsonb,
         'Ho Chi Minh', 'Quan 7',
         ST_SetSRID(ST_MakePoint(106.723, 10.731), 4326)::geography, 8000,

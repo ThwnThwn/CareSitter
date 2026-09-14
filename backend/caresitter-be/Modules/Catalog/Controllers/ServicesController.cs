@@ -23,7 +23,7 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
         var items = await db.ServiceTypes.AsNoTracking().Where(x => x.IsActive)
             .OrderBy(x => x.Name).Select(x => new
             {
-                x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes,
+                x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes, x.AllowAdHocTasks,
                 pricing = db.PricingRules.AsNoTracking()
                     .Where(p => p.ServiceTypeId == x.Id && p.IsActive &&
                         p.EffectiveFrom <= now && (p.EffectiveTo == null || p.EffectiveTo > now))
@@ -38,6 +38,7 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
             x.Name,
             x.Description,
             x.DefaultDurationMinutes,
+            x.AllowAdHocTasks,
             BaseHourlyPrice = x.pricing?.BaseHourlyPrice ?? 0,
             PlatformFeePercent = x.pricing?.PlatformFeePercent ?? 0m
         }));
@@ -51,7 +52,7 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
     {
         var now = DateTimeOffset.UtcNow;
         var item = await db.ServiceTypes.AsNoTracking().Where(x => x.Id == id && x.IsActive)
-            .Select(x => new { x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes })
+            .Select(x => new { x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes, x.AllowAdHocTasks })
             .SingleOrDefaultAsync(ct);
         if (item is null) return NotFound();
 
@@ -68,6 +69,7 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
             item.Name,
             item.Description,
             item.DefaultDurationMinutes,
+            item.AllowAdHocTasks,
             BaseHourlyPrice = pricing?.BaseHourlyPrice ?? 0,
             PlatformFeePercent = pricing?.PlatformFeePercent ?? 0m
         });

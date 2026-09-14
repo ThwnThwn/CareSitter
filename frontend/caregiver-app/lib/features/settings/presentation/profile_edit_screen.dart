@@ -19,7 +19,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   late TextEditingController _expController;
-  late TextEditingController _rateController;
   late TextEditingController _cityController;
   late TextEditingController _districtController;
   late TextEditingController _dobController;
@@ -41,11 +40,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ? profile.yearsOfExperience.toString()
           : '',
     );
-    _rateController = TextEditingController(
-      text: profile.hourlyRateExpected != null
-          ? profile.hourlyRateExpected.toString()
-          : '',
-    );
     _cityController = TextEditingController(text: profile.serviceCity ?? '');
     _districtController =
         TextEditingController(text: profile.serviceDistrict ?? '');
@@ -59,7 +53,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _nameController.dispose();
     _bioController.dispose();
     _expController.dispose();
-    _rateController.dispose();
     _cityController.dispose();
     _districtController.dispose();
     _dobController.dispose();
@@ -144,7 +137,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           fullName: _nameController.text.trim(),
           bio: _bioController.text.trim(),
           yearsOfExperience: int.tryParse(_expController.text.trim()),
-          hourlyRateExpected: int.tryParse(_rateController.text.trim()),
           skills: _skills,
           serviceCity: _cityController.text.trim().isNotEmpty
               ? _cityController.text.trim()
@@ -403,34 +395,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _rateController,
-                label: 'Mức giá mong muốn (đ/giờ)',
-                hint: 'Ví dụ: 80000',
-                icon: Icons.monetization_on_outlined,
-                keyboardType: TextInputType.number,
-                validator: (val) {
-                  if (val != null &&
-                      val.isNotEmpty &&
-                      int.tryParse(val) == null) {
-                    return 'Vui lòng nhập số nguyên hợp lệ';
-                  }
-                  return null;
-                },
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 6, left: 4),
-                child: Text(
-                  '💡 Mức giá mong muốn chỉ là thông tin tham khảo trên hồ sơ, không thay đổi biểu phí dịch vụ tiêu chuẩn của ứng dụng.',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.3),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // ── Skills ──
               _buildSectionTitle('Kỹ năng chuyên môn'),
               const SizedBox(height: 12),

@@ -44,7 +44,6 @@ CREATE TABLE caregiver_profiles (
   certificate_urls        jsonb DEFAULT '[]'::jsonb,
   bio                     text,
   years_of_experience     int,
-  hourly_rate_expected    bigint,
   rating_avg              numeric(3,2) NOT NULL DEFAULT 0,
   rating_count            int NOT NULL DEFAULT 0,
   kyc_status              varchar(50) NOT NULL DEFAULT 'DRAFT'

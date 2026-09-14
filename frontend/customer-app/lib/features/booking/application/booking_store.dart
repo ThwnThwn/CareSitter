@@ -240,6 +240,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
     } catch (e) {
       // ignore: avoid_print
       print('[BookingStore] confirmCompleted error: $e');
+      rethrow;
     }
   }
 
@@ -308,7 +309,6 @@ class BookingStore extends Notifier<List<BookingModel>> {
     }
   }
 
-
   /// Tải danh sách tasks từ backend cho booking cụ thể.
   Future<List<CareTaskModel>> loadTasks(String bookingId) async {
     try {
@@ -362,27 +362,29 @@ class BookingStore extends Notifier<List<BookingModel>> {
   void _upsertTask(String bookingId, CareTaskModel task) {
     state = [
       for (final b in state)
-        if (b.id == bookingId) () {
-          final existing = b.tasks;
-          final idx = existing.indexWhere((t) => t.id == task.id);
-          List<CareTaskModel> updated;
-          if (idx >= 0) {
-            updated = List<CareTaskModel>.from(existing);
-            updated[idx] = task;
-          } else {
-            updated = [...existing, task]
-              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          }
-          return b.copyWith(
-            tasks: updated,
-            needsReview: updated.any((t) => t.isRequired && t.isSkipped),
-          );
-        }() else b,
+        if (b.id == bookingId)
+          () {
+            final existing = b.tasks;
+            final idx = existing.indexWhere((t) => t.id == task.id);
+            List<CareTaskModel> updated;
+            if (idx >= 0) {
+              updated = List<CareTaskModel>.from(existing);
+              updated[idx] = task;
+            } else {
+              updated = [...existing, task]
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+            }
+            return b.copyWith(
+              tasks: updated,
+              needsReview: updated.any((t) => t.isRequired && t.isSkipped),
+            );
+          }()
+        else
+          b,
     ];
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-
 
   void _applyUpdate(BookingModel updated) {
     state = [

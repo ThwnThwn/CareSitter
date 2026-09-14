@@ -28,6 +28,18 @@ type LoginResponse = {
   displayName?: string;
 };
 
+type Service = { id: string; code: string; name: string; description?: string; allowAdHocTasks?: boolean };
+type ChecklistTemplate = {
+  id: string;
+  serviceTypeId: string;
+  name: string;
+  description?: string;
+  isRequired: boolean;
+  requiresPhoto: boolean;
+  sortOrder: number;
+  isActive: boolean;
+};
+
 function getError(payload: unknown, fallback: string) {
   if (payload && typeof payload === 'object') {
     const value = payload as Record<string, unknown>;
@@ -98,6 +110,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState<'reconciliation' | 'checklists'>('reconciliation');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,11 +140,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       .some((value) => value?.toLowerCase().includes(term)));
   }, [items, query]);
 
+  if (page === 'checklists') return <ChecklistDashboard onLogout={onLogout} onBack={() => setPage('reconciliation')} />;
+
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><span className="brand-mark">C</span><span>CareSitter</span></div>
       <nav>
         <button className="nav-item active"><span>⌁</span>Đối soát thanh toán</button>
+        <button className="nav-item" onClick={() => setPage('checklists')}><span>✓</span>Checklist dịch vụ</button>
         <button className="nav-item" disabled><span>◇</span>Booking</button>
         <button className="nav-item" disabled><span>○</span>Nhân sự</button>
       </nav>
@@ -170,6 +186,142 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       </section>
     </main>
     {selected && <ReviewPanel item={selected} onClose={() => setSelected(null)} onResolved={() => { setSelected(null); void load(); }} />}
+  </div>;
+}
+
+function ChecklistDashboard({ onLogout, onBack }: { onLogout: () => void; onBack: () => void }) {
+  const [services, setServices] = useState<Service[]>([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingPolicy, setSavingPolicy] = useState(false);
+  const [error, setError] = useState('');
+  const [editing, setEditing] = useState<ChecklistTemplate | null>(null);
+  const [form, setForm] = useState({ name: '', description: '', isRequired: true, requiresPhoto: false, sortOrder: 1 });
+
+  const headers = useCallback(() => ({ Authorization: `Bearer ${sessionStorage.getItem(TOKEN_KEY)}`, 'Content-Type': 'application/json' }), []);
+  const loadTemplates = useCallback(async (serviceId: string) => {
+    if (!serviceId) return;
+    setLoading(true); setError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/admin/services/${serviceId}/checklist-templates`, { headers: headers() });
+      if (response.status === 401 || response.status === 403) return onLogout();
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(getError(payload, 'Không tải được checklist.'));
+      setTemplates(Array.isArray(payload) ? payload : []);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Không tải được checklist.');
+    } finally { setLoading(false); }
+  }, [headers, onLogout]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/v1/services`);
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(getError(payload, 'Không tải được danh sách dịch vụ.'));
+        const loaded = Array.isArray(payload) ? payload as Service[] : [];
+        setServices(loaded);
+        if (loaded[0]) setSelectedId(loaded[0].id);
+      } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không tải được danh sách dịch vụ.'); }
+    })();
+  }, []);
+  useEffect(() => { void loadTemplates(selectedId); }, [selectedId, loadTemplates]);
+
+  function resetForm() { setEditing(null); setForm({ name: '', description: '', isRequired: true, requiresPhoto: false, sortOrder: templates.length + 1 }); }
+  function edit(template: ChecklistTemplate) {
+    setEditing(template);
+    setForm({ name: template.name, description: template.description || '', isRequired: template.isRequired, requiresPhoto: template.requiresPhoto, sortOrder: template.sortOrder });
+  }
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    if (!selectedId) return;
+    setSaving(true); setError('');
+    try {
+      const path = editing
+        ? `/api/v1/admin/services/${selectedId}/checklist-templates/${editing.id}`
+        : `/api/v1/admin/services/${selectedId}/checklist-templates`;
+      const response = await fetch(`${API_BASE}${path}`, { method: editing ? 'PUT' : 'POST', headers: headers(), body: JSON.stringify(form) });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(getError(payload, 'Không thể lưu checklist.'));
+      resetForm(); await loadTemplates(selectedId);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể lưu checklist.'); }
+    finally { setSaving(false); }
+  }
+  async function toggle(template: ChecklistTemplate) {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/admin/services/${selectedId}/checklist-templates/${template.id}/active`, {
+        method: 'PATCH', headers: headers(), body: JSON.stringify({ isActive: !template.isActive }),
+      });
+      if (!response.ok) throw new Error(getError(await response.json().catch(() => null), 'Không thể cập nhật trạng thái.'));
+      await loadTemplates(selectedId);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể cập nhật trạng thái.'); }
+  }
+  async function remove(template: ChecklistTemplate) {
+    if (!window.confirm(`Xóa “${template.name}” khỏi checklist? Booking đã xác nhận sẽ không bị thay đổi.`)) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/admin/services/${selectedId}/checklist-templates/${template.id}`, { method: 'DELETE', headers: headers() });
+      if (!response.ok) throw new Error(getError(await response.json().catch(() => null), 'Không thể xóa checklist.'));
+      if (editing?.id === template.id) resetForm();
+      await loadTemplates(selectedId);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể xóa checklist.'); }
+  }
+  async function setAllowAdHocTasks(allowAdHocTasks: boolean) {
+    if (!selectedId) return;
+    setSavingPolicy(true); setError('');
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/admin/services/${selectedId}/checklist-policy`, {
+        method: 'PATCH', headers: headers(), body: JSON.stringify({ allowAdHocTasks }),
+      });
+      if (!response.ok) throw new Error(getError(await response.json().catch(() => null), 'Không thể cập nhật chính sách.'));
+      setServices((current) => current.map((service) => service.id === selectedId ? { ...service, allowAdHocTasks } : service));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Không thể cập nhật chính sách.'); }
+    finally { setSavingPolicy(false); }
+  }
+  const selectedService = services.find((service) => service.id === selectedId);
+
+  return <div className="app-shell">
+    <aside className="sidebar">
+      <div className="brand"><span className="brand-mark">C</span><span>CareSitter</span></div>
+      <nav>
+        <button className="nav-item" onClick={onBack}><span>⌁</span>Đối soát thanh toán</button>
+        <button className="nav-item active"><span>✓</span>Checklist dịch vụ</button>
+        <button className="nav-item" disabled><span>◇</span>Booking</button>
+      </nav>
+      <button className="nav-item logout" onClick={onLogout}><span>↪</span>Đăng xuất</button>
+    </aside>
+    <main className="workspace checklist-workspace">
+      <header className="topbar"><div><p className="eyebrow">SERVICE CONFIGURATION</p><h1>Checklist theo gói</h1><p className="muted">Thay đổi chỉ áp dụng cho booking được xác nhận sau thời điểm lưu.</p></div></header>
+      <section className="checklist-layout">
+        <aside className="service-list" aria-label="Danh sách dịch vụ">
+          <h2>Gói dịch vụ</h2>
+          {services.map((service) => <button key={service.id} className={`service-option ${service.id === selectedId ? 'selected' : ''}`} onClick={() => setSelectedId(service.id)}>
+            <strong>{service.name}</strong><small>{service.code}</small>
+          </button>)}
+        </aside>
+        <div className="checklist-content">
+          {error && <div className="error-box">{error}</div>}
+          <section className="template-list">
+            <div className="section-head"><div><h2>Công việc mẫu</h2><p>Yêu cầu ảnh và bắt buộc được snapshot vào từng ca mới.</p></div><span className="count-chip">{templates.length} việc</span></div>
+            <div className="policy-row"><div><strong>Cho phép việc phát sinh</strong><p>Caregiver có thể thêm tối đa 20 việc sau khi check-in.</p></div><label className="switch"><input type="checkbox" checked={selectedService?.allowAdHocTasks ?? false} disabled={savingPolicy || !selectedService} onChange={(event) => void setAllowAdHocTasks(event.target.checked)} /><span /></label></div>
+            {loading ? <div className="empty"><span className="spinner" />Đang tải checklist…</div>
+              : templates.length === 0 ? <div className="empty"><span className="empty-icon">✓</span><strong>Chưa có công việc mẫu</strong><p>Thêm công việc đầu tiên cho gói này ở biểu mẫu bên phải.</p></div>
+              : <div className="template-rows">{templates.map((template) => <article className={`template-row ${template.isActive ? '' : 'inactive'}`} key={template.id}>
+                <div className="order-badge">{template.sortOrder}</div><div className="template-copy"><strong>{template.name}</strong>{template.description && <p>{template.description}</p>}<div className="template-tags"><span>{template.isRequired ? 'Bắt buộc' : 'Tùy chọn'}</span>{template.requiresPhoto && <span>Yêu cầu ảnh</span>}{!template.isActive && <span>Đang tắt</span>}</div></div>
+                <div className="template-actions"><button className="row-action" onClick={() => edit(template)}>Sửa</button><button className="row-action" onClick={() => void toggle(template)}>{template.isActive ? 'Tắt' : 'Bật'}</button><button className="row-action delete-action" onClick={() => void remove(template)}>Xóa</button></div>
+              </article>)}</div>}
+          </section>
+          <form className="template-form" onSubmit={save}>
+            <div className="section-head"><div><h2>{editing ? 'Chỉnh sửa công việc' : 'Thêm công việc'}</h2><p>{editing ? 'Cập nhật sẽ không làm đổi checklist của các ca đã xác nhận.' : 'Công việc mới sẽ có trong các booking xác nhận sau này.'}</p></div>{editing && <button className="secondary" type="button" onClick={resetForm}>Hủy sửa</button>}</div>
+            <label>Tên công việc<input value={form.name} maxLength={255} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ví dụ: Nhắc lịch uống thuốc" required /></label>
+            <label>Mô tả<textarea value={form.description} maxLength={1000} rows={3} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Hướng dẫn ngắn cho caregiver" /></label>
+            <div className="form-grid"><label>Thứ tự<input type="number" min="0" max="1000" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} required /></label><div className="toggle-group"><label><input type="checkbox" checked={form.isRequired} onChange={(e) => setForm({ ...form, isRequired: e.target.checked })} /> Bắt buộc</label><label><input type="checkbox" checked={form.requiresPhoto} onChange={(e) => setForm({ ...form, requiresPhoto: e.target.checked })} /> Yêu cầu ảnh</label></div></div>
+            <button className="primary" disabled={saving}>{saving ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Thêm vào checklist'}</button>
+          </form>
+        </div>
+      </section>
+    </main>
   </div>;
 }
 

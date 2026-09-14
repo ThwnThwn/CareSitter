@@ -113,7 +113,7 @@ public sealed class CaregiversController(PeopleDbContext db) : ControllerBase
     }
 
     private static CaregiverResponse ToCaregiver(CaregiverProfile x, int? distanceMeters = null) =>
-        new(x.Id, x.UserId, x.FullName, x.Bio, x.YearsOfExperience, x.HourlyRateExpected,
+        new(x.Id, x.UserId, x.FullName, x.Bio, x.YearsOfExperience,
             x.RatingAvg, x.RatingCount, x.AvailabilityStatus, Json(x.Skills),
             x.ServiceCity, x.ServiceDistrict,
             x.ServiceCenterLocation != null ? x.ServiceCenterLocation.Y : null,
@@ -126,7 +126,7 @@ public sealed class CaregiversController(PeopleDbContext db) : ControllerBase
 
 public sealed record CaregiverResponse(
     Guid Id, Guid UserId, string? FullName, string? Bio,
-    int? YearsOfExperience, long? HourlyRateExpected,
+    int? YearsOfExperience,
     decimal RatingAvg, int RatingCount,
     string AvailabilityStatus, JsonElement? Skills,
     string? ServiceCity, string? ServiceDistrict,

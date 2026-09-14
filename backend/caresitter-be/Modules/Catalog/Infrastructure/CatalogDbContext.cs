@@ -85,6 +85,7 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.Description).HasColumnName("description");
             b.Property(x => x.DefaultDurationMinutes).HasColumnName("default_duration_minutes");
             b.Property(x => x.IsActive).HasColumnName("is_active");
+            b.Property(x => x.AllowAdHocTasks).HasColumnName("allow_ad_hoc_tasks");
             // Bang service_types khong co created_at/updated_at.
             b.Ignore(x => x.CreatedAt);
             b.Ignore(x => x.UpdatedAt);

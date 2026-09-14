@@ -144,11 +144,11 @@ public sealed class CaregiverKycController(
     }
 
     /// <summary>
-    /// Caregiver cập nhật thông tin hồ sơ cá nhân (bio, kỹ năng, giá dịch vụ, khu vực phục vụ).
+    /// Caregiver cập nhật thông tin hồ sơ cá nhân (bio, kỹ năng, khu vực phục vụ).
     /// Chỉ Caregiver của profile đó mới có quyền cập nhật (kiểm tra qua JWT).
     /// Không ảnh hưởng đến trạng thái KYC.
     /// </summary>
-    /// <param name="req">Các trường cần cập nhật (FullName, Bio, YearsOfExperience, HourlyRateExpected, Skills, ServiceCity, ServiceDistrict, Gender, DateOfBirth).</param>
+    /// <param name="req">Các trường cần cập nhật (FullName, Bio, YearsOfExperience, Skills, ServiceCity, ServiceDistrict, Gender, DateOfBirth).</param>
     /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
     /// <returns>200 OK kèm thông tin profile sau khi cập nhật.</returns>
     [HttpPut("api/v1/caregivers/me/profile")]
@@ -164,7 +164,6 @@ public sealed class CaregiverKycController(
         var result = profile.UpdateProfile(
             fullName: req.FullName, bio: req.Bio,
             yearsOfExperience: req.YearsOfExperience,
-            hourlyRateExpected: req.HourlyRateExpected,
             skills: req.Skills, serviceCity: req.ServiceCity,
             serviceDistrict: req.ServiceDistrict,
             gender: req.Gender, dateOfBirth: req.DateOfBirth);
@@ -177,7 +176,6 @@ public sealed class CaregiverKycController(
             profile.FullName,
             profile.Bio,
             profile.YearsOfExperience,
-            profile.HourlyRateExpected,
             profile.KycStatus,
             profile.AvailabilityStatus,
             profile.ServiceCity,
@@ -344,7 +342,6 @@ public sealed class CaregiverKycController(
         DateOfBirth = profile.DateOfBirth?.ToString("yyyy-MM-dd"),
         profile.Bio,
         profile.YearsOfExperience,
-        profile.HourlyRateExpected,
         profile.RatingAvg,
         profile.RatingCount,
         profile.KycStatus,
@@ -369,6 +366,6 @@ public sealed record RejectKycRequest(string? Reason);
 public sealed record UpdateCaregiverStatusRequest(string Status);
 public sealed record UpdateCaregiverProfileRequest(
     string? FullName = null, string? Bio = null, int? YearsOfExperience = null,
-    long? HourlyRateExpected = null, string? Skills = null,
+    string? Skills = null,
     string? ServiceCity = null, string? ServiceDistrict = null,
     string? Gender = null, DateOnly? DateOfBirth = null);
