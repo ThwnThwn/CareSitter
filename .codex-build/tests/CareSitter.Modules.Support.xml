@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CareSitter.Modules.Support</name>
+    </assembly>
+    <members>
+        <member name="T:CareSitter.Modules.Support.Controllers.DisputesController">
+            <summary>
+            Quản lý khiếu nại (Disputes) liên quan đến Booking.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.#ctor(CareSitter.Modules.Support.Infrastructure.SupportDbContext,CareSitter.Infrastructure.Security.ICurrentUser)">
+            <summary>
+            Quản lý khiếu nại (Disputes) liên quan đến Booking.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.Create(CareSitter.Modules.Support.Controllers.CreateDisputeRequest,System.Threading.CancellationToken)">
+            <summary>Khách hàng hoặc Caregiver tạo khiếu nại cho một booking.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.ListMy(System.Threading.CancellationToken)">
+            <summary>Lấy danh sách khiếu nại mà user hiện tại đã tạo.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.Get(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xem chi tiết một khiếu nại của user.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.Resolve(System.Guid,CareSitter.Modules.Support.Controllers.ResolveDisputeRequest,System.Threading.CancellationToken)">
+            <summary>Admin ra phan quyet dispute va ghi refund/penalty vao ledger.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.DisputesController.Cancel(System.Guid,System.Threading.CancellationToken)">
+            <summary>Admin huy dispute.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Controllers.NotificationsController">
+            <summary>
+            Quản lý thông báo trong ứng dụng cho người dùng.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.NotificationsController.#ctor(CareSitter.Modules.Support.Infrastructure.SupportDbContext,CareSitter.Infrastructure.Security.ICurrentUser)">
+            <summary>
+            Quản lý thông báo trong ứng dụng cho người dùng.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.NotificationsController.List(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Lấy danh sách thông báo của người dùng (phân trang).</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.NotificationsController.MarkRead(System.Guid,System.Threading.CancellationToken)">
+            <summary>Đánh dấu một thông báo là đã đọc.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.NotificationsController.MarkAllRead(System.Threading.CancellationToken)">
+            <summary>Đánh dấu tất cả thông báo của người dùng là đã đọc.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.NotificationsController.GetUnreadCount(System.Threading.CancellationToken)">
+            <summary>Lấy số lượng thông báo chưa đọc.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Controllers.ReviewsController">
+            <summary>
+            Quản lý đánh giá (Review) dịch vụ sau khi Booking hoàn thành.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.ReviewsController.#ctor(CareSitter.Modules.Support.Infrastructure.SupportDbContext,CareSitter.Infrastructure.Security.ICurrentUser)">
+            <summary>
+            Quản lý đánh giá (Review) dịch vụ sau khi Booking hoàn thành.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.ReviewsController.Create(CareSitter.Modules.Support.Controllers.CreateReviewRequest,System.Threading.CancellationToken)">
+            <summary>Khách hàng tạo đánh giá cho một booking đã hoàn thành.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.ReviewsController.GetCaregiverReviews(System.Guid,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Lấy danh sách các đánh giá của một caregiver.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Controllers.SupportTicketsController">
+            <summary>
+            Quản lý các yêu cầu hỗ trợ (Support Ticket) của người dùng.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.#ctor(CareSitter.Modules.Support.Infrastructure.SupportDbContext,CareSitter.Infrastructure.Security.ICurrentUser)">
+            <summary>
+            Quản lý các yêu cầu hỗ trợ (Support Ticket) của người dùng.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.Create(CareSitter.Modules.Support.Controllers.CreateTicketRequest,System.Threading.CancellationToken)">
+            <summary>User tao ticket ho tro (COMPLAINT, SOS, PAYMENT, KYC, CHECKOUT_REVIEW, GENERAL).</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.List(System.String,System.String,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            User xem ticket cua minh. Admin xem tat ca (co loc theo status/type/priority).
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.Get(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xem chi tiet ticket (user chi xem cua minh, admin xem tat ca).</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.UpdateStatus(System.Guid,CareSitter.Modules.Support.Controllers.UpdateTicketStatusRequest,System.Threading.CancellationToken)">
+            <summary>Admin cap nhat trang thai ticket (NEW -> IN_PROGRESS -> RESOLVED -> CLOSED).</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Support.Controllers.SupportTicketsController.Assign(System.Guid,System.Threading.CancellationToken)">
+            <summary>Admin nhan xu ly ticket (assign admin va chuyen IN_PROGRESS).</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Domain.Dispute">
+            <summary>
+            Aggregate root cho 1 tranh chap (dispute) gan voi 1 booking. Map sang bang support.disputes.
+            Khong co created_at/updated_at — thoi diem mien nghiep vu la opened_at/resolved_at.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Dispute.Status">
+            <summary>Allowed values: OPEN, INVESTIGATING, RESOLVED, CANCELLED.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Dispute.Evidence">
+            <summary>jsonb — gom dispute_evidence.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Dispute.Decision">
+            <summary>Allowed values: CUSTOMER_WINS, CAREGIVER_WINS, PARTIAL_REFUND.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Domain.Notification">
+            <summary>
+            Notification inbox (da doc/chua doc) cho 1 user. Map sang bang support.notifications.
+            Co created_at, KHONG co updated_at.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Notification.Type">
+            <summary>Allowed values: BOOKING, CARE_TIMELINE, PAYMENT, PROMOTION, SYSTEM, SOS, BOOKING_OFFER, MATCHING_FAILED.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Notification.Data">
+            <summary>jsonb — payload + deep_link.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Domain.Review">
+            <summary>
+            Danh gia cua khach cho 1 booking (1 review / booking). Map sang bang support.reviews.
+            Co created_at, KHONG co updated_at.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.Review.ExperienceTags">
+            <summary>jsonb — vd ['Dung gio','Tan tam',...].</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Domain.SupportTicket">
+            <summary>
+            Aggregate root cho 1 ticket ho tro. Map sang bang support.support_tickets.
+            Co created_at + updated_at (trg_ticket_updated).
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.SupportTicket.Type">
+            <summary>Allowed values: COMPLAINT, SOS, PAYMENT, KYC, CHECKOUT_REVIEW, GENERAL.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.SupportTicket.Status">
+            <summary>Allowed values: NEW, IN_PROGRESS, RESOLVED, CLOSED.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Support.Domain.SupportTicket.Priority">
+            <summary>Allowed values: LOW, MEDIUM, HIGH, CRITICAL.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Support.Infrastructure.SupportDbContext">
+            <summary>DbContext module Support — schema "support" (disputes, support_tickets, reviews, notifications).</summary>
+        </member>
+    </members>
+</doc>

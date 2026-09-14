@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CareSitter.Modules.Catalog</name>
+    </assembly>
+    <members>
+        <member name="T:CareSitter.Modules.Catalog.Application.GeoapifyPlaceAutocompleteService">
+            <summary>
+            Triển khai IPlaceAutocompleteService dùng Geoapify Geocoding API (miễn phí, không cần billing).
+            Autocomplete  → /v1/geocode/autocomplete
+            GetDetails    → /v1/geocode/search?place_id=... (dùng place_id của Geoapify)
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Application.GeoapifyPlaceAutocompleteService.#ctor(System.Net.Http.HttpClient,Microsoft.Extensions.Configuration.IConfiguration,Microsoft.Extensions.Caching.Memory.IMemoryCache,Microsoft.Extensions.Logging.ILogger{CareSitter.Modules.Catalog.Application.GeoapifyPlaceAutocompleteService})">
+            <summary>
+            Triển khai IPlaceAutocompleteService dùng Geoapify Geocoding API (miễn phí, không cần billing).
+            Autocomplete  → /v1/geocode/autocomplete
+            GetDetails    → /v1/geocode/search?place_id=... (dùng place_id của Geoapify)
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Application.PricingService.VietnamTimeZone">
+            <summary>Múi giờ nghiệp vụ của lịch chăm sóc tại Việt Nam.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Application.PricingService.ResolveHolidayMultiplier(System.String,System.DateTime)">
+            <summary>Đọc hệ số ngày lễ theo ngày địa phương từ cấu hình JSON của pricing rule.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Controllers.AddressesController">
+            <summary>
+            Quản lý sổ địa chỉ của khách hàng (nơi chăm sóc, nhà riêng, v.v.).
+            Mọi thao tác yêu cầu xác thực và chỉ đọc/sửa địa chỉ thuộc về user đó.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.#ctor(CareSitter.Modules.Catalog.Infrastructure.CatalogDbContext,CareSitter.Infrastructure.Security.ICurrentUser,CareSitter.Modules.Catalog.Application.IPlaceAutocompleteService,CareSitter.Infrastructure.Time.IClock)">
+            <summary>
+            Quản lý sổ địa chỉ của khách hàng (nơi chăm sóc, nhà riêng, v.v.).
+            Mọi thao tác yêu cầu xác thực và chỉ đọc/sửa địa chỉ thuộc về user đó.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.Autocomplete(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Gợi ý địa chỉ thật từ Geoapify. Chỉ gợi ý trong Việt Nam.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.GetPlace(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Resolve Place ID thành địa chỉ đã xác minh và tọa độ chuẩn.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.List(System.Threading.CancellationToken)">
+            <summary>Lấy danh sách địa chỉ của user hiện tại, sắp xếp theo ngày cập nhật gần nhất.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.Get(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xem chi tiết một địa chỉ theo ID. Chỉ trả về nếu thuộc user đó.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.Create(CareSitter.Modules.Catalog.Controllers.AddressUpsertRequest,System.Threading.CancellationToken)">
+            <summary>Tạo địa chỉ mới cho user từ Geoapify Place ID đã xác minh.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.Update(System.Guid,CareSitter.Modules.Catalog.Controllers.AddressUpsertRequest,System.Threading.CancellationToken)">
+            <summary>Cập nhật địa chỉ theo ID. Chỉ owner mới sửa được.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xóa địa chỉ. Trả về 409 Conflict nếu địa chỉ đang được liên kết với booking/beneficiary.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.AddressesController.SetDefault(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Xác nhận địa chỉ này thuộc user và đánh dấu để set làm default.
+            Dùng kèm với PUT /api/v1/profile/default-address/{id} ở Identity module.
+            Endpoint này chỉ validate ownership, trả về 200 nếu hợp lệ.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Controllers.ServicesController">
+            <summary>
+            Quản lý danh mục dịch vụ chăm sóc (Genki Dưỡng / An / Tâm).
+            Cho phép liệt kê, xem chi tiết và báo giá theo khung giờ đặt lịch.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.ServicesController.#ctor(CareSitter.Modules.Catalog.Infrastructure.CatalogDbContext,CareSitter.Contracts.Services.IPricingService)">
+            <summary>
+            Quản lý danh mục dịch vụ chăm sóc (Genki Dưỡng / An / Tâm).
+            Cho phép liệt kê, xem chi tiết và báo giá theo khung giờ đặt lịch.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.ServicesController.List(System.Threading.CancellationToken)">
+            <summary>Lấy danh sách tất cả dịch vụ đang hoạt động, sắp xếp theo tên.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.ServicesController.Get(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xem chi tiết một dịch vụ theo ID. Trả về 404 nếu không tồn tại hoặc đã vô hiệu hóa.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Catalog.Controllers.ServicesController.Quote(System.Guid,CareSitter.Modules.Catalog.Controllers.QuoteRequest,System.Threading.CancellationToken)">
+            <summary>
+            Tính giá dự kiến cho dịch vụ theo khung giờ (ScheduledStart → ScheduledEnd).
+            Yêu cầu xác thực. Dùng trước bước xác nhận đặt lịch.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Domain.Address">
+            <summary>
+            Dia chi cham soc (geo-coded). Map sang bang addresses. Co created_at + updated_at
+            (trg_addresses_updated). Cot latitude/longitude la GENERATED ALWAYS tu location nen
+            bi OMIT khoi entity (xem CatalogDbContext).
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.Address.Location">
+            <summary>geography(Point,4326) — NOT NULL.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Domain.MediaAsset">
+            <summary>
+            Tai nguyen media (anh, tai lieu KYC, chung chi...). Map sang bang media_assets.
+            Gom ca caregiver_documents (KYC). Bang chi co created_at, KHONG co updated_at.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.MediaAsset.StorageProvider">
+            <summary>Allowed: 'S3', 'CLOUDINARY'.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.MediaAsset.MediaType">
+            <summary>Allowed: 'PHOTO', 'DOCUMENT', 'CERTIFICATE', 'AVATAR', 'MEDICAL_FILE'.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.MediaAsset.ExifMetadata">
+            <summary>jsonb.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.MediaAsset.DocumentType">
+            <summary>Allowed: 'CCCD_FRONT', 'CCCD_BACK', 'PORTRAIT', 'NURSING_CERT', 'HEALTH_CERT', 'CRIMINAL_RECORD', 'OTHER'.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.MediaAsset.VerificationStatus">
+            <summary>Allowed: 'PENDING', 'APPROVED', 'REJECTED'.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Domain.PricingRule">
+            <summary>
+            Quy tac tinh gia gan voi 1 service_type. Map sang bang pricing_rules. Bang KHONG co
+            created_at/updated_at -> Ignore ca CreatedAt lan UpdatedAt. effective_from la field
+            domain (hieu luc tu), khong phai Entity.CreatedAt.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.PricingRule.Holidays">
+            <summary>jsonb — [{date, multiplier}].</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Catalog.Domain.PricingRule.CancellationPolicy">
+            <summary>jsonb — cancellation_policies.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Domain.ServiceType">
+            <summary>
+            Loai dich vu cham soc. Map sang bang service_types. Bang KHONG co created_at/updated_at
+            -> Ignore ca CreatedAt lan UpdatedAt.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Catalog.Infrastructure.CatalogDbContext">
+            <summary>DbContext module Catalog — schema "catalog" (service_types, pricing_rules, addresses, media_assets).</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CareSitter.ApiHost</name>
+    </assembly>
+    <members>
+        <member name="T:CareSitter.ApiHost.Endpoints.UploadImageRequest">
+            <summary>Request model cho upload ảnh — dùng [AsParameters] để Swashbuckle generate đúng multipart/form-data.</summary>
+        </member>
+        <member name="P:CareSitter.ApiHost.Endpoints.UploadImageRequest.File">
+            <summary>File ảnh cần upload (jpeg, png, webp...)</summary>
+        </member>
+        <member name="P:CareSitter.ApiHost.Endpoints.UploadImageRequest.Folder">
+            <summary>Thư mục lưu trữ trên Cloudinary (tuỳ chọn, mặc định: "general")</summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.Jobs.BookingJobsService">
+            <summary>
+            Hangfire background jobs for booking lifecycle automation.
+            Jobs move bookings to review first; escrow settlement only happens after
+            customer/admin confirmation or after the auto-confirm waiting period.
+            </summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.Matching.MatchingService">
+            <summary>
+            Cross-module matching orchestration.
+            Hard filter is evaluated against KYC, area, skills, availability, conflicts and rejects.
+            Soft ranking is kept configurable and persisted to booking_assignments for auditability.
+            </summary>
+        </member>
+        <member name="M:CareSitter.ApiHost.Matching.MatchingService.#ctor(CareSitter.Modules.Booking.Infrastructure.BookingDbContext,CareSitter.Modules.People.Infrastructure.PeopleDbContext,CareSitter.Modules.Catalog.Infrastructure.CatalogDbContext,CareSitter.Contracts.Services.IPeopleLookupService,CareSitter.Contracts.Services.Routing.IRouteMatrixService,CareSitter.Contracts.Services.IUserNotificationService,Microsoft.AspNetCore.SignalR.IHubContext{CareSitter.Infrastructure.Hubs.CareTrackingHub},Microsoft.Extensions.Options.IOptions{CareSitter.ApiHost.Matching.MatchingOptions},Microsoft.Extensions.Options.IOptions{CareSitter.ApiHost.Routing.RoutingOptions},Microsoft.Extensions.Logging.ILogger{CareSitter.ApiHost.Matching.MatchingService})">
+            <summary>
+            Cross-module matching orchestration.
+            Hard filter is evaluated against KYC, area, skills, availability, conflicts and rejects.
+            Soft ranking is kept configurable and persisted to booking_assignments for auditability.
+            </summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.OpenApi.SwaggerExtensions">
+            <summary>
+            Extension methods để cấu hình Swagger / OpenAPI cho CareSitter API.
+            </summary>
+        </member>
+        <member name="M:CareSitter.ApiHost.OpenApi.SwaggerExtensions.AddCareSitterSwagger(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Đăng ký SwaggerGen với JWT Bearer authentication và XML doc comments.
+            </summary>
+        </member>
+        <member name="M:CareSitter.ApiHost.OpenApi.SwaggerExtensions.UseCareSitterSwagger(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+            Cấu hình Swagger UI với tên và endpoint phù hợp.
+            </summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.OpenApi.FormFileOperationFilter">
+            <summary>
+            Swashbuckle filter: tự động xử lý IFormFile trong Minimal API endpoint.
+            Thay thế schema bị lỗi bằng multipart/form-data request body đúng.
+            </summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.Security.HangfireDashboardAuthFilter">
+             <summary>
+             Hangfire Dashboard authorization filter.
+            
+             Rules:
+               - Development: cho phép localhost request (không cần login) ĐỂ DỄ DEBUG.
+                 Trong thực tế có thể thêm JWT check ở đây nếu cần bảo mật hơn.
+               - Production: bắt buộc phải có JWT hợp lệ với role "ADMIN".
+                 Truyền token qua cookie "hangfire_token" (set sau khi login admin).
+             </summary>
+        </member>
+        <member name="T:CareSitter.ApiHost.Security.HttpContextCurrentUser">
+            <summary>
+            Lay user tu JWT claims cua request. Cung cap UserId de DbContext set GUC app.current_user_id (RLS).
+            MVP: doc claim "sub" + "role"; noi JWT auth o buoc Identity.
+            </summary>
+        </member>
+    </members>
+</doc>

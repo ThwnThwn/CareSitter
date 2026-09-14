@@ -1,0 +1,360 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CareSitter.Modules.Booking</name>
+    </assembly>
+    <members>
+        <member name="T:CareSitter.Modules.Booking.Application.BookingMembershipReader">
+             <summary>
+             Implementation của IBookingMembershipChecker cho SignalR Hub.
+             Được đăng ký trong Booking module và resolve qua DI khi Hub cần verify quyền join group.
+            
+             Query JOIN people.caregiver_profiles để đối chiếu user_id thay vì caregiver_profile_id,
+             vì booking.caregiver_id là caregiver_profiles.id (không phải users.id).
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.BookingMembershipReader.IsPartyToBookingAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Kiểm tra userId có phải là customer hoặc caregiver được assign của booking không.
+            Dùng SQL raw với JOIN vào people.caregiver_profiles để đối chiếu user_id.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Application.CheckInOptions">
+            <summary>Chinh sach check-in toan cuc, bind tu section <c>CheckIn</c>.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Booking.Application.CheckInOptions.EarlyWindowMinutes">
+            <summary>So phut som nhat caregiver duoc check-in truoc gio bat dau ca.</summary>
+        </member>
+        <member name="P:CareSitter.Modules.Booking.Application.CheckInOptions.MaxDistanceMeters">
+            <summary>Khoang cach GPS toi da tinh tu dia chi cham soc.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Application.Sync.BookingSyncService">
+             <summary>
+             Service trung tâm cho realtime delta sync.
+            
+             Hai trách nhiệm chính:
+             1. WriteSyncEventAsync — ghi BookingSyncEvent trong cùng transaction với caller.
+                Caller phải SaveChangesAsync sau khi gọi — service KHÔNG tự gọi SaveChanges.
+             2. GetDeltaAsync     — trả danh sách booking đã thay đổi kể từ cursor X.
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncService.#ctor(CareSitter.Modules.Booking.Infrastructure.BookingDbContext)">
+             <summary>
+             Service trung tâm cho realtime delta sync.
+            
+             Hai trách nhiệm chính:
+             1. WriteSyncEventAsync — ghi BookingSyncEvent trong cùng transaction với caller.
+                Caller phải SaveChangesAsync sau khi gọi — service KHÔNG tự gọi SaveChanges.
+             2. GetDeltaAsync     — trả danh sách booking đã thay đổi kể từ cursor X.
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncService.WriteSyncEvent(CareSitter.Modules.Booking.Domain.Booking,System.String)">
+            <summary>
+            Tăng SyncVersion trên booking và tạo một BookingSyncEvent.
+            Phải gọi trước SaveChangesAsync của caller để tất cả commit trong 1 transaction.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncService.GetCurrentCursorAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Lấy cursor lớn nhất hiện tại của customer.
+            Trả về 0 nếu chưa có event nào.
+            Dùng sau initial load GET /bookings để client có mốc bắt đầu delta.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncService.GetDeltaAsync(System.Guid,System.Int64,System.Int32,System.Threading.CancellationToken)">
+             <summary>
+             Lấy delta: các booking_sync_events có cursor > <paramref name="afterCursor"/> thuộc customer.
+             Trả về danh sách booking ID + version đã thay đổi, theo cursor ASC.
+             Caller (controller) sẽ query booking entity để build full BookingResponse.
+            
+             Cursor âm hoặc lớn hơn cursor toàn cục hiện tại là không hợp lệ và cần full refresh.
+             </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Application.Sync.BookingSyncDeltaResult">
+            <summary>Kết quả từ GetDeltaAsync.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncDeltaResult.#ctor(System.Collections.Generic.IReadOnlyList{CareSitter.Modules.Booking.Domain.BookingSyncEvent},System.Int64,System.Boolean,System.Boolean)">
+            <summary>Kết quả từ GetDeltaAsync.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Application.Sync.BookingSyncDeltaResult.Reset">
+            <summary>Trả khi cursor không hợp lệ — client phải gọi full refresh.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Controllers.BookingsController">
+            <summary>
+            Quản lý toàn bộ vòng đời booking chăm sóc:
+            tạo, xem, hủy, dời lịch, chọn caregiver và các bước lifecycle
+            (confirm-payment → accept → en-route → check-in → checkout → complete).
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.#ctor(CareSitter.Modules.Booking.Infrastructure.BookingDbContext,CareSitter.Infrastructure.Security.ICurrentUser,CareSitter.Infrastructure.Time.IClock,CareSitter.Contracts.Services.IPricingService,CareSitter.Contracts.Services.IPeopleLookupService,CareSitter.Contracts.Services.IWalletService,CareSitter.Contracts.Services.ICatalogLookupService,CareSitter.Contracts.Services.IMatchingService,CareSitter.Contracts.Services.IDisputeLookupService,MediatR.ISender,Microsoft.AspNetCore.SignalR.IHubContext{CareSitter.Infrastructure.Hubs.CareTrackingHub},CareSitter.Modules.Booking.Application.Sync.BookingSyncService,CareSitter.Contracts.Services.IUserNotificationService,Microsoft.Extensions.Options.IOptions{CareSitter.Modules.Booking.Application.CheckInOptions})">
+            <summary>
+            Quản lý toàn bộ vòng đời booking chăm sóc:
+            tạo, xem, hủy, dời lịch, chọn caregiver và các bước lifecycle
+            (confirm-payment → accept → en-route → check-in → checkout → complete).
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Create(CareSitter.Modules.Booking.Application.CreateBooking.CreateBookingCommand,System.Threading.CancellationToken)">
+            <summary>Tạo booking mới qua MediatR CreateBookingCommand. Trả về full BookingResponse để FE không cần gọi thêm GET.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.List(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Lấy danh sách booking của user hiện tại (Customer hoặc Caregiver), có lọc theo status và phân trang.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Get(System.Guid,System.Threading.CancellationToken)">
+            <summary>Xem chi tiết một booking theo ID, kiểm tra quyền theo Customer, Caregiver hoặc Admin.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Sync(System.Int64,System.Threading.CancellationToken)">
+            <summary>
+            Delta sync cho customer app: trả danh sách booking đã thay đổi kể từ cursor X.
+            Client gọi sau khi nhận SignalR BookingListSync event, sau reconnect, hoặc theo polling 30s.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.GetCaregiverSuggestions(System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Gợi ý caregiver cho customer chọn thủ công.
+            Dùng cùng bộ lọc/ranking với auto matching nhưng không tạo offer hàng loạt.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Cancel(System.Guid,CareSitter.Modules.Booking.Controllers.CancelBookingRequest,System.Threading.CancellationToken)">
+            <summary>Hủy booking. Customer có thể hủy ở trạng thái phù hợp; gồm ghi lại lý do.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Reschedule(System.Guid,CareSitter.Modules.Booking.Controllers.RescheduleBookingRequest,System.Threading.CancellationToken)">
+            <summary>Dời lịch booking. Tính lại giá và kiểm tra caregiver cón rảnh trong khung giờ mới.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.SelectCaregiver(System.Guid,CareSitter.Modules.Booking.Controllers.SelectCaregiverRequest,System.Threading.CancellationToken)">
+            <summary>Chọn caregiver cho booking. Kiểm tra rảnh lịch trước khi gán.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.ConfirmPayment(System.Guid,System.Threading.CancellationToken)">
+            <summary>Khóa escrow thanh toán qua WalletService rồi chuyển booking sang trạng thái PAYMENT_CONFIRMED.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Accept(System.Guid,System.Threading.CancellationToken)">
+            <summary>Caregiver chấp nhận ca, chuyển booking sang ASSIGNED và ghi timeline CHECKIN.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Decline(System.Guid,CareSitter.Modules.Booking.Controllers.DeclineBookingRequest,System.Threading.CancellationToken)">
+            <summary>Caregiver từ chối một ca mở để ca đó không hiển thị lại cho caregiver này.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.StartEnRoute(System.Guid,System.Threading.CancellationToken)">
+            <summary>Caregiver bắt đầu di chuyển đến nơi chăm sóc, chuyển sang EN_ROUTE.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.CheckIn(System.Guid,CareSitter.Modules.Booking.Controllers.CheckInRequest,System.Threading.CancellationToken)">
+            <summary>
+            Caregiver check-in tại địa chỉ chăm sóc. Kiểm tra khoảng cách GPS với geofence.
+            Ghi GPS track và timeline sự kiện CHECKIN_VALID / CHECKIN_OUTSIDE_GEOFENCE.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.RequestCheckout(System.Guid,System.Threading.CancellationToken)">
+            <summary>Caregiver gửi yêu cầu checkout thủ công (khi chưa auto-checkout).</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.Complete(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Customer/Admin xác nhận checkout rồi mới hoàn tất ca và giải ngân escrow.
+            Caregiver chỉ được yêu cầu checkout qua /checkout/request.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.RaiseSos(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Kích hoạt SOS khẩn cấp trong ca chăm sóc.
+            Cả Customer và Caregiver được assign đều có thể bấm SOS. Admin cũng được phép.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingsController.PublishCustomerSyncEventAsync(CareSitter.Modules.Booking.Domain.Booking,System.Threading.CancellationToken)">
+            <summary>
+            Publish BookingListSync tới customer-{customerId} group sau mỗi mutation.
+            Event chỉ là tín hiệu để client gọi delta sync — không chứa full state.
+            Gọi SAU SaveChangesAsync để cursor trong DB đã được commit.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Controllers.BookingTrackingController">
+             <summary>
+             Theo dõi thời gian thực của ca chăm sóc:
+             ghi timeline sự kiện (note, check-in, checkout...) và GPS track của caregiver.
+            
+             Phân quyền:
+               - Xem timeline/GPS: Customer của booking, Caregiver được assign, hoặc Admin.
+               - Ghi timeline note: Customer hoặc Caregiver được assign (trong ca đang diễn ra).
+               - Ghi GPS: chỉ Caregiver được assign.
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.#ctor(CareSitter.Modules.Booking.Infrastructure.BookingDbContext,CareSitter.Infrastructure.Security.ICurrentUser,CareSitter.Contracts.Services.IPeopleLookupService,Microsoft.AspNetCore.SignalR.IHubContext{CareSitter.Infrastructure.Hubs.CareTrackingHub})">
+             <summary>
+             Theo dõi thời gian thực của ca chăm sóc:
+             ghi timeline sự kiện (note, check-in, checkout...) và GPS track của caregiver.
+            
+             Phân quyền:
+               - Xem timeline/GPS: Customer của booking, Caregiver được assign, hoặc Admin.
+               - Ghi timeline note: Customer hoặc Caregiver được assign (trong ca đang diễn ra).
+               - Ghi GPS: chỉ Caregiver được assign.
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.ListTimeline(System.Guid,System.Threading.CancellationToken)">
+            <summary>Lấy toàn bộ sự kiện timeline của booking, sắp xếp theo thời gian.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.AddTimelineNote(System.Guid,CareSitter.Modules.Booking.Controllers.AddTimelineNoteRequest,System.Threading.CancellationToken)">
+            <summary>
+            Thêm ghi chú (NOTE) vào timeline.
+            Customer hoặc Caregiver được assign có thể thêm note khi booking đang diễn ra.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.PostGps(System.Guid,CareSitter.Modules.Booking.Controllers.PostGpsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Caregiver gửi vị trí GPS hiện tại. Chỉ caregiver được assign mới được push GPS.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.GetLatestGps(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Lấy điểm GPS mới nhất của caregiver trong booking.
+            Customer, caregiver được assign, và Admin đều có thể xem.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.ListGpsTracks(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Lấy toàn bộ lịch sử GPS track của booking để vẽ lộ trình trên bản đồ.
+            Customer, caregiver được assign, và Admin đều có thể xem.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.BookingTrackingController.CanView(CareSitter.Modules.Booking.Domain.Booking,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Kiểm tra user có quyền xem booking không.
+            Cho phép: customer của booking, caregiver được assign, hoặc Admin.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Controllers.CareTasksController">
+            <summary>
+            Quản lý danh sách nhiệm vụ chăm sóc (care tasks) trong một booking.
+            Caregiver thực hiện hoàn thành hoặc bỏ qua từng task, mỗi thao tác được ghi vào timeline.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.#ctor(CareSitter.Modules.Booking.Infrastructure.BookingDbContext,CareSitter.Modules.Catalog.Infrastructure.CatalogDbContext,CareSitter.Infrastructure.Security.ICurrentUser,CareSitter.Contracts.Services.IPeopleLookupService,CareSitter.Contracts.Services.IMediaService)">
+            <summary>
+            Quản lý danh sách nhiệm vụ chăm sóc (care tasks) trong một booking.
+            Caregiver thực hiện hoàn thành hoặc bỏ qua từng task, mỗi thao tác được ghi vào timeline.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.List(System.Guid,System.Threading.CancellationToken)">
+            <summary>Lấy toàn bộ task của booking, sắp xếp theo SortOrder.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.Create(System.Guid,CareSitter.Modules.Booking.Controllers.CreateCareTaskRequest,System.Threading.CancellationToken)">
+            <summary>Tạo task mới cho booking (chỉ customer/admin). Tác vụ có thể bắt buộc hoặc tùy chọn.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.CompleteTask(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>Caregiver đánh dấu task đã hoàn thành và ghi sự kiện TASK_DONE vào timeline.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.UploadPhoto(System.Guid,System.Guid,Microsoft.AspNetCore.Http.IFormFile,System.Threading.CancellationToken)">
+            <summary>Upload ảnh minh chứng cho một task của caregiver được assign.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Controllers.CareTasksController.SkipTask(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>Caregiver bỏ qua task tùy chọn. Không thể bỏ qua task bắt buộc (IsRequired = true).</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.Booking">
+            <summary>
+            Aggregate root cho 1 don cham soc. Bao ve bat bien: chuyen trang thai hop le,
+            geofence khi check-in, escrow snapshot. Map sang bang bookings.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Booking.Domain.Booking.SyncVersion">
+            <summary>
+            Tăng mỗi khi booking bị mutation. Client dùng để bỏ qua update cũ / đến đảo thứ tự.
+            Tương ứng cột sync_version trong bảng bookings.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.Booking.IncrementSyncVersion">
+            <summary>Gọi trong service layer trước khi ghi BookingSyncEvent.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.Booking.CheckIn(CareSitter.SharedKernel.ValueObjects.GeoPoint,CareSitter.SharedKernel.ValueObjects.GeoPoint,System.Boolean,System.Nullable{System.DateTimeOffset},System.Nullable{System.TimeSpan},System.Nullable{System.Int32})">
+            <summary>
+            Check-in chi hop le tu 30 phut truoc gio bat dau ca, va khi GPS nam trong geofence.
+            <paramref name="checkedInAt"/> phai do server cap; khong dung timestamp tu client.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.BookingAssignment">
+            <summary>
+            Tracks one caregiver's response to a booking offer.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.BookingStateMachine">
+            <summary>
+            Bang chuyen trang thai booking (BUSINESS_FLOW §3). Thuan domain, khong phu thuoc ha tang
+            -> de unit test. Moi chuyen hop le phai nam trong bang nay.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.BookingStatus">
+            <summary>13 trang thai don (khop booking_status trong DB).</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.BookingSyncEvent">
+            <summary>
+            Ghi nhận mỗi lần một booking của customer thay đổi trạng thái.
+            cursor (IDENTITY) tăng đơn điệu toàn bảng — dùng làm mốc delta sync.
+            booking_version là snapshot SyncVersion tại thời điểm event.
+            </summary>
+        </member>
+        <member name="P:CareSitter.Modules.Booking.Domain.BookingSyncEvent.Cursor">
+            <summary>IDENTITY PK — gán bởi database, không set từ code.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.BookingSyncEventTypes">
+            <summary>Các loại event được ghi vào booking_sync_events.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.CaregiverSlotHold">
+            <summary>
+            Giữ tạm một khung giờ của caregiver trong lúc khách đang thanh toán.
+            Database exclusion constraint mới là lớp bảo vệ cuối khi hai booking chạy đồng thời.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.CaregiverSlotHold.Create(System.Guid,System.Guid,System.DateTimeOffset,System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>Tạo hold ngắn hạn cho caregiver đã được khách chọn.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.CaregiverSlotHold.Release">
+            <summary>Giải phóng hold khi thanh toán hết hạn, thất bại hoặc booking bị hủy.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.CaregiverSlotHold.Commit">
+            <summary>Chuyển hold sang committed sau khi booking đã thanh toán thành công.</summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Domain.CaregiverSlotHold.ExtendUntil(System.DateTimeOffset)">
+            <summary>Gia han hold den het payment deadline va grace period doi soat.</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.CareTask">
+            <summary>
+            Nhiem vu cham soc trong 1 ca. Map sang bang booking.care_tasks.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.CareTimelineEvent">
+            <summary>
+            Su kien dong thoi gian trong ca cham soc. Map sang bang booking.care_timeline_events.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Domain.GpsTrack">
+            <summary>
+            Diem GPS caregiver trong ca cham soc. Map sang bang booking.gps_tracks.
+            </summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Infrastructure.BookingDbContext">
+            <summary>DbContext module Booking — map vao schema "booking".</summary>
+        </member>
+        <member name="T:CareSitter.Modules.Booking.Infrastructure.BookingStatusCodec">
+             <summary>
+             Codec chuyển đổi BookingStatus enum ↔ string cho DB và API.
+            
+             Quy ước:
+               - DB (PostgreSQL constraint): UPPER_SNAKE → "CHECKOUT_PENDING_REVIEW"
+               - API response (FE contract): lower_snake → "checkout_pending_review"
+               - FromDatabase(): accept cả UPPER và lower (tương thích dữ liệu cũ/mới)
+             </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Infrastructure.BookingStatusCodec.ToDatabase(CareSitter.Modules.Booking.Domain.BookingStatus)">
+            <summary>
+            Chuyển enum → UPPER_SNAKE_CASE string cho DB storage.
+            Phải khớp với CHECK constraint trong 04-booking.sql.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Infrastructure.BookingStatusCodec.ToApi(CareSitter.Modules.Booking.Domain.BookingStatus)">
+            <summary>
+            Chuyển enum → lower_snake_case string cho API response (FE contract).
+            FE luôn nhận lower_snake_case.
+            </summary>
+        </member>
+        <member name="M:CareSitter.Modules.Booking.Infrastructure.BookingStatusCodec.FromDatabase(System.String)">
+            <summary>
+            Parse từ chuỗi DB hoặc API (hỗ trợ cả UPPER_SNAKE legacy và lower_snake mới).
+            Dùng .ToLowerInvariant() trước khi match nên tương thích cả hai.
+            </summary>
+        </member>
+    </members>
+</doc>
