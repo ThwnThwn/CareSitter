@@ -1,7 +1,7 @@
-namespace CareSitter.Modules.Booking.Domain;
+﻿namespace CareSitter.Modules.Booking.Domain;
 
 /// <summary>
-/// Su kien dong thoi gian trong ca cham soc. Map sang bang booking.care_timeline_events.
+/// Su kien dong thoi gian trong ca chăm sóc. Map sang bang booking.care_timeline_events.
 /// </summary>
 public sealed class CareTimelineEvent
 {

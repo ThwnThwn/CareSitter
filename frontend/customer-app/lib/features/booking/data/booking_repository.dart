@@ -126,6 +126,16 @@ class BookingRepository {
     return BookingModel.fromJson(resp.data ?? {});
   }
 
+  /// Lấy danh sách nhiệm vụ chăm sóc (care tasks) của booking.
+  Future<List<CareTaskModel>> getTasks(String bookingId) async {
+    final resp = await _dio.get<List<dynamic>>(ApiPaths.tasks(bookingId));
+    final list = resp.data ?? [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(CareTaskModel.fromApi)
+        .toList();
+  }
+
   /// Customer chọn thủ công một caregiver đã nằm trong danh sách gợi ý của booking.
   Future<BookingModel> selectCaregiver(
     String bookingId, {

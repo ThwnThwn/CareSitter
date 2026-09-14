@@ -7,6 +7,8 @@ public interface IWalletService
 {
     Task<Result> LockEscrowAsync(Guid bookingId, long amount, string idempotencyKey, CancellationToken ct = default);
 
+    Task<Result> ReleaseEscrowAsync(Guid bookingId, long amount, CancellationToken ct = default);
+
     Task<Result> SettleAsync(Guid bookingId, Guid caregiverId, long escrowAmount, long platformFeeAmount,
         CancellationToken ct = default);
 }

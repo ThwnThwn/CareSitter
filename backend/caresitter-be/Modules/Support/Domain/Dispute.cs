@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Support.Domain;
@@ -55,9 +55,9 @@ public sealed class Dispute : AggregateRoot
         string? description = null)
     {
         if (bookingId == Guid.Empty)
-            return Error.Validation("dispute.booking", "booking_id khong duoc rong.");
+            return Error.Validation("dispute.booking", "booking_id không được rỗng.");
         if (raisedByUserId == Guid.Empty)
-            return Error.Validation("dispute.raisedBy", "raised_by_user_id khong duoc rong.");
+            return Error.Validation("dispute.raisedBy", "raised_by_user_id không được rỗng.");
 
         return new Dispute(Guid.NewGuid(), bookingId, raisedByUserId, reason, description);
     }
@@ -65,7 +65,7 @@ public sealed class Dispute : AggregateRoot
     public Result Investigate()
     {
         if (Status != "OPEN")
-            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> INVESTIGATING.");
+            return Error.Conflict("dispute.status", $"không thể chuyen {Status} -> INVESTIGATING.");
         Status = "INVESTIGATING";
         return Result.Success();
     }
@@ -73,7 +73,7 @@ public sealed class Dispute : AggregateRoot
     public Result Resolve(Guid adminId, string decision, long? refundAmount = null, long? caregiverPenalty = null)
     {
         if (Status is not ("OPEN" or "INVESTIGATING"))
-            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> RESOLVED.");
+            return Error.Conflict("dispute.status", $"không thể chuyen {Status} -> RESOLVED.");
         if (decision is not ("CUSTOMER_WINS" or "CAREGIVER_WINS" or "PARTIAL_REFUND"))
             return Error.Validation("dispute.decision", "Decision phai la CUSTOMER_WINS, CAREGIVER_WINS hoac PARTIAL_REFUND.");
 
@@ -89,7 +89,7 @@ public sealed class Dispute : AggregateRoot
     public Result Cancel()
     {
         if (Status is not ("OPEN" or "INVESTIGATING"))
-            return Error.Conflict("dispute.status", $"Khong the chuyen {Status} -> CANCELLED.");
+            return Error.Conflict("dispute.status", $"không thể chuyen {Status} -> CANCELLED.");
         Status = "CANCELLED";
         ResolvedAt = DateTimeOffset.UtcNow;
         return Result.Success();

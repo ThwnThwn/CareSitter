@@ -1,4 +1,4 @@
-using CareSitter.Contracts.Services;
+﻿using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
 using CareSitter.SharedKernel.Results;
@@ -41,7 +41,7 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
         CancellationToken ct = default)
     {
         if (await disputeLookup.HasOpenDisputeAsync(bookingId, ct))
-            return Error.Conflict("payments.dispute_open", "Booking dang co dispute mo, khong the giai ngan escrow.");
+            return Error.Conflict("payments.dispute_open", "Booking dang co dispute mo, không thể giai ngan escrow.");
         // Idempotent check
         bool settled = await db.LedgerEntries.AsNoTracking()
             .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);
@@ -75,6 +75,40 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
                 .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);
             if (!committedByOtherRequest) throw;
         }
+        return Result.Success();
+    }
+
+    public async Task<Result> ReleaseEscrowAsync(Guid bookingId, long amount, CancellationToken ct = default)
+    {
+        var lockEntry = await db.LedgerEntries.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.BookingId == bookingId
+                && x.TransactionType == "ESCROW_LOCK", ct);
+        if (lockEntry is null)
+            return Result.Success();
+
+        var alreadyReleased = await db.LedgerEntries.AsNoTracking()
+            .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "REFUND", ct);
+        if (alreadyReleased)
+            return Result.Success();
+
+        var refund = LedgerEntry.Create("REFUND",
+            "escrow:platform", "customer:escrow", lockEntry.Amount, bookingId,
+            metadata: "compensating_release_after_confirm_failure");
+        if (refund.IsFailure)
+            return refund.Error;
+
+        db.LedgerEntries.Add(refund.Value);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            var committedByOtherRequest = await db.LedgerEntries.AsNoTracking()
+                .AnyAsync(x => x.BookingId == bookingId && x.TransactionType == "REFUND", ct);
+            if (!committedByOtherRequest) throw;
+        }
+
         return Result.Success();
     }
 }

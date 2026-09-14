@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+﻿using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Catalog.Application;
 using CareSitter.Modules.Catalog.Domain;
@@ -176,7 +176,7 @@ public sealed class AddressesController(
         }
         catch (DbUpdateException)
         {
-            return Conflict(new { error = "Dia chi dang duoc su dung va khong the xoa." });
+            return Conflict(new { error = "Dia chi dang duoc su dung va không thể xoa." });
         }
     }
 

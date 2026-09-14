@@ -49,10 +49,8 @@ public sealed class CaregiversController(PeopleDbContext db) : ControllerBase
             query = query.Where(x => x.AvailabilityStatus == availabilityStatus.ToUpper());
         if (minRating.HasValue)
             query = query.Where(x => x.RatingAvg >= minRating.Value);
-        if (start.HasValue && end.HasValue)
-            query = query.Where(x => db.CaregiverAvailabilities.Any(a =>
-                a.CaregiverId == x.Id && a.Status == "AVAILABLE" &&
-                a.StartAt <= start.Value && a.EndAt >= end.Value));
+        // start/end được giữ lại để tương thích query cũ; caregiver tự kiểm tra
+        // lịch và xác nhận ca, hệ thống chỉ chặn trùng booking khi nhận ca.
 
         bool useSpatial = lat.HasValue && lng.HasValue
                           && lat.Value is >= -90 and <= 90
@@ -114,22 +112,6 @@ public sealed class CaregiversController(PeopleDbContext db) : ControllerBase
         return entity is null ? NotFound() : Ok(ToCaregiver(entity));
     }
 
-    /// <summary>
-    /// Lấy danh sách khung giờ rảnh của caregiver, có thể lọc theo khoảng thời gian.
-    /// </summary>
-    [HttpGet("{id:guid}/availability")]
-    public async Task<IActionResult> GetAvailability(Guid id,
-        DateTimeOffset? from, DateTimeOffset? to, CancellationToken ct)
-    {
-        var query = db.CaregiverAvailabilities.AsNoTracking()
-            .Where(x => x.CaregiverId == id && x.Status == "AVAILABLE");
-        if (from.HasValue) query = query.Where(x => x.EndAt > from.Value);
-        if (to.HasValue) query = query.Where(x => x.StartAt < to.Value);
-        var slots = await query.OrderBy(x => x.StartAt)
-            .Select(x => new AvailabilityResponse(x.Id, x.StartAt, x.EndAt, x.Status)).ToListAsync(ct);
-        return Ok(slots);
-    }
-
     private static CaregiverResponse ToCaregiver(CaregiverProfile x, int? distanceMeters = null) =>
         new(x.Id, x.UserId, x.FullName, x.Bio, x.YearsOfExperience, x.HourlyRateExpected,
             x.RatingAvg, x.RatingCount, x.AvailabilityStatus, Json(x.Skills),
@@ -154,5 +136,3 @@ public sealed record CaregiverResponse(
     // Khoảng cách (mét) từ điểm khách hàng — chỉ có khi gọi với lat/lng
     int? DistanceMeters);
 
-public sealed record AvailabilityResponse(Guid Id, DateTimeOffset StartAt,
-    DateTimeOffset EndAt, string Status);

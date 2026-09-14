@@ -6,7 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/router/navigation_helpers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../catalog/application/address_store.dart';
 import '../../application/beneficiary_store.dart';
+import '../../application/family_contact_store.dart';
+import '../widgets/family_contact_picker.dart';
+import '../widgets/verified_beneficiary_address_picker.dart';
 
 // Helper: entry cho 1 liên hệ khẩn cấp
 class _ECEntry {
@@ -35,7 +39,8 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   // Thông tin cơ bản
   final _nameCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+  String? _selectedAddressId;
+  AddressModel? _selectedAddress;
   String _gender = 'Nam';
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
@@ -57,7 +62,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   String get _formState => [
         _nameCtrl.text,
         _ageCtrl.text,
-        _addressCtrl.text,
+        _selectedAddressId ?? '',
         _gender,
         _relation,
         _careLevel,
@@ -107,7 +112,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     );
     _nameCtrl.text = b.name;
     _ageCtrl.text = b.age.toString();
-    _addressCtrl.text = b.address;
+    _selectedAddressId = b.defaultAddressId;
     _relation = b.relation;
     if (_relations.contains(_relation) == false) _relation = 'Khác';
     _careLevel = b.careLevel;
@@ -145,7 +150,6 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _ageCtrl.dispose();
-    _addressCtrl.dispose();
     _conditionCtrl.dispose();
     _notesCtrl.dispose();
     for (final e in _contacts) {
@@ -184,6 +188,58 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     }
   }
 
+  Future<AddressModel?> _resolveSelectedAddress() async {
+    final addressId = _selectedAddressId;
+    if (addressId == null) return null;
+
+    final addresses = await ref.read(addressStoreProvider.future);
+    for (final address in addresses) {
+      if (address.id == addressId && address.isVerified) return address;
+    }
+    return null;
+  }
+
+  Future<void> _selectFamilyContact(_ECEntry entry) async {
+    final contact = await pickFamilyContact(context, ref);
+    if (contact == null || !mounted) return;
+    setState(() {
+      entry.nameCtrl.text = contact.fullName;
+      entry.phoneCtrl.text = contact.phoneNumber;
+    });
+  }
+
+  Future<void> _saveToFamilyContacts(_ECEntry entry) async {
+    final name = entry.nameCtrl.text.trim();
+    final phone = entry.phoneCtrl.text.trim();
+    if (name.isEmpty || !RegExp(r'^0[3-9]\d{8}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Nhập họ tên và số điện thoại hợp lệ trước khi lưu.'),
+            backgroundColor: AppColors.error),
+      );
+      return;
+    }
+    try {
+      await ref.read(familyContactsProvider.notifier).add(
+            fullName: name,
+            phoneNumber: phone,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Đã lưu vào danh bạ gia đình.'),
+            backgroundColor: AppColors.success),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Không lưu được liên hệ. Số này có thể đã tồn tại.'),
+            backgroundColor: AppColors.error),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (_contacts.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -196,35 +252,70 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     }
     if (!_formKey.currentState!.validate()) return;
 
+    final selectedAddress = _selectedAddress ?? await _resolveSelectedAddress();
+    if (!mounted) return;
+    if (selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn địa chỉ đã xác minh.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    final phoneNumbers = _contacts
+        .map((entry) => entry.phoneCtrl.text.trim())
+        .where((phone) => phone.isNotEmpty);
+    if (phoneNumbers.toSet().length != phoneNumbers.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Các liên hệ khẩn cấp không được trùng số điện thoại.'),
+            backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
-    // Save to store provider
-    ref.read(beneficiaryStoreProvider.notifier).update(
-          widget.id,
-          name: _nameCtrl.text.trim(),
-          age: int.tryParse(_ageCtrl.text) ?? 70,
-          relation: _relation,
-          condition: _conditions.join(', '),
-          careLevel: _careLevel,
-          notes: _notesCtrl.text.trim(),
-          address: _addressCtrl.text.trim(),
-          emergencyContacts: [
-            for (final c in _contacts)
-              EmergencyContact(
-                name: c.nameCtrl.text.trim(),
-                phone: c.phoneCtrl.text.trim(),
-                relationship: c.relationship,
-              )
-          ],
-          avatarPath: _avatarPath,
-        );
+    try {
+      await ref.read(beneficiaryStoreProvider.notifier).update(
+            widget.id,
+            name: _nameCtrl.text.trim(),
+            age: int.tryParse(_ageCtrl.text) ?? 70,
+            relation: _relation,
+            condition: _conditions.join(', '),
+            careLevel: _careLevel,
+            notes: _notesCtrl.text.trim(),
+            defaultAddress: selectedAddress,
+            emergencyContacts: [
+              for (final c in _contacts)
+                EmergencyContact(
+                  name: c.nameCtrl.text.trim(),
+                  phone: c.phoneCtrl.text.trim(),
+                  relationship: c.relationship,
+                )
+            ],
+            avatarPath: _avatarPath,
+          );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không cập nhật được hồ sơ. Vui lòng thử lại.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     if (mounted) {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Hồ sơ đã được cập nhật trên thiết bị.'),
-          backgroundColor: AppColors.warning,
+          content: Text('Đã cập nhật hồ sơ người thân.'),
+          backgroundColor: AppColors.success,
         ),
       );
       popOrGo(context, fallbackRoute: '/beneficiaries/${widget.id}');
@@ -394,23 +485,12 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
               const SizedBox(height: 16),
 
               _buildLabel('Địa chỉ chăm sóc *'),
-              TextFormField(
-                controller: _addressCtrl,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  hintText:
-                      'Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố',
-                  prefixIcon: Padding(
-                    padding: EdgeInsets.only(left: 12, top: 14),
-                    child: Icon(Icons.location_on_outlined,
-                        size: 20, color: AppColors.primary),
-                  ),
-                  prefixIconConstraints:
-                      BoxConstraints(minWidth: 40, minHeight: 40),
-                ),
-                validator: (v) => (v?.trim().isEmpty ?? true)
-                    ? 'Vui lòng nhập địa chỉ'
-                    : null,
+              VerifiedBeneficiaryAddressPicker(
+                selectedAddressId: _selectedAddress?.id ?? _selectedAddressId,
+                onChanged: (address) => setState(() {
+                  _selectedAddress = address;
+                  _selectedAddressId = address.id;
+                }),
               ),
               const SizedBox(height: 16),
 
@@ -718,6 +798,11 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
                   ),
                 ),
               ),
+              TextButton.icon(
+                onPressed: () => _selectFamilyContact(entry),
+                icon: const Icon(Icons.people_outline, size: 17),
+                label: const Text('Danh bạ'),
+              ),
               if (canRemove)
                 GestureDetector(
                   onTap: () => setState(() => _contacts.removeAt(index)),
@@ -773,6 +858,15 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
             },
           ),
           const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _saveToFamilyContacts(entry),
+              icon: const Icon(Icons.person_add_alt_1_outlined, size: 17),
+              label: const Text('Lưu vào danh bạ gia đình'),
+            ),
+          ),
+          const SizedBox(height: 2),
 
           // Mối quan hệ
           DropdownButtonFormField<String>(

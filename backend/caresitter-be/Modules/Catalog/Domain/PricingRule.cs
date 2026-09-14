@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Catalog.Domain;
@@ -81,7 +81,7 @@ public sealed class PricingRule : Entity
         if (serviceTypeId == Guid.Empty)
             return Error.Validation("pricing_rule.service_type_id", "service_type_id la bat buoc.");
         if (baseHourlyPrice < 0)
-            return Error.Validation("pricing_rule.base_hourly_price", "base_hourly_price khong duoc am.");
+            return Error.Validation("pricing_rule.base_hourly_price", "base_hourly_price không được am.");
 
         return new PricingRule(Guid.NewGuid(), name, serviceTypeId, baseHourlyPrice,
             nightMultiplier, holidayMultiplier, platformFeePercent, disputeWindowHours,

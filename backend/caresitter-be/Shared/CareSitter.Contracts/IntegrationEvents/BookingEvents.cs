@@ -1,6 +1,6 @@
-namespace CareSitter.Contracts.IntegrationEvents;
+﻿namespace CareSitter.Contracts.IntegrationEvents;
 
-/// <summary>Booking thanh toan thanh cong -> Payments khoa escrow. (Payments -> Booking)</summary>
+/// <summary>Booking thanh toan thành công -> Payments khoa escrow. (Payments -> Booking)</summary>
 public sealed record PaymentSucceeded(Guid BookingId, Guid PaymentIntentId, long Amount) : IntegrationEvent;
 
 /// <summary>Ca hoan tat -> Payments tinh phi + ghi nhan thu nhap CSV (pending 48h). (Booking -> Payments)</summary>

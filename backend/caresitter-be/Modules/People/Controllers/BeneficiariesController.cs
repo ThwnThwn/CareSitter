@@ -122,12 +122,17 @@ public sealed class BeneficiariesController(
         Guid userId, CancellationToken ct)
     {
         if (NormalizeGender(request.Gender) == string.Empty)
-            return Error.Validation("beneficiary.gender", "Gioi tinh khong hop le.");
+            return Error.Validation("beneficiary.gender", "Giới tính không hợp lệ.");
         if (request.DateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow))
-            return Error.Validation("beneficiary.date_of_birth", "Ngay sinh khong duoc o tuong lai.");
-        if (request.DefaultAddressId is { } addressId &&
-            !await catalog.AddressBelongsToAsync(addressId, userId, ct))
-            return Error.Validation("beneficiary.address", "Dia chi khong ton tai hoac khong thuoc nguoi dung.");
+            return Error.Validation("beneficiary.date_of_birth", "Ngày sinh không được ở tương lai.");
+        if (request.DefaultAddressId is not { } addressId)
+            return Error.Validation("beneficiary.address_required",
+                "Vui lòng chọn địa chỉ đã xác minh cho người được chăm sóc.");
+        if (!await catalog.AddressBelongsToAsync(addressId, userId, ct))
+            return Error.Validation("beneficiary.address", "Địa chỉ không tồn tại hoặc không thuộc người dùng.");
+        if (!await catalog.AddressIsVerifiedForBookingAsync(addressId, userId, ct))
+            return Error.Validation("beneficiary.address_unverified",
+                "Vui lòng chọn địa chỉ từ danh sách gợi ý trước khi lưu.");
         return Result.Success();
     }
 

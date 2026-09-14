@@ -109,12 +109,16 @@ class CareSignalRService {
   final _timelineController = StreamController<TimelineEventUpdate>.broadcast();
   final _lifecycleController =
       StreamController<SignalRConnectionState>.broadcast();
+  final _taskUpdateController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<BookingStatusChange> get statusStream => _statusController.stream;
   Stream<BookingOfferChange> get offerStream => _offerController.stream;
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
   Stream<SignalRConnectionState> get lifecycleStream =>
       _lifecycleController.stream;
+  /// Stream cho CareTaskUpdated — payload: { bookingId, task }
+  Stream<Map<String, dynamic>> get onTaskUpdated => _taskUpdateController.stream;
   Stream<void> get onReconnected => lifecycleStream
       .where((state) => state == SignalRConnectionState.reconnected)
       .map((_) {});
@@ -181,6 +185,14 @@ class CareSignalRService {
       try {
         final data = Map<String, dynamic>.from(args[0] as Map);
         _timelineController.add(TimelineEventUpdate.fromJson(data));
+      } catch (_) {}
+    });
+
+    _connection!.on('CareTaskUpdated', (args) {
+      if (args == null || args.isEmpty) return;
+      try {
+        final data = Map<String, dynamic>.from(args[0] as Map);
+        _taskUpdateController.add(data);
       } catch (_) {}
     });
 
@@ -262,5 +274,6 @@ class CareSignalRService {
     await _offerController.close();
     await _timelineController.close();
     await _lifecycleController.close();
+    await _taskUpdateController.close();
   }
 }

@@ -1,4 +1,4 @@
-using CareSitter.Contracts.Services;
+﻿using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.Sync;
@@ -25,11 +25,11 @@ internal sealed class CreateBookingHandler(
     public async Task<Result<Guid>> Handle(CreateBookingCommand request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } customerId)
-            return Error.Forbidden("booking.unauthenticated", "Khong xac dinh duoc nguoi dung.");
+            return Error.Forbidden("booking.unauthenticated", "Khong xac dinh duoc người dùng.");
         if (request.ScheduledStart <= clock.UtcNow || request.ScheduledEnd <= request.ScheduledStart)
-            return Error.Validation("booking.schedule", "Lich cham soc phai nam trong tuong lai.");
+            return Error.Validation("booking.schedule", "Lich chăm sóc phai nam trong tuong lai.");
         if (!await people.BeneficiaryBelongsToAsync(request.BeneficiaryId, customerId, ct))
-            return Error.Validation("booking.beneficiary", "Nguoi duoc cham soc khong hop le.");
+            return Error.Validation("booking.beneficiary", "Nguoi duoc chăm sóc khong hop le.");
         if (!await catalog.AddressBelongsToAsync(request.AddressId, customerId, ct))
             return Error.Validation("booking.address", "Dia chi khong hop le.");
         if (!await catalog.AddressIsVerifiedForBookingAsync(request.AddressId, customerId, ct))

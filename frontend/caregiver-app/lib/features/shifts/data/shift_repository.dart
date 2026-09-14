@@ -121,7 +121,7 @@ class ShiftRepository {
 
   Future<Map<String, dynamic>> completeTask(
       String bookingId, String taskId) async {
-    final resp = await _dio.put<Map<String, dynamic>>(
+    final resp = await _dio.patch<Map<String, dynamic>>(
       ApiPaths.taskComplete(bookingId, taskId),
     );
     return resp.data ?? {};
@@ -157,9 +157,24 @@ class ShiftRepository {
     };
   }
 
-  Future<Map<String, dynamic>> skipTask(String bookingId, String taskId) async {
-    final resp = await _dio.put<Map<String, dynamic>>(
+  Future<Map<String, dynamic>> skipTask(
+      String bookingId, String taskId, String skipReason) async {
+    final resp = await _dio.patch<Map<String, dynamic>>(
       ApiPaths.taskSkip(bookingId, taskId),
+      data: {'skipReason': skipReason},
+    );
+    return resp.data ?? {};
+  }
+
+  Future<Map<String, dynamic>> createTask(
+      String bookingId, String name, {String? description}) async {
+    final resp = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.tasks(bookingId),
+      data: {
+        'name': name,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+      },
     );
     return resp.data ?? {};
   }

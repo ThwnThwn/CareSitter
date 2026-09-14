@@ -24,6 +24,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   LatLng? _caregiverPos;
   StreamSubscription<GpsUpdate>? _gpsSub;
   StreamSubscription<BookingStatusChange>? _statusSub;
+  StreamSubscription<void>? _reconnectSub;
   late final CareSignalRService _signalR;
   int? _etaSeconds;
   double? _heading;
@@ -48,12 +49,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       duration: const Duration(milliseconds: 450),
     )..addListener(_onPositionAnimationTick);
     _connectSignalR();
+    unawaited(
+        ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId));
   }
 
   @override
   void dispose() {
     _gpsSub?.cancel();
     _statusSub?.cancel();
+    _reconnectSub?.cancel();
     _pulseController.dispose();
     _positionController.dispose();
     _mapController.dispose();
@@ -108,6 +112,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       if (!mounted) return;
       // Refresh booking store để UI cập nhật trạng thái
       ref.read(bookingStoreProvider.notifier).refresh();
+    });
+
+    // ── Lắng nghe reconnect để load lại checklist ─────────────────
+    _reconnectSub = _signalR.onReconnected.listen((_) {
+      if (!mounted) return;
+      ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId);
     });
   }
 
@@ -169,13 +179,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     if (!liveStatuses.contains(bk.status)) {
       return _buildNotLiveScaffold(context, bk);
     }
-    final doneCount = bk.tasks.where((t) {
-      try {
-        return t.isCompleted == true;
-      } catch (_) {
-        return false;
-      }
-    }).length;
+    final doneCount = bk.tasks.where((t) => t.isCompleted).length;
+    final skippedCount = bk.tasks.where((t) => t.isSkipped).length;
     final totalCount = bk.tasks.length;
     final progressPct = totalCount > 0 ? doneCount / totalCount : 0.0;
 
@@ -199,7 +204,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   _buildCaregiverCard(context, bk),
                   const SizedBox(height: 14),
                   if (bk.status != 'caregiver_en_route') ...[
-                    _buildProgressStrip(bk, doneCount, totalCount, progressPct),
+                    if (bk.needsReview ||
+                        bk.tasks.any((t) => t.isRequired && t.isSkipped)) ...[
+                      _buildNeedsReviewBanner(context, bk),
+                      const SizedBox(height: 14),
+                    ],
+                    _buildProgressStrip(bk, doneCount, totalCount, progressPct,
+                        skippedCount: skippedCount),
                     const SizedBox(height: 14),
                     _buildTaskList(context, ref, bk),
                     const SizedBox(height: 14),
@@ -1048,8 +1059,79 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     );
   }
 
+  // ── Needs review banner ───────────────────────────────────────────────────
+  Widget _buildNeedsReviewBanner(BuildContext context, BookingModel bk) {
+    final skippedRequiredCount =
+        bk.tasks.where((t) => t.isRequired && t.isSkipped).length;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1), // amber.shade50
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFCC80), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFB74D).withValues(alpha: 0.25),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFE65100),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ca trực cần xem lại',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE65100),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  skippedRequiredCount > 0
+                      ? 'Có $skippedRequiredCount công việc bắt buộc không thể thực hiện trong ca. Người chăm sóc đã ghi rõ lý do bên dưới để gia đình tiện theo dõi.'
+                      : 'Ca trực này có các công việc cần lưu ý xem xét.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF5D4037),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Progress strip ─────────────────────────────────────────────────────────
-  Widget _buildProgressStrip(BookingModel bk, int done, int total, double pct) {
+  Widget _buildProgressStrip(
+    BookingModel bk,
+    int done,
+    int total,
+    double pct, {
+    int skippedCount = 0,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -1067,18 +1149,32 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${bk.serviceName} • ${bk.duration}',
+                  '${bk.serviceName ?? "Dịch vụ"} • ${bk.duration}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   '$done / $total công việc hoàn thành',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700),
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
+                if (skippedCount > 0) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '• $skippedCount việc không thực hiện được',
+                    style: const TextStyle(
+                      color: Color(0xFFFFE082),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
@@ -1099,15 +1195,21 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             children: [
               const Icon(Icons.schedule, color: Colors.white, size: 16),
               const SizedBox(height: 4),
-              Text(bk.time,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600)),
-              Text(bk.date,
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      fontSize: 11)),
+              Text(
+                bk.time,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                bk.date,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         ],
@@ -1115,15 +1217,10 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     );
   }
 
-  // ── Task list ──────────────────────────────────────────────────────────────
+  // ── Task list (Read-only) ──────────────────────────────────────────────────
   Widget _buildTaskList(BuildContext context, WidgetRef ref, BookingModel bk) {
-    final doneCount = bk.tasks.where((t) {
-      try {
-        return t.isCompleted == true;
-      } catch (_) {
-        return false;
-      }
-    }).length;
+    final doneCount = bk.tasks.where((t) => t.isCompleted).length;
+    final skippedCount = bk.tasks.where((t) => t.isSkipped).length;
     final allDone = bk.tasks.isNotEmpty && doneCount == bk.tasks.length;
 
     return Container(
@@ -1134,9 +1231,10 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: AppColors.border, width: 0.8),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3))
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          )
         ],
       ),
       child: Column(
@@ -1144,12 +1242,36 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         children: [
           Row(
             children: [
-              const Text('Công việc hôm nay',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
+              const Text(
+                'Tiến độ chăm sóc',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const Spacer(),
+              if (skippedCount > 0) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: const Color(0xFFFFB74D), width: 0.6),
+                  ),
+                  child: Text(
+                    '$skippedCount bỏ qua',
+                    style: const TextStyle(
+                      color: Color(0xFFE65100),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1162,97 +1284,324 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 child: Text(
                   '$doneCount/${bk.tasks.length}',
                   style: TextStyle(
-                      color: allDone ? AppColors.success : AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
+                    color: allDone ? AppColors.success : AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           if (bk.tasks.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Chưa có công việc nào',
-                    style: TextStyle(color: AppColors.textHint, fontSize: 13)),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              alignment: Alignment.center,
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.checklist_outlined,
+                    size: 36,
+                    color: AppColors.textHint.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Gói dịch vụ này chưa có checklist',
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             )
           else
-            ...bk.tasks.asMap().entries.map(
-                  (entry) => _buildTaskRow(entry.value, entry.key, bk, ref),
-                ),
+            ...bk.tasks.map((task) => _buildTaskRow(task, bk, context)),
         ],
       ),
     );
   }
 
   Widget _buildTaskRow(
-      dynamic task, int index, BookingModel bk, WidgetRef ref) {
-    final canToggle = bk.status == 'in_progress';
-    final isDone = () {
-      try {
-        return task.isCompleted == true;
-      } catch (_) {
-        return false;
-      }
-    }();
-    final taskTitle = () {
-      try {
-        return task.title?.toString() ?? 'Công việc';
-      } catch (_) {
-        return 'Công việc';
-      }
-    }();
+      CareTaskModel task, BookingModel bk, BuildContext context) {
+    final isDone = task.isCompleted;
+    final isSkipped = task.isSkipped;
 
-    return InkWell(
-      onTap: canToggle
-          ? () =>
-              ref.read(bookingStoreProvider.notifier).toggleTask(bk.id, index)
-          : null,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isDone ? AppColors.successLight : AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
+    Color itemBg = AppColors.surfaceVariant.withValues(alpha: 0.3);
+    Color borderColor = AppColors.border.withValues(alpha: 0.6);
+    if (isDone) {
+      itemBg = AppColors.successLight.withValues(alpha: 0.4);
+      borderColor = AppColors.success.withValues(alpha: 0.25);
+    } else if (isSkipped) {
+      itemBg = const Color(0xFFFFF8E1).withValues(alpha: 0.7);
+      borderColor = const Color(0xFFFFCC80).withValues(alpha: 0.5);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: itemBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Status icon
+              Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.only(top: 1, right: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDone
+                      ? AppColors.success
+                      : isSkipped
+                          ? const Color(0xFFFFB74D)
+                          : AppColors.surface,
+                  border: Border.all(
+                    color: isDone
+                        ? AppColors.success
+                        : isSkipped
+                            ? const Color(0xFFE65100)
+                            : AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: isDone
+                    ? const Icon(Icons.check_rounded,
+                        size: 16, color: Colors.white)
+                    : isSkipped
+                        ? const Icon(Icons.remove_rounded,
+                            size: 16, color: Colors.white)
+                        : Icon(
+                            _iconForTask(task.title),
+                            size: 14,
+                            color: AppColors.textHint,
+                          ),
               ),
-              child: Icon(
-                isDone ? Icons.check_rounded : _iconForTask(taskTitle),
-                color: isDone ? AppColors.success : AppColors.textHint,
-                size: 18,
+              // Title and badges
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            task.title,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight:
+                                  isDone ? FontWeight.w500 : FontWeight.w600,
+                              color: isSkipped
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                              decoration:
+                                  isSkipped ? TextDecoration.lineThrough : null,
+                              decorationColor: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        if (task.isAdHoc) ...[
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Phát sinh',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (task.isRequired && !task.isTerminal) ...[
+                          Container(
+                            margin: const EdgeInsets.only(left: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text(
+                              'Bắt buộc',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (task.description != null &&
+                        task.description!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        task.description!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Skip reason banner
+          if (isSkipped &&
+              task.skipReason != null &&
+              task.skipReason!.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.only(top: 8, left: 38),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFCC80), width: 0.6),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: Color(0xFFE65100),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Lý do: ${task.skipReason}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF8D6E63),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+          ],
+          // Photos gallery
+          if (task.photoUrls.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 38),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: task.photoUrls.map((url) {
+                  return GestureDetector(
+                    onTap: () => _showPhotoPreviewDialog(context, url),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        url,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 50,
+                          height: 50,
+                          color: AppColors.surface,
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            size: 18,
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+          // Completion timestamp
+          if (isDone && task.completedAt != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 38),
               child: Text(
-                taskTitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  color:
-                      isDone ? AppColors.textSecondary : AppColors.textPrimary,
-                  fontWeight: isDone ? FontWeight.w400 : FontWeight.w600,
-                  decoration: isDone ? TextDecoration.lineThrough : null,
-                  decorationColor: AppColors.textSecondary,
+                'Hoàn thành lúc ${task.completedAt!.hour.toString().padLeft(2, '0')}:${task.completedAt!.minute.toString().padLeft(2, '0')}',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textHint,
                 ),
               ),
             ),
-            if (isDone)
-              const Icon(Icons.check_circle_rounded,
-                  color: AppColors.success, size: 20)
-            else
-              Icon(
-                Icons.radio_button_unchecked,
-                color: canToggle
-                    ? AppColors.primary.withValues(alpha: 0.5)
-                    : AppColors.textHint,
-                size: 20,
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showPhotoPreviewDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    padding: const EdgeInsets.all(32),
+                    color: Colors.black87,
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.broken_image_outlined,
+                            color: Colors.white70, size: 48),
+                        SizedBox(height: 8),
+                        Text(
+                          'Không thể tải ảnh',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                icon: const CircleAvatar(
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.close, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
           ],
         ),
       ),

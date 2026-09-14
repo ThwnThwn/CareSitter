@@ -1,7 +1,7 @@
-namespace CareSitter.Modules.Booking.Domain;
+﻿namespace CareSitter.Modules.Booking.Domain;
 
 /// <summary>
-/// Diem GPS caregiver trong ca cham soc. Map sang bang booking.gps_tracks.
+/// Diem GPS caregiver trong ca chăm sóc. Map sang bang booking.gps_tracks.
 /// </summary>
 public sealed class GpsTrack
 {

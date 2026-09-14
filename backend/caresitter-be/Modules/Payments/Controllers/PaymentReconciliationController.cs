@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
@@ -56,7 +56,7 @@ public sealed class PaymentReconciliationController(
         [FromBody] ResolvePaymentReviewRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return BadRequest(new { error = "Ly do xu ly thu cong la bat buoc." });
+            return BadRequest(new { error = "Ly do xu ly thủ công la bat buoc." });
         var intent = await paymentsDb.PaymentIntents.SingleOrDefaultAsync(x => x.Id == intentId, ct);
         if (intent is null) return NotFound();
 
@@ -74,7 +74,7 @@ public sealed class PaymentReconciliationController(
             .SingleOrDefaultAsync(ct);
         if (booking is null) return NotFound();
         if (booking.Status != BookingStatus.NeedsManualReview)
-            return Conflict(new { error = "Booking da duoc tien trinh khac xu ly." });
+            return Conflict(new { error = "Booking đã được tiến trình khác xử lý." });
 
         var payload = JsonSerializer.Serialize(new { request.Reason, source = "AdminManual" });
         var updated = await bookingDb.Database.ExecuteSqlInterpolatedAsync($$"""
@@ -85,7 +85,7 @@ public sealed class PaymentReconciliationController(
             WHERE id = {{intent.Id}} AND status = 'PENDING'
             """, ct);
         if (updated == 0)
-            return Conflict(new { error = "Payment da duoc tien trinh khac xu ly." });
+            return Conflict(new { error = "Payment đã được tiến trình khác xử lý." });
         await bookingDb.Database.ExecuteSqlInterpolatedAsync($$"""
             UPDATE payments.payment_intents
             SET status = 'SUPERSEDED', next_reconciliation_at = NULL, updated_at = now()

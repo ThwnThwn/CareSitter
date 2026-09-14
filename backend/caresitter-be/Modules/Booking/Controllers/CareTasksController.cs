@@ -1,4 +1,5 @@
 using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Hubs;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 
 namespace CareSitter.Modules.Booking.Controllers;
 
@@ -23,7 +25,8 @@ public sealed class CareTasksController(
     CatalogDbContext catalogDb,
     ICurrentUser currentUser,
     IPeopleLookupService people,
-    IMediaService mediaService) : ControllerBase
+    IMediaService mediaService,
+    IHubContext<CareTrackingHub> hub) : ControllerBase
 {
     /// <summary>Lấy toàn bộ task của booking, sắp xếp theo SortOrder.</summary>
     [HttpGet]
@@ -34,7 +37,7 @@ public sealed class CareTasksController(
             .SingleOrDefaultAsync(x => x.Id == id, ct);
         if (booking is null) return NotFound();
 
-        var canRead = booking.CustomerId == userId;
+        var canRead = booking.CustomerId == userId || currentUser.IsInRole("ADMIN");
         if (!canRead && booking.CaregiverId is { } caregiverId)
             canRead = await people.IsCaregiverForBookingAsync(caregiverId, userId, ct);
         if (!canRead) return Forbid();
@@ -43,26 +46,6 @@ public sealed class CareTasksController(
             .Where(x => x.BookingId == id)
             .OrderBy(x => x.SortOrder)
             .ToListAsync(ct);
-
-        if (tasks.Count == 0)
-        {
-            var serviceCode = await catalogDb.ServiceTypes.AsNoTracking()
-                .Where(x => x.Id == booking.ServiceTypeId)
-                .Select(x => x.Code)
-                .SingleOrDefaultAsync(ct);
-            var defaults = DefaultTasksFor(serviceCode);
-            if (defaults.Count > 0)
-            {
-                db.CareTasks.AddRange(defaults.Select((item, index) =>
-                    CareTask.Create(id, item.Name, item.Description, item.IsRequired,
-                        item.RequiresPhoto, index + 1)));
-                await db.SaveChangesAsync(ct);
-                tasks = await db.CareTasks.AsNoTracking()
-                    .Where(x => x.BookingId == id)
-                    .OrderBy(x => x.SortOrder)
-                    .ToListAsync(ct);
-            }
-        }
 
         var taskIds = tasks.Select(t => t.Id).ToArray();
         var photoEvents = await db.TimelineEvents.AsNoTracking()
@@ -75,60 +58,68 @@ public sealed class CareTasksController(
             .Where(x => mediaIds.Contains(x.Id) && x.Url != null)
             .ToDictionaryAsync(x => x.Id, x => x.Url!, ct);
 
-        return Ok(tasks.Select(t => new CareTaskResponse(
-            t.Id, t.BookingId, t.Name, t.Description, t.IsRequired,
-            t.RequiresPhoto, t.SortOrder, t.Status, t.CompletedAt,
+        return Ok(tasks.Select(t => ToResponse(t,
             photoEvents.Where(x => x.TaskId == t.Id && x.MediaId.HasValue)
                 .Select(x => mediaUrls.GetValueOrDefault(x.MediaId!.Value))
                 .Where(x => x != null).Cast<string>().ToArray())));
     }
 
-    /// <summary>Tạo task mới cho booking (chỉ customer/admin). Tác vụ có thể bắt buộc hoặc tùy chọn.</summary>
+    /// <summary>Caregiver thêm công việc phát sinh sau khi đã check-in.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(Guid id, [FromBody] CreateCareTaskRequest request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
-        var booking = await db.Bookings.SingleOrDefaultAsync(x => x.Id == id && x.CustomerId == userId, ct);
-        if (booking is null) return NotFound();
+        var gate = await RequireActiveAssignedCaregiver(id, userId, ct);
+        if (gate.Error is not null) return gate.Error;
+        if (!gate.AllowAdHocTasks)
+            return BadRequest(new { error = "Gói dịch vụ này có checklist cố định, không cho phép thêm công việc phát sinh." });
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length is < 3 or > 255)
+            return BadRequest(new { error = "Tên công việc phát sinh phải có từ 3 đến 255 ký tự." });
+        if (request.Description?.Trim().Length > 500)
+            return BadRequest(new { error = "Ghi chú công việc tối đa 500 ký tự." });
+        if (await db.CareTasks.CountAsync(x => x.BookingId == id && x.Source == "CAREGIVER_AD_HOC", ct) >= 20)
+            return BadRequest(new { error = "Mỗi ca chỉ được thêm tối đa 20 công việc phát sinh." });
 
-        var task = CareTask.Create(id, request.Name, request.Description,
-            request.IsRequired, request.RequiresPhoto, request.SortOrder);
+        var nextOrder = (await db.CareTasks.Where(x => x.BookingId == id)
+            .Select(x => (int?)x.SortOrder).MaxAsync(ct) ?? 0) + 1;
+        var task = CareTask.Create(id, request.Name.Trim(), request.Description?.Trim(),
+            isRequired: false, requiresPhoto: false, sortOrder: nextOrder,
+            source: "CAREGIVER_AD_HOC", createdBy: userId);
         db.CareTasks.Add(task);
         await db.SaveChangesAsync(ct);
-        return Created($"/api/v1/bookings/{id}/tasks/{task.Id}",
-            new CareTaskResponse(task.Id, task.BookingId, task.Name, task.Description,
-                task.IsRequired, task.RequiresPhoto, task.SortOrder, task.Status, task.CompletedAt,
-                Array.Empty<string>()));
+        var response = ToResponse(task, Array.Empty<string>());
+        await BroadcastTaskUpdate(id, response, ct);
+        return Created($"/api/v1/bookings/{id}/tasks/{task.Id}", response);
     }
 
     /// <summary>Caregiver đánh dấu task đã hoàn thành và ghi sự kiện TASK_DONE vào timeline.</summary>
+    [HttpPatch("{taskId:guid}/complete")]
     [HttpPut("{taskId:guid}/complete")]
     public async Task<IActionResult> CompleteTask(Guid id, Guid taskId, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
-        var booking = await db.Bookings.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (booking is null) return NotFound();
-
-        if (booking.CaregiverId is not { } caregiverId ||
-            !await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
-            return Forbid();
+        var gate = await RequireActiveAssignedCaregiver(id, userId, ct);
+        if (gate.Error is not null) return gate.Error;
 
         var task = await db.CareTasks.SingleOrDefaultAsync(x => x.Id == taskId && x.BookingId == id, ct);
         if (task is null) return NotFound();
 
+        if (task.Status == "COMPLETED")
+            return Ok(ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct)));
+        if (task.Status != "PENDING")
+            return Conflict(new { error = "Task đã ở trạng thái kết thúc và không thể hoàn thành." });
         if (task.RequiresPhoto && !await db.TimelineEvents.AnyAsync(
                 x => x.BookingId == id && x.TaskId == taskId && x.EventType == "PHOTO_UPLOADED", ct))
-            return BadRequest(new { error = "Nhiem vu nay can co anh minh chung truoc khi hoan thanh." });
+            return BadRequest(new { error = "Nhiệm vụ này cần có ảnh minh chứng trước khi hoàn thành." });
 
-        task.MarkDone();
+        task.MarkCompleted(userId);
         db.TimelineEvents.Add(CareTimelineEvent.Create(
-            id, caregiverId, "TASK_DONE", $"Hoan thanh: {task.Name}", taskId: taskId));
+            id, gate.CaregiverId!.Value, "TASK_DONE", $"Hoàn thành: {task.Name}", taskId: taskId));
 
         await db.SaveChangesAsync(ct);
-        return Ok(new CareTaskResponse(task.Id, task.BookingId, task.Name, task.Description,
-            task.IsRequired, task.RequiresPhoto, task.SortOrder, task.Status, task.CompletedAt,
-            await GetPhotoUrls(task.BookingId, task.Id, ct)));
+        var response = ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct));
+        await BroadcastTaskUpdate(id, response, ct);
+        return Ok(response);
     }
 
     /// <summary>Upload ảnh minh chứng cho một task của caregiver được assign.</summary>
@@ -137,17 +128,15 @@ public sealed class CareTasksController(
     public async Task<IActionResult> UploadPhoto(Guid id, Guid taskId, IFormFile file, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
-        if (file is null || file.Length == 0) return BadRequest(new { error = "Vui long chon mot anh." });
-        if (file.Length > 10 * 1024 * 1024) return BadRequest(new { error = "Anh khong duoc vuot qua 10 MB." });
+        if (file is null || file.Length == 0) return BadRequest(new { error = "Vui lòng chọn một ảnh." });
+        if (file.Length > 10 * 1024 * 1024) return BadRequest(new { error = "Ảnh không được vượt quá 10 MB." });
 
         var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
         if (!allowedTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
-            return BadRequest(new { error = "Chi chap nhan anh JPG, PNG hoac WEBP." });
+            return BadRequest(new { error = "Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP." });
 
-        var booking = await db.Bookings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (booking is null) return NotFound();
-        if (booking.CaregiverId is not { } caregiverId ||
-            !await people.IsCaregiverForBookingAsync(caregiverId, userId, ct)) return Forbid();
+        var gate = await RequireActiveAssignedCaregiver(id, userId, ct);
+        if (gate.Error is not null) return gate.Error;
 
         var task = await db.CareTasks.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == taskId && x.BookingId == id, ct);
@@ -177,7 +166,7 @@ public sealed class CareTasksController(
         catalogDb.MediaAssets.Add(assetResult.Value);
         await catalogDb.SaveChangesAsync(ct);
 
-        var evt = CareTimelineEvent.Create(id, caregiverId, "PHOTO_UPLOADED",
+        var evt = CareTimelineEvent.Create(id, gate.CaregiverId!.Value, "PHOTO_UPLOADED",
             $"Ảnh minh chứng: {task.Name}", taskId: taskId, source: "ONLINE");
         // media_id is set after creation through the dedicated internal helper below.
         db.TimelineEvents.Add(evt.WithMedia(assetResult.Value.Id));
@@ -197,92 +186,71 @@ public sealed class CareTasksController(
             .Select(x => x.Url!).ToArrayAsync(ct);
     }
 
-    private static IReadOnlyList<DefaultCareTask> DefaultTasksFor(string? serviceCode)
-    {
-        var duong = new List<DefaultCareTask>
-        {
-            new("Vệ sinh cá nhân", "Hỗ trợ vệ sinh, thay đồ và sắp xếp vật dụng cá nhân.", true, true),
-            new("Chuẩn bị bữa ăn", "Chuẩn bị đúng ghi chú dinh dưỡng của gia đình và chụp lại phần ăn.", true, true),
-            new("Nhắc lịch uống thuốc", "Nhắc người được chăm sóc theo lịch gia đình đã cung cấp.", true, false),
-            new("Vận động nhẹ nhàng", "Đồng hành vận động trong phạm vi an toàn, theo tình trạng thực tế.", true, true),
-        };
-        if (string.Equals(serviceCode, "GENKI_DUONG", StringComparison.OrdinalIgnoreCase))
-            return duong;
-        if (string.Equals(serviceCode, "GENKI_AN", StringComparison.OrdinalIgnoreCase))
-            return duong.Concat(new[]
-            {
-                new DefaultCareTask("Hoạt động thư giãn", "Đọc sách, trò chuyện, chơi cờ hoặc hoạt động trí não phù hợp.", true, true),
-                new DefaultCareTask("Xoa bóp thư giãn", "Hỗ trợ thư giãn nhẹ nhàng theo mong muốn của gia đình.", true, true),
-                new DefaultCareTask("Ghi nhận chỉ số theo hướng dẫn", "Chỉ ghi nhận thông tin được gia đình yêu cầu; không chẩn đoán hay điều trị.", true, true),
-            }).ToArray();
-        if (string.Equals(serviceCode, "GENKI_TAM", StringComparison.OrdinalIgnoreCase))
-            return duong.Concat(new[]
-            {
-                new DefaultCareTask("Hoạt động thư giãn", "Đọc sách, trò chuyện, chơi cờ hoặc hoạt động trí não phù hợp.", true, true),
-                new DefaultCareTask("Xoa bóp thư giãn", "Hỗ trợ thư giãn nhẹ nhàng theo mong muốn của gia đình.", true, true),
-                new DefaultCareTask("Hỗ trợ phục hồi theo kế hoạch", "Thực hiện đúng hướng dẫn phục hồi đã được gia đình cung cấp.", true, true),
-                new DefaultCareTask("Lăn trở và kiểm tra tư thế", "Hỗ trợ đổi tư thế an toàn và ghi nhận tình trạng sau khi thực hiện.", true, true),
-                new DefaultCareTask("Ghi nhận chỉ số theo hướng dẫn", "Chỉ ghi nhận thông tin được gia đình yêu cầu; không chẩn đoán hay điều trị.", true, true),
-            }).ToArray();
-        if (string.Equals(serviceCode, "GENKI_PHUCHOI", StringComparison.OrdinalIgnoreCase))
-            return duong.Concat(new[]
-            {
-                new DefaultCareTask("Bài tập vận động Kaigo", "Hướng dẫn và hỗ trợ bài tập phục hồi chức năng nhẹ nhàng theo hướng dẫn.", true, true),
-                new DefaultCareTask("Xoa bóp bấm huyệt phục hồi", "Xoa bóp cơ bắp, hỗ trợ lưu thông khí huyết và giảm căng cứng cơ.", true, true),
-                new DefaultCareTask("Ghi nhận phản ứng vận động", "Ghi chú mức độ linh hoạt và phản ứng của người thân sau buổi tập.", true, false),
-            }).ToArray();
-        if (string.Equals(serviceCode, "GENKI_DONGHANH", StringComparison.OrdinalIgnoreCase))
-            return new[]
-            {
-                new DefaultCareTask("Chuẩn bị trước khi di chuyển", "Kiểm tra sổ khám, thẻ BHYT, thuốc và hỗ trợ trang phục phù hợp.", true, false),
-                new DefaultCareTask("Đồng hành và hỗ trợ di chuyển", "Hỗ trợ đi lại an toàn, xe lăn hoặc dìu đỡ khi lên xuống xe.", true, true),
-                new DefaultCareTask("Ghi chú dặn dò y tế", "Ghi lại hướng dẫn, lời dặn của bác sĩ hoặc lịch tái khám gửi người thân.", true, true),
-                new DefaultCareTask("Hỗ trợ sau khi về nhà", "Giúp cởi áo khoác, nghỉ ngơi, chuẩn bị nước ấm và sắp xếp thuốc mới.", true, false),
-            };
-        if (string.Equals(serviceCode, "GENKI_DEM", StringComparison.OrdinalIgnoreCase))
-            return new[]
-            {
-                new DefaultCareTask("Hỗ trợ chuẩn bị trước giờ ngủ", "Vệ sinh cá nhân, thay đồ ngủ, chuẩn bị nước ấm và kiểm tra phòng ngủ an toàn.", true, true),
-                new DefaultCareTask("Túc trực và theo dõi giấc ngủ", "Quan sát giấc ngủ, kiểm tra nhiệt độ phòng và tiếng động bất thường.", true, false),
-                new DefaultCareTask("Hỗ trợ vệ sinh ban đêm", "Dìu đỡ đi vệ sinh đêm cẩn thận, bật đèn chống trượt ngã.", true, true),
-                new DefaultCareTask("Hỗ trợ buổi sáng sớm", "Hỗ trợ thức giấc nhẹ nhàng, đo huyết áp/thân nhiệt và ghi chú ca trực đêm.", true, true),
-            };
-        return Array.Empty<DefaultCareTask>();
-    }
-
-    private sealed record DefaultCareTask(string Name, string Description,
-        bool IsRequired, bool RequiresPhoto);
-
-    /// <summary>Caregiver bỏ qua task tùy chọn. Không thể bỏ qua task bắt buộc (IsRequired = true).</summary>
+    [HttpPatch("{taskId:guid}/skip")]
     [HttpPut("{taskId:guid}/skip")]
-    public async Task<IActionResult> SkipTask(Guid id, Guid taskId, CancellationToken ct)
+    public async Task<IActionResult> SkipTask(Guid id, Guid taskId, [FromBody] SkipCareTaskRequest request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
-        var booking = await db.Bookings.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (booking is null) return NotFound();
-
-        if (booking.CaregiverId is not { } caregiverId ||
-            !await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
-            return Forbid();
+        var gate = await RequireActiveAssignedCaregiver(id, userId, ct);
+        if (gate.Error is not null) return gate.Error;
 
         var task = await db.CareTasks.SingleOrDefaultAsync(x => x.Id == taskId && x.BookingId == id, ct);
         if (task is null) return NotFound();
-        if (task.IsRequired)
-            return BadRequest(new { error = "Nhiem vu bat buoc khong the bo qua." });
+        if (task.Status == "SKIPPED")
+            return Ok(ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct)));
+        if (task.Status != "PENDING")
+            return Conflict(new { error = "Task đã ở trạng thái kết thúc và không thể bỏ qua." });
+        if (string.IsNullOrWhiteSpace(request.SkipReason) || request.SkipReason.Trim().Length < 3)
+            return BadRequest(new { error = "Cần nhập lý do bỏ qua tối thiểu 3 ký tự." });
 
-        task.Skip();
+        task.Skip(request.SkipReason);
+        db.TimelineEvents.Add(CareTimelineEvent.Create(
+            id, gate.CaregiverId!.Value, "TASK_SKIPPED", $"Bỏ qua: {task.Name}",
+            request.SkipReason.Trim(), taskId: taskId));
         await db.SaveChangesAsync(ct);
-        return Ok(new CareTaskResponse(task.Id, task.BookingId, task.Name, task.Description,
-            task.IsRequired, task.RequiresPhoto, task.SortOrder, task.Status, task.CompletedAt,
-            await GetPhotoUrls(task.BookingId, task.Id, ct)));
+        var response = ToResponse(task, await GetPhotoUrls(task.BookingId, task.Id, ct));
+        await BroadcastTaskUpdate(id, response, ct);
+        return Ok(response);
+    }
+
+    private async Task<(Guid? CaregiverId, bool AllowAdHocTasks, IActionResult? Error)> RequireActiveAssignedCaregiver(
+        Guid bookingId, Guid userId, CancellationToken ct)
+    {
+        var booking = await db.Bookings.AsNoTracking().SingleOrDefaultAsync(x => x.Id == bookingId, ct);
+        if (booking is null) return (null, false, NotFound());
+        if (booking.Status != BookingStatus.InProgress || booking.ActualStart is null)
+            return (null, false, Conflict(new { error = "Checklist chỉ được cập nhật sau khi caregiver check-in." }));
+        if (booking.CaregiverId is not { } caregiverId ||
+            !await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
+            return (null, false, Forbid());
+        return (caregiverId, booking.AllowAdHocTasks, null);
+    }
+
+    private static CareTaskResponse ToResponse(CareTask task, string[] photoUrls) => new(
+        task.Id, task.BookingId, task.Name, task.Description, task.IsRequired,
+        task.RequiresPhoto, task.SortOrder, task.Status, task.CompletedAt, photoUrls,
+        task.Source, task.SkipReason, task.CompletedBy, task.CreatedAt);
+
+    private async Task BroadcastTaskUpdate(Guid bookingId, CareTaskResponse task, CancellationToken ct)
+    {
+        var counts = await db.CareTasks.AsNoTracking().Where(x => x.BookingId == bookingId)
+            .GroupBy(_ => 1).Select(group => new
+            {
+                Completed = group.Count(x => x.Status == "COMPLETED"),
+                Total = group.Count(),
+                Skipped = group.Count(x => x.Status == "SKIPPED")
+            }).SingleOrDefaultAsync(ct);
+        await hub.Clients.Group(CareTrackingHub.BookingGroup(bookingId)).SendAsync("CareTaskUpdated",
+            new { bookingId, completed = counts?.Completed ?? 0, total = counts?.Total ?? 0,
+                skipped = counts?.Skipped ?? 0, task }, ct);
     }
 }
 
 public sealed record CreateCareTaskRequest(string Name, string? Description = null,
     bool IsRequired = false, bool RequiresPhoto = false, int SortOrder = 0);
+public sealed record SkipCareTaskRequest(string SkipReason);
 
 public sealed record CareTaskResponse(Guid Id, Guid BookingId, string Name, string? Description,
     bool IsRequired, bool RequiresPhoto, int SortOrder, string Status, DateTimeOffset? CompletedAt,
-    string[] PhotoUrls);
+    string[] PhotoUrls, string Source, string? SkipReason, Guid? CompletedBy, DateTimeOffset CreatedAt);
 public sealed record CareTaskPhotoResponse(Guid TaskId, Guid MediaId, string Url, DateTimeOffset UploadedAt);

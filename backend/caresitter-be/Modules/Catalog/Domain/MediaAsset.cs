@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Catalog.Domain;
@@ -94,7 +94,7 @@ public sealed class MediaAsset : Entity
         if (string.IsNullOrWhiteSpace(mediaType))
             return Error.Validation("media_asset.media_type", "media_type la bat buoc.");
         if (sizeBytes is < 0)
-            return Error.Validation("media_asset.size_bytes", "size_bytes khong duoc am.");
+            return Error.Validation("media_asset.size_bytes", "size_bytes không được am.");
 
         return new MediaAsset(Guid.NewGuid(), storageProvider, bucket, objectKey, mediaType,
             ownerUserId, bookingId, url, mimeType, sizeBytes, checksum, isSensitive, exifMetadata, documentType);

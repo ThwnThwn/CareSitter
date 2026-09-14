@@ -1,10 +1,10 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Identity.Domain;
 
 /// <summary>
-/// Aggregate root cho 1 nguoi dung. Gop customer_profiles + admin_profiles + user_roles.
+/// Aggregate root cho 1 người dùng. Gop customer_profiles + admin_profiles + user_roles.
 /// Map sang bang users (schema identity).
 /// </summary>
 public sealed class User : AggregateRoot

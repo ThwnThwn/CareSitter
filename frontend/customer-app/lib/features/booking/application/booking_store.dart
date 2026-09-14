@@ -76,7 +76,13 @@ class BookingStore extends Notifier<List<BookingModel>> {
       signalR.customerSyncStream.listen((_) => requestSync()),
     );
     _subscriptions.add(
-      signalR.onReconnected.listen((_) => requestSync()),
+      signalR.onReconnected.listen((_) {
+        requestSync();
+        _reloadActiveBookingTasks();
+      }),
+    );
+    _subscriptions.add(
+      signalR.onTaskUpdated.listen((data) => _handleTaskUpdated(data)),
     );
 
     // Bù khoảng thời gian từ lúc initial load đến lúc hub vừa connected.
@@ -302,31 +308,81 @@ class BookingStore extends Notifier<List<BookingModel>> {
     }
   }
 
-  void toggleTask(String bookingId, int taskIndex) {
+
+  /// Tải danh sách tasks từ backend cho booking cụ thể.
+  Future<List<CareTaskModel>> loadTasks(String bookingId) async {
+    try {
+      final tasks = await _repo.getTasks(bookingId);
+      _updateBookingTasks(bookingId, tasks);
+      return tasks;
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] loadTasks error for $bookingId: $e');
+      return [];
+    }
+  }
+
+  void _reloadActiveBookingTasks() {
+    for (final b in state) {
+      if (b.status == 'in_progress' ||
+          b.status == 'caregiver_en_route' ||
+          b.status == 'checkout_pending_review') {
+        unawaited(loadTasks(b.id));
+      }
+    }
+  }
+
+  void _handleTaskUpdated(Map<String, dynamic> data) {
+    try {
+      final bookingId = data['bookingId']?.toString();
+      final rawTask = data['task'];
+      if (bookingId == null || rawTask == null) return;
+      final taskMap = Map<String, dynamic>.from(rawTask as Map);
+      final task = CareTaskModel.fromApi(taskMap);
+      _upsertTask(bookingId, task);
+    } catch (e) {
+      // ignore: avoid_print
+      print('[BookingStore] _handleTaskUpdated error: $e');
+    }
+  }
+
+  void _updateBookingTasks(String bookingId, List<CareTaskModel> tasks) {
     state = [
       for (final b in state)
         if (b.id == bookingId)
           b.copyWith(
-            tasks: [
-              for (int i = 0; i < b.tasks.length; i++)
-                if (i == taskIndex) _toggleTaskItem(b.tasks[i]) else b.tasks[i],
-            ],
+            tasks: tasks,
+            needsReview: tasks.any((t) => t.isRequired && t.isSkipped),
           )
         else
           b,
     ];
   }
 
+  void _upsertTask(String bookingId, CareTaskModel task) {
+    state = [
+      for (final b in state)
+        if (b.id == bookingId) () {
+          final existing = b.tasks;
+          final idx = existing.indexWhere((t) => t.id == task.id);
+          List<CareTaskModel> updated;
+          if (idx >= 0) {
+            updated = List<CareTaskModel>.from(existing);
+            updated[idx] = task;
+          } else {
+            updated = [...existing, task]
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          }
+          return b.copyWith(
+            tasks: updated,
+            needsReview: updated.any((t) => t.isRequired && t.isSkipped),
+          );
+        }() else b,
+    ];
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  dynamic _toggleTaskItem(dynamic task) {
-    try {
-      final isCompleted = task.isCompleted == true;
-      return task.copyWith(isCompleted: !isCompleted);
-    } catch (_) {
-      return task;
-    }
-  }
 
   void _applyUpdate(BookingModel updated) {
     state = [

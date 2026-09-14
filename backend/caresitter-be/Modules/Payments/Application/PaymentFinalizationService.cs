@@ -105,6 +105,24 @@ internal sealed class PaymentFinalizationService(
 
         var confirm = booking.ConfirmPayment();
         if (confirm.IsFailure) return new(false, "99", confirm.Error.Message);
+        var allowAdHocTasks = await bookingDb.Database.SqlQueryRaw<bool>(
+            "SELECT allow_ad_hoc_tasks AS \"Value\" FROM catalog.service_types WHERE id = {0}",
+            booking.ServiceTypeId).SingleOrDefaultAsync(ct);
+        booking.SnapshotChecklistPolicy(allowAdHocTasks);
+        // Snapshot checklist ngay lúc booking được xác nhận. Tuyệt đối không tạo lazy khi
+        // client GET tasks, để template sửa sau này không làm thay đổi ca đã thanh toán.
+        var hasTasks = await bookingDb.CareTasks.AnyAsync(x => x.BookingId == booking.Id, ct);
+        if (!hasTasks)
+        {
+            var templates = await bookingDb.PackageTaskTemplates.AsNoTracking()
+                .Where(x => x.ServiceTypeId == booking.ServiceTypeId && x.IsActive)
+                .OrderBy(x => x.SortOrder)
+                .ToListAsync(ct);
+            bookingDb.CareTasks.AddRange(templates.Select(template => CareTask.Create(
+                booking.Id, template.Name, template.Description, template.IsRequired,
+                template.RequiresPhoto, template.SortOrder, source: "PACKAGE",
+                templateId: template.Id)));
+        }
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
 
         var hold = await bookingDb.CaregiverSlotHolds

@@ -1,16 +1,16 @@
 namespace CareSitter.SharedKernel.Results;
 
 /// <summary>
-/// Ket qua thao tac khong tra du lieu. Domain/Application tra Result thay vi throw cho loi nghiep vu.
+/// Kết quả thao tác không trả dữ liệu. Domain/Application trả Result thay vì throw cho lỗi nghiệp vụ.
 /// </summary>
 public class Result
 {
     protected Result(bool isSuccess, Error error)
     {
         if (isSuccess && error != Error.None)
-            throw new InvalidOperationException("Result thanh cong khong duoc co Error.");
+            throw new InvalidOperationException("Result thành công không được có Error.");
         if (!isSuccess && error == Error.None)
-            throw new InvalidOperationException("Result that bai phai co Error.");
+            throw new InvalidOperationException("Result thất bại phải có Error.");
 
         IsSuccess = isSuccess;
         Error = error;
@@ -30,7 +30,7 @@ public class Result
 }
 
 /// <summary>
-/// Ket qua thao tac co tra du lieu.
+/// Kết quả thao tác có trả dữ liệu.
 /// </summary>
 public class Result<TValue> : Result
 {
@@ -41,7 +41,7 @@ public class Result<TValue> : Result
 
     public TValue Value => IsSuccess
         ? _value!
-        : throw new InvalidOperationException("Khong the lay Value cua Result that bai.");
+        : throw new InvalidOperationException("Không thể lấy Value của Result thất bại.");
 
     public static implicit operator Result<TValue>(TValue value) => Success(value);
     public static implicit operator Result<TValue>(Error error) => Failure<TValue>(error);

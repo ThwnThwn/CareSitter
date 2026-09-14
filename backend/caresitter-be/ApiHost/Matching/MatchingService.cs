@@ -17,7 +17,7 @@ namespace CareSitter.ApiHost.Matching;
 
 /// <summary>
 /// Cross-module matching orchestration.
-/// Hard filter is evaluated against KYC, area, skills, availability, conflicts and rejects.
+/// Hard filter is evaluated against KYC, area, skills, booking conflicts and rejects.
 /// Soft ranking is kept configurable and persisted to booking_assignments for auditability.
 /// </summary>
 public sealed class MatchingService(
@@ -70,17 +70,6 @@ public sealed class MatchingService(
             return Array.Empty<MatchingCandidate>();
 
         var caregiverIds = profiles.Select(x => x.Id).ToArray();
-        var caregiversWithSlots = (await peopleDb.CaregiverAvailabilities.AsNoTracking()
-            .Where(x => caregiverIds.Contains(x.CaregiverId))
-            .Select(x => x.CaregiverId)
-            .Distinct()
-            .ToListAsync(ct)).ToHashSet();
-
-        var availability = await peopleDb.CaregiverAvailabilities.AsNoTracking()
-            .Where(x => caregiverIds.Contains(x.CaregiverId)
-                && x.StartAt < booking.ScheduledEnd
-                && x.EndAt > booking.ScheduledStart)
-            .ToListAsync(ct);
         var conflicts = await bookingDb.Bookings.AsNoTracking()
             .Where(x => x.CaregiverId != null && caregiverIds.Contains(x.CaregiverId.Value)
                 && x.Status != BookingStatus.Completed
@@ -105,9 +94,7 @@ public sealed class MatchingService(
             if (rejected.Contains(profile.Id))
                 continue;
 
-            var profileAvailability = availability.Where(x => x.CaregiverId == profile.Id).ToList();
-            var hasConfiguredSlots = caregiversWithSlots.Contains(profile.Id);
-            if (!IsEligible(profile, booking, address, hasConfiguredSlots, profileAvailability,
+            if (!IsEligible(profile, booking, address,
                     conflicts.Where(x => x.CaregiverId == profile.Id)
                         .Select(x => new BookingWindow(x.BookingId, x.ScheduledStart, x.ScheduledEnd))))
                 continue;
@@ -375,23 +362,7 @@ public sealed class MatchingService(
                 bookingId, changeType, DateTimeOffset.UtcNow), ct);
     }
 
-    internal static bool HasAvailability(bool hasConfiguredSlots, bool allowWithoutSlots,
-        IReadOnlyCollection<CaregiverAvailability> slots,
-        DateTimeOffset start, DateTimeOffset end)
-    {
-        if (!hasConfiguredSlots)
-            return allowWithoutSlots;
-
-        var hasBlockedSlot = slots.Any(x => x.Status == "BLOCKED" && x.StartAt < end && x.EndAt > start);
-        if (hasBlockedSlot)
-            return false;
-
-        return slots.Any(x => x.Status == "AVAILABLE" && x.StartAt <= start && x.EndAt >= end);
-    }
-
     private bool IsEligible(CaregiverProfile profile, Booking booking, AddressMatchData address,
-        bool hasConfiguredSlots,
-        IReadOnlyCollection<CaregiverAvailability> availability,
         IEnumerable<BookingWindow> conflicts)
     {
         if (profile.DeletedAt is not null || profile.KycStatus != "APPROVED"
@@ -401,9 +372,6 @@ public sealed class MatchingService(
         if (conflicts.Any(x => x.BookingId != booking.Id
             && x.ScheduledStart < booking.ScheduledEnd
             && x.ScheduledEnd > booking.ScheduledStart))
-            return false;
-
-        if (!HasAvailability(hasConfiguredSlots, Config.AllowCaregiversWithoutAvailabilitySlots, availability, booking.ScheduledStart, booking.ScheduledEnd))
             return false;
 
         var distance = DistanceMeters(profile.ServiceCenterLocation, address.Location);

@@ -170,61 +170,6 @@ public class MatchingLogicTests
     }
 
     [Fact]
-    public void HasAvailability_WithBlockedSlot_ShouldReturnFalse()
-    {
-        // Arrange
-        var caregiverId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-        var start = now.AddHours(2);
-        var end = now.AddHours(4);
-
-        var availableSlot = CaregiverAvailability.Create(caregiverId, now.AddHours(1), now.AddHours(5), "AVAILABLE").Value;
-        var blockedSlot = CaregiverAvailability.Create(caregiverId, now.AddHours(2).AddMinutes(30), now.AddHours(3).AddMinutes(30), "BLOCKED").Value;
-        var slots = new[] { availableSlot, blockedSlot };
-
-        // Act
-        var result = MatchingService.HasAvailability(hasConfiguredSlots: true, allowWithoutSlots: false, slots, start, end);
-
-        // Assert: blocked slot overlaps ca -> must be false
-        Assert.False(result);
-    }
-
-    [Fact]
-    public void HasAvailability_WithAvailableSlotCoveringCa_ShouldReturnTrue()
-    {
-        // Arrange
-        var caregiverId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-        var start = now.AddHours(2);
-        var end = now.AddHours(4);
-
-        var availableSlot = CaregiverAvailability.Create(caregiverId, now.AddHours(1), now.AddHours(5), "AVAILABLE").Value;
-        var slots = new[] { availableSlot };
-
-        // Act
-        var result = MatchingService.HasAvailability(hasConfiguredSlots: true, allowWithoutSlots: false, slots, start, end);
-
-        // Assert
-        Assert.True(result);
-    }
-
-    [Theory]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    public void HasAvailability_WhenNoSlotsConfigured_ShouldRespectAllowOption(bool allowWithoutSlots, bool expected)
-    {
-        // Arrange
-        var now = DateTimeOffset.UtcNow;
-        var slots = Array.Empty<CaregiverAvailability>();
-
-        // Act
-        var result = MatchingService.HasAvailability(hasConfiguredSlots: false, allowWithoutSlots, slots, now, now.AddHours(2));
-
-        // Assert
-        Assert.Equal(expected, result);
-    }
-
-    [Fact]
     public void ParseSkills_WithDelimitedString_ShouldParseAllTokens()
     {
         // Arrange

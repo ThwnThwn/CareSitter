@@ -62,25 +62,6 @@ CREATE TABLE caregiver_profiles (
   deleted_at              timestamptz
 );
 
-CREATE TABLE caregiver_availability (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  caregiver_id uuid NOT NULL REFERENCES caregiver_profiles(id) ON DELETE CASCADE,
-  start_at     timestamptz NOT NULL,
-  end_at       timestamptz NOT NULL,
-  status       varchar(20) NOT NULL DEFAULT 'AVAILABLE'
-               CHECK (status IN ('AVAILABLE','BLOCKED','BOOKED')),
-  source       varchar(20) NOT NULL DEFAULT 'CAREGIVER'
-               CHECK (source IN ('CAREGIVER','BOOKING','ADMIN')),
-  time_range   tstzrange GENERATED ALWAYS AS (tstzrange(start_at, end_at, '[)')) STORED,
-  CHECK (end_at > start_at)
-);
-
--- HARDENING: chong double-book (BOOKED + BLOCKED khong duoc chong gio)
-ALTER TABLE caregiver_availability
-  ADD CONSTRAINT excl_caregiver_no_overlap
-  EXCLUDE USING gist (caregiver_id WITH =, time_range WITH &&)
-  WHERE (status IN ('BOOKED','BLOCKED'));
-
 CREATE TRIGGER trg_caregiver_updated BEFORE UPDATE ON caregiver_profiles
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 

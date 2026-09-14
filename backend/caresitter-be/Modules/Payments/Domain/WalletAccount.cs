@@ -1,4 +1,4 @@
-using CareSitter.SharedKernel.Domain;
+﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Domain;
@@ -38,9 +38,9 @@ public sealed class WalletAccount : AggregateRoot
         string currency = "VND")
     {
         if (string.IsNullOrWhiteSpace(accountType))
-            return Error.Validation("wallet.account_type", "account_type khong duoc rong.");
+            return Error.Validation("wallet.account_type", "account_type không được rỗng.");
         if (string.IsNullOrWhiteSpace(currency))
-            return Error.Validation("wallet.currency", "currency khong duoc rong.");
+            return Error.Validation("wallet.currency", "currency không được rỗng.");
 
         return new WalletAccount(Guid.NewGuid(), userId, accountType, currency);
     }

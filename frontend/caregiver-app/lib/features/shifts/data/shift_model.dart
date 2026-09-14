@@ -42,9 +42,15 @@ class CareTaskModel {
   final String? description;
   final bool isRequired;
   final bool requiresPhoto;
-  final String status;
+  final int sortOrder;
+  final String status; // PENDING | COMPLETED | SKIPPED
   final bool isCompleted;
   final List<String> photoUrls;
+  /// PACKAGE | CAREGIVER_AD_HOC | SYSTEM
+  final String source;
+  final String? skipReason;
+  final String? completedBy;
+  final DateTime? createdAt;
 
   const CareTaskModel({
     required this.id,
@@ -52,13 +58,21 @@ class CareTaskModel {
     this.description,
     this.isRequired = false,
     this.requiresPhoto = false,
+    this.sortOrder = 0,
     this.status = 'PENDING',
     this.isCompleted = false,
     this.photoUrls = const [],
+    this.source = 'PACKAGE',
+    this.skipReason,
+    this.completedBy,
+    this.createdAt,
   });
 
   bool get isSkipped => status.toUpperCase() == 'SKIPPED';
   bool get isResolved => isCompleted || isSkipped;
+  bool get isAdHoc => source == 'CAREGIVER_AD_HOC';
+  /// Task đang ở trạng thái terminal (không thể tick/skip lại)
+  bool get isTerminal => isCompleted || isSkipped;
 
   factory CareTaskModel.fromApi(Map<String, dynamic> json) {
     final status = json['status']?.toString().toUpperCase() ?? 'PENDING';
@@ -68,17 +82,28 @@ class CareTaskModel {
       description: json['description']?.toString(),
       isRequired: json['isRequired'] as bool? ?? false,
       requiresPhoto: json['requiresPhoto'] as bool? ?? false,
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
       status: status,
-      isCompleted: status == 'DONE',
+      isCompleted: status == 'DONE' || status == 'COMPLETED',
       photoUrls: (json['photoUrls'] as List<dynamic>? ?? [])
           .map((value) => value.toString())
           .where((value) => value.isNotEmpty)
           .toList(growable: false),
+      source: json['source']?.toString() ?? 'PACKAGE',
+      skipReason: json['skipReason']?.toString(),
+      completedBy: json['completedBy']?.toString(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())?.toLocal()
+          : null,
     );
   }
 
-  CareTaskModel copyWith(
-      {String? status, bool? isCompleted, List<String>? photoUrls}) {
+  CareTaskModel copyWith({
+    String? status,
+    bool? isCompleted,
+    List<String>? photoUrls,
+    String? skipReason,
+  }) {
     final nextStatus = status ?? this.status;
     return CareTaskModel(
       id: id,
@@ -86,9 +111,16 @@ class CareTaskModel {
       description: description,
       isRequired: isRequired,
       requiresPhoto: requiresPhoto,
+      sortOrder: sortOrder,
       status: nextStatus,
-      isCompleted: isCompleted ?? nextStatus.toUpperCase() == 'DONE',
+      isCompleted: isCompleted ??
+          (nextStatus.toUpperCase() == 'DONE' ||
+              nextStatus.toUpperCase() == 'COMPLETED'),
       photoUrls: photoUrls ?? this.photoUrls,
+      source: source,
+      skipReason: skipReason ?? this.skipReason,
+      completedBy: completedBy,
+      createdAt: createdAt,
     );
   }
 }
@@ -132,6 +164,10 @@ class ShiftModel {
   final String? beneficiaryRelationship;
   final String? beneficiaryCondition;
   final String? beneficiaryNotes;
+  /// True nếu gói dịch vụ cho phép caregiver thêm task phát sinh
+  final bool allowAdHocTasks;
+  /// True nếu ca cần admin/customer review (có task bắt buộc bị bỏ qua)
+  final bool needsReview;
 
   const ShiftModel({
     required this.id,
@@ -172,6 +208,8 @@ class ShiftModel {
     this.beneficiaryRelationship,
     this.beneficiaryCondition,
     this.beneficiaryNotes,
+    this.allowAdHocTasks = false,
+    this.needsReview = false,
   });
 
   ShiftModel copyWith({
@@ -191,6 +229,8 @@ class ShiftModel {
     String? beneficiaryRelationship,
     String? beneficiaryCondition,
     String? beneficiaryNotes,
+    bool? allowAdHocTasks,
+    bool? needsReview,
   }) {
     return ShiftModel(
       id: id,
@@ -232,6 +272,8 @@ class ShiftModel {
           beneficiaryRelationship ?? this.beneficiaryRelationship,
       beneficiaryCondition: beneficiaryCondition ?? this.beneficiaryCondition,
       beneficiaryNotes: beneficiaryNotes ?? this.beneficiaryNotes,
+      allowAdHocTasks: allowAdHocTasks ?? this.allowAdHocTasks,
+      needsReview: needsReview ?? this.needsReview,
     );
   }
 }

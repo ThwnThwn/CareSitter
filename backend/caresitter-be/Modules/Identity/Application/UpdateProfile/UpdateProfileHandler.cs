@@ -1,4 +1,4 @@
-using System.Net.Mail;
+﻿using System.Net.Mail;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Identity.Infrastructure;
@@ -19,11 +19,11 @@ internal sealed class UpdateProfileHandler(
     public async Task<Result<ProfileResponse>> Handle(UpdateProfileCommand request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId)
-            return Error.Forbidden("profile.unauthenticated", "Khong xac dinh duoc nguoi dung dang nhap.");
+            return Error.Forbidden("profile.unauthenticated", "Không xác định được người dùng đang nhập.");
 
         var fullName = request.FullName?.Trim() ?? string.Empty;
         if (fullName.Length is < 2 or > 255)
-            return Error.Validation("profile.invalid_full_name", "Ho ten phai co tu 2 den 255 ky tu.");
+            return Error.Validation("profile.invalid_full_name", "Ho ten phai co tu 2 den 255 ký tự.");
 
         var email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
         if (email.Length > 255 || !MailAddress.TryCreate(email, out var parsedEmail) ||
@@ -32,10 +32,10 @@ internal sealed class UpdateProfileHandler(
 
         var displayName = request.DisplayName?.Trim();
         if (displayName?.Length > 255)
-            return Error.Validation("profile.invalid_display_name", "Ten hien thi khong duoc vuot qua 255 ky tu.");
+            return Error.Validation("profile.invalid_display_name", "Tên hiển thị không được vượt quá 255 ký tự.");
 
         if (request.DateOfBirth > DateOnly.FromDateTime(clock.UtcNow.UtcDateTime))
-            return Error.Validation("profile.invalid_date_of_birth", "Ngay sinh khong duoc nam trong tuong lai.");
+            return Error.Validation("profile.invalid_date_of_birth", "Ngày sinh không được nằm trong tương lai.");
 
         var gender = string.IsNullOrWhiteSpace(request.Gender) ? null : request.Gender.Trim().ToUpperInvariant();
         if (gender is not null && !AllowedGenders.Contains(gender))
@@ -43,10 +43,10 @@ internal sealed class UpdateProfileHandler(
 
         var user = await db.Users.SingleOrDefaultAsync(x => x.Id == userId && x.DeletedAt == null, ct);
         if (user is null)
-            return Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan nguoi dung.");
+            return Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan người dùng.");
 
         if (await db.Users.AnyAsync(x => x.Id != userId && x.DeletedAt == null && x.Email == email, ct))
-            return Error.Conflict("profile.email_exists", "Email da duoc su dung boi tai khoan khac.");
+            return Error.Conflict("profile.email_exists", "Email đã được sử dụng bởi tài khoản khác.");
 
         user.UpdateProfile(fullName, email, displayName, request.DateOfBirth, gender);
         await db.SaveChangesAsync(ct);

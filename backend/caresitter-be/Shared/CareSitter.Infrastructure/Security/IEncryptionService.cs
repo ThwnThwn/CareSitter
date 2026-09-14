@@ -1,7 +1,7 @@
-namespace CareSitter.Infrastructure.Security;
+﻿namespace CareSitter.Infrastructure.Security;
 
 /// <summary>
-/// Ma hoa du lieu nhay cam (CCCD, so TK) + HMAC hash chong trung. Key tu KMS/cau hinh.
+/// Ma hoa du lieu nhay cam (CCCD, so TK) + HMAC hash chong trung. Key tu KMS/cấu hình.
 /// </summary>
 public interface IEncryptionService
 {
