@@ -62,6 +62,12 @@ class SettingsScreen extends ConsumerWidget {
                       onTap: () => context.push('/settings/notifications'),
                     ),
                     _SettingsItem(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Ví CareSitter',
+                      subtitle: 'Số dư và lịch sử hoàn tiền',
+                      onTap: () => context.push('/wallet'),
+                    ),
+                    _SettingsItem(
                       icon: Icons.credit_card_outlined,
                       title: 'Phương thức thanh toán',
                       subtitle: 'Thẻ, ví điện tử, chuyển khoản',

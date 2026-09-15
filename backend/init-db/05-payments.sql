@@ -12,7 +12,7 @@ SET search_path = payments, public;
 CREATE TABLE wallet_accounts (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id           uuid REFERENCES identity.users(id) ON DELETE SET NULL,
-  account_type      varchar(20) NOT NULL CHECK (account_type IN ('CAREGIVER','PLATFORM')),
+  account_type      varchar(20) NOT NULL CHECK (account_type IN ('CUSTOMER','CAREGIVER','PLATFORM')),
   available_balance bigint NOT NULL DEFAULT 0 CHECK (available_balance >= 0),
   pending_balance   bigint NOT NULL DEFAULT 0 CHECK (pending_balance >= 0),
   currency          char(3) NOT NULL DEFAULT 'VND',
@@ -103,6 +103,11 @@ CREATE TABLE payout_requests (
   reviewed_at              timestamptz,
   reject_reason            text
 );
+
+-- Mỗi khách chỉ có một Ví CareSitter. Ví được tạo lazy khi phát sinh hoàn tiền.
+CREATE UNIQUE INDEX ux_wallet_customer_user
+  ON wallet_accounts (user_id)
+  WHERE account_type = 'CUSTOMER' AND user_id IS NOT NULL;
 
 -- HARDENING: ledger bat bien (POSTED khong sua/xoa)
 CREATE OR REPLACE FUNCTION prevent_ledger_mutation()

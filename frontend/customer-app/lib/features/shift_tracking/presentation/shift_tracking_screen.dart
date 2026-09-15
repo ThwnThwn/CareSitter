@@ -215,8 +215,10 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                     const SizedBox(height: 14),
                     _buildTaskList(context, ref, bk),
                     const SizedBox(height: 14),
-                    _buildCaregiverNote(bk),
-                    const SizedBox(height: 14),
+                    if (bk.beneficiaryNotes?.trim().isNotEmpty == true) ...[
+                      _buildFamilyNote(bk.beneficiaryNotes!.trim()),
+                      const SizedBox(height: 14),
+                    ],
                   ],
                   _buildInfoRow(bk),
                   const SizedBox(height: 14),
@@ -1635,8 +1637,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     return Icons.task_alt_outlined;
   }
 
-  // ── Caregiver note ─────────────────────────────────────────────────────────
-  Widget _buildCaregiverNote(BookingModel bk) {
+  // ── Note supplied by the customer/family when creating the booking ─────────
+  Widget _buildFamilyNote(String note) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1654,15 +1656,14 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Ghi chú từ người chăm sóc',
+                const Text('Ghi chú của gia đình',
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFFB8860B))),
                 const SizedBox(height: 4),
                 Text(
-                  '${bk.beneficiaryName} hôm nay tinh thần khá tốt. '
-                  'Đã hoàn thành các bài tập nhẹ theo lịch.',
+                  note,
                   style: const TextStyle(
                       fontSize: 13, color: AppColors.textPrimary, height: 1.5),
                 ),
@@ -1840,14 +1841,16 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 ],
               ),
               const SizedBox(height: 14),
-              Text('Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}'),
+              Text(
+                  'Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}'),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
+                      content: Text(
+                          '✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
                       backgroundColor: AppColors.primary,
                     ),
                   );
@@ -1867,7 +1870,6 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           (m) => '${m[1]}.',
         )} ₫';
   }
-
 }
 
 // ── Bottom action bar ──────────────────────────────────────────────────────────
@@ -2082,7 +2084,7 @@ class _BottomActionBar extends ConsumerWidget {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Nếu không xác nhận, hệ thống sẽ tự hoàn tất sau 2 giờ kể từ khi ca kết thúc.',
+                      'Nếu không xác nhận, hệ thống sẽ tự hoàn tất sau 24 giờ kể từ khi yêu cầu checkout được gửi.',
                       style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,

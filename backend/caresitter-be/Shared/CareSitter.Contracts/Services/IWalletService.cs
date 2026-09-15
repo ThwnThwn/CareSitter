@@ -9,6 +9,13 @@ public interface IWalletService
 
     Task<Result> ReleaseEscrowAsync(Guid bookingId, long amount, CancellationToken ct = default);
 
+    /// <summary>
+    /// Hoàn toàn bộ escrow của booking vào Ví CareSitter của khách.
+    /// Idempotent theo bookingId: chạy lại không thể ghi có hai lần.
+    /// </summary>
+    Task<Result> RefundToCustomerWalletAsync(Guid bookingId, Guid customerId,
+        CancellationToken ct = default);
+
     Task<Result> SettleAsync(Guid bookingId, Guid caregiverId, long escrowAmount, long platformFeeAmount,
         CancellationToken ct = default);
 }

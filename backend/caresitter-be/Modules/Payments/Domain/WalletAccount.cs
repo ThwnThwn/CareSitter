@@ -25,7 +25,7 @@ public sealed class WalletAccount : AggregateRoot
 
     public Guid? UserId { get; private set; }
 
-    /// <summary>Allowed values: 'CAREGIVER', 'PLATFORM'.</summary>
+    /// <summary>Allowed values: 'CUSTOMER', 'CAREGIVER', 'PLATFORM'.</summary>
     public string AccountType { get; private set; } = null!;
 
     public long AvailableBalance { get; private set; }

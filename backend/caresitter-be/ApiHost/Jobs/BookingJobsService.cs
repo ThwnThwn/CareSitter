@@ -446,6 +446,96 @@ public sealed class BookingJobsService
             _logger.LogInformation("[BookingJobs] Expanded {Count} expired caregiver offers", expanded);
     }
 
+    /// <summary>
+    /// Không còn caregiver phù hợp: hoàn toàn bộ escrow vào Ví CareSitter của
+    /// khách, sau đó mới đóng booking thành REFUNDED. Job lặp lại an toàn khi
+    /// lỗi tạm thời hoặc một worker bị dừng giữa hai database transaction.
+    /// </summary>
+    public async Task RefundUnmatchedBookingsAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        var wallet = scope.ServiceProvider.GetRequiredService<IWalletService>();
+        var sync = scope.ServiceProvider.GetRequiredService<BookingSyncService>();
+        var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
+        var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
+
+        var bookingIds = await db.Bookings.AsNoTracking()
+            .Where(x => x.Status == BookingStatus.MatchingFailed)
+            .OrderBy(x => x.UpdatedAt)
+            .Select(x => x.Id)
+            .Take(100)
+            .ToListAsync();
+
+        foreach (var bookingId in bookingIds)
+        {
+            var snapshot = await db.Bookings.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == bookingId && x.Status == BookingStatus.MatchingFailed);
+            if (snapshot is null) continue;
+
+            try
+            {
+                // Không giữ row lock của booking lúc PaymentsDbContext insert ledger:
+                // FK ở schema payments sẽ chờ lock đó và gây deadlock giữa hai DbContext.
+                var credited = await wallet.RefundToCustomerWalletAsync(
+                    snapshot.Id, snapshot.CustomerId);
+                if (credited.IsFailure)
+                {
+                    _logger.LogWarning("Could not credit customer wallet for unmatched booking {BookingId}: {Reason}",
+                        snapshot.Id, credited.Error.Message);
+                    continue;
+                }
+
+                await using var tx = await db.Database.BeginTransactionAsync();
+                var booking = await db.Bookings.FromSqlInterpolated(
+                    $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
+                    .SingleOrDefaultAsync();
+                if (booking is null || booking.Status == BookingStatus.Refunded)
+                {
+                    await tx.CommitAsync();
+                    continue;
+                }
+                if (booking.Status != BookingStatus.MatchingFailed)
+                {
+                    await tx.CommitAsync();
+                    continue;
+                }
+
+                var transitioned = booking.TransitionTo(BookingStatus.Refunded);
+                if (transitioned.IsFailure)
+                {
+                    _logger.LogWarning("Could not mark unmatched booking {BookingId} refunded: {Reason}",
+                        booking.Id, transitioned.Error.Message);
+                    await tx.RollbackAsync();
+                    continue;
+                }
+
+                sync.WriteSyncEvent(booking, "REFUNDED_NO_CAREGIVER");
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                await hub.Clients.Group(CareTrackingHub.BookingGroup(booking.Id))
+                    .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
+                        booking.Id, "matching_failed", "refunded", DateTimeOffset.UtcNow));
+                await notifications.NotifyAsync(new UserNotificationMessage(
+                    booking.CustomerId,
+                    "PAYMENT",
+                    "Đã hoàn tiền vào Ví CareSitter",
+                    $"{booking.EscrowAmount:N0}đ đã được cộng vào Ví CareSitter vì chưa tìm được người chăm sóc phù hợp.",
+                    new Dictionary<string, string>
+                    {
+                        ["bookingId"] = booking.Id.ToString(),
+                        ["status"] = "refunded",
+                        ["deepLink"] = $"/bookings/{booking.Id}"
+                    }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to refund unmatched booking {BookingId}", bookingId);
+            }
+        }
+    }
+
     private static string ToApi(BookingStatus status) => status switch
     {
         BookingStatus.Draft => "draft",

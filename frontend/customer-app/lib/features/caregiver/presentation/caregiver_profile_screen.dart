@@ -13,6 +13,13 @@ class CaregiverProfileScreen extends ConsumerWidget {
 
   const CaregiverProfileScreen({super.key, required this.id});
 
+  CaregiverModel? _findCaregiver(List<CaregiverModel> caregivers) {
+    for (final caregiver in caregivers) {
+      if (caregiver.id == id) return caregiver;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caregiverAsync = ref.watch(caregiverStoreProvider);
@@ -23,20 +30,12 @@ class CaregiverProfileScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Lỗi: $e')),
         data: (caregivers) {
-          final caregiver = caregivers.firstWhere(
-            (c) => c.id == id,
-            orElse: () => caregivers.isNotEmpty
-                ? caregivers.first
-                : CaregiverModel(
-                    id: id,
-                    userId: id,
-                    fullName: 'Caregiver',
-                    ratingAvg: 5.0,
-                    ratingCount: 0,
-                    availabilityStatus: 'ONLINE',
-                    skills: const [],
-                  ),
-          );
+          final caregiver = _findCaregiver(caregivers);
+          if (caregiver == null) {
+            return const Center(
+              child: Text('Không tìm thấy hồ sơ người chăm sóc'),
+            );
+          }
 
           return CustomScrollView(
             slivers: [
@@ -65,12 +64,6 @@ class CaregiverProfileScreen extends ConsumerWidget {
                     FadeSlideStaggered(
                       index: 3,
                       child: _buildSection(
-                          'Đánh giá gần đây', _buildReviewsSection()),
-                    ),
-                    const SizedBox(height: 16),
-                    FadeSlideStaggered(
-                      index: 4,
-                      child: _buildSection(
                           'Lịch làm việc', _buildScheduleSection()),
                     ),
                     const SizedBox(height: 24),
@@ -83,21 +76,10 @@ class CaregiverProfileScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: caregiverAsync.maybeWhen(
         data: (caregivers) {
-          final caregiver = caregivers.firstWhere(
-            (c) => c.id == id,
-            orElse: () => caregivers.isNotEmpty
-                ? caregivers.first
-                : CaregiverModel(
-                    id: id,
-                    userId: id,
-                    fullName: 'Caregiver',
-                    ratingAvg: 5.0,
-                    ratingCount: 0,
-                    availabilityStatus: 'ONLINE',
-                    skills: const [],
-                  ),
-          );
-          return _buildBottomBar(context, caregiver);
+          final caregiver = _findCaregiver(caregivers);
+          return caregiver == null
+              ? const SizedBox.shrink()
+              : _buildBottomBar(context, caregiver);
         },
         orElse: () => const SizedBox.shrink(),
       ),
@@ -362,67 +344,6 @@ class CaregiverProfileScreen extends ConsumerWidget {
           fontSize: 13,
           height: 1.5,
         ),
-      ),
-    );
-  }
-
-  Widget _buildReviewsSection() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.secondaryContainer,
-                child: Text('TH',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.w700)),
-              ),
-              SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Trần Hữu',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Row(
-                    children: [
-                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
-                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
-                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
-                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
-                      Icon(Icons.star, size: 12, color: Color(0xFFF39C12)),
-                    ],
-                  ),
-                ],
-              ),
-              Spacer(),
-              Text('2 ngày trước',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-            ],
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Chăm sóc viên rất tận tâm, đúng giờ và chu đáo. Gia đình rất an tâm.',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
-          ),
-        ],
       ),
     );
   }

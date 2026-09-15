@@ -85,14 +85,18 @@ class ShiftListScreen extends ConsumerWidget {
   Widget _buildPendingShifts(
       BuildContext context, WidgetRef ref, List<ShiftModel> shifts) {
     final pendingList = shifts
-        .where((s) => s.status == 'pending' || s.status == 'open')
+        .where((s) =>
+            s.status == 'pending' ||
+            s.status == 'open' ||
+            s.status == 'checkout_pending_review')
         .toList();
 
     if (pendingList.isEmpty) {
       return const AppEmptyState(
         icon: Icons.hourglass_empty_rounded,
-        title: 'Không có lời mời nào',
-        message: 'Khi có ca mới phù hợp, lời mời sẽ hiển thị tại đây.',
+        title: 'Không có ca đang chờ',
+        message:
+            'Lời mời nhận ca và ca chờ khách xác nhận hoàn tất sẽ hiển thị tại đây.',
       );
     }
 
@@ -112,7 +116,7 @@ class ShiftListScreen extends ConsumerWidget {
           date: item.date,
           time: item.time,
           status: item.status,
-          isInvitation: true,
+          isInvitation: item.status == 'pending' || item.status == 'open',
         );
       },
     );
@@ -165,6 +169,7 @@ class ShiftListScreen extends ConsumerWidget {
     final style = ShiftStatusStyle.of(status);
     final statusColor = style.color;
     final isPending = status == 'pending' || status == 'open';
+    final isCheckoutPending = status == 'checkout_pending_review';
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -288,6 +293,37 @@ class ShiftListScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                if (isCheckoutPending) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusPendingBg,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                        color: AppColors.statusPending.withValues(alpha: .28),
+                      ),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.pending_actions_rounded,
+                            size: 18, color: AppColors.statusPending),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Đã gửi yêu cầu checkout. Đang chờ khách hàng xác nhận; hệ thống sẽ tự hoàn tất sau 24 giờ nếu không có khiếu nại.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.4,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (isInvitation) ...[
                   const SizedBox(height: 16),
                   Row(

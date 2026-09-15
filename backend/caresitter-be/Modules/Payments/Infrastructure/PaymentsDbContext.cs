@@ -108,7 +108,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Ignore(x => x.UpdatedAt); // ledger_entries has no updated_at column
             b.HasIndex(x => new { x.BookingId, x.TransactionType })
                 .IsUnique()
-                .HasFilter("booking_id IS NOT NULL AND transaction_type IN ('ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING')")
+                .HasFilter("booking_id IS NOT NULL AND transaction_type IN ('ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING', 'REFUND')")
                 .HasDatabaseName("ux_ledger_booking_transaction_type");
         });
 

@@ -55,6 +55,13 @@ class ShiftStatusStyle {
           label: 'Chờ phản hồi',
           icon: Icons.hourglass_bottom_rounded,
         );
+      case 'checkout_pending_review':
+        return const ShiftStatusStyle._(
+          color: AppColors.statusPending,
+          backgroundColor: AppColors.statusPendingBg,
+          label: 'Chờ khách xác nhận',
+          icon: Icons.pending_actions_rounded,
+        );
       case 'completed':
         return const ShiftStatusStyle._(
           color: AppColors.statusCompleted,

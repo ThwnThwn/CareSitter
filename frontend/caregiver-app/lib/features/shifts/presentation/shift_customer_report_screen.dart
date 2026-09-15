@@ -211,24 +211,6 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    ...List.generate(
-                        5,
-                        (i) => Icon(
-                              i < 4
-                                  ? Icons.star_rounded
-                                  : Icons.star_half_rounded,
-                              size: 14,
-                              color: AppColors.secondary,
-                            )),
-                    const SizedBox(width: 4),
-                    const Text('4.9 • 128 đánh giá',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
               ],
             ),
           ),

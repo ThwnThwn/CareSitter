@@ -224,12 +224,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                           ),
                           const SizedBox(width: 8),
                           _FilterChip(
-                            label: '⭐ Đánh giá 4.9+',
-                            isActive: false,
-                            onTap: () {},
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterChip(
                             label: '🏥 Có chứng chỉ',
                             isActive: false,
                             onTap: () {},

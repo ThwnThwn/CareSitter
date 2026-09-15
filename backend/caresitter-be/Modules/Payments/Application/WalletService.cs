@@ -93,7 +93,7 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
 
         var refund = LedgerEntry.Create("REFUND",
             "escrow:platform", "customer:escrow", lockEntry.Amount, bookingId,
-            metadata: "compensating_release_after_confirm_failure");
+            metadata: "{\"reason\":\"compensating_release_after_confirm_failure\"}");
         if (refund.IsFailure)
             return refund.Error;
 
@@ -110,5 +110,68 @@ internal sealed class WalletService(PaymentsDbContext db, IDisputeLookupService 
         }
 
         return Result.Success();
+    }
+
+    public async Task<Result> RefundToCustomerWalletAsync(Guid bookingId, Guid customerId,
+        CancellationToken ct = default)
+    {
+        // REFUND là chốt idempotency. Không tạo hoặc cộng tiền vào ví lần hai.
+        if (await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+                x.BookingId == bookingId && x.TransactionType == "REFUND", ct))
+            return Result.Success();
+
+        var lockEntry = await db.LedgerEntries.AsNoTracking().SingleOrDefaultAsync(x =>
+            x.BookingId == bookingId && x.TransactionType == "ESCROW_LOCK", ct);
+        if (lockEntry is null || lockEntry.Amount == 0)
+            return Result.Success();
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            // Re-check inside the transaction because Hangfire retries can overlap.
+            if (await db.LedgerEntries.AnyAsync(x =>
+                    x.BookingId == bookingId && x.TransactionType == "REFUND", ct))
+            {
+                await tx.CommitAsync(ct);
+                return Result.Success();
+            }
+
+            var wallet = await db.WalletAccounts.SingleOrDefaultAsync(x =>
+                x.UserId == customerId && x.AccountType == "CUSTOMER", ct);
+            if (wallet is null)
+            {
+                var created = WalletAccount.Create(customerId, "CUSTOMER");
+                if (created.IsFailure) return created.Error;
+                wallet = created.Value;
+                db.WalletAccounts.Add(wallet);
+            }
+
+            var credit = wallet.AddAvailable(lockEntry.Amount);
+            if (credit.IsFailure) return credit.Error;
+
+            var refund = LedgerEntry.Create(
+                "REFUND",
+                "escrow:platform",
+                $"wallet:customer:{customerId}",
+                lockEntry.Amount,
+                bookingId,
+                metadata: "{\"reason\":\"no_caregiver_available_credit_to_customer_wallet\"}");
+            if (refund.IsFailure) return refund.Error;
+
+            db.LedgerEntries.Add(refund.Value);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Result.Success();
+        }
+        catch (DbUpdateException)
+        {
+            await tx.RollbackAsync(ct);
+            // Nếu request cạnh tranh đã ghi REFUND thì số dư đã được ghi trong
+            // cùng transaction của request đó; coi như thành công.
+            var refundedByOtherRequest = await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+                x.BookingId == bookingId && x.TransactionType == "REFUND", ct);
+            if (refundedByOtherRequest) return Result.Success();
+            throw;
+        }
     }
 }

@@ -25,6 +25,7 @@ import '../../features/review/presentation/dispute_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/settings/presentation/profile_edit_screen.dart';
 import '../../features/settings/presentation/payment_methods_screen.dart';
+import '../../features/wallet/presentation/wallet_screen.dart';
 import '../../features/settings/presentation/saved_addresses_screen.dart';
 import '../../features/settings/presentation/change_password_screen.dart';
 import '../../features/settings/presentation/two_factor_auth_screen.dart';
@@ -353,6 +354,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const PaymentMethodsScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/wallet',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const WalletScreen(),
         ),
       ),
       GoRoute(
