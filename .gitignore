@@ -3,12 +3,13 @@
 # (backend: .NET | frontend: Flutter + web)
 # ===========================================================
 
-# ---------- Docs / Design ----------
-docs/
-DESIGN.md
-!docs/
-docs/*
-!docs/phase-0-6-roadmap.md
+# ---------- Chỉ theo dõi source chính ----------
+/*
+!/.gitignore
+!/backend/
+!/backend/**
+!/frontend/
+!/frontend/**
 /backend/docs/
 
 # ---------- Secrets / môi trường ----------
