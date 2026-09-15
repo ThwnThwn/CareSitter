@@ -122,15 +122,18 @@ class CaregiverProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 48),
                 Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 44,
-                      backgroundColor: Colors.white.withValues(alpha: 0.25),
-                      child: Text(
-                        caregiver.initials,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800),
+                    Hero(
+                      tag: 'caregiver-avatar-${caregiver.id}',
+                      child: CircleAvatar(
+                        radius: 44,
+                        backgroundColor: Colors.white.withValues(alpha: 0.25),
+                        child: Text(
+                          caregiver.initials,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ),
                     if (caregiver.isOnline)

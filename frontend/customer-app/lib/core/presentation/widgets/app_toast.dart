@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../push/notification_deep_link_service.dart';
@@ -7,6 +9,9 @@ enum AppToastType { success, error, loading }
 
 /// Toast nổi dùng cho các thao tác quan trọng; mỗi lần hiển thị thay thế toast trước đó.
 final class AppToast {
+  static OverlayEntry? _entry;
+  static Timer? _dismissTimer;
+
   static void loading(BuildContext context, String message) => _show(
         context,
         message: message,
@@ -22,8 +27,12 @@ final class AppToast {
       type: AppToastType.error,
       duration: const Duration(seconds: 5));
 
-  static void dismiss(BuildContext context) =>
-      _messengerFor(context)?.hideCurrentSnackBar();
+  static void dismiss(BuildContext context) {
+    _dismissTimer?.cancel();
+    _entry?.remove();
+    _entry = null;
+    _messengerFor(context)?.hideCurrentSnackBar();
+  }
 
   static ScaffoldMessengerState? _messengerFor(BuildContext context) =>
       notificationMessengerKey.currentState ??
@@ -52,60 +61,132 @@ final class AppToast {
           AppColors.primary.withValues(alpha: .10)
         ),
     };
-    final messenger = _messengerFor(context);
-    if (messenger == null) return;
+    dismiss(context);
+    final overlayContext = notificationMessengerKey.currentContext ?? context;
+    final overlay = Overlay.maybeOf(overlayContext, rootOverlay: true);
+    if (overlay == null) return;
 
-    messenger
-      ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        duration: duration,
-        content: Semantics(
-          liveRegion: true,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: accent.withValues(alpha: .24)),
-              boxShadow: [
-                BoxShadow(
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) => _TopToast(
+        icon: icon,
+        accent: accent,
+        surface: surface,
+        message: message,
+        isLoading: type == AppToastType.loading,
+        onDismiss: () => _remove(entry),
+      ),
+    );
+    _entry = entry;
+    overlay.insert(entry);
+    _dismissTimer = Timer(duration, () => _remove(entry));
+  }
+
+  static void _remove(OverlayEntry entry) {
+    if (_entry != entry) return;
+    _dismissTimer?.cancel();
+    entry.remove();
+    _entry = null;
+  }
+}
+
+class _TopToast extends StatelessWidget {
+  final IconData icon;
+  final Color accent;
+  final Color surface;
+  final String message;
+  final bool isLoading;
+  final VoidCallback onDismiss;
+
+  const _TopToast({
+    required this.icon,
+    required this.accent,
+    required this.surface,
+    required this.message,
+    required this.isLoading,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final reducedMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 12,
+      left: 16,
+      right: 16,
+      child: Semantics(
+        liveRegion: true,
+        child: TweenAnimationBuilder<double>(
+          duration:
+              reducedMotion ? Duration.zero : const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          tween: Tween(begin: 0, end: 1),
+          builder: (context, value, child) => Opacity(
+            opacity: value,
+            child: Transform.translate(
+              offset: Offset(0, -24 * (1 - value)),
+              child: child,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: .24)),
+                boxShadow: [
+                  BoxShadow(
                     color: Colors.black.withValues(alpha: .08),
                     blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: Row(children: [
-              if (type == AppToastType.loading)
-                SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: accent))
-              else
-                Icon(icon, color: accent, size: 21),
-              const SizedBox(width: 11),
-              Expanded(
-                  child: Text(message,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  if (isLoading)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: accent,
+                      ),
+                    )
+                  else
+                    Icon(icon, color: accent, size: 21),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Text(
+                      message,
                       style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          height: 1.35))),
-              if (type != AppToastType.loading)
-                IconButton(
-                  onPressed: messenger.hideCurrentSnackBar,
-                  icon: const Icon(Icons.close_rounded,
-                      size: 18, color: AppColors.textSecondary),
-                  tooltip: 'Đóng',
-                  visualDensity: VisualDensity.compact,
-                ),
-            ]),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                  if (!isLoading)
+                    IconButton(
+                      onPressed: onDismiss,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
+                      tooltip: 'Đóng',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
-      ));
+      ),
+    );
   }
 }

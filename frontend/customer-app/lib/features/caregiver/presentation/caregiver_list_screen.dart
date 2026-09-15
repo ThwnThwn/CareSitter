@@ -372,15 +372,18 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
               children: [
                 Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: AppColors.primaryContainer,
-                      child: Text(
-                        caregiver.initials,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                    Hero(
+                      tag: 'caregiver-avatar-${caregiver.id}',
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundColor: AppColors.primaryContainer,
+                        child: Text(
+                          caregiver.initials,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
