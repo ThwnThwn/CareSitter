@@ -1,5 +1,6 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog.Application;
+using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Modules.Catalog.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using FluentValidation;
 
 namespace CareSitter.Modules.Catalog;
 
@@ -21,6 +23,10 @@ public sealed class CatalogModule : IModule
                 configuration.GetConnectionString("CareSitter"),
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", CatalogDbContext.SchemaName)));
+
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CatalogModule>());
+        services.AddValidatorsFromAssemblyContaining<CatalogModule>();
+        services.AddScoped<IAddressRepository, AddressRepository>();
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).
         services.AddMemoryCache();

@@ -40,7 +40,7 @@ public sealed class VNPayOptions
 public interface IVNPayService
 {
     string BuildPaymentUrl(PaymentIntent intent, VNPayOptions options,
-        string? beneficiaryName = null);
+        string? bookingCustomerName = null);
     bool VerifyCallback(IReadOnlyDictionary<string, string> values, VNPayOptions options);
     Task<VNPayQueryResult> QueryTransactionAsync(PaymentIntent intent, VNPayOptions options,
         CancellationToken ct = default);
@@ -59,7 +59,7 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
 
     /// <summary>Tạo URL thanh toán đã ký cho một PaymentIntent.</summary>
     public string BuildPaymentUrl(PaymentIntent intent, VNPayOptions options,
-        string? beneficiaryName = null)
+        string? bookingCustomerName = null)
     {
         if (string.IsNullOrWhiteSpace(options.TmnCode) || string.IsNullOrWhiteSpace(options.HashSecret))
             throw new InvalidOperationException("VNPay TmnCode và HashSecret chưa được cấu hình.");
@@ -81,10 +81,9 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             ["vnp_CurrCode"] = intent.Currency,
             ["vnp_IpAddr"] = "127.0.0.1",
             ["vnp_Locale"] = options.Locale,
-            // VNPay already displays the amount separately. Keep the order info
-            // short, human-readable, and based on the public payment reference
-            // instead of exposing a long internal booking GUID.
-            ["vnp_OrderInfo"] = BuildOrderInfo(intent, beneficiaryName),
+            // VNPay already displays the amount separately. Describe the payer
+            // clearly and never expose a booking GUID in the customer-facing text.
+            ["vnp_OrderInfo"] = BuildOrderInfo(bookingCustomerName),
             ["vnp_OrderType"] = options.OrderType,
             ["vnp_ReturnUrl"] = options.ReturnUrl,
             ["vnp_TxnRef"] = intent.ProviderOrderRef
@@ -95,14 +94,12 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
         return $"{options.PaymentUrl}?{hashData}&vnp_SecureHash={secureHash}";
     }
 
-    private static string BuildOrderInfo(PaymentIntent intent, string? beneficiaryName)
+    private static string BuildOrderInfo(string? bookingCustomerName)
     {
-        var name = string.IsNullOrWhiteSpace(beneficiaryName)
-            ? "Nguoi duoc cham soc"
-            : beneficiaryName.Trim();
-        // Keep the provider field compact and avoid exposing the internal booking GUID.
-        return $"CareSitter - Thanh toan dich vu cham soc cua khach hang - " +
-            $"Nguoi duoc cham soc: {name} - Ma don: {intent.ProviderOrderRef}";
+        var name = string.IsNullOrWhiteSpace(bookingCustomerName)
+            ? "CareSitter"
+            : bookingCustomerName.Trim();
+        return $"Thanh toán đơn hàng của khách hàng {name}";
     }
 
     /// <summary>Kiểm tra chữ ký callback bằng so sánh constant-time.</summary>

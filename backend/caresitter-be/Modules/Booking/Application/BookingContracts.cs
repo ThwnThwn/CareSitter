@@ -1,0 +1,37 @@
+namespace CareSitter.Modules.Booking.Application;
+
+public sealed record CheckInSelfieResponse(Guid MediaId, string Url, DateTimeOffset UploadedAt);
+
+public sealed record CaregiverSuggestionResponse(
+    Guid CaregiverId,
+    string? DisplayName,
+    int Rank,
+    decimal Score,
+    int? DistanceMeters,
+    decimal? TravelTimeMinutes,
+    IReadOnlyDictionary<string, decimal> ScoreBreakdown);
+
+public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? CaregiverId,
+    Guid AddressId, Guid ServiceTypeId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd,
+    DateTimeOffset? ActualStart, DateTimeOffset? ActualEnd,
+    DateTimeOffset? CheckoutPendingReviewAt, string? CheckoutSource,
+    string Status, long EscrowAmount, long PlatformFeeAmount, long CaregiverEarningAmount,
+    DateTimeOffset? CancelledAt, string? CancelReason,
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, long SyncVersion = 0,
+    string? BeneficiaryName = null,
+    string? CaregiverName = null,
+    string? AddressText = null,
+    string? ServiceName = null,
+    string? ServiceDescription = null,
+    string? Note = null,
+    int? BeneficiaryAge = null,
+    string? BeneficiaryRelationship = null,
+    string? BeneficiaryCondition = null,
+    string? BeneficiaryNotes = null,
+    double? AddressLatitude = null,
+    double? AddressLongitude = null,
+    Guid? OfferId = null,
+    DateTimeOffset? OfferExpiresAt = null,
+    int? OfferRank = null,
+    bool NeedsReview = false,
+    bool AllowAdHocTasks = false);

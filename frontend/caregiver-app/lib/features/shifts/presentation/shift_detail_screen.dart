@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/router/navigation_helpers.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/app_widgets.dart';
 import '../data/shift_model.dart';
 import 'providers/shifts_provider.dart';
@@ -908,20 +909,11 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
             try {
               await ref.read(shiftsProvider.notifier).startEnRoute(booking.id);
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      '🚗 Bắt đầu di chuyển! Khách hàng theo dõi vị trí của bạn.'),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
+              AppToast.success(
+                  context, '🚗 Bắt đầu di chuyển! Khách hàng theo dõi vị trí của bạn.');
             } catch (error) {
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('Chưa thể bắt đầu di chuyển: $error'),
-                    backgroundColor: AppColors.error),
-              );
+              AppToast.error(context, 'Chưa thể bắt đầu di chuyển: $error');
             }
           },
           icon: const Icon(Icons.directions_car_rounded,
@@ -976,18 +968,11 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
                     .declineBooking(bookingId);
                 if (context.mounted) {
                   context.pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Đã từ chối ca làm việc này.')),
-                  );
+                  AppToast.success(context, 'Đã từ chối ca làm việc này.');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Chưa từ chối được ca: $e'),
-                        backgroundColor: AppColors.error),
-                  );
+                  AppToast.error(context, 'Chưa từ chối được ca: $e');
                 }
               }
             },
@@ -1012,21 +997,12 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
                     .acceptBooking(bookingId);
                 if (context.mounted) {
                   context.pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          '✅ Đã nhận ca thành công! Ca nằm trong Tab Sắp tới.'),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
+                  AppToast.success(
+                      context, '✅ Đã nhận ca thành công! Ca nằm trong Tab Sắp tới.');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Lỗi nhận ca: $e'),
-                        backgroundColor: AppColors.error),
-                  );
+                  AppToast.error(context, 'Lỗi nhận ca: $e');
                 }
               }
             },
@@ -1085,22 +1061,13 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
                   await ref.read(shiftsProvider.notifier).checkIn(booking.id);
                 } catch (error) {
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Check-in chưa thành công: $error'),
-                        backgroundColor: AppColors.error),
-                  );
+                  AppToast.error(context, 'Check-in chưa thành công: $error');
                   return;
                 }
                 if (!context.mounted) return;
                 context.pushReplacement('/shifts/${booking.id}/active');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        '📍 Đã GPS check-in! Bắt đầu thực hiện ca chăm sóc.'),
-                    backgroundColor: AppColors.primary,
-                  ),
-                );
+                AppToast.success(
+                    context, '📍 Đã GPS check-in! Bắt đầu thực hiện ca chăm sóc.');
               },
               icon: const Icon(Icons.my_location_rounded,
                   size: 18, color: Colors.white),

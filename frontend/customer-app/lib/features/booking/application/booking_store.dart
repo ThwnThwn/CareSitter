@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_notifier.dart';
+import '../../../core/notifications/in_app_notification_events.dart';
 import '../../../core/realtime/care_signalr_service.dart';
+import '../../home/application/notifications_store.dart';
 import '../../review/data/review_repository.dart';
 import '../data/booking_repository.dart';
 import '../data/models/booking_model.dart';
@@ -26,6 +28,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   // Subscription realtime — giữ để cancel khi logout/dispose.
   final List<StreamSubscription<dynamic>> _subscriptions = [];
+  final Set<String> _announcedRealtimeEvents = {};
   bool _realtimeSubscribed = false;
 
   @override
@@ -34,6 +37,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
     _lastCursor = 0;
     _isSyncing = false;
     _syncPending = false;
+    _announcedRealtimeEvents.clear();
 
     ref.listen(authStateProvider, (prev, next) {
       final isAuth = next.value?.isAuthenticated ?? false;
@@ -73,7 +77,17 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
     _realtimeSubscribed = true;
     _subscriptions.add(
-      signalR.customerSyncStream.listen((_) => requestSync()),
+      signalR.customerSyncStream.listen((_) {
+        unawaited(requestSync());
+        // BookingListSync cũng là fallback khi BookingStatusChanged bị miss
+        // trong lúc hub reconnect; inbox vẫn phản ánh notification đã lưu ở BE.
+        unawaited(ref.read(notificationsProvider.notifier).refresh());
+      }),
+    );
+    _subscriptions.add(
+      signalR.statusStream.listen((change) {
+        unawaited(_handleBookingStatusChanged(change));
+      }),
     );
     _subscriptions.add(
       signalR.onReconnected.listen((_) {
@@ -120,6 +134,11 @@ class BookingStore extends Notifier<List<BookingModel>> {
   /// Kích hoạt delta sync. Nếu đang sync thì ghi nhớ pendng để chạy sau.
   /// Gọi an toàn nhiều lần liên tiếp — mutex đảm bảo chỉ 1 request active.
   Future<void> requestSync() async {
+    // withAutomaticReconnect chỉ áp dụng sau một kết nối thành công. Nếu lần
+    // connect đầu tiên thất bại, polling sync sẽ thử mở lại hub ở tick tiếp theo.
+    if (!_realtimeSubscribed || !ref.read(careSignalRProvider).isConnected) {
+      unawaited(_startRealtime());
+    }
     if (_isSyncing) {
       _syncPending = true;
       return;
@@ -131,15 +150,35 @@ class BookingStore extends Notifier<List<BookingModel>> {
     _isSyncing = true;
     try {
       bool hasMore = true;
+      var receivedBookingChanges = false;
+      final acceptedBookings = <BookingModel>[];
       while (hasMore) {
         final result = await _repo.syncBookings(_lastCursor);
         if (result.resetRequired) {
           await _loadFromApi(); // full refresh, reset cursor
           return;
         }
-        _mergeItems(result.items.cast<BookingModel>());
+        final items = result.items.cast<BookingModel>();
+        if (items.isNotEmpty) receivedBookingChanges = true;
+        acceptedBookings.addAll(
+          _mergeItems(items).where(
+            (booking) => booking.status == 'caregiver_accepted',
+          ),
+        );
         _lastCursor = result.nextCursor;
         hasMore = result.hasMore;
+      }
+
+      // Notification đã được persist trong BE cùng luồng nhận ca. Refresh sau
+      // delta giúp bell/inbox vẫn cập nhật kể cả khi SignalR status event bị miss.
+      if (receivedBookingChanges) {
+        await ref.read(notificationsProvider.notifier).refresh();
+      }
+      for (final booking in acceptedBookings) {
+        _publishCaregiverAcceptedNotification(
+          booking.id,
+          booking.status,
+        );
       }
     } catch (e) {
       // Lỗi network — giữ cursor cũ, retry tick kế tiếp (silent).
@@ -156,17 +195,20 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   /// Merge danh sách incoming vào state hiện tại.
   /// Chỉ cập nhật khi syncVersion của booking đến cao hơn bản đang lưu.
-  void _mergeItems(List<BookingModel> incoming) {
-    if (incoming.isEmpty) return;
+  List<BookingModel> _mergeItems(List<BookingModel> incoming) {
+    if (incoming.isEmpty) return const [];
     final map = {for (final b in state) b.id: b};
+    final changed = <BookingModel>[];
     for (final b in incoming) {
       final existing = map[b.id];
       if (existing == null || b.syncVersion > existing.syncVersion) {
         map[b.id] = b;
+        changed.add(b);
       }
     }
     state = map.values.toList()
       ..sort((a, b) => b.scheduledStart.compareTo(a.scheduledStart));
+    return changed;
   }
 
   // ── Lifecycle actions (gọi trực tiếp API, chờ response) ──────────────────
@@ -344,6 +386,43 @@ class BookingStore extends Notifier<List<BookingModel>> {
       // ignore: avoid_print
       print('[BookingStore] _handleTaskUpdated error: $e');
     }
+  }
+
+  Future<void> _handleBookingStatusChanged(BookingStatusChange change) async {
+    if (change.bookingId.isEmpty ||
+        change.newStatus.toLowerCase() != 'caregiver_accepted') {
+      return;
+    }
+
+    // A tracking screen may be joined to both booking and customer groups.
+    // Keep one foreground notification for the same server event.
+    final key =
+        '${change.bookingId}:${change.newStatus}:${change.changedAt.toUtc().microsecondsSinceEpoch}';
+    if (!_announcedRealtimeEvents.add(key)) return;
+    if (_announcedRealtimeEvents.length > 128) {
+      _announcedRealtimeEvents.clear();
+      _announcedRealtimeEvents.add(key);
+    }
+
+    await requestSync();
+    await ref.read(notificationsProvider.notifier).refresh();
+    _publishCaregiverAcceptedNotification(change.bookingId, change.newStatus);
+  }
+
+  void _publishCaregiverAcceptedNotification(String bookingId, String status) {
+    ref.read(inAppNotificationEventsProvider).publish(
+          InAppNotificationEvent(
+            title: 'Caregiver đã nhận ca',
+            body: 'Caregiver đã xác nhận lịch chăm sóc của bạn.',
+            data: {
+              'type': 'BOOKING',
+              'bookingId': bookingId,
+              'status': status,
+              'deepLink': '/bookings/$bookingId',
+            },
+            deduplicationKey: 'booking:$bookingId:${status.toLowerCase()}',
+          ),
+        );
   }
 
   void _updateBookingTasks(String bookingId, List<CareTaskModel> tasks) {

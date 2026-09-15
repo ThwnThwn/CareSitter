@@ -1,5 +1,9 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.Support.Application;
+using CareSitter.Modules.Support.Application.Commands.MarkAllNotificationsRead;
+using CareSitter.Modules.Support.Application.Commands.MarkNotificationRead;
 using CareSitter.Modules.Support.Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +17,8 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/notifications")]
-public sealed class NotificationsController(SupportDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class NotificationsController(
+    SupportDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
     /// <summary>Lấy danh sách thông báo của người dùng (phân trang).</summary>
     [HttpGet]
@@ -38,26 +43,16 @@ public sealed class NotificationsController(SupportDbContext db, ICurrentUser cu
     [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkRead(Guid id, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var n = await db.Notifications.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
-        if (n is null) return NotFound();
-        n.MarkRead();
-        await db.SaveChangesAsync(ct);
-        return Ok(new NotificationResponse(n.Id, n.Type, n.Title,
-            n.Body, n.Data, n.ReadAt, n.CreatedAt));
+        var result = await sender.Send(new MarkNotificationReadCommand(id), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Đánh dấu tất cả thông báo của người dùng là đã đọc.</summary>
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllRead(CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var unread = await db.Notifications
-            .Where(x => x.UserId == userId && x.ReadAt == null)
-            .ToListAsync(ct);
-        foreach (var n in unread) n.MarkRead();
-        await db.SaveChangesAsync(ct);
-        return Ok(new { marked = unread.Count });
+        var result = await sender.Send(new MarkAllNotificationsReadCommand(), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Lấy số lượng thông báo chưa đọc.</summary>
@@ -70,6 +65,3 @@ public sealed class NotificationsController(SupportDbContext db, ICurrentUser cu
         return Ok(new { unread = count });
     }
 }
-
-public sealed record NotificationResponse(Guid Id, string Type, string Title,
-    string? Body, string? Data, DateTimeOffset? ReadAt, DateTimeOffset CreatedAt);

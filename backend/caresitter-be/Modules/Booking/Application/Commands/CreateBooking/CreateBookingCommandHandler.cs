@@ -1,28 +1,28 @@
-﻿using CareSitter.Contracts.Services;
+using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
-namespace CareSitter.Modules.Booking.Application.CreateBooking;
+namespace CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 
-internal sealed class CreateBookingHandler(
-    BookingDbContext db,
+internal sealed class CreateBookingCommandHandler(
+    IBookingRepository bookings,
     IPricingService pricing,
     IPeopleLookupService people,
     ICatalogLookupService catalog,
     ICurrentUser currentUser,
     IClock clock,
     IConfiguration configuration,
-    BookingSyncService bookingSync) : IRequestHandler<CreateBookingCommand, Result<Guid>>
+    BookingSyncService bookingSync,
+    BookingResponseMapper responseMapper)
+    : IRequestHandler<CreateBookingCommand, Result<BookingResponse>>
 {
-    public async Task<Result<Guid>> Handle(CreateBookingCommand request, CancellationToken ct)
+    public async Task<Result<BookingResponse>> Handle(CreateBookingCommand request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } customerId)
             return Error.Forbidden("booking.unauthenticated", "Khong xac dinh duoc người dùng.");
@@ -59,9 +59,9 @@ internal sealed class CreateBookingHandler(
             quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson);
         booking.TransitionTo(BookingStatus.PendingPayment);
 
-        db.Bookings.Add(booking);
+        bookings.Add(booking);
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Created);
-        await db.SaveChangesAsync(ct);
-        return booking.Id;
+        await bookings.SaveChangesAsync(ct);
+        return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

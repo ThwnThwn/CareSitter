@@ -1,5 +1,6 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.People.Application;
+using CareSitter.Modules.People.Domain;
 using CareSitter.Modules.People.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using FluentValidation;
 
 namespace CareSitter.Modules.People;
 
@@ -21,6 +23,9 @@ public sealed class PeopleModule : IModule
                 configuration.GetConnectionString("CareSitter"),
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", PeopleDbContext.SchemaName)));
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
+        services.AddValidatorsFromAssemblyContaining<PeopleModule>();
+        services.AddScoped<IPeopleRepository, PeopleRepository>();
         services.AddScoped<IPeopleLookupService, PeopleLookupService>();
 
         // Đăng ký Controllers nằm trong assembly của People module

@@ -1,13 +1,16 @@
 ﻿using CareSitter.Infrastructure.Security;
-using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Catalog.Application;
+using CareSitter.Modules.Catalog.Application.Commands.CreateAddress;
+using CareSitter.Modules.Catalog.Application.Commands.DeleteAddress;
+using CareSitter.Modules.Catalog.Application.Commands.SetDefaultAddress;
+using CareSitter.Modules.Catalog.Application.Commands.UpdateAddress;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Modules.Catalog.Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 
 namespace CareSitter.Modules.Catalog.Controllers;
 
@@ -22,7 +25,7 @@ public sealed class AddressesController(
     CatalogDbContext db,
     ICurrentUser currentUser,
     IPlaceAutocompleteService places,
-    IClock clock) : ControllerBase
+    ISender sender) : ControllerBase
 {
     /// <summary>Gợi ý địa chỉ thật từ Geoapify. Chỉ gợi ý trong Việt Nam.</summary>
     [HttpGet("autocomplete")]
@@ -99,29 +102,10 @@ public sealed class AddressesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] AddressUpsertRequest request, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        VerifiedPlaceDetails? verified;
-        try
-        {
-            verified = await ResolvePlaceAsync(request.PlaceId, request.SessionToken, ct);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
-        }
-
-        if (verified is null)
-            return BadRequest(new { error = "Vui long chon dia chi tu danh sach goi y." });
-
-        var point = CreatePoint(verified.Latitude, verified.Longitude);
-        if (point is null) return BadRequest(new { error = "Toa do khong hop le." });
-        var created = Address.Create(verified.FormattedAddress, point, userId, request.Label,
-            verified.Ward, verified.District, verified.City, verified.Country, verified.PlaceId,
-            "GEOAPIFY", clock.UtcNow, request.Note);
-        if (created.IsFailure) return BadRequest(new { error = created.Error.Message });
-        db.Addresses.Add(created.Value);
-        await db.SaveChangesAsync(ct);
-        return Created($"/api/v1/addresses/{created.Value.Id}", ToResponse(created.Value));
+        var result = await sender.Send(new CreateAddressCommand(request.PlaceId,
+            request.SessionToken, request.Label, request.Note), ct);
+        return result.ToActionResult(this,
+            address => Created($"/api/v1/addresses/{address.Id}", address));
     }
 
     /// <summary>Cập nhật địa chỉ theo ID. Chỉ owner mới sửa được.</summary>
@@ -130,31 +114,9 @@ public sealed class AddressesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] AddressUpsertRequest request, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var entity = await db.Addresses.SingleOrDefaultAsync(x =>
-            x.Id == id && x.OwnerUserId == userId, ct);
-        if (entity is null) return NotFound();
-        VerifiedPlaceDetails? verified;
-        try
-        {
-            verified = await ResolvePlaceAsync(request.PlaceId, request.SessionToken, ct);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = ex.Message });
-        }
-
-        if (verified is null)
-            return BadRequest(new { error = "Vui long chon dia chi tu danh sach goi y." });
-
-        var point = CreatePoint(verified.Latitude, verified.Longitude);
-        if (point is null) return BadRequest(new { error = "Toa do khong hop le." });
-        var result = entity.Update(verified.FormattedAddress, point, request.Label,
-            verified.Ward, verified.District, verified.City, verified.Country,
-            verified.PlaceId, "GEOAPIFY", clock.UtcNow, request.Note);
-        if (result.IsFailure) return BadRequest(new { error = result.Error.Message });
-        await db.SaveChangesAsync(ct);
-        return Ok(ToResponse(entity));
+        var result = await sender.Send(new UpdateAddressCommand(id, request.PlaceId,
+            request.SessionToken, request.Label, request.Note), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Xóa địa chỉ. Trả về 409 Conflict nếu địa chỉ đang được liên kết với booking/beneficiary.</summary>
@@ -164,20 +126,8 @@ public sealed class AddressesController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var entity = await db.Addresses.SingleOrDefaultAsync(x =>
-            x.Id == id && x.OwnerUserId == userId, ct);
-        if (entity is null) return NotFound();
-        db.Addresses.Remove(entity);
-        try
-        {
-            await db.SaveChangesAsync(ct);
-            return NoContent();
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict(new { error = "Dia chi dang duoc su dung va không thể xoa." });
-        }
+        var result = await sender.Send(new DeleteAddressCommand(id), ct);
+        return result.ToActionResult(this, _ => NoContent());
     }
 
     /// <summary>
@@ -190,39 +140,8 @@ public sealed class AddressesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetDefault(Guid id, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        // Validate: address tồn tại và thuộc user này
-        var exists = await db.Addresses.AsNoTracking()
-            .AnyAsync(x => x.Id == id && x.OwnerUserId == userId, ct);
-        if (!exists) return NotFound();
-
-        // NOTE: DefaultAddressId được update ở identity.users
-        // Flutter gọi đây để validate rồi gọi tiếp PUT /profile/default-address/{id}
-        // Hoặc backend có thể dùng Shared DB connection để cross-schema update
-        return Ok(new { defaultAddressId = id, validated = true });
-    }
-
-    private static Point? CreatePoint(double latitude, double longitude)
-    {
-        if (latitude is < -90 or > 90 || longitude is < -180 or > 180) return null;
-        return new Point(longitude, latitude) { SRID = 4326 };
-    }
-
-    private async Task<VerifiedPlaceDetails?> ResolvePlaceAsync(
-        string? placeId,
-        string? sessionToken,
-        CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(placeId)) return null;
-        try
-        {
-            return await places.GetDetailsAsync(placeId, sessionToken, ct);
-        }
-        catch (InvalidOperationException)
-        {
-            throw;
-        }
+        var result = await sender.Send(new SetDefaultAddressCommand(id), ct);
+        return result.ToActionResult(this);
     }
 
     private static AddressResponse ToResponse(Address x) => new(x.Id, x.FullAddress,
@@ -235,8 +154,3 @@ public sealed record AddressUpsertRequest(
     string? SessionToken,
     string? Label,
     string? Note = null);
-
-public sealed record AddressResponse(Guid Id, string FullAddress, double Latitude,
-    double Longitude, string? Label, string? Ward, string? District, string? City,
-    string Country, string? PlaceId, string? Provider, DateTimeOffset? VerifiedAt,
-    bool IsVerified, string? Note);

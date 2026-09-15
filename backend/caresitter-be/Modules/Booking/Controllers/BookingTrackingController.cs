@@ -1,8 +1,10 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.Booking.Application.Commands.PostBookingGps;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +29,8 @@ public sealed class BookingTrackingController(
     BookingDbContext db,
     ICurrentUser currentUser,
     IPeopleLookupService people,
-    IHubContext<CareTrackingHub> hub) : ControllerBase
+    IHubContext<CareTrackingHub> hub,
+    ISender sender) : ControllerBase
 {
     // ════════════════════════════════════════════
     //  TIMELINE
@@ -101,12 +104,10 @@ public sealed class BookingTrackingController(
     /// vị trí không cần thiết; GPS chỉ được kiểm tra ở endpoint check-in.
     /// </summary>
     [HttpPost("gps")]
-    public IActionResult PostGps(Guid id)
+    public async Task<IActionResult> PostGps(Guid id, CancellationToken ct)
     {
-        return StatusCode(StatusCodes.Status410Gone, new
-        {
-            error = "GPS tracking liên tục đã bị tắt. Hệ thống chỉ dùng GPS lúc check-in để xác thực khoảng cách."
-        });
+        var result = await sender.Send(new PostBookingGpsCommand(id), ct);
+        return result.ToActionResult(this, _ => NoContent());
     }
 
     /// <summary>

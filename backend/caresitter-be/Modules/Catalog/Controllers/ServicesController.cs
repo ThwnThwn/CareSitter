@@ -1,5 +1,6 @@
-using CareSitter.Contracts.Services;
+using CareSitter.Modules.Catalog.Application.Commands.QuoteService;
 using CareSitter.Modules.Catalog.Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace CareSitter.Modules.Catalog.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/services")]
-public sealed class ServicesController(CatalogDbContext db, IPricingService pricing) : ControllerBase
+public sealed class ServicesController(CatalogDbContext db, ISender sender) : ControllerBase
 {
     /// <summary>Lấy danh sách tất cả dịch vụ đang hoạt động, sắp xếp theo tên.</summary>
     [HttpGet]
@@ -86,11 +87,9 @@ public sealed class ServicesController(CatalogDbContext db, IPricingService pric
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Quote(Guid id, [FromBody] QuoteRequest request, CancellationToken ct)
     {
-        var result = await pricing.QuoteAsync(id, request.ScheduledStart, request.ScheduledEnd, ct);
-        if (result.IsSuccess) return Ok(result.Value);
-        return result.Error.Type == SharedKernel.Results.ErrorType.NotFound
-            ? NotFound(new ProblemDetails { Title = result.Error.Code, Detail = result.Error.Message })
-            : BadRequest(new ProblemDetails { Title = result.Error.Code, Detail = result.Error.Message });
+        var result = await sender.Send(new QuoteServiceCommand(id,
+            request.ScheduledStart, request.ScheduledEnd), ct);
+        return result.ToActionResult(this);
     }
 }
 

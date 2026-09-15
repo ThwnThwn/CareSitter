@@ -19,8 +19,19 @@ final class AppToast {
         duration: const Duration(days: 1),
       );
 
-  static void success(BuildContext context, String message) =>
-      _show(context, message: message, type: AppToastType.success);
+  static void success(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) =>
+      _show(
+        context,
+        message: message,
+        type: AppToastType.success,
+        actionLabel: actionLabel,
+        onAction: onAction,
+      );
 
   static void error(BuildContext context, String message) => _show(context,
       message: message,
@@ -43,6 +54,8 @@ final class AppToast {
     required String message,
     required AppToastType type,
     Duration duration = const Duration(seconds: 4),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     final (icon, accent, surface) = switch (type) {
       AppToastType.success => (
@@ -74,6 +87,8 @@ final class AppToast {
         surface: surface,
         message: message,
         isLoading: type == AppToastType.loading,
+        actionLabel: actionLabel,
+        onAction: onAction,
         onDismiss: () => _remove(entry),
       ),
     );
@@ -96,6 +111,8 @@ class _TopToast extends StatelessWidget {
   final Color surface;
   final String message;
   final bool isLoading;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   final VoidCallback onDismiss;
 
   const _TopToast({
@@ -104,6 +121,8 @@ class _TopToast extends StatelessWidget {
     required this.surface,
     required this.message,
     required this.isLoading,
+    this.actionLabel,
+    this.onAction,
     required this.onDismiss,
   });
 
@@ -170,6 +189,14 @@ class _TopToast extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (!isLoading && actionLabel != null && onAction != null)
+                    TextButton(
+                      onPressed: () {
+                        onDismiss();
+                        onAction!();
+                      },
+                      child: Text(actionLabel!),
+                    ),
                   if (!isLoading)
                     IconButton(
                       onPressed: onDismiss,

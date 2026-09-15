@@ -1,7 +1,13 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.People.Application.Commands.ApproveCaregiverKyc;
+using CareSitter.Modules.People.Application.Commands.CreateCaregiverProfile;
+using CareSitter.Modules.People.Application.Commands.RejectCaregiverKyc;
+using CareSitter.Modules.People.Application.Commands.SubmitCaregiverKyc;
+using CareSitter.Modules.People.Application.Commands.UpdateCaregiverAvailabilityStatus;
+using CareSitter.Modules.People.Application.Commands.UpdateCaregiverProfile;
 using CareSitter.Modules.People.Domain;
 using CareSitter.Modules.People.Infrastructure;
-using CareSitter.SharedKernel.Results;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +22,7 @@ namespace CareSitter.Modules.People.Controllers;
 [ApiController]
 [Authorize]
 public sealed class CaregiverKycController(
-    PeopleDbContext db, ICurrentUser currentUser, IEncryptionService encryption) : ControllerBase
+    PeopleDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
     /// <summary>
     /// Tạo hồ sơ caregiver cho tài khoản CAREGIVER hiện tại.
@@ -26,38 +32,10 @@ public sealed class CaregiverKycController(
     public async Task<IActionResult> CreateMyProfile(
         [FromBody] CreateCaregiverProfileRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        if (!currentUser.IsInRole("CAREGIVER")) return Forbid();
-
-        var existing = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
-        if (existing is not null)
-            return Ok(ToProfileResponse(existing));
-
-        var created = CaregiverProfile.Create(userId);
-        if (created.IsFailure) return Problem(created.Error);
-        var updated = created.Value.UpdateProfile(fullName: req.FullName?.Trim());
-        if (updated.IsFailure) return Problem(updated.Error);
-
-        db.CaregiverProfiles.Add(created.Value);
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException)
-        {
-            // Hai request khởi tạo đồng thời có thể cùng vượt qua bước kiểm tra ở trên.
-            // Unique constraint theo UserId quyết định request thắng; request còn lại trả
-            // về profile vừa được tạo để endpoint vẫn thực sự idempotent.
-            db.ChangeTracker.Clear();
-            var concurrentlyCreated = await db.CaregiverProfiles.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
-            if (concurrentlyCreated is null) throw;
-
-            return Ok(ToProfileResponse(concurrentlyCreated));
-        }
-
-        return Created("/api/v1/caregivers/me/profile", ToProfileResponse(created.Value));
+        var result = await sender.Send(new CreateCaregiverProfileCommand(req.FullName), ct);
+        return result.ToActionResult(this, value => value.Created
+            ? Created("/api/v1/caregivers/me/profile", value.Profile)
+            : Ok(value.Profile));
     }
 
     /// <summary>
@@ -100,47 +78,9 @@ public sealed class CaregiverKycController(
     [HttpPost("api/v1/caregivers/me/kyc")]
     public async Task<IActionResult> SubmitKyc([FromBody] SubmitKycRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        var profile = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
-        if (profile is null)
-            return NotFound(new { error = "Caregiver profile khong ton tai." });
-
-        var cccdNumber = req.CccdNumber?.Trim() ?? string.Empty;
-        if (cccdNumber.Length is not (9 or 12) || !cccdNumber.All(char.IsDigit))
-            return BadRequest(new { error = "So CCCD phai gom 9 hoac 12 chu so." });
-        if (!IsHttpUrl(req.CccdFrontUrl) || !IsHttpUrl(req.CccdBackUrl))
-            return BadRequest(new { error = "Anh mat truoc va mat sau CCCD phai co URL hop le." });
-
-        var certificateUrls = (req.CertificateUrls ?? Array.Empty<string>())
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        if (certificateUrls.Length > 10 || certificateUrls.Any(x => !IsHttpUrl(x)))
-            return BadRequest(new { error = "Danh sach chung chi khong hop le hoac vuot qua 10 tep." });
-
-        var cccdEncrypted = encryption.Encrypt(cccdNumber);
-        var cccdHash = encryption.Hmac(cccdNumber);
-
-        var result = profile.SubmitKyc(
-            cccdEncrypted,
-            cccdHash,
-            req.CccdFrontUrl.Trim(),
-            req.CccdBackUrl.Trim(),
-            JsonSerializer.Serialize(certificateUrls));
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new
-        {
-            kycStatus = profile.KycStatus,
-            profile.CccdFrontUrl,
-            profile.CccdBackUrl,
-            CertificateUrls = certificateUrls,
-            message = "Hồ sơ KYC đã được nộp."
-        });
+        var result = await sender.Send(new SubmitCaregiverKycCommand(req.CccdNumber,
+            req.CccdFrontUrl, req.CccdBackUrl, req.CertificateUrls), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>
@@ -154,36 +94,10 @@ public sealed class CaregiverKycController(
     [HttpPut("api/v1/caregivers/me/profile")]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateCaregiverProfileRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        var profile = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
-        if (profile is null)
-            return NotFound(new { error = "Caregiver profile khong ton tai." });
-
-        var result = profile.UpdateProfile(
-            fullName: req.FullName, bio: req.Bio,
-            yearsOfExperience: req.YearsOfExperience,
-            skills: req.Skills, serviceCity: req.ServiceCity,
-            serviceDistrict: req.ServiceDistrict,
-            gender: req.Gender, dateOfBirth: req.DateOfBirth);
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new
-        {
-            profile.Id,
-            profile.FullName,
-            profile.Bio,
-            profile.YearsOfExperience,
-            profile.KycStatus,
-            profile.AvailabilityStatus,
-            profile.ServiceCity,
-            profile.ServiceDistrict,
-            profile.Gender,
-            DateOfBirth = profile.DateOfBirth?.ToString("yyyy-MM-dd"),
-            profile.Skills
-        });
+        var result = await sender.Send(new UpdateCaregiverProfileCommand(req.FullName,
+            req.Bio, req.YearsOfExperience, req.Skills, req.ServiceCity,
+            req.ServiceDistrict, req.Gender, req.DateOfBirth), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>
@@ -193,18 +107,9 @@ public sealed class CaregiverKycController(
     public async Task<IActionResult> UpdateMyAvailabilityStatus(
         [FromBody] UpdateCaregiverStatusRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        var profile = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.UserId == userId && x.DeletedAt == null, ct);
-        if (profile is null)
-            return NotFound(new { error = "Caregiver profile khong ton tai." });
-
-        var result = profile.SetAvailabilityStatus(req.Status);
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { profile.Id, profile.AvailabilityStatus });
+        var result = await sender.Send(
+            new UpdateCaregiverAvailabilityStatusCommand(req.Status), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Admin xem hàng đợi KYC cùng tài liệu đã nộp.</summary>
@@ -261,17 +166,8 @@ public sealed class CaregiverKycController(
     [HttpPost("api/v1/caregivers/{id:guid}/kyc/approve")]
     public async Task<IActionResult> ApproveKyc(Guid id, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-
-        var profile = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, ct);
-        if (profile is null) return NotFound();
-
-        var result = profile.ApproveKyc();
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { profile.Id, profile.KycStatus });
+        var result = await sender.Send(new ApproveCaregiverKycCommand(id), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>
@@ -286,30 +182,9 @@ public sealed class CaregiverKycController(
     [HttpPost("api/v1/caregivers/{id:guid}/kyc/reject")]
     public async Task<IActionResult> RejectKyc(Guid id, [FromBody] RejectKycRequest? req, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-
-        var profile = await db.CaregiverProfiles
-            .SingleOrDefaultAsync(x => x.Id == id && x.DeletedAt == null, ct);
-        if (profile is null) return NotFound();
-
-        var result = profile.RejectKyc();
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(new { profile.Id, profile.KycStatus, reason = req?.Reason });
+        var result = await sender.Send(new RejectCaregiverKycCommand(id, req?.Reason), ct);
+        return result.ToActionResult(this);
     }
-
-    private IActionResult Problem(Error error) => error.Type switch
-    {
-        ErrorType.NotFound => NotFound(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Conflict => Conflict(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Forbidden => Forbid(),
-        _ => BadRequest(new ProblemDetails { Title = error.Code, Detail = error.Message })
-    };
-
-    private static bool IsHttpUrl(string? value) =>
-        Uri.TryCreate(value, UriKind.Absolute, out var uri)
-        && uri.Scheme is "http" or "https";
 
     private static string[] DeserializeUrls(string? json)
     {

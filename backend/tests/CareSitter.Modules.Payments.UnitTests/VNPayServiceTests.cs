@@ -40,6 +40,19 @@ public sealed class VNPayServiceTests
         Assert.Equal(TimeSpan.FromMinutes(15), expireDate - createDate);
     }
 
+    [Fact]
+    public void BuildPaymentUrl_UsesBookingCustomerNameForOrderInfo()
+    {
+        var intent = CreatePendingIntent();
+        var url = new VNPayService(new HttpClient()).BuildPaymentUrl(
+            intent, QueryOptions(), "Nguyen Van Hung");
+
+        var query = ParseQuery(new Uri(url).Query);
+
+        Assert.Equal("Thanh toán đơn hàng của khách hàng Nguyen Van Hung", query["vnp_OrderInfo"]);
+        Assert.DoesNotContain(intent.ProviderOrderRef!, query["vnp_OrderInfo"]);
+    }
+
     [Theory]
     [InlineData("00", "00", VNPayQueryState.Succeeded)]
     [InlineData("00", "01", VNPayQueryState.Processing)]

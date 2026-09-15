@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../application/booking_store.dart';
+import '../../../home/application/notifications_store.dart';
 
 import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
 
@@ -26,6 +27,12 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final unreadCount = ref
+            .watch(notificationsProvider)
+            .valueOrNull
+            ?.where((notification) => !notification.isRead)
+            .length ??
+        0;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: NestedScrollView(
@@ -69,14 +76,15 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                             size: 22,
                           ),
                         ),
-                        const Positioned(
-                          right: 6,
-                          top: 6,
-                          child: CircleAvatar(
-                            radius: 4,
-                            backgroundColor: Color(0xFFE74C3C),
+                        if (unreadCount > 0)
+                          const Positioned(
+                            right: 6,
+                            top: 6,
+                            child: CircleAvatar(
+                              radius: 4,
+                              backgroundColor: Color(0xFFE74C3C),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
