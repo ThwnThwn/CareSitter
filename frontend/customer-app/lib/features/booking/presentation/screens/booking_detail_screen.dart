@@ -25,14 +25,9 @@ class BookingDetailScreen extends ConsumerWidget {
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final booking = matches.first;
-    // Chỉ hiển thị hồ sơ và nút liên hệ khi API đã trả về đủ người nhận ca.
-    // Điều này tránh biến dữ liệu enrichment còn thiếu thành một caregiver giả.
-    final hasCaregiverProfile = booking.caregiverId != null &&
-        booking.caregiverName?.trim().isNotEmpty == true;
-    final isWaitingCaregiver = !hasCaregiverProfile &&
-        !booking.isPendingPayment &&
-        !booking.isCancelled &&
-        !booking.isCompleted;
+    // Trạng thái booking là nguồn sự thật. Dữ liệu hồ sơ caregiver chỉ là enrichment
+    // và không được phép làm UI quay lại "Đang tìm" sau khi ca đã được nhận.
+    final isWaitingCaregiver = booking.status == 'confirmed';
     final statusConfig = isWaitingCaregiver
         ? _waitingCaregiverStatusConfig()
         : _getStatusConfig(booking.status);

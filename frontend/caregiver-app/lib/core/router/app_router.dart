@@ -29,6 +29,85 @@ import '../../features/shifts/presentation/shift_customer_report_screen.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
+CustomTransitionPage<T> _tabPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) =>
+    CustomTransitionPage<T>(
+      key: pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 180),
+      reverseTransitionDuration: const Duration(milliseconds: 120),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+          return child;
+        }
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        );
+      },
+    );
+
+CustomTransitionPage<T> _detailPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) =>
+    CustomTransitionPage<T>(
+      key: pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 220),
+      reverseTransitionDuration: const Duration(milliseconds: 160),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+          return child;
+        }
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0, 0.7, curve: Curves.easeOut),
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.08, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+
+CustomTransitionPage<T> _modalPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) =>
+    CustomTransitionPage<T>(
+      key: pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 280),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+          return child;
+        }
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.12),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshSignal = ValueNotifier<int>(0);
   ref.listen(authStateProvider, (_, __) => refreshSignal.value++);
@@ -50,18 +129,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Auth Routes ─────────────────────────────
       GoRoute(
         path: '/auth/phone',
-        builder: (ctx, state) => const PhoneInputScreen(),
+        pageBuilder: (ctx, state) =>
+            _modalPage(pageKey: state.pageKey, child: const PhoneInputScreen()),
       ),
       GoRoute(
         path: '/auth/otp',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final email = state.extra as String? ?? '';
-          return OtpVerifyScreen(email: email);
+          return _modalPage(
+            pageKey: state.pageKey,
+            child: OtpVerifyScreen(email: email),
+          );
         },
       ),
       GoRoute(
         path: '/auth/register',
-        builder: (ctx, state) => const RegisterScreen(),
+        pageBuilder: (ctx, state) =>
+            _modalPage(pageKey: state.pageKey, child: const RegisterScreen()),
       ),
 
       // ── Shell (Bottom Nav) ───────────────────────
@@ -71,19 +155,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (ctx, state) => const HomeScreen(),
+            pageBuilder: (ctx, state) =>
+                _tabPage(pageKey: state.pageKey, child: const HomeScreen()),
           ),
           GoRoute(
             path: '/shifts',
-            builder: (ctx, state) => const ShiftListScreen(),
+            pageBuilder: (ctx, state) => _tabPage(
+                pageKey: state.pageKey, child: const ShiftListScreen()),
           ),
           GoRoute(
             path: '/schedule',
-            builder: (ctx, state) => const ScheduleScreen(),
+            pageBuilder: (ctx, state) =>
+                _tabPage(pageKey: state.pageKey, child: const ScheduleScreen()),
           ),
           GoRoute(
             path: '/settings',
-            builder: (ctx, state) => const SettingsScreen(),
+            pageBuilder: (ctx, state) =>
+                _tabPage(pageKey: state.pageKey, child: const SettingsScreen()),
           ),
         ],
       ),
@@ -92,141 +180,166 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/notifications',
-        builder: (ctx, state) => const NotificationsScreen(),
+        pageBuilder: (ctx, state) => _detailPage(
+            pageKey: state.pageKey, child: const NotificationsScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/profile/setup',
-        builder: (ctx, state) => const ProfileEditScreen(),
+        pageBuilder: (ctx, state) => _modalPage(
+            pageKey: state.pageKey, child: const ProfileEditScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/profile/documents',
-        builder: (ctx, state) => const DocumentStatusScreen(),
+        pageBuilder: (ctx, state) => _detailPage(
+            pageKey: state.pageKey, child: const DocumentStatusScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final id = state.pathParameters['id']!;
-          return ShiftDetailScreen(id: id);
+          return _detailPage(
+              pageKey: state.pageKey, child: ShiftDetailScreen(id: id));
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/active',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final id = state.pathParameters['id']!;
-          return ShiftActiveScreen(id: id);
+          return _detailPage(
+              pageKey: state.pageKey, child: ShiftActiveScreen(id: id));
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/map',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final id = state.pathParameters['id']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return ShiftMapScreen(
-            bookingId: id,
-            beneficiaryName:
-                extra['beneficiaryName'] as String? ?? 'Khách hàng',
-            address: extra['address'] as String? ?? 'Địa chỉ khách hàng',
-            destinationLatitude: (extra['addressLatitude'] as num?)?.toDouble(),
-            destinationLongitude:
-                (extra['addressLongitude'] as num?)?.toDouble(),
+          return _detailPage(
+            pageKey: state.pageKey,
+            child: ShiftMapScreen(
+              bookingId: id,
+              beneficiaryName:
+                  extra['beneficiaryName'] as String? ?? 'Khách hàng',
+              address: extra['address'] as String? ?? 'Địa chỉ khách hàng',
+              destinationLatitude:
+                  (extra['addressLatitude'] as num?)?.toDouble(),
+              destinationLongitude:
+                  (extra['addressLongitude'] as num?)?.toDouble(),
+            ),
           );
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/summary',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final id = state.pathParameters['id']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return ShiftSummaryScreen(
-            bookingId: id,
-            beneficiaryName:
-                extra['beneficiaryName'] as String? ?? 'Khách hàng',
-            caregiverName:
-                extra['caregiverName'] as String? ?? 'Người chăm sóc',
-            caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
-            completedTasks: extra['completedTasks'] as int? ?? 0,
-            totalTasks: extra['totalTasks'] as int? ?? 0,
-            duration: extra['duration'] as String? ?? '0 giờ',
-            checkInTime: extra['checkInTime'] as String? ?? '08:00',
-            caregiverNote: extra['caregiverNote'] as String? ?? '',
-            taskPhotos:
-                (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
-            checkoutPendingReview:
-                extra['checkoutPendingReview'] as bool? ?? false,
+          return _detailPage(
+            pageKey: state.pageKey,
+            child: ShiftSummaryScreen(
+              bookingId: id,
+              beneficiaryName:
+                  extra['beneficiaryName'] as String? ?? 'Khách hàng',
+              caregiverName:
+                  extra['caregiverName'] as String? ?? 'Người chăm sóc',
+              caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
+              completedTasks: extra['completedTasks'] as int? ?? 0,
+              totalTasks: extra['totalTasks'] as int? ?? 0,
+              duration: extra['duration'] as String? ?? '0 giờ',
+              checkInTime: extra['checkInTime'] as String? ?? '08:00',
+              caregiverNote: extra['caregiverNote'] as String? ?? '',
+              taskPhotos:
+                  (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
+              checkoutPendingReview:
+                  extra['checkoutPendingReview'] as bool? ?? false,
+            ),
           );
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/customer-report',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final id = state.pathParameters['id']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return ShiftCustomerReportScreen(
-            bookingId: id,
-            beneficiaryName:
-                extra['beneficiaryName'] as String? ?? 'Khách hàng',
-            caregiverName:
-                extra['caregiverName'] as String? ?? 'Người chăm sóc',
-            caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
-            completedTasks: extra['completedTasks'] as int? ?? 0,
-            totalTasks: extra['totalTasks'] as int? ?? 0,
-            duration: extra['duration'] as String? ?? '0 giờ',
-            checkInTime: extra['checkInTime'] as String? ?? '08:00',
-            caregiverNote: extra['caregiverNote'] as String? ?? '',
-            taskPhotos:
-                (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
+          return _detailPage(
+            pageKey: state.pageKey,
+            child: ShiftCustomerReportScreen(
+              bookingId: id,
+              beneficiaryName:
+                  extra['beneficiaryName'] as String? ?? 'Khách hàng',
+              caregiverName:
+                  extra['caregiverName'] as String? ?? 'Người chăm sóc',
+              caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
+              completedTasks: extra['completedTasks'] as int? ?? 0,
+              totalTasks: extra['totalTasks'] as int? ?? 0,
+              duration: extra['duration'] as String? ?? '0 giờ',
+              checkInTime: extra['checkInTime'] as String? ?? '08:00',
+              caregiverNote: extra['caregiverNote'] as String? ?? '',
+              taskPhotos:
+                  (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
+            ),
           );
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/earnings',
-        builder: (ctx, state) => const EarningsScreen(),
+        pageBuilder: (ctx, state) =>
+            _detailPage(pageKey: state.pageKey, child: const EarningsScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/earnings/withdraw',
-        builder: (ctx, state) => const WithdrawalScreen(),
+        pageBuilder: (ctx, state) =>
+            _modalPage(pageKey: state.pageKey, child: const WithdrawalScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/profile/edit',
-        builder: (ctx, state) => const ProfileEditScreen(),
+        pageBuilder: (ctx, state) => _modalPage(
+            pageKey: state.pageKey, child: const ProfileEditScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/documents',
-        builder: (ctx, state) => const DocumentStatusScreen(),
+        pageBuilder: (ctx, state) => _detailPage(
+            pageKey: state.pageKey, child: const DocumentStatusScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/documents/upload',
-        builder: (ctx, state) {
+        pageBuilder: (ctx, state) {
           final docTitle = state.extra as String? ?? 'Tài liệu';
-          return DocumentUploadScreen(docTitle: docTitle);
+          return _modalPage(
+            pageKey: state.pageKey,
+            child: DocumentUploadScreen(docTitle: docTitle),
+          );
         },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/reviews',
-        builder: (ctx, state) => const ReviewsScreen(),
+        pageBuilder: (ctx, state) =>
+            _detailPage(pageKey: state.pageKey, child: const ReviewsScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/faq',
-        builder: (ctx, state) => const FaqScreen(),
+        pageBuilder: (ctx, state) =>
+            _detailPage(pageKey: state.pageKey, child: const FaqScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/support',
-        builder: (ctx, state) => const SupportScreen(),
+        pageBuilder: (ctx, state) =>
+            _detailPage(pageKey: state.pageKey, child: const SupportScreen()),
       ),
     ],
   );

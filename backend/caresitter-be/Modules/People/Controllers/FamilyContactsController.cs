@@ -1,7 +1,11 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.People.Application;
+using CareSitter.Modules.People.Application.Commands.CreateFamilyContact;
+using CareSitter.Modules.People.Application.Commands.DeleteFamilyContact;
+using CareSitter.Modules.People.Application.Commands.UpdateFamilyContact;
 using CareSitter.Modules.People.Domain;
 using CareSitter.Modules.People.Infrastructure;
-using CareSitter.SharedKernel.Results;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +16,8 @@ namespace CareSitter.Modules.People.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/family-contacts")]
-public sealed class FamilyContactsController(PeopleDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class FamilyContactsController(
+    PeopleDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
@@ -29,53 +34,25 @@ public sealed class FamilyContactsController(PeopleDbContext db, ICurrentUser cu
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] FamilyContactUpsertRequest request, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        var contact = FamilyContact.Create(userId, request.FullName, request.PhoneNumber, request.Note);
-        if (contact.IsFailure) return Failure(contact.Error);
-
-        await using var tx = await BeginRls(userId, ct);
-        var duplicate = await db.FamilyContacts.AnyAsync(x => x.CustomerId == userId &&
-            x.PhoneNumber == contact.Value.PhoneNumber && x.DeletedAt == null, ct);
-        if (duplicate)
-            return Conflict(new ProblemDetails { Title = "family_contact.phone_exists", Detail = "So dien thoai nay da co trong danh ba gia dinh." });
-
-        db.FamilyContacts.Add(contact.Value);
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return Created($"/api/v1/family-contacts/{contact.Value.Id}", ToResponse(contact.Value));
+        var result = await sender.Send(new CreateFamilyContactCommand(
+            request.FullName, request.PhoneNumber, request.Note), ct);
+        return result.ToActionResult(this,
+            contact => Created($"/api/v1/family-contacts/{contact.Id}", contact));
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] FamilyContactUpsertRequest request, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        await using var tx = await BeginRls(userId, ct);
-        var contact = await db.FamilyContacts.SingleOrDefaultAsync(x =>
-            x.Id == id && x.CustomerId == userId && x.DeletedAt == null, ct);
-        if (contact is null) return NotFound();
-        var updated = contact.Update(request.FullName, request.PhoneNumber, request.Note);
-        if (updated.IsFailure) return Failure(updated.Error);
-        var duplicate = await db.FamilyContacts.AnyAsync(x => x.CustomerId == userId &&
-            x.PhoneNumber == contact.PhoneNumber && x.Id != id && x.DeletedAt == null, ct);
-        if (duplicate)
-            return Conflict(new ProblemDetails { Title = "family_contact.phone_exists", Detail = "So dien thoai nay da co trong danh ba gia dinh." });
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return Ok(ToResponse(contact));
+        var result = await sender.Send(new UpdateFamilyContactCommand(id,
+            request.FullName, request.PhoneNumber, request.Note), ct);
+        return result.ToActionResult(this);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        await using var tx = await BeginRls(userId, ct);
-        var contact = await db.FamilyContacts.SingleOrDefaultAsync(x =>
-            x.Id == id && x.CustomerId == userId && x.DeletedAt == null, ct);
-        if (contact is null) return NotFound();
-        contact.Delete(DateTimeOffset.UtcNow);
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return NoContent();
+        var result = await sender.Send(new DeleteFamilyContactCommand(id), ct);
+        return result.ToActionResult(this, _ => NoContent());
     }
 
     private async Task<IDbContextTransaction> BeginRls(Guid userId, CancellationToken ct)
@@ -89,9 +66,6 @@ public sealed class FamilyContactsController(PeopleDbContext db, ICurrentUser cu
     private static FamilyContactResponse ToResponse(FamilyContact x) =>
         new(x.Id, x.FullName, x.PhoneNumber, x.Note);
 
-    private IActionResult Failure(Error error) => BadRequest(
-        new ProblemDetails { Title = error.Code, Detail = error.Message });
 }
 
 public sealed record FamilyContactUpsertRequest(string FullName, string PhoneNumber, string? Note);
-public sealed record FamilyContactResponse(Guid Id, string FullName, string PhoneNumber, string? Note);

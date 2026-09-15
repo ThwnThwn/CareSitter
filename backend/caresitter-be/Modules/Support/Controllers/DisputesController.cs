@@ -1,7 +1,11 @@
 using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.Support.Application;
+using CareSitter.Modules.Support.Application.Commands.CancelDispute;
+using CareSitter.Modules.Support.Application.Commands.CreateDispute;
+using CareSitter.Modules.Support.Application.Commands.ResolveDispute;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.Modules.Support.Infrastructure;
-using CareSitter.SharedKernel.Results;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,26 +20,16 @@ namespace CareSitter.Modules.Support.Controllers;
 [Authorize]
 [Route("api/v1/disputes")]
 public sealed class DisputesController(
-    SupportDbContext db, ICurrentUser currentUser) : ControllerBase
+    SupportDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
     /// <summary>Khách hàng hoặc Caregiver tạo khiếu nại cho một booking.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDisputeRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        bool exists = await db.Disputes.AnyAsync(x => x.BookingId == req.BookingId, ct);
-        if (exists) return Conflict(new { error = "Booking nay da co dispute." });
-
-        var created = Dispute.Create(req.BookingId, userId, req.Reason, req.Description);
-        if (created.IsFailure) return Problem(created.Error);
-
-        db.Disputes.Add(created.Value);
-        await db.SaveChangesAsync(ct);
-        var d = created.Value;
-        return Created($"/api/v1/disputes/{d.Id}",
-            new DisputeResponse(d.Id, d.BookingId, d.RaisedByUserId, d.Reason, d.Description,
-                d.Status, d.Decision, d.RefundAmount, d.OpenedAt, d.ResolvedAt));
+        var result = await sender.Send(new CreateDisputeCommand(
+            req.BookingId, req.Reason, req.Description), ct);
+        return result.ToActionResult(this,
+            dispute => Created($"/api/v1/disputes/{dispute.Id}", dispute));
     }
 
     /// <summary>Lấy danh sách khiếu nại mà user hiện tại đã tạo.</summary>
@@ -69,54 +63,21 @@ public sealed class DisputesController(
     [HttpPost("{id:guid}/resolve")]
     public async Task<IActionResult> Resolve(Guid id, [FromBody] ResolveDisputeRequest req, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-        if (currentUser.UserId is not { } adminId) return Unauthorized();
-
-        var dispute = await db.Disputes.SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (dispute is null) return NotFound();
-
-        var result = dispute.Resolve(adminId, req.Decision, req.RefundAmount, req.CaregiverPenaltyAmount);
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        var d = dispute;
-        return Ok(new DisputeResponse(d.Id, d.BookingId, d.RaisedByUserId,
-            d.Reason, d.Description, d.Status, d.Decision, d.RefundAmount,
-            d.OpenedAt, d.ResolvedAt));
+        var result = await sender.Send(new ResolveDisputeCommand(id,
+            req.Decision, req.RefundAmount, req.CaregiverPenaltyAmount), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Admin huy dispute.</summary>
     [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-
-        var dispute = await db.Disputes.SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (dispute is null) return NotFound();
-
-        var result = dispute.Cancel();
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        var d = dispute;
-        return Ok(new DisputeResponse(d.Id, d.BookingId, d.RaisedByUserId,
-            d.Reason, d.Description, d.Status, d.Decision, d.RefundAmount,
-            d.OpenedAt, d.ResolvedAt));
+        var result = await sender.Send(new CancelDisputeCommand(id), ct);
+        return result.ToActionResult(this);
     }
-
-    private IActionResult Problem(Error error) => error.Type switch
-    {
-        ErrorType.NotFound => NotFound(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Conflict => Conflict(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Forbidden => Forbid(),
-        _ => BadRequest(new ProblemDetails { Title = error.Code, Detail = error.Message })
-    };
 }
 
 public sealed record CreateDisputeRequest(Guid BookingId, string? Reason = null,
     string? Description = null);
-public sealed record DisputeResponse(Guid Id, Guid BookingId, Guid RaisedByUserId,
-    string? Reason, string? Description, string Status, string? Decision,
-    long? RefundAmount, DateTimeOffset OpenedAt, DateTimeOffset? ResolvedAt);
 public sealed record ResolveDisputeRequest(string Decision, long? RefundAmount = null,
     long? CaregiverPenaltyAmount = null);

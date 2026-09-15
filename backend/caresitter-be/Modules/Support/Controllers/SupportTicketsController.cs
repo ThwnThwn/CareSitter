@@ -1,7 +1,10 @@
 ﻿using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.Support.Application.Commands.AssignSupportTicket;
+using CareSitter.Modules.Support.Application.Commands.CreateSupportTicket;
+using CareSitter.Modules.Support.Application.Commands.UpdateSupportTicketStatus;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.Modules.Support.Infrastructure;
-using CareSitter.SharedKernel.Results;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,41 +19,17 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/support/tickets")]
-public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class SupportTicketsController(
+    SupportDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
     /// <summary>User tao ticket ho tro (COMPLAINT, SOS, PAYMENT, KYC, CHECKOUT_REVIEW, GENERAL).</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTicketRequest req, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-
-        var attachmentUrls = (req.AttachmentUrls ?? Array.Empty<string>())
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        if (attachmentUrls.Length > 5 || attachmentUrls.Any(x => !IsHttpUrl(x)))
-            return BadRequest(new { error = "Danh sach tep dinh kem khong hop le hoac vuot qua 5 tep." });
-
-        var ticket = SupportTicket.Create(
-            userId, req.Type, req.Priority ?? "MEDIUM", req.BookingId,
-            req.Title, req.Description, JsonSerializer.Serialize(attachmentUrls));
-        if (ticket.IsFailure) return Problem(ticket.Error);
-
-        db.SupportTickets.Add(ticket.Value);
-
-        if (ticket.Value.Type == "SOS" || ticket.Value.Priority == "CRITICAL")
-        {
-            var notif = Notification.Create(userId, "SOS",
-                "Ticket khan cap can xu ly",
-                body: $"Ticket {ticket.Value.Id} - {req.Type}",
-                data: $"{{\"ticket_id\":\"{ticket.Value.Id}\"}}");
-            if (notif.IsSuccess) db.Notifications.Add(notif.Value);
-        }
-
-        await db.SaveChangesAsync(ct);
-        return Created($"/api/v1/support/tickets/{ticket.Value.Id}",
-            ToResponse(ticket.Value));
+        var result = await sender.Send(new CreateSupportTicketCommand(req.Type,
+            req.Title, req.Description, req.Priority, req.BookingId, req.AttachmentUrls), ct);
+        return result.ToActionResult(this,
+            ticket => Created($"/api/v1/support/tickets/{ticket.Id}", ticket));
     }
 
     /// <summary>
@@ -113,33 +92,16 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateTicketStatusRequest req, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-
-        var ticket = await db.SupportTickets.SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (ticket is null) return NotFound();
-
-        var result = ticket.UpdateStatus(req.Status);
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(ToResponse(ticket));
+        var result = await sender.Send(new UpdateSupportTicketStatusCommand(id, req.Status), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Admin nhan xu ly ticket (assign admin va chuyen IN_PROGRESS).</summary>
     [HttpPut("{id:guid}/assign")]
     public async Task<IActionResult> Assign(Guid id, CancellationToken ct)
     {
-        if (!currentUser.IsInRole("ADMIN")) return Forbid();
-        if (currentUser.UserId is not { } adminId) return Unauthorized();
-
-        var ticket = await db.SupportTickets.SingleOrDefaultAsync(x => x.Id == id, ct);
-        if (ticket is null) return NotFound();
-
-        var result = ticket.AssignAdmin(adminId);
-        if (result.IsFailure) return Problem(result.Error);
-
-        await db.SaveChangesAsync(ct);
-        return Ok(ToResponse(ticket));
+        var result = await sender.Send(new AssignSupportTicketCommand(id), ct);
+        return result.ToActionResult(this);
     }
 
     private static object ToResponse(SupportTicket t) => ToApiResponse(new TicketResponse(
@@ -162,10 +124,6 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
         t.UpdatedAt
     };
 
-    private static bool IsHttpUrl(string value) =>
-        Uri.TryCreate(value, UriKind.Absolute, out var uri)
-        && uri.Scheme is "http" or "https";
-
     private static string[] DeserializeUrls(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return Array.Empty<string>();
@@ -173,13 +131,6 @@ public sealed class SupportTicketsController(SupportDbContext db, ICurrentUser c
         catch (JsonException) { return Array.Empty<string>(); }
     }
 
-    private IActionResult Problem(Error error) => error.Type switch
-    {
-        ErrorType.NotFound => NotFound(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Conflict => Conflict(new ProblemDetails { Title = error.Code, Detail = error.Message }),
-        ErrorType.Forbidden => Forbid(),
-        _ => BadRequest(new ProblemDetails { Title = error.Code, Detail = error.Message })
-    };
 }
 
 public sealed record CreateTicketRequest(

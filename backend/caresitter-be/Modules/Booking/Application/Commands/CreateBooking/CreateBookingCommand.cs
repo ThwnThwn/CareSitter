@@ -1,7 +1,7 @@
 using CareSitter.SharedKernel.Results;
 using MediatR;
 
-namespace CareSitter.Modules.Booking.Application.CreateBooking;
+namespace CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 
 public sealed record CreateBookingCommand(
     Guid BeneficiaryId,
@@ -10,4 +10,4 @@ public sealed record CreateBookingCommand(
     DateTimeOffset ScheduledStart,
     DateTimeOffset ScheduledEnd,
     Guid? CaregiverId = null,
-    IReadOnlyList<string>? RequiredSkills = null) : IRequest<Result<Guid>>;
+    IReadOnlyList<string>? RequiredSkills = null) : IRequest<Result<BookingResponse>>;

@@ -2,12 +2,14 @@ using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
+using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FluentValidation;
 using System.Reflection;
 
 namespace CareSitter.Modules.Booking;
@@ -33,6 +35,7 @@ public sealed class BookingModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", BookingDbContext.SchemaName)));
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingModule>());
+        services.AddValidatorsFromAssemblyContaining<BookingModule>();
 
         // Đăng ký Controllers nằm trong assembly của Booking module
         services.AddControllers()
@@ -47,6 +50,10 @@ public sealed class BookingModule : IModule
         // BookingSyncService: ghi sync event và query delta.
         // Scoped vì inject BookingDbContext (Scoped).
         services.AddScoped<BookingSyncService>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingMediaAssetRepository, BookingMediaAssetRepository>();
+        services.AddScoped<BookingResponseMapper>();
+        services.AddScoped<BookingPostCommitService>();
     }
 
     // Controllers tự được map qua app.MapControllers() ở Program.cs

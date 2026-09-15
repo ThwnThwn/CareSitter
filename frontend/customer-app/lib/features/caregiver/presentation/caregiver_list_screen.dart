@@ -7,6 +7,7 @@ import '../../../core/widgets/loading_list.dart';
 import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 import '../application/caregiver_store.dart';
 import '../data/models/caregiver_model.dart';
+import '../../home/application/notifications_store.dart';
 
 class CaregiverListScreen extends ConsumerStatefulWidget {
   const CaregiverListScreen({super.key});
@@ -48,6 +49,12 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
   Widget build(BuildContext context) {
     final caregiverAsync = ref.watch(caregiverStoreProvider);
     final topPadding = MediaQuery.of(context).padding.top;
+    final unreadCount = ref
+            .watch(notificationsProvider)
+            .valueOrNull
+            ?.where((notification) => !notification.isRead)
+            .length ??
+        0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -160,14 +167,15 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                             child: const Icon(Icons.notifications_outlined,
                                 color: AppColors.textSecondary, size: 22),
                           ),
-                          const Positioned(
-                            right: 6,
-                            top: 6,
-                            child: CircleAvatar(
-                              radius: 4,
-                              backgroundColor: Color(0xFFE74C3C),
+                          if (unreadCount > 0)
+                            const Positioned(
+                              right: 6,
+                              top: 6,
+                              child: CircleAvatar(
+                                radius: 4,
+                                backgroundColor: Color(0xFFE74C3C),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -372,15 +380,18 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
               children: [
                 Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: AppColors.primaryContainer,
-                      child: Text(
-                        caregiver.initials,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                    Hero(
+                      tag: 'caregiver-avatar-${caregiver.id}',
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundColor: AppColors.primaryContainer,
+                        child: Text(
+                          caregiver.initials,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),

@@ -39,62 +39,27 @@ import 'shell_scaffold.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
-// ── Grab-style tab transition: micro-slide từ phải + fade ─────────────────────
+// ── Tab transition: chỉ crossfade để không làm mất cảm giác giữ state ──────────
 CustomTransitionPage<T> _grabTabPage<T>({
   required LocalKey pageKey,
   required Widget child,
 }) {
-  // Spring curve giống Grab app: ease-out cực nhanh, landing mềm
-  const spring = Cubic(0.16, 1.0, 0.30, 1.0);
-
   return CustomTransitionPage<T>(
     key: pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 350),
-    reverseTransitionDuration: const Duration(milliseconds: 280),
+    transitionDuration: const Duration(milliseconds: 180),
+    reverseTransitionDuration: const Duration(milliseconds: 120),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      // Slide: 3% từ phải sang (micro — vừa đủ thấy, không làm mất focus)
-      final slideIn = Tween<Offset>(
-        begin: const Offset(0.03, 0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(parent: animation, curve: spring));
-
-      // Fade: 0 → 1 nhanh ở đầu
-      final fadeIn = CurvedAnimation(
-        parent: animation,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
-      );
-
-      // Secondary (trang cũ đi ra): fade ra mềm + slide nhẹ sang trái
-      final slideOut = Tween<Offset>(
-        begin: Offset.zero,
-        end: const Offset(-0.015, 0),
-      ).animate(
-          CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeIn));
-      final fadeOut = Tween<double>(begin: 1.0, end: 0.85).animate(
-        CurvedAnimation(
-            parent: secondaryAnimation,
-            curve: const Interval(0.0, 0.8, curve: Curves.easeIn)),
-      );
-
-      return SlideTransition(
-        position: slideOut,
-        child: FadeTransition(
-          opacity: fadeOut,
-          child: SlideTransition(
-            position: slideIn,
-            child: FadeTransition(
-              opacity: fadeIn,
-              child: child,
-            ),
-          ),
-        ),
+      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
       );
     },
   );
 }
 
-// ── Slide-up + Fade transition (dùng cho màn hình detail push lên trên) ─────
+// ── Detail transition: thể hiện quan hệ list → detail ─────────────────────────
 CustomTransitionPage<T> _slideUpPage<T>({
   required LocalKey pageKey,
   required Widget child,
@@ -102,16 +67,44 @@ CustomTransitionPage<T> _slideUpPage<T>({
   return CustomTransitionPage<T>(
     key: pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 450),
-    reverseTransitionDuration: const Duration(milliseconds: 350),
+    transitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: const Duration(milliseconds: 160),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
       final slideAnim = Tween<Offset>(
-        begin: const Offset(0, 0.25),
+        begin: const Offset(0.08, 0),
         end: Offset.zero,
-      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutQuart));
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0, 0.7, curve: Curves.easeOut),
+        ),
+        child: SlideTransition(position: slideAnim, child: child),
+      );
+    },
+  );
+}
+
+// ── Modal transition: form / OTP / booking tạm thời ──────────────────────────
+CustomTransitionPage<T> _modalPage<T>({
+  required LocalKey pageKey,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.12),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
       return FadeTransition(
         opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-        child: SlideTransition(position: slideAnim, child: child),
+        child: SlideTransition(position: slide, child: child),
       );
     },
   );
@@ -141,21 +134,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Auth Routes ─────────────────────────────
       GoRoute(
         path: '/auth/login',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const LoginScreen(),
         ),
       ),
       GoRoute(
         path: '/auth/register',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const RegisterScreen(),
         ),
       ),
       GoRoute(
         path: '/auth/email',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const EmailInputScreen(),
         ),
@@ -166,7 +159,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/auth/otp',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: OtpVerifyScreen(email: state.extra as String? ?? ''),
         ),
@@ -226,7 +219,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/beneficiaries/create',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const BeneficiaryCreateScreen(),
         ),
@@ -264,7 +257,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/booking/new',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: BookingWizardScreen(
             initialServiceId: state.uri.queryParameters['serviceId'],
@@ -343,7 +336,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/profile/edit',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const ProfileEditScreen(),
         ),
@@ -367,7 +360,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/addresses',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: SavedAddressesScreen(
             selectionMode: state.uri.queryParameters['select'] == '1',
@@ -378,7 +371,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/password',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const ChangePasswordScreen(),
         ),
@@ -394,7 +387,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings/2fa',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const TwoFactorAuthScreen(),
         ),
@@ -418,7 +411,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/beneficiaries/:id/edit',
-        pageBuilder: (ctx, state) => _slideUpPage(
+        pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: BeneficiaryEditScreen(id: state.pathParameters['id']!),
         ),

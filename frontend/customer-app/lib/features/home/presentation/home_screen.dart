@@ -10,6 +10,7 @@ import '../../caregiver/application/caregiver_store.dart';
 import '../../caregiver/data/models/caregiver_model.dart';
 import '../../catalog/application/service_store.dart';
 import '../../catalog/data/models/service_model.dart';
+import '../application/notifications_store.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final bookings = ref.watch(bookingStoreProvider);
     final profile = ref.watch(profileStoreProvider);
+    final unreadCount = ref
+            .watch(notificationsProvider)
+            .valueOrNull
+            ?.where((notification) => !notification.isRead)
+            .length ??
+        0;
     final topPadding = MediaQuery.of(context).padding.top;
 
     // Tìm ca đang diễn ra (nếu có)
@@ -42,7 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(context, profile, topPadding),
+            _buildHeader(context, profile, topPadding, unreadCount),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               child: Column(
@@ -69,8 +76,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ── Header ─────────────────────────────────────────────────────────────────
-  Widget _buildHeader(
-      BuildContext context, UserProfile profile, double topPadding) {
+  Widget _buildHeader(BuildContext context, UserProfile profile,
+      double topPadding, int unreadCount) {
     final avatarUrl = profile.avatarUrl?.trim() ?? '';
     ImageProvider? avatarImage;
     if (avatarUrl.startsWith('http')) {
@@ -217,18 +224,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       size: 20,
                     ),
                   ),
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE74C3C),
-                        shape: BoxShape.circle,
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE74C3C),
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

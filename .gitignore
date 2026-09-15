@@ -9,6 +9,7 @@ DESIGN.md
 !docs/
 docs/*
 !docs/phase-0-6-roadmap.md
+/backend/docs/
 
 # ---------- Secrets / môi trường ----------
 # Chỉ commit *.env.example, KHÔNG commit file thật

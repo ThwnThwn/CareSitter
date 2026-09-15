@@ -1,135 +1,22 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/dio_client.dart';
+
+import '../../../core/presentation/widgets/fade_slide_staggered.dart';
 import '../../../core/push/notification_deep_link_service.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/presentation/widgets/fade_slide_staggered.dart';
+import '../application/notifications_store.dart';
 
-class _Notification {
-  final String id;
-  final String type;
-  final String title;
-  final String body;
-  final DateTime createdAt;
-  final String? route;
-  bool isRead;
-
-  _Notification({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.body,
-    required this.createdAt,
-    this.route,
-    this.isRead = false,
-  });
-
-  factory _Notification.fromJson(Map<String, dynamic> json) {
-    final data = _decodeData(json['data']);
-    return _Notification(
-      id: json['id']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'INFO',
-      title: json['title']?.toString() ?? 'Thông báo',
-      body: json['body']?.toString() ?? '',
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal() ??
-              DateTime.now(),
-      route: data['deepLink']?.toString(),
-      isRead: json['readAt'] != null,
-    );
-  }
-
-  static Map<String, dynamic> _decodeData(Object? raw) {
-    if (raw is Map<String, dynamic>) return raw;
-    if (raw is String && raw.trim().isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map<String, dynamic>) return decoded;
-      } catch (_) {}
-    }
-    return const {};
-  }
-}
-
-class NotificationsScreen extends ConsumerStatefulWidget {
+class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   @override
-  ConsumerState<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifications = ref.watch(notificationsProvider);
+    final unreadCount = notifications.valueOrNull
+            ?.where((notification) => !notification.isRead)
+            .length ??
+        0;
 
-class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
-  List<_Notification> _notifications = const [];
-  bool _isLoading = true;
-
-  int get _unreadCount => _notifications.where((n) => !n.isRead).length;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(_loadNotifications);
-  }
-
-  Future<void> _loadNotifications() async {
-    setState(() => _isLoading = true);
-    try {
-      final dio = ref.read(dioClientProvider);
-      final resp = await dio.get<Map<String, dynamic>>(
-        '/notifications',
-        query: {'pageSize': 50},
-      );
-      final items = (resp.data?['items'] as List<dynamic>? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(_Notification.fromJson)
-          .toList();
-      if (!mounted) return;
-      setState(() {
-        _notifications = items;
-        _isLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _markAllRead() async {
-    final previous = _notifications;
-    setState(() {
-      for (final n in _notifications) {
-        n.isRead = true;
-      }
-    });
-    try {
-      await ref.read(dioClientProvider).put<void>('/notifications/read-all');
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _notifications = previous);
-    }
-  }
-
-  Future<void> _onTap(_Notification notif) async {
-    final wasRead = notif.isRead;
-    setState(() => notif.isRead = true);
-    if (!wasRead && notif.id.isNotEmpty) {
-      try {
-        await ref
-            .read(dioClientProvider)
-            .put<void>('/notifications/${notif.id}/read');
-      } catch (_) {}
-    }
-    if (!mounted) return;
-    await ref.read(notificationDeepLinkServiceProvider).handle({
-      'type': notif.type,
-      if (notif.route != null) 'deepLink': notif.route,
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -142,39 +29,52 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             const Text(
               'Thông báo',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700),
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            if (_unreadCount > 0)
+            if (unreadCount > 0)
               Text(
-                '$_unreadCount chưa đọc',
+                '$unreadCount chưa đọc',
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12,
+                ),
               ),
           ],
         ),
         actions: [
-          if (_unreadCount > 0)
+          if (unreadCount > 0)
             TextButton(
-              onPressed: _markAllRead,
+              onPressed: () => ref
+                  .read(notificationsProvider.notifier)
+                  .markAllRead()
+                  .catchError((_) {}),
               child: const Text(
                 'Đọc tất cả',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600),
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _notifications.isEmpty
-              ? _buildEmpty()
-              : ListView.separated(
+      body: notifications.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _NotificationLoadError(
+          onRetry: () => ref.read(notificationsProvider.notifier).refresh(),
+        ),
+        data: (items) => items.isEmpty
+            ? const _NotificationEmpty()
+            : RefreshIndicator(
+                onRefresh: () =>
+                    ref.read(notificationsProvider.notifier).refresh(),
+                child: ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _notifications.length,
+                  itemCount: items.length,
                   separatorBuilder: (_, __) => const Divider(
                     height: 1,
                     indent: 72,
@@ -183,27 +83,48 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ),
                   itemBuilder: (context, index) => FadeSlideStaggered(
                     index: index,
-                    child: _buildItem(_notifications[index]),
+                    child: _NotificationItem(notification: items[index]),
                   ),
                 ),
+              ),
+      ),
     );
   }
+}
 
-  Widget _buildItem(_Notification notif) {
-    final icon = _iconFor(notif.type);
-    final iconColor = _iconColorFor(notif.type);
+class _NotificationItem extends ConsumerWidget {
+  const _NotificationItem({required this.notification});
+
+  final AppNotification notification;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final icon = _iconFor(notification.type);
+    final iconColor = _iconColorFor(notification.type);
+    final route = notification.data['deepLink']?.toString();
     return InkWell(
-      onTap: () => _onTap(notif),
+      onTap: () async {
+        await ref
+            .read(notificationsProvider.notifier)
+            .markRead(notification.id)
+            .catchError((_) {});
+        if (!context.mounted) return;
+        await ref.read(notificationDeepLinkServiceProvider).handle({
+          'type': notification.type,
+          ...notification.data,
+        });
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        color: notif.isRead
+        duration: MediaQuery.maybeOf(context)?.disableAnimations ?? false
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        color: notification.isRead
             ? Colors.transparent
             : AppColors.primary.withValues(alpha: 0.05),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon bubble
             Container(
               width: 44,
               height: 44,
@@ -214,7 +135,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 12),
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,17 +143,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          notif.title,
+                          notification.title,
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 14,
-                            fontWeight: notif.isRead
+                            fontWeight: notification.isRead
                                 ? FontWeight.w500
                                 : FontWeight.w700,
                           ),
                         ),
                       ),
-                      if (!notif.isRead)
+                      if (!notification.isRead)
                         Container(
                           width: 8,
                           height: 8,
@@ -247,98 +167,138 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    notif.body,
+                    notification.body,
                     style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.4),
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    _relativeTime(notif.createdAt),
+                    _relativeTime(notification.createdAt),
                     style: const TextStyle(
-                        color: AppColors.textHint, fontSize: 11),
+                      color: AppColors.textHint,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (notif.route != null)
+            if (route != null && route.isNotEmpty)
               const Padding(
                 padding: EdgeInsets.only(left: 8, top: 10),
-                child: Icon(Icons.chevron_right,
-                    color: AppColors.textHint, size: 18),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textHint,
+                  size: 18,
+                ),
               ),
           ],
         ),
       ),
     );
   }
+}
 
-  IconData _iconFor(String type) {
-    final normalized = type.toLowerCase();
-    if (normalized.contains('booking')) return Icons.event_available_outlined;
-    if (normalized.contains('payment') || normalized.contains('wallet')) {
-      return Icons.account_balance_wallet_outlined;
-    }
-    if (normalized.contains('review')) return Icons.star_outline;
-    if (normalized.contains('sos') || normalized.contains('crisis')) {
-      return Icons.warning_amber_rounded;
-    }
-    return Icons.notifications_none_outlined;
-  }
+class _NotificationLoadError extends StatelessWidget {
+  const _NotificationLoadError({required this.onRetry});
 
-  Color _iconColorFor(String type) {
-    final normalized = type.toLowerCase();
-    if (normalized.contains('sos') || normalized.contains('crisis')) {
-      return AppColors.error;
-    }
-    if (normalized.contains('payment') || normalized.contains('wallet')) {
-      return const Color(0xFFE67E22);
-    }
-    if (normalized.contains('review')) return const Color(0xFFF39C12);
-    return AppColors.primary;
-  }
+  final VoidCallback onRetry;
 
-  String _relativeTime(DateTime value) {
-    final diff = DateTime.now().difference(value);
-    if (diff.inMinutes < 1) return 'Vừa xong';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
-    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
-    return '${value.day}/${value.month}/${value.year}';
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.notifications_none_outlined,
-                color: AppColors.primary, size: 34),
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.cloud_off_outlined,
+                color: AppColors.textSecondary,
+                size: 36,
+              ),
+              const SizedBox(height: 12),
+              const Text('Không thể tải thông báo'),
+              const SizedBox(height: 8),
+              TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Chưa có thông báo',
-            style: TextStyle(
+        ),
+      );
+}
+
+class _NotificationEmpty extends StatelessWidget {
+  const _NotificationEmpty();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_none_outlined,
+                color: AppColors.primary,
+                size: 34,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Chưa có thông báo',
+              style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 16,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Các thông báo về lịch hẹn sẽ hiển thị ở đây',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Các thông báo về lịch hẹn sẽ hiển thị ở đây',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+}
+
+IconData _iconFor(String type) {
+  final normalized = type.toLowerCase();
+  if (normalized.contains('booking')) return Icons.event_available_outlined;
+  if (normalized.contains('payment') || normalized.contains('wallet')) {
+    return Icons.account_balance_wallet_outlined;
   }
+  if (normalized.contains('review')) return Icons.star_outline;
+  if (normalized.contains('sos') || normalized.contains('crisis')) {
+    return Icons.warning_amber_rounded;
+  }
+  return Icons.notifications_none_outlined;
+}
+
+Color _iconColorFor(String type) {
+  final normalized = type.toLowerCase();
+  if (normalized.contains('sos') || normalized.contains('crisis')) {
+    return AppColors.error;
+  }
+  if (normalized.contains('payment') || normalized.contains('wallet')) {
+    return const Color(0xFFE67E22);
+  }
+  if (normalized.contains('review')) return const Color(0xFFF39C12);
+  return AppColors.primary;
+}
+
+String _relativeTime(DateTime value) {
+  final diff = DateTime.now().difference(value);
+  if (diff.inMinutes < 1) return 'Vừa xong';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+  if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+  if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+  return '${value.day}/${value.month}/${value.year}';
 }

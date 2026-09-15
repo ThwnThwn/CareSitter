@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/dio_client.dart';
 import '../auth/auth_notifier.dart';
+import '../notifications/in_app_notification_events.dart';
 import '../../features/booking/application/booking_store.dart';
+import '../../features/home/application/notifications_store.dart';
 import 'notification_deep_link_service.dart';
 
 /// Top-level background message handler (phải là hàm top-level).
@@ -137,13 +139,27 @@ class PushNotificationService {
         _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuthenticated) return;
 
-    await _ref.read(bookingStoreProvider.notifier).requestSync();
+    await Future.wait([
+      _ref.read(bookingStoreProvider.notifier).requestSync(),
+      _ref.read(notificationsProvider.notifier).refresh(),
+    ]);
     final notification = message.notification;
-    _ref.read(notificationDeepLinkServiceProvider).showForeground(
-          title: notification?.title ?? 'CareSitter',
-          body: notification?.body ?? '',
-          data: Map<String, dynamic>.from(message.data),
-          deliveryId: message.data['eventId']?.toString() ?? message.messageId,
+    final data = Map<String, dynamic>.from(message.data);
+    final bookingId = data['bookingId']?.toString().trim();
+    final status = data['status']?.toString().trim().toLowerCase();
+    final deduplicationKey = bookingId != null &&
+            bookingId.isNotEmpty &&
+            status != null &&
+            status.isNotEmpty
+        ? 'booking:$bookingId:$status'
+        : 'fcm:${data['eventId'] ?? message.messageId ?? DateTime.now().microsecondsSinceEpoch}';
+    _ref.read(inAppNotificationEventsProvider).publish(
+          InAppNotificationEvent(
+            title: notification?.title ?? 'CareSitter',
+            body: notification?.body ?? '',
+            data: data,
+            deduplicationKey: deduplicationKey,
+          ),
         );
   }
 
