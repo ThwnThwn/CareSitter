@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
@@ -41,6 +42,7 @@ public sealed class BookingModule : IModule
         // Hub resolve IBookingMembershipChecker (Shared interface) → implementation nằm ở đây.
         // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
         services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
+        services.AddScoped<IReviewBookingLookup, ReviewBookingLookup>();
 
         // BookingSyncService: ghi sync event và query delta.
         // Scoped vì inject BookingDbContext (Scoped).

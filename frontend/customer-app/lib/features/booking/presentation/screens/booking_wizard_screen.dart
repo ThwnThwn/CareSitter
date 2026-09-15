@@ -59,7 +59,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     _selectedServiceId = widget.initialServiceId;
     _selectedBeneficiaryId = widget.initialBeneficiaryId;
 
-
     // Nếu có initialBeneficiaryId, auto-set địa chỉ mặc định và bỏ qua bước chọn người thân
     if (_selectedBeneficiaryId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -140,6 +139,21 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       _startTime!.minute,
     );
     return start.isAfter(DateTime.now().add(const Duration(minutes: 30)));
+  }
+
+  /// Booking chỉ nhận mốc 5 phút để tránh các giờ khó đọc như 10:13.
+  /// Nếu làm tròn qua 00:00, ngày đã chọn cũng phải tiến thêm một ngày.
+  ({TimeOfDay time, bool movesToNextDay}) _snapToFiveMinutes(TimeOfDay time) {
+    final minutesSinceMidnight = time.hour * 60 + time.minute;
+    final roundedMinutes = ((minutesSinceMidnight + 2) ~/ 5) * 5;
+
+    return (
+      time: TimeOfDay(
+        hour: (roundedMinutes ~/ 60) % 24,
+        minute: roundedMinutes % 60,
+      ),
+      movesToNextDay: roundedMinutes >= 24 * 60,
+    );
   }
 
   bool get _selectedAddressIsVerified {
@@ -790,7 +804,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     });
   }
 
-
   Widget _buildTimeStep() {
     final addressAsync = ref.watch(addressStoreProvider);
 
@@ -887,7 +900,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               : () async {
                   final picked = await showTimePicker(
                     context: context,
-                    initialTime: _startTime ?? const TimeOfDay(hour: 8, minute: 0),
+                    initialTime: _snapToFiveMinutes(
+                      _startTime ?? const TimeOfDay(hour: 8, minute: 0),
+                    ).time,
                     builder: (context, child) => Theme(
                       data: Theme.of(context).copyWith(
                         colorScheme: const ColorScheme.light(
@@ -897,8 +912,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           onSurface: AppColors.textPrimary,
                         ),
                         timePickerTheme: TimePickerThemeData(
-                          dialBackgroundColor:
-                              const Color(0xFFEEEEEE),
+                          dialBackgroundColor: const Color(0xFFEEEEEE),
                           dialHandColor: AppColors.primary,
                           dialTextColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
@@ -910,8 +924,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                 ? AppColors.primaryContainer
                                 : const Color(0xFFEEEEEE),
                           ),
-                          hourMinuteTextColor:
-                              WidgetStateColor.resolveWith(
+                          hourMinuteTextColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
                                 ? AppColors.primaryDark
                                 : AppColors.textPrimary,
@@ -921,8 +934,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                 ? AppColors.primaryContainer
                                 : Colors.white,
                           ),
-                          dayPeriodTextColor:
-                              WidgetStateColor.resolveWith(
+                          dayPeriodTextColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
                                 ? AppColors.primaryDark
                                 : AppColors.textSecondary,
@@ -944,8 +956,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                     ),
                   );
                   if (picked != null) {
+                    final snapped = _snapToFiveMinutes(picked);
                     setState(() {
-                      _startTime = picked;
+                      _startTime = snapped.time;
+                      if (snapped.movesToNextDay) {
+                        _selectedDate =
+                            _selectedDate!.add(const Duration(days: 1));
+                      }
                       _selectedCaregiverId = null;
                     });
                   }
@@ -959,9 +976,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                   : AppColors.cardBackground,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _startTime != null
-                    ? AppColors.primary
-                    : AppColors.border,
+                color:
+                    _startTime != null ? AppColors.primary : AppColors.border,
                 width: _startTime != null ? 1.5 : 1,
               ),
             ),
@@ -1015,10 +1031,15 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         Builder(
           builder: (context) {
             final rate = _selectedService?.pricePerHour ?? 110000;
-            final isCustom = _duration != 2 && _duration != 4 && _duration != 8 && _duration != 12;
+            final isCustom = _duration != 2 &&
+                _duration != 4 &&
+                _duration != 8 &&
+                _duration != 12;
             final totalDurationPrice = (rate * _duration).toInt();
-            final totalFormatted = '${totalDurationPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ';
-            final rateFormatted = '${rate.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ/h';
+            final totalFormatted =
+                '${totalDurationPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ';
+            final rateFormatted =
+                '${rate.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ/h';
 
             String helperText;
             switch (_duration) {
@@ -1356,12 +1377,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             TextButton.icon(
               onPressed: _openAddressSelector,
               icon: const Icon(Icons.location_on_outlined, size: 16),
-              label:
-                  const Text('Chọn / thêm', style: TextStyle(fontSize: 13)),
+              label: const Text('Chọn / thêm', style: TextStyle(fontSize: 13)),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -1379,8 +1398,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3F3),
               borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1390,8 +1408,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 const Expanded(
                   child: Text(
                     'Không tải được danh sách địa chỉ. Thử lại?',
-                    style:
-                        TextStyle(color: AppColors.error, fontSize: 13),
+                    style: TextStyle(color: AppColors.error, fontSize: 13),
                   ),
                 ),
                 TextButton(
@@ -1475,8 +1492,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Ước tính chi phí:',
-                    style:
-                        TextStyle(color: AppColors.primary, fontSize: 13)),
+                    style: TextStyle(color: AppColors.primary, fontSize: 13)),
                 Text(
                   '${(_selectedService!.pricePerHour * _duration).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ',
                   style: const TextStyle(
@@ -1519,9 +1535,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected
-                    ? AppColors.primaryDark
-                    : AppColors.textPrimary,
+                color:
+                    isSelected ? AppColors.primaryDark : AppColors.textPrimary,
               ),
             ),
           ),

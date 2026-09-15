@@ -351,6 +351,9 @@ class BookingDetailScreen extends ConsumerWidget {
                     ] else if (booking.status == 'disputed') ...[
                       _buildStatusBanner(
                           'Ca đang được đánh dấu có vấn đề. Ghi nhận tài chính sẽ chờ xử lý tranh chấp.'),
+                    ] else if (booking.status == 'refunded') ...[
+                      _buildStatusBanner(
+                          'Đã hoàn ${_formatCurrency(booking.totalPrice)}đ vào Ví CareSitter vì chưa tìm được người chăm sóc phù hợp.'),
                     ],
                   ],
                 ),
@@ -616,8 +619,19 @@ class BookingDetailScreen extends ConsumerWidget {
           'currentStep': 2,
           'description': 'Hệ thống đã nhận tín hiệu hỗ trợ khẩn cấp.',
         };
-      case 'cancelled':
       case 'refunded':
+        return {
+          'label': 'Đã hoàn tiền vào Ví CareSitter',
+          'shortLabel': 'Đã hoàn tiền',
+          'emoji': '↩️',
+          'icon': Icons.account_balance_wallet_outlined,
+          'color': const Color(0xFF047857),
+          'bg': const Color(0xFFD1FAE5),
+          'currentStep': -1,
+          'description':
+              'Không tìm được người chăm sóc phù hợp. Tiền đã được cộng vào Ví CareSitter.',
+        };
+      case 'cancelled':
         return {
           'label': 'Đã huỷ lịch hẹn',
           'shortLabel': 'Đã huỷ',
@@ -1264,7 +1278,7 @@ class BookingDetailScreen extends ConsumerWidget {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Nếu bạn không xác nhận, hệ thống sẽ tự động hoàn tất sau 2 giờ kể từ khi ca kết thúc.',
+                      'Nếu bạn không xác nhận, hệ thống sẽ tự động hoàn tất sau 24 giờ kể từ khi yêu cầu checkout được gửi.',
                       style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
@@ -1482,14 +1496,16 @@ class BookingDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ'),
+              Text(
+                  'Phí ước tính thêm: ~${_formatCurrency(selectedHours * effectiveHourlyRate)}đ'),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
+                      content: Text(
+                          '✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
                       backgroundColor: AppColors.primary,
                     ),
                   );

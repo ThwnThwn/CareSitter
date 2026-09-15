@@ -240,12 +240,50 @@ public sealed class PaymentsController(
     public async Task<IActionResult> GetMyWallet(CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
+        var accountType = currentUser.IsInRole("CAREGIVER") ? "CAREGIVER" : "CUSTOMER";
         var wallet = await db.WalletAccounts.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.UserId == userId, ct);
+            .SingleOrDefaultAsync(x => x.UserId == userId && x.AccountType == accountType, ct);
         if (wallet is null)
             return Ok(new WalletResponse(null, 0, 0, "VND"));
         return Ok(new WalletResponse(wallet.Id, wallet.AvailableBalance,
             wallet.PendingBalance, wallet.Currency));
+    }
+
+    /// <summary>Lấy các giao dịch liên quan đến ví của user hiện tại.</summary>
+    [HttpGet("api/v1/wallet/transactions")]
+    public async Task<IActionResult> ListMyWalletTransactions(
+        int page = 1, int pageSize = 20, CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId) return Unauthorized();
+
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var accountType = currentUser.IsInRole("CAREGIVER") ? "caregiver" : "customer";
+        var walletAccount = $"wallet:{accountType}:{userId}";
+
+        var query = db.LedgerEntries.AsNoTracking()
+            .Where(x => x.DebitAccount == walletAccount || x.CreditAccount == walletAccount);
+        var total = await query.CountAsync(ct);
+        var entries = await query.OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return Ok(new
+        {
+            items = entries.Select(x => new WalletTransactionResponse(
+                x.Id,
+                x.BookingId,
+                x.TransactionType,
+                x.Amount,
+                x.Currency,
+                x.Status,
+                x.CreditAccount == walletAccount ? "CREDIT" : "DEBIT",
+                x.CreatedAt)),
+            total,
+            page,
+            pageSize
+        });
     }
 
     // ════════════════════════════════════════════
@@ -305,6 +343,9 @@ public sealed record PaymentIntentResponse(Guid Id, Guid BookingId, Guid Custome
     string? ProviderTransactionId, string IdempotencyKey, DateTimeOffset CreatedAt,
     string? PaymentUrl = null, string? ProviderOrderRef = null);
 public sealed record WalletResponse(Guid? Id, long AvailableBalance, long PendingBalance, string Currency);
+public sealed record WalletTransactionResponse(Guid Id, Guid? BookingId,
+    string TransactionType, long Amount, string Currency, string Status,
+    string Direction, DateTimeOffset CreatedAt);
 public sealed record LedgerEntryResponse(Guid Id, Guid? BookingId, Guid? PaymentIntentId,
     string TransactionType, string DebitAccount, string CreditAccount,
     long Amount, string Currency, string Status, DateTimeOffset CreatedAt);

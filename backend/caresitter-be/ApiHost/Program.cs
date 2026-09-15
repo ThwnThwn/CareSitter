@@ -244,6 +244,12 @@ RecurringJob.AddOrUpdate<BookingJobsService>(
     cronExpression: "* * * * *", // Mỗi 1 phút
     queue: "booking");
 
+RecurringJob.AddOrUpdate<BookingJobsService>(
+    recurringJobId: "refund-unmatched-bookings",
+    methodCall: svc => svc.RefundUnmatchedBookingsAsync(),
+    cronExpression: "* * * * *", // Retry nhanh, refund idempotent
+    queue: "booking");
+
 // --- Map Controllers ---
 app.MapControllers();
 

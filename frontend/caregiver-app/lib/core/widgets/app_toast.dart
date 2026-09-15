@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../push/notification_deep_link_service.dart';
 import '../theme/app_theme.dart';
 
 enum AppToastType { success, error, loading }
@@ -17,7 +18,11 @@ final class AppToast {
       type: AppToastType.error,
       duration: const Duration(seconds: 5));
   static void dismiss(BuildContext context) =>
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      _messengerFor(context)?.hideCurrentSnackBar();
+
+  static ScaffoldMessengerState? _messengerFor(BuildContext context) =>
+      notificationMessengerKey.currentState ??
+      ScaffoldMessenger.maybeOf(context);
 
   static void _show(BuildContext context,
       {required String message,
@@ -40,8 +45,11 @@ final class AppToast {
           AppColors.primary.withValues(alpha: .10)
         ),
     };
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+    final messenger = _messengerFor(context);
+    if (messenger == null) return;
+
+    messenger
+      ..removeCurrentSnackBar()
       ..showSnackBar(SnackBar(
         behavior: SnackBarBehavior.floating,
         elevation: 0,
@@ -81,8 +89,7 @@ final class AppToast {
                             height: 1.35))),
                 if (type != AppToastType.loading)
                   IconButton(
-                      onPressed: () =>
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                      onPressed: messenger.hideCurrentSnackBar,
                       icon: const Icon(Icons.close_rounded,
                           size: 18, color: AppColors.textSecondary),
                       tooltip: 'Đóng',

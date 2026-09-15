@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.Modules.Support.Infrastructure;
@@ -15,23 +16,51 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/reviews")]
-public sealed class ReviewsController(SupportDbContext db, ICurrentUser currentUser) : ControllerBase
+public sealed class ReviewsController(
+    SupportDbContext db,
+    ICurrentUser currentUser,
+    IReviewBookingLookup bookingLookup) : ControllerBase
 {
     /// <summary>Khách hàng tạo đánh giá cho một booking đã hoàn thành.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReviewRequest req, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
+        if (req.BookingId == Guid.Empty || req.CaregiverId == Guid.Empty)
+            return BadRequest(new { error = "Booking và caregiver là bắt buộc." });
+
+        var comment = req.Comment?.Trim();
+        var experienceTags = req.ExperienceTags?.Trim();
+        if (comment?.Length > 1_000)
+            return BadRequest(new { error = "Nội dung đánh giá không được vượt quá 1000 ký tự." });
+        if (experienceTags?.Length > 1_000)
+            return BadRequest(new { error = "Danh sách trải nghiệm không được vượt quá 1000 ký tự." });
+
+        var booking = await bookingLookup.GetForReviewAsync(req.BookingId, ct);
+        if (booking is null) return NotFound(new { error = "Không tìm thấy booking." });
+        if (booking.CustomerId != userId) return Forbid();
+        if (!booking.IsCompleted)
+            return Conflict(new { error = "Chỉ có thể đánh giá sau khi ca chăm sóc hoàn tất." });
+        if (booking.CaregiverId != req.CaregiverId)
+            return BadRequest(new { error = "Caregiver không khớp với booking này." });
 
         bool exists = await db.Reviews.AnyAsync(x => x.BookingId == req.BookingId, ct);
         if (exists) return Conflict(new { error = "Booking nay da co review." });
 
         var created = Review.Create(req.BookingId, req.CaregiverId, userId, req.Rating,
-            req.Comment, req.ExperienceTags);
+            comment, experienceTags);
         if (created.IsFailure) return Problem(created.Error);
 
         db.Reviews.Add(created.Value);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // DB unique index là lớp cuối cùng khi hai request cùng gửi review.
+            return Conflict(new { error = "Booking này đã có review." });
+        }
         var r = created.Value;
         return Created($"/api/v1/reviews/{r.Id}",
             new ReviewResponse(r.Id, r.BookingId, r.CaregiverId, r.CustomerId,

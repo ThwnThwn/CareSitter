@@ -10,6 +10,7 @@ class CareTaskModel {
   final int sortOrder;
   final String status; // PENDING | COMPLETED | SKIPPED
   final List<String> photoUrls;
+
   /// PACKAGE | CAREGIVER_AD_HOC | SYSTEM
   final String source;
   final String? skipReason;
@@ -102,6 +103,7 @@ class BookingModel {
   final String? caregiverName;
   final String? caregiverAvatar;
   final String? beneficiaryName;
+  final String? beneficiaryNotes;
   final String? addressText;
   final double? addressLatitude;
   final double? addressLongitude;
@@ -133,6 +135,7 @@ class BookingModel {
     this.caregiverName,
     this.caregiverAvatar,
     this.beneficiaryName,
+    this.beneficiaryNotes,
     this.addressText,
     this.addressLatitude,
     this.addressLongitude,
@@ -146,8 +149,10 @@ class BookingModel {
 
   final bool isReviewed;
   final List<CareTaskModel> tasks;
+
   /// True khi gói cho phép caregiver thêm task phát sinh
   final bool allowAdHocTasks;
+
   /// True khi ca có task bắt buộc bỏ qua — cần admin/customer review
   final bool needsReview;
 
@@ -233,6 +238,7 @@ class BookingModel {
     String? caregiverId,
     String? caregiverName,
     String? caregiverAvatar,
+    String? beneficiaryNotes,
     DateTime? actualStart,
     DateTime? actualEnd,
     DateTime? checkoutPendingReviewAt,
@@ -269,6 +275,7 @@ class BookingModel {
       caregiverName: caregiverName ?? this.caregiverName,
       caregiverAvatar: caregiverAvatar ?? this.caregiverAvatar,
       beneficiaryName: beneficiaryName,
+      beneficiaryNotes: beneficiaryNotes ?? this.beneficiaryNotes,
       addressText: addressText,
       addressLatitude: addressLatitude,
       addressLongitude: addressLongitude,
@@ -313,6 +320,8 @@ class BookingModel {
       caregiverName: _string(json['caregiverName']),
       caregiverAvatar: _string(json['caregiverAvatar']),
       beneficiaryName: _string(json['beneficiaryName']),
+      beneficiaryNotes:
+          _string(json['beneficiaryNotes']) ?? _string(json['note']),
       addressText: _string(json['addressText']),
       addressLatitude: _double(json['addressLatitude']),
       addressLongitude: _double(json['addressLongitude']),

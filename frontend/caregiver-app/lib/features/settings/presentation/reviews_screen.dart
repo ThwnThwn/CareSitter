@@ -16,6 +16,7 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   List<CaregiverReviewModel> _reviews = const [];
   bool _isLoading = true;
+  bool _hasLoadError = false;
 
   @override
   void initState() {
@@ -32,18 +33,23 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     try {
       final response = await ref
           .read(dioClientProvider)
-          .get<List<dynamic>>('/reviews/caregiver/${profile.id}');
+          .get<Map<String, dynamic>>('/reviews/caregiver/${profile.id}');
+      final items = response.data?['items'];
       if (!mounted) return;
       setState(() {
-        _reviews = (response.data ?? [])
+        _reviews = (items is List ? items : const [])
             .whereType<Map<String, dynamic>>()
             .map(CaregiverReviewModel.fromJson)
             .toList();
         _isLoading = false;
+        _hasLoadError = false;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _hasLoadError = true;
+      });
     }
   }
 
@@ -54,6 +60,11 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         ? 0.0
         : _reviews.fold<double>(0, (sum, item) => sum + item.rating) /
             totalReviews;
+    final ratingCounts = List<int>.filled(5, 0);
+    for (final review in _reviews) {
+      final index = review.rating.round().clamp(1, 5) - 1;
+      ratingCounts[index]++;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -63,33 +74,49 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // ── Rating Header Summary ──
-                  _buildRatingSummaryCard(avgRating, totalReviews),
-                  const SizedBox(height: 12),
-                  // ── Reviews List ──
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    itemCount: _reviews.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final review = _reviews[index];
-                      return _buildReviewItem(review);
-                    },
+          : _hasLoadError
+              ? _buildLoadError()
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ── Rating Header Summary ──
+                      _buildRatingSummaryCard(
+                          avgRating, totalReviews, ratingCounts),
+                      const SizedBox(height: 12),
+                      // ── Reviews List ──
+                      if (_reviews.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(24, 12, 24, 24),
+                          child: Text(
+                            'Chưa có đánh giá nào. Các nhận xét từ khách hàng sẽ hiển thị tại đây.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: AppColors.textSecondary, fontSize: 14),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 8),
+                          itemCount: _reviews.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            final review = _reviews[index];
+                            return _buildReviewItem(review);
+                          },
+                        ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
+                ),
     );
   }
 
-  Widget _buildRatingSummaryCard(double avg, int total) {
+  Widget _buildRatingSummaryCard(
+      double avg, int total, List<int> ratingCounts) {
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(24),
@@ -154,15 +181,15 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               padding: const EdgeInsets.only(left: 20),
               child: Column(
                 children: [
-                  _buildProgressBar(5, 0.85),
+                  _buildProgressBar(5, ratingCounts[4], total),
                   const SizedBox(height: 4),
-                  _buildProgressBar(4, 0.12),
+                  _buildProgressBar(4, ratingCounts[3], total),
                   const SizedBox(height: 4),
-                  _buildProgressBar(3, 0.03),
+                  _buildProgressBar(3, ratingCounts[2], total),
                   const SizedBox(height: 4),
-                  _buildProgressBar(2, 0.0),
+                  _buildProgressBar(2, ratingCounts[1], total),
                   const SizedBox(height: 4),
-                  _buildProgressBar(1, 0.0),
+                  _buildProgressBar(1, ratingCounts[0], total),
                 ],
               ),
             ),
@@ -172,7 +199,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     );
   }
 
-  Widget _buildProgressBar(int stars, double pct) {
+  Widget _buildProgressBar(int stars, int count, int total) {
     return Row(
       children: [
         Text(
@@ -189,7 +216,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: pct,
+              value: total == 0 ? 0 : count / total,
               minHeight: 6,
               backgroundColor: AppColors.border,
               valueColor: const AlwaysStoppedAnimation(AppColors.primary),
@@ -197,6 +224,35 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLoadError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error, size: 36),
+            const SizedBox(height: 12),
+            const Text('Không tải được đánh giá',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  _isLoading = true;
+                  _hasLoadError = false;
+                });
+                _loadReviews();
+              },
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
