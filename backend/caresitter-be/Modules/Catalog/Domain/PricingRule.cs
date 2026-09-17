@@ -61,6 +61,42 @@ public sealed class PricingRule : Entity
     public bool IsActive { get; private set; }
     public Guid? CreatedByAdminId { get; private set; }
 
+    public Result Update(
+        string name,
+        long baseHourlyPrice,
+        decimal nightMultiplier,
+        decimal holidayMultiplier,
+        decimal platformFeePercent,
+        int disputeWindowHours,
+        DateTimeOffset effectiveFrom,
+        DateTimeOffset? effectiveTo)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Error.Validation("pricing_rule.name", "Tên bảng giá là bắt buộc.");
+        if (baseHourlyPrice < 0)
+            return Error.Validation("pricing_rule.base_hourly_price", "Giá theo giờ không được âm.");
+        if (nightMultiplier is < 1 or > 10 || holidayMultiplier is < 1 or > 10)
+            return Error.Validation("pricing_rule.multiplier", "Hệ số phải nằm trong khoảng 1 đến 10.");
+        if (platformFeePercent is < 0 or > 100)
+            return Error.Validation("pricing_rule.platform_fee_percent", "Phí nền tảng phải nằm trong khoảng 0 đến 100%.");
+        if (disputeWindowHours is < 1 or > 720)
+            return Error.Validation("pricing_rule.dispute_window_hours", "Thời hạn khiếu nại phải từ 1 đến 720 giờ.");
+        if (effectiveTo.HasValue && effectiveTo <= effectiveFrom)
+            return Error.Validation("pricing_rule.effective_to", "Thời điểm kết thúc phải sau thời điểm bắt đầu.");
+
+        Name = name.Trim();
+        BaseHourlyPrice = baseHourlyPrice;
+        NightMultiplier = nightMultiplier;
+        HolidayMultiplier = holidayMultiplier;
+        PlatformFeePercent = platformFeePercent;
+        DisputeWindowHours = disputeWindowHours;
+        EffectiveFrom = effectiveFrom;
+        EffectiveTo = effectiveTo;
+        return Result.Success();
+    }
+
+    public void SetActive(bool isActive) => IsActive = isActive;
+
     public static Result<PricingRule> Create(
         string name,
         Guid serviceTypeId,

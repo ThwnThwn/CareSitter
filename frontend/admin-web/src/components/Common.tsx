@@ -1,0 +1,117 @@
+import { ReactNode, useEffect, useId } from 'react';
+import { AlertCircle, Inbox, LoaderCircle, RefreshCw, X } from 'lucide-react';
+import { useAdminMetadata } from '../adminMetadata';
+
+export function StatusChip({ value }: { value?: string }) {
+  const { statusDefinitions } = useAdminMetadata();
+  const normalized = value || 'UNKNOWN';
+  const definition = statusDefinitions[normalized]
+    || statusDefinitions[normalized.toUpperCase()]
+    || statusDefinitions[normalized.toLowerCase()];
+  return <span className={`status-chip ${definition?.tone || 'neutral'}`}>
+    {definition?.label || normalized.replaceAll('_', ' ')}
+  </span>;
+}
+
+export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
+  return <header className="page-header">
+    <div><h1>{title}</h1>{description && <p>{description}</p>}</div>
+    {actions && <div className="page-actions">{actions}</div>}
+  </header>;
+}
+
+export function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return <div className="notice error-notice" role="alert">
+    <AlertCircle size={18} aria-hidden="true" />
+    <div><strong>Không thể tải dữ liệu</strong><p>{message}</p></div>
+    {onRetry && <button className="text-button" onClick={onRetry}><RefreshCw size={15} /> Thử lại</button>}
+  </div>;
+}
+
+export function EmptyState({ title, description }: { title: string; description: string }) {
+  return <div className="empty-state">
+    <span className="empty-symbol"><Inbox size={24} /></span>
+    <strong>{title}</strong><p>{description}</p>
+  </div>;
+}
+
+export function LoadingTable({ rows = 6, columns = 5 }: { rows?: number; columns?: number }) {
+  return <div className="skeleton-table" aria-label="Đang tải dữ liệu" aria-busy="true">
+    {Array.from({ length: rows }).map((_, row) => <div className="skeleton-row" key={row}>
+      {Array.from({ length: columns }).map((__, column) => <span key={column} />)}
+    </div>)}
+  </div>;
+}
+
+export function InlineLoading({ label = 'Đang xử lý…' }: { label?: string }) {
+  return <span className="inline-loading"><LoaderCircle size={16} className="spin" />{label}</span>;
+}
+
+export function Pagination({ page, pageSize, total, onChange }: { page: number; pageSize: number; total: number; onChange: (page: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total <= pageSize) return null;
+  return <div className="pagination" aria-label="Phân trang">
+    <span>Hiển thị {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} trong {total}</span>
+    <div>
+      <button className="icon-page" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Trang trước">‹</button>
+      <span>Trang {page}/{pages}</span>
+      <button className="icon-page" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Trang sau">›</button>
+    </div>
+  </div>;
+}
+
+export function Drawer({ title, subtitle, onClose, children, footer }: {
+  title: string; subtitle?: string; onClose: () => void; children: ReactNode; footer?: ReactNode;
+}) {
+  const titleId = useId();
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    document.body.classList.add('drawer-open');
+    return () => { document.removeEventListener('keydown', onKey); document.body.classList.remove('drawer-open'); };
+  }, [onClose]);
+
+  return <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="drawer-head">
+        <div>{subtitle && <span className="drawer-kicker">{subtitle}</span>}<h2 id={titleId}>{title}</h2></div>
+        <button className="icon-button" onClick={onClose} aria-label="Đóng"><X size={20} /></button>
+      </div>
+      <div className="drawer-body">{children}</div>
+      {footer && <div className="drawer-footer">{footer}</div>}
+    </aside>
+  </div>;
+}
+
+export function DetailList({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
+  return <dl className="detail-list">{items.map((item) => <div key={item.label}>
+    <dt>{item.label}</dt><dd>{item.value || '—'}</dd>
+  </div>)}</dl>;
+}
+
+export function Tabs({ value, onChange, items }: {
+  value: string; onChange: (value: string) => void; items: Array<{ value: string; label: string; count?: number }>;
+}) {
+  return <div className="tabs" role="tablist">{items.map((item) => <button
+    key={item.value} role="tab" aria-selected={value === item.value}
+    className={value === item.value ? 'active' : ''} onClick={() => onChange(item.value)}>
+    {item.label}{item.count !== undefined && <span>{item.count}</span>}
+  </button>)}</div>;
+}
+
+export function SectionTitle({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
+  return <div className="section-title"><div><h2>{title}</h2>{description && <p>{description}</p>}</div>{action}</div>;
+}
+
+export function formatMoney(value?: number) {
+  return new Intl.NumberFormat('vi-VN').format(value || 0) + ' đ';
+}
+
+export function formatDate(value?: string, withTime = true) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('vi-VN', withTime
+    ? { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }
+    : { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
+}
+
+export function shortId(value?: string) { return value ? `#${value.slice(0, 8).toUpperCase()}` : '—'; }

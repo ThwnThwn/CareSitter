@@ -124,7 +124,7 @@ public sealed class CaregiverKycController(
 
         var query = db.CaregiverProfiles.AsNoTracking()
             .Where(x => x.DeletedAt == null);
-        if (!string.IsNullOrWhiteSpace(status))
+        if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "ALL", StringComparison.OrdinalIgnoreCase))
         {
             var normalizedStatus = status.Trim().ToUpperInvariant();
             query = query.Where(x => x.KycStatus == normalizedStatus);

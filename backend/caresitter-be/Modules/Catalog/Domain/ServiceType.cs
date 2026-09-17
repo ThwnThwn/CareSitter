@@ -35,6 +35,24 @@ public sealed class ServiceType : Entity
 
     public void SetAllowAdHocTasks(bool allowAdHocTasks) => AllowAdHocTasks = allowAdHocTasks;
 
+    public Result Update(string code, string name, string? description, int defaultDurationMinutes)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return Error.Validation("service_type.code", "Mã dịch vụ là bắt buộc.");
+        if (string.IsNullOrWhiteSpace(name))
+            return Error.Validation("service_type.name", "Tên dịch vụ là bắt buộc.");
+        if (defaultDurationMinutes is < 15 or > 1440)
+            return Error.Validation("service_type.default_duration_minutes", "Thời lượng mặc định phải từ 15 đến 1.440 phút.");
+
+        Code = code.Trim().ToUpperInvariant();
+        Name = name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        DefaultDurationMinutes = defaultDurationMinutes;
+        return Result.Success();
+    }
+
+    public void SetActive(bool isActive) => IsActive = isActive;
+
     public static Result<ServiceType> Create(
         string code,
         string name,
@@ -49,6 +67,7 @@ public sealed class ServiceType : Entity
         if (defaultDurationMinutes <= 0)
             return Error.Validation("service_type.default_duration_minutes", "default_duration_minutes phai > 0.");
 
-        return new ServiceType(Guid.NewGuid(), code, name, description, defaultDurationMinutes, isActive);
+        return new ServiceType(Guid.NewGuid(), code.Trim().ToUpperInvariant(), name.Trim(),
+            string.IsNullOrWhiteSpace(description) ? null : description.Trim(), defaultDurationMinutes, isActive);
     }
 }
