@@ -1,0 +1,71 @@
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/login_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero_header.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  Future<void> pumpLogin(
+    WidgetTester tester,
+    Size size, {
+    double textScale = 1,
+  }) async {
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: child!,
+          ),
+          home: const LoginScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  for (final size in const [
+    Size(320, 568),
+    Size(430, 932),
+    Size(1024, 768),
+  ]) {
+    testWidgets('renders without overflow at ${size.width}x${size.height}',
+        (tester) async {
+      await pumpLogin(tester, size);
+
+      expect(find.text('Chào mừng trở lại!'), findsOneWidget);
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('keeps the wide layout split and the form readable',
+      (tester) async {
+    await pumpLogin(tester, const Size(1024, 768));
+
+    final heroRect = tester.getRect(find.byType(AuthHeroHeader));
+    final emailRect = tester.getRect(find.byType(TextFormField).first);
+
+    expect(heroRect.right, lessThan(emailRect.left));
+    expect(emailRect.width, lessThanOrEqualTo(AppLayout.authFormMaxWidth));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('supports larger accessibility text on a compact viewport',
+      (tester) async {
+    await pumpLogin(
+      tester,
+      const Size(320, 568),
+      textScale: 1.4,
+    );
+
+    expect(find.text('Đăng nhập bằng mã OTP (Email)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}

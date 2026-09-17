@@ -27,6 +27,16 @@ class AppColors {
   static const Color textHint = Color(0xFF9FB8AC);
   static const Color textOnDark = Color(0xFFFFFFFF);
 
+  // ── Authentication Surface ───────────────────────────
+  // Giữ nguyên palette của luồng đăng nhập cũ nhưng gom về một nguồn duy nhất.
+  static const Color authBackground = Color(0xFFF2F8F4);
+  static const Color authTextPrimary = Color(0xFF1A2E2E);
+  static const Color authTextSecondary = Color(0xFF6B7280);
+  static const Color authTextHint = Color(0xFF9CA3AF);
+  static const Color authFieldBorder = Color(0xFFE5E7EB);
+  static const Color authErrorSurface = Color(0xFFFEF2F2);
+  static const Color authErrorBorder = Color(0xFFFCA5A5);
+
   // ── State Colors ─────────────────────────────────────
   static const Color success = Color(0xFF059669);
   static const Color successLight = Color(0xFFD1FAE5);
@@ -74,6 +84,11 @@ class AppColors {
 class AppTheme {
   /// Tính 1 lần & cache — tránh dựng lại toàn bộ ThemeData mỗi lần MaterialApp rebuild.
   static final ThemeData lightTheme = _buildLightTheme();
+
+  /// Theme cục bộ cho form xác thực để giữ nguyên giao diện cũ mà không làm
+  /// thay đổi InputDecorationTheme của các feature khác.
+  static final InputDecorationTheme authInputDecorationTheme =
+      _buildAuthInputDecorationTheme();
 
   static ThemeData _buildLightTheme() {
     final base = ThemeData(
@@ -300,6 +315,44 @@ class AppTheme {
     );
   }
 
+  static InputDecorationTheme _buildAuthInputDecorationTheme() {
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surface,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.authFieldBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.authFieldBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+      ),
+      hintStyle: _textStyle(14, AppColors.authTextHint),
+      labelStyle: _textStyle(14, AppColors.authTextSecondary),
+      floatingLabelStyle:
+          _textStyle(12, AppColors.primary, weight: FontWeight.w500),
+      prefixIconColor: AppColors.primary,
+      suffixIconColor: AppColors.authTextHint,
+      errorStyle: _textStyle(12, AppColors.error),
+    );
+  }
+
   // ── Card ─────────────────────────────────────────────
   static CardThemeData _buildCardTheme() {
     return CardThemeData(
@@ -394,10 +447,26 @@ class AppSpacing {
 class AppRadius {
   static const double sm = 8;
   static const double md = 12;
+  static const double control = 14;
   static const double lg = 16;
   static const double xl = 20;
   static const double xxl = 24;
   static const double full = 100;
+}
+
+class AppBreakpoints {
+  static const double compact = 360;
+  static const double wideAuthLayout = 760;
+  static const double wideAuthMinHeight = 600;
+}
+
+class AppLayout {
+  static const double authFormMaxWidth = 520;
+  static const double authHeroMinHeight = 220;
+  static const double authPagePaddingCompact = AppSpacing.md;
+  static const double authPagePadding = 20;
+  static const double authPrimaryButtonMinHeight = 52;
+  static const double authSecondaryButtonMinHeight = 50;
 }
 
 class AppShadows {
