@@ -112,6 +112,16 @@ public sealed class User : AggregateRoot
         Roles = roles ?? Array.Empty<string>();
     }
 
+    public Result SetStatus(string status)
+    {
+        var normalized = status?.Trim().ToUpperInvariant();
+        if (normalized is not ("ACTIVE" or "SUSPENDED" or "LOCKED"))
+            return Error.Validation("user.status", "Trạng thái phải là ACTIVE, SUSPENDED hoặc LOCKED.");
+
+        Status = normalized;
+        return Result.Success();
+    }
+
     /// <summary>
     /// Thiết lập số điện thoại cho người dùng.
     /// </summary>

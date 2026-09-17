@@ -22,6 +22,40 @@ namespace CareSitter.Modules.Support.Controllers;
 public sealed class DisputesController(
     SupportDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
 {
+    [HttpGet("/api/v1/admin/disputes")]
+    public async Task<IActionResult> ListForAdmin(string? status = null,
+        int page = 1, int pageSize = 20, CancellationToken ct = default)
+    {
+        if (!currentUser.IsInRole("ADMIN")) return Forbid();
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var query = db.Disputes.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var normalized = status.Trim().ToUpperInvariant();
+            query = query.Where(x => x.Status == normalized);
+        }
+
+        var total = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(x => x.OpenedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(d => new DisputeResponse(d.Id, d.BookingId, d.RaisedByUserId,
+                d.Reason, d.Description, d.Status, d.Decision, d.RefundAmount,
+                d.OpenedAt, d.ResolvedAt))
+            .ToListAsync(ct);
+        return Ok(new { items, total, page, pageSize });
+    }
+
+    [HttpGet("/api/v1/admin/disputes/{id:guid}")]
+    public async Task<IActionResult> GetForAdmin(Guid id, CancellationToken ct)
+    {
+        if (!currentUser.IsInRole("ADMIN")) return Forbid();
+        var d = await db.Disputes.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+        return d is null ? NotFound() : Ok(new DisputeResponse(d.Id, d.BookingId,
+            d.RaisedByUserId, d.Reason, d.Description, d.Status, d.Decision,
+            d.RefundAmount, d.OpenedAt, d.ResolvedAt));
+    }
+
     /// <summary>Khách hàng hoặc Caregiver tạo khiếu nại cho một booking.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDisputeRequest req, CancellationToken ct)

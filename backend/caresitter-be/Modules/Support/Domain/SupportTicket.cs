@@ -94,18 +94,22 @@ public sealed class SupportTicket : AggregateRoot
         if (string.IsNullOrWhiteSpace(newStatus))
             return Error.Validation("ticket.status", "status không được rỗng.");
 
-        var allowed = Status switch
+        var normalizedStatus = newStatus.Trim().ToUpperInvariant();
+        var allowed = AllowedTransitions(Status);
+
+        if (!allowed.Contains(normalizedStatus))
+            return Error.Conflict("ticket.status", $"không thể chuyen {Status} -> {normalizedStatus}.");
+
+        Status = normalizedStatus;
+        return Result.Success();
+    }
+
+    public static IReadOnlyCollection<string> AllowedTransitions(string currentStatus) =>
+        currentStatus.Trim().ToUpperInvariant() switch
         {
             "NEW" => new[] { "IN_PROGRESS", "CLOSED" },
             "IN_PROGRESS" => new[] { "RESOLVED", "CLOSED" },
             "RESOLVED" => new[] { "CLOSED" },
             _ => Array.Empty<string>()
         };
-
-        if (!allowed.Contains(newStatus))
-            return Error.Conflict("ticket.status", $"không thể chuyen {Status} -> {newStatus}.");
-
-        Status = newStatus;
-        return Result.Success();
-    }
 }
