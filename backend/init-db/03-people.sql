@@ -24,6 +24,8 @@ CREATE TABLE beneficiaries (
   allergies                jsonb,
   chronic_conditions       jsonb,
   care_instructions        text,
+  care_level               varchar(20) CHECK (care_level IN ('Nhẹ','Trung bình','Nặng')),
+  avatar_url               text,
   emergency_contacts       jsonb,   -- gom emergency_contacts
   medications              jsonb,   -- gom medications: [{name,dosage,schedule,instruction,start_date,end_date,is_active}]
   created_at               timestamptz NOT NULL DEFAULT now(),

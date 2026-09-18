@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 /// Primary CTA button – full width by default
 class AppButton extends StatelessWidget {

@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/api/dio_client.dart';
-import '../../../../core/router/navigation_helpers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../data/auth_repository.dart';
+import 'package:caregiver_app/core/error/failure.dart';
+import 'package:caregiver_app/core/router/navigation_helpers.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_widgets.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/register_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -50,7 +50,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _submitting = true);
     try {
-      await ref.read(authRepositoryProvider).register(
+      await ref.read(registerControllerProvider).register(
             fullName: _nameController.text,
             email: _emailController.text,
             phone: _phoneController.text,

@@ -8,5 +8,6 @@ public sealed record UpdateBeneficiaryCommand(Guid BeneficiaryId, string FullNam
     DateOnly? DateOfBirth, string? Gender, string? RelationshipToCustomer, string? Phone,
     Guid? DefaultAddressId, string? MobilityNote, string? GeneralNote,
     JsonElement? HealthHistory, JsonElement? Allergies, JsonElement? ChronicConditions,
-    string? CareInstructions, JsonElement? EmergencyContacts, JsonElement? Medications)
+    string? CareInstructions, string? CareLevel, string? AvatarUrl,
+    JsonElement? EmergencyContacts, JsonElement? Medications)
     : IRequest<Result<BeneficiaryResponse>>;

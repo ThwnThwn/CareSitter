@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../push/notification_deep_link_service.dart';
-import '../theme/app_theme.dart';
+import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
 
 enum AppToastType { success, error, loading }
 

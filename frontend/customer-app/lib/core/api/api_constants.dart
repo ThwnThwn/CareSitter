@@ -4,10 +4,9 @@
 /// Mặc định trỏ về production nếu không truyền biến.
 library;
 
-const String kBaseUrl = String.fromEnvironment(
-  'BASE_URL',
-  defaultValue: 'http://localhost:5033/api/v1',
-);
+import 'package:caresitter_customer/core/config/env_config.dart';
+
+const String kBaseUrl = EnvConfig.apiBaseUrl;
 
 class ApiPaths {
   ApiPaths._();

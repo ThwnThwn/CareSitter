@@ -88,7 +88,8 @@ public sealed class BeneficiariesController(
     private static BeneficiaryResponse ToResponse(Beneficiary x) => new(x.Id, x.FullName,
         x.DateOfBirth, x.Gender, x.RelationshipToCustomer, x.Phone, x.DefaultAddressId,
         x.MobilityNote, x.GeneralNote, Json(x.HealthHistory), Json(x.Allergies),
-        Json(x.ChronicConditions), x.CareInstructions, Json(x.EmergencyContacts), Json(x.Medications));
+        Json(x.ChronicConditions), x.CareInstructions, x.CareLevel, x.AvatarUrl,
+        Json(x.EmergencyContacts), Json(x.Medications));
 
     private static JsonElement? Json(string? value) => string.IsNullOrWhiteSpace(value)
         ? null : JsonDocument.Parse(value).RootElement.Clone();
@@ -98,7 +99,8 @@ public sealed class BeneficiariesController(
             request.RelationshipToCustomer, request.Phone, request.DefaultAddressId,
             request.MobilityNote, request.GeneralNote, request.HealthHistory,
             request.Allergies, request.ChronicConditions, request.CareInstructions,
-            request.EmergencyContacts, request.Medications);
+            request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
+            request.Medications);
 
     private static UpdateBeneficiaryCommand ToUpdateCommand(
         Guid id, BeneficiaryUpsertRequest request) =>
@@ -106,11 +108,13 @@ public sealed class BeneficiariesController(
             request.RelationshipToCustomer, request.Phone, request.DefaultAddressId,
             request.MobilityNote, request.GeneralNote, request.HealthHistory,
             request.Allergies, request.ChronicConditions, request.CareInstructions,
-            request.EmergencyContacts, request.Medications);
+            request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
+            request.Medications);
 }
 
 public sealed record BeneficiaryUpsertRequest(string FullName, DateOnly? DateOfBirth,
     string? Gender, string? RelationshipToCustomer, string? Phone, Guid? DefaultAddressId,
     string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
     JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
-    JsonElement? EmergencyContacts, JsonElement? Medications);
+    string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
+    JsonElement? Medications);

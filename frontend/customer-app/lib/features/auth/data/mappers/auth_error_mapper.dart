@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../../../../core/api/dio_client.dart';
+import 'package:caresitter_customer/core/api/dio_client.dart';
 
 class AuthErrorMapper {
   const AuthErrorMapper._();

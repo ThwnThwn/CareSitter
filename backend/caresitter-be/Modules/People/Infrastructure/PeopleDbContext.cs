@@ -41,6 +41,8 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.Allergies).HasColumnName("allergies").HasColumnType("jsonb");
             b.Property(x => x.ChronicConditions).HasColumnName("chronic_conditions").HasColumnType("jsonb");
             b.Property(x => x.CareInstructions).HasColumnName("care_instructions");
+            b.Property(x => x.CareLevel).HasColumnName("care_level").HasMaxLength(20);
+            b.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
             b.Property(x => x.EmergencyContacts).HasColumnName("emergency_contacts").HasColumnType("jsonb");
             b.Property(x => x.Medications).HasColumnName("medications").HasColumnType("jsonb");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");

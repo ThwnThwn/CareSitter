@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/auth/auth_notifier.dart';
-import 'core/push/firebase_push_notifications.dart';
-import 'core/push/notification_deep_link_service.dart';
-import 'core/realtime/care_signalr_service.dart';
-import 'core/router/app_router.dart';
-import 'core/theme/app_theme.dart';
-import 'features/home/presentation/providers/notifications_provider.dart';
-import 'features/shifts/presentation/providers/shifts_provider.dart';
+import 'package:caregiver_app/core/auth/auth_notifier.dart';
+import 'package:caregiver_app/core/push/firebase_push_notifications.dart';
+import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
+import 'package:caregiver_app/core/realtime/care_signalr_service.dart';
+import 'package:caregiver_app/core/router/app_router.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/features/home/presentation/controllers/notifications_controller.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 
 class CaregiverApp extends ConsumerStatefulWidget {
   const CaregiverApp({super.key});

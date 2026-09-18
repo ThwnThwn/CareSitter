@@ -39,6 +39,8 @@ public sealed class Beneficiary : AggregateRoot
     /// <summary>jsonb.</summary>
     public string? ChronicConditions { get; private set; }
     public string? CareInstructions { get; private set; }
+    public string? CareLevel { get; private set; }
+    public string? AvatarUrl { get; private set; }
 
     /// <summary>jsonb: gom emergency_contacts.</summary>
     public string? EmergencyContacts { get; private set; }
@@ -61,10 +63,22 @@ public sealed class Beneficiary : AggregateRoot
     public Result Update(string fullName, DateOnly? dateOfBirth, string? gender,
         string? relationship, string? phone, Guid? defaultAddressId, string? mobilityNote,
         string? generalNote, string? healthHistory, string? allergies, string? chronicConditions,
-        string? careInstructions, string? emergencyContacts, string? medications)
+        string? careInstructions, string? careLevel, string? avatarUrl,
+        string? emergencyContacts, string? medications)
     {
         if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length > 255)
             return Error.Validation("beneficiary.full_name", "Họ tên không hợp lệ.");
+
+        var normalizedCareLevel = string.IsNullOrWhiteSpace(careLevel) ? null : careLevel.Trim();
+        if (normalizedCareLevel is not null &&
+            normalizedCareLevel is not ("Nhẹ" or "Trung bình" or "Nặng"))
+            return Error.Validation("beneficiary.care_level", "Mức độ chăm sóc không hợp lệ.");
+
+        var normalizedAvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim();
+        if (normalizedAvatarUrl is not null &&
+            (!Uri.TryCreate(normalizedAvatarUrl, UriKind.Absolute, out var avatarUri) ||
+             avatarUri.Scheme is not ("http" or "https")))
+            return Error.Validation("beneficiary.avatar_url", "URL ảnh đại diện không hợp lệ.");
 
         FullName = fullName.Trim();
         DateOfBirth = dateOfBirth;
@@ -78,6 +92,8 @@ public sealed class Beneficiary : AggregateRoot
         Allergies = allergies;
         ChronicConditions = chronicConditions;
         CareInstructions = careInstructions?.Trim();
+        CareLevel = normalizedCareLevel;
+        AvatarUrl = normalizedAvatarUrl;
         EmergencyContacts = emergencyContacts;
         Medications = medications;
         return Result.Success();

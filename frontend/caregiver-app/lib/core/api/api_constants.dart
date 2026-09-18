@@ -1,11 +1,5 @@
 /// API path constants cho CareSitter Caregiver App.
-/// baseUrl: --dart-define=BASE_URL=http://localhost:5033/api/v1
 library;
-
-const String kBaseUrl = String.fromEnvironment(
-  'BASE_URL',
-  defaultValue: 'http://localhost:5033/api/v1',
-);
 
 class ApiPaths {
   ApiPaths._();

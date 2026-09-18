@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../application/beneficiary_store.dart';
-import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
+import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
 class BeneficiaryListScreen extends ConsumerWidget {
   const BeneficiaryListScreen({super.key});

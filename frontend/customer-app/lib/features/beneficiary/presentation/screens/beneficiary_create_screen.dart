@@ -1,16 +1,15 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/router/navigation_helpers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../catalog/application/address_store.dart';
-import '../../application/beneficiary_store.dart';
-import '../../application/family_contact_store.dart';
-import '../widgets/family_contact_picker.dart';
-import '../widgets/verified_beneficiary_address_picker.dart';
+import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/controllers/family_contact_controller.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_avatar_image.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/family_contact_picker.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/verified_beneficiary_address_picker.dart';
 
 // Helper: entry cho 1 liên hệ khẩn cấp
 class _ECEntry {
@@ -44,6 +43,7 @@ class _BeneficiaryCreateScreenState
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
   String? _avatarPath;
+  XFile? _avatarFile;
 
   // Thông tin cần biết (tag-based)
   final _conditionCtrl = TextEditingController();
@@ -87,6 +87,7 @@ class _BeneficiaryCreateScreenState
       );
       if (image != null) {
         setState(() {
+          _avatarFile = image;
           _avatarPath = image.path;
         });
       }
@@ -236,7 +237,7 @@ class _BeneficiaryCreateScreenState
                   ),
                 )
                 .toList(growable: false),
-            avatarPath: _avatarPath,
+            avatarFile: _avatarFile,
           );
 
       if (!mounted) return;
@@ -315,11 +316,8 @@ class _BeneficiaryCreateScreenState
                             width: 2.5),
                         image: _avatarPath != null && _avatarPath!.isNotEmpty
                             ? DecorationImage(
-                                image: kIsWeb
-                                    ? NetworkImage(_avatarPath!)
-                                        as ImageProvider
-                                    : FileImage(File(_avatarPath!))
-                                        as ImageProvider,
+                                image: beneficiaryAvatarImageProvider(
+                                    _avatarPath!),
                                 fit: BoxFit.cover,
                               )
                             : null,

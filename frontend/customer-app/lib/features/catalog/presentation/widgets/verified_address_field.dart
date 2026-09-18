@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../data/address_repository.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/catalog/data/repositories/address_repository.dart';
 
 class VerifiedAddressSelection {
   final PlaceSuggestionModel suggestion;

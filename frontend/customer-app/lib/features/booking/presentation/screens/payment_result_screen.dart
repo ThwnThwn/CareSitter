@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../application/booking_store.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 /// Màn hình đích sau callback VNPay. Luôn tải lại booking để trạng thái hiển thị
 /// phản ánh kết quả đã được backend xác nhận, thay vì chỉ tin query string.

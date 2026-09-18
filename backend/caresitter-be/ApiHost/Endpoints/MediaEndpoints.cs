@@ -43,6 +43,7 @@ internal static class MediaEndpoints
             "avatars" or "avatar" => "CareSitter/Avatars",
             "assetsproject" or "assets-project" or "project" => "CareSitter/AssetsProject",
             "checklist" or "checklists" => "CareSitter/Checklist",
+            "beneficiary" or "beneficiaries" => $"CareSitter/Beneficiaries/{userId}",
             "kyc" => $"CareSitter/Kyc/{userId}",
             "support" => $"CareSitter/Support/{userId}",
             _ => "CareSitter/AssetsProject",

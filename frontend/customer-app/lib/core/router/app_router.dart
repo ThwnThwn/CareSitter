@@ -1,40 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/register_screen.dart';
-import '../../features/auth/presentation/screens/email_input_screen.dart';
-import '../../features/auth/presentation/screens/otp_verify_screen.dart';
-import '../../features/home/presentation/home_screen.dart';
-import '../../features/home/presentation/notifications_screen.dart';
-import '../../features/home/presentation/activity_screen.dart';
-import '../../features/beneficiary/presentation/screens/beneficiary_list_screen.dart';
-import '../../features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
-import '../../features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
-import '../../features/catalog/presentation/catalog_screen.dart';
-import '../../features/booking/presentation/screens/booking_wizard_screen.dart';
-import '../../features/booking/presentation/screens/booking_list_screen.dart';
-import '../../features/booking/presentation/screens/booking_detail_screen.dart';
-import '../../features/booking/presentation/screens/payment_result_screen.dart';
-import '../../features/caregiver/presentation/caregiver_list_screen.dart';
-import '../../features/caregiver/presentation/caregiver_profile_screen.dart';
-import '../../features/shift_tracking/presentation/shift_tracking_screen.dart';
-import '../../features/shift_tracking/presentation/care_timeline_screen.dart';
-import '../../features/review/presentation/review_screen.dart';
-import '../../features/review/presentation/dispute_screen.dart';
-import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/settings/presentation/profile_edit_screen.dart';
-import '../../features/settings/presentation/payment_methods_screen.dart';
-import '../../features/wallet/presentation/wallet_screen.dart';
-import '../../features/settings/presentation/saved_addresses_screen.dart';
-import '../../features/settings/presentation/change_password_screen.dart';
-import '../../features/settings/presentation/two_factor_auth_screen.dart';
-import '../../features/settings/presentation/faq_screen.dart';
-import '../../features/settings/presentation/support_screen.dart';
-import '../../features/settings/presentation/notification_settings_screen.dart';
-import '../../features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
-import '../auth/auth_notifier.dart';
-import 'shell_scaffold.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/login_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/register_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/email_input_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/otp_verify_screen.dart';
+import 'package:caresitter_customer/features/home/presentation/screens/home_screen.dart';
+import 'package:caresitter_customer/features/home/presentation/screens/notifications_screen.dart';
+import 'package:caresitter_customer/features/home/presentation/screens/activity_screen.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_list_screen.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
+import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
+import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
+import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
+import 'package:caresitter_customer/features/booking/presentation/screens/booking_detail_screen.dart';
+import 'package:caresitter_customer/features/booking/presentation/screens/payment_result_screen.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/screens/caregiver_list_screen.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/screens/caregiver_profile_screen.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/screens/shift_tracking_screen.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/screens/care_timeline_screen.dart';
+import 'package:caresitter_customer/features/review/presentation/screens/review_screen.dart';
+import 'package:caresitter_customer/features/review/presentation/screens/dispute_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/settings_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/profile_edit_screen.dart';
+import 'package:caresitter_customer/features/wallet/presentation/screens/wallet_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/saved_addresses_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/change_password_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/faq_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/support_screen.dart';
+import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/router/shell_scaffold.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -343,14 +341,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/payment',
-        pageBuilder: (ctx, state) => _slideUpPage(
-          pageKey: state.pageKey,
-          child: const PaymentMethodsScreen(),
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: '/wallet',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
@@ -382,14 +372,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const NotificationSettingsScreen(),
-        ),
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/2fa',
-        pageBuilder: (ctx, state) => _modalPage(
-          pageKey: state.pageKey,
-          child: const TwoFactorAuthScreen(),
         ),
       ),
       GoRoute(

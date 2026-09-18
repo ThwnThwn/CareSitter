@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
-import '../auth/auth_notifier.dart';
-import '../../features/booking/data/models/booking_sync_model.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/features/booking/data/models/booking_sync_model.dart';
 
 /// URL của SignalR Hub trên backend.
 /// Phải là URL gốc (không có /api/v1) vì Hub nằm ở /hubs/care-tracking.
@@ -158,7 +158,8 @@ class CareSignalRService {
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
 
   /// Stream cho CareTaskUpdated — payload: { bookingId, task }
-  Stream<Map<String, dynamic>> get onTaskUpdated => _taskUpdateController.stream;
+  Stream<Map<String, dynamic>> get onTaskUpdated =>
+      _taskUpdateController.stream;
 
   /// Stream trạng thái lifecycle (connecting / connected / reconnecting / ...).
   Stream<SignalRConnectionState> get lifecycleStream =>

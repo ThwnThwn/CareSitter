@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../data/auth_repository.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_widgets.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
   const PhoneInputScreen({super.key});
@@ -58,7 +58,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       final identifier = _identifierController.text.trim();
       final password = _passwordController.text;
       await ref
-          .read(authRepositoryProvider)
+          .read(loginControllerProvider)
           .loginWithPassword(identifier, password);
       if (mounted) context.go('/home');
     } catch (e) {
@@ -80,7 +80,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     setState(() => _isLoading = true);
     try {
       final email = _identifierController.text.trim().toLowerCase();
-      await ref.read(authRepositoryProvider).requestOtp(email);
+      await ref.read(loginControllerProvider).requestOtp(email);
       if (mounted) context.push('/auth/otp', extra: email);
     } catch (e) {
       if (mounted) {

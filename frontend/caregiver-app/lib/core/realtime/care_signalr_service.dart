@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
-import '../auth/auth_notifier.dart';
+import 'package:caregiver_app/core/auth/auth_notifier.dart';
 
 const String _hubBaseUrl = String.fromEnvironment(
   'HUB_BASE_URL',
@@ -117,8 +117,10 @@ class CareSignalRService {
   Stream<TimelineEventUpdate> get timelineStream => _timelineController.stream;
   Stream<SignalRConnectionState> get lifecycleStream =>
       _lifecycleController.stream;
+
   /// Stream cho CareTaskUpdated — payload: { bookingId, task }
-  Stream<Map<String, dynamic>> get onTaskUpdated => _taskUpdateController.stream;
+  Stream<Map<String, dynamic>> get onTaskUpdated =>
+      _taskUpdateController.stream;
   Stream<void> get onReconnected => lifecycleStream
       .where((state) => state == SignalRConnectionState.reconnected)
       .map((_) {});
