@@ -8,5 +8,6 @@ public sealed record CreateBeneficiaryCommand(string FullName, DateOnly? DateOfB
     string? Gender, string? RelationshipToCustomer, string? Phone, Guid? DefaultAddressId,
     string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
     JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
-    JsonElement? EmergencyContacts, JsonElement? Medications)
+    string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
+    JsonElement? Medications)
     : IRequest<Result<BeneficiaryResponse>>;

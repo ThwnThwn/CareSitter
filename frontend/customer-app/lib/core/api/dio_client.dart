@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../auth/auth_notifier.dart';
-import 'api_constants.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/api/api_constants.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
+
+export 'package:caresitter_customer/core/error/app_exception.dart';
 
 // baseUrl đọc từ --dart-define=BASE_URL=http://localhost:5033/api/v1
 // Nếu không truyền → dùng giá trị mặc định trong api_constants.dart
@@ -220,20 +223,4 @@ class _ErrorInterceptor extends Interceptor {
         >= 500 => 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
         _ => 'Đã xảy ra lỗi, vui lòng thử lại.',
       };
-}
-
-class AppApiException implements Exception {
-  final String message;
-  final int? statusCode;
-  final String? code;
-  final Map<String, dynamic>? details;
-  const AppApiException({
-    required this.message,
-    this.statusCode,
-    this.code,
-    this.details,
-  });
-
-  @override
-  String toString() => message;
 }

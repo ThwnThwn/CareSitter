@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/router/navigation_helpers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../data/auth_repository.dart';
+import 'package:caregiver_app/core/router/navigation_helpers.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/otp_verify_controller.dart';
 
 class OtpVerifyScreen extends ConsumerStatefulWidget {
   final String email;
@@ -73,7 +73,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   Future<void> _verify() async {
     setState(() => _isVerifying = true);
     try {
-      await ref.read(authRepositoryProvider).loginWithOtp(widget.email, _otp);
+      await ref.read(otpVerifyControllerProvider).verify(widget.email, _otp);
       if (mounted) {
         setState(() => _isVerifying = false);
         context.go('/home');
@@ -94,7 +94,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   Future<void> _resendOtp() async {
     setState(() => _isResending = true);
     try {
-      await ref.read(authRepositoryProvider).requestOtp(widget.email);
+      await ref.read(otpVerifyControllerProvider).resend(widget.email);
       if (mounted) _startCountdown();
     } catch (e) {
       if (mounted) {

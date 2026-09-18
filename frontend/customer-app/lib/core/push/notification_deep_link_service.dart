@@ -5,8 +5,8 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/auth_notifier.dart';
-import '../router/app_router.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/router/app_router.dart';
 
 final notificationMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -38,7 +38,7 @@ class NotificationDeepLinkService {
 
     if (supplied != null) return supplied;
     if (bookingId == null) {
-      if (type == 'PAYMENT') return '/settings/payment';
+      if (type == 'PAYMENT') return '/bookings';
       if (type == 'SUPPORT') return '/settings/support';
       return type.isEmpty ? null : '/notifications';
     }

@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/auth/auth_notifier.dart';
-import 'core/notifications/in_app_notification_events.dart';
-import 'core/presentation/widgets/app_toast.dart';
-import 'core/push/firebase_push_notifications.dart';
-import 'core/push/notification_deep_link_service.dart';
-import 'core/router/app_router.dart';
-import 'core/theme/app_theme.dart';
-import 'features/booking/application/booking_sync_watchdog.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/notifications/in_app_notification_events.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
+import 'package:caresitter_customer/core/push/firebase_push_notifications.dart';
+import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
+import 'package:caresitter_customer/core/router/app_router.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/booking/presentation/widgets/booking_sync_watchdog.dart';
 
 class CareSitterApp extends ConsumerStatefulWidget {
   const CareSitterApp({super.key});

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../catalog/application/address_store.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
 
 /// Chọn địa chỉ đã được xác minh từ cùng nguồn với luồng đặt lịch.
 class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {

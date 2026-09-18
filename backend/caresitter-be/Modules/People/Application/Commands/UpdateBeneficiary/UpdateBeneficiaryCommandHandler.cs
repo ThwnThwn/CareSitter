@@ -45,8 +45,8 @@ internal sealed class UpdateBeneficiaryCommandHandler(
             request.RelationshipToCustomer, request.Phone, request.DefaultAddressId,
             request.MobilityNote, request.GeneralNote, request.HealthHistory?.GetRawText(),
             request.Allergies?.GetRawText(), request.ChronicConditions?.GetRawText(),
-            request.CareInstructions, request.EmergencyContacts?.GetRawText(),
-            request.Medications?.GetRawText());
+            request.CareInstructions, request.CareLevel, request.AvatarUrl,
+            request.EmergencyContacts?.GetRawText(), request.Medications?.GetRawText());
 
     private static string? NormalizeGender(string? value)
     {

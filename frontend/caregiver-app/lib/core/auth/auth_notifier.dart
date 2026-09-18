@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'auth_state.dart';
+import 'package:caregiver_app/core/auth/auth_state.dart';
 
 const _storage = FlutterSecureStorage();
 

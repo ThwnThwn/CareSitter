@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_widgets.dart';
-import '../../data/auth_repository.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_widgets.dart';
+import 'package:caresitter_customer/features/auth/data/repositories/auth_repository.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
   const PhoneInputScreen({super.key});

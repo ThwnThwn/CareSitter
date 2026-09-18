@@ -6,7 +6,8 @@ public sealed record BeneficiaryResponse(Guid Id, string FullName, DateOnly? Dat
     string? Gender, string? RelationshipToCustomer, string? Phone, Guid? DefaultAddressId,
     string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
     JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
-    JsonElement? EmergencyContacts, JsonElement? Medications);
+    string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
+    JsonElement? Medications);
 
 public sealed record FamilyContactResponse(Guid Id, string FullName, string PhoneNumber, string? Note);
 

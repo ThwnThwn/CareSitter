@@ -18,6 +18,15 @@ public sealed class CreateBeneficiaryCommandValidator : AbstractValidator<Create
             .NotNull()
             .WithErrorCode("beneficiary.address_required")
             .WithMessage("Vui lòng chọn địa chỉ đã xác minh cho người được chăm sóc.");
+        RuleFor(x => x.CareLevel)
+            .Must(IsValidCareLevel)
+            .WithErrorCode("beneficiary.care_level")
+            .WithMessage("Mức độ chăm sóc không hợp lệ.");
+        RuleFor(x => x.AvatarUrl)
+            .MaximumLength(2048)
+            .Must(IsValidAvatarUrl)
+            .WithErrorCode("beneficiary.avatar_url")
+            .WithMessage("URL ảnh đại diện không hợp lệ.");
     }
 
     private static string? NormalizeGender(string? value)
@@ -25,5 +34,15 @@ public sealed class CreateBeneficiaryCommandValidator : AbstractValidator<Create
         if (string.IsNullOrWhiteSpace(value)) return null;
         var gender = value.Trim().ToUpperInvariant();
         return gender is "MALE" or "FEMALE" or "OTHER" or "UNSPECIFIED" ? gender : string.Empty;
+    }
+
+    private static bool IsValidCareLevel(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Trim() is "Nhẹ" or "Trung bình" or "Nặng";
+
+    private static bool IsValidAvatarUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) &&
+               uri.Scheme is "http" or "https";
     }
 }

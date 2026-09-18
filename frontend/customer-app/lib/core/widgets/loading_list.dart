@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../theme/app_theme.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 /// Fixed-size placeholders keep the first-load layout stable.
 class LoadingList extends StatelessWidget {

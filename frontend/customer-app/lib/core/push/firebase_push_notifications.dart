@@ -5,12 +5,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/dio_client.dart';
-import '../auth/auth_notifier.dart';
-import '../notifications/in_app_notification_events.dart';
-import '../../features/booking/application/booking_store.dart';
-import '../../features/home/application/notifications_store.dart';
-import 'notification_deep_link_service.dart';
+import 'package:caresitter_customer/core/api/dio_client.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/notifications/in_app_notification_events.dart';
+import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
+import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 
 /// Top-level background message handler (phải là hàm top-level).
 /// Gọi khi app ở background hoặc terminated và nhận FCM data message.

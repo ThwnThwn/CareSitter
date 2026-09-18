@@ -12,12 +12,30 @@ public sealed class ModuleCommandValidatorTests
     {
         var validator = new CreateBeneficiaryCommandValidator();
         var command = new CreateBeneficiaryCommand("Name", DateOnly.MaxValue,
-            "invalid", null, null, null, null, null, null, null, null, null, null, null);
+            "invalid", null, null, null, null, null, null, null, null, null, null, null,
+            null, null);
 
         var result = validator.Validate(command);
 
         Assert.False(result.IsValid);
         Assert.Equal("Giới tính không hợp lệ.", result.Errors[0].ErrorMessage);
+    }
+
+    [Fact]
+    public void Beneficiary_validation_rejects_fake_care_level_and_local_avatar_path()
+    {
+        var validator = new CreateBeneficiaryCommandValidator();
+        var command = new CreateBeneficiaryCommand("Name", null,
+            null, null, null, Guid.NewGuid(), null, null, null, null, null, null,
+            "Rất nặng", "C:\\temp\\avatar.jpg", null, null);
+
+        var result = validator.Validate(command);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors,
+            error => error.ErrorCode == "beneficiary.care_level");
+        Assert.Contains(result.Errors,
+            error => error.ErrorCode == "beneficiary.avatar_url");
     }
 
     [Fact]

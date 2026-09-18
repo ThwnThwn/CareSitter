@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../auth/auth_notifier.dart';
-import 'api_constants.dart';
+import 'package:caregiver_app/core/auth/auth_notifier.dart';
+import 'package:caregiver_app/core/config/env_config.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 
-const String _baseUrl = kBaseUrl;
+const String _baseUrl = EnvConfig.baseUrl;
 
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
 
@@ -212,21 +213,4 @@ class _ErrorInterceptor extends Interceptor {
         >= 500 => 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
         _ => 'Đã xảy ra lỗi, vui lòng thử lại.',
       };
-}
-
-class AppApiException implements Exception {
-  final String message;
-  final int? statusCode;
-  const AppApiException({required this.message, this.statusCode});
-
-  @override
-  String toString() => 'AppApiException($statusCode): $message';
-}
-
-String apiErrorMessage(Object error) {
-  if (error is DioException && error.error is AppApiException) {
-    return (error.error as AppApiException).message;
-  }
-  if (error is AppApiException) return error.message;
-  return 'Đã xảy ra lỗi, vui lòng thử lại.';
 }

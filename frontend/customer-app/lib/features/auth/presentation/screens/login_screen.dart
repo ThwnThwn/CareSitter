@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/presentation/widgets/app_text_field.dart';
-import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../application/login_controller.dart';
-import '../validators/auth_validators.dart';
-import '../widgets/auth_error_banner.dart';
-import '../widgets/auth_hero_header.dart';
+import 'package:caresitter_customer/core/widgets/app_text_field.dart';
+import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
+import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero_header.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

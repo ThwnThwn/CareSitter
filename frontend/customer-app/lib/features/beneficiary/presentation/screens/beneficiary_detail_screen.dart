@@ -1,12 +1,11 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/router/navigation_helpers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../application/beneficiary_store.dart';
+import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_avatar_image.dart';
 
 class BeneficiaryDetailScreen extends ConsumerWidget {
   final String id;
@@ -59,10 +58,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                           radius: 46,
                           backgroundColor: Colors.white.withValues(alpha: 0.22),
                           backgroundImage: hasAvatar
-                              ? (kIsWeb
-                                  ? NetworkImage(b.avatarPath!) as ImageProvider
-                                  : FileImage(File(b.avatarPath!))
-                                      as ImageProvider)
+                              ? beneficiaryAvatarImageProvider(b.avatarPath!)
                               : null,
                           child: hasAvatar
                               ? null

@@ -4,13 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/router/navigation_helpers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/presentation/widgets/app_toast.dart';
-import '../../../../core/api/dio_client.dart' show AppApiException;
-import '../../application/booking_store.dart';
+import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
+import 'package:caresitter_customer/core/api/dio_client.dart'
+    show AppApiException;
+import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
-import '../../../../core/presentation/widgets/fade_slide_staggered.dart';
+import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
 class BookingDetailScreen extends ConsumerWidget {
   final String id;

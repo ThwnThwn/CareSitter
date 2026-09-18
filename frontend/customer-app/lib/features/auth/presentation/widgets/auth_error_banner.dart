@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class AuthErrorBanner extends StatelessWidget {
   const AuthErrorBanner({

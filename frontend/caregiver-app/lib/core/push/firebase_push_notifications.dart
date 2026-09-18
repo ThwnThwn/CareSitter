@@ -5,11 +5,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/dio_client.dart';
-import '../auth/auth_notifier.dart';
-import '../../features/home/presentation/providers/notifications_provider.dart';
-import '../../features/shifts/presentation/providers/shifts_provider.dart';
-import 'notification_deep_link_service.dart';
+import 'package:caregiver_app/core/api/dio_client.dart';
+import 'package:caregiver_app/core/auth/auth_notifier.dart';
+import 'package:caregiver_app/features/home/presentation/controllers/notifications_controller.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
+import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
