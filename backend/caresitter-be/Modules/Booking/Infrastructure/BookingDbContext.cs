@@ -66,7 +66,9 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.CancelReason).HasColumnName("cancel_reason");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            b.Property(x => x.SyncVersion).HasColumnName("sync_version");
+            b.Property(x => x.SyncVersion)
+                .HasColumnName("sync_version")
+                .IsConcurrencyToken();
             b.Ignore(x => x.DomainEvents);
         });
 

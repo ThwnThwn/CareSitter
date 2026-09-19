@@ -164,13 +164,6 @@ class BookingRepository {
 
   // ── Lifecycle mutations ──────────────────────────────────────────────────────
 
-  /// Xác nhận thanh toán ký quỹ (escrow) → status: confirmed
-  Future<BookingModel> confirmPayment(String bookingId) async {
-    final resp = await _dio
-        .post<Map<String, dynamic>>(ApiPaths.confirmPayment(bookingId));
-    return BookingModel.fromJson(resp.data ?? {});
-  }
-
   /// Caregiver bắt đầu di chuyển → status: caregiver_en_route
   Future<BookingModel> startEnRoute(String bookingId) async {
     final resp =

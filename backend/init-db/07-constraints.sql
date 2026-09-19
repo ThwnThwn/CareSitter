@@ -35,3 +35,24 @@ ALTER TABLE booking.gps_tracks
 ALTER TABLE people.caregiver_profiles
   ADD CONSTRAINT fk_caregiver_wallet FOREIGN KEY (wallet_account_id)
   REFERENCES payments.wallet_accounts(id) ON DELETE SET NULL;
+
+-- Depends on booking.bookings, so this RLS policy must be created only after
+-- both the People and Booking schemas exist.
+CREATE POLICY p_beneficiary_assigned_caregiver_read ON people.beneficiaries
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM booking.bookings b
+      JOIN people.caregiver_profiles c ON c.id = b.caregiver_id
+      WHERE b.beneficiary_id = beneficiaries.id
+        AND c.user_id = nullif(current_setting('app.current_user_id', true), '')::uuid
+        AND b.status IN (
+          'CAREGIVER_ACCEPTED',
+          'CAREGIVER_EN_ROUTE',
+          'IN_PROGRESS',
+          'CHECKOUT_PENDING_REVIEW',
+          'COMPLETED'
+        )
+    )
+  );

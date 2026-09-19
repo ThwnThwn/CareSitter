@@ -97,6 +97,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.Id).HasColumnName("id");
             b.Property(x => x.BookingId).HasColumnName("booking_id");
             b.Property(x => x.PaymentIntentId).HasColumnName("payment_intent_id");
+            b.Property(x => x.PayoutRequestId).HasColumnName("payout_request_id");
             b.Property(x => x.TransactionType).HasColumnName("transaction_type").HasMaxLength(30);
             b.Property(x => x.DebitAccount).HasColumnName("debit_account").HasMaxLength(100);
             b.Property(x => x.CreditAccount).HasColumnName("credit_account").HasMaxLength(100);
@@ -119,6 +120,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.Id).HasColumnName("id");
             b.Property(x => x.CaregiverId).HasColumnName("caregiver_id");
             b.Property(x => x.WalletAccountId).HasColumnName("wallet_account_id");
+            b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(100);
             b.Property(x => x.Amount).HasColumnName("amount");
             b.Property(x => x.BankName).HasColumnName("bank_name").HasMaxLength(255);
             b.Property(x => x.AccountHolderName).HasColumnName("account_holder_name").HasMaxLength(255);
@@ -128,6 +130,9 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.ReviewedByAdminId).HasColumnName("reviewed_by_admin_id");
             b.Property(x => x.ReviewedAt).HasColumnName("reviewed_at");
             b.Property(x => x.RejectReason).HasColumnName("reject_reason");
+            b.HasIndex(x => new { x.CaregiverId, x.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("uq_payout_caregiver_idempotency");
             b.Ignore(x => x.CreatedAt); // payout_requests has no created_at column (requested_at is the domain field)
             b.Ignore(x => x.UpdatedAt); // payout_requests has no updated_at column
         });

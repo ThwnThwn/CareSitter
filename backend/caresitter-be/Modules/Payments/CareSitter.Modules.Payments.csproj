@@ -15,4 +15,9 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CareSitter.Modules.Payments.UnitTests" />
+    <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

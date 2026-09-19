@@ -265,17 +265,6 @@ class BookingStore extends Notifier<List<BookingModel>> {
     }
   }
 
-  Future<void> confirmPayment(String bookingId) async {
-    try {
-      final updated = await _repo.confirmPayment(bookingId);
-      _applyUpdate(updated);
-    } catch (e) {
-      // ignore: avoid_print
-      print('[BookingStore] confirmPayment error: $e');
-      rethrow;
-    }
-  }
-
   Future<void> confirmCompleted(String bookingId) async {
     try {
       final updated = await _repo.completeBooking(bookingId);

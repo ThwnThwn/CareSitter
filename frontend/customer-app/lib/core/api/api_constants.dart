@@ -20,7 +20,6 @@ class ApiPaths {
       '/bookings/$id/caregiver-suggestions';
 
   // ── Booking lifecycle ──────────────────────────────────────
-  static String confirmPayment(String id) => '/bookings/$id/confirm-payment';
   static const paymentIntents = '/payments/intents';
   static String enRoute(String id) => '/bookings/$id/en-route';
   static String checkIn(String id) => '/bookings/$id/check-in';
