@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:caregiver_app/core/api/api_constants.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
@@ -31,6 +32,7 @@ class EarningsRepository {
         'bankName': bankName,
         'accountHolderName': accountHolderName,
         'accountNumber': accountNumber,
+        'idempotencyKey': const Uuid().v4(),
       },
     );
   }

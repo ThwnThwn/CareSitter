@@ -288,7 +288,8 @@ public sealed class PaymentsController(
     //  LEDGER
     // ════════════════════════════════════════════
 
-    /// <summary>Lấy lịch sử giao dịch sổ cái (ESCROW_LOCK, PAYOUT, SETTLEMENT...), có lọc theo booking.</summary>
+    /// <summary>Admin lấy lịch sử sổ cái toàn hệ thống, có thể lọc theo booking.</summary>
+    [Authorize(Roles = "ADMIN")]
     [HttpGet("api/v1/payments/ledger")]
     public async Task<IActionResult> ListLedger(Guid? bookingId = null,
         int page = 1, int pageSize = 20, CancellationToken ct = default)

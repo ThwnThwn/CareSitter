@@ -22,27 +22,73 @@ public sealed class PayoutsController(
 {
     /// <summary>Caregiver tao yeu cau rut tien tu available balance.</summary>
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreatePayoutRequest req, CancellationToken ct)
+    public async Task<IActionResult> Create(
+        [FromBody] CreatePayoutRequest req,
+        [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey,
+        CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
 
-        var wallet = await db.WalletAccounts
+        var idempotencyKey = string.IsNullOrWhiteSpace(req.IdempotencyKey)
+            ? headerIdempotencyKey?.Trim()
+            : req.IdempotencyKey.Trim();
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Length > 100)
+            return Problem(Error.Validation("payout.idempotency_key", "Thiếu hoặc sai idempotency key."));
+
+        var existing = await db.PayoutRequests.AsNoTracking().SingleOrDefaultAsync(x =>
+            x.CaregiverId == userId && x.IdempotencyKey == idempotencyKey, ct);
+        if (existing is not null)
+            return Ok(ToResponse(existing));
+
+        var wallet = await db.WalletAccounts.AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.AccountType == "CAREGIVER", ct);
         if (wallet is null)
             return BadRequest(new { error = "Caregiver chua co vi dien tu." });
 
-        if (wallet.AvailableBalance < req.Amount)
-            return BadRequest(new { error = "So du kha dung khong du." });
+        if (string.IsNullOrWhiteSpace(req.AccountNumber))
+            return Problem(Error.Validation("payout.account_number", "account_number không được rỗng."));
 
-        var deductResult = wallet.DeductAvailable(req.Amount);
-        if (deductResult.IsFailure) return Problem(deductResult.Error);
-
-        var payout = PayoutRequest.Create(userId, wallet.Id, req.Amount,
+        var payout = PayoutRequest.Create(userId, wallet.Id, idempotencyKey, req.Amount,
             req.BankName, req.AccountHolderName, encryption.Encrypt(req.AccountNumber.Trim()));
         if (payout.IsFailure) return Problem(payout.Error);
 
-        db.PayoutRequests.Add(payout.Value);
-        await db.SaveChangesAsync(ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            // Atomic reserve: concurrent requests serialize on the wallet row and
+            // only requests with enough remaining balance can succeed.
+            var reserved = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+                UPDATE payments.wallet_accounts
+                SET available_balance = available_balance - {{req.Amount}},
+                    pending_balance = pending_balance + {{req.Amount}},
+                    updated_at = now()
+                WHERE id = {{wallet.Id}} AND available_balance >= {{req.Amount}}
+                """, ct);
+            if (reserved == 0)
+            {
+                await tx.RollbackAsync(ct);
+                db.ChangeTracker.Clear();
+                existing = await db.PayoutRequests.AsNoTracking().SingleOrDefaultAsync(x =>
+                    x.CaregiverId == userId && x.IdempotencyKey == idempotencyKey, ct);
+                return existing is not null
+                    ? Ok(ToResponse(existing))
+                    : BadRequest(new { error = "So du kha dung khong du." });
+            }
+
+            db.PayoutRequests.Add(payout.Value);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            await tx.RollbackAsync(ct);
+            db.ChangeTracker.Clear();
+            existing = await db.PayoutRequests.AsNoTracking().SingleOrDefaultAsync(x =>
+                x.CaregiverId == userId && x.IdempotencyKey == idempotencyKey, ct);
+            if (existing is not null)
+                return Ok(ToResponse(existing));
+            throw;
+        }
 
         return Created($"/api/v1/payments/payouts/{payout.Value.Id}",
             ToResponse(payout.Value));
@@ -97,7 +143,10 @@ public sealed class PayoutsController(
         if (!currentUser.IsInRole("ADMIN")) return Forbid();
         if (currentUser.UserId is not { } adminId) return Unauthorized();
 
-        var payout = await db.PayoutRequests.SingleOrDefaultAsync(x => x.Id == id, ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var payout = await db.PayoutRequests
+            .FromSqlInterpolated($"SELECT * FROM payments.payout_requests WHERE id = {id} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
         if (payout is null) return NotFound();
 
         var result = payout.Approve(adminId);
@@ -105,10 +154,20 @@ public sealed class PayoutsController(
 
         var ledger = LedgerEntry.Create("PAYOUT",
             $"wallet:caregiver:{payout.CaregiverId}", "bank:external",
-            payout.Amount, metadata: $"{{\"payout_request_id\":\"{payout.Id}\"}}");
+            payout.Amount, metadata: $"{{\"payout_request_id\":\"{payout.Id}\"}}",
+            payoutRequestId: payout.Id);
         if (ledger.IsSuccess) db.LedgerEntries.Add(ledger.Value);
 
+        var released = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+            UPDATE payments.wallet_accounts
+            SET pending_balance = pending_balance - {{payout.Amount}}, updated_at = now()
+            WHERE id = {{payout.WalletAccountId}} AND pending_balance >= {{payout.Amount}}
+            """, ct);
+        if (released == 0)
+            return Problem(Error.Conflict("payout.balance", "Số dư tạm giữ không còn hợp lệ."));
+
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Ok(ToResponse(payout));
     }
 
@@ -119,17 +178,27 @@ public sealed class PayoutsController(
         if (!currentUser.IsInRole("ADMIN")) return Forbid();
         if (currentUser.UserId is not { } adminId) return Unauthorized();
 
-        var payout = await db.PayoutRequests.SingleOrDefaultAsync(x => x.Id == id, ct);
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var payout = await db.PayoutRequests
+            .FromSqlInterpolated($"SELECT * FROM payments.payout_requests WHERE id = {id} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
         if (payout is null) return NotFound();
 
         var result = payout.Reject(adminId, req?.Reason);
         if (result.IsFailure) return Problem(result.Error);
 
-        var wallet = await db.WalletAccounts
-            .FirstOrDefaultAsync(x => x.Id == payout.WalletAccountId, ct);
-        wallet?.AddAvailable(payout.Amount);
+        var restored = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+            UPDATE payments.wallet_accounts
+            SET available_balance = available_balance + {{payout.Amount}},
+                pending_balance = pending_balance - {{payout.Amount}},
+                updated_at = now()
+            WHERE id = {{payout.WalletAccountId}} AND pending_balance >= {{payout.Amount}}
+            """, ct);
+        if (restored == 0)
+            return Problem(Error.Conflict("payout.balance", "Số dư tạm giữ không còn hợp lệ."));
 
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return Ok(ToResponse(payout));
     }
 
@@ -161,7 +230,7 @@ public sealed class PayoutsController(
 
 // ── DTOs ──
 public sealed record CreatePayoutRequest(long Amount, string BankName,
-    string AccountHolderName, string AccountNumber);
+    string AccountHolderName, string AccountNumber, string? IdempotencyKey = null);
 public sealed record RejectPayoutRequest(string? Reason);
 public sealed record PayoutResponse(Guid Id, Guid CaregiverId, Guid WalletAccountId,
     long Amount, string BankName, string AccountHolderName, string Status,

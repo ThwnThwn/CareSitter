@@ -69,6 +69,7 @@ CREATE TABLE ledger_entries (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id        uuid REFERENCES booking.bookings(id),
   payment_intent_id uuid REFERENCES payment_intents(id),
+  payout_request_id uuid,
   transaction_type  varchar(30) NOT NULL
                     CHECK (transaction_type IN ('ESCROW_LOCK','PLATFORM_FEE','CAREGIVER_EARNING',
                            'REFUND','PAYOUT','PENALTY','BONUS')),
@@ -89,8 +90,10 @@ CREATE UNIQUE INDEX uq_ledger_booking_transaction_type
 
 CREATE TABLE payout_requests (
   id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  caregiver_id             uuid NOT NULL REFERENCES people.caregiver_profiles(id),
+  -- Identity user id. API authentication and wallet ownership both use User.Id.
+  caregiver_id             uuid NOT NULL REFERENCES identity.users(id),
   wallet_account_id        uuid NOT NULL REFERENCES wallet_accounts(id),
+  idempotency_key          varchar(100) NOT NULL,
   amount                   bigint NOT NULL CHECK (amount >= 100000),
   -- snapshot bank (gom bank_accounts)
   bank_name                varchar(255) NOT NULL,
@@ -104,10 +107,25 @@ CREATE TABLE payout_requests (
   reject_reason            text
 );
 
+ALTER TABLE ledger_entries
+  ADD CONSTRAINT ledger_entries_payout_request_id_fkey
+  FOREIGN KEY (payout_request_id) REFERENCES payout_requests(id);
+
+CREATE UNIQUE INDEX uq_payout_caregiver_idempotency
+  ON payout_requests (caregiver_id, idempotency_key);
+
+CREATE UNIQUE INDEX uq_ledger_payout_request
+  ON ledger_entries (payout_request_id)
+  WHERE payout_request_id IS NOT NULL;
+
 -- Mỗi khách chỉ có một Ví CareSitter. Ví được tạo lazy khi phát sinh hoàn tiền.
 CREATE UNIQUE INDEX ux_wallet_customer_user
   ON wallet_accounts (user_id)
   WHERE account_type = 'CUSTOMER' AND user_id IS NOT NULL;
+
+CREATE UNIQUE INDEX ux_wallet_caregiver_user
+  ON wallet_accounts (user_id)
+  WHERE account_type = 'CAREGIVER' AND user_id IS NOT NULL;
 
 -- HARDENING: ledger bat bien (POSTED khong sua/xoa)
 CREATE OR REPLACE FUNCTION prevent_ledger_mutation()

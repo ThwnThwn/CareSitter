@@ -15,6 +15,7 @@ public sealed class LedgerEntry : Entity
         Guid id,
         Guid? bookingId,
         Guid? paymentIntentId,
+        Guid? payoutRequestId,
         string transactionType,
         string debitAccount,
         string creditAccount,
@@ -25,6 +26,7 @@ public sealed class LedgerEntry : Entity
         Id = id;
         BookingId = bookingId;
         PaymentIntentId = paymentIntentId;
+        PayoutRequestId = payoutRequestId;
         TransactionType = transactionType;
         DebitAccount = debitAccount;
         CreditAccount = creditAccount;
@@ -36,6 +38,7 @@ public sealed class LedgerEntry : Entity
 
     public Guid? BookingId { get; private set; }
     public Guid? PaymentIntentId { get; private set; }
+    public Guid? PayoutRequestId { get; private set; }
 
     /// <summary>Allowed values: 'ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING', 'REFUND', 'PAYOUT', 'PENALTY', 'BONUS'.</summary>
     public string TransactionType { get; private set; } = null!;
@@ -58,7 +61,8 @@ public sealed class LedgerEntry : Entity
         Guid? bookingId = null,
         Guid? paymentIntentId = null,
         string currency = "VND",
-        string? metadata = null)
+        string? metadata = null,
+        Guid? payoutRequestId = null)
     {
         if (string.IsNullOrWhiteSpace(transactionType))
             return Error.Validation("ledger.transaction_type", "transaction_type không được rỗng.");
@@ -69,7 +73,7 @@ public sealed class LedgerEntry : Entity
         if (amount < 0)
             return Error.Validation("ledger.amount", "amount không được âm.");
 
-        return new LedgerEntry(Guid.NewGuid(), bookingId, paymentIntentId, transactionType,
+        return new LedgerEntry(Guid.NewGuid(), bookingId, paymentIntentId, payoutRequestId, transactionType,
             debitAccount, creditAccount, amount, currency, metadata);
     }
 }

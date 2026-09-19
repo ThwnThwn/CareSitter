@@ -1,0 +1,371 @@
+using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Security;
+using CareSitter.Modules.Booking.Application.Sync;
+using CareSitter.Modules.Booking.Infrastructure;
+using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Controllers;
+using CareSitter.Modules.Payments.Domain;
+using CareSitter.Modules.Payments.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Npgsql;
+
+namespace CareSitter.IntegrationTests;
+
+public sealed class PaymentRaceTests : IAsyncLifetime
+{
+    private PostgresRaceTestDatabase _database = null!;
+
+    public Task InitializeAsync() => InitializeDatabaseAsync();
+    public async Task DisposeAsync() => await _database.DisposeAsync();
+
+    [PostgresFact]
+    public async Task ConcurrentPayouts_CannotReserveMoreThanAvailableBalance()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 150_000);
+
+        var results = await Task.WhenAll(
+            CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")),
+            CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")));
+
+        Assert.Single(results.OfType<CreatedResult>());
+        Assert.Single(results.OfType<BadRequestObjectResult>());
+
+        var state = await ReadPayoutStateAsync(caregiver.UserId);
+        Assert.Equal(50_000, state.Available);
+        Assert.Equal(100_000, state.Pending);
+        Assert.Equal(1, state.PayoutCount);
+    }
+
+    [PostgresFact]
+    public async Task ConcurrentPayoutRetry_WithSameKey_ReservesExactlyOnce()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 300_000);
+        var key = Guid.NewGuid().ToString("N");
+
+        var results = await Task.WhenAll(
+            CreatePayoutAsync(caregiver.UserId, key),
+            CreatePayoutAsync(caregiver.UserId, key));
+
+        Assert.All(results, result => Assert.True(result is CreatedResult or OkObjectResult));
+        var state = await ReadPayoutStateAsync(caregiver.UserId);
+        Assert.Equal(200_000, state.Available);
+        Assert.Equal(100_000, state.Pending);
+        Assert.Equal(1, state.PayoutCount);
+    }
+
+    [PostgresFact]
+    public async Task ConcurrentApproveAndReject_OnlyOneTransitionChangesMoney()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 200_000);
+        var created = Assert.IsType<CreatedResult>(
+            await CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")));
+        var payout = Assert.IsType<PayoutResponse>(created.Value);
+        var adminId = await GetAdminUserIdAsync();
+
+        var results = await Task.WhenAll(
+            ReviewPayoutAsync(adminId, payout.Id, approve: true),
+            ReviewPayoutAsync(adminId, payout.Id, approve: false));
+
+        Assert.Single(results.OfType<OkObjectResult>());
+        Assert.Single(results.OfType<ConflictObjectResult>());
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT payout.status, wallet.available_balance, wallet.pending_balance,
+                   (SELECT count(*) FROM payments.ledger_entries ledger
+                    WHERE ledger.payout_request_id = payout.id)
+            FROM payments.payout_requests payout
+            JOIN payments.wallet_accounts wallet ON wallet.id = payout.wallet_account_id
+            WHERE payout.id = @id
+            """, connection);
+        command.Parameters.AddWithValue("id", payout.Id);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        var status = reader.GetString(0);
+        var available = reader.GetInt64(1);
+        var pending = reader.GetInt64(2);
+        var ledgerCount = reader.GetInt64(3);
+
+        if (status == "APPROVED")
+        {
+            Assert.Equal(100_000, available);
+            Assert.Equal(0, pending);
+            Assert.Equal(1, ledgerCount);
+        }
+        else
+        {
+            Assert.Equal("REJECTED", status);
+            Assert.Equal(200_000, available);
+            Assert.Equal(0, pending);
+            Assert.Equal(0, ledgerCount);
+        }
+    }
+
+    [PostgresFact]
+    public async Task ConcurrentSettlement_CreditsCaregiverExactlyOnce()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 0);
+        var booking = await CreateBookingAsync("COMPLETED", caregiver.ProfileId);
+
+        async Task<CareSitter.SharedKernel.Results.Result> SettleAsync()
+        {
+            await using var db = CreatePaymentsDbContext();
+            var service = new WalletService(
+                db,
+                new DisputeLookupStub(),
+                new PeopleLookupStub(caregiver.ProfileId, caregiver.UserId));
+            return await service.SettleAsync(
+                booking.BookingId, caregiver.ProfileId, 100_000, 15_000);
+        }
+
+        var results = await Task.WhenAll(SettleAsync(), SettleAsync());
+        Assert.All(results, result => Assert.True(result.IsSuccess));
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT wallet.available_balance,
+                   count(*) FILTER (WHERE ledger.transaction_type = 'CAREGIVER_EARNING'),
+                   count(*) FILTER (WHERE ledger.transaction_type = 'PLATFORM_FEE')
+            FROM payments.wallet_accounts wallet
+            LEFT JOIN payments.ledger_entries ledger ON ledger.booking_id = @booking_id
+            WHERE wallet.id = @wallet_id
+            GROUP BY wallet.available_balance
+            """, connection);
+        command.Parameters.AddWithValue("booking_id", booking.BookingId);
+        command.Parameters.AddWithValue("wallet_id", caregiver.WalletId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(85_000, reader.GetInt64(0));
+        Assert.Equal(1, reader.GetInt64(1));
+        Assert.Equal(1, reader.GetInt64(2));
+    }
+
+    [PostgresFact]
+    public async Task ConcurrentPaymentFinalization_FinalizesBookingAndEscrowOnce()
+    {
+        var booking = await CreateBookingAsync("PENDING_PAYMENT", caregiverProfileId: null);
+        Guid intentId;
+        await using (var paymentsDb = CreatePaymentsDbContext())
+        {
+            var intent = PaymentIntent.Create(
+                booking.BookingId,
+                booking.CustomerId,
+                "VNPAY",
+                100_000,
+                Guid.NewGuid().ToString("N")).Value;
+            Assert.True(intent.MarkPending().IsSuccess);
+            intentId = intent.Id;
+            paymentsDb.PaymentIntents.Add(intent);
+            await paymentsDb.SaveChangesAsync();
+        }
+
+        async Task<PaymentFinalizationResult> FinalizeAsync()
+        {
+            await using var paymentsDb = CreatePaymentsDbContext();
+            await using var bookingDb = CreateBookingDbContext();
+            var service = new PaymentFinalizationService(
+                paymentsDb,
+                bookingDb,
+                new BookingSyncService(bookingDb),
+                null!,
+                null!,
+                null!,
+                NullLogger<PaymentFinalizationService>.Instance);
+            return await service.FinalizeSuccessfulPaymentAsync(
+                intentId,
+                "txn-race-1",
+                "{}",
+                PaymentFinalizationSource.Ipn);
+        }
+
+        var results = await Task.WhenAll(FinalizeAsync(), FinalizeAsync());
+        Assert.All(results, result => Assert.True(result.Succeeded));
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT booking.status,
+                   (SELECT count(*) FROM payments.payment_intents intent
+                    WHERE intent.booking_id = booking.id AND intent.status = 'SUCCEEDED'),
+                   (SELECT count(*) FROM payments.ledger_entries ledger
+                    WHERE ledger.booking_id = booking.id AND ledger.transaction_type = 'ESCROW_LOCK')
+            FROM booking.bookings booking
+            WHERE booking.id = @booking_id
+            """, connection);
+        command.Parameters.AddWithValue("booking_id", booking.BookingId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("CONFIRMED", reader.GetString(0));
+        Assert.Equal(1, reader.GetInt64(1));
+        Assert.Equal(1, reader.GetInt64(2));
+    }
+
+    private async Task InitializeDatabaseAsync() =>
+        _database = await PostgresRaceTestDatabase.CreateAsync();
+
+    private PaymentsDbContext CreatePaymentsDbContext() => new(
+        new DbContextOptionsBuilder<PaymentsDbContext>()
+            .UseNpgsql(_database.ConnectionString)
+            .Options);
+
+    private BookingDbContext CreateBookingDbContext() => new(
+        new DbContextOptionsBuilder<BookingDbContext>()
+            .UseNpgsql(_database.ConnectionString)
+            .Options);
+
+    private async Task<IActionResult> CreatePayoutAsync(Guid caregiverUserId, string idempotencyKey)
+    {
+        await using var db = CreatePaymentsDbContext();
+        var controller = new PayoutsController(
+            db,
+            new CurrentUserStub(caregiverUserId, "CAREGIVER"),
+            new EncryptionStub());
+        return await controller.Create(
+            new CreatePayoutRequest(100_000, "VCB", "NGUYEN VAN A", "0123456789", idempotencyKey),
+            null,
+            CancellationToken.None);
+    }
+
+    private async Task<IActionResult> ReviewPayoutAsync(Guid adminId, Guid payoutId, bool approve)
+    {
+        await using var db = CreatePaymentsDbContext();
+        var controller = new PayoutsController(
+            db,
+            new CurrentUserStub(adminId, "ADMIN"),
+            new EncryptionStub());
+        return approve
+            ? await controller.Approve(payoutId, CancellationToken.None)
+            : await controller.Reject(payoutId, new RejectPayoutRequest("Thông tin chưa hợp lệ"), CancellationToken.None);
+    }
+
+    private async Task<CaregiverRecord> GetCaregiverAsync()
+    {
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT profile.id, profile.user_id, wallet.id
+            FROM people.caregiver_profiles profile
+            JOIN payments.wallet_accounts wallet
+              ON wallet.user_id = profile.user_id AND wallet.account_type = 'CAREGIVER'
+            ORDER BY profile.id
+            LIMIT 1
+            """, connection);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        return new CaregiverRecord(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2));
+    }
+
+    private async Task<Guid> GetAdminUserIdAsync()
+    {
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand(
+            "SELECT id FROM identity.users WHERE 'ADMIN' = ANY(roles) ORDER BY id LIMIT 1", connection);
+        return (Guid)(await command.ExecuteScalarAsync()
+            ?? throw new InvalidOperationException("Seed admin was not found."));
+    }
+
+    private async Task ResetWalletAsync(Guid walletId, long available)
+    {
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            DELETE FROM payments.ledger_entries
+            WHERE payout_request_id IN (
+                SELECT id FROM payments.payout_requests WHERE wallet_account_id = @wallet_id);
+            DELETE FROM payments.payout_requests WHERE wallet_account_id = @wallet_id;
+            UPDATE payments.wallet_accounts
+            SET available_balance = @available, pending_balance = 0
+            WHERE id = @wallet_id;
+            """, connection);
+        command.Parameters.AddWithValue("wallet_id", walletId);
+        command.Parameters.AddWithValue("available", available);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task<PayoutState> ReadPayoutStateAsync(Guid userId)
+    {
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT wallet.available_balance, wallet.pending_balance,
+                   (SELECT count(*) FROM payments.payout_requests payout
+                    WHERE payout.caregiver_id = @user_id)
+            FROM payments.wallet_accounts wallet
+            WHERE wallet.user_id = @user_id AND wallet.account_type = 'CAREGIVER'
+            """, connection);
+        command.Parameters.AddWithValue("user_id", userId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        return new PayoutState(reader.GetInt64(0), reader.GetInt64(1), reader.GetInt64(2));
+    }
+
+    private async Task<BookingRecord> CreateBookingAsync(string status, Guid? caregiverProfileId)
+    {
+        var bookingId = Guid.NewGuid();
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            INSERT INTO booking.bookings (
+                id, customer_id, beneficiary_id, caregiver_id, address_id, service_type_id,
+                scheduled_start, scheduled_end, payment_deadline, status,
+                escrow_amount, platform_fee_amount, caregiver_earning_amount)
+            SELECT @id, beneficiary.customer_id, beneficiary.id, @caregiver_id,
+                   address.id, service.id,
+                   now() + interval '2 days', now() + interval '2 days 2 hours',
+                   now() + interval '30 minutes', @status,
+                   100000, 15000, 85000
+            FROM people.beneficiaries beneficiary
+            JOIN catalog.addresses address ON address.owner_user_id = beneficiary.customer_id
+            CROSS JOIN LATERAL (
+                SELECT id FROM catalog.service_types ORDER BY id LIMIT 1
+            ) service
+            ORDER BY beneficiary.id, address.id
+            LIMIT 1
+            RETURNING customer_id
+            """, connection);
+        command.Parameters.AddWithValue("id", bookingId);
+        command.Parameters.AddWithValue("caregiver_id", (object?)caregiverProfileId ?? DBNull.Value);
+        command.Parameters.AddWithValue("status", status);
+        var customerId = (Guid)(await command.ExecuteScalarAsync()
+            ?? throw new InvalidOperationException("Seed booking was not found."));
+        return new BookingRecord(bookingId, customerId);
+    }
+
+    private sealed record CaregiverRecord(Guid ProfileId, Guid UserId, Guid WalletId);
+    private sealed record PayoutState(long Available, long Pending, long PayoutCount);
+    private sealed record BookingRecord(Guid BookingId, Guid CustomerId);
+
+    private sealed class CurrentUserStub(Guid userId, params string[] roles) : ICurrentUser
+    {
+        public Guid? UserId => userId;
+        public IReadOnlyCollection<string> Roles => roles;
+        public bool IsInRole(string role) => roles.Contains(role, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private sealed class EncryptionStub : IEncryptionService
+    {
+        public string Encrypt(string plaintext) => $"encrypted:{plaintext}";
+        public string Decrypt(string ciphertext) => ciphertext.Replace("encrypted:", string.Empty);
+        public string Hmac(string value) => value;
+    }
+
+    private sealed class DisputeLookupStub : IDisputeLookupService
+    {
+        public Task<bool> HasOpenDisputeAsync(Guid bookingId, CancellationToken ct = default) =>
+            Task.FromResult(false);
+    }
+
+    private sealed class PeopleLookupStub(Guid profileId, Guid userId) : IPeopleLookupService
+    {
+        public Task<Guid?> GetUserIdByCaregiverProfileIdAsync(Guid caregiverId, CancellationToken ct = default) =>
+            Task.FromResult<Guid?>(caregiverId == profileId ? userId : null);
+        public Task<bool> BeneficiaryBelongsToAsync(Guid beneficiaryId, Guid customerId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> CaregiverIsAvailableAsync(Guid caregiverId, DateTimeOffset start, DateTimeOffset end, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> IsCaregiverApprovedAsync(Guid caregiverId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> IsCaregiverForBookingAsync(Guid caregiverId, Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Guid?> GetCaregiverProfileIdByUserIdAsync(Guid userId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<PeopleDisplaySummary?> GetBeneficiaryDisplayAsync(Guid beneficiaryId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<PeopleDisplaySummary?> GetCaregiverDisplayAsync(Guid caregiverId, CancellationToken ct = default) => throw new NotSupportedException();
+    }
+}

@@ -6,7 +6,6 @@ using CareSitter.Modules.Booking.Application.Commands.AcceptBooking;
 using CareSitter.Modules.Booking.Application.Commands.CancelBooking;
 using CareSitter.Modules.Booking.Application.Commands.CheckInBooking;
 using CareSitter.Modules.Booking.Application.Commands.CompleteBooking;
-using CareSitter.Modules.Booking.Application.Commands.ConfirmBookingPayment;
 using CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 using CareSitter.Modules.Booking.Application.Commands.DeclineBooking;
 using CareSitter.Modules.Booking.Application.Commands.RaiseBookingSos;
@@ -256,14 +255,6 @@ public sealed class BookingsController(
     // ──────────────────────────────────────────────
     //  LIFECYCLE
     // ──────────────────────────────────────────────
-
-    /// <summary>Khóa escrow thanh toán qua WalletService rồi chuyển booking sang trạng thái PAYMENT_CONFIRMED.</summary>
-    [HttpPost("{id:guid}/confirm-payment")]
-    public async Task<IActionResult> ConfirmPayment(Guid id, CancellationToken ct)
-    {
-        var result = await sender.Send(new ConfirmBookingPaymentCommand(id), ct);
-        return result.ToActionResult(this);
-    }
 
     [HttpPost("{id:guid}/accept")]
     public async Task<IActionResult> Accept(Guid id, CancellationToken ct)

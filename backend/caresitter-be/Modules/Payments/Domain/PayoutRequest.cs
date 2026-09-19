@@ -15,6 +15,7 @@ public sealed class PayoutRequest : Entity
         Guid id,
         Guid caregiverId,
         Guid walletAccountId,
+        string idempotencyKey,
         long amount,
         string bankName,
         string accountHolderName,
@@ -23,6 +24,7 @@ public sealed class PayoutRequest : Entity
         Id = id;
         CaregiverId = caregiverId;
         WalletAccountId = walletAccountId;
+        IdempotencyKey = idempotencyKey;
         Amount = amount;
         BankName = bankName;
         AccountHolderName = accountHolderName;
@@ -33,6 +35,7 @@ public sealed class PayoutRequest : Entity
 
     public Guid CaregiverId { get; private set; }
     public Guid WalletAccountId { get; private set; }
+    public string IdempotencyKey { get; private set; } = null!;
     public long Amount { get; private set; }
 
     public string BankName { get; private set; } = null!;
@@ -50,13 +53,16 @@ public sealed class PayoutRequest : Entity
     public static Result<PayoutRequest> Create(
         Guid caregiverId,
         Guid walletAccountId,
+        string idempotencyKey,
         long amount,
         string bankName,
         string accountHolderName,
         string accountNumberEncrypted)
     {
-        if (amount < 0)
-            return Error.Validation("payout.amount", "amount không được âm.");
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Trim().Length > 100)
+            return Error.Validation("payout.idempotency_key", "idempotency_key không hợp lệ.");
+        if (amount < 100_000)
+            return Error.Validation("payout.amount", "Số tiền rút tối thiểu là 100.000đ.");
         if (string.IsNullOrWhiteSpace(bankName))
             return Error.Validation("payout.bank_name", "bank_name không được rỗng.");
         if (string.IsNullOrWhiteSpace(accountHolderName))
@@ -64,7 +70,7 @@ public sealed class PayoutRequest : Entity
         if (string.IsNullOrWhiteSpace(accountNumberEncrypted))
             return Error.Validation("payout.account_number", "account_number_encrypted không được rỗng.");
 
-        return new PayoutRequest(Guid.NewGuid(), caregiverId, walletAccountId, amount,
+        return new PayoutRequest(Guid.NewGuid(), caregiverId, walletAccountId, idempotencyKey.Trim(), amount,
             bankName, accountHolderName, accountNumberEncrypted);
     }
 

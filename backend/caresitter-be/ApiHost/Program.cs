@@ -1,5 +1,6 @@
 using CareSitter.ApiHost.Jobs;
 using CareSitter.ApiHost.OpenApi;
+using CareSitter.ApiHost.Persistence;
 using CareSitter.ApiHost.Routing;
 using CareSitter.ApiHost.Routing.Geoapify;
 using CareSitter.ApiHost.Routing.OpenRouteService;
@@ -18,7 +19,12 @@ using Hangfire;
 using Hangfire.InMemory;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using Npgsql;
+using StackExchange.Redis;
+using System.Text.Json;
 using CareSitter.Contracts.Services.Routing;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
@@ -62,6 +68,7 @@ builder.Services.AddScoped<IRouteMatrixService>(sp =>
 });
 builder.Services.AddScoped<IMatchingService, MatchingService>();
 builder.Services.AddExceptionHandler<RoutingExceptionHandler>();
+builder.Services.AddExceptionHandler<PersistenceConcurrencyExceptionHandler>();
 
 // --- Shared infrastructure services ---
 builder.Services.AddSingleton<IClock, SystemClock>();
@@ -87,6 +94,59 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration["Redis:ConnectionString"];
     options.InstanceName = "caresitter:"; // Prefix cho tất cả key trong Redis
 });
+
+// Liveness chỉ xác nhận process đang chạy; readiness kiểm tra các dependency
+// bắt buộc để API có thể phục vụ request thật.
+builder.Services.AddHealthChecks()
+    .AddAsyncCheck("postgres", async cancellationToken =>
+    {
+        var connectionString = builder.Configuration.GetConnectionString("CareSitter");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return HealthCheckResult.Unhealthy("ConnectionStrings:CareSitter is not configured.");
+
+        try
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = new NpgsqlCommand("SELECT 1", connection);
+            await command.ExecuteScalarAsync(cancellationToken);
+            return HealthCheckResult.Healthy();
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("PostgreSQL is unavailable.", ex);
+        }
+    }, timeout: TimeSpan.FromSeconds(5))
+    .AddAsyncCheck("redis", async cancellationToken =>
+    {
+        var connectionString = builder.Configuration["Redis:ConnectionString"];
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return HealthCheckResult.Unhealthy("Redis:ConnectionString is not configured.");
+
+        try
+        {
+            var options = ConfigurationOptions.Parse(connectionString);
+            options.AbortOnConnectFail = false;
+            using var connection = await ConnectionMultiplexer.ConnectAsync(options);
+            var pingTask = connection.GetDatabase().PingAsync();
+            var completedTask = await Task.WhenAny(
+                pingTask,
+                Task.Delay(TimeSpan.FromSeconds(3), cancellationToken));
+
+            if (completedTask != pingTask)
+                return HealthCheckResult.Unhealthy("Redis ping timed out.");
+
+            var latency = await pingTask;
+            return HealthCheckResult.Healthy(data: new Dictionary<string, object>
+            {
+                ["latencyMs"] = Math.Round(latency.TotalMilliseconds, 2)
+            });
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("Redis is unavailable.", ex);
+        }
+    }, timeout: TimeSpan.FromSeconds(5));
 
 // --- Module discovery: quet tat ca IModule trong cac assembly module ---
 var moduleAssemblies = new[]
@@ -194,6 +254,29 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithTags("System");
+app.MapGet("/health/live", () => Results.Ok(new { status = "ok" })).WithTags("System");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var payload = new
+        {
+            status = report.Status.ToString(),
+            totalDurationMs = Math.Round(report.TotalDuration.TotalMilliseconds, 2),
+            checks = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => new
+                {
+                    status = entry.Value.Status.ToString(),
+                    description = entry.Value.Description,
+                    durationMs = Math.Round(entry.Value.Duration.TotalMilliseconds, 2),
+                    data = entry.Value.Data
+                })
+        };
+        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+    }
+}).WithTags("System");
 
 // --- SignalR Hub ---
 app.MapHub<CareTrackingHub>("/hubs/care-tracking");

@@ -11,6 +11,7 @@ namespace CareSitter.Modules.Booking.Application.Commands.AcceptBooking;
 
 internal sealed class AcceptBookingCommandHandler(
     IBookingRepository bookings,
+    BookingDbContext bookingDb,
     ICurrentUser currentUser,
     IPeopleLookupService people,
     IMatchingService matching,
@@ -22,23 +23,26 @@ internal sealed class AcceptBookingCommandHandler(
     public async Task<Result<BookingResponse>> Handle(AcceptBookingCommand request, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return BookingErrors.Unauthenticated();
-        var booking = await bookings.GetByIdAsync(request.BookingId, ct);
-        if (booking is null) return BookingErrors.NotFound();
         if (!currentUser.IsInRole("CAREGIVER")) return BookingErrors.Forbidden();
 
-        Guid caregiverId;
+        var currentCaregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
+        if (currentCaregiverId is null) return BookingErrors.Forbidden();
+
+        await using var tx = await bookingDb.Database.BeginTransactionAsync(ct);
+        var booking = await bookingDb.Bookings
+            .FromSqlInterpolated($"SELECT * FROM booking.bookings WHERE id = {request.BookingId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (booking is null) return BookingErrors.NotFound();
+
+        var caregiverId = currentCaregiverId.Value;
         if (booking.CaregiverId is { } assignedCaregiverId)
         {
-            if (!await people.IsCaregiverForBookingAsync(assignedCaregiverId, userId, ct))
-                return BookingErrors.Forbidden();
+            if (assignedCaregiverId != caregiverId)
+                return BookingErrors.AlreadyAccepted();
             caregiverId = assignedCaregiverId;
         }
         else
         {
-            var currentCaregiverId = await people.GetCaregiverProfileIdByUserIdAsync(userId, ct);
-            if (currentCaregiverId is null) return BookingErrors.Forbidden();
-            caregiverId = currentCaregiverId.Value;
-
             var offer = await bookings.GetActiveAssignmentReadOnlyAsync(
                 request.BookingId, caregiverId, DateTimeOffset.UtcNow, ct);
             var hasAnyAssignment = await bookings.HasAnyAssignmentAsync(request.BookingId, ct);
@@ -65,6 +69,29 @@ internal sealed class AcceptBookingCommandHandler(
         var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var result = booking.AssignCaregiver(caregiverId);
         if (result.IsFailure) return result.Error;
+
+        var slotHold = await bookings.GetActiveSlotHoldAsync(booking.Id, ct);
+        if (slotHold is not null && slotHold.CaregiverId != caregiverId)
+            return BookingErrors.CaregiverSlotHeld();
+        if (slotHold is null)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var holdResult = CaregiverSlotHold.Create(
+                booking.Id,
+                caregiverId,
+                booking.ScheduledStart,
+                booking.ScheduledEnd,
+                booking.ScheduledEnd > now ? booking.ScheduledEnd : now.AddMinutes(1));
+            if (holdResult.IsFailure) return holdResult.Error;
+            slotHold = holdResult.Value;
+            slotHold.Commit();
+            bookings.AddSlotHold(slotHold);
+        }
+        else
+        {
+            slotHold.Commit();
+        }
+
         var acceptedOffer = await bookings.GetActiveAssignmentAsync(request.BookingId, caregiverId, ct);
         acceptedOffer?.Accept();
         var otherOffers = await bookings.GetOtherOfferedAssignmentsAsync(
@@ -78,10 +105,17 @@ internal sealed class AcceptBookingCommandHandler(
         try
         {
             await bookings.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await tx.RollbackAsync(ct);
+            return BookingErrors.AlreadyAccepted();
         }
         catch (DbUpdateException)
         {
-            return BookingErrors.AlreadyAccepted();
+            await tx.RollbackAsync(ct);
+            return BookingErrors.CaregiverScheduleConflict();
         }
 
         await postCommit.RunAsync("accepted offer update", () =>
