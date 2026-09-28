@@ -15,7 +15,7 @@ class ServiceStore extends AsyncNotifier<List<ServiceModel>> {
 
   Future<List<ServiceModel>> _fetch() async {
     try {
-      return _repository.getServices();
+      return await _repository.getServices();
     } catch (e) {
       // Lỗi mạng / server → giữ state cũ hoặc empty
     }
