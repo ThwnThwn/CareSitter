@@ -1,5 +1,6 @@
+using System.Text.Json;
+using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
-using CareSitter.ApiHost.Persistence;
 using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.Sync;
@@ -179,15 +180,10 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         {
             await using var paymentsDb = CreatePaymentsDbContext();
             await using var bookingDb = CreateBookingDbContext();
-            var bookingSync = new BookingSyncService(bookingDb);
-            var bookingGateway = new BookingPaymentGateway(
-                bookingDb, bookingSync, new SystemClock());
+            var outbox = new BookingConfirmingOutboxDispatcher(paymentsDb, bookingDb);
             var service = new PaymentFinalizationService(
                 paymentsDb,
-                bookingGateway,
-                null!,
-                null!,
-                null!,
+                outbox,
                 new AuditLoggerStub(),
                 NullLogger<PaymentFinalizationService>.Instance);
             return await service.FinalizeSuccessfulPaymentAsync(
@@ -393,6 +389,41 @@ public sealed class PaymentRaceTests : IAsyncLifetime
     {
         public Task WriteAsync(string action, string entityType, Guid entityId,
             object? before, object? after, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class BookingConfirmingOutboxDispatcher(
+        PaymentsDbContext paymentsDb,
+        BookingDbContext bookingDb) : IPaymentOutboxDispatcher
+    {
+        public async Task DispatchAsync(Guid messageId, CancellationToken ct = default)
+        {
+            var message = await paymentsDb.OutboxMessages.SingleAsync(x => x.Id == messageId, ct);
+            var integrationEvent = JsonSerializer.Deserialize<PaymentSucceeded>(message.Payload)
+                ?? throw new InvalidOperationException("Invalid payment event payload.");
+            var booking = await bookingDb.Bookings.SingleAsync(
+                x => x.Id == integrationEvent.BookingId, ct);
+            if (booking.Status != CareSitter.Modules.Booking.Domain.BookingStatus.Confirmed)
+            {
+                var result = booking.ConfirmPayment();
+                Assert.True(result.IsSuccess, result.Error.Message);
+                await bookingDb.SaveChangesAsync(ct);
+            }
+
+            message.MarkProcessed(DateTimeOffset.UtcNow);
+            await paymentsDb.SaveChangesAsync(ct);
+        }
+
+        public async Task<int> DispatchPendingAsync(
+            int batchSize = 20, CancellationToken ct = default)
+        {
+            var ids = await paymentsDb.OutboxMessages.AsNoTracking()
+                .Where(x => x.ProcessedOnUtc == null)
+                .Take(batchSize)
+                .Select(x => x.Id)
+                .ToListAsync(ct);
+            foreach (var id in ids) await DispatchAsync(id, ct);
+            return ids.Count;
+        }
     }
 
     private sealed class DisputeLookupStub : IDisputeLookupService

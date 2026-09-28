@@ -1,19 +1,20 @@
+using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Hubs;
+using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Domain;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace CareSitter.Modules.Payments.Infrastructure;
 
+/// <summary>
+/// Finalizes Payments-owned state atomically and publishes a durable event for Booking.
+/// Booking confirmation is intentionally eventual and idempotent.
+/// </summary>
 internal sealed class PaymentFinalizationService(
     PaymentsDbContext paymentsDb,
-    IBookingPaymentGateway bookings,
-    IMatchingService matching,
-    IHubContext<CareTrackingHub> hub,
-    IUserNotificationService notifications,
+    IPaymentOutboxDispatcher outbox,
     IAuditLogger auditLogger,
     ILogger<PaymentFinalizationService> logger) : IPaymentFinalizationService
 {
@@ -21,79 +22,74 @@ internal sealed class PaymentFinalizationService(
         Guid intentId, string? transactionId, string? payload,
         PaymentFinalizationSource source, CancellationToken ct = default)
     {
-        var intent = await paymentsDb.PaymentIntents.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == intentId, ct);
-        if (intent is null) return new(false, "01", "Payment intent not found");
+        Guid? outboxMessageId = null;
+        PaymentIntent? finalizedIntent = null;
 
-        var ledger = LedgerEntry.Create(
-            "ESCROW_LOCK", "customer:escrow", "escrow:platform", intent.Amount,
-            intent.BookingId, intent.Id);
-        if (ledger.IsFailure) return new(false, "99", ledger.Error.Message);
+        await using (var tx = await paymentsDb.Database.BeginTransactionAsync(ct))
+        {
+            var intent = await paymentsDb.PaymentIntents.FromSqlInterpolated(
+                    $"SELECT * FROM payments.payment_intents WHERE id = {intentId} FOR UPDATE")
+                .SingleOrDefaultAsync(ct);
+            if (intent is null)
+                return new(false, "01", "Payment intent not found");
+            if (intent.Status == "SUCCEEDED")
+            {
+                await tx.CommitAsync(ct);
+                return new(true, "00", "Confirm Success");
+            }
+            if (intent.Status is not ("CREATED" or "PENDING"))
+                return new(false, "99", $"Payment intent cannot be finalized from {intent.Status}");
 
-        var outcome = await bookings.FinalizeAsync(new BookingPaymentFinalization(
-            intent.BookingId, intent.Id, intent.Status, intent.Amount, ledger.Value.Id,
-            transactionId, payload, source.ToString()), ct);
-        if (!outcome.Succeeded || !outcome.NewlyFinalized)
-            return new(outcome.Succeeded, outcome.Code, outcome.Message);
+            var succeeded = intent.MarkSucceeded(transactionId, payload, source.ToString());
+            if (succeeded.IsFailure)
+                return new(false, "99", succeeded.Error.Message);
 
-        var booking = outcome.Booking!;
+            var otherPending = await paymentsDb.PaymentIntents
+                .Where(x => x.BookingId == intent.BookingId && x.Id != intent.Id &&
+                    x.Status == "PENDING")
+                .ToListAsync(ct);
+            foreach (var other in otherPending) other.MarkSuperseded();
+
+            if (!await paymentsDb.LedgerEntries.AnyAsync(x =>
+                    x.BookingId == intent.BookingId && x.TransactionType == "ESCROW_LOCK", ct))
+            {
+                var ledger = LedgerEntry.Create(
+                    "ESCROW_LOCK", "customer:escrow", "escrow:platform", intent.Amount,
+                    intent.BookingId, intent.Id);
+                if (ledger.IsFailure) return new(false, "99", ledger.Error.Message);
+                paymentsDb.LedgerEntries.Add(ledger.Value);
+            }
+
+            var integrationEvent = new PaymentSucceeded(intent.BookingId, intent.Id, intent.Amount);
+            var message = OutboxMessage.Create(integrationEvent);
+            paymentsDb.OutboxMessages.Add(message);
+            outboxMessageId = message.Id;
+            finalizedIntent = intent;
+
+            await paymentsDb.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+
         try
         {
-            await auditLogger.WriteAsync("PAYMENT_FINALIZED", "PaymentIntent", intent.Id,
-                new { paymentStatus = intent.Status, bookingStatus = "pending_payment" },
+            await auditLogger.WriteAsync("PAYMENT_FINALIZED", "PaymentIntent", intentId,
+                new { paymentStatus = "PENDING" },
                 new
                 {
                     paymentStatus = "SUCCEEDED",
-                    bookingStatus = "confirmed",
-                    Id = booking.BookingId,
-                    intent.Amount,
+                    finalizedIntent!.BookingId,
+                    finalizedIntent.Amount,
                     source = source.ToString()
                 }, ct);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogCritical(ex,
-                "Payment {PaymentIntentId} finalized but its security audit entry could not be persisted.",
-                intent.Id);
+            logger.LogCritical(exception,
+                "Payment {PaymentIntentId} finalized but its audit entry could not be persisted.",
+                intentId);
         }
 
-        await RunPostCommitActionAsync("booking sync", async () =>
-        {
-            var cursor = await bookings.GetCurrentSyncCursorAsync(booking.CustomerId, ct);
-            await hub.Clients.Group(CareTrackingHub.CustomerGroup(booking.CustomerId))
-                .SendAsync("BookingListSync", new
-                {
-                    bookingId = booking.BookingId,
-                    booking.SyncVersion,
-                    cursor
-                }, ct);
-        });
-        await RunPostCommitActionAsync("payment notification", () => notifications.NotifyAsync(
-            new UserNotificationMessage(
-                booking.CustomerId, "PAYMENT", "Thanh toán thành công",
-                "Booking đã được xác nhận và đang tìm người chăm sóc phù hợp.",
-                new Dictionary<string, string>
-                {
-                    ["bookingId"] = booking.BookingId.ToString(),
-                    ["status"] = "confirmed",
-                    ["deepLink"] = $"/bookings/{booking.BookingId}"
-                }), ct));
-        await RunPostCommitActionAsync("caregiver matching", () =>
-            matching.OfferTopCandidatesAsync(booking.BookingId, ct));
+        await outbox.DispatchAsync(outboxMessageId!.Value, ct);
         return new(true, "00", "Confirm Success");
-    }
-
-    private async Task RunPostCommitActionAsync(string action, Func<Task> operation)
-    {
-        try
-        {
-            await operation();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex,
-                "Payment finalization completed, but post-commit {PostCommitAction} failed. The payment will not be rolled back.",
-                action);
-        }
     }
 }

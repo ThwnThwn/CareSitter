@@ -1,5 +1,7 @@
-using CareSitter.ApiHost.Matching;
+using CareSitter.Contracts.Services;
+using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Domain;
+using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.People.Domain;
 using Xunit;
 
@@ -98,9 +100,8 @@ public class MatchingLogicTests
     public void AreaMatches_WithGpsOutsideRadius_ShouldReturnFalseEvenIfSameDistrict()
     {
         // Arrange
-        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
-        profile.UpdateProfile(serviceDistrict: "Bình Chánh", serviceCity: "Hồ Chí Minh");
-        var address = new MatchingService.AddressMatchData("Bình Chánh", "Hồ Chí Minh", null);
+        var profile = MatchingProfile("Bình Chánh", "Hồ Chí Minh");
+        var address = new MatchingAddress("Bình Chánh", "Hồ Chí Minh", null);
 
         // Act: distance is 15km, but max distance is 10km (and profile default radius)
         var result = MatchingService.AreaMatches(profile, address, distance: 15000, maxDistanceMeters: 10000);
@@ -113,9 +114,8 @@ public class MatchingLogicTests
     public void AreaMatches_WithGpsWithinRadius_ShouldReturnTrue()
     {
         // Arrange
-        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
-        profile.UpdateProfile(serviceDistrict: "Bình Thạnh", serviceCity: "Hồ Chí Minh");
-        var address = new MatchingService.AddressMatchData("Quận 1", "Hồ Chí Minh", null);
+        var profile = MatchingProfile("Bình Thạnh", "Hồ Chí Minh");
+        var address = new MatchingAddress("Quận 1", "Hồ Chí Minh", null);
 
         // Act: distance 3km within 10km radius
         var result = MatchingService.AreaMatches(profile, address, distance: 3000, maxDistanceMeters: 10000);
@@ -128,9 +128,8 @@ public class MatchingLogicTests
     public void AreaMatches_WithoutGps_DifferentCitySameDistrict_ShouldReturnFalse()
     {
         // Arrange: Huyện Châu Thành ở Bến Tre vs Tiền Giang
-        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
-        profile.UpdateProfile(serviceDistrict: "Châu Thành", serviceCity: "Bến Tre");
-        var address = new MatchingService.AddressMatchData("Châu Thành", "Tiền Giang", null);
+        var profile = MatchingProfile("Châu Thành", "Bến Tre");
+        var address = new MatchingAddress("Châu Thành", "Tiền Giang", null);
 
         // Act
         var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
@@ -143,9 +142,8 @@ public class MatchingLogicTests
     public void AreaMatches_WithoutGps_MissingCity_ShouldReturnFalse()
     {
         // Arrange: Profile lacks city
-        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
-        profile.UpdateProfile(serviceDistrict: "Châu Thành", serviceCity: null);
-        var address = new MatchingService.AddressMatchData("Châu Thành", "Bến Tre", null);
+        var profile = MatchingProfile("Châu Thành", null);
+        var address = new MatchingAddress("Châu Thành", "Bến Tre", null);
 
         // Act
         var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
@@ -158,9 +156,8 @@ public class MatchingLogicTests
     public void AreaMatches_WithoutGps_SameCityAndDistrict_ShouldReturnTrue()
     {
         // Arrange
-        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
-        profile.UpdateProfile(serviceDistrict: "Quận 1", serviceCity: "Hồ Chí Minh");
-        var address = new MatchingService.AddressMatchData("Quận 1", "Hồ Chí Minh", null);
+        var profile = MatchingProfile("Quận 1", "Hồ Chí Minh");
+        var address = new MatchingAddress("Quận 1", "Hồ Chí Minh", null);
 
         // Act
         var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
@@ -199,4 +196,9 @@ public class MatchingLogicTests
         Assert.Contains("elderly care", skills);
         Assert.Contains("dementia", skills);
     }
+
+    private static MatchingCaregiverProfile MatchingProfile(
+        string? district, string? city) => new(
+        Guid.NewGuid(), "APPROVED", "ONLINE", null, city, district,
+        null, null, 5m, 1, 1, null);
 }

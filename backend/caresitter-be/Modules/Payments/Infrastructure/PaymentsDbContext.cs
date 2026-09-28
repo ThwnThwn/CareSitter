@@ -1,5 +1,6 @@
 using CareSitter.Infrastructure.Persistence;
 using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
     public DbSet<PaymentWebhook> PaymentWebhooks => Set<PaymentWebhook>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<PayoutRequest> PayoutRequests => Set<PayoutRequest>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -135,6 +137,22 @@ public sealed class PaymentsDbContext : ModuleDbContext
                 .HasDatabaseName("uq_payout_caregiver_idempotency");
             b.Ignore(x => x.CreatedAt); // payout_requests has no created_at column (requested_at is the domain field)
             b.Ignore(x => x.UpdatedAt); // payout_requests has no updated_at column
+        });
+
+        modelBuilder.Entity<OutboxMessage>(b =>
+        {
+            b.ToTable("outbox_messages");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.Type).HasColumnName("type").HasMaxLength(500);
+            b.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
+            b.Property(x => x.OccurredOnUtc).HasColumnName("occurred_on_utc");
+            b.Property(x => x.ProcessedOnUtc).HasColumnName("processed_on_utc");
+            b.Property(x => x.Error).HasColumnName("error");
+            b.Property(x => x.AttemptCount).HasColumnName("attempt_count");
+            b.Property(x => x.NextAttemptOnUtc).HasColumnName("next_attempt_on_utc");
+            b.HasIndex(x => new { x.ProcessedOnUtc, x.NextAttemptOnUtc })
+                .HasDatabaseName("ix_payments_outbox_pending");
         });
     }
 }

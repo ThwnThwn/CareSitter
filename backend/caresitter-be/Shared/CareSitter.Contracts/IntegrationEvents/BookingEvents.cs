@@ -1,7 +1,23 @@
 ﻿namespace CareSitter.Contracts.IntegrationEvents;
 
-/// <summary>Booking thanh toan thành công -> Payments khoa escrow. (Payments -> Booking)</summary>
+/// <summary>Payments da khoa escrow thanh cong; Booking xac nhan lich theo eventual consistency.</summary>
 public sealed record PaymentSucceeded(Guid BookingId, Guid PaymentIntentId, long Amount) : IntegrationEvent;
+
+/// <summary>Payments da dong mot lan thanh toan that bai; Booking giai phong slot hold neu co.</summary>
+public sealed record PaymentFailed(Guid BookingId, Guid PaymentIntentId, string Source) : IntegrationEvent;
+
+/// <summary>Admin tu choi payment can doi soat; Booking huy lich va giai phong slot hold.</summary>
+public sealed record PaymentReviewRejected(
+    Guid BookingId, Guid PaymentIntentId, string Reason) : IntegrationEvent;
+
+public sealed record PaymentReconciliationStarted(
+    Guid BookingId, Guid PaymentIntentId) : IntegrationEvent;
+
+public sealed record PaymentExpired(
+    Guid BookingId, Guid? PaymentIntentId, string Reason) : IntegrationEvent;
+
+public sealed record PaymentNeedsManualReview(
+    Guid BookingId, Guid PaymentIntentId, string Reason) : IntegrationEvent;
 
 /// <summary>Ca hoan tat -> Payments tinh phi + ghi nhan thu nhap CSV (pending 48h). (Booking -> Payments)</summary>
 public sealed record BookingCompleted(Guid BookingId, Guid CaregiverId, long EscrowAmount) : IntegrationEvent;

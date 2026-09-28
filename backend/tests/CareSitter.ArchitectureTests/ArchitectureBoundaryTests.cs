@@ -7,6 +7,8 @@ public sealed class ArchitectureBoundaryTests
     private static readonly string RepositoryRoot = FindRepositoryRoot();
     private static readonly string ModulesRoot = Path.Combine(
         RepositoryRoot, "backend", "caresitter-be", "Modules");
+    private static readonly string ApiHostRoot = Path.Combine(
+        RepositoryRoot, "backend", "caresitter-be", "ApiHost");
 
     private static readonly string[] ForbiddenDomainDependencies =
     {
@@ -24,6 +26,10 @@ public sealed class ArchitectureBoundaryTests
     };
 
     private static readonly HashSet<string> ExistingControllerInfrastructureDebt = new(StringComparer.OrdinalIgnoreCase)
+    {
+    };
+
+    private static readonly HashSet<string> ExistingApiHostModuleLayerDebt = new(StringComparer.OrdinalIgnoreCase)
     {
     };
 
@@ -235,6 +241,79 @@ public sealed class ArchitectureBoundaryTests
         AssertNoNewDebt(actual, allowed, "cross-module project reference");
     }
 
+    [Fact]
+    public void Module_source_does_not_reference_another_module_namespace()
+    {
+        var violations = Directory.EnumerateFiles(ModulesRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(IsSourceFile)
+            .SelectMany(path => Regex.Matches(File.ReadAllText(path),
+                    @"using\s+CareSitter\.Modules\.(?<target>[^.]+)\.")
+                .Select(match => new
+                {
+                    Path = path,
+                    Source = Path.GetRelativePath(ModulesRoot, path)
+                        .Split(Path.DirectorySeparatorChar)[0],
+                    Target = match.Groups["target"].Value
+                }))
+            .Where(x => !x.Source.Equals(x.Target, StringComparison.OrdinalIgnoreCase))
+            .Select(x => $"{Relative(x.Path)} -> {x.Target}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToArray();
+
+        Assert.True(violations.Length == 0,
+            "Cross-module namespace dependencies:" + Environment.NewLine +
+            string.Join(Environment.NewLine, violations));
+    }
+
+    [Fact]
+    public void Module_sql_does_not_access_another_module_schema()
+    {
+        var moduleSchemas = new HashSet<string>(
+            new[] { "identity", "people", "catalog", "booking", "payments", "support" },
+            StringComparer.OrdinalIgnoreCase);
+        var sqlReference = new Regex(
+            @"\b(?:FROM|JOIN|UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+(?<schema>[a-z_]+)\.",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        var violations = Directory.EnumerateFiles(ModulesRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(IsSourceFile)
+            .SelectMany(path => sqlReference.Matches(File.ReadAllText(path))
+                .Select(match => new
+                {
+                    Path = path,
+                    Owner = Path.GetRelativePath(ModulesRoot, path)
+                        .Split(Path.DirectorySeparatorChar)[0],
+                    Schema = match.Groups["schema"].Value
+                }))
+            .Where(x => moduleSchemas.Contains(x.Schema) &&
+                !x.Owner.Equals(x.Schema, StringComparison.OrdinalIgnoreCase))
+            .Select(x => $"{Relative(x.Path)} -> {x.Schema}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToArray();
+
+        Assert.True(violations.Length == 0,
+            "Cross-module SQL access:" + Environment.NewLine +
+            string.Join(Environment.NewLine, violations));
+    }
+
+    [Fact]
+    public void ApiHost_module_layer_debt_can_only_decrease()
+    {
+        var moduleLayerUsing = new Regex(
+            @"using\s+CareSitter\.Modules\.[^.]+\.(?:Domain|Infrastructure)\s*;",
+            RegexOptions.CultureInvariant);
+        var actual = Directory.EnumerateFiles(ApiHostRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(IsSourceFile)
+            .Where(path => moduleLayerUsing.IsMatch(File.ReadAllText(path)))
+            .Select(path => Path.GetRelativePath(ApiHostRoot, path)
+                .Replace(Path.DirectorySeparatorChar, '/'));
+
+        AssertNoNewDebt(actual, ExistingApiHostModuleLayerDebt,
+            "ApiHost -> module Domain/Infrastructure");
+    }
+
     private static IEnumerable<string> SourceFiles(string layer) =>
         Directory.EnumerateFiles(ModulesRoot, "*.cs", SearchOption.AllDirectories)
             .Where(path => path.Split(Path.DirectorySeparatorChar)
@@ -243,6 +322,12 @@ public sealed class ArchitectureBoundaryTests
     private static IEnumerable<string> FilesUnderLayer(string layer) => SourceFiles(layer)
         .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
         .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsSourceFile(string path) =>
+        !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}",
+            StringComparison.OrdinalIgnoreCase) &&
+        !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+            StringComparison.OrdinalIgnoreCase);
 
     private static bool ReferencesInfrastructure(string path) =>
         Regex.IsMatch(File.ReadAllText(path), @"using CareSitter\.(Infrastructure|Modules\.[^.]+\.Infrastructure)");

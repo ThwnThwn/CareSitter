@@ -65,6 +65,21 @@ CREATE TABLE payment_webhooks (
   CONSTRAINT uq_webhook_event UNIQUE (provider, provider_event_id)
 );
 
+CREATE TABLE outbox_messages (
+  id                  uuid PRIMARY KEY,
+  type                varchar(500) NOT NULL,
+  payload             jsonb NOT NULL,
+  occurred_on_utc     timestamptz NOT NULL,
+  processed_on_utc    timestamptz,
+  error               text,
+  attempt_count       int NOT NULL DEFAULT 0,
+  next_attempt_on_utc timestamptz
+);
+
+CREATE INDEX ix_payments_outbox_pending
+  ON outbox_messages (processed_on_utc, next_attempt_on_utc)
+  WHERE processed_on_utc IS NULL;
+
 CREATE TABLE ledger_entries (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id        uuid REFERENCES booking.bookings(id),

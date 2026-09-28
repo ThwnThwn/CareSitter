@@ -20,6 +20,13 @@ public sealed class BookingModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<MatchingOptions>()
+            .Bind(configuration.GetSection(MatchingOptions.SectionName))
+            .Validate(options => options.InitialOfferCount > 0 && options.ExpansionOfferCount > 0,
+                "Matching offer counts must be positive.")
+            .Validate(options => options.MaxDistanceMeters > 0 && options.RouteCandidateLimit > 0,
+                "Matching distance and route candidate limit must be positive.")
+            .ValidateOnStart();
         services.AddOptions<CheckInOptions>()
             .Bind(configuration.GetSection(CheckInOptions.SectionName))
             .Validate(options => options.EarlyWindowMinutes is >= 0 and <= 180,
@@ -62,6 +69,10 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
         services.AddScoped<ICareTaskManager, CareTaskManager>();
         services.AddScoped<IBookingReadStore, BookingReadStore>();
+        services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();
+        services.AddScoped<IMatchingService, MatchingService>();
+        services.AddScoped<IBookingJobsService, BookingJobsService>();
+        services.AddScoped<IAdminBookingReader, AdminBookingReader>();
     }
 
     // Controllers tự được map qua app.MapControllers() ở Program.cs

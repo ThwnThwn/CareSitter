@@ -113,10 +113,9 @@ internal sealed class WalletService(
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            // The booking row is the settlement mutex. All retries for one booking
-            // queue here, then re-check the immutable ledger after acquiring it.
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"SELECT 1 FROM booking.bookings WHERE id = {bookingId} FOR UPDATE", ct);
+            // Payments owns its concurrency boundary. An advisory transaction lock
+            // serializes ledger mutations without locking a Booking-owned row.
+            await AcquirePaymentLockAsync(bookingId, ct);
 
             var settled = await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
                 x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);
@@ -396,8 +395,7 @@ internal sealed class WalletService(
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"SELECT 1 FROM booking.bookings WHERE id = {bookingId} FOR UPDATE", ct);
+            await AcquirePaymentLockAsync(bookingId, ct);
             if (await HasDisputeResolutionMarkerAsync(bookingId, decision, ct))
             {
                 await tx.CommitAsync(ct);
@@ -474,101 +472,19 @@ internal sealed class WalletService(
         DateTimeOffset releasedAt,
         CancellationToken ct = default)
     {
-        if (!db.Database.IsRelational())
-        {
-            var settled = await SettleAsync(
-                bookingId, caregiverId, escrowAmount, platformFeeAmount, ct);
-            return settled;
-        }
+        if (await disputeLookup.HasOpenDisputeAsync(bookingId, ct))
+            return Error.Conflict("payments.settlement.not_mature",
+                "Settlement chưa đến hạn hoặc booking đang có dispute.");
 
-        var caregiverUserId = await peopleLookup.GetUserIdByCaregiverProfileIdAsync(caregiverId, ct);
-        if (caregiverUserId is null)
-            return Error.NotFound("payments.caregiver_not_found", "Không tìm thấy tài khoản caregiver.");
-        var caregiverAmount = escrowAmount - platformFeeAmount;
-        if (caregiverAmount <= 0)
-            return Error.Validation("payments.invalid_settlement_amount",
-                "Số tiền caregiver nhận phải lớn hơn 0.");
-
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
-        try
-        {
-            var eligibleId = await db.Database.SqlQuery<Guid>($$"""
-                SELECT id AS "Value"
-                FROM booking.bookings booking
-                WHERE booking.id = {{bookingId}}
-                  AND booking.status = 'COMPLETED'
-                  AND booking.settlement_released_at IS NULL
-                  AND booking.actual_end IS NOT NULL
-                  AND booking.actual_end
-                      + make_interval(hours => booking.dispute_window_hours) <= {{releasedAt}}
-                  AND NOT EXISTS (
-                      SELECT 1 FROM support.disputes dispute
-                      WHERE dispute.booking_id = booking.id
-                        AND dispute.status NOT IN ('RESOLVED', 'CANCELLED'))
-                FOR UPDATE
-                """).SingleOrDefaultAsync(ct);
-
-            if (eligibleId == Guid.Empty)
-            {
-                var alreadyReleased = await db.Database.SqlQuery<bool>($$"""
-                    SELECT EXISTS (
-                        SELECT 1 FROM booking.bookings
-                        WHERE id = {{bookingId}} AND settlement_released_at IS NOT NULL) AS "Value"
-                    """).SingleAsync(ct);
-                await tx.CommitAsync(ct);
-                return alreadyReleased
-                    ? Result.Success()
-                    : Error.Conflict("payments.settlement.not_mature",
-                        "Settlement chưa đến hạn hoặc booking đang có dispute.");
-            }
-
-            var settled = await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
-                x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);
-            if (!settled)
-            {
-                await EnsureWalletAsync(caregiverUserId.Value, "CAREGIVER", ct);
-
-                var feeEntry = CreatePostedEntry("PLATFORM_FEE",
-                    "escrow:platform", "revenue:platform", platformFeeAmount,
-                    bookingId, "{\"reason\":\"dispute_window_elapsed\"}");
-                if (feeEntry.IsFailure) return feeEntry.Error;
-                var earningEntry = CreatePostedEntry("CAREGIVER_EARNING",
-                    "escrow:platform", $"wallet:caregiver:{caregiverUserId.Value}",
-                    caregiverAmount, bookingId,
-                    "{\"reason\":\"dispute_window_elapsed\"}");
-                if (earningEntry.IsFailure) return earningEntry.Error;
-
-                db.LedgerEntries.Add(feeEntry.Value);
-                db.LedgerEntries.Add(earningEntry.Value);
-                await db.Database.ExecuteSqlInterpolatedAsync($$"""
-                    UPDATE payments.wallet_accounts
-                    SET available_balance = available_balance + {{caregiverAmount}}, updated_at = now()
-                    WHERE user_id = {{caregiverUserId.Value}} AND account_type = 'CAREGIVER'
-                    """, ct);
-                await db.SaveChangesAsync(ct);
-            }
-
-            await db.Database.ExecuteSqlInterpolatedAsync($$"""
-                UPDATE booking.bookings
-                SET settlement_released_at = {{releasedAt}}, updated_at = now()
-                WHERE id = {{bookingId}} AND settlement_released_at IS NULL
-                """, ct);
-            await tx.CommitAsync(ct);
-            return Result.Success();
-        }
-        catch (DbUpdateException)
-        {
-            await tx.RollbackAsync(ct);
-            db.ChangeTracker.Clear();
-            var alreadyReleased = await db.Database.SqlQuery<bool>($$"""
-                SELECT EXISTS (
-                    SELECT 1 FROM booking.bookings
-                    WHERE id = {{bookingId}} AND settlement_released_at IS NOT NULL) AS "Value"
-                """).SingleAsync(ct);
-            if (alreadyReleased) return Result.Success();
-            throw;
-        }
+        // Booking owns maturity/status validation and stamps SettlementReleasedAt
+        // after this idempotent Payments operation succeeds.
+        return await SettleAsync(
+            bookingId, caregiverId, escrowAmount, platformFeeAmount, ct);
     }
+
+    private Task AcquirePaymentLockAsync(Guid bookingId, CancellationToken ct) =>
+        db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({bookingId.ToString()}, 0))", ct);
 
     private Task<bool> HasDisputeResolutionMarkerAsync(
         Guid bookingId, string decision, CancellationToken ct) =>

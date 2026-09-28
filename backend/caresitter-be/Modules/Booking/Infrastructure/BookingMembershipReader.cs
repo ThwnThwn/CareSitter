@@ -1,45 +1,27 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Booking.Infrastructure;
 
 /// <summary>
-/// Implementation của IBookingMembershipChecker cho SignalR Hub.
-/// Được đăng ký trong Booking module và resolve qua DI khi Hub cần verify quyền join group.
-///
-/// Query JOIN people.caregiver_profiles để đối chiếu user_id thay vì caregiver_profile_id,
-/// vì booking.caregiver_id là caregiver_profiles.id (không phải users.id).
+/// Booking-owned SignalR membership check. Cross-module caregiver identity lookup
+/// goes through the People contract instead of joining its schema.
 /// </summary>
-public sealed class BookingMembershipReader : IBookingMembershipChecker
+public sealed class BookingMembershipReader(
+    BookingDbContext db,
+    IPeopleLookupService people) : IBookingMembershipChecker
 {
-    private readonly BookingDbContext _db;
-
-    public BookingMembershipReader(BookingDbContext db)
+    public async Task<bool> IsPartyToBookingAsync(
+        Guid bookingId, Guid userId, CancellationToken ct = default)
     {
-        _db = db;
+        var party = await db.Bookings.AsNoTracking()
+            .Where(x => x.Id == bookingId)
+            .Select(x => new { x.CustomerId, x.CaregiverId })
+            .SingleOrDefaultAsync(ct);
+        if (party is null) return false;
+        if (party.CustomerId == userId) return true;
+        return party.CaregiverId is { } caregiverId &&
+            await people.IsCaregiverForBookingAsync(caregiverId, userId, ct);
     }
-
-    /// <summary>
-    /// Kiểm tra userId có phải là customer hoặc caregiver được assign của booking không.
-    /// Dùng SQL raw với JOIN vào people.caregiver_profiles để đối chiếu user_id.
-    /// </summary>
-    public Task<bool> IsPartyToBookingAsync(Guid bookingId, Guid userId, CancellationToken ct = default)
-        => _db.Database
-               .SqlQueryRaw<int>(
-                   """
-                   SELECT 1 AS "Value"
-                   FROM booking.bookings b
-                   WHERE b.id = {0}
-                     AND (
-                       b.customer_id = {1}
-                       OR EXISTS (
-                         SELECT 1
-                         FROM people.caregiver_profiles cp
-                         WHERE cp.id = b.caregiver_id
-                           AND cp.user_id = {1}
-                       )
-                     )
-                   LIMIT 1
-                   """, bookingId, userId)
-               .AnyAsync(ct);
 }

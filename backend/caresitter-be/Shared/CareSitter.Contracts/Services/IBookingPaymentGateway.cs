@@ -1,8 +1,8 @@
 namespace CareSitter.Contracts.Services;
 
 /// <summary>
-/// Published Booking-module boundary used by Payments. It keeps booking state,
-/// slot holds and cross-schema payment transitions behind the owning module.
+/// Published Booking-module boundary used by Payments. Every operation in this
+/// contract is owned and persisted by Booking; Payments never receives a Booking DbContext.
 /// </summary>
 public interface IBookingPaymentGateway
 {
@@ -12,21 +12,10 @@ public interface IBookingPaymentGateway
         Guid bookingId, int reconciliationWindowMinutes, CancellationToken ct = default);
     Task ReleaseSlotHoldAsync(
         Guid bookingId, Guid holdId, CancellationToken ct = default);
-    Task<BookingPaymentMutationStatus> ClosePendingIntentAsync(
-        Guid bookingId, Guid intentId, string closedStatus, string payload,
-        string source, CancellationToken ct = default);
-    Task<BookingPaymentFinalizationOutcome> FinalizeAsync(
-        BookingPaymentFinalization request, CancellationToken ct = default);
-    Task<long> GetCurrentSyncCursorAsync(
-        Guid customerId, CancellationToken ct = default);
-    Task<BookingPaymentSnapshot?> RecordFailedAttemptAsync(
-        Guid bookingId, Guid intentId, string payload, string source,
-        CancellationToken ct = default);
     Task<IReadOnlyDictionary<Guid, BookingPaymentSnapshot>> GetManualReviewBookingsAsync(
         IReadOnlyCollection<Guid> bookingIds, CancellationToken ct = default);
-    Task<BookingPaymentRejectionOutcome> RejectManualReviewAsync(
-        Guid bookingId, Guid intentId, string reason, string payload,
-        CancellationToken ct = default);
+    Task<IReadOnlyList<Guid>> ListDuePaymentBookingIdsAsync(
+        DateTimeOffset now, int batchSize, CancellationToken ct = default);
 }
 
 public enum BookingPaymentState
@@ -61,24 +50,3 @@ public sealed record BookingPaymentSnapshot(
 
 public sealed record BookingPaymentHoldResult(
     BookingPaymentMutationStatus Status, Guid? CreatedHoldId = null);
-
-public sealed record BookingPaymentFinalization(
-    Guid BookingId,
-    Guid IntentId,
-    string IntentStatus,
-    long Amount,
-    Guid LedgerEntryId,
-    string? ProviderTransactionId,
-    string? Payload,
-    string Source);
-
-public sealed record BookingPaymentFinalizationOutcome(
-    bool Succeeded,
-    bool NewlyFinalized,
-    string Code,
-    string Message,
-    BookingPaymentSnapshot? Booking = null);
-
-public sealed record BookingPaymentRejectionOutcome(
-    BookingPaymentMutationStatus Status,
-    BookingPaymentSnapshot? Booking = null);

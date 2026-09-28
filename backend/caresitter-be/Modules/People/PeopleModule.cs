@@ -28,7 +28,9 @@ public sealed class PeopleModule : IModule
         services.AddScoped<IPeopleRepository, PeopleRepository>();
         services.AddScoped<IPeopleReadStore, PeopleReadStore>();
         services.AddScoped<IPeopleLookupService, PeopleLookupService>();
+        services.AddScoped<IMatchingCaregiverReader, MatchingCaregiverReader>();
         services.AddScoped<ICaregiverRegistrationService, CaregiverRegistrationService>();
+        services.AddScoped<IAdminPeopleReader, AdminPeopleReader>();
 
         // Đăng ký Controllers nằm trong assembly của People module
         services.AddControllers()

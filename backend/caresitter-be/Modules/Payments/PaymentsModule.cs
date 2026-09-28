@@ -71,7 +71,11 @@ public sealed class PaymentsModule : IModule
         services.AddScoped<IPaymentWebhookProcessor, PaymentWebhookProcessor>();
         services.AddScoped<IVnPayCallbackProcessor, VNPayCallbackProcessor>();
         services.AddScoped<IPaymentReconciliationProcessor, PaymentReconciliationProcessor>();
+        services.AddScoped<IPaymentReconciliationJob, PaymentReconciliationJob>();
         services.AddScoped<IPaymentPortal, PaymentPortal>();
+        services.AddScoped<IPaymentOutboxDispatcher, PaymentOutboxDispatcher>();
+        services.AddScoped<IAdminPaymentsReader, AdminPaymentsReader>();
+        services.AddHostedService<PaymentOutboxWorker>();
 
         // Đăng ký Controllers nằm trong assembly của Payments module
         services.AddControllers()

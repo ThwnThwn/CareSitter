@@ -104,12 +104,13 @@ public sealed class PaymentIntent : AggregateRoot
         return Result.Success();
     }
 
-    public Result MarkExpired(string? finalizedSource = null)
+    public Result MarkExpired(string? finalizedSource = null, string? responsePayload = null)
     {
         if (Status != "PENDING")
             return Error.Conflict("payment_intent.status", $"không thể chuyen {Status} -> EXPIRED.");
         Status = "EXPIRED";
         FinalizedSource = finalizedSource;
+        ResponsePayload = responsePayload;
         NextReconciliationAt = null;
         return Result.Success();
     }

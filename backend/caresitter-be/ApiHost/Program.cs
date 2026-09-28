@@ -1,4 +1,3 @@
-using CareSitter.ApiHost.Jobs;
 using CareSitter.ApiHost.OpenApi;
 using CareSitter.ApiHost.Persistence;
 using CareSitter.ApiHost.Routing;
@@ -13,7 +12,6 @@ using CareSitter.Infrastructure.Security;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Infrastructure.Media;
 using CareSitter.Modules.Booking;
-using CareSitter.ApiHost.Matching;
 using CareSitter.Contracts.Services;
 using Hangfire;
 using Hangfire.InMemory;
@@ -57,7 +55,6 @@ if (!builder.Environment.IsDevelopment() && allowedOrigins.Count == 0)
 // require API keys in query strings, so suppress those framework logs.
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 
-builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection("Matching"));
 builder.Services.Configure<RoutingOptions>(builder.Configuration.GetSection("Routing"));
 builder.Services.AddMetrics();
 builder.Services.AddSingleton<RoutingMetrics>();
@@ -89,8 +86,6 @@ builder.Services.AddScoped<IRouteMatrixService>(sp =>
         return sp.GetRequiredService<OpenRouteServiceMatrixService>();
     return sp.GetRequiredService<GeoapifyRouteMatrixService>();
 });
-builder.Services.AddScoped<IMatchingService, MatchingService>();
-builder.Services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();
 builder.Services.AddExceptionHandler<RoutingExceptionHandler>();
 builder.Services.AddExceptionHandler<PersistenceConcurrencyExceptionHandler>();
 
@@ -307,9 +302,6 @@ builder.Services.AddHangfireServer(options =>
     options.WorkerCount = 2;
     options.Queues = new[] { "default", "booking" };
 });
-builder.Services.AddScoped<BookingJobsService>();
-
-
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -397,43 +389,43 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 
 // --- Đăng ký Hangfire Recurring Jobs ---
 RecurringJob.RemoveIfExists("expire-pending-payments");
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "reconcile-pending-payments",
     methodCall: svc => svc.ReconcilePendingPaymentsAsync(),
     cronExpression: "* * * * *",   // Mỗi 1 phút
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "alert-late-checkins",
     methodCall: svc => svc.AlertLateCheckinsAsync(),
     cronExpression: "*/5 * * * *", // Mỗi 5 phút
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "auto-request-checkout-expired-shifts",
     methodCall: svc => svc.AutoRequestCheckoutExpiredShiftsAsync(),
     cronExpression: "*/5 * * * *", // Mỗi 5 phút
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "auto-confirm-pending-checkouts",
     methodCall: svc => svc.AutoConfirmPendingCheckoutsAsync(),
     cronExpression: "*/15 * * * *", // Mỗi 15 phút
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "expand-expired-booking-offers",
     methodCall: svc => svc.ExpandExpiredBookingOffersAsync(),
     cronExpression: "* * * * *", // Mỗi 1 phút
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "refund-unmatched-bookings",
     methodCall: svc => svc.RefundUnmatchedBookingsAsync(),
     cronExpression: "* * * * *", // Retry nhanh, refund idempotent
     queue: "booking");
 
-RecurringJob.AddOrUpdate<BookingJobsService>(
+RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "release-mature-settlements",
     methodCall: svc => svc.ReleaseMatureSettlementsAsync(),
     cronExpression: "*/5 * * * *", // Mỗi 5 phút, idempotent theo booking

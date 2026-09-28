@@ -1,10 +1,6 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Identity.Infrastructure;
-using CareSitter.Modules.Support.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.ApiHost.Controllers;
 
@@ -12,32 +8,22 @@ namespace CareSitter.ApiHost.Controllers;
 [Authorize(Roles = "ADMIN")]
 [Route("api/v1/admin/metadata")]
 public sealed class AdminMetadataController(
-    IdentityDbContext identityDb,
+    IAdminIdentityReader identityReader,
+    IAdminBookingReader bookingReader,
+    IAdminSupportReader supportReader,
     ICurrentUser currentUser) : ControllerBase
 {
-    private static readonly AdminOption[] BookingStatuses =
-        Enum.GetValues<BookingStatus>()
-            .Select(status => new AdminOption(ToApiStatus(status), BookingStatusLabel(status), BookingStatusTone(status)))
-            .ToArray();
-
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId) return Unauthorized();
 
-        var user = await identityDb.Users.AsNoTracking()
-            .Where(x => x.Id == userId && x.DeletedAt == null)
-            .Select(x => new
-            {
-                x.Id,
-                x.Email,
-                x.DisplayName,
-                x.FullName,
-                x.Roles,
-                x.AdminDepartment
-            })
-            .SingleOrDefaultAsync(ct);
+        var user = await identityReader.FindUserAsync(userId, ct);
         if (user is null) return Unauthorized();
+
+        var bookingStatuses = bookingReader.GetStatusDescriptors()
+            .Select(x => new AdminOption(x.Value, x.Label, x.Tone))
+            .ToArray();
 
         var kycStatuses = new[]
         {
@@ -104,7 +90,7 @@ public sealed class AdminMetadataController(
             Option("PARTIAL_REFUND", "Hoàn tiền một phần")
         };
 
-        var statusDefinitions = BookingStatuses
+        var statusDefinitions = bookingStatuses
             .Concat(kycStatuses)
             .Concat(payoutStatuses)
             .Concat(ticketStatuses)
@@ -136,7 +122,7 @@ public sealed class AdminMetadataController(
                 user.Email,
                 displayName = user.DisplayName ?? user.FullName ?? user.Email,
                 user.Roles,
-                department = user.AdminDepartment
+                department = user.Department
             },
             navigation = new[]
             {
@@ -152,7 +138,7 @@ public sealed class AdminMetadataController(
             statusDefinitions,
             filters = new
             {
-                bookings = Filter(string.Empty, AllOption("Tất cả trạng thái").Concat(BookingStatuses).ToArray()),
+                bookings = Filter(string.Empty, AllOption("Tất cả trạng thái").Concat(bookingStatuses).ToArray()),
                 kyc = Filter("PENDING", kycStatuses.Concat([Option("ALL", "Tất cả")]).ToArray()),
                 payouts = Filter("PENDING", payoutStatuses.Concat([Option("ALL", "Tất cả")]).ToArray()),
                 tickets = Filter(string.Empty, AllOption("Tất cả").Concat(ticketStatuses).ToArray()),
@@ -167,13 +153,7 @@ public sealed class AdminMetadataController(
             disputeDecisions,
             transitions = new
             {
-                support = new Dictionary<string, string[]>
-                {
-                    ["NEW"] = SupportTicket.AllowedTransitions("NEW").ToArray(),
-                    ["IN_PROGRESS"] = SupportTicket.AllowedTransitions("IN_PROGRESS").ToArray(),
-                    ["RESOLVED"] = SupportTicket.AllowedTransitions("RESOLVED").ToArray(),
-                    ["CLOSED"] = SupportTicket.AllowedTransitions("CLOSED").ToArray()
-                }
+                support = supportReader.GetTicketTransitions()
             },
             reviewableStatuses = new
             {
@@ -223,49 +203,6 @@ public sealed class AdminMetadataController(
         string? description = null, string? actionLabel = null) =>
         new(value, label, tone, description, actionLabel);
 
-    private static string ToApiStatus(BookingStatus status) => status switch
-    {
-        BookingStatus.PendingPayment => "pending_payment",
-        BookingStatus.PaymentReconciliationPending => "payment_reconciliation_pending",
-        BookingStatus.NeedsManualReview => "needs_manual_review",
-        BookingStatus.CaregiverAccepted => "caregiver_accepted",
-        BookingStatus.CaregiverEnRoute => "caregiver_en_route",
-        BookingStatus.InProgress => "in_progress",
-        BookingStatus.CheckoutPendingReview => "checkout_pending_review",
-        BookingStatus.MatchingFailed => "matching_failed",
-        _ => status.ToString().ToLowerInvariant()
-    };
-
-    private static string BookingStatusLabel(BookingStatus status) => status switch
-    {
-        BookingStatus.Draft => "Bản nháp",
-        BookingStatus.PendingPayment => "Chờ thanh toán",
-        BookingStatus.PaymentReconciliationPending => "Đang đối soát",
-        BookingStatus.NeedsManualReview => "Cần đối soát",
-        BookingStatus.Confirmed => "Đã xác nhận",
-        BookingStatus.MatchingFailed => "Ghép ca thất bại",
-        BookingStatus.CaregiverAccepted => "Caregiver đã nhận",
-        BookingStatus.CaregiverEnRoute => "Đang di chuyển",
-        BookingStatus.InProgress => "Đang diễn ra",
-        BookingStatus.CheckoutPendingReview => "Chờ duyệt checkout",
-        BookingStatus.Completed => "Hoàn thành",
-        BookingStatus.Cancelled => "Đã hủy",
-        BookingStatus.Crisis => "Khẩn cấp",
-        BookingStatus.Disputed => "Đang khiếu nại",
-        BookingStatus.Refunded => "Đã hoàn tiền",
-        _ => status.ToString()
-    };
-
-    private static string BookingStatusTone(BookingStatus status) => status switch
-    {
-        BookingStatus.Completed or BookingStatus.Confirmed or BookingStatus.Refunded => "success",
-        BookingStatus.InProgress or BookingStatus.CaregiverEnRoute or BookingStatus.CaregiverAccepted => "info",
-        BookingStatus.PendingPayment or BookingStatus.PaymentReconciliationPending
-            or BookingStatus.NeedsManualReview or BookingStatus.CheckoutPendingReview
-            or BookingStatus.Disputed => "warning",
-        BookingStatus.Cancelled or BookingStatus.MatchingFailed or BookingStatus.Crisis => "danger",
-        _ => "neutral"
-    };
 }
 
 public sealed record AdminOption(

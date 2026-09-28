@@ -23,6 +23,7 @@ public interface IBookingMediaStore
 public interface IServiceChecklistCatalog
 {
     Task<bool> ExistsAsync(Guid serviceTypeId, CancellationToken ct = default);
+    Task<bool?> GetAllowAdHocTasksAsync(Guid serviceTypeId, CancellationToken ct = default);
     Task<ServiceChecklistPolicyChange?> SetPolicyAsync(
         Guid serviceTypeId, bool allowAdHocTasks, CancellationToken ct = default);
 }

@@ -36,6 +36,7 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IAuthenticationAttemptLimiter, AuthenticationAttemptLimiter>();
         services.AddScoped<IOtpStore, OtpStore>();
         services.AddScoped<IAccessTokenRevocationStore, AccessTokenRevocationStore>();
+        services.AddScoped<IAdminIdentityReader, AdminIdentityReader>();
 
         // Đăng ký Controllers nằm trong assembly của Identity module
         // (AuthController được khai báo trong project này, không phải ApiHost)

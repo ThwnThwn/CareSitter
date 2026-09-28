@@ -44,6 +44,24 @@ public interface IEmailSender
     Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default);
 }
 
+/// <summary>Payments-owned recurring reconciliation use case.</summary>
+public interface IPaymentReconciliationJob
+{
+    Task ExecuteAsync(CancellationToken ct = default);
+}
+
+/// <summary>Public scheduler boundary for Booking lifecycle automation.</summary>
+public interface IBookingJobsService
+{
+    Task ReconcilePendingPaymentsAsync();
+    Task AlertLateCheckinsAsync();
+    Task AutoRequestCheckoutExpiredShiftsAsync();
+    Task AutoConfirmPendingCheckoutsAsync();
+    Task ExpandExpiredBookingOffersAsync();
+    Task RefundUnmatchedBookingsAsync();
+    Task ReleaseMatureSettlementsAsync();
+}
+
 /// <summary>Read-only public identity data exposed to other modules.</summary>
 public interface IUserProfileReader
 {

@@ -1,4 +1,6 @@
+using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.SharedKernel.Results;
@@ -12,6 +14,7 @@ internal sealed class PaymentPortal(
     IBookingPaymentGateway bookings,
     IVNPayService vnPay,
     IPaymentFinalizationService finalizer,
+    IPaymentOutboxDispatcher outbox,
     IOptions<VNPayOptions> vnPayOptions,
     IClock clock) : IPaymentPortal
 {
@@ -70,8 +73,8 @@ internal sealed class PaymentPortal(
                     expiresAt: latestAttempt.CreatedAt.Add(paymentTimeout));
 
             var closedStatus = query.State == VNPayQueryState.NotFound ? "EXPIRED" : "FAILED";
-            var closeStatus = await bookings.ClosePendingIntentAsync(
-                booking.BookingId, latestAttempt.Id, closedStatus, query.RawPayload,
+            var closeStatus = await ClosePendingIntentAsync(
+                latestAttempt.Id, closedStatus, query.RawPayload,
                 PaymentFinalizationSource.RetryPreflight.ToString(), ct);
             if (closeStatus != BookingPaymentMutationStatus.Succeeded)
                 return Conflict(
@@ -170,6 +173,37 @@ internal sealed class PaymentPortal(
             new LedgerEntryResponse(x.Id, x.BookingId, x.PaymentIntentId,
                 x.TransactionType, x.DebitAccount, x.CreditAccount, x.Amount,
                 x.Currency, x.Status, x.CreatedAt)).ToArray(), total, page, pageSize);
+    }
+
+    private async Task<BookingPaymentMutationStatus> ClosePendingIntentAsync(
+        Guid intentId, string closedStatus, string payload, string source, CancellationToken ct)
+    {
+        paymentsDb.ChangeTracker.Clear();
+        Guid? messageId = null;
+        await using (var tx = await paymentsDb.Database.BeginTransactionAsync(ct))
+        {
+            var intent = await paymentsDb.PaymentIntents.FromSqlInterpolated(
+                    $"SELECT * FROM payments.payment_intents WHERE id = {intentId} FOR UPDATE")
+                .SingleOrDefaultAsync(ct);
+            if (intent is null || intent.Status != "PENDING")
+                return BookingPaymentMutationStatus.IntentStateChanged;
+
+            var result = closedStatus == "EXPIRED"
+                ? intent.MarkExpired(source, payload)
+                : intent.MarkFailed(payload, source);
+            if (result.IsFailure)
+                return BookingPaymentMutationStatus.IntentStateChanged;
+
+            var message = OutboxMessage.Create(
+                new PaymentFailed(intent.BookingId, intent.Id, source));
+            paymentsDb.OutboxMessages.Add(message);
+            messageId = message.Id;
+            await paymentsDb.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+
+        await outbox.DispatchAsync(messageId!.Value, ct);
+        return BookingPaymentMutationStatus.Succeeded;
     }
 
     private static Result<PaymentIntentCreationOutcome> Conflict(

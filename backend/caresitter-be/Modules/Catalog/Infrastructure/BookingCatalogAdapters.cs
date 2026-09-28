@@ -34,6 +34,13 @@ internal sealed class ServiceChecklistCatalog(CatalogDbContext db) : IServiceChe
     public Task<bool> ExistsAsync(Guid serviceTypeId, CancellationToken ct = default) =>
         db.ServiceTypes.AsNoTracking().AnyAsync(x => x.Id == serviceTypeId, ct);
 
+    public Task<bool?> GetAllowAdHocTasksAsync(
+        Guid serviceTypeId, CancellationToken ct = default) =>
+        db.ServiceTypes.AsNoTracking()
+            .Where(x => x.Id == serviceTypeId)
+            .Select(x => (bool?)x.AllowAdHocTasks)
+            .SingleOrDefaultAsync(ct);
+
     public async Task<ServiceChecklistPolicyChange?> SetPolicyAsync(
         Guid serviceTypeId, bool allowAdHocTasks, CancellationToken ct = default)
     {

@@ -29,6 +29,7 @@ public sealed class SupportModule : IModule
         services.AddScoped<ISupportReadStore, SupportReadStore>();
         services.AddScoped<IUserNotificationService, UserNotificationService>();
         services.AddScoped<IDisputeLookupService, DisputeLookupService>();
+        services.AddScoped<IAdminSupportReader, AdminSupportReader>();
 
         // Đăng ký Controllers nằm trong assembly của Support module
         services.AddControllers()

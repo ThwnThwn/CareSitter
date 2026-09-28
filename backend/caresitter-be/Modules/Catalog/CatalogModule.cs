@@ -36,6 +36,7 @@ public sealed class CatalogModule : IModule
         services.AddMemoryCache();
         services.AddScoped<IPricingService, PricingService>();
         services.AddScoped<ICatalogLookupService, CatalogLookupService>();
+        services.AddScoped<IMatchingAddressReader, MatchingAddressReader>();
         services.AddHttpClient<IPlaceAutocompleteService, GeoapifyPlaceAutocompleteService>((_, client) =>
         {
             client.BaseAddress = new Uri(

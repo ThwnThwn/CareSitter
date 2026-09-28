@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
+using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +12,9 @@ namespace CareSitter.Modules.Payments.Infrastructure;
 
 internal sealed class VNPayCallbackProcessor(
     PaymentsDbContext paymentsDb,
-    IBookingPaymentGateway bookings,
     IVNPayService vnPay,
     IPaymentFinalizationService finalizer,
+    IPaymentOutboxDispatcher outbox,
     IOptions<VNPayOptions> options,
     IUserNotificationService notifications) : IVnPayCallbackProcessor
 {
@@ -91,18 +93,38 @@ internal sealed class VNPayCallbackProcessor(
     private async Task RecordFailedAttemptAsync(
         PaymentIntent intent, string payload, PaymentFinalizationSource source, CancellationToken ct)
     {
-        var booking = await bookings.RecordFailedAttemptAsync(
-            intent.BookingId, intent.Id, payload, source.ToString(), ct);
-        if (booking is null) return;
+        Guid? messageId = null;
+        await using (var tx = await paymentsDb.Database.BeginTransactionAsync(ct))
+        {
+            var locked = await paymentsDb.PaymentIntents.FromSqlInterpolated(
+                    $"SELECT * FROM payments.payment_intents WHERE id = {intent.Id} FOR UPDATE")
+                .SingleOrDefaultAsync(ct);
+            if (locked is null || locked.Status is not ("CREATED" or "PENDING"))
+            {
+                await tx.CommitAsync(ct);
+                return;
+            }
+
+            var failed = locked.MarkFailed(payload, source.ToString());
+            if (failed.IsFailure) return;
+            var message = OutboxMessage.Create(
+                new PaymentFailed(locked.BookingId, locked.Id, source.ToString()));
+            paymentsDb.OutboxMessages.Add(message);
+            messageId = message.Id;
+            await paymentsDb.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+
+        await outbox.DispatchAsync(messageId!.Value, ct);
 
         await notifications.NotifyAsync(new UserNotificationMessage(
-            booking.CustomerId, "PAYMENT", "Thanh toán chưa thành công",
+            intent.CustomerId, "PAYMENT", "Thanh toán chưa thành công",
             "Giao dịch chưa hoàn tất. Bạn có thể mở booking để thử lại.",
             new Dictionary<string, string>
             {
-                ["bookingId"] = booking.BookingId.ToString(),
+                ["bookingId"] = intent.BookingId.ToString(),
                 ["status"] = "payment_failed",
-                ["deepLink"] = $"/bookings/{booking.BookingId}"
+                ["deepLink"] = $"/bookings/{intent.BookingId}"
             }), ct);
     }
 

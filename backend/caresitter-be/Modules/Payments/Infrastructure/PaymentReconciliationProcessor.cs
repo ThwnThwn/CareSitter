@@ -1,5 +1,7 @@
 using System.Text.Json;
+using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
+using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,7 @@ internal sealed class PaymentReconciliationProcessor(
     PaymentsDbContext paymentsDb,
     IBookingPaymentGateway bookings,
     IPaymentFinalizationService finalizer,
+    IPaymentOutboxDispatcher outbox,
     IAuditLogger auditLogger) : IPaymentReconciliationProcessor
 {
     public async Task<IReadOnlyList<PaymentReconciliationItem>> ListAsync(
@@ -64,20 +67,38 @@ internal sealed class PaymentReconciliationProcessor(
         }
 
         var payload = JsonSerializer.Serialize(new { command.Reason, source = "AdminManual" });
-        var rejection = await bookings.RejectManualReviewAsync(
-            intent.BookingId, intent.Id, command.Reason, payload, ct);
-        if (rejection.Status == BookingPaymentMutationStatus.BookingNotFound)
-            return Error.NotFound("payments.booking_not_found", "Không tìm thấy booking.");
-        if (rejection.Status == BookingPaymentMutationStatus.BookingStateChanged)
-            return Error.Conflict("payments.booking_changed",
-                "Booking đã được tiến trình khác xử lý.");
-        if (rejection.Status == BookingPaymentMutationStatus.IntentStateChanged)
-            return Error.Conflict("payments.intent_changed",
-                "Payment đã được tiến trình khác xử lý.");
-        if (rejection.Status != BookingPaymentMutationStatus.Succeeded)
-            return Error.Conflict("payments.booking_changed",
-                "Booking đã được tiến trình khác xử lý.");
-        var booking = rejection.Booking!;
+        paymentsDb.ChangeTracker.Clear();
+        Guid messageId;
+        await using (var tx = await paymentsDb.Database.BeginTransactionAsync(ct))
+        {
+            var locked = await paymentsDb.PaymentIntents.FromSqlInterpolated(
+                    $"SELECT * FROM payments.payment_intents WHERE id = {intent.Id} FOR UPDATE")
+                .SingleOrDefaultAsync(ct);
+            if (locked is null)
+                return Error.NotFound("payments.intent_not_found", "Không tìm thấy payment intent.");
+            if (locked.Status != "PENDING")
+                return Error.Conflict("payments.intent_changed",
+                    "Payment đã được tiến trình khác xử lý.");
+
+            var failed = locked.MarkFailed(payload, PaymentFinalizationSource.AdminManual.ToString());
+            if (failed.IsFailure)
+                return Error.Conflict("payments.intent_changed", failed.Error.Message);
+            locked.SetManualReviewReason(command.Reason);
+
+            var otherPending = await paymentsDb.PaymentIntents.Where(x =>
+                x.BookingId == locked.BookingId && x.Id != locked.Id && x.Status == "PENDING")
+                .ToListAsync(ct);
+            foreach (var other in otherPending) other.MarkSuperseded();
+
+            var message = OutboxMessage.Create(
+                new PaymentReviewRejected(locked.BookingId, locked.Id, command.Reason));
+            paymentsDb.OutboxMessages.Add(message);
+            messageId = message.Id;
+            await paymentsDb.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+
+        await outbox.DispatchAsync(messageId, ct);
         await auditLogger.WriteAsync(
             "ADMIN_PAYMENT_RECONCILIATION_REJECTED", "PaymentIntent", intent.Id,
             before, new
@@ -88,6 +109,6 @@ internal sealed class PaymentReconciliationProcessor(
                 command.Reason,
                 bookingStatus = "CANCELLED"
             }, ct);
-        return new PaymentReviewResolution(null, booking.BookingId, "cancelled");
+        return new PaymentReviewResolution(null, intent.BookingId, "cancelled");
     }
 }

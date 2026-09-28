@@ -149,6 +149,15 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
                 platformFeeAmount: 15_000,
                 releasedAt);
             Assert.True(result.IsSuccess, result.Error.Message);
+
+            await using var bookingDb = new CareSitter.Modules.Booking.Infrastructure.BookingDbContext(
+                new DbContextOptionsBuilder<CareSitter.Modules.Booking.Infrastructure.BookingDbContext>()
+                    .UseNpgsql(_database.ConnectionString)
+                    .Options);
+            var booking = await bookingDb.Bookings.SingleAsync(x => x.Id == bookingId);
+            var marked = booking.MarkSettlementReleased(releasedAt);
+            Assert.True(marked.IsSuccess, marked.Error.Message);
+            await bookingDb.SaveChangesAsync();
         }
 
         await Task.WhenAll(ReleaseAsync(), ReleaseAsync());
@@ -195,7 +204,7 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
 
     private WalletService CreateWalletService(PaymentsDbContext db, SeedRecord seed) => new(
         db,
-        new DisputeLookupStub(),
+        new PostgresDisputeLookupStub(_database.ConnectionString),
         new PeopleLookupStub(seed.CaregiverProfileId, seed.CaregiverUserId));
 
     private async Task<SeedRecord> GetSeedAsync()
@@ -409,6 +418,24 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
     {
         public Task<bool> HasOpenDisputeAsync(Guid bookingId, CancellationToken ct = default) =>
             Task.FromResult(false);
+    }
+
+    private sealed class PostgresDisputeLookupStub(string connectionString) : IDisputeLookupService
+    {
+        public async Task<bool> HasOpenDisputeAsync(
+            Guid bookingId, CancellationToken ct = default)
+        {
+            await using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync(ct);
+            await using var command = new NpgsqlCommand("""
+                SELECT EXISTS (
+                    SELECT 1 FROM support.disputes
+                    WHERE booking_id = @booking_id
+                      AND status NOT IN ('RESOLVED', 'CANCELLED'))
+                """, connection);
+            command.Parameters.AddWithValue("booking_id", bookingId);
+            return (bool)(await command.ExecuteScalarAsync(ct) ?? false);
+        }
     }
 
     private sealed class PeopleLookupStub(Guid profileId, Guid userId) : IPeopleLookupService
