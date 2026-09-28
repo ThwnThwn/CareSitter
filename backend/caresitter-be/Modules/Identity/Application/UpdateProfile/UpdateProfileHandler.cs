@@ -1,15 +1,13 @@
-﻿using System.Net.Mail;
-using CareSitter.Infrastructure.Security;
-using CareSitter.Infrastructure.Time;
-using CareSitter.Modules.Identity.Infrastructure;
+using System.Net.Mail;
+using CareSitter.Contracts.Services;
+using CareSitter.Modules.Identity.Application;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Identity.Application.UpdateProfile;
 
 internal sealed class UpdateProfileHandler(
-    IdentityDbContext db,
+    IIdentityStore store,
     ICurrentUser currentUser,
     IClock clock) : IRequestHandler<UpdateProfileCommand, Result<ProfileResponse>>
 {
@@ -41,15 +39,15 @@ internal sealed class UpdateProfileHandler(
         if (gender is not null && !AllowedGenders.Contains(gender))
             return Error.Validation("profile.invalid_gender", "Gioi tinh phai la MALE, FEMALE, OTHER hoac UNSPECIFIED.");
 
-        var user = await db.Users.SingleOrDefaultAsync(x => x.Id == userId && x.DeletedAt == null, ct);
+        var user = await store.FindUserByIdAsync(userId, ct);
         if (user is null)
             return Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan người dùng.");
 
-        if (await db.Users.AnyAsync(x => x.Id != userId && x.DeletedAt == null && x.Email == email, ct))
+        if (await store.EmailExistsAsync(email, userId, ct))
             return Error.Conflict("profile.email_exists", "Email đã được sử dụng bởi tài khoản khác.");
 
         user.UpdateProfile(fullName, email, displayName, request.DateOfBirth, gender);
-        await db.SaveChangesAsync(ct);
+        await store.SaveChangesAsync(ct);
 
         return new ProfileResponse(user.Id, user.Phone, user.Email, user.FullName!, user.DisplayName!,
             user.DateOfBirth, user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles);

@@ -26,6 +26,8 @@ using Npgsql;
 using StackExchange.Redis;
 using System.Text.Json;
 using CareSitter.Contracts.Services.Routing;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Http.Features;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
 // TraversePath() tim .env tu thu muc hien tai len cac thu muc cha (repo root).
@@ -33,6 +35,27 @@ using CareSitter.Contracts.Services.Routing;
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+    options.Limits.MaxRequestBodySize = 11 * 1024 * 1024);
+
+var encryptionKey = builder.Configuration["Encryption:EncryptionKey"];
+if (string.IsNullOrWhiteSpace(encryptionKey) || encryptionKey.Length < 32)
+    throw new InvalidOperationException(
+        "Encryption:EncryptionKey must be configured with at least 32 characters.");
+
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+var allowedOrigins = configuredOrigins
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .Select(x => x.Trim().TrimEnd('/'))
+    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+if (!builder.Environment.IsDevelopment() && allowedOrigins.Count == 0)
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins must contain at least one explicit origin outside Development.");
+
+// HttpClientFactory logs request URLs at Information by default. Some providers
+// require API keys in query strings, so suppress those framework logs.
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 
 builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection("Matching"));
 builder.Services.Configure<RoutingOptions>(builder.Configuration.GetSection("Routing"));
@@ -67,6 +90,7 @@ builder.Services.AddScoped<IRouteMatrixService>(sp =>
     return sp.GetRequiredService<GeoapifyRouteMatrixService>();
 });
 builder.Services.AddScoped<IMatchingService, MatchingService>();
+builder.Services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();
 builder.Services.AddExceptionHandler<RoutingExceptionHandler>();
 builder.Services.AddExceptionHandler<PersistenceConcurrencyExceptionHandler>();
 
@@ -74,7 +98,7 @@ builder.Services.AddExceptionHandler<PersistenceConcurrencyExceptionHandler>();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton(new EncryptionOptions
 {
-    EncryptionKey = builder.Configuration["Encryption:EncryptionKey"] ?? "dev-only-change-me-please-32bytes!"
+    EncryptionKey = encryptionKey
 });
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 builder.Services.AddHttpContextAccessor();
@@ -163,16 +187,69 @@ builder.Services.AddModules(builder.Configuration, moduleAssemblies);
 // --- Cross-cutting ---
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers(); // Hỗ trợ Controller-based API
+builder.Services.Configure<FormOptions>(options =>
+    options.MultipartBodyLengthLimit = 11 * 1024 * 1024);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCareSitterSwagger();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.ContentType = "application/problem+json";
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            title = "auth.rate_limit",
+            detail = "Bạn thao tác quá nhanh. Vui lòng thử lại sau."
+        }, ct);
+    };
+
+    static string Partition(HttpContext context) =>
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    options.AddPolicy("auth-send-otp", context => RateLimitPartition.GetFixedWindowLimiter(
+        Partition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("auth-login", context => RateLimitPartition.GetFixedWindowLimiter(
+        Partition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("auth-register", context => RateLimitPartition.GetFixedWindowLimiter(
+        Partition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromHours(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("auth-refresh", context => RateLimitPartition.GetFixedWindowLimiter(
+        Partition(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(10),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
 builder.Services.AddCors(options =>
     options.AddPolicy("crm", policy => policy
-        // Cho phép tất cả localhost (Flutter Web chạy port ngẫu nhiên)
-        // và 10.0.2.2 (Android emulator trỏ về host machine)
         .SetIsOriginAllowed(origin =>
         {
-            var uri = new Uri(origin);
-            return uri.Host is "localhost" or "127.0.0.1" or "10.0.2.2";
+            var normalized = origin.TrimEnd('/');
+            if (allowedOrigins.Contains(normalized)) return true;
+            if (!builder.Environment.IsDevelopment()) return false;
+            return Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                && uri.Scheme is "http" or "https"
+                && uri.Host is "localhost" or "127.0.0.1" or "10.0.2.2";
         })
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -242,8 +319,31 @@ if (app.Environment.IsDevelopment())
 {
     app.UseCareSitterSwagger();
 }
+else
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+        if (context.Request.Path.StartsWithSegments("/api") ||
+            context.Request.Path.StartsWithSegments("/health"))
+            headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 app.UseCors("crm");
+app.UseRateLimiter();
 
 // Serve static files từ wwwroot (chỉ dùng khi Development — vd: google-token-tester.html)
 if (app.Environment.IsDevelopment())
@@ -331,6 +431,12 @@ RecurringJob.AddOrUpdate<BookingJobsService>(
     recurringJobId: "refund-unmatched-bookings",
     methodCall: svc => svc.RefundUnmatchedBookingsAsync(),
     cronExpression: "* * * * *", // Retry nhanh, refund idempotent
+    queue: "booking");
+
+RecurringJob.AddOrUpdate<BookingJobsService>(
+    recurringJobId: "release-mature-settlements",
+    methodCall: svc => svc.ReleaseMatureSettlementsAsync(),
+    cronExpression: "*/5 * * * *", // Mỗi 5 phút, idempotent theo booking
     queue: "booking");
 
 // --- Map Controllers ---

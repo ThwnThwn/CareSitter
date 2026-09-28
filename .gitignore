@@ -6,6 +6,17 @@
 # ---------- Chỉ theo dõi source chính ----------
 /*
 !/.gitignore
+!/README.md
+!/.github/
+!/.github/workflows/
+!/.github/workflows/ci.yml
+!/docs/
+/docs/*
+!/docs/release-roadmap.md
+!/docs/phase-7-acceptance.md
+!/docs/phase-8-acceptance.md
+!/docs/adr/
+!/docs/adr/*.md
 !/backend/
 !/backend/**
 !/frontend/

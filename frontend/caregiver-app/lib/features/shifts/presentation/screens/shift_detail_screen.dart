@@ -58,10 +58,9 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
     }
 
     final beneficiary = _resolveBeneficiary(booking);
-    final isPending = booking.status == 'pending' || booking.status == 'open';
-    final isUpcoming =
-        booking.status == 'confirmed' || booking.status == 'assigned';
-    final isEnRoute = booking.status == 'caregiver_en_route';
+    final isPending = booking.canAccept;
+    final isUpcoming = booking.canStartEnRoute;
+    final isEnRoute = booking.canCheckIn;
     final isInProgress = booking.status == 'in_progress';
     final isCompleted = booking.status == 'completed';
 

@@ -12,6 +12,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CareSitter.Modules.Identity.Controllers;
 
@@ -30,6 +31,7 @@ public sealed class AuthController : ControllerBase
     /// Sends a 6-digit OTP to the requested email address.
     /// </summary>
     [HttpPost("send-otp")]
+    [EnableRateLimiting("auth-send-otp")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
@@ -42,6 +44,7 @@ public sealed class AuthController : ControllerBase
     /// Logs in with email and OTP, returning access and refresh tokens.
     /// </summary>
     [HttpPost("login")]
+    [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -64,10 +67,15 @@ public sealed class AuthController : ControllerBase
     {
         var jti = User.FindFirstValue(JwtRegisteredClaimNames.Jti);
         var exp = User.FindFirstValue(JwtRegisteredClaimNames.Exp);
+        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sid = User.FindFirstValue("sid");
 
         if (string.IsNullOrWhiteSpace(jti) ||
             string.IsNullOrWhiteSpace(exp) ||
-            !long.TryParse(exp, out var expUnixSeconds))
+            !long.TryParse(exp, out var expUnixSeconds) ||
+            !Guid.TryParse(sub, out var userId) ||
+            !Guid.TryParse(sid, out var sessionId))
         {
             return HandleFailure(Error.Validation(
                 "auth.invalid_token",
@@ -76,7 +84,8 @@ public sealed class AuthController : ControllerBase
 
         var expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expUnixSeconds);
         // Gửi refreshToken (nếu có) để server revoke session bền vững trong PostgreSQL.
-        var result = await _sender.Send(new LogoutCommand(jti, expiresAtUtc, body?.RefreshToken));
+        var result = await _sender.Send(new LogoutCommand(
+            jti, expiresAtUtc, userId, sessionId, body?.RefreshToken));
 
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
     }
@@ -87,6 +96,7 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     /// <param name="command">Thông tin đăng ký gồm Phone, FullName, Email và Roles. Password là tuỳ chọn.</param>
     [HttpPost("register")]
+    [EnableRateLimiting("auth-register")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -104,6 +114,7 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     /// <param name="command">Email và mật khẩu.</param>
     [HttpPost("login/password")]
+    [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LoginWithPassword([FromBody] LoginWithPasswordCommand command)
@@ -120,6 +131,7 @@ public sealed class AuthController : ControllerBase
     ///   - Redis miss sẽ fallback DB và tự làm ấm lại cache.
     /// </summary>
     [HttpPost("refresh")]
+    [EnableRateLimiting("auth-refresh")]
     [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command)
@@ -129,17 +141,32 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Đăng nhập hoặc đăng ký bằng Google Account.
-    /// Gửi Google ID Token nhận được từ Google Sign-In SDK trên client.
-    /// Nếu tài khoản chưa tồn tại sẽ tự động được tạo với role mặc định CUSTOMER.
+    /// Đăng nhập hoặc đăng ký từ Customer app bằng Google Account.
+    /// Role CUSTOMER do server gán, không nhận từ request body.
     /// </summary>
-    /// <param name="command">Google ID Token và danh sách vai trò (tuỳ chọn cho lần đăng ký đầu).</param>
-    [HttpPost("google/callback")]
+    [HttpPost("google/customer")]
+    [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(GoogleLoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GoogleCallback([FromBody] GoogleLoginCommand command)
+    public async Task<IActionResult> GoogleCustomer([FromBody] GoogleLoginRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _sender.Send(new GoogleLoginCommand(
+            request.IdToken, GoogleLoginRolePolicy.Customer));
+        return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
+    }
+
+    /// <summary>
+    /// Đăng nhập hoặc đăng ký từ Caregiver app bằng Google Account.
+    /// Role CAREGIVER do server gán; caregiver mới vẫn phải hoàn tất KYC.
+    /// </summary>
+    [HttpPost("google/caregiver")]
+    [EnableRateLimiting("auth-login")]
+    [ProducesResponseType(typeof(GoogleLoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleCaregiver([FromBody] GoogleLoginRequest request)
+    {
+        var result = await _sender.Send(new GoogleLoginCommand(
+            request.IdToken, GoogleLoginRolePolicy.Caregiver));
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 

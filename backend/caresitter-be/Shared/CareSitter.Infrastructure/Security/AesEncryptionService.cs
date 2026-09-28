@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+using CareSitter.Contracts.Services;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CareSitter.Infrastructure.Security;
@@ -9,8 +10,8 @@ namespace CareSitter.Infrastructure.Security;
 /// </summary>
 public sealed class AesEncryptionService : IEncryptionService
 {
-    private readonly byte[] _key;     // 32 bytes
-    private readonly byte[] _hmacKey; // tach rieng key HMAC
+    private readonly byte[] _key;
+    private readonly byte[] _hmacKey;
 
     public AesEncryptionService(EncryptionOptions options)
     {
@@ -68,5 +69,5 @@ public sealed class EncryptionOptions
     public const string SectionName = "Encryption";
 
     /// <summary>Khoa bi mat goc (production: lay tu KMS/secret manager, KHONG hardcode).</summary>
-    public string EncryptionKey { get; set; } = "dev-only-change-me-please-32bytes!";
+    public string EncryptionKey { get; set; } = string.Empty;
 }

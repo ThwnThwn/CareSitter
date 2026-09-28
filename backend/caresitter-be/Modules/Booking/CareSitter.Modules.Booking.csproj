@@ -4,12 +4,15 @@
     <ProjectReference Include="..\..\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Contracts\CareSitter.Contracts.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Infrastructure\CareSitter.Infrastructure.csproj" />
-    <ProjectReference Include="..\Catalog\CareSitter.Modules.Catalog.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.10.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
   </ItemGroup>
 
   <PropertyGroup>

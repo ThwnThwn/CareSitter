@@ -1,8 +1,6 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 
@@ -12,9 +10,9 @@ internal sealed class RequestBookingCheckoutCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IPeopleLookupService people,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<RequestBookingCheckoutCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(
@@ -32,7 +30,7 @@ internal sealed class RequestBookingCheckoutCommandHandler(
         if (await bookings.HasRequiredSkippedCareTasksAsync(request.BookingId, ct))
             booking.MarkNeedsReview();
 
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
+        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.RequestManualCheckout();
         if (result.IsFailure) return result.Error;
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
@@ -41,7 +39,7 @@ internal sealed class RequestBookingCheckoutCommandHandler(
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("checkout-request status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusCodec.ToApi(booking.Status), ct));
+                BookingStatusPresenter.ToApi(booking.Status), ct));
         await postCommit.RunAsync("checkout-request customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("checkout-request customer notification", () =>

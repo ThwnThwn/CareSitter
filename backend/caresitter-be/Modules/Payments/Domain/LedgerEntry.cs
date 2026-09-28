@@ -76,4 +76,13 @@ public sealed class LedgerEntry : Entity
         return new LedgerEntry(Guid.NewGuid(), bookingId, paymentIntentId, payoutRequestId, transactionType,
             debitAccount, creditAccount, amount, currency, metadata);
     }
+
+    public Result MarkPosted()
+    {
+        if (Status == "POSTED") return Result.Success();
+        if (Status != "PENDING")
+            return Error.Conflict("ledger.status", $"Không thể chuyển {Status} -> POSTED.");
+        Status = "POSTED";
+        return Result.Success();
+    }
 }

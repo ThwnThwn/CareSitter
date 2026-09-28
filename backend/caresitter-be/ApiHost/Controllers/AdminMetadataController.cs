@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.Modules.Support.Domain;

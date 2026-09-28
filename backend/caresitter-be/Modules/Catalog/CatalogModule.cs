@@ -27,6 +27,10 @@ public sealed class CatalogModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CatalogModule>());
         services.AddValidatorsFromAssemblyContaining<CatalogModule>();
         services.AddScoped<IAddressRepository, AddressRepository>();
+        services.AddScoped<ICatalogReadStore, CatalogReadStore>();
+        services.AddScoped<ICatalogAdminRepository, CatalogAdminRepository>();
+        services.AddScoped<IBookingMediaStore, BookingMediaStore>();
+        services.AddScoped<IServiceChecklistCatalog, ServiceChecklistCatalog>();
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).
         services.AddMemoryCache();

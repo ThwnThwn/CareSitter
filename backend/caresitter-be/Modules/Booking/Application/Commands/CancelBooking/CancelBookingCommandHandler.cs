@@ -1,8 +1,6 @@
-using CareSitter.Infrastructure.Security;
-using CareSitter.Infrastructure.Time;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 
@@ -12,9 +10,9 @@ internal sealed class CancelBookingCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IClock clock,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<CancelBookingCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(CancelBookingCommand request, CancellationToken ct)
@@ -22,7 +20,7 @@ internal sealed class CancelBookingCommandHandler(
         if (currentUser.UserId is not { } userId) return BookingErrors.Unauthenticated();
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
+        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.Cancel(userId, "CUSTOMER", request.Reason, clock.UtcNow);
         if (result.IsFailure) return result.Error;
         if (oldStatus == "in_progress")

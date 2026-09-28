@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Domain;
+using CareSitter.Modules.Payments.Infrastructure;
 
 namespace CareSitter.Modules.Payments.UnitTests;
 

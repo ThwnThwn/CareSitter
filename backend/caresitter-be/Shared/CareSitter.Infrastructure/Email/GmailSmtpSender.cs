@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,6 @@ internal sealed class GmailSmtpSender : IEmailSender
         _logger = logger;
     }
 
-    /// <inheritdoc />
     public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
     {
         var fromAddress = _opts.UserName.Trim();
@@ -41,12 +41,9 @@ internal sealed class GmailSmtpSender : IEmailSender
 
         try
         {
-            // Gmail submission dùng STARTTLS trên port 587.
             await smtp.ConnectAsync(_opts.Host, _opts.Port, SecureSocketOptions.StartTls, ct);
             await smtp.AuthenticateAsync(fromAddress, appPassword, ct);
             await smtp.SendAsync(message, ct);
-
-            // Không log địa chỉ người nhận hoặc nội dung OTP.
             _logger.LogInformation("Gmail SMTP đã gửi email thành công.");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)

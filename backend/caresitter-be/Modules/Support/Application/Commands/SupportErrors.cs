@@ -8,6 +8,10 @@ internal static class SupportErrors
     public const string NotFoundCode = "support.not_found";
     public const string ForbiddenCode = "support.forbidden";
     public const string DisputeAlreadyExistsCode = "support.dispute.already_exists";
+    public const string DisputeBookingNotFoundCode = "support.dispute.booking_not_found";
+    public const string DisputeInvalidStateCode = "support.dispute.invalid_state";
+    public const string DisputeWindowExpiredCode = "support.dispute.window_expired";
+    public const string DisputeCaregiverMissingCode = "support.dispute.caregiver_missing";
     public const string ReviewRequiredIdsCode = "support.review.required_ids";
     public const string ReviewCommentTooLongCode = "support.review.comment_too_long";
     public const string ReviewTagsTooLongCode = "support.review.tags_too_long";
@@ -24,6 +28,15 @@ internal static class SupportErrors
     public static Error Forbidden() => Error.Forbidden(ForbiddenCode, string.Empty);
     public static Error DisputeAlreadyExists() => Error.Conflict(
         DisputeAlreadyExistsCode, "Booking nay da co dispute.");
+    public static Error DisputeBookingNotFound() => Error.NotFound(
+        DisputeBookingNotFoundCode, "Không tìm thấy booking.");
+    public static Error DisputeInvalidState() => Error.Conflict(
+        DisputeInvalidStateCode,
+        "Booking không ở trạng thái cho phép mở hoặc xử lý khiếu nại.");
+    public static Error DisputeWindowExpired() => Error.Conflict(
+        DisputeWindowExpiredCode, "Booking đã hết thời hạn khiếu nại.");
+    public static Error DisputeCaregiverMissing() => Error.Conflict(
+        DisputeCaregiverMissingCode, "Booking chưa có caregiver để xử lý tài chính.");
     public static Error ReviewBookingNotFound() => Error.NotFound(
         ReviewBookingNotFoundCode, "Không tìm thấy booking.");
     public static Error ReviewBookingNotCompleted() => Error.Conflict(

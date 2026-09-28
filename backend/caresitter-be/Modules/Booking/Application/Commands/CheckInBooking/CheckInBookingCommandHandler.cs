@@ -1,8 +1,6 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using CareSitter.SharedKernel.ValueObjects;
 using FluentValidation;
@@ -18,9 +16,9 @@ internal sealed class CheckInBookingCommandHandler(
     ICatalogLookupService catalog,
     IOptions<CheckInOptions> checkInOptions,
     IValidator<CheckInBookingCommand> validator,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<CheckInBookingCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(CheckInBookingCommand request, CancellationToken ct)
@@ -45,7 +43,7 @@ internal sealed class CheckInBookingCommandHandler(
         var caregiverGeo = new GeoPoint(request.Latitude, request.Longitude);
         var addressGeo = new GeoPoint(addressLocation.Value.Lat, addressLocation.Value.Lng);
 
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
+        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.CheckIn(
             caregiverGeo,
             addressGeo,
@@ -66,7 +64,7 @@ internal sealed class CheckInBookingCommandHandler(
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("check-in status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusCodec.ToApi(booking.Status), ct));
+                BookingStatusPresenter.ToApi(booking.Status), ct));
         await postCommit.RunAsync("check-in customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("check-in customer notification", () =>

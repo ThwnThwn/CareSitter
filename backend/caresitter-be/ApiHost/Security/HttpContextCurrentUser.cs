@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using Microsoft.AspNetCore.Http;
 
 namespace CareSitter.ApiHost.Security;

@@ -1,10 +1,8 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace CareSitter.Modules.Booking.Application.Commands.ConfirmBookingPayment;
@@ -14,9 +12,9 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
     ICurrentUser currentUser,
     IWalletService wallet,
     IMatchingService matching,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper,
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper,
     ILogger<ConfirmBookingPaymentCommandHandler> logger)
     : IRequestHandler<ConfirmBookingPaymentCommand, Result<BookingResponse>>
 {
@@ -44,14 +42,8 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
                 slotHold = holdResult.Value;
                 bookings.AddSlotHold(slotHold);
             }
-            try
-            {
-                await bookings.SaveChangesAsync(ct);
-            }
-            catch (DbUpdateException)
-            {
+            if (!await bookings.TrySaveSlotHoldChangesAsync(ct))
                 return BookingErrors.CaregiverSlotHeld();
-            }
         }
 
         var lockResult = await wallet.LockEscrowAsync(booking.Id, booking.EscrowAmount,

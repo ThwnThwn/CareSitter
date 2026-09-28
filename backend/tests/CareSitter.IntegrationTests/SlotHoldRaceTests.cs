@@ -122,7 +122,10 @@ public sealed class SlotHoldRaceTests : IAsyncLifetime
                 scheduled_start, scheduled_end, payment_deadline, status)
             SELECT @id, beneficiary.customer_id, beneficiary.id,
                    address.id, service.id,
-                   now() + interval '2 days', now() + interval '2 days 2 hours',
+                   now() + interval '2 days'
+                       + (SELECT count(*) FROM booking.bookings) * interval '3 hours',
+                   now() + interval '2 days 2 hours'
+                       + (SELECT count(*) FROM booking.bookings) * interval '3 hours',
                    now() + interval '30 minutes', 'CONFIRMED'
             FROM people.beneficiaries beneficiary
             JOIN catalog.addresses address ON address.owner_user_id = beneficiary.customer_id

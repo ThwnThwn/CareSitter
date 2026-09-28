@@ -24,7 +24,5 @@ public interface IPeopleRepository
     Task<CaregiverProfile?> GetCaregiverProfileByIdAsync(Guid id, CancellationToken ct = default);
     Task<CaregiverProfileCreationResult> AddCaregiverProfileIdempotentlyAsync(
         CaregiverProfile profile, Guid userId, CancellationToken ct = default);
-    Task<string?> GetAvatarUrlAsync(Guid userId, CancellationToken ct = default);
-
     Task SaveChangesAsync(CancellationToken ct = default);
 }

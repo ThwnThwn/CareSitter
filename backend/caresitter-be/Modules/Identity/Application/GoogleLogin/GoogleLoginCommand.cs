@@ -5,22 +5,38 @@ using MediatR;
 namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 
 /// <summary>
-/// Yêu cầu đăng nhập / đăng ký tài khoản bằng Google ID Token.
+/// Request body công khai cho đăng nhập Google. Client chỉ được gửi ID token;
+/// role được endpoint phía server quyết định theo ứng dụng.
 /// </summary>
 /// <param name="IdToken">
 /// Google ID Token nhận được từ Google Sign-In SDK trên client.
 /// Token này được verify phía server bằng Google public keys.
 /// </param>
-/// <param name="Roles">
-/// Vai trò muốn đăng ký (chỉ cần khi tạo tài khoản mới qua Google lần đầu).
-/// Nếu null hoặc rỗng và chưa có tài khoản → mặc định là ["CUSTOMER"].
-/// </param>
-/// <param name="RequiredRole">Vai trò bắt buộc cho ứng dụng đang đăng nhập, ví dụ CUSTOMER hoặc CAREGIVER.</param>
+public sealed record GoogleLoginRequest(string IdToken);
+
+/// <summary>
+/// Command nội bộ. RequiredRole luôn do controller gán cứng, không bind từ request body.
+/// </summary>
 public sealed record GoogleLoginCommand(
     string IdToken,
-    string[]? Roles = null,
-    string? RequiredRole = null
+    string RequiredRole
 ) : IRequest<Result<GoogleLoginResponse>>;
+
+internal static class GoogleLoginRolePolicy
+{
+    public const string Customer = "CUSTOMER";
+    public const string Caregiver = "CAREGIVER";
+
+    public static Result<string> Validate(string? requiredRole)
+    {
+        var normalized = requiredRole?.Trim().ToUpperInvariant();
+        return normalized is Customer or Caregiver
+            ? Result.Success(normalized)
+            : Error.Forbidden(
+                "auth.google_role_not_allowed",
+                "Google self-registration chỉ hỗ trợ Customer hoặc Caregiver.");
+    }
+}
 
 /// <summary>
 /// Phản hồi đăng nhập Google, mở rộng LoginResponse với thêm thông tin.

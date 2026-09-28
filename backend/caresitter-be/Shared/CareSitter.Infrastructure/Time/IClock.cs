@@ -1,10 +1,6 @@
-namespace CareSitter.Infrastructure.Time;
+using CareSitter.Contracts.Services;
 
-/// <summary>Bao boc thoi gian de test deterministic.</summary>
-public interface IClock
-{
-    DateTimeOffset UtcNow { get; }
-}
+namespace CareSitter.Infrastructure.Time;
 
 public sealed class SystemClock : IClock
 {

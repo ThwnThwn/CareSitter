@@ -27,7 +27,7 @@
 </head>
 <body>
   <h1>🔑 Google Auth Tester</h1>
-  <p class="sub">Test endpoint <code>POST /api/v1/auth/google/callback</code> — CareSitter local</p>
+  <p class="sub">Test endpoint Google theo ứng dụng — CareSitter local</p>
 
   <!-- Step 1: Sign in -->
   <div class="card">
@@ -53,14 +53,13 @@
     <label>API Base URL</label>
     <input id="api-url" value="http://localhost:5033" />
 
-    <label>Roles (cho lần đầu đăng ký qua Google)</label>
-    <select id="roles">
-      <option value="CUSTOMER">CUSTOMER</option>
-      <option value="CAREGIVER">CAREGIVER</option>
-      <option value="ADMIN">ADMIN</option>
+    <label>Ứng dụng (role do backend gán)</label>
+    <select id="app-role">
+      <option value="customer">Customer</option>
+      <option value="caregiver">Caregiver</option>
     </select>
 
-    <button class="btn btn-primary" onclick="callApi()">🚀 Gọi /api/v1/auth/google/callback</button>
+    <button class="btn btn-primary" onclick="callApi()">🚀 Gọi Google Login</button>
   </div>
 
   <!-- Step 3: Response -->
@@ -87,7 +86,7 @@
       if (!idToken) { alert('Hãy đăng nhập Google trước!'); return; }
 
       const baseUrl = document.getElementById('api-url').value.replace(/\/$/, '');
-      const role = document.getElementById('roles').value;
+      const appRole = document.getElementById('app-role').value;
       const box = document.getElementById('response-box');
       const badge = document.getElementById('status-badge');
 
@@ -95,10 +94,10 @@
       badge.textContent = '';
 
       try {
-        const res = await fetch(`${baseUrl}/api/v1/auth/google/callback`, {
+        const res = await fetch(`${baseUrl}/api/v1/auth/google/${appRole}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken, roles: [role] })
+          body: JSON.stringify({ idToken })
         });
 
         const data = await res.json();

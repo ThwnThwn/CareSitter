@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using CareSitter.Contracts.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +19,16 @@ public static class AuthServiceRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection(JwtSettings.SectionName))
+            .Validate(x => !string.IsNullOrWhiteSpace(x.Issuer), "Jwt:Issuer is required.")
+            .Validate(x => !string.IsNullOrWhiteSpace(x.Audience), "Jwt:Audience is required.")
+            .Validate(x => x.SecretKey?.Length >= 32, "Jwt:SecretKey must contain at least 32 characters.")
+            .Validate(x => x.ExpiryMinutes is >= 5 and <= 60,
+                "Jwt:ExpiryMinutes must be between 5 and 60.")
+            .Validate(x => x.RefreshTokenExpiryDays is >= 1 and <= 30,
+                "Jwt:RefreshTokenExpiryDays must be between 1 and 30.")
+            .ValidateOnStart();
 
         var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
             ?? new JwtSettings();
@@ -41,9 +51,7 @@ public static class AuthServiceRegistration
                 ValidIssuer = jwtSettings.Issuer,
                 ValidAudience = jwtSettings.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtSettings.SecretKey)
-                        ? "dev-only-change-me-please-32bytes!"
-                        : jwtSettings.SecretKey)),
+                    Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
                 ClockSkew = TimeSpan.Zero
             };
 
@@ -55,6 +63,25 @@ public static class AuthServiceRegistration
                     if (string.IsNullOrWhiteSpace(jti))
                     {
                         context.Fail("Token is missing jti.");
+                        return;
+                    }
+
+                    var userIdValue = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                        ?? context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var sessionIdValue = context.Principal?.FindFirst("sid")?.Value;
+                    if (!Guid.TryParse(userIdValue, out var userId) ||
+                        !Guid.TryParse(sessionIdValue, out var sessionId))
+                    {
+                        context.Fail("Token is not bound to a durable session.");
+                        return;
+                    }
+
+                    var sessionValidator = context.HttpContext.RequestServices
+                        .GetRequiredService<IAccessSessionValidator>();
+                    if (!await sessionValidator.IsActiveAsync(
+                            userId, sessionId, context.HttpContext.RequestAborted))
+                    {
+                        context.Fail("The account or session is no longer active.");
                         return;
                     }
 

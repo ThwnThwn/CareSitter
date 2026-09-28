@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.IntegrationTests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Routing.UnitTests", "tests\CareSitter.Modules.Routing.UnitTests\CareSitter.Modules.Routing.UnitTests.csproj", "{957EEB78-BB6E-42DA-8F8D-8A99C574416B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.ArchitectureTests", "tests\CareSitter.ArchitectureTests\CareSitter.ArchitectureTests.csproj", "{1703A6EE-1729-4927-9921-765D2C814926}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -217,6 +219,18 @@ Global
 		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x64.Build.0 = Release|Any CPU
 		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x86.ActiveCfg = Release|Any CPU
 		{957EEB78-BB6E-42DA-8F8D-8A99C574416B}.Release|x86.Build.0 = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|x64.Build.0 = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Debug|x86.Build.0 = Debug|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|x64.ActiveCfg = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|x64.Build.0 = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|x86.ActiveCfg = Release|Any CPU
+		{1703A6EE-1729-4927-9921-765D2C814926}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -238,5 +252,6 @@ Global
 		{693E2D20-EA57-4ACA-A59C-B135452793A7} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 		{B0D43F96-D2BB-4404-A8A2-709344EC73D8} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 		{957EEB78-BB6E-42DA-8F8D-8A99C574416B} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
+		{1703A6EE-1729-4927-9921-765D2C814926} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 	EndGlobalSection
 EndGlobal

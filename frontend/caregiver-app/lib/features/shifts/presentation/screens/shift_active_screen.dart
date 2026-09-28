@@ -1117,7 +1117,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
             children: [
               // ── Checkbox / status icon ─────────────────
               GestureDetector(
-                onTap: canAct && (!task.requiresPhoto || hasPhoto)
+                onTap: canAct && task.canComplete
                     ? () => _onCompleteTask(booking, task)
                     : null,
                 child: AnimatedContainer(
@@ -1677,7 +1677,7 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
         booking.tasks.where((t) => t.status == 'PENDING').length;
     final requiredSkippedCount =
         booking.tasks.where((t) => t.isSkipped && t.isRequired).length;
-    final canCheckout = pendingCount == 0;
+    final canCheckout = booking.canRequestCheckout && pendingCount == 0;
 
     return Column(
       children: [

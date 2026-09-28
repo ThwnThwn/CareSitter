@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -30,7 +31,11 @@ public sealed class JwtTokenService : IJwtTokenService
     /// <param name="roles">Danh sách các vai trò (roles) của người dùng.</param>
     /// <param name="displayName">Tên hiển thị (tùy chọn).</param>
     /// <returns>Chuỗi JWT Access Token đã ký.</returns>
-    public string GenerateAccessToken(Guid userId, IEnumerable<string> roles, string? displayName = null)
+    public string GenerateAccessToken(
+        Guid userId,
+        IEnumerable<string> roles,
+        string? displayName = null,
+        Guid? sessionId = null)
     {
         var claims = new List<Claim>
         {
@@ -41,6 +46,11 @@ public sealed class JwtTokenService : IJwtTokenService
         if (!string.IsNullOrWhiteSpace(displayName))
         {
             claims.Add(new(ClaimTypes.Name, displayName));
+        }
+
+        if (sessionId is { } durableSessionId)
+        {
+            claims.Add(new("sid", durableSessionId.ToString()));
         }
 
         // Thêm các role vào claims để kiểm tra phân quyền sau này

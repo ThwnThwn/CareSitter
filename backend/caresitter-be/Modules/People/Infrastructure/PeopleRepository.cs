@@ -69,11 +69,6 @@ internal sealed class PeopleRepository(PeopleDbContext db) : IPeopleRepository
         }
     }
 
-    public Task<string?> GetAvatarUrlAsync(Guid userId, CancellationToken ct = default) =>
-        db.Database.SqlQueryRaw<string>(
-                "SELECT avatar_url AS \"Value\" FROM identity.users WHERE id = {0}", userId)
-            .FirstOrDefaultAsync(ct);
-
     public Task SaveChangesAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
 
     private sealed class PeopleTransaction(IDbContextTransaction transaction) : IPeopleTransaction

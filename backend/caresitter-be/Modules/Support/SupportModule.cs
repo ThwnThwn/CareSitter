@@ -26,6 +26,7 @@ public sealed class SupportModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SupportModule>());
         services.AddValidatorsFromAssemblyContaining<SupportModule>();
         services.AddScoped<ISupportRepository, SupportRepository>();
+        services.AddScoped<ISupportReadStore, SupportReadStore>();
         services.AddScoped<IUserNotificationService, UserNotificationService>();
         services.AddScoped<IDisputeLookupService, DisputeLookupService>();
 

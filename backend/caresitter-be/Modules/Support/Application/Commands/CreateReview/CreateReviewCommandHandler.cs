@@ -1,5 +1,4 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.SharedKernel.Results;
 using FluentValidation;

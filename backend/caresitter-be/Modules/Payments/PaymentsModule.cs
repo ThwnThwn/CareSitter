@@ -1,7 +1,16 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Application.Payouts;
+using CareSitter.Modules.Payments.Application.Payouts.ApprovePayout;
+using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
+using CareSitter.Modules.Payments.Application.Payouts.ListMyPayouts;
+using CareSitter.Modules.Payments.Application.Payouts.ListPendingPayouts;
+using CareSitter.Modules.Payments.Application.Payouts.RejectPayout;
 using CareSitter.Modules.Payments.Infrastructure;
 using CareSitter.SharedKernel.Modules;
+using CareSitter.SharedKernel.Results;
+using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +31,26 @@ public sealed class PaymentsModule : IModule
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", PaymentsDbContext.SchemaName)));
 
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssemblyContaining<PaymentsModule>());
+        services.AddValidatorsFromAssemblyContaining<PaymentsModule>();
+        services.AddTransient<
+            IPipelineBehavior<CreatePayoutCommand, Result<CreatePayoutResult>>,
+            PayoutValidationBehavior<CreatePayoutCommand, CreatePayoutResult>>();
+        services.AddTransient<
+            IPipelineBehavior<ListMyPayoutsQuery, Result<PayoutPage>>,
+            PayoutValidationBehavior<ListMyPayoutsQuery, PayoutPage>>();
+        services.AddTransient<
+            IPipelineBehavior<ListPendingPayoutsQuery, Result<PayoutPage>>,
+            PayoutValidationBehavior<ListPendingPayoutsQuery, PayoutPage>>();
+        services.AddTransient<
+            IPipelineBehavior<ApprovePayoutCommand, Result<PayoutResponse>>,
+            PayoutValidationBehavior<ApprovePayoutCommand, PayoutResponse>>();
+        services.AddTransient<
+            IPipelineBehavior<RejectPayoutCommand, Result<PayoutResponse>>,
+            PayoutValidationBehavior<RejectPayoutCommand, PayoutResponse>>();
+        services.AddScoped<PayoutMapper>();
+        services.AddScoped<IPayoutStore, PayoutStore>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddOptions<VNPayOptions>()
             .Bind(configuration.GetSection(VNPayOptions.SectionName))
@@ -39,6 +68,10 @@ public sealed class PaymentsModule : IModule
         services.AddHttpClient<IVNPayService, VNPayService>(client =>
             client.Timeout = TimeSpan.FromSeconds(10));
         services.AddScoped<IPaymentFinalizationService, PaymentFinalizationService>();
+        services.AddScoped<IPaymentWebhookProcessor, PaymentWebhookProcessor>();
+        services.AddScoped<IVnPayCallbackProcessor, VNPayCallbackProcessor>();
+        services.AddScoped<IPaymentReconciliationProcessor, PaymentReconciliationProcessor>();
+        services.AddScoped<IPaymentPortal, PaymentPortal>();
 
         // Đăng ký Controllers nằm trong assembly của Payments module
         services.AddControllers()

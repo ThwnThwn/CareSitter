@@ -24,6 +24,22 @@ internal static class PeopleResponseMapper
         DeserializeUrls(profile.CertificateUrls), profile.AvailabilityStatus,
         profile.Skills, profile.ServiceCity, profile.ServiceDistrict, avatarUrl);
 
+    public static CaregiverResponse ToCaregiverResponse(
+        CaregiverProfile profile, int? distanceMeters = null) => new(
+        profile.Id, profile.UserId, profile.FullName, profile.Bio,
+        profile.YearsOfExperience, profile.RatingAvg, profile.RatingCount,
+        profile.AvailabilityStatus, Json(profile.Skills), profile.ServiceCity,
+        profile.ServiceDistrict,
+        profile.ServiceCenterLocation?.Y,
+        profile.ServiceCenterLocation?.X,
+        profile.ServiceRadiusMeters,
+        distanceMeters);
+
+    public static CaregiverKycResponse ToKycResponse(CaregiverProfile profile) => new(
+        profile.Id, profile.UserId, profile.FullName, profile.DateOfBirth,
+        profile.Gender, profile.KycStatus, profile.CccdFrontUrl, profile.CccdBackUrl,
+        DeserializeUrls(profile.CertificateUrls), profile.CreatedAt, profile.UpdatedAt);
+
     private static JsonElement? Json(string? value) => string.IsNullOrWhiteSpace(value)
         ? null : JsonDocument.Parse(value).RootElement.Clone();
 

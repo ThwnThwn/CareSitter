@@ -2,14 +2,21 @@
 param(
     [int]$From = 10,
     [switch]$AllowDestructive,
-    [string]$ContainerName = 'caresitter-db'
+    [string]$ContainerName = 'caresitter-db',
+    [switch]$SkipStart,
+    [string]$MigrationPath
 )
 
 $ErrorActionPreference = 'Stop'
 
 $backendRoot = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $backendRoot 'docker-compose.yml'
-$migrationDirectory = Join-Path $backendRoot 'init-db'
+$migrationDirectory = if ([string]::IsNullOrWhiteSpace($MigrationPath)) {
+    Join-Path $backendRoot 'init-db'
+}
+else {
+    (Resolve-Path -LiteralPath $MigrationPath).Path
+}
 $destructiveMigrations = @(
     '19-drop-caregiver-availability.sql',
     '21-drop-caregiver-hourly-rate.sql'
@@ -38,10 +45,12 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Docker CLI was not found.'
 }
 
-Write-Host 'Starting PostgreSQL...'
-& docker compose -f $composeFile up -d db
-if ($LASTEXITCODE -ne 0) {
-    throw 'Unable to start the PostgreSQL service.'
+if (-not $SkipStart) {
+    Write-Host 'Starting PostgreSQL...'
+    & docker compose -f $composeFile up -d db
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to start the PostgreSQL service.'
+    }
 }
 
 $isHealthy = $false

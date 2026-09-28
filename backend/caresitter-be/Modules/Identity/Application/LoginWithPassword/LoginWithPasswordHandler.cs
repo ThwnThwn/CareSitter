@@ -1,10 +1,7 @@
-using BCrypt.Net;
-using CareSitter.Modules.Identity.Application.AuthSessions;
+using CareSitter.Modules.Identity.Application;
 using CareSitter.Modules.Identity.Application.Login;
-using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Identity.Application.LoginWithPassword;
 
@@ -14,15 +11,21 @@ namespace CareSitter.Modules.Identity.Application.LoginWithPassword;
 /// </summary>
 internal sealed class LoginWithPasswordHandler : IRequestHandler<LoginWithPasswordCommand, Result<LoginResponse>>
 {
-    private readonly IdentityDbContext _db;
-    private readonly RefreshTokenSessionService _sessions;
+    private readonly IIdentityStore _store;
+    private readonly IRefreshTokenSessionService _sessions;
+    private readonly IAuthenticationAttemptLimiter _attemptLimiter;
+    private readonly IPasswordHasher _passwordHasher;
 
     public LoginWithPasswordHandler(
-        IdentityDbContext db,
-        RefreshTokenSessionService sessions)
+        IIdentityStore store,
+        IRefreshTokenSessionService sessions,
+        IAuthenticationAttemptLimiter attemptLimiter,
+        IPasswordHasher passwordHasher)
     {
-        _db = db;
+        _store = store;
         _sessions = sessions;
+        _attemptLimiter = attemptLimiter;
+        _passwordHasher = passwordHasher;
     }
 
     /// <summary>
@@ -39,31 +42,35 @@ internal sealed class LoginWithPasswordHandler : IRequestHandler<LoginWithPasswo
         if (string.IsNullOrWhiteSpace(request.Password))
             return Error.Validation("auth.password_required", "Mật khẩu là bắt buộc.");
 
+        if (await _attemptLimiter.IsBlockedAsync("password-login", identifierLower, ct))
+            return InvalidCredentials();
+
         // Tìm user theo email hoặc số điện thoại
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == identifierLower || (u.Phone != null && u.Phone == identifier), ct);
+        var user = await _store.FindUserByIdentifierAsync(identifierLower, identifier, ct);
 
-        // Trả về cùng thông báo lỗi dù tài khoản sai hay password sai (tránh user enumeration)
-        if (user is null || user.PasswordHash is null)
-            return Error.Validation("auth.invalid_credentials", "Tài khoản hoặc mật khẩu không chính xác.");
-
-        if (user.Status != "ACTIVE")
-            return Error.Failure("auth.inactive_user", $"Tài khoản đang ở trạng thái {user.Status} và không thể đăng nhập.");
-
-        // Xác minh mật khẩu với BCrypt
-        var isValidPassword = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-        if (!isValidPassword)
-            return Error.Validation("auth.invalid_credentials", "Email hoặc mật khẩu không chính xác.");
+        // Always execute BCrypt to keep unknown-account and bad-password timing close.
+        var isValidPassword = _passwordHasher.Verify(request.Password, user?.PasswordHash);
+        if (user is null || user.PasswordHash is null || !isValidPassword || user.Status != "ACTIVE")
+        {
+            await _attemptLimiter.RecordFailureAsync(
+                "password-login", identifierLower, 5, TimeSpan.FromMinutes(15),
+                TimeSpan.FromMinutes(15), ct);
+            return InvalidCredentials();
+        }
 
         var roleRequirement = AuthRoleRequirement.Validate(user, request.RequiredRole);
         if (roleRequirement.IsFailure)
-            return roleRequirement.Error;
+            return InvalidCredentials();
 
         // Ghi nhận thời gian đăng nhập
         user.RecordLogin(DateTimeOffset.UtcNow);
-        await _db.SaveChangesAsync(ct);
+        await _store.SaveChangesAsync(ct);
+        await _attemptLimiter.ResetAsync("password-login", identifierLower, ct);
 
         var tokens = await _sessions.IssueAsync(user, ct);
         return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
+
+    private static Error InvalidCredentials() => Error.Validation(
+        "auth.invalid_credentials", "Tài khoản hoặc mật khẩu không chính xác.");
 }

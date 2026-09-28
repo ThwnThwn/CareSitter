@@ -56,7 +56,8 @@ public sealed class BookingCommandValidatorTests
             ContentType = "image/jpeg"
         };
 
-        var result = validator.Validate(new UploadCheckInSelfieCommand(Guid.NewGuid(), file));
+        var result = validator.Validate(new UploadCheckInSelfieCommand(
+            Guid.NewGuid(), file.OpenReadStream(), file.FileName, file.ContentType, file.Length));
 
         Assert.False(result.IsValid);
         Assert.Equal("Vui lòng chọn ảnh selfie.", result.Errors[0].ErrorMessage);
@@ -72,7 +73,8 @@ public sealed class BookingCommandValidatorTests
             ContentType = "image/gif"
         };
 
-        var result = validator.Validate(new UploadCheckInSelfieCommand(Guid.NewGuid(), file));
+        var result = validator.Validate(new UploadCheckInSelfieCommand(
+            Guid.NewGuid(), file.OpenReadStream(), file.FileName, file.ContentType, file.Length));
 
         Assert.False(result.IsValid);
         Assert.Equal("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.", result.Errors[0].ErrorMessage);

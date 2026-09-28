@@ -14,6 +14,18 @@ internal sealed class BookingRepository(BookingDbContext db) : IBookingRepositor
     public Task<Domain.Booking?> GetForCustomerAsync(Guid bookingId, Guid customerId, CancellationToken ct) =>
         db.Bookings.SingleOrDefaultAsync(x => x.Id == bookingId && x.CustomerId == customerId, ct);
 
+    public Task<bool> HasBeneficiaryScheduleConflictAsync(Guid bookingId, Guid beneficiaryId,
+        DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd, CancellationToken ct) =>
+        db.Bookings.AsNoTracking().AnyAsync(x =>
+            x.Id != bookingId &&
+            x.BeneficiaryId == beneficiaryId &&
+            x.Status != BookingStatus.Completed &&
+            x.Status != BookingStatus.Cancelled &&
+            x.Status != BookingStatus.Refunded &&
+            x.Status != BookingStatus.MatchingFailed &&
+            x.ScheduledStart < scheduledEnd &&
+            x.ScheduledEnd > scheduledStart, ct);
+
     public Task<bool> HasCaregiverScheduleConflictAsync(Guid bookingId, Guid caregiverId,
         DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd, CancellationToken ct) =>
         db.Bookings.AsNoTracking().AnyAsync(x =>
@@ -81,4 +93,17 @@ internal sealed class BookingRepository(BookingDbContext db) : IBookingRepositor
     public void AddAssignment(BookingAssignment assignment) => db.BookingAssignments.Add(assignment);
     public void AddTimelineEvent(CareTimelineEvent timelineEvent) => db.TimelineEvents.Add(timelineEvent);
     public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);
+
+    public async Task<bool> TrySaveSlotHoldChangesAsync(CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
+    }
 }

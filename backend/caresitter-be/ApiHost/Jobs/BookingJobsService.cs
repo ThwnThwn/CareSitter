@@ -42,7 +42,7 @@ public sealed class BookingJobsService
         var vnPay = scope.ServiceProvider.GetRequiredService<IVNPayService>();
         var vnPayOptions = scope.ServiceProvider.GetRequiredService<IOptions<VNPayOptions>>().Value;
         var finalizer = scope.ServiceProvider.GetRequiredService<IPaymentFinalizationService>();
-        var bookingSync = scope.ServiceProvider.GetRequiredService<BookingSyncService>();
+        var bookingSync = scope.ServiceProvider.GetRequiredService<IBookingSyncService>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
         var now = DateTimeOffset.UtcNow;
         var dueBookingIds = await db.Bookings.AsNoTracking()
@@ -127,7 +127,7 @@ public sealed class BookingJobsService
         }
     }
 
-    private static async Task MoveToReconciliationAsync(BookingDbContext db, BookingSyncService sync,
+    private static async Task MoveToReconciliationAsync(BookingDbContext db, IBookingSyncService sync,
         IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
     {
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -143,7 +143,7 @@ public sealed class BookingJobsService
                 "payment_reconciliation_pending", now));
     }
 
-    private static async Task CancelExpiredBookingAsync(BookingDbContext db, BookingSyncService sync,
+    private static async Task CancelExpiredBookingAsync(BookingDbContext db, IBookingSyncService sync,
         IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
     {
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -164,7 +164,7 @@ public sealed class BookingJobsService
 
     private static async Task CloseDefinitiveFailureAsync(
         BookingDbContext db,
-        BookingSyncService sync,
+        IBookingSyncService sync,
         IHubContext<CareTrackingHub> hub,
         Guid bookingId,
         Guid intentId,
@@ -206,7 +206,7 @@ public sealed class BookingJobsService
             "BookingStatusChanged", new BookingStatusChangedEvent(bookingId, oldStatus, "cancelled", now));
     }
 
-    private static async Task MoveToManualReviewAsync(BookingDbContext db, BookingSyncService sync,
+    private static async Task MoveToManualReviewAsync(BookingDbContext db, IBookingSyncService sync,
         IHubContext<CareTrackingHub> hub, Guid bookingId, DateTimeOffset now)
     {
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -341,7 +341,6 @@ public sealed class BookingJobsService
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
-        var wallet = scope.ServiceProvider.GetRequiredService<IWalletService>();
         var disputeLookup = scope.ServiceProvider.GetRequiredService<IDisputeLookupService>();
         var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
 
@@ -396,18 +395,6 @@ public sealed class BookingJobsService
                 continue;
             }
 
-            var settleResult = await wallet.SettleAsync(
-                booking.Id, caregiverId, booking.EscrowAmount, booking.PlatformFeeAmount,
-                CancellationToken.None);
-            if (settleResult.IsFailure)
-            {
-                await tx.RollbackAsync();
-                _logger.LogWarning(
-                    "[BookingJobs] Auto-confirm settle blocked for booking {Id}: {Error}",
-                    booking.Id, settleResult.Error.Message);
-                continue;
-            }
-
             db.TimelineEvents.Add(CareTimelineEvent.Create(
                 booking.Id,
                 caregiverId,
@@ -456,7 +443,7 @@ public sealed class BookingJobsService
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
         var wallet = scope.ServiceProvider.GetRequiredService<IWalletService>();
-        var sync = scope.ServiceProvider.GetRequiredService<BookingSyncService>();
+        var sync = scope.ServiceProvider.GetRequiredService<IBookingSyncService>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
         var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
 
@@ -533,6 +520,53 @@ public sealed class BookingJobsService
             {
                 _logger.LogError(ex, "Failed to refund unmatched booking {BookingId}", bookingId);
             }
+        }
+    }
+
+    /// <summary>
+    /// Releases caregiver earnings only after the booking-specific dispute window
+    /// has elapsed. The wallet service locks the booking row, re-checks that no
+    /// dispute is open, writes ledger entries and stamps settlement_released_at in
+    /// one PostgreSQL transaction.
+    /// </summary>
+    public async Task ReleaseMatureSettlementsAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+        var wallet = scope.ServiceProvider.GetRequiredService<IWalletService>();
+        var now = DateTimeOffset.UtcNow;
+
+        var candidates = await db.Bookings.AsNoTracking()
+            .Where(x => x.Status == BookingStatus.Completed &&
+                        x.SettlementReleasedAt == null &&
+                        x.ActualEnd != null &&
+                        x.CaregiverId != null)
+            .OrderBy(x => x.ActualEnd)
+            .Take(100)
+            .Select(x => new
+            {
+                x.Id,
+                CaregiverId = x.CaregiverId!.Value,
+                x.EscrowAmount,
+                x.PlatformFeeAmount,
+                ActualEnd = x.ActualEnd!.Value,
+                x.DisputeWindowHours
+            })
+            .ToListAsync();
+
+        foreach (var candidate in candidates.Where(x =>
+                     x.ActualEnd.AddHours(x.DisputeWindowHours) <= now))
+        {
+            var result = await wallet.ReleaseMatureSettlementAsync(
+                candidate.Id,
+                candidate.CaregiverId,
+                candidate.EscrowAmount,
+                candidate.PlatformFeeAmount,
+                now);
+            if (result.IsFailure)
+                _logger.LogWarning(
+                    "Could not release mature settlement for booking {BookingId}: {Reason}",
+                    candidate.Id, result.Error.Message);
         }
     }
 

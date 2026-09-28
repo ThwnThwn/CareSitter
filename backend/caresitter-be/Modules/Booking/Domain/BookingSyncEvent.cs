@@ -48,4 +48,5 @@ public static class BookingSyncEventTypes
     public const string CrisisRaised       = "CRISIS_RAISED";
     public const string Disputed           = "DISPUTED";
     public const string MatchingFailed     = "MATCHING_FAILED";
+    public const string Refunded           = "REFUNDED";
 }

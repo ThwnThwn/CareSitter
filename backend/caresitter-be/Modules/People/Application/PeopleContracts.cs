@@ -33,3 +33,35 @@ public sealed record CaregiverProfileCreationResponse(
 public sealed record CaregiverKycApprovalResponse(Guid Id, string KycStatus);
 
 public sealed record CaregiverKycRejectionResponse(Guid Id, string KycStatus, string? Reason);
+
+public sealed record CaregiverResponse(
+    Guid Id,
+    Guid UserId,
+    string? FullName,
+    string? Bio,
+    int? YearsOfExperience,
+    decimal RatingAvg,
+    int RatingCount,
+    string AvailabilityStatus,
+    JsonElement? Skills,
+    string? ServiceCity,
+    string? ServiceDistrict,
+    double? ServiceCenterLat,
+    double? ServiceCenterLng,
+    int? ServiceRadiusMeters,
+    int? DistanceMeters);
+
+public sealed record CaregiverKycResponse(
+    Guid Id,
+    Guid UserId,
+    string? FullName,
+    DateOnly? DateOfBirth,
+    string? Gender,
+    string KycStatus,
+    string? CccdFrontUrl,
+    string? CccdBackUrl,
+    string[] CertificateUrls,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record PeoplePage<T>(IReadOnlyList<T> Items, int Total, int Page, int PageSize);

@@ -1,8 +1,6 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 
@@ -11,11 +9,11 @@ namespace CareSitter.Modules.Booking.Application.Commands.CompleteBooking;
 internal sealed class CompleteBookingCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
-    IWalletService wallet,
     IDisputeLookupService disputeLookup,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IAuditLogger auditLogger,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<CompleteBookingCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(CompleteBookingCommand request, CancellationToken ct)
@@ -35,21 +33,28 @@ internal sealed class CompleteBookingCommandHandler(
         if (await disputeLookup.HasOpenDisputeAsync(booking.Id, ct))
             return BookingErrors.OpenDispute();
 
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
+        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.Complete();
         if (result.IsFailure) return result.Error;
-
-        var settleResult = await wallet.SettleAsync(booking.Id, caregiverId,
-            booking.EscrowAmount, booking.PlatformFeeAmount, ct);
-        if (settleResult.IsFailure) return settleResult.Error;
 
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKOUT", "Ca chăm sóc hoàn thành"));
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Completed);
         await bookings.SaveChangesAsync(ct);
+        await auditLogger.WriteAsync("BOOKING_COMPLETED_AWAITING_SETTLEMENT", "Booking", booking.Id,
+            new { status = oldStatus },
+            new
+            {
+                status = BookingStatusPresenter.ToApi(booking.Status),
+                booking.EscrowAmount,
+                booking.PlatformFeeAmount,
+                caregiverId,
+                approvedBy = isAdmin ? "ADMIN" : "CUSTOMER",
+                booking.DisputeWindowHours
+            }, ct);
         await postCommit.RunAsync("complete status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusCodec.ToApi(booking.Status), ct));
+                BookingStatusPresenter.ToApi(booking.Status), ct));
         await postCommit.RunAsync("complete customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("complete customer notification", () =>
@@ -57,7 +62,7 @@ internal sealed class CompleteBookingCommandHandler(
                 "Lịch chăm sóc đã được xác nhận hoàn tất.", ct));
         await postCommit.RunAsync("complete caregiver notification", () =>
             postCommit.NotifyCaregiverAsync(booking, "Ca chăm sóc đã hoàn tất",
-                "Escrow đã được xử lý cho ca chăm sóc này.", ct));
+                "Thu nhập sẽ khả dụng sau thời hạn khiếu nại nếu không có tranh chấp.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

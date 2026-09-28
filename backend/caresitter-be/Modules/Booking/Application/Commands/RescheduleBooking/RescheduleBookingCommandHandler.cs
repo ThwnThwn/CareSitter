@@ -1,6 +1,4 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
-using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
@@ -13,9 +11,9 @@ internal sealed class RescheduleBookingCommandHandler(
     ICurrentUser currentUser,
     IClock clock,
     IPricingService pricing,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<RescheduleBookingCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(RescheduleBookingCommand request, CancellationToken ct)
@@ -25,6 +23,9 @@ internal sealed class RescheduleBookingCommandHandler(
             return BookingErrors.ScheduleMustBeFuture();
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
+        if (await bookings.HasBeneficiaryScheduleConflictAsync(booking.Id,
+                booking.BeneficiaryId, request.ScheduledStart, request.ScheduledEnd, ct))
+            return BookingErrors.BeneficiaryScheduleConflict();
         if (booking.CaregiverId is { } caregiverId && await bookings.HasCaregiverScheduleConflictAsync(
             booking.Id, caregiverId, request.ScheduledStart, request.ScheduledEnd, ct))
             return BookingErrors.CaregiverNewScheduleConflict();
@@ -35,7 +36,8 @@ internal sealed class RescheduleBookingCommandHandler(
         var changed = booking.Reschedule(request.ScheduledStart, request.ScheduledEnd);
         if (changed.IsFailure) return changed.Error;
         booking.ApplyPricing(quote.Value.EscrowAmount, quote.Value.PlatformFeeAmount,
-            quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson);
+            quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson,
+            quote.Value.DisputeWindowHours);
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Rescheduled);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("reschedule customer sync", () =>

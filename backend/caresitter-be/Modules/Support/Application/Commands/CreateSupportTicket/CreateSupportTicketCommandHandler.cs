@@ -1,5 +1,5 @@
 using System.Text.Json;
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.SharedKernel.Results;
 using FluentValidation;

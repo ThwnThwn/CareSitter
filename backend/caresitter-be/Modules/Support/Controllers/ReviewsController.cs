@@ -1,11 +1,9 @@
 using CareSitter.Modules.Support.Application;
 using CareSitter.Modules.Support.Application.Commands.CreateReview;
-using CareSitter.Modules.Support.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Support.Controllers;
 
@@ -15,9 +13,7 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/reviews")]
-public sealed class ReviewsController(
-    SupportDbContext db,
-    ISender sender) : ControllerBase
+public sealed class ReviewsController(ISender sender) : ControllerBase
 {
     /// <summary>Khách hàng tạo đánh giá cho một booking đã hoàn thành.</summary>
     [HttpPost]
@@ -34,18 +30,8 @@ public sealed class ReviewsController(
     public async Task<IActionResult> GetCaregiverReviews(Guid caregiverId,
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        page = Math.Max(page, 1);
-        pageSize = Math.Clamp(pageSize, 1, 50);
-        var query = db.Reviews.AsNoTracking().Where(x => x.CaregiverId == caregiverId);
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(x => x.CreatedAt)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return Ok(new
-        {
-            items = items.Select(r => new ReviewResponse(r.Id, r.BookingId, r.CaregiverId,
-                r.CustomerId, r.Rating, r.Comment, r.ExperienceTags, r.CreatedAt)),
-            total, page, pageSize
-        });
+        return Ok(await sender.Send(
+            new ListCaregiverReviewsQuery(caregiverId, page, pageSize), ct));
     }
 
 }

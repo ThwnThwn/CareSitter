@@ -27,6 +27,8 @@ public sealed class BookingModule : IModule
             .Validate(options => options.MaxDistanceMeters is >= 10 and <= 1_000,
                 "CheckIn:MaxDistanceMeters phai nam trong khoang 10-1000.")
             .ValidateOnStart();
+        services.AddOptions<BookingPaymentOptions>()
+            .Bind(configuration.GetSection(BookingPaymentOptions.SectionName));
 
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
@@ -46,14 +48,20 @@ public sealed class BookingModule : IModule
         // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
         services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
         services.AddScoped<IReviewBookingLookup, ReviewBookingLookup>();
+        services.AddScoped<IDisputeBookingWorkflow, DisputeBookingWorkflow>();
 
         // BookingSyncService: ghi sync event và query delta.
         // Scoped vì inject BookingDbContext (Scoped).
-        services.AddScoped<BookingSyncService>();
+        services.AddScoped<IBookingSyncService, BookingSyncService>();
         services.AddScoped<IBookingRepository, BookingRepository>();
-        services.AddScoped<IBookingMediaAssetRepository, BookingMediaAssetRepository>();
-        services.AddScoped<BookingResponseMapper>();
-        services.AddScoped<BookingPostCommitService>();
+        services.AddScoped<IBookingResponseMapper, BookingResponseMapper>();
+        services.AddScoped<IBookingPostCommitService, BookingPostCommitService>();
+        services.AddScoped<IBookingAcceptanceTransaction, BookingAcceptanceTransaction>();
+        services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
+        services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
+        services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
+        services.AddScoped<ICareTaskManager, CareTaskManager>();
+        services.AddScoped<IBookingReadStore, BookingReadStore>();
     }
 
     // Controllers tự được map qua app.MapControllers() ở Program.cs

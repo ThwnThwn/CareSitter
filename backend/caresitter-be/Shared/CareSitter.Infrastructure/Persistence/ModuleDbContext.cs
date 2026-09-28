@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.SharedKernel.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,5 +71,7 @@ public abstract class ModuleDbContext : DbContext
         // SET LOCAL chi co hieu luc trong transaction hien tai.
         await Database.ExecuteSqlInterpolatedAsync(
             $"SELECT set_config('app.current_user_id', {userId.ToString()}, true)", ct);
+        await Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT set_config('app.current_user_role', {string.Join(',', _currentUser.Roles)}, true)", ct);
     }
 }

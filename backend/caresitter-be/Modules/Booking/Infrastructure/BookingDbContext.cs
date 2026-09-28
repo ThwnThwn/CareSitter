@@ -1,5 +1,5 @@
 using CareSitter.Infrastructure.Persistence;
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,6 +59,8 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.PlatformFeeAmount).HasColumnName("platform_fee_amount");
             b.Property(x => x.CaregiverEarningAmount).HasColumnName("caregiver_earning_amount");
             b.Property(x => x.PriceSnapshot).HasColumnName("price_snapshot").HasColumnType("jsonb");
+            b.Property(x => x.DisputeWindowHours).HasColumnName("dispute_window_hours");
+            b.Property(x => x.SettlementReleasedAt).HasColumnName("settlement_released_at");
             b.Property(x => x.GeofenceRadiusMeters).HasColumnName("geofence_radius_meters");
             b.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
             b.Property(x => x.CancelledByUserId).HasColumnName("cancelled_by_user_id");

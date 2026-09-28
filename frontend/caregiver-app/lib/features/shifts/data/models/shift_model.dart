@@ -107,6 +107,13 @@ class CareTaskModel {
   /// Task đang ở trạng thái terminal (không thể tick/skip lại)
   bool get isTerminal => isCompleted || isSkipped;
 
+  /// Evidence can only be attached while the task is still actionable.
+  bool get canUploadEvidence => !isTerminal;
+
+  /// Photo-required tasks cannot be completed before evidence exists.
+  bool get canComplete =>
+      !isTerminal && (!requiresPhoto || photoUrls.isNotEmpty);
+
   factory CareTaskModel.fromApi(Map<String, dynamic> json) {
     final status = json['status']?.toString().toUpperCase() ?? 'PENDING';
     return CareTaskModel(
@@ -205,6 +212,14 @@ class ShiftModel {
   final bool needsReview;
 
   ShiftStatus get statusType => ShiftStatus.fromApi(status);
+
+  bool get canAccept =>
+      statusType == ShiftStatus.open || statusType == ShiftStatus.pending;
+  bool get canStartEnRoute =>
+      statusType == ShiftStatus.confirmed || statusType == ShiftStatus.assigned;
+  bool get canCheckIn => statusType == ShiftStatus.caregiverEnRoute;
+  bool get canWorkChecklist => statusType == ShiftStatus.inProgress;
+  bool get canRequestCheckout => statusType == ShiftStatus.inProgress;
 
   const ShiftModel({
     required this.id,

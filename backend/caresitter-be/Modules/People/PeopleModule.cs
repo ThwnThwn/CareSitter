@@ -26,7 +26,9 @@ public sealed class PeopleModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
         services.AddValidatorsFromAssemblyContaining<PeopleModule>();
         services.AddScoped<IPeopleRepository, PeopleRepository>();
+        services.AddScoped<IPeopleReadStore, PeopleReadStore>();
         services.AddScoped<IPeopleLookupService, PeopleLookupService>();
+        services.AddScoped<ICaregiverRegistrationService, CaregiverRegistrationService>();
 
         // Đăng ký Controllers nằm trong assembly của People module
         services.AddControllers()

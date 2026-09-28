@@ -30,6 +30,8 @@ public static class CatalogResultExtensions
             return controller.Unauthorized();
         if (error.Code == CatalogErrors.AddressNotFoundCode)
             return controller.NotFound();
+        if (error.Code == CatalogErrors.PlaceNotFoundCode)
+            return controller.NotFound(new { error = error.Message });
         if (error.Code == CatalogErrors.PlaceServiceUnavailableCode)
             return controller.StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { error = error.Message });

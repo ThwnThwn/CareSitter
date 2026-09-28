@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

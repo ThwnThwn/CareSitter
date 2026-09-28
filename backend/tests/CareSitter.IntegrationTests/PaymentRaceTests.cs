@@ -1,12 +1,16 @@
 using CareSitter.Contracts.Services;
+using CareSitter.ApiHost.Persistence;
 using CareSitter.Infrastructure.Security;
+using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.Payments.Application;
-using CareSitter.Modules.Payments.Controllers;
+using CareSitter.Modules.Payments.Application.Payouts;
+using CareSitter.Modules.Payments.Application.Payouts.ApprovePayout;
+using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
+using CareSitter.Modules.Payments.Application.Payouts.RejectPayout;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
@@ -30,8 +34,9 @@ public sealed class PaymentRaceTests : IAsyncLifetime
             CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")),
             CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")));
 
-        Assert.Single(results.OfType<CreatedResult>());
-        Assert.Single(results.OfType<BadRequestObjectResult>());
+        Assert.Single(results, x => x.IsSuccess && x.Value.Created);
+        Assert.Single(results, x =>
+            x.IsFailure && x.Error.Code == PayoutErrors.InsufficientBalanceCode);
 
         var state = await ReadPayoutStateAsync(caregiver.UserId);
         Assert.Equal(50_000, state.Available);
@@ -50,7 +55,9 @@ public sealed class PaymentRaceTests : IAsyncLifetime
             CreatePayoutAsync(caregiver.UserId, key),
             CreatePayoutAsync(caregiver.UserId, key));
 
-        Assert.All(results, result => Assert.True(result is CreatedResult or OkObjectResult));
+        Assert.All(results, result => Assert.True(result.IsSuccess, result.Error.Message));
+        Assert.Single(results, x => x.Value.Created);
+        Assert.Single(results, x => !x.Value.Created);
         var state = await ReadPayoutStateAsync(caregiver.UserId);
         Assert.Equal(200_000, state.Available);
         Assert.Equal(100_000, state.Pending);
@@ -62,17 +69,20 @@ public sealed class PaymentRaceTests : IAsyncLifetime
     {
         var caregiver = await GetCaregiverAsync();
         await ResetWalletAsync(caregiver.WalletId, available: 200_000);
-        var created = Assert.IsType<CreatedResult>(
-            await CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N")));
-        var payout = Assert.IsType<PayoutResponse>(created.Value);
+        var created = await CreatePayoutAsync(
+            caregiver.UserId, Guid.NewGuid().ToString("N"));
+        Assert.True(created.IsSuccess, created.Error.Message);
+        Assert.True(created.Value.Created);
+        var payout = created.Value.Payout;
         var adminId = await GetAdminUserIdAsync();
 
         var results = await Task.WhenAll(
             ReviewPayoutAsync(adminId, payout.Id, approve: true),
             ReviewPayoutAsync(adminId, payout.Id, approve: false));
 
-        Assert.Single(results.OfType<OkObjectResult>());
-        Assert.Single(results.OfType<ConflictObjectResult>());
+        Assert.Single(results, x => x.IsSuccess);
+        Assert.Single(results, x =>
+            x.IsFailure && x.Error.Type == CareSitter.SharedKernel.Results.ErrorType.Conflict);
 
         await using var connection = await _database.OpenConnectionAsync();
         await using var command = new NpgsqlCommand("""
@@ -169,13 +179,16 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         {
             await using var paymentsDb = CreatePaymentsDbContext();
             await using var bookingDb = CreateBookingDbContext();
+            var bookingSync = new BookingSyncService(bookingDb);
+            var bookingGateway = new BookingPaymentGateway(
+                bookingDb, bookingSync, new SystemClock());
             var service = new PaymentFinalizationService(
                 paymentsDb,
-                bookingDb,
-                new BookingSyncService(bookingDb),
+                bookingGateway,
                 null!,
                 null!,
                 null!,
+                new AuditLoggerStub(),
                 NullLogger<PaymentFinalizationService>.Instance);
             return await service.FinalizeSuccessfulPaymentAsync(
                 intentId,
@@ -218,29 +231,55 @@ public sealed class PaymentRaceTests : IAsyncLifetime
             .UseNpgsql(_database.ConnectionString)
             .Options);
 
-    private async Task<IActionResult> CreatePayoutAsync(Guid caregiverUserId, string idempotencyKey)
+    private async Task<CareSitter.SharedKernel.Results.Result<CreatePayoutResult>> CreatePayoutAsync(
+        Guid caregiverUserId,
+        string idempotencyKey)
     {
         await using var db = CreatePaymentsDbContext();
-        var controller = new PayoutsController(
-            db,
+        var encryption = new EncryptionStub();
+        var handler = new CreatePayoutCommandHandler(
+            new PayoutStore(db),
             new CurrentUserStub(caregiverUserId, "CAREGIVER"),
-            new EncryptionStub());
-        return await controller.Create(
-            new CreatePayoutRequest(100_000, "VCB", "NGUYEN VAN A", "0123456789", idempotencyKey),
-            null,
-            CancellationToken.None);
+            encryption,
+            new AuditLoggerStub(),
+            new PayoutMapper(encryption));
+        return await handler.Handle(new CreatePayoutCommand(
+            100_000,
+            "VCB",
+            "NGUYEN VAN A",
+            "0123456789",
+            idempotencyKey,
+            null), CancellationToken.None);
     }
 
-    private async Task<IActionResult> ReviewPayoutAsync(Guid adminId, Guid payoutId, bool approve)
+    private async Task<CareSitter.SharedKernel.Results.Result<PayoutResponse>> ReviewPayoutAsync(
+        Guid adminId,
+        Guid payoutId,
+        bool approve)
     {
         await using var db = CreatePaymentsDbContext();
-        var controller = new PayoutsController(
-            db,
-            new CurrentUserStub(adminId, "ADMIN"),
-            new EncryptionStub());
-        return approve
-            ? await controller.Approve(payoutId, CancellationToken.None)
-            : await controller.Reject(payoutId, new RejectPayoutRequest("Thông tin chưa hợp lệ"), CancellationToken.None);
+        var user = new CurrentUserStub(adminId, "ADMIN");
+        var encryption = new EncryptionStub();
+        var mapper = new PayoutMapper(encryption);
+        if (approve)
+        {
+            var handler = new ApprovePayoutCommandHandler(
+                new PayoutStore(db),
+                user,
+                new AuditLoggerStub(),
+                mapper);
+            return await handler.Handle(
+                new ApprovePayoutCommand(payoutId), CancellationToken.None);
+        }
+
+        var rejectHandler = new RejectPayoutCommandHandler(
+            new PayoutStore(db),
+            user,
+            new AuditLoggerStub(),
+            mapper);
+        return await rejectHandler.Handle(
+            new RejectPayoutCommand(payoutId, "Thông tin chưa hợp lệ"),
+            CancellationToken.None);
     }
 
     private async Task<CaregiverRecord> GetCaregiverAsync()
@@ -348,6 +387,12 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         public string Encrypt(string plaintext) => $"encrypted:{plaintext}";
         public string Decrypt(string ciphertext) => ciphertext.Replace("encrypted:", string.Empty);
         public string Hmac(string value) => value;
+    }
+
+    private sealed class AuditLoggerStub : IAuditLogger
+    {
+        public Task WriteAsync(string action, string entityType, Guid entityId,
+            object? before, object? after, CancellationToken ct = default) => Task.CompletedTask;
     }
 
     private sealed class DisputeLookupStub : IDisputeLookupService

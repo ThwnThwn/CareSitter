@@ -18,6 +18,7 @@ internal static class MediaEndpoints
 
         group.MapPost("/upload", UploadImage)
             .DisableAntiforgery()
+            .RequireAuthorization()
             .WithSummary("Upload ảnh lên Cloudinary");
     }
 
@@ -34,19 +35,29 @@ internal static class MediaEndpoints
         if (file == null || file.Length == 0)
             return Results.BadRequest(new { error = "File is empty or missing." });
 
-        if (!file.ContentType.StartsWith("image/"))
-            return Results.BadRequest(new { error = "Only image files are allowed." });
+        if (file.Length > 10 * 1024 * 1024)
+            return Results.BadRequest(new { error = "Image must not exceed 10 MB." });
+
+        if (file.ContentType is not ("image/jpeg" or "image/png" or "image/webp"))
+            return Results.BadRequest(new { error = "Only JPEG, PNG or WEBP images are allowed." });
+
+        var folder = request.Folder?.Trim().ToLowerInvariant();
+        if (folder == "kyc" && !currentUser.IsInRole("CAREGIVER"))
+            return Results.Forbid();
+        if (folder is "checklist" or "checklists" && !currentUser.IsInRole("CAREGIVER"))
+            return Results.Forbid();
+        if (folder is "beneficiary" or "beneficiaries" && !currentUser.IsInRole("CUSTOMER"))
+            return Results.Forbid();
 
         using var stream = file.OpenReadStream();
-        var targetFolder = request.Folder?.Trim().ToLowerInvariant() switch
+        var targetFolder = folder switch
         {
-            "avatars" or "avatar" => "CareSitter/Avatars",
-            "assetsproject" or "assets-project" or "project" => "CareSitter/AssetsProject",
-            "checklist" or "checklists" => "CareSitter/Checklist",
+            "avatars" or "avatar" => $"CareSitter/Avatars/{userId}",
+            "checklist" or "checklists" => $"CareSitter/Checklist/{userId}",
             "beneficiary" or "beneficiaries" => $"CareSitter/Beneficiaries/{userId}",
             "kyc" => $"CareSitter/Kyc/{userId}",
             "support" => $"CareSitter/Support/{userId}",
-            _ => "CareSitter/AssetsProject",
+            _ => $"CareSitter/Uploads/{userId}",
         };
 
         var result = await mediaService.UploadImageAsync(stream, file.FileName, targetFolder, ct);

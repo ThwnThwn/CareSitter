@@ -1,17 +1,12 @@
 using System.Text.Json;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Application.Commands.CreateBeneficiary;
 using CareSitter.Modules.People.Application.Commands.DeleteBeneficiary;
 using CareSitter.Modules.People.Application.Commands.UpdateBeneficiary;
-using CareSitter.Modules.People.Domain;
-using CareSitter.Modules.People.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CareSitter.Modules.People.Controllers;
 
@@ -22,30 +17,22 @@ namespace CareSitter.Modules.People.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/beneficiaries")]
-public sealed class BeneficiariesController(
-    PeopleDbContext db, ICurrentUser currentUser, ISender sender) : ControllerBase
+public sealed class BeneficiariesController(ISender sender) : ControllerBase
 {
     /// <summary>Lấy danh sách tất cả hồ sơ người thân của user, sắp xếp theo tên.</summary>
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        await using var tx = await BeginRls(userId, ct);
-        var entities = await db.Beneficiaries.AsNoTracking()
-            .Where(x => x.CustomerId == userId && x.DeletedAt == null)
-            .OrderBy(x => x.FullName).ToListAsync(ct);
-        return Ok(entities.Select(ToResponse));
+        var result = await sender.Send(new ListBeneficiariesQuery(), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>Xem chi tiết một hồ sơ người thân theo ID, chỉ trả về nếu thuộc user hiện tại.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        if (currentUser.UserId is not { } userId) return Unauthorized();
-        await using var tx = await BeginRls(userId, ct);
-        var entity = await db.Beneficiaries.AsNoTracking().SingleOrDefaultAsync(x =>
-            x.Id == id && x.CustomerId == userId && x.DeletedAt == null, ct);
-        return entity is null ? NotFound() : Ok(ToResponse(entity));
+        var result = await sender.Send(new GetBeneficiaryQuery(id), ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>
@@ -74,25 +61,6 @@ public sealed class BeneficiariesController(
         var result = await sender.Send(new DeleteBeneficiaryCommand(id), ct);
         return result.ToActionResult(this, _ => NoContent());
     }
-
-    // ── Helpers ──
-
-    private async Task<IDbContextTransaction> BeginRls(Guid userId, CancellationToken ct)
-    {
-        var tx = await db.Database.BeginTransactionAsync(ct);
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT set_config('app.current_user_id', {userId.ToString()}, true)", ct);
-        return tx;
-    }
-
-    private static BeneficiaryResponse ToResponse(Beneficiary x) => new(x.Id, x.FullName,
-        x.DateOfBirth, x.Gender, x.RelationshipToCustomer, x.Phone, x.DefaultAddressId,
-        x.MobilityNote, x.GeneralNote, Json(x.HealthHistory), Json(x.Allergies),
-        Json(x.ChronicConditions), x.CareInstructions, x.CareLevel, x.AvatarUrl,
-        Json(x.EmergencyContacts), Json(x.Medications));
-
-    private static JsonElement? Json(string? value) => string.IsNullOrWhiteSpace(value)
-        ? null : JsonDocument.Parse(value).RootElement.Clone();
 
     private static CreateBeneficiaryCommand ToCreateCommand(BeneficiaryUpsertRequest request) =>
         new(request.FullName, request.DateOfBirth, request.Gender,

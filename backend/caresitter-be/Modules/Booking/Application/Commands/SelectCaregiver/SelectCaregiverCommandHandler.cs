@@ -1,10 +1,8 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Booking.Application.Commands.SelectCaregiver;
 
@@ -12,9 +10,9 @@ internal sealed class SelectCaregiverCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IMatchingService matching,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<SelectCaregiverCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(SelectCaregiverCommand request, CancellationToken ct)
@@ -47,14 +45,8 @@ internal sealed class SelectCaregiverCommandHandler(
         var result = booking.SelectCaregiver(request.CaregiverId);
         if (result.IsFailure) return result.Error;
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverSelected);
-        try
-        {
-            await bookings.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException)
-        {
+        if (!await bookings.TrySaveSlotHoldChangesAsync(ct))
             return BookingErrors.CaregiverSlotHeld();
-        }
         await postCommit.RunAsync("caregiver selection customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         if (booking.Status == BookingStatus.Confirmed)

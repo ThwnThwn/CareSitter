@@ -1,8 +1,6 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 
@@ -12,9 +10,9 @@ internal sealed class RaiseBookingSosCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IPeopleLookupService people,
-    BookingSyncService bookingSync,
-    BookingPostCommitService postCommit,
-    BookingResponseMapper responseMapper)
+    IBookingSyncService bookingSync,
+    IBookingPostCommitService postCommit,
+    IBookingResponseMapper responseMapper)
     : IRequestHandler<RaiseBookingSosCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(RaiseBookingSosCommand request, CancellationToken ct)
@@ -31,7 +29,7 @@ internal sealed class RaiseBookingSosCommandHandler(
         if (!isCustomer && !isAssignedCaregiver && !isAdmin)
             return BookingErrors.Forbidden();
 
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
+        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.RaiseSos(userId);
         if (result.IsFailure) return result.Error;
 
@@ -42,7 +40,7 @@ internal sealed class RaiseBookingSosCommandHandler(
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("SOS status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusCodec.ToApi(booking.Status), ct));
+                BookingStatusPresenter.ToApi(booking.Status), ct));
         await postCommit.RunAsync("SOS customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("SOS notifications", () =>

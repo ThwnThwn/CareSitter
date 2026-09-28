@@ -76,6 +76,10 @@ public sealed class Dispute : AggregateRoot
             return Error.Conflict("dispute.status", $"không thể chuyen {Status} -> RESOLVED.");
         if (decision is not ("CUSTOMER_WINS" or "CAREGIVER_WINS" or "PARTIAL_REFUND"))
             return Error.Validation("dispute.decision", "Decision phai la CUSTOMER_WINS, CAREGIVER_WINS hoac PARTIAL_REFUND.");
+        if (refundAmount is < 0)
+            return Error.Validation("dispute.refund_amount", "Số tiền hoàn không được âm.");
+        if (caregiverPenalty is < 0)
+            return Error.Validation("dispute.caregiver_penalty", "Mức phạt không được âm.");
 
         Status = "RESOLVED";
         Decision = decision;

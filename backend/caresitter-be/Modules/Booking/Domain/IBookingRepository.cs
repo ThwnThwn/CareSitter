@@ -5,6 +5,8 @@ public interface IBookingRepository
     Task<Booking?> GetByIdAsync(Guid bookingId, CancellationToken ct);
     Task<Booking?> GetByIdReadOnlyAsync(Guid bookingId, CancellationToken ct);
     Task<Booking?> GetForCustomerAsync(Guid bookingId, Guid customerId, CancellationToken ct);
+    Task<bool> HasBeneficiaryScheduleConflictAsync(Guid bookingId, Guid beneficiaryId,
+        DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd, CancellationToken ct);
     Task<bool> HasCaregiverScheduleConflictAsync(Guid bookingId, Guid caregiverId,
         DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd, CancellationToken ct);
     Task<List<CareTask>> GetPendingCareTasksAsync(Guid bookingId, CancellationToken ct);
@@ -27,4 +29,5 @@ public interface IBookingRepository
     void AddAssignment(BookingAssignment assignment);
     void AddTimelineEvent(CareTimelineEvent timelineEvent);
     Task SaveChangesAsync(CancellationToken ct);
+    Task<bool> TrySaveSlotHoldChangesAsync(CancellationToken ct);
 }

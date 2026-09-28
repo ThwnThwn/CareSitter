@@ -1,5 +1,4 @@
 using CareSitter.Contracts.Services;
-using CareSitter.Infrastructure.Security;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
 using FluentValidation;
@@ -13,7 +12,7 @@ internal sealed class DeclineBookingCommandHandler(
     IPeopleLookupService people,
     IMatchingService matching,
     IValidator<DeclineBookingCommand> validator,
-    BookingPostCommitService postCommit)
+    IBookingPostCommitService postCommit)
     : IRequestHandler<DeclineBookingCommand, Result<Unit>>
 {
     public async Task<Result<Unit>> Handle(DeclineBookingCommand request, CancellationToken ct)

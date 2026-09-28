@@ -1,12 +1,7 @@
-using CareSitter.Modules.Identity.Application.AuthSessions;
-using CareSitter.Modules.Identity.Application.Login;
+using CareSitter.Modules.Identity.Application;
 using CareSitter.Modules.Identity.Domain;
-using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.SharedKernel.Results;
-using Google.Apis.Auth;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 
@@ -16,22 +11,18 @@ namespace CareSitter.Modules.Identity.Application.GoogleLogin;
 /// </summary>
 internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, Result<GoogleLoginResponse>>
 {
-    private readonly IdentityDbContext _db;
-    private readonly RefreshTokenSessionService _sessions;
-    private readonly string _googleClientId;
-
-    private static readonly string[] DefaultRoles = { "CUSTOMER" };
-    private static readonly string[] AllowedRoles  = { "CUSTOMER", "CAREGIVER", "ADMIN" };
+    private readonly IIdentityStore _store;
+    private readonly IRefreshTokenSessionService _sessions;
+    private readonly IGoogleIdentityVerifier _googleIdentityVerifier;
 
     public GoogleLoginHandler(
-        IdentityDbContext db,
-        RefreshTokenSessionService sessions,
-        IConfiguration configuration)
+        IIdentityStore store,
+        IRefreshTokenSessionService sessions,
+        IGoogleIdentityVerifier googleIdentityVerifier)
     {
-        _db = db;
+        _store = store;
         _sessions = sessions;
-        _googleClientId = configuration["Google:ClientId"]
-            ?? throw new InvalidOperationException("Google:ClientId chưa được cấu hình trong appsettings / .env.");
+        _googleIdentityVerifier = googleIdentityVerifier;
     }
 
     /// <summary>
@@ -43,71 +34,41 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
     /// </summary>
     public async Task<Result<GoogleLoginResponse>> Handle(GoogleLoginCommand request, CancellationToken ct)
     {
+        // Defense in depth: command có thể được gọi ngoài HTTP controller.
+        // Không bao giờ cho phép Google self-registration cấp ADMIN.
+        var roleResult = GoogleLoginRolePolicy.Validate(request.RequiredRole);
+        if (roleResult.IsFailure)
+            return roleResult.Error;
+        var requiredRole = roleResult.Value;
+
         if (string.IsNullOrWhiteSpace(request.IdToken))
             return Error.Validation("auth.google_token_required", "Google ID Token là bắt buộc.");
 
-        // --- Verify Google ID Token ---
-        GoogleJsonWebSignature.Payload payload;
-        try
-        {
-            var validationSettings = new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = new[] { _googleClientId }
-            };
-            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, validationSettings);
-        }
-        catch (InvalidJwtException)
-        {
-            return Error.Validation("auth.invalid_google_token", "Google ID Token không hợp lệ hoặc đã hết hạn.");
-        }
-
-        var googleId = payload.Subject;  // Google "sub" claim — ID duy nhất trên Google
-        var email    = payload.Email?.Trim().ToLowerInvariant() ?? string.Empty;
-        var name     = payload.Name ?? email;
-
-        if (string.IsNullOrWhiteSpace(email))
-            return Error.Validation("auth.google_email_missing", "Tài khoản Google không cung cấp địa chỉ email.");
-
-        // Validate roles nếu được truyền vào
-        var roles = request.Roles?.Select(r => r.ToUpper()).ToArray() ?? Array.Empty<string>();
-        foreach (var role in roles)
-        {
-            if (!AllowedRoles.Contains(role))
-                return Error.Validation("auth.invalid_role", $"Vai trò '{role}' không hợp lệ.");
-        }
-
-        var requiredRoleResult = AuthRoleRequirement.Normalize(request.RequiredRole);
-        if (requiredRoleResult.IsFailure)
-            return requiredRoleResult.Error;
-        var requiredRole = requiredRoleResult.Value;
+        var verified = await _googleIdentityVerifier.VerifyAsync(request.IdToken, ct);
+        if (verified.IsFailure) return verified.Error;
+        var googleId = verified.Value.Subject;
+        var email = verified.Value.Email;
+        var name = verified.Value.Name;
 
         var now = DateTimeOffset.UtcNow;
         bool isNewUser = false;
 
         // --- Tìm user theo google_id trước, rồi theo email ---
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.GoogleId == googleId, ct)
-            ?? await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email, ct);
+        var user = await _store.FindUserByGoogleIdOrEmailAsync(googleId, email, ct);
 
         if (user is null)
         {
             // --- Tạo user mới (auto-register qua Google) ---
-            var finalRoles = roles.Length > 0
-                ? roles
-                : requiredRole is not null
-                    ? new[] { requiredRole }
-                    : DefaultRoles;
             var userResult = User.Create(Guid.NewGuid(), email);
             if (userResult.IsFailure)
                 return userResult.Error;
 
             user = userResult.Value;
             user.UpdateProfile(name, email, name);
-            user.SetRoles(finalRoles);
+            user.SetRoles([requiredRole]);
             user.LinkGoogle(googleId);
 
-            _db.Users.Add(user);
+            _store.AddUser(user);
             isNewUser = true;
         }
         else
@@ -120,12 +81,13 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
                 user.LinkGoogle(googleId);
         }
 
-        var roleRequirement = AuthRoleRequirement.Validate(user, requiredRole);
+        var roleRequirement = CareSitter.Modules.Identity.Application.Login.AuthRoleRequirement
+            .Validate(user, requiredRole);
         if (roleRequirement.IsFailure)
             return roleRequirement.Error;
 
         user.RecordLogin(now);
-        await _db.SaveChangesAsync(ct);
+        await _store.SaveChangesAsync(ct);
 
         var tokens = await _sessions.IssueAsync(user, ct);
 

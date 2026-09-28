@@ -1,13 +1,9 @@
-using BCrypt.Net;
-using CareSitter.Modules.Identity.Application.AuthSessions;
+using CareSitter.Modules.Identity.Application;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Identity.Domain;
 using CareSitter.Modules.Identity.Application.Login;
-using CareSitter.Modules.Identity.Infrastructure;
-using CareSitter.Modules.People.Domain;
-using CareSitter.Modules.People.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Identity.Application.Register;
 
@@ -16,25 +12,29 @@ namespace CareSitter.Modules.Identity.Application.Register;
 /// </summary>
 internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<LoginResponse>>
 {
-    private readonly IdentityDbContext _db;
-    private readonly PeopleDbContext _peopleDb;
-    private readonly RefreshTokenSessionService _sessions;
+    private readonly IIdentityStore _store;
+    private readonly ICaregiverRegistrationService _caregiverRegistration;
+    private readonly IRefreshTokenSessionService _sessions;
 
     // Endpoint đăng ký là public nên tuyệt đối không cho tự cấp quyền ADMIN.
     private static readonly string[] AllowedRoles = { "CUSTOMER", "CAREGIVER" };
 
     /// <summary>
-    /// Khởi tạo RegisterHandler với DbContext, JWT token service và Redis cache.
+    /// Khởi tạo RegisterHandler với các cổng lưu trữ và phát hành session.
     /// </summary>
     public RegisterHandler(
-        IdentityDbContext db,
-        PeopleDbContext peopleDb,
-        RefreshTokenSessionService sessions)
+        IIdentityStore store,
+        ICaregiverRegistrationService caregiverRegistration,
+        IRefreshTokenSessionService sessions,
+        IPasswordHasher passwordHasher)
     {
-        _db = db;
-        _peopleDb = peopleDb;
+        _store = store;
+        _caregiverRegistration = caregiverRegistration;
         _sessions = sessions;
+        _passwordHasher = passwordHasher;
     }
+
+    private readonly IPasswordHasher _passwordHasher;
 
     /// <summary>
     /// Xử lý việc kiểm tra tính duy nhất của số điện thoại, hợp lệ của vai trò, lưu người dùng mới và phát hành JWT tokens.
@@ -89,7 +89,7 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         }
 
         // Kiểm tra trùng Email / Phone theo partial unique indexes của DB.
-        var emailExists = await _db.Users.AnyAsync(u => u.Email == email && u.DeletedAt == null, ct);
+        var emailExists = await _store.EmailExistsAsync(email, ct: ct);
         if (emailExists)
         {
             return Error.Conflict("auth.email_exists", $"Email {email} đã được đăng ký.");
@@ -97,7 +97,7 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
 
         if (!string.IsNullOrWhiteSpace(phone))
         {
-            var phoneExists = await _db.Users.AnyAsync(u => u.Phone == phone && u.DeletedAt == null, ct);
+            var phoneExists = await _store.PhoneExistsAsync(phone, ct);
             if (phoneExists)
                 return Error.Conflict("auth.phone_exists", $"Số điện thoại {phone} đã được đăng ký.");
         }
@@ -120,24 +120,17 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         // Hash và lưu password nếu được cung cấp
         if (request.Password is not null)
         {
-            var hash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12);
+            var hash = _passwordHasher.Hash(request.Password);
             user.SetPassword(hash);
         }
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync(ct);
+        _store.AddUser(user);
+        await _store.SaveChangesAsync(ct);
 
         // Tự động tạo CaregiverProfile nếu user đăng ký với vai trò CAREGIVER.
         if (user.Roles.Contains("CAREGIVER", StringComparer.OrdinalIgnoreCase))
         {
-            var profileResult = CaregiverProfile.Create(user.Id);
-            if (profileResult.IsSuccess)
-            {
-                // Gán fullName ngay từ lúc đăng ký để profile không rỗng.
-                profileResult.Value.UpdateProfile(fullName: request.FullName?.Trim());
-                _peopleDb.CaregiverProfiles.Add(profileResult.Value);
-                await _peopleDb.SaveChangesAsync(ct);
-            }
+            await _caregiverRegistration.EnsureProfileAsync(user.Id, request.FullName, ct);
         }
 
         var tokens = await _sessions.IssueAsync(user, ct);

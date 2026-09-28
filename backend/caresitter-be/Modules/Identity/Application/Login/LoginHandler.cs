@@ -1,9 +1,6 @@
-using CareSitter.Modules.Identity.Application.AuthSessions;
-using CareSitter.Modules.Identity.Infrastructure;
+using CareSitter.Modules.Identity.Application;
 using CareSitter.SharedKernel.Results;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace CareSitter.Modules.Identity.Application.Login;
 
@@ -13,18 +10,21 @@ namespace CareSitter.Modules.Identity.Application.Login;
 /// </summary>
 internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginResponse>>
 {
-    private readonly IdentityDbContext _db;
-    private readonly IDistributedCache _cache;
-    private readonly RefreshTokenSessionService _sessions;
+    private readonly IIdentityStore _store;
+    private readonly IOtpStore _otpStore;
+    private readonly IRefreshTokenSessionService _sessions;
+    private readonly IAuthenticationAttemptLimiter _attemptLimiter;
 
     public LoginHandler(
-        IdentityDbContext db,
-        IDistributedCache cache,
-        RefreshTokenSessionService sessions)
+        IIdentityStore store,
+        IOtpStore otpStore,
+        IRefreshTokenSessionService sessions,
+        IAuthenticationAttemptLimiter attemptLimiter)
     {
-        _db = db;
-        _cache = cache;
+        _store = store;
+        _otpStore = otpStore;
         _sessions = sessions;
+        _attemptLimiter = attemptLimiter;
     }
 
     /// <summary>
@@ -41,40 +41,45 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
         if (string.IsNullOrWhiteSpace(otp))
             return Error.Validation("auth.otp_required", "Mã OTP là bắt buộc.");
 
-        var cacheKey = $"otp:{email}";
+        if (await _attemptLimiter.IsBlockedAsync("otp-login", email, ct))
+            return InvalidOtp();
 
         // Lấy OTP từ Redis và đối chiếu
-        var cachedOtp = await _cache.GetStringAsync(cacheKey, ct);
+        var cachedOtp = await _otpStore.GetAsync(email, ct);
         if (cachedOtp is null || cachedOtp != otp)
         {
-            return Error.Validation("auth.invalid_otp", "Mã OTP không hợp lệ hoặc đã hết hiệu lực.");
+            await _attemptLimiter.RecordFailureAsync(
+                "otp-login", email, 5, TimeSpan.FromMinutes(15),
+                TimeSpan.FromMinutes(15), ct);
+            return InvalidOtp();
         }
 
         var now = DateTimeOffset.UtcNow;
 
         // Tìm user theo email
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.Email == email, ct);
+        var user = await _store.FindUserByEmailAsync(email, ct);
 
-        if (user is null)
-            return Error.NotFound("auth.user_not_found", $"Không tìm thấy tài khoản với email {email}.");
-
-        if (user.Status != "ACTIVE")
-            return Error.Failure("auth.inactive_user", $"Tài khoản đang ở trạng thái {user.Status} và không thể đăng nhập.");
+        if (user is null || user.Status != "ACTIVE")
+            return InvalidOtp();
 
         var roleRequirement = AuthRoleRequirement.Validate(user, request.RequiredRole);
         if (roleRequirement.IsFailure)
             return roleRequirement.Error;
 
         // Xóa mã OTP sau khi user hợp lệ và đúng role ứng dụng.
-        await _cache.RemoveAsync(cacheKey, ct);
+        await _otpStore.RemoveAsync(email, ct);
+        await _attemptLimiter.ResetAsync("otp-login", email, ct);
 
         // Ghi nhận thời gian đăng nhập gần nhất
         user.RecordLogin(now);
 
-        await _db.SaveChangesAsync(ct);
+        await _store.SaveChangesAsync(ct);
 
         var tokens = await _sessions.IssueAsync(user, ct);
         return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
+
+    private static Error InvalidOtp() => Error.Validation(
+        "auth.invalid_otp",
+        "Mã OTP không hợp lệ hoặc đã hết hiệu lực.");
 }

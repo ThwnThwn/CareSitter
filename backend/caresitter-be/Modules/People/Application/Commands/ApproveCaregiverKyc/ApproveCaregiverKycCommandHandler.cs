@@ -1,4 +1,4 @@
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.People.Domain;
 using CareSitter.SharedKernel.Results;
 using MediatR;
@@ -7,7 +7,8 @@ namespace CareSitter.Modules.People.Application.Commands.ApproveCaregiverKyc;
 
 internal sealed class ApproveCaregiverKycCommandHandler(
     IPeopleRepository repository,
-    ICurrentUser currentUser)
+    ICurrentUser currentUser,
+    IAuditLogger auditLogger)
     : IRequestHandler<ApproveCaregiverKycCommand, Result<CaregiverKycApprovalResponse>>
 {
     public async Task<Result<CaregiverKycApprovalResponse>> Handle(
@@ -18,10 +19,13 @@ internal sealed class ApproveCaregiverKycCommandHandler(
         var profile = await repository.GetCaregiverProfileByIdAsync(request.CaregiverId, ct);
         if (profile is null) return PeopleErrors.NotFound();
 
+        var before = new { profile.KycStatus };
         var result = profile.ApproveKyc();
         if (result.IsFailure) return result.Error;
 
         await repository.SaveChangesAsync(ct);
+        await auditLogger.WriteAsync("ADMIN_KYC_APPROVED", "CaregiverProfile", profile.Id,
+            before, new { profile.KycStatus, profile.UserId }, ct);
         return new CaregiverKycApprovalResponse(profile.Id, profile.KycStatus);
     }
 }

@@ -4,6 +4,9 @@ using CareSitter.Modules.Catalog.Application.Commands.CreateAddress;
 using CareSitter.Modules.People;
 using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Application.Commands.CreateFamilyContact;
+using CareSitter.Modules.Payments;
+using CareSitter.Modules.Payments.Application.Payouts;
+using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
 using CareSitter.Modules.Support;
 using CareSitter.Modules.Support.Application;
 using CareSitter.Modules.Support.Application.Commands.CreateDispute;
@@ -52,5 +55,15 @@ public sealed class ModuleMediatRRegistrationTests
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<CreateDisputeCommand, Result<DisputeResponse>>));
+    }
+
+    [Fact]
+    public void Payments_registers_payout_command_handlers()
+    {
+        var services = new ServiceCollection();
+        new PaymentsModule().RegisterServices(services, Configuration);
+
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<CreatePayoutCommand, Result<CreatePayoutResult>>));
     }
 }

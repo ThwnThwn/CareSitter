@@ -25,7 +25,7 @@
 </head>
 <body>
   <h1>🔑 Google ID Token Tester</h1>
-  <p>Dùng để lấy Google ID Token test <code>POST /api/v1/auth/google/callback</code></p>
+  <p>Dùng để lấy Google ID Token test <code>POST /api/v1/auth/google/customer</code></p>
 
   <div class="step">
     <h3>Bước 1 — Đăng nhập Google</h3>
@@ -49,7 +49,7 @@
     <textarea id="token-box" readonly placeholder="Token sẽ xuất hiện ở đây sau khi đăng nhập..."></textarea>
     <br>
     <button class="copy-btn" onclick="copyToken()">📋 Copy Token</button>
-    <p class="info">Token hợp lệ trong ~1 giờ. Paste vào body của POST /api/v1/auth/google/callback → field "idToken"</p>
+    <p class="info">Token hợp lệ trong ~1 giờ. Paste vào body của POST /api/v1/auth/google/customer hoặc /google/caregiver → field "idToken"</p>
   </div>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>

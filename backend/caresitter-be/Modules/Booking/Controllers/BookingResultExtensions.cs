@@ -17,7 +17,8 @@ public static class BookingResultExtensions
         BookingErrors.AddressLocationMissingCode,
         BookingErrors.SelfieRequiredCode,
         BookingErrors.SelfieTooLargeCode,
-        BookingErrors.SelfieInvalidTypeCode
+        BookingErrors.SelfieInvalidTypeCode,
+        BookingErrors.InvalidStatusCode
     ];
 
     private static readonly HashSet<string> LegacyConflictCodes =
@@ -44,6 +45,16 @@ public static class BookingResultExtensions
         if (result.IsSuccess)
             return onSuccess?.Invoke(result.Value) ?? controller.Ok(result.Value);
 
+        return ToFailureActionResult(result.Error, controller);
+    }
+
+    public static IActionResult ToActionResult(
+        this Result result,
+        ControllerBase controller,
+        Func<IActionResult>? onSuccess = null)
+    {
+        if (result.IsSuccess)
+            return onSuccess?.Invoke() ?? controller.NoContent();
         return ToFailureActionResult(result.Error, controller);
     }
 

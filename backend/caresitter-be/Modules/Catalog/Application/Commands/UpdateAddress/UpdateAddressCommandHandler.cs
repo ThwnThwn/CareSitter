@@ -1,5 +1,4 @@
-using CareSitter.Infrastructure.Security;
-using CareSitter.Infrastructure.Time;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.SharedKernel.Results;
 using MediatR;

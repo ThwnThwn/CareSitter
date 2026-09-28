@@ -40,7 +40,9 @@ public sealed class AuditLog : Entity
         Guid? entityId = null,
         string? afterData = null,
         string? ipAddress = null,
-        string? userAgent = null)
+        string? userAgent = null,
+        string? beforeData = null,
+        string? actorRole = null)
     {
         if (string.IsNullOrWhiteSpace(action))
             return Error.Validation("audit_log.action", "action la bat buoc.");
@@ -50,10 +52,19 @@ public sealed class AuditLog : Entity
         return new AuditLog(Guid.NewGuid(), action.Trim(), entityType.Trim())
         {
             ActorUserId = actorUserId,
+            ActorRole = actorRole,
             EntityId = entityId,
+            BeforeData = beforeData,
             AfterData = afterData,
-            IpAddress = ipAddress,
-            UserAgent = userAgent
+            IpAddress = Normalize(ipAddress, 64),
+            UserAgent = Normalize(userAgent, 500)
         };
+    }
+
+    private static string? Normalize(string? value, int maxLength)
+    {
+        var normalized = value?.Trim();
+        if (string.IsNullOrEmpty(normalized)) return null;
+        return normalized.Length <= maxLength ? normalized : normalized[..maxLength];
     }
 }

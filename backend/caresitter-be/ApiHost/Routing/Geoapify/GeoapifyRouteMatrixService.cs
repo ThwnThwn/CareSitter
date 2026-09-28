@@ -77,20 +77,20 @@ public sealed class GeoapifyRouteMatrixService(
             logger.LogInformation("Geoapify route matrix succeeded for {Origins} origins.", origins.Count);
             return items;
         }
-        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             metrics.Failure(Provider, "timeout");
-            throw new RoutingProviderUnavailableException("Geoapify route matrix timed out.", ex);
+            throw new RoutingProviderUnavailableException("Geoapify route matrix timed out.");
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             metrics.Failure(Provider, "network");
-            throw new RoutingProviderUnavailableException("Geoapify route matrix request failed.", ex);
+            throw new RoutingProviderUnavailableException("Geoapify route matrix request failed.");
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             metrics.Failure(Provider, "invalid_response");
-            throw new RoutingProviderUnavailableException("Geoapify route matrix response was invalid.", ex);
+            throw new RoutingProviderUnavailableException("Geoapify route matrix response was invalid.");
         }
     }
 

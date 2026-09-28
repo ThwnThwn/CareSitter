@@ -73,6 +73,8 @@ public sealed class Booking : AggregateRoot
     public long PlatformFeeAmount { get; private set; }
     public long CaregiverEarningAmount { get; private set; }
     public string? PriceSnapshot { get; private set; }
+    public int DisputeWindowHours { get; private set; } = 48;
+    public DateTimeOffset? SettlementReleasedAt { get; private set; }
     public int GeofenceRadiusMeters { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
     public Guid? CancelledByUserId { get; private set; }
@@ -99,15 +101,29 @@ public sealed class Booking : AggregateRoot
         return booking;
     }
 
-    public Result ApplyPricing(long escrow, long platformFee, long caregiverEarning, string? snapshot = null)
+    public Result ApplyPricing(long escrow, long platformFee, long caregiverEarning,
+        string? snapshot = null, int disputeWindowHours = 48)
     {
         if (escrow < 0 || platformFee < 0 || caregiverEarning < 0)
             return Error.Validation("booking.pricing", "Số tiền không được âm.");
+        if (disputeWindowHours is < 1 or > 720)
+            return Error.Validation("booking.dispute_window",
+                "Thời hạn khiếu nại phải từ 1 đến 720 giờ.");
 
         EscrowAmount = escrow;
         PlatformFeeAmount = platformFee;
         CaregiverEarningAmount = caregiverEarning;
         PriceSnapshot = snapshot;
+        DisputeWindowHours = disputeWindowHours;
+        return Result.Success();
+    }
+
+    public Result MarkSettlementReleased(DateTimeOffset releasedAt)
+    {
+        if (Status != BookingStatus.Completed)
+            return Error.Conflict("booking.settlement.invalid_state",
+                "Chỉ có thể giải ngân booking đã hoàn thành.");
+        SettlementReleasedAt ??= releasedAt;
         return Result.Success();
     }
 

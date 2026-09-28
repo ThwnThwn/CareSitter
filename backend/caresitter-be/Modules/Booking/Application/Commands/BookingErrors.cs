@@ -8,6 +8,7 @@ internal static class BookingErrors
     public const string NotFoundCode = "booking.not_found";
     public const string ForbiddenCode = "booking.forbidden";
     public const string ScheduleMustBeFutureCode = "booking.schedule.must_be_future";
+    public const string BeneficiaryScheduleConflictCode = "booking.beneficiary.schedule_conflict";
     public const string CaregiverScheduleConflictCode = "booking.caregiver.schedule_conflict";
     public const string CaregiverNewScheduleConflictCode = "booking.caregiver.new_schedule_conflict";
     public const string CaregiverNotSuggestedCode = "booking.caregiver.not_suggested";
@@ -30,6 +31,7 @@ internal static class BookingErrors
     public const string CompleteInvalidStateCode = "booking.complete.invalid_state";
     public const string OpenDisputeCode = "booking.complete.open_dispute";
     public const string GpsTrackingDisabledCode = "booking.gps_tracking.disabled";
+    public const string InvalidStatusCode = "booking.status.invalid";
 
     public static Error Unauthenticated() =>
         Error.Unauthorized(UnauthenticatedCode, string.Empty);
@@ -39,6 +41,10 @@ internal static class BookingErrors
 
     public static Error ScheduleMustBeFuture() =>
         Error.Validation(ScheduleMustBeFutureCode, "Lịch mới phải ở tương lai.");
+
+    public static Error BeneficiaryScheduleConflict() =>
+        Error.Conflict(BeneficiaryScheduleConflictCode,
+            "Người được chăm sóc đã có lịch trùng trong khung giờ này.");
 
     public static Error CaregiverScheduleConflict() =>
         Error.Conflict(CaregiverScheduleConflictCode,
@@ -97,4 +103,7 @@ internal static class BookingErrors
     public static Error GpsTrackingDisabled() =>
         Error.Failure(GpsTrackingDisabledCode,
             "GPS tracking liên tục đã bị tắt. Hệ thống chỉ dùng GPS lúc check-in để xác thực khoảng cách.");
+
+    public static Error InvalidStatus() =>
+        Error.Validation(InvalidStatusCode, "Trạng thái booking không hợp lệ.");
 }

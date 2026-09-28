@@ -1,5 +1,5 @@
 using CareSitter.Infrastructure.Persistence;
-using CareSitter.Infrastructure.Security;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
 
