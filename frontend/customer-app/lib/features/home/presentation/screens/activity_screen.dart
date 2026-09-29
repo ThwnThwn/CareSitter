@@ -11,21 +11,18 @@ class ActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(bookingStoreProvider);
+    final now = DateTime.now();
 
-    final active = bookings
-        .where((b) =>
-            b.status == 'caregiver_en_route' ||
-            b.status == 'in_progress' ||
-            b.status == 'checkout_pending_review')
-        .toList();
+    final active = bookings.where((b) => b.isLiveTrackingAt(now)).toList();
 
-    final recent = bookings
-        .where((b) =>
-            b.status == 'completed' ||
-            b.status == 'cancelled' ||
-            b.status == 'confirmed' ||
-            b.status == 'pending')
-        .toList();
+    final recent = bookings.where((b) {
+      final status = b.presentationStatusAt(now);
+      return status == 'completed' ||
+          status == 'cancelled' ||
+          status == 'confirmed' ||
+          status == 'caregiver_accepted' ||
+          status == 'pending';
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F8F4),
@@ -320,8 +317,9 @@ class ActivityScreen extends ConsumerWidget {
 
   // ── Recent booking row (Grab style) ─────────────────────────
   Widget _buildRecentRow(BookingModel booking, BuildContext context) {
-    final statusConfig = _getStatusConfig(booking.status);
-    final isCancelled = booking.status == 'cancelled';
+    final status = booking.presentationStatusAt(DateTime.now());
+    final statusConfig = _getStatusConfig(status);
+    final isCancelled = status == 'cancelled';
 
     return GestureDetector(
       onTap: () => context.push('/bookings/${booking.id}'),
@@ -387,7 +385,7 @@ class ActivityScreen extends ConsumerWidget {
                     style:
                         const TextStyle(color: Color(0xFF9FBABA), fontSize: 11),
                   ),
-                  if (!isCancelled && booking.status == 'completed') ...[
+                  if (!isCancelled && status == 'completed') ...[
                     const SizedBox(height: 6),
                     GestureDetector(
                       onTap: () => context.push('/booking/new'),

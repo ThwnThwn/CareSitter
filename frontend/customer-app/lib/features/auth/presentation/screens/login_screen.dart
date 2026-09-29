@@ -22,7 +22,6 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero
 class _HeroTokens {
   static const Color primary = Color(0xFF2D9E6B);
   static const Color primaryDeep = Color(0xFF006A43);
-  static const Color primaryContainer = Color(0xFF008656);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceLow = Color(0xFFE1F9EB);
   static const Color background = Color(0xFFE7FFF1);
@@ -344,78 +343,6 @@ class _HeroSection extends StatelessWidget {
             ),
           ),
 
-          // ── Top bar: brand pill + trust badge ──────────
-          Positioned(
-            top: topPad + 12,
-            left: 16,
-            right: 16,
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: _GlassPill(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: const BoxDecoration(
-                          color: _HeroTokens.primaryContainer,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.volunteer_activism_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      const Flexible(
-                        child: Text(
-                          'CareSitter',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: _HeroTokens.primaryDeep,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  flex: 5,
-                  child: _GlassPill(
-                    children: [
-                      Icon(
-                        Icons.verified_rounded,
-                        size: 15,
-                        color: _HeroTokens.primary,
-                      ),
-                      SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          '10,000+ Gia đình',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _HeroTokens.onSurface,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // ── Animated tagline chip at bottom ────────────
           Positioned(
             bottom: 40,
@@ -448,36 +375,6 @@ class _HeroSection extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Glass Pill ──────────────────────────────────────────────────────────────
-
-class _GlassPill extends StatelessWidget {
-  const _GlassPill({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(
-          color: _HeroTokens.outlineVariant.withValues(alpha: 0.35),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }

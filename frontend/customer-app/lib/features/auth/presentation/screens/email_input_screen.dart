@@ -67,6 +67,8 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < AppBreakpoints.compact;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -76,7 +78,7 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
               // ── Hero Header ──────────────────────
               Container(
                 width: double.infinity,
-                height: 260,
+                constraints: const BoxConstraints(minHeight: 260),
                 decoration: const BoxDecoration(
                   gradient: AppColors.heroGradient,
                   borderRadius: BorderRadius.only(
@@ -162,7 +164,9 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
 
               // ── Form ────────────────────────────
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(
+                  isCompact ? AppSpacing.md : AppSpacing.lg,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -286,8 +290,9 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
                       const SizedBox(height: 12),
 
                       // Link Đăng ký
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           const Text(
                             'Chưa có tài khoản?',
