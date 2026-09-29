@@ -36,55 +36,79 @@ class ShellScaffold extends ConsumerWidget {
 
     // Tính số lượng ca đang diễn ra (cần theo dõi) thật từ bookingStore
     final bookings = ref.watch(bookingStoreProvider);
-    final activeTrackingCount = bookings.where((b) {
-      final s = b.status.toLowerCase();
-      return s == 'in_progress' ||
-          s == 'caregiver_en_route' ||
-          s == 'checkout_pending_review';
-    }).length;
+    final now = DateTime.now();
+    final activeTrackingCount =
+        bookings.where((b) => b.isLiveTrackingAt(now)).length;
 
     return Scaffold(
-      body: child,
-      backgroundColor: AppColors.background,
-      extendBody: true,
-      floatingActionButton: _CenterFab(
-        onTap: () => context.push('/booking/new'),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: AppLayout.appContentMaxWidth,
+          ),
+          child: child,
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      backgroundColor: AppColors.background,
+      extendBody: false,
       bottomNavigationBar: _StitchBottomBar(
         selectedIndex: idx,
         activeTrackingCount: activeTrackingCount,
         tabs: _tabs,
         onTabSelected: (i) => context.go(_tabs[i].path),
+        onCreateBooking: () => context.push('/booking/new'),
       ),
     );
   }
 }
 
 // ── Center FAB ─────────────────────────────────────────────────────────────
-class _CenterFab extends StatelessWidget {
+class _CenterBookingAction extends StatelessWidget {
   final VoidCallback onTap;
-  const _CenterFab({required this.onTap});
+  const _CenterBookingAction({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.45),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+    return Semantics(
+      button: true,
+      label: 'Đặt lịch mới',
+      child: Tooltip(
+        message: 'Đặt lịch mới',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Đặt lịch',
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 10,
+                  height: 1.1,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -96,12 +120,14 @@ class _StitchBottomBar extends StatelessWidget {
   final int activeTrackingCount;
   final List<_NavItem> tabs;
   final void Function(int) onTabSelected;
+  final VoidCallback onCreateBooking;
 
   const _StitchBottomBar({
     required this.selectedIndex,
     required this.activeTrackingCount,
     required this.tabs,
     required this.onTabSelected,
+    required this.onCreateBooking,
   });
 
   @override
@@ -109,11 +135,7 @@ class _StitchBottomBar extends StatelessWidget {
     return BottomAppBar(
       color: Colors.white,
       elevation: 0,
-      notchMargin: 8,
-      shape: const AutomaticNotchedShape(
-        RoundedRectangleBorder(),
-        CircleBorder(),
-      ),
+      padding: EdgeInsets.zero,
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -122,17 +144,24 @@ class _StitchBottomBar extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              children: [
-                // Tab 0 & 1 — left side
-                ..._buildLeftTabs(),
-                // Center spacer for FAB
-                const SizedBox(width: 72),
-                // Tab 2 & 3 — right side
-                ..._buildRightTabs(),
-              ],
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 64,
+                maxWidth: AppLayout.appContentMaxWidth,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    ..._buildLeftTabs(),
+                    Expanded(
+                      child: _CenterBookingAction(onTap: onCreateBooking),
+                    ),
+                    ..._buildRightTabs(),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -243,6 +272,9 @@ class _NavBarItem extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             item.label,
+            maxLines: 2,
+            overflow: TextOverflow.fade,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: isSelected ? AppColors.primary : const Color(0xFF9CA3AF),
               fontSize: 10,

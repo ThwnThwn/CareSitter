@@ -183,6 +183,36 @@ class BookingModel {
   bool get isCheckoutPending => status == 'checkout_pending_review';
   bool get isCrisis => status == 'crisis';
 
+  /// Trạng thái an toàn để hiển thị trên UI.
+  ///
+  /// `IN_PROGRESS` và `CHECKOUT_PENDING_REVIEW` chỉ hợp lệ sau khi backend
+  /// ghi nhận `actualStart`. Dữ liệu cũ hoặc dữ liệu bị chỉnh trực tiếp có thể
+  /// còn status live dù ca đã huỷ/chưa check-in; không được biến các bản ghi đó
+  /// thành một ca đang diễn ra trên ứng dụng khách hàng.
+  String presentationStatusAt(DateTime now) {
+    final normalizedStatus = status.toLowerCase();
+    const cancelledStatuses = {'cancelled', 'refunded', 'disputed'};
+
+    if (cancelledAt != null && !cancelledStatuses.contains(normalizedStatus)) {
+      return 'cancelled';
+    }
+
+    const checkedInStatuses = {'in_progress', 'checkout_pending_review'};
+    final hasValidCheckIn = actualStart != null && !actualStart!.isAfter(now);
+    if (checkedInStatuses.contains(normalizedStatus) && !hasValidCheckIn) {
+      return caregiverId == null ? 'confirmed' : 'caregiver_accepted';
+    }
+
+    return normalizedStatus;
+  }
+
+  bool isLiveTrackingAt(DateTime now) {
+    final displayStatus = presentationStatusAt(now);
+    return displayStatus == 'caregiver_en_route' ||
+        displayStatus == 'in_progress' ||
+        displayStatus == 'checkout_pending_review';
+  }
+
   String get date => displayDate;
   String get time => displayTime;
   String get duration => displayDuration;

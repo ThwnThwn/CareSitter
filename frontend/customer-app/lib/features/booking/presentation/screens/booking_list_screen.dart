@@ -141,8 +141,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
 
   Widget _buildBookingList(List<String> statuses) {
     final bookings = ref.watch(bookingStoreProvider);
-    final filtered =
-        bookings.where((b) => statuses.contains(b.status)).toList();
+    final now = DateTime.now();
+    final filtered = bookings
+        .where((b) => statuses.contains(b.presentationStatusAt(now)))
+        .toList();
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -222,15 +224,16 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   }
 
   Widget _buildBookingCard(BookingModel booking) {
-    final isWaitingCaregiver = booking.status.toLowerCase() == 'confirmed' &&
-        booking.caregiverId == null;
+    final status = booking.presentationStatusAt(DateTime.now());
+    final isWaitingCaregiver =
+        status == 'confirmed' && booking.caregiverId == null;
     final statusConfig = isWaitingCaregiver
         ? {
             'label': 'Chờ ghép CSV',
             'color': const Color(0xFFD97706),
             'bg': const Color(0xFFFEF3C7),
           }
-        : _getStatusConfig(booking.status);
+        : _getStatusConfig(status);
     final borderColor = statusConfig['color'] as Color;
 
     return GestureDetector(
@@ -265,7 +268,11 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Row 1: Status pill + Price ──
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -282,7 +289,6 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                               fontWeight: FontWeight.w600),
                         ),
                       ),
-                      const Spacer(),
                       Text(
                         _formatCurrencyFull(booking.totalPrice),
                         style: const TextStyle(
@@ -300,11 +306,17 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                       const Icon(Icons.calendar_today_outlined,
                           size: 13, color: AppColors.textSecondary),
                       const SizedBox(width: 5),
-                      Text(booking.date,
+                      Expanded(
+                        child: Text(
+                          booking.date,
+                          maxLines: 2,
                           style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500)),
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -313,11 +325,17 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                       const Icon(Icons.access_time_outlined,
                           size: 13, color: AppColors.textSecondary),
                       const SizedBox(width: 5),
-                      Text('${booking.time} (${booking.duration})',
+                      Expanded(
+                        child: Text(
+                          '${booking.time} (${booking.duration})',
+                          maxLines: 2,
                           style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500)),
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -401,9 +419,9 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                         ),
                       ),
                       // Action buttons
-                      if (booking.status == 'confirmed' ||
-                          booking.status == 'caregiver_accepted' ||
-                          booking.status == 'pending') ...[
+                      if (status == 'confirmed' ||
+                          status == 'caregiver_accepted' ||
+                          status == 'pending') ...[
                         _ActionIconButton(
                           icon: Icons.call_outlined,
                           onTap: () {},
@@ -418,7 +436,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                   ),
 
                   // ── Review button ──
-                  if (booking.status == 'completed' && !booking.isReviewed) ...[
+                  if (status == 'completed' && !booking.isReviewed) ...[
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,

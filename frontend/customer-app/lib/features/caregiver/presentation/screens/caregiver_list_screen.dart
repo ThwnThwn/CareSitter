@@ -10,7 +10,9 @@ import 'package:caresitter_customer/features/caregiver/data/models/caregiver_mod
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
 
 class CaregiverListScreen extends ConsumerStatefulWidget {
-  const CaregiverListScreen({super.key});
+  const CaregiverListScreen({super.key, this.initialQuery});
+
+  final String? initialQuery;
 
   @override
   ConsumerState<CaregiverListScreen> createState() =>
@@ -19,8 +21,15 @@ class CaregiverListScreen extends ConsumerStatefulWidget {
 
 class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
   bool _showAvailableOnly = false;
-  final _searchCtrl = TextEditingController();
+  late final TextEditingController _searchCtrl;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchQuery = widget.initialQuery?.trim() ?? '';
+    _searchCtrl = TextEditingController(text: _searchQuery);
+  }
 
   List<CaregiverModel> _filtered(List<CaregiverModel> all) {
     var list = all;
@@ -106,7 +115,10 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               const Text(
                                 'Đội ngũ Chăm sóc viên',
@@ -116,7 +128,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 3),
@@ -141,11 +152,15 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                               Icon(Icons.location_on_outlined,
                                   size: 13, color: AppColors.textSecondary),
                               SizedBox(width: 2),
-                              Text(
-                                'Hồ Chí Minh (Q.1, Q.3, Bình Thạnh)',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12),
+                              Expanded(
+                                child: Text(
+                                  'Hồ Chí Minh (Q.1, Q.3, Bình Thạnh)',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12),
+                                ),
                               ),
                             ],
                           ),
@@ -270,19 +285,13 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                     : ListView.builder(
                         key: const PageStorageKey('caregiver-list'),
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                        itemCount: filtered.length + 1,
+                        itemCount: filtered.length,
                         itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _buildTrustBanner(),
-                            );
-                          }
-                          final i = index - 1;
                           return FadeSlideStaggered(
-                            key: ValueKey(filtered[i].id),
-                            index: i,
-                            child: _buildCaregiverCard(filtered[i], context),
+                            key: ValueKey(filtered[index].id),
+                            index: index,
+                            child:
+                                _buildCaregiverCard(filtered[index], context),
                           );
                         },
                       ),
@@ -290,71 +299,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTrustBanner() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFD580), width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF0C0),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.verified_user_outlined,
-                color: Color(0xFFF5A623), size: 18),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'An tâm tuyệt đối với CareSitter',
-                      style: TextStyle(
-                        color: Color(0xFF7A4800),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'PHI Y TẾ',
-                      style: TextStyle(
-                        color: Color(0xFFF5A623),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 2),
-                Text(
-                  '100% Chăm sóc viên xác minh lý lịch tư pháp & đào tạo kỹ năng phi y tế.',
-                  style: TextStyle(
-                    color: Color(0xFFA07020),
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -68,4 +68,12 @@ void main() {
     expect(find.text('Đăng nhập bằng mã OTP (Email)'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('does not show decorative hero badges on mobile', (tester) async {
+    await pumpLogin(tester, const Size(430, 932));
+
+    expect(find.text('CareSitter'), findsNothing);
+    expect(find.text('10,000+ Gia đình'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -17,7 +17,15 @@ void main() {
         overrides: [
           addressStoreProvider.overrideWith(_FakeAddressStore.new),
         ],
-        child: const MaterialApp(home: _SelectionHarness()),
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.3),
+            ),
+            child: child!,
+          ),
+          home: const _SelectionHarness(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

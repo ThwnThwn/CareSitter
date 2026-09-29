@@ -186,7 +186,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/caregivers',
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
-              child: const CaregiverListScreen(),
+              child: CaregiverListScreen(
+                initialQuery: state.uri.queryParameters['q'],
+              ),
             ),
           ),
           GoRoute(

@@ -28,6 +28,35 @@ void main() {
     expect(find.text('123 Nguyễn Huệ'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('booking cards wrap at 320 px with enlarged text',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 700);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingStoreProvider.overrideWith(_FakeBookingStore.new),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.4),
+            ),
+            child: child!,
+          ),
+          home: const BookingListScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chờ thanh toán'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeBookingStore extends BookingStore {

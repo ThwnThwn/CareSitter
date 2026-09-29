@@ -54,6 +54,8 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < AppBreakpoints.compact;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -63,7 +65,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
               // ── Hero Header ──────────────────────
               Container(
                 width: double.infinity,
-                height: 280,
+                constraints: const BoxConstraints(minHeight: 280),
                 decoration: const BoxDecoration(
                   gradient: AppColors.heroGradient,
                 ),
@@ -140,7 +142,9 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
 
               // ── Form ────────────────────────────
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(
+                  isCompact ? AppSpacing.md : AppSpacing.lg,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(

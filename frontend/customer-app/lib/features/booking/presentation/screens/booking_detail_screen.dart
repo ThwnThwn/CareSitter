@@ -26,12 +26,13 @@ class BookingDetailScreen extends ConsumerWidget {
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final booking = matches.first;
+    final status = booking.presentationStatusAt(DateTime.now());
     // Trạng thái booking là nguồn sự thật. Dữ liệu hồ sơ caregiver chỉ là enrichment
     // và không được phép làm UI quay lại "Đang tìm" sau khi ca đã được nhận.
-    final isWaitingCaregiver = booking.status == 'confirmed';
+    final isWaitingCaregiver = status == 'confirmed';
     final statusConfig = isWaitingCaregiver
         ? _waitingCaregiverStatusConfig()
-        : _getStatusConfig(booking.status);
+        : _getStatusConfig(status);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -198,7 +199,7 @@ class BookingDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (booking.status == 'completed') ...[
+              if (status == 'completed') ...[
                 const SizedBox(height: 12),
                 FadeSlideStaggered(
                   index: 4,
@@ -223,8 +224,7 @@ class BookingDetailScreen extends ConsumerWidget {
                 index: 5,
                 child: Column(
                   children: [
-                    if (booking.status == 'pending_payment' ||
-                        booking.status == 'pending') ...[
+                    if (status == 'pending_payment' || status == 'pending') ...[
                       _buildStatusBanner(
                           'Đơn đang chờ bạn thanh toán ký quỹ (Escrow) để kích hoạt và thông báo cho người chăm sóc.'),
                       const SizedBox(height: 10),
@@ -241,13 +241,12 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
-                    ] else if (booking.status ==
-                        'payment_reconciliation_pending') ...[
+                    ] else if (status == 'payment_reconciliation_pending') ...[
                       _buildStatusBanner(
                           'Hệ thống đang đối soát giao dịch gần nhất với VNPay. Vui lòng chưa tạo thêm thanh toán để tránh bị trừ tiền hai lần.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
-                    ] else if (booking.status == 'needs_manual_review') ...[
+                    ] else if (status == 'needs_manual_review') ...[
                       _buildStatusBanner(
                           'Giao dịch chưa thể xác minh tự động. Bộ phận vận hành đang kiểm tra và sẽ cập nhật booking sau khi đối chiếu.'),
                       const SizedBox(height: 10),
@@ -257,14 +256,14 @@ class BookingDetailScreen extends ConsumerWidget {
                           'Đã thanh toán ký quỹ. Lịch hẹn đang được gửi sang ứng dụng caregiver để người chăm sóc nhận ca.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
-                    ] else if (booking.status == 'confirmed' ||
-                        booking.status == 'caregiver_accepted' ||
-                        booking.status == 'assigned') ...[
+                    ] else if (status == 'confirmed' ||
+                        status == 'caregiver_accepted' ||
+                        status == 'assigned') ...[
                       _buildStatusBanner(
                           'Ca đã được nhận. Vui lòng chờ caregiver bắt đầu di chuyển hoặc check-in từ ứng dụng caregiver.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
-                    ] else if (booking.status == 'caregiver_en_route') ...[
+                    ] else if (status == 'caregiver_en_route') ...[
                       _buildStatusBanner(
                           'Caregiver đang trên đường đến. Chờ caregiver GPS check-in tại địa điểm.'),
                       const SizedBox(height: 10),
@@ -280,7 +279,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
-                    ] else if (booking.status == 'in_progress') ...[
+                    ] else if (status == 'in_progress') ...[
                       ElevatedButton.icon(
                         onPressed: () =>
                             context.push('/bookings/${booking.id}/tracking'),
@@ -299,7 +298,7 @@ class BookingDetailScreen extends ConsumerWidget {
                           minimumSize: const Size(double.infinity, 52),
                         ),
                       ),
-                    ] else if (booking.status == 'checkout_pending_review') ...[
+                    ] else if (status == 'checkout_pending_review') ...[
                       _buildStatusBanner(
                           'Caregiver đã gửi yêu cầu kết thúc ca. Hãy xác nhận để hoàn tất.'),
                       const SizedBox(height: 10),
@@ -324,7 +323,7 @@ class BookingDetailScreen extends ConsumerWidget {
                         style: OutlinedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 52)),
                       ),
-                    ] else if (booking.status == 'completed') ...[
+                    ] else if (status == 'completed') ...[
                       if (!booking.isReviewed)
                         ElevatedButton.icon(
                           onPressed: () =>
@@ -344,10 +343,10 @@ class BookingDetailScreen extends ConsumerWidget {
                         style: OutlinedButton.styleFrom(
                             minimumSize: const Size(double.infinity, 52)),
                       ),
-                    ] else if (booking.status == 'disputed') ...[
+                    ] else if (status == 'disputed') ...[
                       _buildStatusBanner(
                           'Ca đang được đánh dấu có vấn đề. Ghi nhận tài chính sẽ chờ xử lý tranh chấp.'),
-                    ] else if (booking.status == 'refunded') ...[
+                    ] else if (status == 'refunded') ...[
                       _buildStatusBanner(
                           'Đã hoàn ${_formatCurrency(booking.totalPrice)}đ vào Ví CareSitter vì chưa tìm được người chăm sóc phù hợp.'),
                     ],
@@ -1520,6 +1519,7 @@ class BookingDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     BookingModel booking,
   ) {
+    final status = booking.presentationStatusAt(DateTime.now());
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1564,9 +1564,9 @@ class BookingDetailScreen extends ConsumerWidget {
                   );
                 },
               ),
-              if (booking.status == 'pending' ||
-                  booking.status == 'confirmed' ||
-                  booking.status == 'caregiver_accepted')
+              if (status == 'pending' ||
+                  status == 'confirmed' ||
+                  status == 'caregiver_accepted')
                 ListTile(
                   leading:
                       const Icon(Icons.cancel_outlined, color: AppColors.error),

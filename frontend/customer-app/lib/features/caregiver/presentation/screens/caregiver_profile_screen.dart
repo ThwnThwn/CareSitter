@@ -87,8 +87,12 @@ class CaregiverProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, CaregiverModel caregiver) {
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.8).toDouble();
+    final expandedHeight = 280 + ((textScale - 1) * 300);
+
     return SliverAppBar(
-      expandedHeight: 240,
+      expandedHeight: expandedHeight,
       pinned: true,
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
@@ -155,6 +159,9 @@ class CaregiverProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 Text(
                   caregiver.displayName,
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -165,6 +172,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
                   caregiver.isOnline
                       ? '● Đang rảnh${caregiver.yearsOfExperience != null ? ' • ${caregiver.yearsOfExperience} năm kinh nghiệm' : ''}'
                       : '○ Hiện đang bận',
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 13),
@@ -175,26 +184,38 @@ class CaregiverProfileScreen extends ConsumerWidget {
                   children: [
                     const Icon(Icons.star, size: 14, color: Color(0xFFF39C12)),
                     const SizedBox(width: 4),
-                    Text(
-                      '${caregiver.ratingAvg.toStringAsFixed(1)} (${caregiver.ratingCount} đánh giá)',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600),
+                    Flexible(
+                      child: Text(
+                        '${caregiver.ratingAvg.toStringAsFixed(1)} (${caregiver.ratingCount} đánh giá)',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    if (caregiver.location.isNotEmpty) ...[
-                      const SizedBox(width: 12),
+                  ],
+                ),
+                if (caregiver.location.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       const Icon(Icons.location_on_outlined,
                           size: 14, color: Colors.white70),
                       const SizedBox(width: 4),
-                      Text(
-                        caregiver.location,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                      Flexible(
+                        child: Text(
+                          caregiver.location,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 13),
+                        ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -218,16 +239,19 @@ class CaregiverProfileScreen extends ConsumerWidget {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('⭐ ${caregiver.ratingAvg.toStringAsFixed(1)}',
-              '${caregiver.ratingCount} đánh giá'),
+          Expanded(
+            child: _buildStatItem('⭐ ${caregiver.ratingAvg.toStringAsFixed(1)}',
+                '${caregiver.ratingCount} đánh giá'),
+          ),
           _buildDivider(),
-          _buildStatItem('🛡️ 100%', 'Xác minh KYC'),
+          Expanded(child: _buildStatItem('🛡️ 100%', 'Xác minh KYC')),
           _buildDivider(),
-          _buildStatItem(
-              '📍 ${caregiver.location.isNotEmpty ? caregiver.location : 'TP.HCM'}',
-              'Khu vực'),
+          Expanded(
+            child: _buildStatItem(
+                '📍 ${caregiver.location.isNotEmpty ? caregiver.location : 'TP.HCM'}',
+                'Khu vực'),
+          ),
         ],
       ),
     );
@@ -238,6 +262,9 @@ class CaregiverProfileScreen extends ConsumerWidget {
       children: [
         Text(
           value,
+          maxLines: 2,
+          overflow: TextOverflow.fade,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 15,
@@ -247,6 +274,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
         const SizedBox(height: 3),
         Text(
           label,
+          maxLines: 2,
+          textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       ],
@@ -309,12 +338,16 @@ class CaregiverProfileScreen extends ConsumerWidget {
               const Icon(Icons.check_circle_outline,
                   color: AppColors.primary, size: 14),
               const SizedBox(width: 6),
-              Text(
-                skill,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  skill,
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -387,6 +420,35 @@ class CaregiverProfileScreen extends ConsumerWidget {
 
   Widget _buildBottomBar(BuildContext context, CaregiverModel caregiver) {
     final rate = caregiver.hourlyRateExpected ?? 85000;
+    final price = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Giá thuê',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        Text(
+          '${rate.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ/giờ',
+          maxLines: 2,
+          style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 20,
+              fontWeight: FontWeight.w800),
+        ),
+      ],
+    );
+    final action = ElevatedButton(
+      onPressed: caregiver.isOnline ? () => context.push('/booking/new') : null,
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(0, 52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      child: Text(
+        caregiver.isOnline ? 'Đặt lịch ngay' : 'Hiện đang bận',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    );
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
@@ -398,46 +460,27 @@ class CaregiverProfileScreen extends ConsumerWidget {
               offset: const Offset(0, -4)),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final stackActions =
+              constraints.maxWidth < AppBreakpoints.compact || textScale > 1.2;
+          if (stackActions) {
+            return Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Giá thuê',
-                    style: TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12)),
-                Text(
-                  '${rate.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}đ/giờ',
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: caregiver.isOnline
-                  ? () => context.push('/booking/new')
-                  : null,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(0, 52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Text(
-                caregiver.isOnline ? 'Đặt lịch ngay' : 'Hiện đang bận',
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [price, const SizedBox(height: 12), action],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: price),
+              const SizedBox(width: 16),
+              Expanded(flex: 2, child: action),
+            ],
+          );
+        },
       ),
     );
   }

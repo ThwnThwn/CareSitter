@@ -1671,6 +1671,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildConsentStep() {
+    final consentHeight = (MediaQuery.sizeOf(context).height * 0.42)
+        .clamp(220.0, 320.0)
+        .toDouble();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1709,7 +1713,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
         // Consent content (scrollable box)
         Container(
-          height: 320,
+          height: consentHeight,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.cardBackground,

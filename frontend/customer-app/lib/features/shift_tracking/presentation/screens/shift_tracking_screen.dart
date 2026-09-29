@@ -168,6 +168,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final bk = matches.first;
+    final now = DateTime.now();
+    final presentationStatus = bk.presentationStatusAt(now);
 
     // Màn theo dõi trực tiếp mở cho cả caregiver_en_route (caregiver đang di chuyển) và
     // in_progress / checkout_pending_review (ca đang diễn ra). Các trạng thái khác
@@ -177,8 +179,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       'in_progress',
       'checkout_pending_review'
     };
-    if (!liveStatuses.contains(bk.status)) {
-      return _buildNotLiveScaffold(context, bk);
+    if (!liveStatuses.contains(presentationStatus)) {
+      return _buildNotLiveScaffold(context, bk, presentationStatus);
     }
     final doneCount = bk.tasks.where((t) => t.isCompleted).length;
     final skippedCount = bk.tasks.where((t) => t.isSkipped).length;
@@ -265,8 +267,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   }
 
   // ── Fallback khi ca chưa/không còn ở trạng thái live ───────────────────────
-  Widget _buildNotLiveScaffold(BuildContext context, BookingModel bk) {
-    final info = _notLiveInfo(bk.status);
+  Widget _buildNotLiveScaffold(
+    BuildContext context,
+    BookingModel bk,
+    String presentationStatus,
+  ) {
+    final info = _notLiveInfo(presentationStatus);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -336,6 +342,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           actionLabel: 'Xem chi tiết lịch hẹn',
         );
       case 'confirmed':
+      case 'caregiver_accepted':
       case 'caregiver_en_route':
         return (
           icon: Icons.directions_car_rounded,
