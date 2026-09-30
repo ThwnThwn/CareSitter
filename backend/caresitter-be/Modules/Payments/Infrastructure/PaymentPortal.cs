@@ -96,7 +96,7 @@ internal sealed class PaymentPortal(
 
         var idempotencyKey = $"pi-{bookingId}-{userId}-VNPAY-{Guid.NewGuid():N}";
         var created = PaymentIntent.Create(
-            bookingId, userId, "VNPAY", booking.EscrowAmount, idempotencyKey);
+            bookingId, userId, "VNPAY", booking.CustomerPayableAmount, idempotencyKey);
         if (created.IsFailure) return created.Error;
         var orderRef = $"CS{created.Value.Id:N}"[..34];
         var orderRefResult = created.Value.SetProviderOrderRef(orderRef);

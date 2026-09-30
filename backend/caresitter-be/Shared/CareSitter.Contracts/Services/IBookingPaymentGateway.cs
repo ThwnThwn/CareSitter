@@ -45,6 +45,7 @@ public sealed record BookingPaymentSnapshot(
     DateTimeOffset ScheduledEnd,
     DateTimeOffset PaymentDeadline,
     long EscrowAmount,
+    long CustomerPayableAmount,
     long SyncVersion,
     BookingPaymentState State);
 

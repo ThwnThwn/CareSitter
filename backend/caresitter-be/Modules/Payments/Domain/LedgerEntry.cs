@@ -40,7 +40,7 @@ public sealed class LedgerEntry : Entity
     public Guid? PaymentIntentId { get; private set; }
     public Guid? PayoutRequestId { get; private set; }
 
-    /// <summary>Allowed values: 'ESCROW_LOCK', 'PLATFORM_FEE', 'CAREGIVER_EARNING', 'REFUND', 'PAYOUT', 'PENALTY', 'BONUS'.</summary>
+    /// <summary>Allowed values include escrow, settlement, refund, payout and promotion subsidy movements.</summary>
     public string TransactionType { get; private set; } = null!;
 
     public string DebitAccount { get; private set; } = null!;

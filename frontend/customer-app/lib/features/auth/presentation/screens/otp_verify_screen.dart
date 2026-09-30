@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/data/repositories/auth_repository.dart';
@@ -103,7 +102,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
             widget.email,
             _otp,
           );
-      if (mounted) context.go('/home');
+      // The authenticated-route redirect runs the CareSitter logo intro.
     } catch (e) {
       if (mounted) {
         setState(() {

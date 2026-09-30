@@ -58,6 +58,11 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.EscrowAmount).HasColumnName("escrow_amount");
             b.Property(x => x.PlatformFeeAmount).HasColumnName("platform_fee_amount");
             b.Property(x => x.CaregiverEarningAmount).HasColumnName("caregiver_earning_amount");
+            b.Property(x => x.CustomerPayableAmount).HasColumnName("customer_payable_amount");
+            b.Property(x => x.PromotionDiscountAmount).HasColumnName("promotion_discount_amount");
+            b.Property(x => x.PromotionSubsidyAmount).HasColumnName("promotion_subsidy_amount");
+            b.Property(x => x.PromotionId).HasColumnName("promotion_id");
+            b.Property(x => x.PromotionCode).HasColumnName("promotion_code").HasMaxLength(50);
             b.Property(x => x.PriceSnapshot).HasColumnName("price_snapshot").HasColumnType("jsonb");
             b.Property(x => x.DisputeWindowHours).HasColumnName("dispute_window_hours");
             b.Property(x => x.SettlementReleasedAt).HasColumnName("settlement_released_at");

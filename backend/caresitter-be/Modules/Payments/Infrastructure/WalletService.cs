@@ -39,6 +39,39 @@ internal sealed class WalletService(
         return Result.Success();
     }
 
+    public async Task<Result> RecordPromotionSubsidyAsync(Guid bookingId, long amount,
+        CancellationToken ct = default)
+    {
+        if (amount == 0) return Result.Success();
+        if (amount < 0)
+            return Error.Validation("payments.promotion_subsidy",
+                "Số tiền tài trợ promotion không được âm.");
+
+        var exists = await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+            x.BookingId == bookingId && x.TransactionType == "PROMOTION_SUBSIDY", ct);
+        if (exists) return Result.Success();
+
+        var entry = LedgerEntry.Create("PROMOTION_SUBSIDY",
+            "revenue:platform", "escrow:platform", amount, bookingId,
+            metadata: "{\"funding\":\"platform\"}");
+        if (entry.IsFailure) return entry.Error;
+        entry.Value.MarkPosted();
+        db.LedgerEntries.Add(entry.Value);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            db.ChangeTracker.Clear();
+            if (!await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+                    x.BookingId == bookingId &&
+                    x.TransactionType == "PROMOTION_SUBSIDY", ct))
+                throw;
+        }
+        return Result.Success();
+    }
+
     public async Task<Result> SettleAsync(Guid bookingId, Guid caregiverId, long escrowAmount, long platformFeeAmount,
         CancellationToken ct = default)
     {

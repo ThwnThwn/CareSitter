@@ -270,7 +270,7 @@ public sealed class ArchitectureBoundaryTests
     public void Module_sql_does_not_access_another_module_schema()
     {
         var moduleSchemas = new HashSet<string>(
-            new[] { "identity", "people", "catalog", "booking", "payments", "support" },
+            new[] { "identity", "people", "catalog", "booking", "payments", "support", "promotion" },
             StringComparer.OrdinalIgnoreCase);
         var sqlReference = new Regex(
             @"\b(?:FROM|JOIN|UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+(?<schema>[a-z_]+)\.",

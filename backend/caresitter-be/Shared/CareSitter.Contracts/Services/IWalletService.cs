@@ -10,6 +10,12 @@ public interface IWalletService
     Task<Result> ReleaseEscrowAsync(Guid bookingId, long amount, CancellationToken ct = default);
 
     /// <summary>
+    /// Records the platform-funded portion of a promotion in escrow. Idempotent per booking.
+    /// </summary>
+    Task<Result> RecordPromotionSubsidyAsync(Guid bookingId, long amount,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Hoàn toàn bộ escrow của booking vào Ví CareSitter của khách.
     /// Idempotent theo bookingId: chạy lại không thể ghi có hai lần.
     /// </summary>

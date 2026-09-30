@@ -19,6 +19,8 @@ internal sealed class PaymentIntegrationEventHandler(
     IBookingSyncService bookingSync,
     IBookingPostCommitService postCommit,
     IMatchingService matching,
+    IWalletService wallet,
+    IPromotionService promotions,
     IClock clock,
     ILogger<PaymentIntegrationEventHandler> logger) :
     INotificationHandler<PaymentSucceeded>,
@@ -45,6 +47,7 @@ internal sealed class PaymentIntegrationEventHandler(
         if (booking.Status == BookingStatus.Confirmed)
         {
             await tx.CommitAsync(ct);
+            await FinalizePromotionAsync(booking, ct);
             return;
         }
         if (booking.Status is not (BookingStatus.PendingPayment or
@@ -74,6 +77,8 @@ internal sealed class PaymentIntegrationEventHandler(
         hold?.Commit();
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        await FinalizePromotionAsync(booking, ct);
 
         await postCommit.RunAsync("payment customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
@@ -113,6 +118,8 @@ internal sealed class PaymentIntegrationEventHandler(
         if (booking.Status == BookingStatus.Cancelled)
         {
             await tx.CommitAsync(ct);
+            await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
+                "PAYMENT_REJECTED", ct);
             return;
         }
         if (booking.Status != BookingStatus.NeedsManualReview)
@@ -132,6 +139,8 @@ internal sealed class PaymentIntegrationEventHandler(
         bookingSync.WriteSyncEvent(booking, "PAYMENT_MANUAL_REJECTED");
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
+            "PAYMENT_REJECTED", ct);
 
         await postCommit.RunAsync("payment rejection customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
@@ -170,6 +179,8 @@ internal sealed class PaymentIntegrationEventHandler(
         if (booking.Status == BookingStatus.Cancelled)
         {
             await tx.CommitAsync(ct);
+            await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
+                "PAYMENT_EXPIRED", ct);
             return;
         }
         if (booking.Status is not (BookingStatus.PendingPayment or
@@ -188,6 +199,8 @@ internal sealed class PaymentIntegrationEventHandler(
         bookingSync.WriteSyncEvent(booking, "PAYMENT_EXPIRED");
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
+            "PAYMENT_EXPIRED", ct);
         await postCommit.RunAsync("payment expiration status", () =>
             postCommit.BroadcastStatusAsync(booking.Id, oldStatus, "cancelled", ct));
         await postCommit.RunAsync("payment expiration notification", () =>
@@ -229,4 +242,18 @@ internal sealed class PaymentIntegrationEventHandler(
         db.Bookings.FromSqlInterpolated(
             $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
             .SingleOrDefaultAsync(ct);
+
+    private async Task FinalizePromotionAsync(Domain.Booking booking,
+        CancellationToken ct)
+    {
+        if (booking.PromotionId is null) return;
+        var subsidy = await wallet.RecordPromotionSubsidyAsync(
+            booking.Id, booking.PromotionSubsidyAmount, ct);
+        if (subsidy.IsFailure)
+            throw new InvalidOperationException(subsidy.Error.Message);
+        var redemption = await promotions.RedeemAsync(
+            booking.Id, booking.CustomerId, ct);
+        if (redemption.IsFailure)
+            throw new InvalidOperationException(redemption.Error.Message);
+    }
 }

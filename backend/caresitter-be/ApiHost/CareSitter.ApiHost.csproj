@@ -31,6 +31,7 @@
     <ProjectReference Include="..\Modules\Booking\CareSitter.Modules.Booking.csproj" />
     <ProjectReference Include="..\Modules\Payments\CareSitter.Modules.Payments.csproj" />
     <ProjectReference Include="..\Modules\Support\CareSitter.Modules.Support.csproj" />
+    <ProjectReference Include="..\Modules\Promotion\CareSitter.Modules.Promotion.csproj" />
   </ItemGroup>
 
   <ItemGroup>

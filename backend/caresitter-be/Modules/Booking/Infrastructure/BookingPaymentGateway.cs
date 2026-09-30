@@ -95,7 +95,7 @@ internal sealed class BookingPaymentGateway(BookingDbContext db) : IBookingPayme
     private static BookingPaymentSnapshot ToSnapshot(Domain.Booking booking) => new(
         booking.Id, booking.CustomerId, booking.CaregiverId, booking.ServiceTypeId,
         booking.ScheduledStart, booking.ScheduledEnd, booking.PaymentDeadline,
-        booking.EscrowAmount, booking.SyncVersion, booking.Status switch
+        booking.EscrowAmount, booking.CustomerPayableAmount, booking.SyncVersion, booking.Status switch
         {
             BookingStatus.PendingPayment => BookingPaymentState.PendingPayment,
             BookingStatus.PaymentReconciliationPending =>

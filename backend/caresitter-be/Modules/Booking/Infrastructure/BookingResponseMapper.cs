@@ -119,7 +119,12 @@ public sealed class BookingResponseMapper(
             offer?.ExpiresAt,
             offer?.Rank,
             x.NeedsReview,
-            x.AllowAdHocTasks);
+            x.AllowAdHocTasks,
+            x.CustomerPayableAmount,
+            x.PromotionDiscountAmount,
+            x.PromotionSubsidyAmount,
+            x.PromotionId,
+            x.PromotionCode);
 
     private sealed record OfferMetadata(Guid Id, DateTimeOffset? ExpiresAt, int? Rank);
 }

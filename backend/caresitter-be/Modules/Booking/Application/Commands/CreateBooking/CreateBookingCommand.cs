@@ -10,4 +10,5 @@ public sealed record CreateBookingCommand(
     DateTimeOffset ScheduledStart,
     DateTimeOffset ScheduledEnd,
     Guid? CaregiverId = null,
-    IReadOnlyList<string>? RequiredSkills = null) : IRequest<Result<BookingResponse>>;
+    IReadOnlyList<string>? RequiredSkills = null,
+    string? PromotionCode = null) : IRequest<Result<BookingResponse>>;

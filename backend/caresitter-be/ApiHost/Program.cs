@@ -18,6 +18,7 @@ using Hangfire.InMemory;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -35,6 +36,21 @@ DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = 11 * 1024 * 1024);
+
+var forwardedHeadersOptions = DeploymentConfiguration.CreateForwardedHeadersOptions(
+    builder.Configuration,
+    builder.Environment.IsProduction());
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = forwardedHeadersOptions.ForwardedHeaders;
+    options.ForwardLimit = forwardedHeadersOptions.ForwardLimit;
+    options.KnownProxies.Clear();
+    options.KnownNetworks.Clear();
+    foreach (var proxy in forwardedHeadersOptions.KnownProxies)
+        options.KnownProxies.Add(proxy);
+    foreach (var network in forwardedHeadersOptions.KnownNetworks)
+        options.KnownNetworks.Add(network);
+});
 
 var encryptionKey = builder.Configuration["Encryption:EncryptionKey"];
 if (string.IsNullOrWhiteSpace(encryptionKey) || encryptionKey.Length < 32)
@@ -175,7 +191,8 @@ var moduleAssemblies = new[]
     typeof(CareSitter.Modules.People.PeopleModule).Assembly,
     typeof(CareSitter.Modules.Catalog.CatalogModule).Assembly,
     typeof(CareSitter.Modules.Payments.PaymentsModule).Assembly,
-    typeof(CareSitter.Modules.Support.SupportModule).Assembly
+    typeof(CareSitter.Modules.Support.SupportModule).Assembly,
+    typeof(CareSitter.Modules.Promotion.PromotionModule).Assembly
 };
 builder.Services.AddModules(builder.Configuration, moduleAssemblies);
 
@@ -275,10 +292,12 @@ builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.Authenticatio
 });
 
 // --- Hangfire ---
-// Development: dùng InMemory (không cần PostgreSQL kết nối lúc startup).
-// Production: đặt HANGFIRE_USE_POSTGRES=true để dùng PostgreSQL storage (durable).
-var usePostgresHangfire = builder.Configuration["HANGFIRE_USE_POSTGRES"] == "true"
-    && !string.IsNullOrEmpty(builder.Configuration.GetConnectionString("CareSitter"));
+// Production must use shared PostgreSQL storage so jobs survive restarts and
+// multiple API instances coordinate through Hangfire's distributed locks.
+var usePostgresHangfire = DeploymentConfiguration.UsePostgresHangfire(
+    builder.Configuration,
+    builder.Environment.IsProduction());
+var hangfireConnectionString = builder.Configuration.GetConnectionString("CareSitter");
 
 builder.Services.AddHangfire(config =>
 {
@@ -288,8 +307,7 @@ builder.Services.AddHangfire(config =>
 
     if (usePostgresHangfire)
     {
-        var hangfireConnStr = builder.Configuration.GetConnectionString("CareSitter");
-        config.UsePostgreSqlStorage(options => options.UseNpgsqlConnection(hangfireConnStr));
+        config.UsePostgreSqlStorage(options => options.UseNpgsqlConnection(hangfireConnectionString!));
     }
     else
     {
@@ -299,13 +317,35 @@ builder.Services.AddHangfire(config =>
 });
 builder.Services.AddHangfireServer(options =>
 {
+    options.ServerName = $"{Environment.MachineName}:{Guid.NewGuid():N}";
     options.WorkerCount = 2;
     options.Queues = new[] { "default", "booking" };
 });
 var app = builder.Build();
 
+if (usePostgresHangfire)
+{
+    // Fail before accepting requests if persistent job storage is unreachable.
+    try
+    {
+        await using var connection = new NpgsqlConnection(hangfireConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand("SELECT 1", connection);
+        await command.ExecuteScalarAsync();
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException(
+            "Hangfire PostgreSQL storage is unavailable; refusing to start the API.", ex);
+    }
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+// Must run before HTTPS redirection and rate limiting so requests behind a
+// configured reverse proxy retain the original scheme and client IP.
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -388,6 +428,8 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 // --- Đăng ký Hangfire Recurring Jobs ---
+// Every instance writes the same stable recurring IDs into the shared PostgreSQL
+// store; Hangfire's distributed lock prevents duplicate scheduling across servers.
 RecurringJob.RemoveIfExists("expire-pending-payments");
 RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "reconcile-pending-payments",
