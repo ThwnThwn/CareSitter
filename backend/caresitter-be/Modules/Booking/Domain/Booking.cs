@@ -72,6 +72,11 @@ public sealed class Booking : AggregateRoot
     public long EscrowAmount { get; private set; }
     public long PlatformFeeAmount { get; private set; }
     public long CaregiverEarningAmount { get; private set; }
+    public long CustomerPayableAmount { get; private set; }
+    public long PromotionDiscountAmount { get; private set; }
+    public long PromotionSubsidyAmount { get; private set; }
+    public Guid? PromotionId { get; private set; }
+    public string? PromotionCode { get; private set; }
     public string? PriceSnapshot { get; private set; }
     public int DisputeWindowHours { get; private set; } = 48;
     public DateTimeOffset? SettlementReleasedAt { get; private set; }
@@ -113,8 +118,39 @@ public sealed class Booking : AggregateRoot
         EscrowAmount = escrow;
         PlatformFeeAmount = platformFee;
         CaregiverEarningAmount = caregiverEarning;
+        if (PromotionId is null)
+        {
+            CustomerPayableAmount = escrow;
+            PromotionDiscountAmount = 0;
+            PromotionSubsidyAmount = 0;
+        }
+        else
+        {
+            PromotionDiscountAmount = Math.Min(PromotionDiscountAmount, escrow);
+            PromotionSubsidyAmount = PromotionDiscountAmount;
+            CustomerPayableAmount = escrow - PromotionDiscountAmount;
+        }
         PriceSnapshot = snapshot;
         DisputeWindowHours = disputeWindowHours;
+        return Result.Success();
+    }
+
+    public Result ApplyPromotion(Guid promotionId, string code, long grossAmount,
+        long discountAmount, long customerPayableAmount, long platformSubsidyAmount)
+    {
+        if (promotionId == Guid.Empty || string.IsNullOrWhiteSpace(code))
+            return Error.Validation("booking.promotion", "Thông tin ưu đãi không hợp lệ.");
+        if (grossAmount != EscrowAmount || discountAmount <= 0 ||
+            customerPayableAmount < 0 || platformSubsidyAmount < 0 ||
+            customerPayableAmount + discountAmount != grossAmount ||
+            platformSubsidyAmount != discountAmount)
+            return Error.Validation("booking.promotion_pricing", "Giá ưu đãi không hợp lệ.");
+
+        PromotionId = promotionId;
+        PromotionCode = code.Trim().ToUpperInvariant();
+        PromotionDiscountAmount = discountAmount;
+        PromotionSubsidyAmount = platformSubsidyAmount;
+        CustomerPayableAmount = customerPayableAmount;
         return Result.Success();
     }
 

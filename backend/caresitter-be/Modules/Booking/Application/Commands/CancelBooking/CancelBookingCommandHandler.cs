@@ -10,6 +10,7 @@ internal sealed class CancelBookingCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IClock clock,
+    IPromotionService promotions,
     IBookingSyncService bookingSync,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
@@ -39,6 +40,8 @@ internal sealed class CancelBookingCommandHandler(
             slotHold.Release();
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Cancelled);
         await bookings.SaveChangesAsync(ct);
+        await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
+            "BOOKING_CANCELLED", ct);
         await postCommit.RunAsync("cancel status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus, "cancelled", ct));
         await postCommit.RunAsync("cancel customer sync", () =>

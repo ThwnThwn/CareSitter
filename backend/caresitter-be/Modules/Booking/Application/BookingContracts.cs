@@ -34,4 +34,9 @@ public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? Caregive
     DateTimeOffset? OfferExpiresAt = null,
     int? OfferRank = null,
     bool NeedsReview = false,
-    bool AllowAdHocTasks = false);
+    bool AllowAdHocTasks = false,
+    long CustomerPayableAmount = 0,
+    long PromotionDiscountAmount = 0,
+    long PromotionSubsidyAmount = 0,
+    Guid? PromotionId = null,
+    string? PromotionCode = null);

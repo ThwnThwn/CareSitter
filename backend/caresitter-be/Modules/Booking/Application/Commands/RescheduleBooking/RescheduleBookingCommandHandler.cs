@@ -33,11 +33,16 @@ internal sealed class RescheduleBookingCommandHandler(
         var quote = await pricing.QuoteAsync(booking.ServiceTypeId,
             request.ScheduledStart, request.ScheduledEnd, ct);
         if (quote.IsFailure) return quote.Error;
+        if (booking.PromotionId is not null && quote.Value.EscrowAmount != booking.EscrowAmount)
+            return Error.Conflict("booking.promotion_reprice_required",
+                "Lịch mới làm thay đổi giá của đơn có ưu đãi. Vui lòng tạo đơn mới để hệ thống kiểm tra lại promotion.");
         var changed = booking.Reschedule(request.ScheduledStart, request.ScheduledEnd);
         if (changed.IsFailure) return changed.Error;
-        booking.ApplyPricing(quote.Value.EscrowAmount, quote.Value.PlatformFeeAmount,
+        var pricingApplied = booking.ApplyPricing(quote.Value.EscrowAmount,
+            quote.Value.PlatformFeeAmount,
             quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson,
             quote.Value.DisputeWindowHours);
+        if (pricingApplied.IsFailure) return pricingApplied.Error;
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Rescheduled);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("reschedule customer sync", () =>

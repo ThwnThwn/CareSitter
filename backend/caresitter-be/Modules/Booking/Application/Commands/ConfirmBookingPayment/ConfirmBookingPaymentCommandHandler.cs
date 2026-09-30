@@ -11,6 +11,7 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
     IBookingRepository bookings,
     ICurrentUser currentUser,
     IWalletService wallet,
+    IPromotionService promotions,
     IMatchingService matching,
     IBookingSyncService bookingSync,
     IBookingPostCommitService postCommit,
@@ -23,6 +24,12 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         if (currentUser.UserId is not { } userId) return BookingErrors.Unauthenticated();
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
+        if (booking.Status == BookingStatus.Confirmed)
+        {
+            var finalized = await FinalizePromotionAsync(booking, ct);
+            if (finalized.IsFailure) return finalized.Error;
+            return await responseMapper.ToResponseAsync(booking, ct);
+        }
 
         CaregiverSlotHold? slotHold = null;
         if (booking.CaregiverId is { } caregiverId && booking.Status == BookingStatus.PendingPayment)
@@ -46,7 +53,7 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
                 return BookingErrors.CaregiverSlotHeld();
         }
 
-        var lockResult = await wallet.LockEscrowAsync(booking.Id, booking.EscrowAmount,
+        var lockResult = await wallet.LockEscrowAsync(booking.Id, booking.CustomerPayableAmount,
             $"booking-escrow-{booking.Id}", ct);
         if (lockResult.IsFailure)
         {
@@ -60,7 +67,7 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         {
             slotHold?.Release();
             if (slotHold is not null) await bookings.SaveChangesAsync(ct);
-            var releaseResult = await wallet.ReleaseEscrowAsync(booking.Id, booking.EscrowAmount, ct);
+            var releaseResult = await wallet.ReleaseEscrowAsync(booking.Id, booking.CustomerPayableAmount, ct);
             if (releaseResult.IsFailure)
             {
                 logger.LogError("Escrow release failed after ConfirmPayment rejection for booking {BookingId}: {Error}",
@@ -71,6 +78,8 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
         slotHold?.Commit();
         await bookings.SaveChangesAsync(ct);
+        var promotionFinalization = await FinalizePromotionAsync(booking, ct);
+        if (promotionFinalization.IsFailure) return promotionFinalization.Error;
         await postCommit.RunAsync("payment customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("caregiver matching", () =>
@@ -79,5 +88,15 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
             postCommit.NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
                 "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
+    }
+
+    private async Task<Result> FinalizePromotionAsync(Domain.Booking booking,
+        CancellationToken ct)
+    {
+        if (booking.PromotionId is null) return Result.Success();
+        var subsidy = await wallet.RecordPromotionSubsidyAsync(
+            booking.Id, booking.PromotionSubsidyAmount, ct);
+        if (subsidy.IsFailure) return subsidy;
+        return await promotions.RedeemAsync(booking.Id, booking.CustomerId, ct);
     }
 }

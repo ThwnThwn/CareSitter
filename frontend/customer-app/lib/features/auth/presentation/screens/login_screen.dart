@@ -58,11 +58,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     controller.clearError();
     if (_formKey.currentState?.validate() != true) return;
 
-    final success = await controller.login(
+    await controller.login(
       email: _emailCtrl.text,
       password: _passCtrl.text,
     );
-    if (success && mounted) context.go('/home');
+    // A successful auth-state update sends GoRouter through /brand-intro.
   }
 
   @override

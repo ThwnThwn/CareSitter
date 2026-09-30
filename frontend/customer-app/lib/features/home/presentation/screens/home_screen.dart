@@ -205,7 +205,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Text('👋', style: TextStyle(fontSize: 16)),
+                    const WavingHand(),
                   ],
                 ),
               ],

@@ -67,6 +67,25 @@ public class BookingDomainTests
         Assert.Equal(50000, booking.PlatformFeeAmount);
         Assert.Equal(450000, booking.CaregiverEarningAmount);
         Assert.Equal("{\"rate\":125000}", booking.PriceSnapshot);
+        Assert.Equal(500000, booking.CustomerPayableAmount);
+    }
+
+    [Fact]
+    public void ApplyPromotion_PreservesCaregiverEarning_AndReducesCustomerPayable()
+    {
+        var start = DateTimeOffset.UtcNow.AddHours(2);
+        var booking = Domain.Booking.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            Guid.NewGuid(), start, start.AddHours(4)).Value;
+        booking.ApplyPricing(500_000, 75_000, 425_000);
+
+        var result = booking.ApplyPromotion(Guid.NewGuid(), "welcome20",
+            500_000, 100_000, 400_000, 100_000);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(425_000, booking.CaregiverEarningAmount);
+        Assert.Equal(400_000, booking.CustomerPayableAmount);
+        Assert.Equal(100_000, booking.PromotionSubsidyAmount);
+        Assert.Equal("WELCOME20", booking.PromotionCode);
     }
 
     [Fact]

@@ -5,6 +5,7 @@ import 'package:caresitter_customer/features/auth/presentation/screens/login_scr
 import 'package:caresitter_customer/features/auth/presentation/screens/register_screen.dart';
 import 'package:caresitter_customer/features/auth/presentation/screens/email_input_screen.dart';
 import 'package:caresitter_customer/features/auth/presentation/screens/otp_verify_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/brand_intro_screen.dart';
 import 'package:caresitter_customer/features/home/presentation/screens/home_screen.dart';
 import 'package:caresitter_customer/features/home/presentation/screens/notifications_screen.dart';
 import 'package:caresitter_customer/features/home/presentation/screens/activity_screen.dart';
@@ -32,6 +33,7 @@ import 'package:caresitter_customer/features/settings/presentation/screens/suppo
 import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/router/auth_route_redirect.dart';
 import 'package:caresitter_customer/core/router/shell_scaffold.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -123,10 +125,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoggedIn =
           ref.read(authStateProvider).value?.isAuthenticated ?? false;
-      final isAuthRoute = state.matchedLocation.startsWith('/auth');
-      if (!isLoggedIn && !isAuthRoute) return '/auth/login';
-      if (isLoggedIn && isAuthRoute) return '/home';
-      return null;
+      return authRouteRedirect(
+        location: state.matchedLocation,
+        isAuthenticated: isLoggedIn,
+      );
     },
     routes: [
       // ── Auth Routes ─────────────────────────────
@@ -160,6 +162,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: OtpVerifyScreen(email: state.extra as String? ?? ''),
+        ),
+      ),
+      GoRoute(
+        path: '/brand-intro',
+        pageBuilder: (ctx, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const BrandIntroScreen(),
         ),
       ),
 

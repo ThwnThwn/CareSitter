@@ -73,6 +73,7 @@ public sealed class BookingModule : IModule
         services.AddScoped<IMatchingService, MatchingService>();
         services.AddScoped<IBookingJobsService, BookingJobsService>();
         services.AddScoped<IAdminBookingReader, AdminBookingReader>();
+        services.AddScoped<IPromotionBookingLookup, PromotionBookingLookup>();
     }
 
     // Controllers tự được map qua app.MapControllers() ở Program.cs

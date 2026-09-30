@@ -52,6 +52,27 @@ public sealed class WalletServiceTests
         Assert.Empty(await db.LedgerEntries.ToListAsync());
     }
 
+    [Fact]
+    public async Task PromotionSubsidy_IsRecordedExactlyOnce()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var service = new WalletService(db, new DisputeLookupStub(false),
+            new PeopleLookupStub(Guid.NewGuid(), null));
+
+        var first = await service.RecordPromotionSubsidyAsync(bookingId, 100_000);
+        var retry = await service.RecordPromotionSubsidyAsync(bookingId, 100_000);
+
+        Assert.True(first.IsSuccess);
+        Assert.True(retry.IsSuccess);
+        var entry = await db.LedgerEntries.SingleAsync(x =>
+            x.BookingId == bookingId && x.TransactionType == "PROMOTION_SUBSIDY");
+        Assert.Equal(100_000, entry.Amount);
+        Assert.Equal("revenue:platform", entry.DebitAccount);
+        Assert.Equal("escrow:platform", entry.CreditAccount);
+        Assert.Equal("POSTED", entry.Status);
+    }
+
     private static PaymentsDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<PaymentsDbContext>()

@@ -15,6 +15,7 @@ internal sealed class CreateBookingCommandHandler(
     ICatalogLookupService catalog,
     ICurrentUser currentUser,
     IClock clock,
+    IPromotionService promotions,
     IOptions<BookingPaymentOptions> paymentOptions,
     IBookingSyncService bookingSync,
     IBookingResponseMapper responseMapper)
@@ -56,14 +57,54 @@ internal sealed class CreateBookingCommandHandler(
             request.ScheduledStart, request.ScheduledEnd, ct);
         if (quote.IsFailure) return quote.Error;
         var booking = created.Value;
-        booking.ApplyPricing(quote.Value.EscrowAmount, quote.Value.PlatformFeeAmount,
+        var pricingApplied = booking.ApplyPricing(quote.Value.EscrowAmount,
+            quote.Value.PlatformFeeAmount,
             quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson,
             quote.Value.DisputeWindowHours);
-        booking.TransitionTo(BookingStatus.PendingPayment);
+        if (pricingApplied.IsFailure) return pricingApplied.Error;
+
+        var hasPromotion = !string.IsNullOrWhiteSpace(request.PromotionCode);
+        if (hasPromotion)
+        {
+            var reservation = await promotions.ReserveAsync(new PromotionReservationRequest(
+                request.PromotionCode!, customerId, booking.Id, request.ServiceTypeId,
+                request.ScheduledStart, request.ScheduledEnd,
+                booking.PaymentDeadline.AddMinutes(30), quote.Value.EscrowAmount), ct);
+            if (reservation.IsFailure) return reservation.Error;
+
+            var promo = reservation.Value;
+            var applied = booking.ApplyPromotion(promo.PromotionId, promo.Code,
+                promo.GrossAmount, promo.DiscountAmount, promo.CustomerPayableAmount,
+                promo.PlatformSubsidyAmount);
+            if (applied.IsFailure)
+            {
+                await promotions.ReleaseAsync(booking.Id, customerId,
+                    "BOOKING_PRICING_REJECTED", ct);
+                return applied.Error;
+            }
+        }
+        var transitioned = booking.TransitionTo(BookingStatus.PendingPayment);
+        if (transitioned.IsFailure)
+        {
+            if (hasPromotion)
+                await promotions.ReleaseAsync(booking.Id, customerId,
+                    "BOOKING_TRANSITION_REJECTED", ct);
+            return transitioned.Error;
+        }
 
         bookings.Add(booking);
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Created);
-        await bookings.SaveChangesAsync(ct);
+        try
+        {
+            await bookings.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            if (hasPromotion)
+                await promotions.ReleaseAsync(booking.Id, customerId,
+                    "BOOKING_PERSISTENCE_FAILED", CancellationToken.None);
+            throw;
+        }
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }
