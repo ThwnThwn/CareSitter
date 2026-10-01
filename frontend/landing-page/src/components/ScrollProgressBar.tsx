@@ -21,8 +21,9 @@ export default function ScrollProgressBar() {
 
   return (
     <div
+      aria-hidden="true"
       id="scroll-progress-bar"
-      style={{ width: `${scrollProgress}%` }}
+      style={{ transform: `scaleX(${scrollProgress / 100})` }}
     />
   );
 }

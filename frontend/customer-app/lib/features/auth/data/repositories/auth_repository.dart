@@ -5,6 +5,7 @@ import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 import 'package:caresitter_customer/features/auth/data/models/auth_models.dart';
+import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepository(ref.read(dioClientProvider), ref),
@@ -28,6 +29,17 @@ class AuthRepository {
   /// Alias để tương thích với login_screen.dart đang gọi `.login(...)`
   Future<AuthResponse> login(LoginRequest request) =>
       loginWithPassword(request);
+
+  // ── Google ID Token → CareSitter JWT + refresh token ─────────────────────
+  Future<AuthResponse> loginWithGoogleIdToken(String idToken) async {
+    final resp = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.googleCustomer,
+      data: {'idToken': idToken},
+    );
+    final authResponse = AuthResponse.fromJson(resp.data ?? {});
+    await _ref.read(googleIdentityGatewayProvider).clearLocalSelection();
+    return _saveAndReturn(authResponse);
+  }
 
   // ── Đăng ký tài khoản mới → POST /auth/register ───────────────────────────
   Future<AuthResponse> register(RegisterRequest request) async {
@@ -92,6 +104,7 @@ class AuthRepository {
     } catch (_) {
       // Vẫn xóa local token dù server lỗi
     } finally {
+      await _ref.read(googleIdentityGatewayProvider).clearLocalSelection();
       await authNotifier.logout();
       _ref.read(profileStoreProvider.notifier).reset();
     }

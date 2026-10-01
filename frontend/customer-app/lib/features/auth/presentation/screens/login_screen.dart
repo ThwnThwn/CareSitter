@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
+import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
 import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero_header.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/google_web_button.dart';
 
 // ─── Stitch Design Tokens (Hero Lifestyle) ──────────────────────────────────
 // Based on: projects/9685887642498274590 / screen 2c0a8463e7cd41e78008517578edb60b
@@ -686,21 +690,17 @@ class _OrDivider extends StatelessWidget {
 
 // ─── Social Login Row ────────────────────────────────────────────────────────
 
-class _SocialLoginRow extends StatelessWidget {
+class _SocialLoginRow extends ConsumerWidget {
   const _SocialLoginRow({required this.enabled});
 
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
-          child: _SocialButton(
-            label: 'Google',
-            icon: const _GoogleIcon(),
-            enabled: enabled,
-          ),
+          child: _buildGoogleButton(ref),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -712,30 +712,84 @@ class _SocialLoginRow extends StatelessWidget {
               color: _HeroTokens.onSurface,
             ),
             enabled: enabled,
+            onPressed: () {},
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGoogleButton(WidgetRef ref) {
+    if (!kIsWeb) {
+      return _SocialButton(
+        key: const ValueKey('google-sign-in-button'),
+        label: 'Google',
+        icon: const _GoogleIcon(),
+        enabled: enabled,
+        onPressed: () =>
+            ref.read(loginControllerProvider.notifier).loginWithGoogle(),
+      );
+    }
+
+    final initialization = ref.watch(googleIdentityInitializationProvider);
+    return initialization.when(
+      data: (_) => enabled
+          ? SizedBox(
+              key: const ValueKey('google-sign-in-button'),
+              height: 48,
+              child: LayoutBuilder(
+                builder: (context, constraints) => Center(
+                  child: buildGoogleWebButton(width: constraints.maxWidth),
+                ),
+              ),
+            )
+          : const _SocialButton(
+              label: 'Google',
+              icon: _GoogleIcon(),
+              enabled: false,
+            ),
+      loading: () => const _SocialButton(
+        label: 'Google',
+        icon: SizedBox.square(
+          dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        enabled: false,
+      ),
+      error: (error, _) => Tooltip(
+        message: error is GoogleIdentityException
+            ? error.message
+            : 'Google Sign-In chưa được cấu hình.',
+        child: const _SocialButton(
+          label: 'Google',
+          icon: _GoogleIcon(),
+          enabled: false,
+        ),
+      ),
     );
   }
 }
 
 class _SocialButton extends StatelessWidget {
   const _SocialButton({
+    super.key,
     required this.label,
     required this.icon,
     required this.enabled,
+    this.onPressed,
   });
 
   final String label;
   final Widget icon;
   final bool enabled;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 48,
       child: OutlinedButton(
-        onPressed: enabled ? () {} : null,
+        onPressed: enabled ? onPressed : null,
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: _HeroTokens.onSurface,
