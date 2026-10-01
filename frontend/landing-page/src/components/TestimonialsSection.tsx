@@ -1,88 +1,340 @@
-'use client';
+"use client";
 
-import React from 'react';
+import { useCallback, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
+  MoveHorizontal,
+  Pause,
+  Play,
+  Quote,
+  Star,
+} from "lucide-react";
 
 const reviews = [
   {
-    stars: 5,
-    quote: '"Found an amazing sitter within 5 minutes! The background check feature gave me complete peace of mind. Chị chăm sóc rất nhẹ nhàng với bé nhà mình."',
-    name: 'Linh T.',
-    role: 'Mẹ của 2 bé • Hà Nội',
-    initials: 'LT',
+    quote:
+      "Đi làm cả ngày, nhưng mình vẫn biết mẹ đang được chăm sóc thế nào. Điều quý nhất là cảm giác mọi việc đều có người theo sát và chịu trách nhiệm.",
+    author: "Minh Khôi",
+    relation: "Con trai của cô Lan",
+    location: "TP.HCM",
+    initials: "MK",
   },
   {
-    stars: 5,
-    quote: '"Booked a caregiver for my father last minute — they arrived in 20 minutes. Incredible! Bố mình rất quý bạn Nam vì biết cách nói chuyện và dìu ông tập thể dục."',
-    name: 'Minh K.',
-    role: 'Kỹ sư công nghệ • TP.HCM',
-    initials: 'MK',
+    quote:
+      "Lịch trình rõ ràng, cập nhật đúng lúc. Tôi có thể tập trung làm việc mà không cần gọi về nhà liên tục để hỏi thăm bố.",
+    author: "Linh Thảo",
+    relation: "Con gái của bác Hùng",
+    location: "Hà Nội",
+    initials: "LT",
   },
   {
-    stars: 5,
-    quote: '"The app is so easy to use. I\'ve tried others but CareSitter just works. Tính năng cập nhật GPS và hình ảnh trong ca trực giúp mình yên tâm đi làm cả ngày."',
-    name: 'Sarah D.',
-    role: 'Quản lý dự án • Đà Nẵng',
-    initials: 'SD',
+    quote:
+      "Caregiver đến đúng giờ, nói chuyện nhẹ nhàng và rất tôn trọng nếp sinh hoạt của bố tôi. Cả nhà yên tâm hơn hẳn.",
+    author: "Anh Dũng",
+    relation: "Con trai của bác Minh",
+    location: "Đà Nẵng",
+    initials: "AD",
+  },
+  {
+    quote:
+      "Từ buổi đầu làm quen đến mỗi lần bàn giao, mọi thông tin đều rõ ràng. Mẹ tôi cũng chủ động hỏi khi nào cô caregiver quay lại.",
+    author: "Ngọc Mai",
+    relation: "Gia đình cô Hạnh",
+    location: "TP.HCM",
+    initials: "NM",
+  },
+  {
+    quote:
+      "Không chỉ hỗ trợ sinh hoạt, caregiver còn biết cách trò chuyện để ông vui hơn. Đó là điều ứng dụng hay lịch trình không thể hiện hết.",
+    author: "Tuấn Anh",
+    relation: "Cháu của ông Phúc",
+    location: "Hà Nội",
+    initials: "TA",
   },
 ];
 
+const compactReviews = [
+  {
+    quote: "Thông báo đúng lúc, lịch trình dễ theo dõi và không có khoản phí bất ngờ.",
+    author: "Phương Vy",
+    context: "Gia đình tại TP.HCM",
+    initials: "PV",
+  },
+  {
+    quote: "Mẹ tôi hợp với caregiver ngay từ buổi đầu. Cách trò chuyện rất tự nhiên.",
+    author: "Hoàng Nam",
+    context: "Gia đình tại Hà Nội",
+    initials: "HN",
+  },
+  {
+    quote: "Mỗi lần bàn giao đều rõ ràng nên anh chị em trong nhà cùng nắm được tình hình.",
+    author: "Thu Hà",
+    context: "Gia đình tại Hải Phòng",
+    initials: "TH",
+  },
+  {
+    quote: "Đổi lịch một lần nhưng được hỗ trợ rất nhanh, không làm gián đoạn ca chăm sóc.",
+    author: "Quốc Bảo",
+    context: "Gia đình tại Đà Nẵng",
+    initials: "QB",
+  },
+  {
+    quote: "Bố vui hơn vì có người đồng hành đều đặn, còn tôi bớt cảm giác phải xoay xở một mình.",
+    author: "Hà My",
+    context: "Gia đình tại Bình Dương",
+    initials: "HM",
+  },
+  {
+    quote: "Hồ sơ rõ ràng giúp gia đình chọn nhanh hơn mà vẫn cảm thấy mình đang quyết định kỹ.",
+    author: "Đức Anh",
+    context: "Gia đình tại TP.HCM",
+    initials: "ĐA",
+  },
+];
+
+function relativePosition(index: number, activeIndex: number) {
+  let position = index - activeIndex;
+  const midpoint = Math.floor(reviews.length / 2);
+
+  if (position > midpoint) position -= reviews.length;
+  if (position < -midpoint) position += reviews.length;
+
+  return position;
+}
+
 export default function TestimonialsSection() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+  const marqueeIsStopped = Boolean(shouldReduceMotion || isMarqueePaused);
+
+  const goTo = useCallback((index: number) => {
+    setActiveIndex((index + reviews.length) % reviews.length);
+  }, []);
+
+  const previous = useCallback(() => {
+    setActiveIndex((current) => (current - 1 + reviews.length) % reviews.length);
+  }, []);
+
+  const next = useCallback(() => {
+    setActiveIndex((current) => (current + 1) % reviews.length);
+  }, []);
+
   return (
-    <section className="py-24 bg-[#F0FDF4] border-t border-[#D1FAE5] relative" id="testimonials">
-      <div className="max-w-7xl mx-auto px-6">
-
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="text-xs uppercase font-bold text-[#00B14F] tracking-widest mb-3">
-            Cộng đồng tin cậy
+    <section className="stories-section" id="testimonials">
+      <div className="shell">
+        <header className="stories-section__heading">
+          <div className="stories-section__intro">
+            <p className="section-label section-label--ink">
+              Câu chuyện từ gia đình
+            </p>
+            <h2 className="display display--section">
+              Khi việc chăm sóc <em>trở nên nhẹ lòng.</em>
+            </h2>
           </div>
-          <h2 className="font-headline font-extrabold text-3xl sm:text-4xl lg:text-5xl text-[#0F291E] tracking-tight">
-            Loved By Families
-          </h2>
-          <p className="text-[#4A6B5D] text-base mt-4">
-            Lắng nghe chia sẻ từ những người con, người cha, người mẹ đã tìm được sự an tâm trọn vẹn.
-          </p>
-        </div>
 
-        {/* 3 Testimonial Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {reviews.map((r, idx) => (
-            <div
-              key={idx}
-              className="flat-card rounded-3xl p-8 flex flex-col justify-between bg-white relative transition-transform duration-300 hover:-translate-y-2 hover:border-[#00B14F] hover:shadow-lg"
-            >
-              {/* Decorative Quote Mark */}
-              <span className="absolute top-4 right-6 text-6xl font-serif text-[#D1FAE5] pointer-events-none select-none">
-                &ldquo;
+          <div className="stories-rating" aria-label="4,9 trên 5 sao">
+            <strong>4,9</strong>
+            <div>
+              <span className="stories-rating__stars" aria-hidden="true">
+                {[0, 1, 2, 3, 4].map((star) => (
+                  <Star fill="currentColor" key={star} size={15} strokeWidth={0} />
+                ))}
               </span>
+              <span>từ hơn 12.000 lượt đánh giá</span>
+            </div>
+          </div>
+        </header>
 
-              <div>
-                <div className="flex items-center gap-1 text-amber-500 text-base mb-6">
-                  {[...Array(r.stars)].map((_, i) => (
-                    <span key={i}>★</span>
-                  ))}
-                </div>
+        <div className="review-carousel">
+          <motion.div
+            aria-label="Đánh giá của gia đình sử dụng CareSitter"
+            aria-roledescription="carousel"
+            className="review-carousel__stage"
+            drag={shouldReduceMotion ? false : "x"}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.08}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -56 || info.velocity.x < -420) next();
+              if (info.offset.x > 56 || info.velocity.x > 420) previous();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft") previous();
+              if (event.key === "ArrowRight") next();
+            }}
+            role="region"
+            tabIndex={0}
+          >
+            {reviews.map((review, index) => {
+              const position = relativePosition(index, activeIndex);
+              const isActive = position === 0;
+              const isNearby = Math.abs(position) <= 1;
 
-                <p className="text-[#0F291E] text-base leading-relaxed italic mb-8 font-medium">
-                  {r.quote}
-                </p>
-              </div>
+              return (
+                <div className="review-carousel__slot" key={review.author}>
+                  <motion.blockquote
+                    animate={{
+                      opacity: isActive ? 1 : isNearby ? 0.42 : 0,
+                      scale: isActive ? 1 : 0.9,
+                      x: `${position * 106}%`,
+                    }}
+                    aria-hidden={!isActive}
+                    className="review-card"
+                    initial={false}
+                    style={{ pointerEvents: isActive ? "auto" : "none" }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0.01 }
+                        : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+                    }
+                  >
+                    <div className="review-card__topline">
+                      <span className="review-card__stars" aria-label="5 trên 5 sao">
+                        {[0, 1, 2, 3, 4].map((star) => (
+                          <Star
+                            aria-hidden="true"
+                            fill="currentColor"
+                            key={star}
+                            size={17}
+                            strokeWidth={0}
+                          />
+                        ))}
+                      </span>
+                      <Quote aria-hidden="true" size={34} strokeWidth={1.4} />
+                    </div>
 
-              <div className="flex items-center gap-4 pt-4 border-t border-[#D1FAE5]">
-                <div className="w-12 h-12 rounded-full bg-[#00B14F] p-0.5 shadow-xs">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center font-bold text-[#00B14F] font-headline text-sm">
-                    {r.initials}
-                  </div>
+                    <p>“{review.quote}”</p>
+
+                    <footer>
+                      <span className="review-card__avatar" aria-hidden="true">
+                        {review.initials}
+                      </span>
+                      <span className="review-card__person">
+                        <strong>{review.author}</strong>
+                        <small>
+                          {review.relation} · {review.location}
+                        </small>
+                      </span>
+                      <span className="review-card__verified">
+                        <BadgeCheck aria-hidden="true" size={16} />
+                        Đã xác thực
+                      </span>
+                    </footer>
+                  </motion.blockquote>
                 </div>
-                <div>
-                  <h4 className="font-headline font-bold text-[#0F291E] text-sm">{r.name}</h4>
-                  <p className="text-[#4A6B5D] text-xs">{r.role}</p>
-                </div>
+              );
+            })}
+          </motion.div>
+
+          <div className="review-carousel__controls">
+            <div className="review-carousel__gesture" aria-hidden="true">
+              <MoveHorizontal size={17} />
+              Kéo hoặc vuốt để xem
+            </div>
+
+            <div className="review-carousel__dots" aria-label="Chọn đánh giá">
+              {reviews.map((review, index) => (
+                <button
+                  aria-label={`Xem đánh giá của ${review.author}`}
+                  aria-pressed={activeIndex === index}
+                  key={review.author}
+                  onClick={() => goTo(index)}
+                  type="button"
+                />
+              ))}
+            </div>
+
+            <div className="review-carousel__arrows">
+              <button aria-label="Đánh giá trước" onClick={previous} type="button">
+                <ChevronLeft aria-hidden="true" size={19} />
+              </button>
+              <span aria-live="polite">
+                {String(activeIndex + 1).padStart(2, "0")} / {String(reviews.length).padStart(2, "0")}
+              </span>
+              <button aria-label="Đánh giá tiếp theo" onClick={next} type="button">
+                <ChevronRight aria-hidden="true" size={19} />
+              </button>
+            </div>
+          </div>
+
+          <div className="review-marquee">
+            <div className="review-marquee__header">
+              <h3>Những lời nhắn khác từ gia đình</h3>
+              <button
+                aria-label={
+                  shouldReduceMotion
+                    ? "Chuyển động đã được tắt theo cài đặt hệ thống"
+                    : isMarqueePaused
+                      ? "Tiếp tục tự động lướt đánh giá"
+                      : "Tạm dừng tự động lướt đánh giá"
+                }
+                aria-pressed={isMarqueePaused}
+                disabled={Boolean(shouldReduceMotion)}
+                onClick={() => setIsMarqueePaused((paused) => !paused)}
+                type="button"
+              >
+                {marqueeIsStopped ? (
+                  <Play aria-hidden="true" size={15} />
+                ) : (
+                  <Pause aria-hidden="true" size={15} />
+                )}
+                {shouldReduceMotion
+                  ? "Đã tắt chuyển động"
+                  : isMarqueePaused
+                    ? "Tiếp tục"
+                    : "Tạm dừng"}
+              </button>
+            </div>
+
+            <div
+              aria-label="Các đánh giá ngắn từ gia đình"
+              className="review-marquee__viewport"
+              role="region"
+            >
+              <div
+                className={`review-marquee__track${
+                  marqueeIsStopped ? " review-marquee__track--paused" : ""
+                }`}
+              >
+                {[false, true].map((isDuplicate) => (
+                  <ul aria-hidden={isDuplicate} className="review-marquee__group" key={String(isDuplicate)}>
+                    {compactReviews.map((review) => (
+                      <li className="review-note" key={`${isDuplicate}-${review.author}`}>
+                        <span className="review-note__stars" aria-label="5 trên 5 sao">
+                          {[0, 1, 2, 3, 4].map((star) => (
+                            <Star
+                              aria-hidden="true"
+                              fill="currentColor"
+                              key={star}
+                              size={14}
+                              strokeWidth={0}
+                            />
+                          ))}
+                        </span>
+                        <p>“{review.quote}”</p>
+                        <footer>
+                          <span aria-hidden="true">{review.initials}</span>
+                          <span>
+                            <strong>{review.author}</strong>
+                            <small>{review.context}</small>
+                          </span>
+                        </footer>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
 
+          <p className="sr-only" aria-live="polite">
+            Đánh giá {activeIndex + 1} trên {reviews.length}: {reviews[activeIndex].quote} —{" "}
+            {reviews[activeIndex].author}
+          </p>
+        </div>
       </div>
     </section>
   );

@@ -1,46 +1,46 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Plus_Jakarta_Sans, Space_Grotesk, Inter } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-const beVietnamPro = Be_Vietnam_Pro({
-  weight: ['300', '400', '500', '600', '700', '800'],
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-be-vietnam-pro',
-  display: 'swap',
+const dmSans = DM_Sans({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  weight: ['600', '700', '800'],
-  subsets: ['latin'],
-  variable: '--font-plus-jakarta',
-  display: 'swap',
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  style: ["normal", "italic"],
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-instrument-serif",
+  display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
-  weight: ['600', '700'],
-  subsets: ['latin'],
-  variable: '--font-space-grotesk',
-  display: 'swap',
-});
-
-const inter = Inter({
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-inter',
-  display: 'swap',
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ["500", "600"],
+  subsets: ["latin", "latin-ext", "vietnamese"],
+  variable: "--font-ibm-plex-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "CareSitter — Nền Tảng Chăm Sóc Đáng Tin Cậy Cho Gia Đình | Smart Family Care",
-  description: "Kết nối người chăm sóc đã xác minh 100% lý lịch tư pháp cho người thân, người cao tuổi, trẻ nhỏ trong vòng 8 phút.",
-  keywords: ["CareSitter", "chăm sóc người già", "trông trẻ", "chăm sóc tại nhà", "điều dưỡng gia đình", "caregiver việt nam"],
+  title: "CareSitter — Người thân được chăm, bạn được an lòng",
+  description:
+    "Kết nối gia đình với người chăm sóc tại nhà đã được xác minh. Đặt ca minh bạch, theo dõi rõ ràng và hỗ trợ xuyên suốt.",
+  keywords: [
+    "CareSitter",
+    "chăm sóc người cao tuổi",
+    "người chăm sóc tại nhà",
+    "đồng hành sinh hoạt",
+    "caregiver Việt Nam",
+  ],
   authors: [{ name: "CareSitter Team" }],
-  icons: {
-    icon: "/favicon.ico",
-  },
+  icons: { icon: "/favicon.ico" },
   openGraph: {
-    title: "CareSitter — Nền Tảng Chăm Sóc Đáng Tin Cậy Cho Gia Đình",
-    description: "Kết nối người chăm sóc đã xác minh 100% lý lịch tư pháp trong vòng 8 phút.",
+    title: "CareSitter — Người thân được chăm, bạn được an lòng",
+    description:
+      "Tìm người chăm sóc tại nhà phù hợp, đã được xác minh và có quy trình theo dõi minh bạch.",
     type: "website",
     locale: "vi_VN",
   },
@@ -50,6 +50,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  themeColor: "#F5F3EE",
 };
 
 export default function RootLayout({
@@ -60,11 +61,9 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`scroll-smooth ${beVietnamPro.variable} ${plusJakartaSans.variable} ${spaceGrotesk.variable} ${inter.variable}`}
+      className={`${dmSans.variable} ${instrumentSerif.variable} ${ibmPlexMono.variable}`}
     >
-      <body className="bg-white text-[#0F291E] antialiased selection:bg-[#D1FAE5] selection:text-[#00B14F]">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
