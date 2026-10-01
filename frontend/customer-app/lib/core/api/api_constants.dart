@@ -66,6 +66,7 @@ class ApiPaths {
       '/auth/login/password'; // POST: login bằng password
   static const register = '/auth/register'; // POST: đăng ký
   static const sendOtp = '/auth/send-otp'; // POST: gửi OTP qua email
+  static const googleCustomer = '/auth/google/customer';
   static const logout = '/auth/logout'; // POST: đăng xuất
   static const me =
       '/profile'; // GET: thông tin user hiện tại (ProfileController)

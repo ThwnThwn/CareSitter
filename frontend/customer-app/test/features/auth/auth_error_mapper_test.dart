@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/features/auth/data/mappers/auth_error_mapper.dart';
+import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
 import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,42 @@ void main() {
         'Mật khẩu tối thiểu 6 ký tự',
       );
       expect(AuthValidators.loginPassword('123456'), isNull);
+    });
+  });
+
+  group('AuthErrorMapper.google', () {
+    test('does not show an error when the user closes the Google chooser', () {
+      const error = GoogleIdentityException(
+        GoogleIdentityFailureCode.cancelled,
+        'cancelled',
+      );
+
+      expect(AuthErrorMapper.google(error), isNull);
+    });
+
+    test('maps an OAuth configuration failure to an actionable message', () {
+      const error = GoogleIdentityException(
+        GoogleIdentityFailureCode.configuration,
+        'missing client id',
+      );
+
+      expect(
+        AuthErrorMapper.google(error),
+        contains('chưa được cấu hình đúng'),
+      );
+    });
+
+    test('maps a rejected backend ID token', () {
+      const error = AppApiException(
+        message: 'Google ID Token không hợp lệ hoặc đã hết hạn.',
+        statusCode: 400,
+        code: 'auth.invalid_google_token',
+      );
+
+      expect(
+        AuthErrorMapper.google(error),
+        'Phiên xác thực Google không hợp lệ hoặc đã hết hạn.',
+      );
     });
   });
 }

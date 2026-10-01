@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'package:caresitter_customer/core/api/dio_client.dart';
+import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
 
 class AuthErrorMapper {
   const AuthErrorMapper._();
@@ -21,6 +22,35 @@ class AuthErrorMapper {
     if (apiError != null && message.isNotEmpty) return message;
 
     return 'Đăng nhập thất bại, vui lòng thử lại';
+  }
+
+  static String? google(Object error) {
+    if (error is GoogleIdentityException) {
+      return switch (error.code) {
+        GoogleIdentityFailureCode.cancelled => null,
+        GoogleIdentityFailureCode.configuration =>
+          'Google Sign-In chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.',
+        GoogleIdentityFailureCode.missingIdToken =>
+          'Google không trả về thông tin xác thực. Vui lòng thử lại.',
+        GoogleIdentityFailureCode.unsupportedPlatform => error.message,
+        GoogleIdentityFailureCode.unknown =>
+          'Không thể đăng nhập bằng Google. Vui lòng thử lại.',
+      };
+    }
+
+    final apiError = _apiException(error);
+    final normalized = (apiError?.message ?? error.toString()).toLowerCase();
+    if (_isConnectionError(error, normalized)) {
+      return 'Không có kết nối internet';
+    }
+    if (apiError?.code == 'auth.invalid_google_token' ||
+        normalized.contains('google') && normalized.contains('token')) {
+      return 'Phiên xác thực Google không hợp lệ hoặc đã hết hạn.';
+    }
+    if (apiError != null && apiError.message.trim().isNotEmpty) {
+      return apiError.message.trim();
+    }
+    return 'Không thể đăng nhập bằng Google. Vui lòng thử lại.';
   }
 
   static AppApiException? _apiException(Object error) {
