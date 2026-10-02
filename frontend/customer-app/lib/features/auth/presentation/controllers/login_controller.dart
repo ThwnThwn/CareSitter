@@ -26,15 +26,20 @@ class LoginState {
 class LoginController extends AutoDisposeNotifier<LoginState> {
   StreamSubscription<GoogleIdentityCredential>? _googleCredentialSubscription;
   bool _handlingGoogleCredential = false;
+  bool _disposed = false;
 
   @override
   LoginState build() {
+    _disposed = false;
     final googleIdentity = ref.read(googleIdentityGatewayProvider);
     _googleCredentialSubscription = googleIdentity.credentials.listen(
       _handleGoogleCredential,
       onError: _handleGoogleStreamError,
     );
-    ref.onDispose(() => _googleCredentialSubscription?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _googleCredentialSubscription?.cancel();
+    });
     return const LoginState();
   }
 
@@ -57,9 +62,11 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
               password: password,
             ),
           );
+      if (_disposed) return false;
       state = const LoginState();
       return true;
     } catch (error) {
+      if (_disposed) return false;
       state = LoginState(errorMessage: AuthErrorMapper.login(error));
       return false;
     }
@@ -72,6 +79,7 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
     try {
       await ref.read(googleIdentityGatewayProvider).authenticate();
     } catch (error) {
+      if (_disposed) return;
       state = LoginState(errorMessage: AuthErrorMapper.google(error));
     }
   }
@@ -79,7 +87,7 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
   Future<void> _handleGoogleCredential(
     GoogleIdentityCredential credential,
   ) async {
-    if (_handlingGoogleCredential) return;
+    if (_disposed || _handlingGoogleCredential) return;
     _handlingGoogleCredential = true;
     state = const LoginState(isLoading: true);
 
@@ -87,8 +95,10 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
       await ref
           .read(authRepositoryProvider)
           .loginWithGoogleIdToken(credential.idToken);
+      if (_disposed) return;
       state = const LoginState();
     } catch (error) {
+      if (_disposed) return;
       state = LoginState(errorMessage: AuthErrorMapper.google(error));
     } finally {
       _handlingGoogleCredential = false;
@@ -96,6 +106,7 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
   }
 
   void _handleGoogleStreamError(Object error, StackTrace stackTrace) {
+    if (_disposed) return;
     state = LoginState(errorMessage: AuthErrorMapper.google(error));
   }
 }

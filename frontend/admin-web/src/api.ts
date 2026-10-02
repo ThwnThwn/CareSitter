@@ -1,4 +1,5 @@
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5033').replace(/\/$/, '');
+const defaultApiBase = import.meta.env.PROD ? window.location.origin : 'http://localhost:5033';
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || defaultApiBase).replace(/\/$/, '');
 export const TOKEN_KEY = 'caresitter_admin_access_token';
 
 export class ApiError extends Error {

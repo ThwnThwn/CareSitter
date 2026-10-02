@@ -9,13 +9,13 @@ class ShellScaffold extends ConsumerWidget {
   const ShellScaffold({super.key, required this.child});
 
   static const _tabs = [
-    _NavItem(icon: Icons.home_rounded, label: 'Trang chủ', path: '/home'),
+    _NavItem(icon: Icons.home_outlined, label: 'Trang chủ', path: '/home'),
     _NavItem(
-        icon: Icons.calendar_month_rounded,
+        icon: Icons.calendar_month_outlined,
         label: 'Lịch hẹn',
         path: '/bookings'),
     _NavItem(
-        icon: Icons.people_alt_rounded,
+        icon: Icons.people_outline_rounded,
         label: 'Chăm sóc viên',
         path: '/caregivers'),
     _NavItem(
@@ -50,6 +50,8 @@ class ShellScaffold extends ConsumerWidget {
         ),
       ),
       backgroundColor: AppColors.background,
+      // Reserve the bottom bar's full height so scrollable page content never
+      // gets trapped underneath the persistent navigation.
       extendBody: false,
       bottomNavigationBar: _StitchBottomBar(
         selectedIndex: idx,
@@ -62,7 +64,7 @@ class ShellScaffold extends ConsumerWidget {
   }
 }
 
-// ── Center FAB ─────────────────────────────────────────────────────────────
+// ── Center FAB (GlowCare-style floating button) ────────────────────────────
 class _CenterBookingAction extends StatelessWidget {
   final VoidCallback onTap;
   const _CenterBookingAction({required this.onTap});
@@ -74,36 +76,52 @@ class _CenterBookingAction extends StatelessWidget {
       label: 'Đặt lịch mới',
       child: Tooltip(
         message: 'Đặt lịch mới',
-        child: InkWell(
+        child: GestureDetector(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 25,
+              Transform.translate(
+                offset: const Offset(0, -14),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primary, AppColors.primaryLight],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              const Text(
-                'Đặt lịch',
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 10,
-                  height: 1.1,
-                  fontWeight: FontWeight.w700,
+              Transform.translate(
+                offset: const Offset(0, -10),
+                child: const Text(
+                  'Đặt lịch',
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    height: 1.1,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -114,7 +132,7 @@ class _CenterBookingAction extends StatelessWidget {
   }
 }
 
-// ── Bottom Bar ─────────────────────────────────────────────────────────────
+// ── Bottom Bar (GlowCare-style) ────────────────────────────────────────────
 class _StitchBottomBar extends StatelessWidget {
   final int selectedIndex;
   final int activeTrackingCount;
@@ -133,15 +151,22 @@ class _StitchBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
-      color: Colors.white,
+      color: Colors.transparent,
       elevation: 0,
       padding: EdgeInsets.zero,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: AppColors.divider, width: 1),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Center(
@@ -234,10 +259,23 @@ class _NavBarItem extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Center(
-                  child: Icon(
-                    item.icon,
-                    color: isSelected ? AppColors.primary : AppColors.textHint,
-                    size: 24,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding:
+                        isSelected ? const EdgeInsets.all(4) : EdgeInsets.zero,
+                    decoration: isSelected
+                        ? BoxDecoration(
+                            color: AppColors.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          )
+                        : null,
+                    child: Icon(
+                      item.icon,
+                      color:
+                          isSelected ? AppColors.primary : AppColors.textHint,
+                      size: isSelected ? 20 : 24,
+                    ),
                   ),
                 ),
                 if (badgeCount > 0)
@@ -267,11 +305,11 @@ class _NavBarItem extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             item.label,
-            maxLines: 2,
-            overflow: TextOverflow.fade,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isSelected ? AppColors.primary : AppColors.textHint,

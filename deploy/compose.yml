@@ -1,0 +1,116 @@
+name: caresitter
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in deploy/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in deploy/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redisdata:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: postgis/postgis:16-3.4
+    profiles: [migrate]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB in deploy/.env}
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER in deploy/.env}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      ALLOW_DESTRUCTIVE_MIGRATIONS: ${ALLOW_DESTRUCTIVE_MIGRATIONS:-false}
+    volumes:
+      - ../backend/init-db:/sql:ro
+      - ./migrate.sh:/migrate.sh:ro
+    entrypoint: ["sh", "/migrate.sh"]
+    networks: [data]
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ${CARESITTER_ENV_FILE:-.env}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:?Set APP_ENVIRONMENT in deploy/.env}
+      ASPNETCORE_URLS: http://+:8080
+      HANGFIRE_USE_POSTGRES: "true"
+      Proxy__KnownProxies__0: ${PROXY_IP:-172.30.90.10}
+      Proxy__ForwardLimit: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
+    networks: [edge, data]
+
+  admin:
+    build:
+      context: ../frontend/admin-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks: [edge]
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - admin
+    networks:
+      edge:
+        ipv4_address: ${PROXY_IP:-172.30.90.10}
+
+networks:
+  edge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.30.90.0/24}
+  data:
+    internal: true
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

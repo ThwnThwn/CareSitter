@@ -1,16 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
-import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
 import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero_header.dart';
-import 'package:caresitter_customer/features/auth/presentation/widgets/google_web_button.dart';
 
 // Authentication colors inherit the shared landing-page palette.
 
@@ -215,8 +211,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _SocialLoginRow(enabled: !loginState.isLoading),
               const SizedBox(height: 16),
               _OtpLoginButton(enabled: !loginState.isLoading),
-              const SizedBox(height: 16),
-              const _TrustBanner(),
               const SizedBox(height: 20),
             ],
           ),
@@ -689,16 +683,27 @@ class _SocialLoginRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        Expanded(
-          child: _buildGoogleButton(ref),
-        ),
-        const SizedBox(width: 12),
+        // ── Google button ──
         Expanded(
           child: _SocialButton(
-            label: 'Apple',
+            key: const ValueKey('google-sign-in-button'),
+            label: 'Đăng nhập bằng Google',
+            icon: const _GoogleIcon(),
+            enabled: enabled,
+            onPressed: () =>
+                ref.read(loginControllerProvider.notifier).loginWithGoogle(),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // ── Apple button ──
+        Expanded(
+          child: _SocialButton(
+            key: const ValueKey('apple-sign-in-button'),
+            label: 'Đăng nhập bằng Apple',
             icon: const Icon(
               Icons.apple_rounded,
-              size: 20,
+              size: 22,
               color: _HeroTokens.onSurface,
             ),
             enabled: enabled,
@@ -706,56 +711,6 @@ class _SocialLoginRow extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildGoogleButton(WidgetRef ref) {
-    if (!kIsWeb) {
-      return _SocialButton(
-        key: const ValueKey('google-sign-in-button'),
-        label: '',
-        icon: const _GoogleIcon(),
-        enabled: enabled,
-        onPressed: () =>
-            ref.read(loginControllerProvider.notifier).loginWithGoogle(),
-      );
-    }
-
-    final initialization = ref.watch(googleIdentityInitializationProvider);
-    return initialization.when(
-      data: (_) => enabled
-          ? SizedBox(
-              key: const ValueKey('google-sign-in-button'),
-              height: 48,
-              child: LayoutBuilder(
-                builder: (context, constraints) => Center(
-                  child: buildGoogleWebButton(width: constraints.maxWidth),
-                ),
-              ),
-            )
-          : const _SocialButton(
-              label: '',
-              icon: _GoogleIcon(),
-              enabled: false,
-            ),
-      loading: () => const _SocialButton(
-        label: '',
-        icon: SizedBox.square(
-          dimension: 18,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        enabled: false,
-      ),
-      error: (error, _) => Tooltip(
-        message: error is GoogleIdentityException
-            ? error.message
-            : 'Google Sign-In chưa được cấu hình.',
-        child: const _SocialButton(
-          label: '',
-          icon: _GoogleIcon(),
-          enabled: false,
-        ),
-      ),
     );
   }
 }
@@ -783,6 +738,7 @@ class _SocialButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: _HeroTokens.onSurface,
+          overlayColor: Colors.black.withValues(alpha: 0.04),
           side: BorderSide(
             color: _HeroTokens.outlineVariant.withValues(alpha: 0.6),
           ),
@@ -791,74 +747,29 @@ class _SocialButton extends StatelessWidget {
           ),
           padding: EdgeInsets.zero,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            if (label.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: _HeroTokens.onSurface,
-                  ),
-                ),
-              ),
-            ],
-          ],
+        child: Tooltip(
+          message: label,
+          excludeFromSemantics: true,
+          child: Semantics(label: label, excludeSemantics: true, child: icon),
         ),
       ),
     );
   }
 }
 
-/// Painted Google "G" multicolor ring icon
+/// Official Google brand asset; preserve its colors and aspect ratio.
 class _GoogleIcon extends StatelessWidget {
   const _GoogleIcon();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Image.asset(
+      'assets/icons/google-g.png',
       width: 20,
       height: 20,
-      child: CustomPaint(painter: _GooglePainter()),
+      excludeFromSemantics: true,
     );
   }
-}
-
-class _GooglePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    const colors = [
-      Color(0xFF4285F4),
-      Color(0xFF34A853),
-      Color(0xFFFBBC05),
-      Color(0xFFEA4335),
-    ];
-    const startAngles = [0.0, 1.57, 3.14, 4.71];
-    final center = Offset(size.width / 2, size.height / 2);
-    final r = size.width / 2 - 1.5;
-    for (int i = 0; i < 4; i++) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: r),
-        startAngles[i],
-        1.47,
-        false,
-        Paint()
-          ..color = colors[i]
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.0,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ─── OTP Login Button ────────────────────────────────────────────────────────
@@ -893,62 +804,6 @@ class _OtpLoginButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Trust / Security Banner ─────────────────────────────────────────────────
-
-class _TrustBanner extends StatelessWidget {
-  const _TrustBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: _HeroTokens.surfaceLow.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: _HeroTokens.outlineVariant.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.security_rounded,
-            size: 20,
-            color: _HeroTokens.primary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: const TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Bảo mật chuẩn y tế & đồng hành phi lâm sàng: ',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: _HeroTokens.onSurface,
-                      height: 1.45,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'Dữ liệu gia đình được mã hóa an toàn 256-bit.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _HeroTokens.onSurfaceVariant,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

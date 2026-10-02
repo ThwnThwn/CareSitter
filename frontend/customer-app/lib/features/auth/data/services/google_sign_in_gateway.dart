@@ -6,9 +6,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:caresitter_customer/core/config/env_config.dart';
 import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
+import 'google_web_identity_gateway_stub.dart'
+    if (dart.library.js_interop) 'google_web_identity_gateway_web.dart';
 
 final googleIdentityGatewayProvider = Provider<GoogleIdentityGateway>(
-  (ref) => GoogleSignInGateway(),
+  (ref) => kIsWeb ? createGoogleWebIdentityGateway(ref) : GoogleSignInGateway(),
 );
 
 final googleIdentityInitializationProvider = FutureProvider<void>(

@@ -7,6 +7,46 @@ namespace CareSitter.IntegrationTests;
 public sealed class DeploymentConfigurationTests
 {
     [Fact]
+    public void Non_development_requires_https_public_urls_and_exact_vnpay_callback_paths()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:CareSitter"] = "Host=db;Database=caresitter;Password=sample",
+            ["Redis:ConnectionString"] = "redis:6379,password=sample",
+            ["Jwt:SecretKey"] = "test-only-key-with-at-least-thirty-two-characters",
+            ["Encryption:EncryptionKey"] = "test-only-key-with-at-least-thirty-two-characters",
+            ["Payments:VNPay:TmnCode"] = "test-tmn",
+            ["Payments:VNPay:HashSecret"] = "test-hash",
+            ["Smtp:Password"] = "test-app-password",
+            ["Cloudinary:ApiSecret"] = "test-cloudinary-secret",
+            ["Public:ApiBaseUrl"] = "https://admin.example.com",
+            ["Cors:AllowedOrigins:0"] = "https://admin.example.com",
+            ["Payments:VNPay:ReturnUrl"] = "https://admin.example.com/api/v1/payments/vnpay/return",
+            ["Payments:VNPay:IpnUrl"] = "https://admin.example.com/api/v1/payments/vnpay/ipn",
+            ["Payments:VNPay:PaymentUrl"] = "https://payments.example.com/pay",
+            ["Payments:VNPay:QueryUrl"] = "https://payments.example.com/query",
+            ["Payments:VNPay:CustomerWebUrl"] = "https://customer.example.com"
+        };
+
+        DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false);
+
+        values["Cors:AllowedOrigins:0"] = "http://admin.example.com";
+        Assert.Throws<InvalidOperationException>(() =>
+            DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false));
+
+        values["Payments:VNPay:IpnUrl"] = "https://admin.example.com/api/v1/payments/vnpay/ipn";
+        values["Jwt:SecretKey"] = "REPLACE_WITH_RANDOM_JWT_SECRET_AT_LEAST_32_CHARACTERS";
+        Assert.Throws<InvalidOperationException>(() =>
+            DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false));
+
+        values["Cors:AllowedOrigins:0"] = "https://admin.example.com";
+        values["Jwt:SecretKey"] = "test-only-key-with-at-least-thirty-two-characters";
+        values["Payments:VNPay:IpnUrl"] = "https://other.example.com/api/v1/payments/vnpay/ipn";
+        Assert.Throws<InvalidOperationException>(() =>
+            DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false));
+    }
+
+    [Fact]
     public void Production_requires_an_explicit_trusted_proxy()
     {
         var configuration = Configuration();
