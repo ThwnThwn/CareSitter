@@ -182,7 +182,8 @@ class CaregiverProfileScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.star, size: 14, color: Color(0xFFF39C12)),
+                    const Icon(Icons.star,
+                        size: 14, color: AppColors.secondary),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(

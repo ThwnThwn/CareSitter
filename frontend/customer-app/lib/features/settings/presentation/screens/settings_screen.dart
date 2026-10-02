@@ -310,7 +310,9 @@ class SettingsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0x662D9E6B), width: 1.5)),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                    width: 1.5)),
             child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

@@ -140,7 +140,7 @@ class _StitchBottomBar extends StatelessWidget {
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: Color(0xFFE8F2EC), width: 1),
+            top: BorderSide(color: AppColors.divider, width: 1),
           ),
         ),
         child: SafeArea(
@@ -236,9 +236,7 @@ class _NavBarItem extends StatelessWidget {
                 Center(
                   child: Icon(
                     item.icon,
-                    color: isSelected
-                        ? AppColors.primary
-                        : const Color(0xFF9CA3AF),
+                    color: isSelected ? AppColors.primary : AppColors.textHint,
                     size: 24,
                   ),
                 ),
@@ -276,7 +274,7 @@ class _NavBarItem extends StatelessWidget {
             overflow: TextOverflow.fade,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppColors.primary : const Color(0xFF9CA3AF),
+              color: isSelected ? AppColors.primary : AppColors.textHint,
               fontSize: 10,
               height: 1.1,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

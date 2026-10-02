@@ -264,7 +264,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFE8F2EC)),
+              const Divider(height: 1, color: AppColors.divider),
 
               // ── List ──
               Expanded(
@@ -382,7 +382,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                       Row(
                         children: [
                           const Icon(Icons.star_rounded,
-                              color: Color(0xFFF5A623), size: 14),
+                              color: AppColors.secondary, size: 14),
                           const SizedBox(width: 3),
                           Text(
                             caregiver.ratingAvg.toStringAsFixed(1),
@@ -451,7 +451,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
             ],
 
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Color(0xFFE8F2EC)),
+            const Divider(height: 1, color: AppColors.divider),
             const SizedBox(height: 12),
 
             // ── Price + Action buttons ──

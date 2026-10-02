@@ -9,7 +9,7 @@ import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import QuickBookModal from "@/components/QuickBookModal";
-import ScrollProgressBar from "@/components/ScrollProgressBar";
+import ScrollMotion from "@/components/ScrollMotion";
 import StatsSection from "@/components/StatsSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 
@@ -33,7 +33,7 @@ export default function LandingPage() {
       <a className="skip-link" href="#main-content">
         Bỏ qua điều hướng
       </a>
-      <ScrollProgressBar />
+      <ScrollMotion />
       <Header onOpenBooking={() => handleOpenBooking()} />
 
       <main id="main-content">

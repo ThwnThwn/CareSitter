@@ -133,7 +133,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F8F4),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -303,7 +303,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           IconButton(
             onPressed: () => context.pop(),
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 20, color: Color(0xFF1A2E2E)),
+                size: 20, color: AppColors.textPrimary),
           ),
           const Spacer(),
           Container(
@@ -345,7 +345,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1A2E2E),
+              color: AppColors.textPrimary,
               letterSpacing: -0.5,
             ),
           ),
@@ -354,7 +354,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             'Điền thông tin để bắt đầu chăm sóc người thân',
             style: TextStyle(
               fontSize: 14,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -366,20 +366,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: AppColors.authErrorSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFCA5A5)),
+        border: Border.all(color: AppColors.authErrorBorder),
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline_rounded,
-              color: Color(0xFFDC2626), size: 20),
+              color: AppColors.error, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -410,7 +410,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       textInputAction: textInputAction,
       textCapitalization: textCapitalization,
       style: const TextStyle(
-          fontSize: 15, color: Color(0xFF1A2E2E), fontWeight: FontWeight.w500),
+          fontSize: 15,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -433,11 +435,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -445,11 +447,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFDC2626)),
+          borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
     );
@@ -471,7 +473,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       textInputAction: textInputAction,
       onFieldSubmitted: onSubmitted,
       style: const TextStyle(
-          fontSize: 15, color: Color(0xFF1A2E2E), fontWeight: FontWeight.w500),
+          fontSize: 15,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         labelText: label,
         hintText: '••••••••',
@@ -480,7 +484,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         suffixIcon: IconButton(
           icon: Icon(
             obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-            color: const Color(0xFF9CA3AF),
+            color: AppColors.textHint,
             size: 20,
           ),
           onPressed: onToggle,
@@ -491,11 +495,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -503,11 +507,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFDC2626)),
+          borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
     );
@@ -536,7 +540,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: RichText(
               text: const TextSpan(
                 style: TextStyle(
-                    fontSize: 13, color: Color(0xFF6B7280), height: 1.4),
+                    fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                 children: [
                   TextSpan(text: 'Tôi đồng ý với '),
                   TextSpan(
@@ -613,7 +617,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       children: [
         const Text(
           'Đã có tài khoản?',
-          style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         TextButton(
           onPressed: () => context.pop(),

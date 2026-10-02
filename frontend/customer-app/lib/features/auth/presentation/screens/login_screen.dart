@@ -12,27 +12,17 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/auth_erro
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_hero_header.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/google_web_button.dart';
 
-// ─── Stitch Design Tokens (Hero Lifestyle) ──────────────────────────────────
-// Based on: projects/9685887642498274590 / screen 2c0a8463e7cd41e78008517578edb60b
-// Primary Deep:   #006A43
-// Primary:        #2D9E6B (botanical green)
-// Surface:        #E7FFF1 (mint background)
-// Surface Low:    #E1F9EB
-// On-Surface:     #0B1F17
-// On-Surface Var: #3E4941
-// Outline:        #6E7A71
-// Outline Var:    #BDCABF
+// Authentication colors inherit the shared landing-page palette.
 
 class _HeroTokens {
-  static const Color primary = Color(0xFF2D9E6B);
-  static const Color primaryDeep = Color(0xFF006A43);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceLow = Color(0xFFE1F9EB);
-  static const Color background = Color(0xFFE7FFF1);
-  static const Color onSurface = Color(0xFF0B1F17);
-  static const Color onSurfaceVariant = Color(0xFF3E4941);
-  static const Color outline = Color(0xFF6E7A71);
-  static const Color outlineVariant = Color(0xFFBDCABF);
+  static const Color primary = AppColors.primary;
+  static const Color primaryDeep = AppColors.primary;
+  static const Color surfaceLow = AppColors.primaryContainer;
+  static const Color background = AppColors.background;
+  static const Color onSurface = AppColors.textPrimary;
+  static const Color onSurfaceVariant = AppColors.textSecondary;
+  static const Color outline = AppColors.textSecondary;
+  static const Color outlineVariant = AppColors.border;
 }
 
 // ─── Login Screen ────────────────────────────────────────────────────────────
@@ -93,7 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Expanded(
                     flex: 6,
                     child: ColoredBox(
-                      color: _HeroTokens.surface,
+                      color: _HeroTokens.background,
                       child: LayoutBuilder(
                         builder: (context, formConstraints) {
                           return SingleChildScrollView(
@@ -146,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         if (includeHero) const _HeroSection(),
         Container(
-          color: _HeroTokens.surface,
+          color: _HeroTokens.background,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -265,7 +255,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: AppColors.error, width: 1.5),
       ),
-      hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9FB8AC)),
+      hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
       labelStyle: const TextStyle(
         fontSize: 14,
         color: _HeroTokens.onSurfaceVariant,
@@ -324,8 +314,8 @@ class _HeroSection extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   stops: const [0.0, 0.45, 1.0],
                   colors: [
-                    const Color(0xFF0B1F17).withValues(alpha: 0.60),
-                    const Color(0xFF0B1F17).withValues(alpha: 0.15),
+                    AppColors.textPrimary.withValues(alpha: 0.60),
+                    AppColors.textPrimary.withValues(alpha: 0.15),
                     Colors.white.withValues(alpha: 0.90),
                   ],
                 ),
@@ -339,7 +329,7 @@ class _HeroSection extends StatelessWidget {
             child: Container(
               height: 32,
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.background,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
@@ -723,7 +713,7 @@ class _SocialLoginRow extends ConsumerWidget {
     if (!kIsWeb) {
       return _SocialButton(
         key: const ValueKey('google-sign-in-button'),
-        label: 'Google',
+        label: '',
         icon: const _GoogleIcon(),
         enabled: enabled,
         onPressed: () =>
@@ -744,12 +734,12 @@ class _SocialLoginRow extends ConsumerWidget {
               ),
             )
           : const _SocialButton(
-              label: 'Google',
+              label: '',
               icon: _GoogleIcon(),
               enabled: false,
             ),
       loading: () => const _SocialButton(
-        label: 'Google',
+        label: '',
         icon: SizedBox.square(
           dimension: 18,
           child: CircularProgressIndicator(strokeWidth: 2),
@@ -761,7 +751,7 @@ class _SocialLoginRow extends ConsumerWidget {
             ? error.message
             : 'Google Sign-In chưa được cấu hình.',
         child: const _SocialButton(
-          label: 'Google',
+          label: '',
           icon: _GoogleIcon(),
           enabled: false,
         ),
@@ -805,19 +795,21 @@ class _SocialButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: _HeroTokens.onSurface,
+            if (label.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: _HeroTokens.onSurface,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -974,7 +966,7 @@ class _RegisterFooter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         border: Border(
           top: BorderSide(
             color: _HeroTokens.outlineVariant.withValues(alpha: 0.25),

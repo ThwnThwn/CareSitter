@@ -240,7 +240,7 @@ class _NotificationEmpty extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
+                color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -288,9 +288,9 @@ Color _iconColorFor(String type) {
     return AppColors.error;
   }
   if (normalized.contains('payment') || normalized.contains('wallet')) {
-    return const Color(0xFFE67E22);
+    return AppColors.warning;
   }
-  if (normalized.contains('review')) return const Color(0xFFF39C12);
+  if (normalized.contains('review')) return AppColors.secondary;
   return AppColors.primary;
 }
 

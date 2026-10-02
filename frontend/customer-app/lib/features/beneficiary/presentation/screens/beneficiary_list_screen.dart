@@ -130,8 +130,8 @@ class BeneficiaryListScreen extends ConsumerWidget {
     final careColor = b.careLevel == 'Nặng'
         ? const Color(0xFFE74C3C)
         : b.careLevel == 'Trung bình'
-            ? const Color(0xFFF39C12)
-            : const Color(0xFF27AE60);
+            ? AppColors.warning
+            : AppColors.success;
 
     return GestureDetector(
       onTap: () => context.push('/beneficiaries/${b.id}'),

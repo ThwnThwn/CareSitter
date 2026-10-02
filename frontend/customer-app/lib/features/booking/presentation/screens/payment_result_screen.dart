@@ -225,7 +225,7 @@ class _PaymentResultContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [
                 BoxShadow(
-                    color: Color(0x120B3D26),
+                    color: AppColors.shadow,
                     blurRadius: 8,
                     offset: Offset(0, 3)),
               ],

@@ -152,7 +152,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: value ? AppColors.primaryLight : AppColors.surfaceVariant,
+          color: value ? AppColors.primaryContainer : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon,

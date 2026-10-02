@@ -25,7 +25,7 @@ class ActivityScreen extends ConsumerWidget {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F8F4),
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
           // ── App Bar ──────────────────────────────────
@@ -36,7 +36,7 @@ class ActivityScreen extends ConsumerWidget {
             title: const Text(
               'Hoạt động',
               style: TextStyle(
-                color: Color(0xFF1A2E2E),
+                color: AppColors.textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
@@ -119,7 +119,7 @@ class ActivityScreen extends ConsumerWidget {
                                         height: 1,
                                         indent: 64,
                                         endIndent: 16,
-                                        color: Color(0xFFECF5F5)),
+                                        color: AppColors.surfaceVariant),
                                 ],
                               );
                             }),
@@ -165,7 +165,7 @@ class ActivityScreen extends ConsumerWidget {
     return Text(
       title,
       style: const TextStyle(
-        color: Color(0xFF1A2E2E),
+        color: AppColors.textPrimary,
         fontSize: 17,
         fontWeight: FontWeight.w800,
       ),
@@ -366,8 +366,8 @@ class ActivityScreen extends ConsumerWidget {
                     booking.caregiverName ?? 'Người chăm sóc',
                     style: TextStyle(
                       color: isCancelled
-                          ? const Color(0xFF5A7272)
-                          : const Color(0xFF1A2E2E),
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
@@ -375,15 +375,15 @@ class ActivityScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${booking.serviceName ?? "Dịch vụ chăm sóc"} • Cho: ${booking.beneficiaryName ?? "Người thân"}',
-                    style:
-                        const TextStyle(color: Color(0xFF5A7272), fontSize: 12),
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
                   Text(
                     '${booking.time} • ${booking.date}',
-                    style:
-                        const TextStyle(color: Color(0xFF9FBABA), fontSize: 11),
+                    style: const TextStyle(
+                        color: AppColors.textHint, fontSize: 11),
                   ),
                   if (!isCancelled && status == 'completed') ...[
                     const SizedBox(height: 6),
@@ -410,7 +410,7 @@ class ActivityScreen extends ConsumerWidget {
                 Text(
                   _formatCurrency(booking.totalPrice),
                   style: const TextStyle(
-                    color: Color(0xFF1A2E2E),
+                    color: AppColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -452,7 +452,7 @@ class ActivityScreen extends ConsumerWidget {
             const Text(
               'Chưa có ca chăm sóc nào',
               style: TextStyle(
-                color: Color(0xFF5A7272),
+                color: AppColors.textSecondary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -461,7 +461,7 @@ class ActivityScreen extends ConsumerWidget {
             const Text(
               'Đặt lịch ngay để bắt đầu theo dõi\nca chăm sóc cho người thân.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF9FBABA), fontSize: 13),
+              style: TextStyle(color: AppColors.textHint, fontSize: 13),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -513,22 +513,22 @@ class ActivityScreen extends ConsumerWidget {
       case 'disputed':
         return {
           'shortLabel': 'Đang xử lý',
-          'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFEF5E7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       case 'confirmed':
         return {
           'shortLabel': 'Đã xác nhận',
-          'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFFF3DC),
+          'color': AppColors.warning,
+          'bg': AppColors.secondaryContainer,
         };
       case 'pending':
       case 'pending_payment':
       case 'draft':
         return {
           'shortLabel': 'Chờ xác nhận',
-          'color': const Color(0xFF7F8C8D),
-          'bg': const Color(0xFFF4F6F6),
+          'color': AppColors.textSecondary,
+          'bg': AppColors.background,
         };
       case 'payment_reconciliation_pending':
         return {
@@ -539,8 +539,8 @@ class ActivityScreen extends ConsumerWidget {
       case 'needs_manual_review':
         return {
           'shortLabel': 'Chờ kiểm tra',
-          'color': const Color(0xFFB45309),
-          'bg': const Color(0xFFFFF7ED),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       case 'completed':
         return {
@@ -558,8 +558,8 @@ class ActivityScreen extends ConsumerWidget {
       case 'matching_failed':
         return {
           'shortLabel': 'Chưa ghép được',
-          'color': const Color(0xFFD97706),
-          'bg': const Color(0xFFFEF3C7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       default:
         final formatted = status.replaceAll('_', ' ');
