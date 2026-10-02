@@ -8,6 +8,8 @@
 !/.gitignore
 !/backend/
 !/backend/**
+!/deploy/
+!/deploy/**
 !/frontend/
 !/frontend/**
 /backend/docs/
@@ -15,6 +17,7 @@
 # ---------- Secrets / môi trường ----------
 # Chỉ commit *.env.example, KHÔNG commit file thật
 .env
+.env.runtime
 .env.local
 .env.*.local
 *.env
@@ -23,6 +26,7 @@ secrets.json
 appsettings.*.Local.json
 *firebase-adminsdk*.json
 firebase-service-account*.json
+deploy/secrets/
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 **/macos/Runner/GoogleService-Info.plist

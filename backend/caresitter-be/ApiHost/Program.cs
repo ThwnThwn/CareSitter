@@ -34,8 +34,15 @@ using Microsoft.AspNetCore.Http.Features;
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+// Hosting request diagnostics include query strings (OAuth codes/state).
+// Keep warnings/errors without logging authentication callback URLs.
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = 11 * 1024 * 1024);
+
+DeploymentConfiguration.ValidatePublicEndpoints(
+    builder.Configuration,
+    builder.Environment.IsDevelopment());
 
 var forwardedHeadersOptions = DeploymentConfiguration.CreateForwardedHeadersOptions(
     builder.Configuration,
@@ -119,6 +126,7 @@ builder.Services.AddCloudinaryMediaService(builder.Configuration);
 
 // Đăng ký cấu hình và các dịch vụ xác thực JWT
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddGoogleWebAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
 
 // Đăng ký Email sender (Gmail SMTP) để gửi OTP
 builder.Services.AddEmailSender(builder.Configuration);
@@ -366,8 +374,9 @@ app.Use(async (context, next) =>
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
         headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-        if (context.Request.Path.StartsWithSegments("/api") ||
-            context.Request.Path.StartsWithSegments("/health"))
+        if (!headers.ContainsKey("Content-Security-Policy") &&
+            (context.Request.Path.StartsWithSegments("/api") ||
+             context.Request.Path.StartsWithSegments("/health")))
             headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
         return Task.CompletedTask;
     });
@@ -475,6 +484,7 @@ RecurringJob.AddOrUpdate<IBookingJobsService>(
 
 // --- Map Controllers ---
 app.MapControllers();
+app.MapGoogleWebAuthentication();
 
 // --- Map endpoint cua tat ca module (Minimal API) ---
 app.MapModuleEndpoints();

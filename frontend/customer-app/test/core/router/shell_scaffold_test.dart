@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/router/shell_scaffold.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +21,12 @@ void main() {
           routes: [
             GoRoute(
               path: '/home',
-              builder: (_, __) => const Scaffold(body: Text('Trang chủ')),
+              builder: (_, __) => const Scaffold(
+                body: SizedBox.expand(
+                  key: ValueKey('home-body'),
+                  child: Text('Trang chủ'),
+                ),
+              ),
             ),
           ],
         ),
@@ -40,9 +46,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final barRect = tester.getRect(find.byType(BottomAppBar));
+    final bodyRect = tester.getRect(find.byKey(const ValueKey('home-body')));
     final addRect = tester.getRect(find.byIcon(Icons.add_rounded));
 
-    expect(addRect.top, greaterThanOrEqualTo(barRect.top));
+    expect(bodyRect.bottom, lessThanOrEqualTo(barRect.top));
+    // The circular booking action may optically rise a few pixels above the
+    // bar, but must stay attached to it rather than floating over content.
+    expect(addRect.top, greaterThanOrEqualTo(barRect.top - AppSpacing.sm));
     expect(addRect.bottom, lessThanOrEqualTo(barRect.bottom));
     expect(find.text('Đặt lịch'), findsOneWidget);
 

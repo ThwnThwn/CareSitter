@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/TestResults/
+tests/
+.tmp-build/
+.vs/
+artifacts/
+.env*
+**/.env*
+**/appsettings.*.Local.json
+**/*firebase-adminsdk*.json
+**/firebase-service-account*.json
+**/secrets.json
+.git/

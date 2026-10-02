@@ -1,0 +1,13 @@
+{$APP_DOMAIN} {
+    encode zstd gzip
+    header Strict-Transport-Security "max-age=31536000"
+
+    @backend path /api/* /hubs/* /health /health/* /hangfire /hangfire/*
+    handle @backend {
+        reverse_proxy api:8080
+    }
+
+    handle {
+        reverse_proxy admin:8080
+    }
+}
