@@ -115,7 +115,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       backgroundColor: AppColors.cardBackground,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: Color(0x1A2F7F7F),
+      shadowColor: AppColors.shadow,
       title: Text(
         'Danh mục dịch vụ',
         style: TextStyle(
@@ -277,7 +277,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                       child: Text(
                         service.category,
                         style: const TextStyle(
-                          color: AppColors.secondary,
+                          color: AppColors.secondaryStrong,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),

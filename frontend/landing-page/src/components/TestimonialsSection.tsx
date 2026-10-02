@@ -1,14 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import MotionWords from "./MotionWords";
+import { motion } from "framer-motion";
 import {
   BadgeCheck,
-  ChevronLeft,
-  ChevronRight,
-  MoveHorizontal,
-  Pause,
-  Play,
   Quote,
   Star,
 } from "lucide-react";
@@ -107,9 +103,6 @@ function relativePosition(index: number, activeIndex: number) {
 
 export default function TestimonialsSection() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
-  const marqueeIsStopped = Boolean(shouldReduceMotion || isMarqueePaused);
 
   const goTo = useCallback((index: number) => {
     setActiveIndex((index + reviews.length) % reviews.length);
@@ -131,8 +124,10 @@ export default function TestimonialsSection() {
             <p className="section-label section-label--ink">
               Câu chuyện từ gia đình
             </p>
-            <h2 className="display display--section">
+            <h2 className="display display--section" data-scroll-reveal="heading">
+              <MotionWords>
               Khi việc chăm sóc <em>trở nên nhẹ lòng.</em>
+              </MotionWords>
             </h2>
           </div>
 
@@ -154,7 +149,7 @@ export default function TestimonialsSection() {
             aria-label="Đánh giá của gia đình sử dụng CareSitter"
             aria-roledescription="carousel"
             className="review-carousel__stage"
-            drag={shouldReduceMotion ? false : "x"}
+            drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.08}
             onDragEnd={(_, info) => {
@@ -174,7 +169,7 @@ export default function TestimonialsSection() {
               const isNearby = Math.abs(position) <= 1;
 
               return (
-                <div className="review-carousel__slot" key={review.author}>
+                <div className="review-carousel__slot" data-scroll-reveal="card" key={review.author}>
                   <motion.blockquote
                     animate={{
                       opacity: isActive ? 1 : isNearby ? 0.42 : 0,
@@ -185,11 +180,7 @@ export default function TestimonialsSection() {
                     className="review-card"
                     initial={false}
                     style={{ pointerEvents: isActive ? "auto" : "none" }}
-                    transition={
-                      shouldReduceMotion
-                        ? { duration: 0.01 }
-                        : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
-                    }
+                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <div className="review-card__topline">
                       <span className="review-card__stars" aria-label="5 trên 5 sao">
@@ -230,11 +221,6 @@ export default function TestimonialsSection() {
           </motion.div>
 
           <div className="review-carousel__controls">
-            <div className="review-carousel__gesture" aria-hidden="true">
-              <MoveHorizontal size={17} />
-              Kéo hoặc vuốt để xem
-            </div>
-
             <div className="review-carousel__dots" aria-label="Chọn đánh giá">
               {reviews.map((review, index) => (
                 <button
@@ -247,46 +233,11 @@ export default function TestimonialsSection() {
               ))}
             </div>
 
-            <div className="review-carousel__arrows">
-              <button aria-label="Đánh giá trước" onClick={previous} type="button">
-                <ChevronLeft aria-hidden="true" size={19} />
-              </button>
-              <span aria-live="polite">
-                {String(activeIndex + 1).padStart(2, "0")} / {String(reviews.length).padStart(2, "0")}
-              </span>
-              <button aria-label="Đánh giá tiếp theo" onClick={next} type="button">
-                <ChevronRight aria-hidden="true" size={19} />
-              </button>
-            </div>
           </div>
 
-          <div className="review-marquee">
+          <div className="review-marquee" data-scroll-reveal="card">
             <div className="review-marquee__header">
               <h3>Những lời nhắn khác từ gia đình</h3>
-              <button
-                aria-label={
-                  shouldReduceMotion
-                    ? "Chuyển động đã được tắt theo cài đặt hệ thống"
-                    : isMarqueePaused
-                      ? "Tiếp tục tự động lướt đánh giá"
-                      : "Tạm dừng tự động lướt đánh giá"
-                }
-                aria-pressed={isMarqueePaused}
-                disabled={Boolean(shouldReduceMotion)}
-                onClick={() => setIsMarqueePaused((paused) => !paused)}
-                type="button"
-              >
-                {marqueeIsStopped ? (
-                  <Play aria-hidden="true" size={15} />
-                ) : (
-                  <Pause aria-hidden="true" size={15} />
-                )}
-                {shouldReduceMotion
-                  ? "Đã tắt chuyển động"
-                  : isMarqueePaused
-                    ? "Tiếp tục"
-                    : "Tạm dừng"}
-              </button>
             </div>
 
             <div
@@ -294,11 +245,7 @@ export default function TestimonialsSection() {
               className="review-marquee__viewport"
               role="region"
             >
-              <div
-                className={`review-marquee__track${
-                  marqueeIsStopped ? " review-marquee__track--paused" : ""
-                }`}
-              >
+              <div className="review-marquee__track">
                 {[false, true].map((isDuplicate) => (
                   <ul aria-hidden={isDuplicate} className="review-marquee__group" key={String(isDuplicate)}>
                     {compactReviews.map((review) => (

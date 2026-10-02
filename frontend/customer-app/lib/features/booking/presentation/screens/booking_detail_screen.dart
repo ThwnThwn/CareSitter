@@ -42,14 +42,14 @@ class BookingDetailScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF0B1F17),
+            color: AppColors.textPrimary,
           ),
         ),
         backgroundColor: AppColors.cardBackground,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: const Color(0x1A2F7F7F),
+        shadowColor: AppColors.shadow,
         leading: const AppBackButton(fallbackRoute: '/bookings'),
         actions: [
           // Status badge chip in header (matching Stitch)
@@ -274,7 +274,7 @@ class BookingDetailScreen extends ConsumerWidget {
                         label: const Text('Xem vị trí trực tiếp 🚗'),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 52),
-                          backgroundColor: const Color(0xFFE67E22),
+                          backgroundColor: AppColors.warning,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -439,21 +439,20 @@ class BookingDetailScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF9E7),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(10),
-        border:
-            Border.all(color: const Color(0xFFF39C12).withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.science_outlined,
-              size: 17, color: Color(0xFFF39C12)),
+              size: 17, color: AppColors.secondary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
                 style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF7D6608), height: 1.4)),
+                    fontSize: 12, color: AppColors.warning, height: 1.4)),
           ),
         ],
       ),
@@ -490,8 +489,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Đang diễn ra',
           'emoji': '🟢',
           'icon': Icons.play_arrow_rounded,
-          'color': const Color(0xFF006A43),
-          'bg': const Color(0xFFE8F7F0),
+          'color': AppColors.primary,
+          'bg': AppColors.primaryContainer,
           'currentStep': 2,
           'description': 'Ca chăm sóc đang diễn ra theo kế hoạch.',
         };
@@ -513,8 +512,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Khiếu nại',
           'emoji': '⚠️',
           'icon': Icons.warning_amber_rounded,
-          'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFEF5E7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
           'currentStep': 2,
           'description':
               'Bộ phận CSKH đang hỗ trợ xử lý khiếu nại cho ca hẹn này.',
@@ -538,8 +537,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Đã nhận ca',
           'emoji': '🤝',
           'icon': Icons.handshake_outlined,
-          'color': const Color(0xFF006A43),
-          'bg': const Color(0xFFE8F7F0),
+          'color': AppColors.primary,
+          'bg': AppColors.primaryContainer,
           'currentStep': 1,
           'description':
               'Người chăm sóc đã nhận ca hẹn. Sẵn sàng thực hiện nhiệm vụ.',
@@ -550,8 +549,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Đã xác nhận',
           'emoji': '✅',
           'icon': Icons.verified_outlined,
-          'color': const Color(0xFF006A43),
-          'bg': const Color(0xFFE8F7F0),
+          'color': AppColors.primary,
+          'bg': AppColors.primaryContainer,
           'currentStep': 1,
           'description': 'Lịch hẹn đã được xác nhận thành công.',
         };
@@ -563,8 +562,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Chờ xử lý',
           'emoji': '🟡',
           'icon': Icons.schedule,
-          'color': const Color(0xFFD97706),
-          'bg': const Color(0xFFFEF3C7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
           'currentStep': 0,
           'description': 'Đang chờ hoàn tất thủ tục đặt lịch ca hẹn.',
         };
@@ -586,8 +585,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Chờ kiểm tra',
           'emoji': '🛡️',
           'icon': Icons.admin_panel_settings_outlined,
-          'color': const Color(0xFFB45309),
-          'bg': const Color(0xFFFFF7ED),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
           'currentStep': 0,
           'description':
               'Bộ phận vận hành đang kiểm tra giao dịch trước khi xác nhận hoặc hủy booking.',
@@ -598,8 +597,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Hoàn thành',
           'emoji': '✨',
           'icon': Icons.task_alt,
-          'color': const Color(0xFF059669),
-          'bg': const Color(0xFFD1FAE5),
+          'color': AppColors.success,
+          'bg': AppColors.successLight,
           'currentStep': 3,
           'description': 'Ca chăm sóc đã kết thúc an toàn và trọn vẹn.',
         };
@@ -609,8 +608,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Khẩn cấp',
           'emoji': '🚨',
           'icon': Icons.emergency,
-          'color': const Color(0xFFDC2626),
-          'bg': const Color(0xFFFEE2E2),
+          'color': AppColors.error,
+          'bg': AppColors.errorLight,
           'currentStep': 2,
           'description': 'Hệ thống đã nhận tín hiệu hỗ trợ khẩn cấp.',
         };
@@ -620,8 +619,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Đã hoàn tiền',
           'emoji': '↩️',
           'icon': Icons.account_balance_wallet_outlined,
-          'color': const Color(0xFF047857),
-          'bg': const Color(0xFFD1FAE5),
+          'color': AppColors.primaryDark,
+          'bg': AppColors.successLight,
           'currentStep': -1,
           'description':
               'Không tìm được người chăm sóc phù hợp. Tiền đã được cộng vào Ví CareSitter.',
@@ -643,8 +642,8 @@ class BookingDetailScreen extends ConsumerWidget {
           'shortLabel': 'Chưa ghép được',
           'emoji': '🟡',
           'icon': Icons.person_off_outlined,
-          'color': const Color(0xFFD97706),
-          'bg': const Color(0xFFFEF3C7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
           'currentStep': 1,
           'description': 'Hiện chưa có người chăm sóc phù hợp nhận ca này.',
         };
@@ -658,7 +657,7 @@ class BookingDetailScreen extends ConsumerWidget {
           'emoji': '📋',
           'icon': Icons.info_outline,
           'color': AppColors.primary,
-          'bg': const Color(0xFFE8F7F0),
+          'bg': AppColors.primaryContainer,
           'currentStep': 1,
           'description': 'Trạng thái hiện tại: $formattedLabel',
         };
@@ -670,8 +669,8 @@ class BookingDetailScreen extends ConsumerWidget {
         'shortLabel': 'Đang tìm',
         'emoji': '⏳',
         'icon': Icons.hourglass_top,
-        'color': const Color(0xFFD97706),
-        'bg': const Color(0xFFFEF3C7),
+        'color': AppColors.warning,
+        'bg': AppColors.warningLight,
         'currentStep': 1,
         'description':
             'Hệ thống đang điều phối người chăm sóc tốt nhất cho bạn.',
@@ -703,12 +702,12 @@ class BookingDetailScreen extends ConsumerWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFDDE8E3),
+          color: AppColors.border,
           width: 1,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A1A2E25),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -723,7 +722,7 @@ class BookingDetailScreen extends ConsumerWidget {
               const Text(
                 'Tiến trình dịch vụ',
                 style: TextStyle(
-                  color: Color(0xFF0B1F17),
+                  color: AppColors.textPrimary,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -743,7 +742,7 @@ class BookingDetailScreen extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F7F0),
+                    color: AppColors.primaryContainer,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -752,14 +751,14 @@ class BookingDetailScreen extends ConsumerWidget {
                       Text(
                         'Mã ca: #$shortId',
                         style: const TextStyle(
-                          color: Color(0xFF006A43),
+                          color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(width: 4),
                       const Icon(Icons.copy_rounded,
-                          size: 12, color: Color(0xFF006A43)),
+                          size: 12, color: AppColors.primary),
                     ],
                   ),
                 ),
@@ -809,7 +808,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       right: 18,
                       child: Container(
                         height: 2,
-                        color: const Color(0xFFE0E6E3),
+                        color: AppColors.border,
                       ),
                     ),
                     // Active progress track line
@@ -819,7 +818,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       child: Container(
                         height: 2,
                         width: progressWidth,
-                        color: const Color(0xFF006A43),
+                        color: AppColors.primary,
                       ),
                     ),
                     Row(
@@ -833,18 +832,18 @@ class BookingDetailScreen extends ConsumerWidget {
                         Border? border;
 
                         if (isPassed) {
-                          circleBg = const Color(0xFF006A43);
+                          circleBg = AppColors.primary;
                           iconColor = Colors.white;
                         } else if (isActive) {
-                          circleBg = const Color(0xFF006A43);
+                          circleBg = AppColors.primary;
                           iconColor = Colors.white;
                           border = Border.all(
-                            color: const Color(0xFF8CF8BD),
+                            color: AppColors.primaryContainer,
                             width: 3,
                           );
                         } else {
-                          circleBg = const Color(0xFFE0E6E3);
-                          iconColor = const Color(0xFF6E7A71);
+                          circleBg = AppColors.border;
+                          iconColor = AppColors.textSecondary;
                         }
 
                         return Column(
@@ -860,7 +859,7 @@ class BookingDetailScreen extends ConsumerWidget {
                                 boxShadow: isActive
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF006A43)
+                                          color: AppColors.primary
                                               .withValues(alpha: 0.25),
                                           blurRadius: 6,
                                           offset: const Offset(0, 2),
@@ -889,10 +888,10 @@ class BookingDetailScreen extends ConsumerWidget {
                                         ? FontWeight.w600
                                         : FontWeight.w400),
                                 color: isActive
-                                    ? const Color(0xFF006A43)
+                                    ? AppColors.primary
                                     : (isPassed
-                                        ? const Color(0xFF0B1F17)
-                                        : const Color(0xFF6E7A71)),
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary),
                               ),
                             ),
                           ],
@@ -948,12 +947,12 @@ class BookingDetailScreen extends ConsumerWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFDDE8E3),
+          color: AppColors.border,
           width: 1,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A1A2E25),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -995,7 +994,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0B1F17),
+                        color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1006,7 +1005,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF006A43),
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1018,7 +1017,7 @@ class BookingDetailScreen extends ConsumerWidget {
                           const Text(
                             'Thông tin hồ sơ đang cập nhật',
                             style: TextStyle(
-                              color: Color(0xFF5A7272),
+                              color: AppColors.textSecondary,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1031,7 +1030,7 @@ class BookingDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFF0F4F2)),
+          const Divider(height: 1, color: AppColors.background),
           const SizedBox(height: 12),
           // Quick Action Buttons (matching Stitch)
           Row(
@@ -1051,19 +1050,19 @@ class BookingDetailScreen extends ConsumerWidget {
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F7F0),
+                      color: AppColors.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.chat_bubble_outline,
-                            size: 17, color: Color(0xFF006A43)),
+                            size: 17, color: AppColors.primary),
                         SizedBox(width: 6),
                         Text(
                           'Nhắn tin',
                           style: TextStyle(
-                            color: Color(0xFF006A43),
+                            color: AppColors.primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1080,7 +1079,7 @@ class BookingDetailScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('📞 Gọi cho $caregiverName...'),
-                        backgroundColor: const Color(0xFF006A43),
+                        backgroundColor: AppColors.primary,
                         duration: const Duration(seconds: 2),
                       ),
                     );
@@ -1089,11 +1088,11 @@ class BookingDetailScreen extends ConsumerWidget {
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF006A43),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF006A43).withValues(alpha: 0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -1129,14 +1128,14 @@ class BookingDetailScreen extends ConsumerWidget {
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F7F0),
+        color: AppColors.primaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
         child: Text(
           booking.caregiverInitials,
           style: const TextStyle(
-            color: Color(0xFF006A43),
+            color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -1152,10 +1151,10 @@ class BookingDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDDE8E3), width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A1A2E25),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
@@ -1170,13 +1169,13 @@ class BookingDetailScreen extends ConsumerWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
+                  color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.person_search_outlined,
-                    color: Color(0xFFD97706),
+                    color: AppColors.warning,
                     size: 28,
                   ),
                 ),
@@ -1191,7 +1190,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0B1F17),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     SizedBox(height: 3),
@@ -1213,7 +1212,7 @@ class BookingDetailScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(99),
             child: const LinearProgressIndicator(
               minHeight: 5,
-              backgroundColor: Color(0xFFE8F1ED),
+              backgroundColor: AppColors.surfaceVariant,
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
@@ -1261,7 +1260,7 @@ class BookingDetailScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FBF4),
+                color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                     color: AppColors.success.withValues(alpha: 0.25)),

@@ -10,7 +10,7 @@ export default function StatsSection() {
     <section className="stats-strip" aria-label="Các cam kết của CareSitter">
       <div className="shell stats-strip__grid">
         {stats.map((stat) => (
-          <div className="stat" key={stat.label}>
+          <div className="stat" data-scroll-reveal="item" key={stat.label}>
             <strong>{stat.value}</strong>
             <span>{stat.label}</span>
           </div>

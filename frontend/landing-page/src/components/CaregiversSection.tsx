@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ArrowUpRight, BadgeCheck, Star } from "lucide-react";
+import MotionWords from "./MotionWords";
 
 interface CaregiversSectionProps {
   onOpenBooking: (caregiver?: string, service?: string) => void;
@@ -33,9 +34,11 @@ export default function CaregiversSection({
         <div className="caregivers-section__heading">
           <div>
             <p className="section-label section-label--ink">Những người CareSitter tin cậy</p>
-            <h2 className="display display--section">
+            <h2 className="display display--section" data-scroll-reveal="heading">
+              <MotionWords>
               Kinh nghiệm là quan trọng.
               <em>Sự phù hợp cũng vậy.</em>
+              </MotionWords>
             </h2>
           </div>
           <p>
@@ -45,7 +48,7 @@ export default function CaregiversSection({
         </div>
 
         <div className="caregiver-showcase">
-          <article className="caregiver-featured">
+          <article className="caregiver-featured" data-scroll-reveal="card">
             <figure>
               <Image
                 alt="Caregiver Hải Đường"
@@ -86,7 +89,7 @@ export default function CaregiversSection({
 
           <div className="caregiver-list">
             {caregivers.map((caregiver) => (
-              <article className="caregiver-row" key={caregiver.name}>
+              <article className="caregiver-row" data-scroll-reveal="card" key={caregiver.name}>
                 <figure>
                   <Image
                     alt={"Caregiver " + caregiver.name}

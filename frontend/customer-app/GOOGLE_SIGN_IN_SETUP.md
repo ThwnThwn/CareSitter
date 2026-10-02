@@ -34,6 +34,37 @@ Restart the API after changing this value.
 
 ## 3. Flutter build/run
 
+The app loads its public OAuth configuration from `frontend/customer-app/.env`
+at startup:
+
+```env
+GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_IOS_CLIENT_ID=
+```
+
+With that file configured, a normal web run works without passing the client ID
+on the command line:
+
+```powershell
+flutter run -d chrome --web-hostname localhost --web-port 7357
+```
+
+The helper script remains available for local development:
+
+```powershell
+.\run-web.ps1
+```
+
+The launcher can synchronize `GOOGLE_WEB_CLIENT_ID` from the process environment
+or `Google__ClientId` in `backend/.env`, and uses `http://localhost:7357` by
+default. Register this exact origin in Google Cloud. Use `-Device web-server`
+for an existing browser, or `-CheckOnly` to validate configuration without
+starting Flutter.
+
+Values passed with `--dart-define` override the matching values in `.env`. After
+changing Google authentication configuration, stop and relaunch Flutter so the
+Google web SDK is initialized once with the new values.
+
 Web development should use a stable port that is registered in Google Cloud:
 
 ```powershell

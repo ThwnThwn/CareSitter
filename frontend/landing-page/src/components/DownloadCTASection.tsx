@@ -13,7 +13,7 @@ export default function DownloadCTASection({
     <section className="download-section" id="download">
       <div className="shell">
         <div className="download-panel">
-          <div className="download-panel__copy">
+          <div className="download-panel__copy" data-scroll-reveal="card">
             <p className="section-label">Bắt đầu khi gia đình sẵn sàng</p>
             <h2 className="display display--cta">
               Một ca chăm sóc tốt bắt đầu bằng một nhu cầu được nói rõ.
@@ -33,7 +33,7 @@ export default function DownloadCTASection({
             </div>
           </div>
 
-          <div className="download-card">
+          <div className="download-card" data-scroll-reveal="card">
             <Smartphone size={28} aria-hidden="true" />
             <span>Ứng dụng CareSitter</span>
             <strong>Mọi cập nhật của ca chăm sóc, trong một nơi.</strong>

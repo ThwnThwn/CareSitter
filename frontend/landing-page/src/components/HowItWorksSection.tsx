@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock3, MessageCircle, Search } from "lucide-react";
+import MotionWords from "./MotionWords";
 
 const steps = [
   {
@@ -25,9 +26,11 @@ export default function HowItWorksSection() {
         <div className="process-section__heading">
           <div>
             <p className="section-label section-label--ink">Ba bước, không vòng vo</p>
-            <h2 className="display display--section">
+            <h2 className="display display--section" data-scroll-reveal="heading">
+              <MotionWords>
               Từ nhu cầu đến ca chăm sóc
               <em>trong vài phút.</em>
+              </MotionWords>
             </h2>
           </div>
           <p>
@@ -39,7 +42,7 @@ export default function HowItWorksSection() {
         <div className="process-layout">
           <ol className="process-list">
             {steps.map((step) => (
-              <li key={step.number}>
+              <li data-scroll-reveal="card" key={step.number}>
                 <span>{step.number}</span>
                 <div>
                   <h3>{step.title}</h3>
@@ -49,7 +52,7 @@ export default function HowItWorksSection() {
             ))}
           </ol>
 
-          <div className="care-timeline" aria-label="Minh họa tiến trình một ca chăm sóc">
+          <div className="care-timeline" data-scroll-reveal="image" aria-label="Minh họa tiến trình một ca chăm sóc">
             <div className="care-timeline__top">
               <span>Ca hôm nay</span>
               <strong>14:00 — 18:00</strong>

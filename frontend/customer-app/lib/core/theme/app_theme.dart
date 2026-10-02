@@ -1,83 +1,83 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // ── Primary Botanical Green Palette (Đồng bộ Caregiver CSV) ─────
-  static const Color primary = Color(0xFF2D9E6B);
-  static const Color primaryLight = Color(0xFF4FBF8A);
-  static const Color primaryDark = Color(0xFF1E7A52);
-  static const Color primaryContainer = Color(0xFFE8F7F0);
+  // Brand tokens shared with frontend/landing-page/src/app/globals.css.
+  static const Color primary = Color(0xFF006B5B);
+  static const Color primaryLight = Color(0xFF00806D);
+  static const Color primaryDark = Color(0xFF004F43);
+  static const Color accent = Color(0xFF00C896);
+  static const Color primaryContainer = Color(0xFFE6F4F1);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color onPrimaryContainer = Color(0xFF1E7A52);
+  static const Color onPrimaryContainer = primary;
 
-  // ── Secondary / Accent ───────────────────────────────
-  static const Color secondary = Color(0xFFF5A623);
-  static const Color secondaryLight = Color(0xFFFFCC70);
-  static const Color secondaryContainer = Color(0xFFFFF3DC);
-  static const Color onSecondary = Color(0xFFFFFFFF);
+  static const Color secondary = Color(0xFFFF6B35);
+  static const Color secondaryLight = Color(0xFFFFC4AE);
+  static const Color secondaryContainer = Color(0xFFFFF0E8);
+  static const Color secondaryStrong = Color(0xFFA43F16);
+  static const Color onSecondary = Color(0xFF0D1117);
 
-  // ── Surfaces ─────────────────────────────────────────
-  static const Color background = Color(0xFFF0F4F2);
+  static const Color background = Color(0xFFF5F3EE);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE8F7F0);
-  static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = primaryContainer;
+  static const Color cardBackground = surface;
+  static const Color darkSurface = Color(0xFF0D1117);
 
-  // ── Text ─────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A2E25);
-  static const Color textSecondary = Color(0xFF5A7268);
-  static const Color textHint = Color(0xFF9FB8AC);
-  static const Color textOnDark = Color(0xFFFFFFFF);
+  static const Color textPrimary = Color(0xFF0D1117);
+  static const Color textSecondary = Color(0xFF536471);
+  // Small labels and placeholders retain readable contrast on paper/mint.
+  static const Color textHint = textSecondary;
+  static const Color textOnDark = onPrimary;
 
-  // ── Authentication Surface ───────────────────────────
-  // Giữ nguyên palette của luồng đăng nhập cũ nhưng gom về một nguồn duy nhất.
-  static const Color authBackground = Color(0xFFF2F8F4);
-  static const Color authTextPrimary = Color(0xFF1A2E2E);
-  static const Color authTextSecondary = Color(0xFF6B7280);
-  static const Color authTextHint = Color(0xFF9CA3AF);
-  static const Color authFieldBorder = Color(0xFFE5E7EB);
+  static const Color authBackground = background;
+  static const Color authTextPrimary = textPrimary;
+  static const Color authTextSecondary = textSecondary;
+  static const Color authTextHint = textHint;
+  static const Color authFieldBorder = border;
   static const Color authErrorSurface = Color(0xFFFEF2F2);
   static const Color authErrorBorder = Color(0xFFFCA5A5);
 
-  // ── State Colors ─────────────────────────────────────
-  static const Color success = Color(0xFF059669);
-  static const Color successLight = Color(0xFFD1FAE5);
-  static const Color warning = Color(0xFFD97706);
-  static const Color warningLight = Color(0xFFFEF3C7);
+  // Semantic foregrounds remain dark enough to read on their light surfaces.
+  static const Color success = primary;
+  static const Color successLight = primaryContainer;
+  static const Color warning = secondaryStrong;
+  static const Color warningLight = secondaryContainer;
   static const Color error = Color(0xFFDC2626);
   static const Color errorLight = Color(0xFFFEE2E2);
   static const Color info = Color(0xFF0284C7);
   static const Color infoLight = Color(0xFFE0F2FE);
 
-  // ── Booking Status Colors ─────────────────────────────
-  static const Color statusPending = Color(0xFFD97706);
-  static const Color statusConfirmed = Color(0xFF16A34A);
-  static const Color statusInProgress = AppColors.primary;
-  static const Color statusCompleted = Color(0xFF059669);
-  static const Color statusCancelled = Color(0xFF64748B);
-  static const Color statusCrisis = Color(0xFFDC2626);
-  static const Color statusDisputed = Color(0xFFE67E22);
+  static const Color statusPending = warning;
+  static const Color statusConfirmed = success;
+  static const Color statusInProgress = primary;
+  static const Color statusCompleted = success;
+  static const Color statusCancelled = textSecondary;
+  static const Color statusCrisis = error;
+  static const Color statusDisputed = warning;
 
-  // ── Border / Divider ─────────────────────────────────
-  static const Color border = Color(0xFFDDE8E3);
-  static const Color borderFocus = AppColors.primary;
-  static const Color divider = Color(0xFFEDF5EF);
+  static const Color border = Color(0xFFE2DDD5);
+  static const Color borderFocus = primary;
+  static const Color divider = border;
+  static const Color shadow = Color(0x140D1117);
+  static const Color scrim = Color(0x800D1117);
 
-  // ── Gradient ─────────────────────────────────────────
+  // Existing gradient components use the shared teal family. The bright mint
+  // accent is reserved for decoration, not backgrounds behind white text.
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
+    colors: [primary, primaryLight],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1E7A52), Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
+    colors: [primaryDark, primary, primaryLight],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE8F7F0), Color(0xFFF5FAF7)],
+    colors: [primaryContainer, background],
   );
 }
 
@@ -85,8 +85,7 @@ class AppTheme {
   /// Tính 1 lần & cache — tránh dựng lại toàn bộ ThemeData mỗi lần MaterialApp rebuild.
   static final ThemeData lightTheme = _buildLightTheme();
 
-  /// Theme cục bộ cho form xác thực để giữ nguyên giao diện cũ mà không làm
-  /// thay đổi InputDecorationTheme của các feature khác.
+  /// Form xác thực dùng chung bảng màu, giữ cấu trúc input riêng của luồng auth.
   static final InputDecorationTheme authInputDecorationTheme =
       _buildAuthInputDecorationTheme();
 
@@ -103,7 +102,7 @@ class AppTheme {
         secondary: AppColors.secondary,
         onSecondary: AppColors.onSecondary,
         secondaryContainer: AppColors.secondaryContainer,
-        onSecondaryContainer: Color(0xFF7A4800),
+        onSecondaryContainer: AppColors.secondaryStrong,
         tertiary: AppColors.primaryLight,
         onTertiary: Colors.white,
         tertiaryContainer: AppColors.primaryContainer,
@@ -118,8 +117,8 @@ class AppTheme {
         onSurfaceVariant: AppColors.textSecondary,
         outline: AppColors.border,
         outlineVariant: AppColors.divider,
-        shadow: Color(0x142D9E6B),
-        scrim: Color(0x800B1F17),
+        shadow: AppColors.shadow,
+        scrim: AppColors.scrim,
         inverseSurface: AppColors.textPrimary,
         onInverseSurface: Colors.white,
         inversePrimary: AppColors.primaryLight,
@@ -229,7 +228,7 @@ class AppTheme {
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: const Color(0x1A2F7F7F),
+      shadowColor: AppColors.shadow,
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
       titleTextStyle:
@@ -475,7 +474,7 @@ class AppLayout {
 class AppShadows {
   static List<BoxShadow> get card => [
         const BoxShadow(
-          color: Color(0x142D9E6B),
+          color: AppColors.shadow,
           blurRadius: 16,
           offset: Offset(0, 4),
         ),
@@ -488,7 +487,7 @@ class AppShadows {
 
   static List<BoxShadow> get elevated => [
         const BoxShadow(
-          color: Color(0x252D9E6B),
+          color: Color(0x250D1117),
           blurRadius: 24,
           offset: Offset(0, 8),
         ),

@@ -78,7 +78,10 @@ class GoogleSignInGateway implements GoogleIdentityGateway {
     try {
       await _googleSignIn.initialize(
         clientId: platformClientId,
-        serverClientId: webClientId,
+        // The web implementation uses clientId directly and rejects
+        // serverClientId. Native platforms use the Web client ID as the
+        // server audience so the backend can verify the returned ID token.
+        serverClientId: kIsWeb ? null : webClientId,
       );
     } on GoogleSignInException catch (error) {
       throw _mapException(error);

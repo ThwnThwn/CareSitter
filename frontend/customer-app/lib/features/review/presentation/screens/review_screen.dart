@@ -129,7 +129,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                 child: Icon(
                                   i < _rating ? Icons.star : Icons.star_border,
                                   size: 44,
-                                  color: const Color(0xFFF39C12),
+                                  color: AppColors.secondary,
                                 ),
                               ),
                             )),

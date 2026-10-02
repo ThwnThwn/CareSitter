@@ -314,7 +314,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : isToday
             ? 'Ca sắp diễn ra hôm nay'
             : 'Ca sắp tới';
-    final accentColor = isOngoing ? AppColors.primary : AppColors.secondary;
+    final accentColor =
+        isOngoing ? AppColors.primary : AppColors.secondaryStrong;
 
     return GestureDetector(
       onTap: () => context.push(
@@ -325,7 +326,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: isOngoing ? const Color(0xFFF1FBF7) : const Color(0xFFFFFBF3),
+          color: isOngoing
+              ? AppColors.primaryContainer
+              : AppColors.secondaryContainer,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: accentColor.withValues(alpha: 0.28),
@@ -427,7 +430,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         subtitle: 'Giảm 20% đơn đầu tiên',
         hsd: 'HSD: 31/10/2026',
         badge: 'Giảm 20%',
-        bg: const Color(0xFFE8F7F0),
+        bg: AppColors.primaryContainer,
         accent: AppColors.primary,
         borderColor: AppColors.primary,
         icon: '🎁',
@@ -437,9 +440,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         subtitle: 'Tiết kiệm 50.000đ',
         hsd: 'HSD: 05/10/2026',
         badge: 'Giảm 50k',
-        bg: const Color(0xFFFEF7EC),
-        accent: const Color(0xFFE67E22),
-        borderColor: const Color(0xFFE67E22),
+        bg: AppColors.warningLight,
+        accent: AppColors.warning,
+        borderColor: AppColors.warning,
         icon: '🌟',
       ),
       (
@@ -447,9 +450,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         subtitle: 'Nhận 100.000đ tín dụng',
         hsd: 'Không giới hạn',
         badge: '+100k',
-        bg: const Color(0xFFEDE7F6),
-        accent: const Color(0xFF7B1FA2),
-        borderColor: const Color(0xFF7B1FA2),
+        bg: AppColors.primaryContainer,
+        accent: AppColors.primaryDark,
+        borderColor: AppColors.primaryDark,
         icon: '👥',
       ),
     ];
@@ -849,9 +852,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final status = booking.presentationStatusAt(now);
     final isOngoing = status == 'in_progress' || status == 'caregiver_en_route';
     final statusLabel = isOngoing ? 'Đang diễn ra' : 'Sắp diễn ra';
-    final statusColor = isOngoing ? AppColors.primary : const Color(0xFFE67E22);
+    final statusColor = isOngoing ? AppColors.primary : AppColors.warning;
     final statusBg =
-        isOngoing ? const Color(0xFFE8F7F0) : const Color(0xFFFEF7EC);
+        isOngoing ? AppColors.primaryContainer : AppColors.warningLight;
     final caregiverName = booking.caregiverName?.trim() ?? 'Chăm sóc viên';
     final initials = caregiverName
         .trim()
@@ -1158,11 +1161,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   _ServiceAccent _serviceAccent(int index) {
     const accents = [
       _ServiceAccent(AppColors.primary, AppColors.primaryContainer),
-      _ServiceAccent(Color(0xFFE67E22), Color(0xFFFFF3E0)),
-      _ServiceAccent(Color(0xFF1976D2), Color(0xFFE3F0FC)),
-      _ServiceAccent(Color(0xFF7B1FA2), Color(0xFFF3E5F5)),
-      _ServiceAccent(Color(0xFF00897B), Color(0xFFE0F2F1)),
-      _ServiceAccent(Color(0xFF5C6BC0), Color(0xFFEDE7F6)),
+      _ServiceAccent(AppColors.warning, AppColors.warningLight),
+      _ServiceAccent(AppColors.primaryDark, AppColors.primaryContainer),
+      _ServiceAccent(AppColors.textSecondary, AppColors.background),
+      _ServiceAccent(AppColors.primary, AppColors.primaryContainer),
+      _ServiceAccent(AppColors.primary, AppColors.primaryContainer),
     ];
     return accents[index % accents.length];
   }
@@ -1329,7 +1332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Row(
               children: [
                 const Icon(Icons.star_rounded,
-                    color: Color(0xFFF5A623), size: 13),
+                    color: AppColors.secondary, size: 13),
                 const SizedBox(width: 2),
                 Text(
                   c.ratingAvg.toStringAsFixed(1),
@@ -1453,7 +1456,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 8,
           height: 8,
           decoration: const BoxDecoration(
-            color: Color(0xFF4ADE80),
+            color: AppColors.accent,
             shape: BoxShape.circle,
           ),
         ),
@@ -1664,7 +1667,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         decoration: InputDecoration(
                           hintText: 'Tìm người chăm sóc, kỹ năng, địa chỉ...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF6E8989),
+                            color: AppColors.textSecondary,
                             fontSize: 13,
                           ),
                           prefixIcon: const Icon(

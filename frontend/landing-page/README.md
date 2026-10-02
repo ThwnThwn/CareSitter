@@ -53,7 +53,6 @@ landing-page/
 │   │   └── page.tsx         # Trang chủ tích hợp tất cả các components
 │   └── components/
 │       ├── CustomCursor.tsx        # Con trỏ chuột tương tác (desktop)
-│       ├── ScrollProgressBar.tsx   # Thanh đo tiến trình cuộn trang
 │       ├── Header.tsx              # Sticky Header & Mobile menu drawer
 │       ├── HeroSection.tsx         # Hero section & 3D Interactive Phone Mockup
 │       ├── StatsSection.tsx        # Bộ đếm chỉ số động (50.000+, 4.9★, <10m, 98%)

@@ -220,7 +220,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
           scrolledUnderElevation: 1,
-          shadowColor: const Color(0x1A2F7F7F),
+          shadowColor: AppColors.shadow,
           leading: AppCloseButton(
             fallbackRoute: '/home',
             onPressed: requestExit,
@@ -756,7 +756,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                             Row(
                               children: [
                                 const Icon(Icons.star,
-                                    size: 12, color: Color(0xFFF39C12)),
+                                    size: 12, color: AppColors.secondary),
                                 const SizedBox(width: 3),
                                 Text(
                                     '${c.ratingAvg.toStringAsFixed(1)} • ${c.yearsOfExperience ?? 3} năm',
@@ -913,7 +913,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           onSurface: AppColors.textPrimary,
                         ),
                         timePickerTheme: TimePickerThemeData(
-                          dialBackgroundColor: const Color(0xFFEEEEEE),
+                          dialBackgroundColor: AppColors.divider,
                           dialHandColor: AppColors.primary,
                           dialTextColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
@@ -923,7 +923,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           hourMinuteColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
                                 ? AppColors.primaryContainer
-                                : const Color(0xFFEEEEEE),
+                                : AppColors.divider,
                           ),
                           hourMinuteTextColor: WidgetStateColor.resolveWith(
                             (states) => states.contains(WidgetState.selected)
@@ -941,7 +941,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                 : AppColors.textSecondary,
                           ),
                           dayPeriodBorderSide: const BorderSide(
-                            color: Color(0xFFCCCCCC),
+                            color: AppColors.border,
                             width: 1,
                           ),
                           entryModeIconColor: AppColors.primary,
@@ -1160,7 +1160,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                     decoration: BoxDecoration(
                       color: isCustom
                           ? AppColors.primaryContainer.withValues(alpha: 0.35)
-                          : const Color(0xFFF9FBF9),
+                          : AppColors.background,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isCustom ? AppColors.primary : AppColors.border,
@@ -1237,8 +1237,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                   height: 36,
                                   decoration: BoxDecoration(
                                     color: _duration > 2
-                                        ? const Color(0xFFEEEEEE)
-                                        : const Color(0xFFF5F5F5),
+                                        ? AppColors.divider
+                                        : AppColors.background,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -1290,7 +1290,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                   decoration: BoxDecoration(
                                     color: _duration < 12
                                         ? AppColors.primaryContainer
-                                        : const Color(0xFFF5F5F5),
+                                        : AppColors.background,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(

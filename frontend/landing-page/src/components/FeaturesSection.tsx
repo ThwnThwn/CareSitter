@@ -1,3 +1,4 @@
+import MotionWords from "./MotionWords";
 import {
   LifeBuoy,
   MapPinned,
@@ -38,9 +39,11 @@ export default function FeaturesSection() {
       <div className="shell promise-section__grid">
         <div className="promise-section__intro">
           <p className="section-label">An tâm không đến từ một lời hứa</p>
-          <h2 className="display display--section">
+          <h2 className="display display--section" data-scroll-reveal="heading">
+            <MotionWords>
             Mọi ca chăm sóc đều có một
             <em>đường đi rõ ràng.</em>
+            </MotionWords>
           </h2>
           <p>
             CareSitter tập trung vào những gì gia đình thực sự cần biết: ai
@@ -54,7 +57,7 @@ export default function FeaturesSection() {
 
         <div className="promise-list">
           {promises.map(({ icon: Icon, meta, text, title }) => (
-            <article className="promise-item" key={title}>
+            <article className="promise-item" data-scroll-reveal="item" key={title}>
               <div className="promise-item__icon" aria-hidden="true">
                 <Icon size={22} strokeWidth={1.8} />
               </div>

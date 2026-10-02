@@ -234,7 +234,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       side: const BorderSide(
                           color: AppColors.primary, width: 1.2),
                       backgroundColor:
-                          const Color(0xFFE8F5E9).withValues(alpha: 0.5),
+                          AppColors.successLight.withValues(alpha: 0.5),
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
@@ -249,8 +249,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       icon: const Icon(Icons.more_time_outlined, size: 16),
                       label: const Text('Yêu cầu gia hạn ca'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.secondary,
-                        side: const BorderSide(color: AppColors.secondary),
+                        foregroundColor: AppColors.secondaryStrong,
+                        side:
+                            const BorderSide(color: AppColors.secondaryStrong),
                         minimumSize: const Size(double.infinity, 46),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -393,7 +394,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       title: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8F5E9),
+          color: AppColors.successLight,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
           boxShadow: [
@@ -703,7 +704,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 child: Text('© CARTO',
-                    style: TextStyle(fontSize: 9, color: Color(0xFF36514A))),
+                    style:
+                        TextStyle(fontSize: 9, color: AppColors.textSecondary)),
               ),
             ),
           ),
@@ -780,15 +782,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF7EC),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFF5A623).withValues(alpha: 0.55),
+          color: AppColors.secondary.withValues(alpha: 0.55),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF5A623).withValues(alpha: 0.12),
+            color: AppColors.secondary.withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -803,12 +805,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5A623).withValues(alpha: 0.2),
+                  color: AppColors.secondary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.directions_car_rounded,
-                  color: Color(0xFF935200),
+                  color: AppColors.warning,
                   size: 24,
                 ),
               ),
@@ -838,7 +840,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                           TextSpan(
                             text: '$_etaLabel (còn ~1.8 km)',
                             style: const TextStyle(
-                              color: Color(0xFF935200),
+                              color: AppColors.warning,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -855,12 +857,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5A623).withValues(alpha: v),
+                    color: AppColors.secondary.withValues(alpha: v),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            const Color(0xFFF5A623).withValues(alpha: v * 0.5),
+                        color: AppColors.secondary.withValues(alpha: v * 0.5),
                         blurRadius: 6,
                         spreadRadius: 2,
                       ),
@@ -876,9 +877,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: 0.75,
-              backgroundColor: const Color(0xFFF5A623).withValues(alpha: 0.18),
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.18),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFFF5A623)),
+                  const AlwaysStoppedAnimation<Color>(AppColors.secondary),
               minHeight: 5,
             ),
           ),
@@ -902,7 +903,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: AppColors.border, width: 0.9),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A2E25).withValues(alpha: 0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -1081,7 +1082,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         border: Border.all(color: const Color(0xFFFFCC80), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withValues(alpha: 0.1),
+            color: AppColors.secondary.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1098,7 +1099,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             ),
             child: const Icon(
               Icons.warning_amber_rounded,
-              color: Color(0xFFE65100),
+              color: AppColors.warning,
               size: 20,
             ),
           ),
@@ -1112,7 +1113,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFE65100),
+                    color: AppColors.warning,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1146,7 +1147,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1E6262), Color(0xFF297979)],
+          colors: [AppColors.primaryDark, AppColors.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1267,7 +1268,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3E0),
+                    color: AppColors.warningLight,
                     borderRadius: BorderRadius.circular(8),
                     border:
                         Border.all(color: const Color(0xFFFFB74D), width: 0.6),
@@ -1275,7 +1276,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   child: Text(
                     '$skippedCount bỏ qua',
                     style: const TextStyle(
-                      color: Color(0xFFE65100),
+                      color: AppColors.warning,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1378,7 +1379,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                     color: isDone
                         ? AppColors.success
                         : isSkipped
-                            ? const Color(0xFFE65100)
+                            ? AppColors.warning
                             : AppColors.border,
                     width: 1.5,
                   ),
@@ -1482,7 +1483,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               margin: const EdgeInsets.only(top: 8, left: 38),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
+                color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFFFFCC80), width: 0.6),
               ),
@@ -1492,7 +1493,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   const Icon(
                     Icons.info_outline_rounded,
                     size: 14,
-                    color: Color(0xFFE65100),
+                    color: AppColors.warning,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -1777,14 +1778,13 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF7EC),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: const Color(0xFFF5A623).withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
       ),
       child: const Row(
         children: [
-          Icon(Icons.verified_user_rounded, color: Color(0xFF935200), size: 18),
+          Icon(Icons.verified_user_rounded, color: AppColors.warning, size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -2079,7 +2079,7 @@ class _BottomActionBar extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FBF4),
+                color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                     color: AppColors.success.withValues(alpha: 0.25)),

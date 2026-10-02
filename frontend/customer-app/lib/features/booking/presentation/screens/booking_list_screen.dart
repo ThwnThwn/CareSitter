@@ -186,7 +186,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.primaryContainer,
               borderRadius: BorderRadius.circular(40),
             ),
             child: const Icon(Icons.calendar_today_outlined,
@@ -230,8 +230,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     final statusConfig = isWaitingCaregiver
         ? {
             'label': 'Chờ ghép CSV',
-            'color': const Color(0xFFD97706),
-            'bg': const Color(0xFFFEF3C7),
+            'color': AppColors.warning,
+            'bg': AppColors.warningLight,
           }
         : _getStatusConfig(status);
     final borderColor = statusConfig['color'] as Color;
@@ -357,7 +357,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                   ),
 
                   const SizedBox(height: 12),
-                  const Divider(height: 1, color: Color(0xFFE8F2EC)),
+                  const Divider(height: 1, color: AppColors.divider),
                   const SizedBox(height: 10),
 
                   // ── Row 3: Caregiver ──
@@ -366,11 +366,11 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: isWaitingCaregiver
-                            ? const Color(0xFFFEF3C7)
+                            ? AppColors.warningLight
                             : AppColors.primaryContainer,
                         child: isWaitingCaregiver
                             ? const Icon(Icons.auto_awesome,
-                                size: 16, color: Color(0xFFD97706))
+                                size: 16, color: AppColors.warning)
                             : Text(
                                 booking.caregiverAvatar ??
                                     booking.caregiverInitials,
@@ -397,7 +397,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                         color: isWaitingCaregiver
-                                            ? const Color(0xFFD97706)
+                                            ? AppColors.warning
                                             : AppColors.textPrimary,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700),
@@ -495,21 +495,21 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
       case 'disputed':
         return {
           'label': 'Đang xử lý',
-          'color': const Color(0xFFE67E22),
-          'bg': const Color(0xFFFEF5E7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       case 'confirmed':
         return {
           'label': 'Đã xác nhận',
-          'color': const Color(0xFF006A43),
-          'bg': const Color(0xFFE8F7F0),
+          'color': AppColors.primary,
+          'bg': AppColors.primaryContainer,
         };
       case 'pending':
       case 'pending_payment':
         return {
           'label': 'Chờ thanh toán',
-          'color': const Color(0xFFF39C12),
-          'bg': const Color(0xFFFFF8E6),
+          'color': AppColors.secondary,
+          'bg': AppColors.warningLight,
         };
       case 'payment_reconciliation_pending':
         return {
@@ -520,14 +520,14 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
       case 'needs_manual_review':
         return {
           'label': 'Chờ kiểm tra',
-          'color': const Color(0xFFB45309),
-          'bg': const Color(0xFFFFF7ED),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       case 'draft':
         return {
           'label': 'Bản nháp',
-          'color': const Color(0xFF95A5A6),
-          'bg': const Color(0xFFF2F4F4),
+          'color': AppColors.textHint,
+          'bg': AppColors.background,
         };
       case 'completed':
         return {
@@ -550,14 +550,14 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
       case 'crisis':
         return {
           'label': 'Khẩn cấp',
-          'color': const Color(0xFFDC2626),
-          'bg': const Color(0xFFFEE2E2),
+          'color': AppColors.error,
+          'bg': AppColors.errorLight,
         };
       case 'matching_failed':
         return {
           'label': 'Chưa ghép được',
-          'color': const Color(0xFFD97706),
-          'bg': const Color(0xFFFEF3C7),
+          'color': AppColors.warning,
+          'bg': AppColors.warningLight,
         };
       default:
         final formattedLabel = status.replaceAll('_', ' ');
@@ -622,7 +622,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
       child: Column(
         children: [
           _tabBar,
-          const Divider(height: 1, color: Color(0xFFE8F2EC)),
+          const Divider(height: 1, color: AppColors.divider),
         ],
       ),
     );
