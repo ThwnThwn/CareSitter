@@ -1,9 +1,9 @@
+import 'package:caresitter_customer/features/home/presentation/widgets/home_hover_button.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/core/widgets/custom_animations.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 import 'package:caresitter_customer/features/caregiver/presentation/controllers/caregiver_controller.dart';
@@ -53,41 +53,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // nếu không có thì lấy ca hợp lệ gần nhất trong tương lai.
     final featuredBooking = _selectFeaturedBooking(bookings, DateTime.now());
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(context, profile, topPadding, unreadCount),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildHeroBanner(context),
-                  if (featuredBooking != null) ...[
-                    const SizedBox(height: 12),
-                    _buildLiveSessionCard(featuredBooking, context),
+    final theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        textTheme: theme.textTheme.apply(fontFamily: 'Nunito'),
+        primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Nunito'),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(context, profile, topPadding, unreadCount),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildHeroBanner(context),
+                    if (featuredBooking != null) ...[
+                      const SizedBox(height: 12),
+                      _buildLiveSessionCard(featuredBooking, context),
+                    ],
+                    const SizedBox(height: 20),
+                    _buildServicesSection(context),
+                    const SizedBox(height: 24),
+                    _buildPromotionsSection(context),
+                    const SizedBox(height: 24),
+                    _buildRecentlyBookedSection(context, bookings),
+                    const SizedBox(height: 24),
+                    _buildUpcomingAppointmentsSection(context, bookings),
+                    const SizedBox(height: 24),
+                    _buildCaregiverSection(context),
                   ],
-                  const SizedBox(height: 20),
-                  _buildPromotionsSection(context),
-                  const SizedBox(height: 24),
-                  _buildServicesSection(context),
-                  const SizedBox(height: 24),
-                  _buildRecentlyBookedSection(context, bookings),
-                  const SizedBox(height: 24),
-                  _buildUpcomingAppointmentsSection(context, bookings),
-                  const SizedBox(height: 24),
-                  _buildCaregiverSection(context),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -118,7 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return upcoming.isEmpty ? null : upcoming.first;
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
+  // ── Header (GlowCare-style) ─────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, UserProfile profile,
       double topPadding, int unreadCount) {
     final avatarUrl = profile.avatarUrl?.trim() ?? '';
@@ -135,111 +142,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .take(2)
         .join();
 
-    // Greeting theo giờ
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Chào buổi sáng,'
-        : hour < 18
-            ? 'Chào buổi chiều,'
-            : 'Chào buổi tối,';
-
     return Container(
-      color: AppColors.background,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       padding: EdgeInsets.only(
-        top: topPadding + 12,
-        left: 16,
-        right: 16,
-        bottom: 12,
+        top: topPadding + 14,
+        left: 18,
+        right: 18,
+        bottom: 14,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar
-          GestureDetector(
+          // ── Avatar ──
+          HomeHoverButton(
+            borderRadius: BorderRadius.circular(999),
             onTap: () => context.push('/settings'),
-            child: CircleAvatar(
-              radius: 22,
-              backgroundColor: AppColors.primaryContainer,
-              backgroundImage: avatarImage,
-              child: avatarImage != null
-                  ? null
-                  : Text(
-                      initials.isNotEmpty ? initials : 'U',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.primaryContainer,
+                backgroundImage: avatarImage,
+                child: avatarImage != null
+                    ? null
+                    : Text(
+                        initials.isNotEmpty ? initials : 'U',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
 
-          // Greeting
+          // ── App Branding ──
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  greeting,
+                  profile.name.isNotEmpty ? profile.name : 'CareSitter',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        profile.name.isNotEmpty ? profile.name : 'Bạn',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const WavingHand(),
-                  ],
+                const SizedBox(height: 2),
+                const Text(
+                  'Chăm sóc tận tâm cho người thân',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Search icon
-          GestureDetector(
-            onTap: () => context.push('/catalog'),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Bell icon
-          GestureDetector(
+          // ── Notification Bell ──
+          HomeHoverButton(
+            borderRadius: BorderRadius.circular(999),
             onTap: () => context.push('/notifications'),
             child: SizedBox(
               width: 40,
@@ -251,32 +239,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.primaryContainer.withValues(alpha: 0.7),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: const Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
+                      Icons.notifications_none_rounded,
+                      color: AppColors.primary,
+                      size: 19,
                     ),
                   ),
                   if (unreadCount > 0)
                     Positioned(
-                      right: 6,
-                      top: 6,
+                      right: 4,
+                      top: 4,
                       child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE74C3C),
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE74C3C),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.background,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
@@ -317,7 +302,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final accentColor =
         isOngoing ? AppColors.primary : AppColors.secondaryStrong;
 
-    return GestureDetector(
+    return HomeHoverButton(
       onTap: () => context.push(
         isTracking
             ? '/bookings/${booking.id}/tracking'
@@ -396,7 +381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: const TextStyle(
                     color: AppColors.primaryDark,
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -468,11 +453,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            GestureDetector(
+            HomeHoverButton(
               onTap: () {},
               child: const Text(
                 'Xem tất cả',
@@ -587,7 +572,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-              GestureDetector(
+              HomeHoverButton(
                 onTap: () {},
                 child: Container(
                   padding:
@@ -647,11 +632,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            GestureDetector(
+            HomeHoverButton(
               onTap: () => context.push('/bookings'),
               child: const Text(
                 'Xem thêm',
@@ -759,7 +744,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const Spacer(),
-          GestureDetector(
+          HomeHoverButton(
             onTap: () => context.push(
               '/booking/new?serviceId=$serviceId&caregiverId=${booking.caregiverId ?? ""}',
             ),
@@ -817,11 +802,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            GestureDetector(
+            HomeHoverButton(
               onTap: () => context.push('/bookings'),
               child: const Text(
                 'Xem tất cả',
@@ -881,8 +866,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             : weekdays[dt.weekday - 1];
     final dateStr =
         '$dayLabel, ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    final compactLayout = MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
-    return GestureDetector(
+    final statusBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: statusBg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        statusLabel,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: statusColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+
+    Widget appointmentDetails({required bool includeStatus}) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              caregiverName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Row(
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 12,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '$dateStr · ${booking.time}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (booking.serviceName != null) ...[
+              const SizedBox(height: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  booking.serviceName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+            if (includeStatus) ...[
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  Flexible(child: statusBadge),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: AppColors.textHint,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+
+    return HomeHoverButton(
       onTap: () => context.push(
         isOngoing
             ? '/bookings/${booking.id}/tracking'
@@ -912,95 +991,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: appointmentDetails(includeStatus: compactLayout),
+            ),
+            if (!compactLayout) ...[
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    caregiverName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  statusBadge,
+                  const SizedBox(height: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: AppColors.textHint,
                   ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.schedule_rounded,
-                        size: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '$dateStr · ${booking.time}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (booking.serviceName != null) ...[
-                    const SizedBox(height: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        booking.serviceName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    statusLabel,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 16,
-                  color: AppColors.textHint,
-                ),
-              ],
-            ),
+            ],
           ],
         ),
       ),
@@ -1020,11 +1028,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            GestureDetector(
+            HomeHoverButton(
               onTap: () => context.push('/catalog'),
               child: const Text(
                 'Tất cả',
@@ -1086,7 +1094,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final textScale =
         MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3).toDouble();
 
-    return BouncingCard(
+    return HomeHoverButton(
       onTap: () => context.push('/booking/new?serviceId=$serviceId'),
       child: Container(
         width: 138 * textScale,
@@ -1199,7 +1207,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -1208,7 +1216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            GestureDetector(
+            HomeHoverButton(
               onTap: () => context.go('/caregivers'),
               child: const Text(
                 'Xem thêm',
@@ -1268,7 +1276,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final textScale =
         MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3).toDouble();
 
-    return GestureDetector(
+    return HomeHoverButton(
       onTap: () => context.push('/caregivers/${c.id}'),
       child: Container(
         width: 180 * textScale,
@@ -1411,7 +1419,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCaregiverEmptyState(BuildContext context) {
-    return GestureDetector(
+    return HomeHoverButton(
       onTap: () => context.go('/caregivers'),
       child: Container(
         width: double.infinity,
@@ -1478,7 +1486,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     final callToAction = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 240),
-      child: GestureDetector(
+      child: HomeHoverButton(
         onTap: () => context.push('/booking/new'),
         child: Container(
           key: const Key('home-book-now-cta'),
@@ -1609,7 +1617,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: isNarrow ? 20 : 26,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         height: 1.25,
                       ),
                     ),

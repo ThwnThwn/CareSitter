@@ -2,91 +2,105 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // ── Primary Botanical Green Palette ─────────────────────
-  static const Color primary = Color(0xFF2D9E6B);
-  static const Color primaryLight = Color(0xFF4FBF8A);
-  static const Color primaryDark = Color(0xFF1E7A52);
-  static const Color primaryContainer = Color(0xFFE8F7F0);
+  // ── Brand tokens shared with customer-app, admin-web, and landing-page ──
+  static const Color primary = Color(0xFF006B5B);
+  static const Color primaryLight = Color(0xFF00806D);
+  static const Color primaryDark = Color(0xFF004F43);
+  static const Color accent = Color(0xFF00C896);
+  static const Color primaryContainer = Color(0xFFE6F4F1);
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color onPrimaryContainer = Color(0xFF1E7A52);
+  static const Color onPrimaryContainer = primary;
 
-  // ── Secondary / Teal Companion ──────────────────────────
-  static const Color secondary = Color(0xFF00B4A0);
-  static const Color secondaryLight = Color(0xFF4FDCC6);
-  static const Color secondaryContainer = Color(0xFFE0F9F5);
-  static const Color onSecondary = Color(0xFFFFFFFF);
+  // ── Secondary / Warm Coral Companion ──
+  static const Color secondary = Color(0xFFFF6B35);
+  static const Color secondaryLight = Color(0xFFFFC4AE);
+  static const Color secondaryContainer = Color(0xFFFFF0E8);
+  static const Color secondaryStrong = Color(0xFFA43F16);
+  static const Color onSecondary = Color(0xFF0D1117);
 
-  // ── Tertiary / Amber Warning ────────────────────────────
-  static const Color tertiary = Color(0xFFF5A623);
-  static const Color tertiaryContainer = Color(0xFFFEF7EC);
+  // ── Tertiary (compatible with caregiver components) ──
+  static const Color tertiary = secondary;
+  static const Color tertiaryContainer = secondaryContainer;
 
-  // ── Surfaces ───────────────────────────────────────────
-  static const Color background = Color(0xFFF0F4F2);
+  // ── Surfaces ──
+  static const Color background = Color(0xFFF5F3EE);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE8F7F0);
-  static const Color surfaceContainer = Color(0xFFF5FAF7);
-  static const Color surfaceContainerLow = Color(0xFFF7FBF9);
-  static const Color surfaceContainerHigh = Color(0xFFE8F0EB);
-  static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = primaryContainer;
+  static const Color surfaceContainer = Color(0xFFFAF8F5);
+  static const Color surfaceContainerLow = Color(0xFFFFFFFF);
+  static const Color surfaceContainerHigh = Color(0xFFEDE8E1);
+  static const Color cardBackground = surface;
+  static const Color darkSurface = Color(0xFF0D1117);
 
-  // ── Text ───────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A2E25);
-  static const Color textSecondary = Color(0xFF5A7268);
-  static const Color textHint = Color(0xFF9FB8AC);
-  static const Color textOnDark = Color(0xFFFFFFFF);
+  // ── Text ──
+  static const Color textPrimary = Color(0xFF0D1117);
+  static const Color textSecondary = Color(0xFF536471);
+  static const Color textHint = textSecondary;
+  static const Color textOnDark = onPrimary;
 
-  // ── State Colors ───────────────────────────────────────
-  static const Color success = Color(0xFF059669);
-  static const Color successLight = Color(0xFFD1FAE5);
-  static const Color warning = Color(0xFFD97706);
-  static const Color warningLight = Color(0xFFFEF3C7);
+  // ── Auth Specific tokens ──
+  static const Color authBackground = background;
+  static const Color authTextPrimary = textPrimary;
+  static const Color authTextSecondary = textSecondary;
+  static const Color authTextHint = textHint;
+  static const Color authFieldBorder = border;
+  static const Color authErrorSurface = Color(0xFFFEF2F2);
+  static const Color authErrorBorder = Color(0xFFFCA5A5);
+
+  // ── Semantic & State Colors ──
+  static const Color success = primary;
+  static const Color successLight = primaryContainer;
+  static const Color warning = secondaryStrong;
+  static const Color warningLight = secondaryContainer;
   static const Color error = Color(0xFFDC2626);
   static const Color errorLight = Color(0xFFFEE2E2);
   static const Color info = Color(0xFF0284C7);
   static const Color infoLight = Color(0xFFE0F2FE);
 
-  // ── Booking Status Colors (Stitch Semantic) ────────────
-  static const Color statusPending = Color(0xFFD97706);
-  static const Color statusPendingBg = Color(0xFFFEF3C7);
-  static const Color statusConfirmed = Color(0xFF16A34A);
-  static const Color statusConfirmedBg = Color(0xFFDCFCE7);
-  static const Color statusInProgress = Color(0xFF005F56);
-  static const Color statusInProgressBg = Color(0xFFE6F4F2);
-  static const Color statusCompleted = Color(0xFF059669);
-  static const Color statusCompletedBg = Color(0xFFD1FAE5);
-  static const Color statusCancelled = Color(0xFF64748B);
-  static const Color statusCancelledBg = Color(0xFFF1F5F9);
-  static const Color statusCrisis = Color(0xFFDC2626);
-  static const Color statusCrisisBg = Color(0xFFFEE2E2);
-  static const Color statusDisputed = Color(0xFFE67E22);
+  // ── Shift / Booking Status Colors (Stitch Semantic aligned with Customer app) ──
+  static const Color statusPending = warning;
+  static const Color statusPendingBg = warningLight;
+  static const Color statusConfirmed = success;
+  static const Color statusConfirmedBg = successLight;
+  static const Color statusInProgress = primary;
+  static const Color statusInProgressBg = primaryContainer;
+  static const Color statusCompleted = success;
+  static const Color statusCompletedBg = successLight;
+  static const Color statusCancelled = textSecondary;
+  static const Color statusCancelledBg = Color(0xFFEDE8E1);
+  static const Color statusCrisis = error;
+  static const Color statusCrisisBg = errorLight;
+  static const Color statusDisputed = warning;
 
-  // ── Border / Divider ───────────────────────────────────
-  static const Color border = Color(0xFFDDE8E3);
-  static const Color borderFocus = Color(0xFF2D9E6B);
-  static const Color divider = Color(0xFFEDF5EF);
+  // ── Border / Divider ──
+  static const Color border = Color(0xFFE2DDD5);
+  static const Color borderFocus = primary;
+  static const Color divider = border;
+  static const Color shadow = Color(0x140D1117);
+  static const Color scrim = Color(0x800D1117);
 
-  // ── Gradient ───────────────────────────────────────────
+  // ── Gradient (Shared teal family) ──
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
+    colors: [primary, primaryLight],
   );
 
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF1E7A52), Color(0xFF2D9E6B), Color(0xFF4FBF8A)],
+    colors: [primaryDark, primary, primaryLight],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFE8F7F0), Color(0xFFF5FAF7)],
+    colors: [primaryContainer, background],
   );
 }
 
 class AppTheme {
-  /// Tính 1 lần & cache — tránh dựng lại toàn bộ ThemeData mỗi lần MaterialApp rebuild.
+  /// Tính 1 lần & cache - tránh dựng lại toàn bộ ThemeData mỗi lần MaterialApp rebuild.
   static final ThemeData lightTheme = _buildLightTheme();
 
   static ThemeData _buildLightTheme() {
@@ -101,23 +115,23 @@ class AppTheme {
         secondary: AppColors.secondary,
         onSecondary: AppColors.onSecondary,
         secondaryContainer: AppColors.secondaryContainer,
-        onSecondaryContainer: Color(0xFF005047),
-        tertiary: AppColors.tertiary,
+        onSecondaryContainer: AppColors.secondaryStrong,
+        tertiary: AppColors.primaryLight,
         onTertiary: Colors.white,
-        tertiaryContainer: AppColors.tertiaryContainer,
-        onTertiaryContainer: Color(0xFF633F00),
+        tertiaryContainer: AppColors.primaryContainer,
+        onTertiaryContainer: AppColors.primaryDark,
         error: AppColors.error,
         onError: Colors.white,
         errorContainer: AppColors.errorLight,
-        onErrorContainer: Color(0xFF8B0000),
+        onErrorContainer: Color(0xFF680000),
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
-        surfaceContainerHighest: AppColors.surfaceContainerHigh,
+        surfaceContainerHighest: AppColors.surfaceVariant,
         onSurfaceVariant: AppColors.textSecondary,
         outline: AppColors.border,
         outlineVariant: AppColors.divider,
-        shadow: Color(0x1A1A2E25),
-        scrim: Color(0x801A2E25),
+        shadow: AppColors.shadow,
+        scrim: AppColors.scrim,
         inverseSurface: AppColors.textPrimary,
         onInverseSurface: Colors.white,
         inversePrimary: AppColors.primaryLight,
@@ -172,7 +186,7 @@ class AppTheme {
     );
   }
 
-  // ── Text Theme (Be Vietnam Pro via google_fonts) ────────
+  // ── Text Theme (Be Vietnam Pro via google_fonts) ──
   static TextTheme _buildTextTheme() {
     return GoogleFonts.beVietnamProTextTheme(
       TextTheme(
@@ -234,14 +248,14 @@ class AppTheme {
     );
   }
 
-  // ── AppBar ─────────────────────────────────────────────
+  // ── AppBar ──
   static AppBarTheme _buildAppBarTheme() {
     return AppBarTheme(
       backgroundColor: AppColors.cardBackground,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: const Color(0x0A1A2E25),
+      shadowColor: AppColors.shadow,
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
       titleTextStyle: GoogleFonts.beVietnamPro(
@@ -253,7 +267,7 @@ class AppTheme {
     );
   }
 
-  // ── Buttons ─────────────────────────────────────────────
+  // ── Buttons ──
   static ElevatedButtonThemeData _buildElevatedButtonTheme() {
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -303,11 +317,11 @@ class AppTheme {
     );
   }
 
-  // ── Input ─────────────────────────────────────────────
+  // ── Input ──
   static InputDecorationTheme _buildInputDecorationTheme() {
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.surfaceVariant,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.border, width: 1),
@@ -339,7 +353,7 @@ class AppTheme {
     );
   }
 
-  // ── Card ─────────────────────────────────────────────
+  // ── Card ──
   static CardThemeData _buildCardTheme() {
     return CardThemeData(
       color: AppColors.cardBackground,
@@ -353,7 +367,7 @@ class AppTheme {
     );
   }
 
-  // ── Chip ─────────────────────────────────────────────
+  // ── Chip ──
   static ChipThemeData _buildChipTheme() {
     return ChipThemeData(
       backgroundColor: AppColors.primaryContainer,
@@ -372,7 +386,7 @@ class AppTheme {
     );
   }
 
-  // ── Bottom Nav ─────────────────────────────────────────
+  // ── Bottom Nav ──
   static BottomNavigationBarThemeData _buildBottomNavTheme() {
     return BottomNavigationBarThemeData(
       backgroundColor: AppColors.cardBackground,
@@ -419,7 +433,7 @@ class AppTheme {
     );
   }
 
-  // ── Tab Bar ─────────────────────────────────────────────
+  // ── Tab Bar ──
   static TabBarThemeData _buildTabBarTheme() {
     return TabBarThemeData(
       labelColor: AppColors.primary,
@@ -443,7 +457,7 @@ class AppTheme {
   }
 }
 
-// ── Spacing / Radius Constants ────────────────────────────
+// ── Spacing / Radius Constants ──
 class AppSpacing {
   static const double xxs = 4;
   static const double xs = 4;
@@ -464,32 +478,35 @@ class AppRadius {
 }
 
 class AppShadows {
-  /// Level 1: Resting cards — green-tinted ambient shadow
+  /// Level 1: Resting cards
   static List<BoxShadow> get card => [
-        BoxShadow(
-          color: const Color(0xFF1A2E25).withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-          spreadRadius: -2,
-        ),
-      ];
-
-  /// Level 2: Interactive floating items — elevated green-tinted
-  static List<BoxShadow> get elevated => [
-        BoxShadow(
-          color: const Color(0xFF1A2E25).withValues(alpha: 0.08),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-          spreadRadius: -4,
-        ),
-      ];
-
-  /// Level 3: Bottom bar — upward shadow
-  static List<BoxShadow> get bottomBar => [
-        BoxShadow(
-          color: const Color(0xFF1A2E25).withValues(alpha: 0.06),
+        const BoxShadow(
+          color: AppColors.shadow,
           blurRadius: 16,
-          offset: const Offset(0, -4),
+          offset: Offset(0, 4),
+        ),
+        const BoxShadow(
+          color: Color(0x08000000),
+          blurRadius: 6,
+          offset: Offset(0, 1),
+        ),
+      ];
+
+  /// Level 2: Interactive floating items - elevated
+  static List<BoxShadow> get elevated => [
+        const BoxShadow(
+          color: Color(0x250D1117),
+          blurRadius: 24,
+          offset: Offset(0, 8),
+        ),
+      ];
+
+  /// Level 3: Bottom bar - upward shadow
+  static List<BoxShadow> get bottomBar => [
+        const BoxShadow(
+          color: AppColors.shadow,
+          blurRadius: 16,
+          offset: Offset(0, -4),
         ),
       ];
 }

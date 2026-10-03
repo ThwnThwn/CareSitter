@@ -232,6 +232,211 @@ html.lenis {
   color: var(--green);
 }
 
+.button--ai {
+  background: var(--paper-deep);
+  color: var(--green-dark);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--green) 18%, transparent);
+}
+
+.button--ai:hover,
+.button--ai:focus-visible {
+  background: var(--lime);
+  color: var(--green-dark);
+}
+
+.ai-assistant-backdrop {
+  align-items: center;
+  background: color-mix(in oklch, var(--green-dark) 72%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+.ai-assistant {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px color-mix(in oklch, var(--green-dark) 28%, transparent);
+  max-height: min(760px, calc(100vh - 2rem));
+  max-width: 560px;
+  overflow: auto;
+  padding: clamp(1.35rem, 4vw, 2.4rem);
+  position: relative;
+  width: 100%;
+}
+
+.ai-assistant__close {
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  position: absolute;
+  right: 1.2rem;
+  top: 1.2rem;
+  width: 40px;
+}
+
+.ai-assistant__heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+  padding-right: 2.5rem;
+}
+
+.ai-assistant__icon {
+  align-items: center;
+  background: var(--green);
+  border-radius: 12px;
+  color: var(--white);
+  display: flex;
+  flex: 0 0 44px;
+  height: 44px;
+  justify-content: center;
+}
+
+.ai-assistant .section-label {
+  margin-bottom: 0.55rem;
+}
+
+.ai-assistant h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.45rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.08;
+  margin: 0;
+  max-width: 14ch;
+}
+
+.ai-assistant__intro {
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 1.2rem 0;
+  max-width: 60ch;
+}
+
+.ai-assistant__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.ai-assistant__examples button {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+.ai-assistant__examples button:hover,
+.ai-assistant__examples button:focus-visible {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ai-assistant textarea {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  display: block;
+  font: inherit;
+  line-height: 1.55;
+  min-height: 116px;
+  padding: 0.9rem 1rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.ai-assistant textarea:focus {
+  border-color: var(--green);
+  outline: 3px solid color-mix(in oklch, var(--green-bright) 35%, transparent);
+}
+
+.ai-assistant__form-footer {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  justify-content: space-between;
+  margin-top: 0.65rem;
+}
+
+.ai-assistant__form-footer .button {
+  min-height: 44px;
+}
+
+.ai-assistant__error {
+  color: #a12a22;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 1rem 0 0;
+}
+
+.ai-assistant__result {
+  background: var(--paper-deep);
+  border: 1px solid color-mix(in oklch, var(--green) 18%, var(--line));
+  border-radius: 14px;
+  margin-top: 1.3rem;
+  padding: 1.1rem;
+}
+
+.ai-assistant__result-label {
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ai-assistant__result h3 {
+  font-size: 1.2rem;
+  margin: 0.45rem 0 0.35rem;
+}
+
+.ai-assistant__result p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.ai-assistant__result-meta {
+  color: var(--green-dark);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  gap: 0.6rem 1rem;
+  margin: 0.8rem 0 1rem;
+}
+
+.ai-assistant__result-meta span:first-child {
+  font-weight: 700;
+}
+
+.spin {
+  animation: ai-spin 900ms linear infinite;
+}
+
+@keyframes ai-spin {
+  to { transform: rotate(360deg); }
+}
+
 .button--light {
   background: var(--white);
   color: var(--green-dark);

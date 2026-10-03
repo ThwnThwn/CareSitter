@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowDownRight, ArrowUpRight, Pause, Play, ShieldCheck } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useHeroCollageMotion } from "./useHeroCollageMotion";
+import CareAssistant from "./CareAssistant";
 
 interface HeroSectionProps {
   onOpenBooking: (caregiver?: string, service?: string) => void;
@@ -89,6 +90,7 @@ export default function HeroSection({ onOpenBooking }: HeroSectionProps) {
               Xem cách hoạt động
               <ArrowDownRight size={18} aria-hidden="true" />
             </a>
+            <CareAssistant onOpenBooking={onOpenBooking} />
           </div>
 
           <div className="hero__proof" aria-label="Đánh giá từ cộng đồng">

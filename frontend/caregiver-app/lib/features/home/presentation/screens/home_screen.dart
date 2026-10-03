@@ -144,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 1,
-      shadowColor: const Color(0x0A1A2E25),
+      shadowColor: AppColors.shadow,
       toolbarHeight: 68,
       automaticallyImplyLeading: false,
       title: Row(
@@ -341,7 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     if (rating > 0) ...[
                       const Icon(Icons.star_rounded,
-                          color: Color(0xFFA16900), size: 18),
+                          color: AppColors.secondary, size: 18),
                       const SizedBox(width: 4),
                     ],
                     Text(

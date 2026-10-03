@@ -19,16 +19,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   String _searchQuery = '';
 
   List<ServiceModel> _filtered(List<ServiceModel> services) {
-    var list = services;
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      list = list
-          .where((s) =>
-              s.name.toLowerCase().contains(q) ||
-              (s.description?.toLowerCase().contains(q) ?? false))
-          .toList();
-    }
-    return list;
+    if (_searchQuery.isEmpty) return services;
+    final q = _searchQuery.toLowerCase();
+    return services
+        .where((s) =>
+            s.name.toLowerCase().contains(q) ||
+            (s.description?.toLowerCase().contains(q) ?? false))
+        .toList();
   }
 
   @override
@@ -44,63 +41,131 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         slivers: [
-          _buildHeader(context),
+          // ── App Bar ──────────────────────────────────────────────────────
+          const SliverAppBar(
+            pinned: true,
+            backgroundColor: AppColors.background,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0.5,
+            shadowColor: AppColors.shadow,
+            title: Text(
+              'Danh mục dịch vụ',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+            centerTitle: true,
+            leading: AppBackButton(fallbackRoute: '/home'),
+          ),
+
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const SizedBox(height: 16),
-                FadeSlideStaggered(index: 0, child: _buildSearchBar()),
-                const SizedBox(height: 8),
-                FadeSlideStaggered(index: 2, child: _buildBanner()),
-                const SizedBox(height: 20),
+                // ── Search Bar ─────────────────────────────────────────────
+                FadeSlideStaggered(
+                  index: 0,
+                  child: _buildSearchBar(),
+                ),
+                const SizedBox(height: 14),
+
+                // ── Banner ─────────────────────────────────────────────────
+                FadeSlideStaggered(
+                  index: 1,
+                  child: _buildBanner(),
+                ),
+                const SizedBox(height: 22),
+
+                // ── Section Title ──────────────────────────────────────────
                 const FadeSlideStaggered(
-                  index: 3,
-                  child: Text(
-                    'Dịch vụ chăm sóc',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  index: 2,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Dịch vụ chăm sóc',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Text('🩺', style: TextStyle(fontSize: 15)),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                // ── Service List ───────────────────────────────────────────
                 FadeSlideStaggered(
-                  index: 4,
+                  index: 3,
                   child: servicesAsync.when(
                     loading: () => const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32),
-                        child: CircularProgressIndicator(),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
-                    error: (e, _) => Center(
-                      child: Text('Không thể tải dịch vụ: $e'),
+                    error: (e, _) => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(Icons.wifi_off_rounded,
+                                color: AppColors.textHint, size: 36),
+                            SizedBox(height: 12),
+                            Text(
+                              'Không thể tải dịch vụ',
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     data: (services) {
                       final filtered = _filtered(services);
                       if (filtered.isEmpty) {
                         return const Padding(
                           padding: EdgeInsets.all(32),
-                          child: Center(
-                            child: Text(
-                              'Không tìm thấy dịch vụ phù hợp.',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.search_off_rounded,
+                                  color: AppColors.textHint, size: 36),
+                              SizedBox(height: 12),
+                              Text(
+                                'Không tìm thấy dịch vụ phù hợp',
+                                style:
+                                    TextStyle(color: AppColors.textSecondary),
+                              ),
+                            ],
                           ),
                         );
                       }
                       return Column(
                         children: filtered
-                            .map((s) => _buildServiceCard(s, context))
+                            .asMap()
+                            .entries
+                            .map((e) =>
+                                _buildServiceCard(e.value, e.key, context))
                             .toList(),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 32),
               ]),
             ),
           ),
@@ -109,72 +174,71 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return const SliverAppBar(
-      pinned: true,
-      backgroundColor: AppColors.cardBackground,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: AppColors.shadow,
-      title: Text(
-        'Danh mục dịch vụ',
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      centerTitle: true,
-      leading: AppBackButton(fallbackRoute: '/home'),
-    );
-  }
-
+  // ── Search Bar ────────────────────────────────────────────────────────────
   Widget _buildSearchBar() {
-    return TextField(
-      controller: _searchCtrl,
-      onChanged: (v) => setState(() => _searchQuery = v.trim()),
-      decoration: InputDecoration(
-        hintText: 'Tìm kiếm dịch vụ...',
-        prefixIcon:
-            const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear,
-                    size: 18, color: AppColors.textHint),
-                onPressed: () {
-                  _searchCtrl.clear();
-                  setState(() => _searchQuery = '');
-                },
-              )
-            : null,
-        filled: true,
-        fillColor: AppColors.cardBackground,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+      ),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() => _searchQuery = v.trim()),
+        style: const TextStyle(
+          fontSize: 14,
+          color: AppColors.textPrimary,
         ),
-        hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        decoration: InputDecoration(
+          hintText: 'Tìm kiếm dịch vụ...',
+          hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: AppColors.textHint,
+            size: 20,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      size: 18, color: AppColors.textHint),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          ),
         ),
       ),
     );
   }
 
+  // ── Banner ────────────────────────────────────────────────────────────────
   Widget _buildBanner() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppShadows.card,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryDark, AppColors.primary],
+        ),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
@@ -187,159 +251,218 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Gọi để được hỗ trợ chọn dịch vụ phù hợp',
+                  'Được hỗ trợ chọn dịch vụ phù hợp',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 12),
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+                // Call button
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    '📞 Gọi ngay: 1800 6789',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.phone_rounded,
+                        size: 13,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        'Gọi ngay: 1800 6789',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🏡', style: TextStyle(fontSize: 48)),
+          const Text('🏡', style: TextStyle(fontSize: 44)),
         ],
       ),
     );
   }
 
-  Widget _buildServiceCard(ServiceModel service, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+  // ── Service Card ──────────────────────────────────────────────────────────
+  static const _iconColors = [
+    (bg: Color(0xFFE8F5F0), fg: AppColors.primary),
+    (bg: Color(0xFFFFF3E8), fg: Color(0xFFA85A16)),
+    (bg: Color(0xFFE8F0FF), fg: Color(0xFF2255CC)),
+    (bg: Color(0xFFFFF0F5), fg: Color(0xFFB5226B)),
+    (bg: Color(0xFFF0F8E8), fg: Color(0xFF4A7C1F)),
+    (bg: Color(0xFFF5F0FF), fg: Color(0xFF6633BB)),
+  ];
+
+  Widget _buildServiceCard(
+      ServiceModel service, int index, BuildContext context) {
+    final colors = _iconColors[index % _iconColors.length];
+
+    return Material(
+      color: AppColors.cardBackground,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => context.push('/booking/new?serviceId=${service.id}'),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: Text(service.icon, style: const TextStyle(fontSize: 24)),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.border.withValues(alpha: 0.6),
+              width: 1,
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        service.name,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        service.category,
-                        style: const TextStyle(
-                          color: AppColors.secondaryStrong,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Icon ──
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: colors.bg,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  service.description ?? '',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      height: 1.4),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${_formatVnd(service.baseHourlyPrice)}/giờ',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '• tối thiểu ${service.defaultDurationMinutes ~/ 60}h',
-                      style: const TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                FilledButton(
-                  onPressed: () =>
-                      context.push('/booking/new?serviceId=${service.id}'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                child: Center(
+                  child: Text(
+                    service.icon,
+                    style: const TextStyle(fontSize: 22),
                   ),
-                  child: const Text('Đặt ngay'),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+
+              // ── Content ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Name + Category badge
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            service.name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            service.category,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+
+                    // Description
+                    Text(
+                      service.description ?? '',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Price + Duration + CTA
+                    Row(
+                      children: [
+                        // Price pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colors.bg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            service.baseHourlyPrice > 0
+                                ? '${_formatVnd(service.baseHourlyPrice)}/giờ'
+                                : 'Liên hệ',
+                            style: TextStyle(
+                              color: colors.fg,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '• tối thiểu ${service.defaultDurationMinutes ~/ 60}h',
+                          style: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const Spacer(),
+                        // Compact CTA
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Đặt ngay',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

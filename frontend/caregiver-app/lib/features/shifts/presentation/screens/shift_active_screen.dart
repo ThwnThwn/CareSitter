@@ -874,20 +874,10 @@ class _ShiftActiveScreenState extends ConsumerState<ShiftActiveScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE8F8F0), Color(0xFFF0FBF5)],
-        ),
+        color: AppColors.primaryContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
