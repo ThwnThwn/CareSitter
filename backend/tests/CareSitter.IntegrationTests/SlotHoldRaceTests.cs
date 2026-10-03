@@ -2,6 +2,7 @@ using Npgsql;
 
 namespace CareSitter.IntegrationTests;
 
+[Trait("Category", "PostgreSQL")]
 public sealed class SlotHoldRaceTests : IAsyncLifetime
 {
     private PostgresRaceTestDatabase _database = null!;
@@ -9,7 +10,10 @@ public sealed class SlotHoldRaceTests : IAsyncLifetime
     public async Task InitializeAsync() =>
         _database = await PostgresRaceTestDatabase.CreateAsync();
 
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (_database is not null) await _database.DisposeAsync();
+    }
 
     [PostgresFact]
     public async Task SameCaregiver_CannotCommitOverlappingBookings()

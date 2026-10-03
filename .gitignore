@@ -6,6 +6,7 @@
 # ---------- Chỉ theo dõi source chính ----------
 /*
 !/.gitignore
+!/vercel.json
 !/backend/
 !/backend/**
 !/deploy/

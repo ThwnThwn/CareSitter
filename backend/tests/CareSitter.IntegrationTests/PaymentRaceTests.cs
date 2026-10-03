@@ -18,12 +18,16 @@ using Npgsql;
 
 namespace CareSitter.IntegrationTests;
 
+[Trait("Category", "PostgreSQL")]
 public sealed class PaymentRaceTests : IAsyncLifetime
 {
     private PostgresRaceTestDatabase _database = null!;
 
     public Task InitializeAsync() => InitializeDatabaseAsync();
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (_database is not null) await _database.DisposeAsync();
+    }
 
     [PostgresFact]
     public async Task ConcurrentPayouts_CannotReserveMoreThanAvailableBalance()
