@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useId } from 'react';
+import { ReactNode, useEffect, useId, useRef } from 'react';
 import { AlertCircle, Inbox, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 
@@ -23,7 +23,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
 export function ErrorBanner({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return <div className="notice error-notice" role="alert">
     <AlertCircle size={18} aria-hidden="true" />
-    <div><strong>Không thể tải dữ liệu</strong><p>{message}</p></div>
+    <div><strong>Không thể hoàn tất yêu cầu</strong><p>{message}</p></div>
     {onRetry && <button className="text-button" onClick={onRetry}><RefreshCw size={15} /> Thử lại</button>}
   </div>;
 }
@@ -49,9 +49,9 @@ export function InlineLoading({ label = 'Đang xử lý…' }: { label?: string 
 
 export function Pagination({ page, pageSize, total, onChange }: { page: number; pageSize: number; total: number; onChange: (page: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (total <= pageSize) return null;
+  if (total <= pageSize && page <= 1) return null;
   return <div className="pagination" aria-label="Phân trang">
-    <span>Hiển thị {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} trong {total}</span>
+    <span>{page > pages ? 'Trang hiện tại không còn dữ liệu.' : `Hiển thị ${total ? (page - 1) * pageSize + 1 : 0}–${Math.min(page * pageSize, total)} trong ${total}`}</span>
     <div>
       <button className="icon-page" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Trang trước">‹</button>
       <span>Trang {page}/{pages}</span>
@@ -60,22 +60,40 @@ export function Pagination({ page, pageSize, total, onChange }: { page: number; 
   </div>;
 }
 
-export function Drawer({ title, subtitle, onClose, children, footer }: {
-  title: string; subtitle?: string; onClose: () => void; children: ReactNode; footer?: ReactNode;
+export function Drawer({ title, subtitle, onClose, children, footer, busy = false }: {
+  title: string; subtitle?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; busy?: boolean;
 }) {
   const titleId = useId();
+  const dialog = useRef<HTMLElement>(null);
+  const close = useRef(onClose);
+  const pending = useRef(busy);
+  close.current = onClose;
+  pending.current = busy;
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    const previousFocus = document.activeElement as HTMLElement | null;
+    dialog.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !pending.current) { event.preventDefault(); close.current(); }
+      if (event.key !== 'Tab') return;
+      const targets = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || [])
+        .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+      const first = targets[0]; const last = targets.at(-1);
+      if (!first) { event.preventDefault(); dialog.current?.focus(); }
+      else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first.focus(); }
+    };
+    const keepFocus = (event: FocusEvent) => { if (event.target instanceof Node && !dialog.current?.contains(event.target)) dialog.current?.focus(); };
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', keepFocus);
     document.body.classList.add('drawer-open');
-    return () => { document.removeEventListener('keydown', onKey); document.body.classList.remove('drawer-open'); };
-  }, [onClose]);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('focusin', keepFocus); document.body.classList.remove('drawer-open'); previousFocus?.focus(); };
+  }, []);
 
-  return <div className="drawer-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+  return <div className="drawer-backdrop" onMouseDown={(event) => !busy && event.target === event.currentTarget && onClose()}>
+    <aside ref={dialog} tabIndex={-1} className="drawer" role="dialog" aria-modal="true" aria-busy={busy} aria-labelledby={titleId}>
       <div className="drawer-head">
         <div>{subtitle && <span className="drawer-kicker">{subtitle}</span>}<h2 id={titleId}>{title}</h2></div>
-        <button className="icon-button" onClick={onClose} aria-label="Đóng"><X size={20} /></button>
+        <button className="icon-button" disabled={busy} onClick={onClose} aria-label="Đóng"><X size={20} /></button>
       </div>
       <div className="drawer-body">{children}</div>
       {footer && <div className="drawer-footer">{footer}</div>}
@@ -85,15 +103,23 @@ export function Drawer({ title, subtitle, onClose, children, footer }: {
 
 export function DetailList({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
   return <dl className="detail-list">{items.map((item) => <div key={item.label}>
-    <dt>{item.label}</dt><dd>{item.value || '—'}</dd>
+    <dt>{item.label}</dt><dd>{item.value === '' || item.value == null ? '—' : item.value}</dd>
   </div>)}</dl>;
 }
 
 export function Tabs({ value, onChange, items }: {
   value: string; onChange: (value: string) => void; items: Array<{ value: string; label: string; count?: number }>;
 }) {
-  return <div className="tabs" role="tablist">{items.map((item) => <button
-    key={item.value} role="tab" aria-selected={value === item.value}
+  return <div className="tabs" role="tablist">{items.map((item, index) => <button
+    key={item.value} role="tab" aria-selected={value === item.value} tabIndex={value === item.value ? 0 : -1}
+    onKeyDown={(event) => {
+      const next = event.key === 'ArrowRight' ? (index + 1) % items.length
+        : event.key === 'ArrowLeft' ? (index + items.length - 1) % items.length
+        : event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : -1;
+      if (next < 0) return;
+      event.preventDefault(); onChange(items[next].value);
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+    }}
     className={value === item.value ? 'active' : ''} onClick={() => onChange(item.value)}>
     {item.label}{item.count !== undefined && <span>{item.count}</span>}
   </button>)}</div>;
@@ -108,7 +134,7 @@ export function formatMoney(value?: number) {
 }
 
 export function formatDate(value?: string, withTime = true) {
-  if (!value) return '—';
+  if (!value || !Number.isFinite(Date.parse(value))) return '—';
   return new Intl.DateTimeFormat('vi-VN', withTime
     ? { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }
     : { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));

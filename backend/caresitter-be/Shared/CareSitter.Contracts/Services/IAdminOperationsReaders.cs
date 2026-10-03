@@ -6,7 +6,10 @@ public sealed record AdminQueueItem(
     string Title,
     string Subtitle,
     string Status,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt)
+{
+    public string Priority { get; init; } = "NORMAL";
+}
 
 public sealed record AdminStatusDescriptor(string Value, string Label, string Tone);
 

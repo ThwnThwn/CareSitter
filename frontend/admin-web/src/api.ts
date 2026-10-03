@@ -25,13 +25,29 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401 && token && sessionStorage.getItem(TOKEN_KEY) === token) {
     window.dispatchEvent(new CustomEvent('admin:unauthorized'));
   }
   if (response.status === 204) return undefined as T;
   const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(errorMessage(payload, 'Không thể hoàn tất yêu cầu.'), response.status);
+  const fallback = response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.'
+    : response.status === 409 ? 'Dữ liệu đã thay đổi. Vui lòng tải lại trước khi tiếp tục.' : 'Không thể hoàn tất yêu cầu.';
+  if (!response.ok) throw new ApiError(errorMessage(payload, fallback), response.status);
+  if (payload === null) throw new ApiError('Phản hồi máy chủ không hợp lệ. Vui lòng thử lại.', response.status);
   return payload as T;
+}
+
+export async function logoutSession(): Promise<string> {
+  if (!sessionStorage.getItem(TOKEN_KEY)) return '';
+  try {
+    await api('/api/v1/auth/logout', { method: 'POST', body: '{}', signal: AbortSignal.timeout(10_000) });
+    return '';
+  } catch (cause) {
+    if (cause instanceof ApiError && cause.status === 401) return '';
+    return 'Đã đăng xuất trên trình duyệt này nhưng chưa xác nhận thu hồi phiên trên máy chủ. Hãy kiểm tra kết nối hoặc liên hệ quản trị nếu cần khóa phiên.';
+  } finally {
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
 }
 
 export function qs(values: Record<string, string | number | undefined | null>) {
