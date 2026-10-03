@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowDownRight, ArrowUpRight, Pause, Play, ShieldCheck } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useHeroCollageMotion } from "./useHeroCollageMotion";
 import CareAssistant from "./CareAssistant";
@@ -12,7 +12,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ onOpenBooking }: HeroSectionProps) {
   const heroRef = useRef<HTMLElement>(null);
-  const { motionEnabled, toggleMotion } = useHeroCollageMotion(heroRef);
+  useHeroCollageMotion(heroRef);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -115,7 +115,7 @@ export default function HeroSection({ onOpenBooking }: HeroSectionProps) {
           </div>
         </div>
 
-        <div className="hero-collage" aria-label="CareSitter trong một ca chăm sóc" data-motion-enabled={motionEnabled}>
+        <div className="hero-collage" aria-label="CareSitter trong một ca chăm sóc">
           <figure className="hero-collage__main">
             <Image
               alt="Người chăm sóc đồng hành cùng một gia đình trong không gian ấm cúng"
@@ -151,15 +151,6 @@ export default function HeroSection({ onOpenBooking }: HeroSectionProps) {
             </span>
           </div>
 
-          <button
-            type="button"
-            className="hero-collage__motion-toggle"
-            onClick={toggleMotion}
-            aria-label={motionEnabled ? "Tạm dừng chuyển động ảnh" : "Bật chuyển động ảnh"}
-            title={motionEnabled ? "Tạm dừng chuyển động ảnh" : "Bật chuyển động ảnh"}
-          >
-            {motionEnabled ? <Pause size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
-          </button>
         </div>
       </div>
     </section>

@@ -731,7 +731,7 @@ html.lenis {
 }
 
 /* Independent translate keeps pointer depth separate from Anime.js entrances. */
-.hero-collage > :not(.hero-collage__motion-toggle) {
+.hero-collage > * {
   translate: calc(var(--hero-pointer-x, 0px) * var(--hero-depth, 1))
     calc(var(--hero-pointer-y, 0px) * var(--hero-depth, 1));
   transition: translate 800ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -741,27 +741,6 @@ html.lenis {
 .hero-collage__portrait { --hero-depth: 0.8; }
 .hero-collage__seal { --hero-depth: 1; }
 .hero-collage__caption { --hero-depth: 1.2; }
-
-.hero-collage__motion-toggle {
-  align-items: center;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  bottom: 1%;
-  color: var(--green);
-  cursor: pointer;
-  display: flex;
-  height: 44px;
-  justify-content: center;
-  left: 0;
-  position: absolute;
-  width: 44px;
-}
-
-.hero-collage__motion-toggle:hover {
-  background: var(--paper-deep);
-  border-color: var(--green);
-}
 
 .hero-collage figure {
   margin: 0;
@@ -2488,16 +2467,6 @@ html.lenis {
 
   .hero__copy[data-hero-entered] > * {
     animation-duration: var(--hero-duration) !important;
-  }
-
-  .hero-collage:not([data-motion-enabled="true"]) > * {
-    translate: none;
-    transition: none;
-  }
-
-  /* An explicit press of the hero play button opts into this local effect. */
-  .hero-collage[data-motion-enabled="true"] > :not(.hero-collage__motion-toggle) {
-    transition-duration: 800ms !important;
   }
 
   /* The requested reference navigation remains animated with page motion. */

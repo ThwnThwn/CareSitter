@@ -1,28 +1,13 @@
 "use client";
 
 import { animate, type JSAnimation } from "animejs";
-import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
-
-const motionQuery = "(prefers-reduced-motion: reduce)";
-const getReducedMotion = () => window.matchMedia(motionQuery).matches;
-const getServerReducedMotion = () => true;
-const subscribeReducedMotion = (onChange: () => void) => {
-  const media = window.matchMedia(motionQuery);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-};
+import { useEffect, type RefObject } from "react";
 
 /** A once-only photo entrance, with small independent movements for its layers. */
 export function useHeroCollageMotion(heroRef: RefObject<HTMLElement | null>) {
-  const prefersReducedMotion = useSyncExternalStore(
-    subscribeReducedMotion, getReducedMotion, getServerReducedMotion,
-  );
-  const [userChoice, setUserChoice] = useState<boolean | null>(null);
-  const motionEnabled = userChoice ?? !prefersReducedMotion;
-
   useEffect(() => {
     const collage = heroRef.current?.querySelector<HTMLElement>(".hero-collage");
-    if (!collage || !motionEnabled) return;
+    if (!collage) return;
 
     const photo = collage.querySelector<HTMLImageElement>(".hero-collage__main img");
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -144,7 +129,5 @@ export function useHeroCollageMotion(heroRef: RefObject<HTMLElement | null>) {
       animations.forEach((animation) => animation.revert());
       resetPointer();
     };
-  }, [heroRef, motionEnabled]);
-
-  return { motionEnabled, toggleMotion: () => setUserChoice(!motionEnabled) };
+  }, [heroRef]);
 }
