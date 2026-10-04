@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - name: Native process shutdown and log-drain regression
+        shell: pwsh
+        run: ./backend/scripts/test-phase7-process.ps1
       - name: Clean migration, legacy upgrade, smoke and full backend tests
         shell: pwsh
         run: ./backend/scripts/test-phase7.ps1 -Repeat 2 -SkipFrontend -ArtifactsDirectory backend/artifacts/ci-baseline
@@ -35,6 +38,7 @@ jobs:
           path: |
             backend/artifacts/ci-baseline/**/*.trx
             backend/artifacts/ci-baseline/summary.json
+            backend/artifacts/ci-baseline/*.log
           retention-days: 14
           if-no-files-found: warn
 

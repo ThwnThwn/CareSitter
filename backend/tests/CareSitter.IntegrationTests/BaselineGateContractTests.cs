@@ -54,6 +54,26 @@ public sealed class BaselineGateContractTests
     }
 
     [Fact]
+    public void Baseline_starts_the_built_api_directly_and_drains_logs_without_PowerShell_callbacks()
+    {
+        var runner = Read("backend/scripts/test-phase7.ps1");
+        var processHelper = Read("backend/scripts/phase7-process.ps1");
+        Assert.Contains("bin/Release/net8.0/CareSitter.ApiHost.dll", runner);
+        Assert.DoesNotContain("Start-Process @", runner);
+        Assert.Contains("Start-Phase7LoggedProcess", runner);
+        Assert.Contains("Stop-Phase7LoggedProcess", runner);
+        Assert.Contains("ArgumentList.Add($argument)", processHelper);
+        Assert.Contains("CopyToAsync", processHelper);
+        Assert.Contains("Kill($true)", processHelper);
+        Assert.Contains("$logTasks.Wait(10000)", processHelper);
+        Assert.Contains("test-phase7-process.ps1", Read(".github/workflows/ci.yml"));
+        Assert.Contains("ci-baseline/*.log", Read(".github/workflows/ci.yml"));
+        Assert.Contains("Join-Path $testResultsDirectory $testProject.BaseName", runner);
+        Assert.Contains("$testCounters.Files -ne $testProjects.Count", runner);
+        Assert.Contains("Test results directory already exists", runner);
+    }
+
+    [Fact]
     public void Vercel_automatic_git_deployments_are_disabled_for_all_branches()
     {
         using var configuration = JsonDocument.Parse(Read("vercel.json"));

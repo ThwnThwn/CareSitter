@@ -13,7 +13,7 @@ Cập nhật: 04/10/2026 (Asia/Saigon). Đã được người dùng cho phép c
 
 Baseline kỹ thuật local đạt; **chưa đóng toàn bộ G0/policy** (policy matrix, owner, phạm vi thiết bị, RPO/RTO còn cần chốt):
 
-- Bỏ ignore .github/global.json; đưa workflow vào commit được người dùng cho phép. Chưa có evidence CI remote.
+- Bỏ ignore .github/global.json; đưa workflow vào commit được người dùng cho phép. CI remote trên main/develop tại f8bed77: ba job frontend pass; backend crash trong StartProcessCommand.StdOutputHandler (closed TextWriter, exit 134), không phải migration/smoke fail.
 - Pin SDK .NET 8.0.425/latestPatch, Flutter 3.44.4, Node 24.19.0 cho baseline CI. Đây là baseline hiện tại, không thay thế REL02 nâng .NET 10 trước public release.
 - CI chạy backend hai vòng, không skip PostgreSQL, chạy test admin trước build và lưu TRX/summary/JUnit.
 - Runner local dùng PostgreSQL/Redis tạm, không chạy Compose hoặc sử dụng Redis dev; cleanup chỉ tài nguyên do runner tạo.
@@ -21,6 +21,15 @@ Baseline kỹ thuật local đạt; **chưa đóng toàn bộ G0/policy** (polic
 - Backend Release build: 0 warning/error trước adapter; hai vòng sạch liên tiếp, mỗi vòng **217/217**, 0 fail/skip. Migrations 00–30, legacy 00–25 → 26–30 và replay đạt; smoke health/readiness/catalog/anonymous boundary/login ba role đạt. Evidence: `backend/artifacts/g0-20261004/backend/summary.json` (fingerprint của baseline trước adapter).
 - Customer Flutter: analyze sạch, **55 test pass**, web release build đạt. Caregiver Flutter: analyze sạch, **15 test pass**, web release build đạt. Không thay cho nghiệm thu Android/iOS/thiết bị thật.
 - Admin: Node 24.19.0, `npm ci` đạt, **33/33 test**, TypeScript/Vite build đạt. JUnit: `backend/artifacts/g0-20261004/admin-tests.xml`.
+
+### Sửa runner CI — 04/10/2026
+
+- Chạy DLL Release trực tiếp, không để launcher `dotnet run` sinh API con bị bỏ lại. Dùng .NET Process/ArgumentList, hai task copy stdout/stderr; kill tree, chờ exit và drain log có timeout trước dispose. Không dùng callback redirect của PowerShell Start-Process.
+- Startup fail tự dọn process. Regression native kiểm tra quoting/exit code, dừng lúc ghi stdout/stderr, cleanup lặp và lỗi startup/log pump. CI chạy regression này trước baseline; lưu log cùng TRX/summary để chẩn đoán.
+- Tách TRX từng test project, kiểm đủ báo cáo và chặn sử dụng lại kết quả cũ. Fingerprint bổ sung vercel.json.
+- Baseline local đầu sau sửa lifecycle: hai vòng **294/294**, 0 fail/skip, 6 TRX/vòng, schema 00–31, legacy upgrade/replay và smoke pass; runner đã ghi summary và exit 0. Evidence: `backend/artifacts/runner-fix-20261004/summary.json`. Sau bảo vệ TRX/log-failure, chạy lại một vòng **294/294**, 6 báo cáo riêng, summary/cleanup/exit 0: `backend/artifacts/runner-fix-trx-20261004/summary.json`; native process regression pass. Chỉ cập nhật dòng tiến độ này sau lượt test đó, không sửa runtime trước commit.
+- Người dùng cho phép commit/push develop để chạy CI, chỉ merge main khi CI xanh. Chưa coi baseline remote đã đạt trước khi đọc kết quả run của commit mới.
+- Hướng dẫn chuẩn bị tài liệu/provider: [VNPAY_READING_GUIDE.md](VNPAY_READING_GUIDE.md). Đợt này không bật refund, không nối CancelBooking, không tích hợp API chi hộ thiếu hợp đồng và không gọi giao dịch thật.
 
 ## Nhánh Git local
 

@@ -17,9 +17,10 @@ $repoRoot = Split-Path -Parent $backendRoot
 $migrationDirectory = Join-Path $backendRoot 'init-db'
 $solution = Join-Path $backendRoot 'CareSitter.sln'
 $apiHostDirectory = Join-Path (Join-Path $backendRoot 'caresitter-be') 'ApiHost'
-$apiProject = Join-Path $apiHostDirectory 'CareSitter.ApiHost.csproj'
+$apiAssembly = Join-Path $apiHostDirectory 'bin/Release/net8.0/CareSitter.ApiHost.dll'
 $smokeScript = Join-Path $PSScriptRoot 'smoke-test.ps1'
 $updateDbScript = Join-Path $PSScriptRoot 'update-db.ps1'
+. (Join-Path $PSScriptRoot 'phase7-process.ps1')
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
 if ([string]::IsNullOrWhiteSpace($ArtifactsDirectory)) {
@@ -37,7 +38,7 @@ function Get-SourceFingerprint {
     # Content hashes identify the tested dirty worktree without exporting a diff
     # or credentials. Generated/ignored dependencies and reports are excluded.
     $paths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard --
-        .gitignore .github global.json backend deploy frontend) | Sort-Object -Unique
+        .gitignore .github global.json vercel.json backend deploy frontend) | Sort-Object -Unique
     if ($LASTEXITCODE -ne 0) { throw 'Cannot fingerprint the source worktree.' }
     $lines = foreach ($path in $paths) {
         $absolutePath = Join-Path $repoRoot $path
@@ -417,14 +418,12 @@ function Start-Phase7Api {
     $stdout = Join-Path $ArtifactsDirectory "api-run-$RunNumber.stdout.log"
     $stderr = Join-Path $ArtifactsDirectory "api-run-$RunNumber.stderr.log"
     $baseUrl = "http://127.0.0.1:$Port"
+    if (-not (Test-Path -LiteralPath $apiAssembly -PathType Leaf)) {
+        throw "Built API assembly was not found: $apiAssembly"
+    }
     $arguments = @(
-        'run',
-        '--project', $apiProject,
-        '--configuration', 'Release',
-        '--no-build',
-        '--no-launch-profile',
+        $apiAssembly,
         '--urls', $baseUrl,
-        '--',
         '--environment=Development',
         "--ConnectionStrings:CareSitter=Host=127.0.0.1;Port=$($Database.Port);Database=$($Database.Database);Username=$($Database.User);Password=$($Database.Password)",
         "--Redis:ConnectionString=127.0.0.1:$RedisPort,password=$RedisPassword",
@@ -448,49 +447,42 @@ function Start-Phase7Api {
         '--CheckIn:MaxDistanceMeters=250'
     )
 
-    $startParameters = @{
-        FilePath = 'dotnet'
-        ArgumentList = $arguments
-        WorkingDirectory = $workingDirectory
-        RedirectStandardOutput = $stdout
-        RedirectStandardError = $stderr
-        PassThru = $true
-    }
-    if ($env:OS -eq 'Windows_NT') {
-        $startParameters['WindowStyle'] = 'Hidden'
-    }
-    $process = Start-Process @startParameters
-
-    for ($attempt = 1; $attempt -le 45; $attempt++) {
-        if ($process.HasExited) {
-            $out = Get-Content -Raw -LiteralPath $stdout -ErrorAction SilentlyContinue
-            $err = Get-Content -Raw -LiteralPath $stderr -ErrorAction SilentlyContinue
-            throw "API exited during startup.`n$out`n$err"
-        }
-        try {
-            $response = Invoke-WebRequest -Uri "$baseUrl/health/live" -UseBasicParsing -TimeoutSec 3
-            if ([int]$response.StatusCode -eq 200) {
-                return [pscustomobject]@{
-                    Process = $process
-                    BaseUrl = $baseUrl
+    $handle = Start-Phase7LoggedProcess -FilePath (Get-Command dotnet).Source `
+        -Arguments $arguments -WorkingDirectory $workingDirectory `
+        -StdoutPath $stdout -StderrPath $stderr
+    try {
+        for ($attempt = 1; $attempt -le 45; $attempt++) {
+            if ($handle.Process.HasExited) {
+                Stop-Phase7LoggedProcess -Handle $handle
+                $out = Get-Content -Raw -LiteralPath $stdout -ErrorAction SilentlyContinue
+                $err = Get-Content -Raw -LiteralPath $stderr -ErrorAction SilentlyContinue
+                throw "API exited during startup.`n$out`n$err"
+            }
+            try {
+                $response = Invoke-WebRequest -Uri "$baseUrl/health/live" -UseBasicParsing -TimeoutSec 3
+                if ([int]$response.StatusCode -eq 200) {
+                    return [pscustomobject]@{
+                        Handle = $handle
+                        BaseUrl = $baseUrl
+                    }
                 }
             }
+            catch {
+                Start-Sleep -Seconds 2
+            }
         }
-        catch {
-            Start-Sleep -Seconds 2
-        }
+        throw "API did not become live at $baseUrl."
     }
-
-    throw "API did not become live at $baseUrl."
+    catch {
+        Stop-Phase7LoggedProcess -Handle $handle
+        throw
+    }
 }
 
 function Stop-Phase7Api {
     param($Process)
 
-    if ($null -ne $Process -and -not $Process.HasExited) {
-        Stop-Process -Id $Process.Id -Force
-        $Process.WaitForExit(10000) | Out-Null
-    }
+    Stop-Phase7LoggedProcess -Handle $Process
 }
 
 function Get-TestCounters {
@@ -508,6 +500,9 @@ function Get-TestCounters {
     foreach ($file in $files) {
         [xml]$trx = Get-Content -Raw -LiteralPath $file.FullName
         $counters = $trx.TestRun.ResultSummary.Counters
+        if ([int]$counters.total -eq 0) {
+            throw "Test project produced an empty test report: $($file.FullName)"
+        }
         $total += [int]$counters.total
         $passed += [int]$counters.passed
         $failed += [int]$counters.failed
@@ -591,7 +586,7 @@ try {
             -RedisPassword $redis.Password `
             -Port ($ApiPort + $run - 1) `
             -RunNumber $run
-        $apiProcess = $api.Process
+        $apiProcess = $api.Handle
         try {
             & $smokeScript `
                 -BaseUrl $api.BaseUrl `
@@ -609,25 +604,36 @@ try {
         }
 
         $testResultsDirectory = Join-Path $ArtifactsDirectory "tests-run-$run"
+        if (Test-Path -LiteralPath $testResultsDirectory) {
+            throw "Test results directory already exists; use a new artifacts directory: $testResultsDirectory"
+        }
         New-Item -ItemType Directory -Force -Path $testResultsDirectory | Out-Null
+        $testProjects = @(Get-ChildItem -LiteralPath (Join-Path $backendRoot 'tests') `
+            -Recurse -File -Filter '*Tests.csproj' | Sort-Object FullName)
+        if ($testProjects.Count -eq 0) { throw 'No backend test projects were found.' }
         $previousAdminConnection = $env:CARESITTER_TEST_ADMIN_CONNECTION
         $env:CARESITTER_TEST_ADMIN_CONNECTION =
             "Host=127.0.0.1;Port=$($cleanDatabase.Port);Database=postgres;Username=$($cleanDatabase.User);Password=$($cleanDatabase.Password)"
         try {
-            Invoke-CheckedCommand `
-                -FilePath 'dotnet' `
-                -Arguments @(
-                    'test', $solution,
-                    '--configuration', 'Release',
-                    '--no-build',
-                    '--no-restore',
-                    '--nologo',
-                    '--results-directory', $testResultsDirectory,
-                    '--logger', "trx;LogFilePrefix=phase7-$run"
-                ) `
-                -WorkingDirectory $repoRoot `
-                -LogPath (Join-Path $ArtifactsDirectory "dotnet-test-run-$run.log") `
-                -Description "Run all backend tests ($run/$Repeat)"
+            foreach ($testProject in $testProjects) {
+                # VSTest's shared prefix/timestamp can overwrite reports when
+                # several assemblies finish in the same second on Linux.
+                $projectResults = Join-Path $testResultsDirectory $testProject.BaseName
+                Invoke-CheckedCommand `
+                    -FilePath 'dotnet' `
+                    -Arguments @(
+                        'test', $testProject.FullName,
+                        '--configuration', 'Release',
+                        '--no-build',
+                        '--no-restore',
+                        '--nologo',
+                        '--results-directory', $projectResults,
+                        '--logger', 'trx;LogFileName=results.trx'
+                    ) `
+                    -WorkingDirectory $repoRoot `
+                    -LogPath (Join-Path $ArtifactsDirectory "dotnet-test-$($testProject.BaseName)-run-$run.log") `
+                    -Description "Run $($testProject.BaseName) ($run/$Repeat)"
+            }
         }
         finally {
             if ($null -eq $previousAdminConnection) {
@@ -639,7 +645,8 @@ try {
         }
 
         $testCounters = Get-TestCounters -ResultsDirectory $testResultsDirectory
-        if ($testCounters.Total -eq 0 -or $testCounters.Failed -ne 0 -or $testCounters.NotExecuted -ne 0 -or
+        if ($testCounters.Files -ne $testProjects.Count -or $testCounters.Total -eq 0 -or
+            $testCounters.Failed -ne 0 -or $testCounters.NotExecuted -ne 0 -or
             $testCounters.Total -ne $testCounters.Passed) {
             throw "Backend tests were not fully green: $($testCounters | ConvertTo-Json -Compress)"
         }
