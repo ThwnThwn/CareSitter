@@ -55,6 +55,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
             b.Property(x => x.ProviderTransactionId).HasColumnName("provider_transaction_id").HasMaxLength(255);
             b.Property(x => x.ProviderOrderRef).HasColumnName("provider_order_ref").HasMaxLength(100);
+            b.Property(x => x.ProviderCreateDate).HasColumnName("provider_create_date").HasMaxLength(14);
             b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(255);
             b.Property(x => x.RequestPayload).HasColumnName("request_payload").HasColumnType("jsonb");
             b.Property(x => x.ResponsePayload).HasColumnName("response_payload").HasColumnType("jsonb");

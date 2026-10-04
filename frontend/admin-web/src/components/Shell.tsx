@@ -24,7 +24,7 @@ export function Shell({ page, onNavigate, onLogout, children }: {
   const initials = currentUser.displayName.split(/\s+/).filter(Boolean).slice(-2)
     .map((part) => part[0]?.toUpperCase()).join('') || 'AD';
   return <div className="app-shell">
-    <a className="skip-link" href="#main-content">Bỏ qua điều hướng</a>
+    <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Bỏ qua điều hướng</a>
     <aside className="sidebar">
       <div className="brand"><span className="brand-mark">C</span><span><strong>CareSitter</strong><small>Operations Console</small></span></div>
       <nav aria-label="Điều hướng quản trị">{navigation.map((item) => {
@@ -39,6 +39,6 @@ export function Shell({ page, onNavigate, onLogout, children }: {
       </div>
       <button className="nav-item logout" onClick={onLogout}><LogOut size={19} /><span>Đăng xuất</span></button>
     </aside>
-    <main className="workspace" id="main-content">{children}</main>
+    <main className="workspace" id="main-content" tabIndex={-1}>{children}</main>
   </div>;
 }

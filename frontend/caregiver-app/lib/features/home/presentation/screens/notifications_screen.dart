@@ -149,23 +149,23 @@ class NotificationsScreen extends ConsumerWidget {
       case 'CARE_TIMELINE':
         return {
           'icon': Icons.directions_run_rounded,
-          'bg': const Color(0xFFE8F8F0),
-          'color': const Color(0xFF27AE60),
+          'bg': AppColors.primaryContainer,
+          'color': AppColors.primary,
         };
       case 'BOOKING':
       case 'BOOKING_OFFER':
       case 'MATCHING_FAILED':
         return {
           'icon': Icons.calendar_month_rounded,
-          'bg': const Color(0xFFFFF3DC),
-          'color': const Color(0xFFE67E22),
+          'bg': AppColors.secondaryContainer,
+          'color': AppColors.secondaryStrong,
         };
       case 'PAYMENT':
       case 'PAYOUT':
         return {
           'icon': Icons.account_balance_wallet_rounded,
-          'bg': const Color(0xFFEBF5FB),
-          'color': const Color(0xFF2980B9),
+          'bg': AppColors.infoLight,
+          'color': AppColors.info,
         };
       case 'SOS':
         return {

@@ -23,6 +23,8 @@ internal sealed class RescheduleBookingCommandHandler(
             return BookingErrors.ScheduleMustBeFuture();
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
+        if (booking.Status is not (BookingStatus.Draft or BookingStatus.PendingPayment or BookingStatus.Confirmed))
+            return Error.Conflict("booking.reschedule", "Không thể dời lịch ở trạng thái hiện tại.");
         if (await bookings.HasBeneficiaryScheduleConflictAsync(booking.Id,
                 booking.BeneficiaryId, request.ScheduledStart, request.ScheduledEnd, ct))
             return BookingErrors.BeneficiaryScheduleConflict();
@@ -33,18 +35,32 @@ internal sealed class RescheduleBookingCommandHandler(
         var quote = await pricing.QuoteAsync(booking.ServiceTypeId,
             request.ScheduledStart, request.ScheduledEnd, ct);
         if (quote.IsFailure) return quote.Error;
+        if (booking.Status == BookingStatus.Confirmed && quote.Value.EscrowAmount != booking.EscrowAmount)
+            return Error.Conflict("booking.reschedule.paid_price_change",
+                "Lịch mới làm thay đổi số tiền đã thanh toán. Vui lòng liên hệ hỗ trợ để điều chỉnh đơn.");
         if (booking.PromotionId is not null && quote.Value.EscrowAmount != booking.EscrowAmount)
             return Error.Conflict("booking.promotion_reprice_required",
                 "Lịch mới làm thay đổi giá của đơn có ưu đãi. Vui lòng tạo đơn mới để hệ thống kiểm tra lại promotion.");
         var changed = booking.Reschedule(request.ScheduledStart, request.ScheduledEnd);
         if (changed.IsFailure) return changed.Error;
-        var pricingApplied = booking.ApplyPricing(quote.Value.EscrowAmount,
-            quote.Value.PlatformFeeAmount,
-            quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson,
-            quote.Value.DisputeWindowHours);
-        if (pricingApplied.IsFailure) return pricingApplied.Error;
+        // Keep the paid financial snapshot, including fees and dispute window, immutable.
+        if (booking.Status != BookingStatus.Confirmed)
+        {
+            var pricingApplied = booking.ApplyPricing(quote.Value.EscrowAmount,
+                quote.Value.PlatformFeeAmount,
+                quote.Value.CaregiverEarningAmount, quote.Value.PriceSnapshotJson,
+                quote.Value.DisputeWindowHours);
+            if (pricingApplied.IsFailure) return pricingApplied.Error;
+        }
+        var slotHold = await bookings.GetActiveSlotHoldAsync(booking.Id, ct);
+        if (slotHold is not null)
+        {
+            var moved = slotHold.Reschedule(request.ScheduledStart, request.ScheduledEnd);
+            if (moved.IsFailure) return moved.Error;
+        }
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Rescheduled);
-        await bookings.SaveChangesAsync(ct);
+        if (!await bookings.TrySaveSlotHoldChangesAsync(ct))
+            return BookingErrors.CaregiverNewScheduleConflict();
         await postCommit.RunAsync("reschedule customer sync", () =>
             postCommit.PublishCustomerSyncEventAsync(booking, ct));
         return await responseMapper.ToResponseAsync(booking, ct);

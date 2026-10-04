@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Phase 7 backend baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Clean migration, legacy upgrade, smoke and full backend tests
+        shell: pwsh
+        run: ./backend/scripts/test-phase7.ps1 -Repeat 2 -SkipFrontend -ArtifactsDirectory backend/artifacts/ci-baseline
+      - name: Preserve backend acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-baseline-${{ github.run_id }}
+          path: |
+            backend/artifacts/ci-baseline/**/*.trx
+            backend/artifacts/ci-baseline/summary.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  flutter:
+    name: Flutter ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [customer-app, caregiver-app]
+    defaults:
+      run:
+        working-directory: frontend/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub
+
+  admin-web:
+    name: Admin web tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/admin-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: frontend/admin-web/package-lock.json
+      - run: npm ci
+      - run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/admin.xml
+      - run: npm run build
+      - name: Preserve admin test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-tests-${{ github.run_id }}
+          path: frontend/admin-web/test-results/admin.xml
+          retention-days: 14
+          if-no-files-found: warn

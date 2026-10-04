@@ -124,7 +124,10 @@ internal sealed class PostgresRaceTestDatabase : IAsyncDisposable
         if (!SafeDatabaseName.IsMatch(_databaseName))
             throw new InvalidOperationException("Refusing to drop an unexpected database name.");
 
-        NpgsqlConnection.ClearAllPools();
+        // Other test classes use separate databases concurrently. Only retire
+        // connections belonging to the database this fixture is about to drop.
+        using (var testConnection = new NpgsqlConnection(ConnectionString))
+            NpgsqlConnection.ClearPool(testConnection);
         await using var admin = new NpgsqlConnection(_adminConnectionString);
         await admin.OpenAsync();
         await using (var terminate = new NpgsqlCommand(

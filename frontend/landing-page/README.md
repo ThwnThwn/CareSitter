@@ -33,6 +33,19 @@ npm run dev
 ```
 Truy cập trình duyệt tại: [http://localhost:3000](http://localhost:3000)
 
+### Trợ lý AI chọn dịch vụ
+
+Landing page có trợ lý AI trong hero để đọc mô tả nhu cầu của gia đình và gợi ý loại hỗ trợ cùng số giờ ban đầu. API key chỉ được đọc ở Route Handler phía server, không đưa vào trình duyệt.
+
+Tạo file `.env.local` trong thư mục `frontend/landing-page`:
+
+```env
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-5-mini
+```
+
+Nếu chưa cấu hình key, nút trợ lý vẫn mở bình thường và hướng người dùng sang form đặt ca. Trợ lý chỉ đưa gợi ý phi y tế; người dùng vẫn xác nhận thông tin trong bước đặt ca.
+
 ### 3. Build & Run Production
 ```bash
 npm run build

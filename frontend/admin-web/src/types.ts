@@ -96,6 +96,7 @@ export type DashboardData = {
 };
 
 export type WorkItem = {
+  priority?: string;
   type: 'PAYMENT' | 'KYC' | 'PAYOUT' | 'SUPPORT' | 'DISPUTE';
   id: string;
   title: string;

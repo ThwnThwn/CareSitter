@@ -40,8 +40,12 @@ public sealed class AdminDashboardController(
         var workItems = payments.WorkItems
             .Concat(people.WorkItems)
             .Concat(support.WorkItems)
-            .OrderBy(x => x.CreatedAt)
-            .Take(12);
+            .OrderByDescending(x => x.Priority == "CRITICAL")
+            .ThenByDescending(x => x.Priority == "HIGH")
+            .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .Take(12)
+            .ToArray();
 
         return Ok(new
         {

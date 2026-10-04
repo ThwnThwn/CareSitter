@@ -242,8 +242,8 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
         return (
           label: 'Đang di chuyển',
           subtitle: 'Khách hàng theo dõi vị trí của bạn',
-          color: const Color(0xFFE67E22),
-          bgColor: const Color(0xFFFFF3E0),
+          color: AppColors.statusInProgress,
+          bgColor: AppColors.statusInProgressBg,
           icon: Icons.directions_car_rounded
         );
       case 'in_progress':
@@ -823,10 +823,10 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0),
+                        color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.health_and_safety_outlined,
-                        size: 18, color: Color(0xFFE67E22)),
+                        size: 18, color: AppColors.warning),
                   ),
                   const SizedBox(width: 10),
                   const Expanded(
@@ -1025,10 +1025,10 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(16),
         border:
-            Border.all(color: const Color(0xFFE67E22).withValues(alpha: 0.4)),
+            Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,13 +1036,13 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
           const Row(
             children: [
               Icon(Icons.navigation_rounded,
-                  color: Color(0xFFE67E22), size: 20),
+                  color: AppColors.warning, size: 20),
               SizedBox(width: 8),
               Text('Đang trên đường đến',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFE67E22))),
+                      color: AppColors.warning)),
             ],
           ),
           const SizedBox(height: 6),

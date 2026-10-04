@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AdminMetadataProvider } from './adminMetadata';
-import { api, TOKEN_KEY } from './api';
+import { api, logoutSession, TOKEN_KEY } from './api';
 import { Shell } from './components/Shell';
 import { BookingsPage } from './pages/BookingsPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -32,7 +32,7 @@ function pageFromHash(): PageKey {
   return pages.includes(value) ? value : 'dashboard';
 }
 
-function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
+function Login({ onLoggedIn, notice }: { onLoggedIn: () => void; notice?: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,8 +52,9 @@ function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
     finally { setBusy(false); }
   }
   return <main className="login-page">
+
     <section className="login-story"><div className="brand"><span className="brand-mark">C</span><span><strong>CareSitter</strong><small>Operations Console</small></span></div><div className="story-copy"><span>VẬN HÀNH CHĂM SÓC</span><h1>Mọi quyết định quan trọng ở đúng một nơi.</h1><p>Duyệt hồ sơ, đối soát thanh toán và xử lý ca chăm sóc bằng dữ liệu được ghi nhận từ hệ thống.</p></div><p className="story-foot">Identity · Booking · Payments · Support</p></section>
-    <section className="login-panel"><form className="login-card" onSubmit={submit}><span className="form-kicker">ĐĂNG NHẬP QUẢN TRỊ</span><h2>Chào mừng quay lại</h2><p>Dùng tài khoản có vai trò ADMIN.</p><label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label><label>Mật khẩu<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" /></label>{error && <div className="notice error-notice" role="alert">{error}</div>}<button className="primary login-submit" disabled={busy}>{busy ? 'Đang xác thực…' : 'Đăng nhập'}</button></form></section>
+    <section className="login-panel"><form className="login-card" onSubmit={submit}><span className="form-kicker">ĐĂNG NHẬP QUẢN TRỊ</span><h2>Chào mừng quay lại</h2><p>Dùng tài khoản có vai trò ADMIN.</p>{notice && <div className="notice" role="status">{notice}</div>}<label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label><label>Mật khẩu<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" /></label>{error && <div className="notice error-notice" role="alert">{error}</div>}<button className="primary login-submit" disabled={busy}>{busy ? 'Đang xác thực…' : 'Đăng nhập'}</button></form></section>
   </main>;
 }
 
@@ -98,12 +99,21 @@ function AdminApp({ onLogout }: { onLogout: () => void }) {
 
 function App() {
   const [authenticated, setAuthenticated] = useState(() => !!sessionStorage.getItem(TOKEN_KEY));
-  const logout = useCallback(() => { sessionStorage.removeItem(TOKEN_KEY); setAuthenticated(false); }, []);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [notice, setNotice] = useState('');
+  const expireSession = useCallback(() => { sessionStorage.removeItem(TOKEN_KEY); setAuthenticated(false); setNotice('Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.'); }, []);
+  const logout = useCallback(async () => {
+    setLoggingOut(true);
+    setNotice(await logoutSession());
+    setAuthenticated(false);
+    setLoggingOut(false);
+  }, []);
   useEffect(() => {
-    window.addEventListener('admin:unauthorized', logout);
-    return () => window.removeEventListener('admin:unauthorized', logout);
-  }, [logout]);
-  return authenticated ? <AdminApp onLogout={logout} /> : <Login onLoggedIn={() => setAuthenticated(true)} />;
+    window.addEventListener('admin:unauthorized', expireSession);
+    return () => window.removeEventListener('admin:unauthorized', expireSession);
+  }, [expireSession]);
+  if (loggingOut) return <main className="boot-screen" aria-busy="true">Đang thu hồi phiên đăng nhập…</main>;
+  return authenticated ? <AdminApp onLogout={() => void logout()} /> : <Login notice={notice} onLoggedIn={() => { setNotice(''); setAuthenticated(true); }} />;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

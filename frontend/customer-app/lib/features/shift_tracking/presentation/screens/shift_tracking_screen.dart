@@ -528,9 +528,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               children: [
                 TileLayer(
                   urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  retinaMode: true,
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.caresitter.app',
                 ),
                 // Đường polyline từ caregiver đến nhà khách (en_route)

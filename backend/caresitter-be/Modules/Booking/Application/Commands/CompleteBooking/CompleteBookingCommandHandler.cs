@@ -30,6 +30,9 @@ internal sealed class CompleteBookingCommandHandler(
             return BookingErrors.Forbidden();
         if (booking.Status != BookingStatus.CheckoutPendingReview)
             return BookingErrors.CompleteInvalidState();
+        if (booking.NeedsReview && !isAdmin)
+            return Error.Conflict("booking.complete.admin_review_required",
+                "Ca chăm sóc có bất thường cần admin kiểm tra trước khi hoàn tất.");
         if (await disputeLookup.HasOpenDisputeAsync(booking.Id, ct))
             return BookingErrors.OpenDispute();
 

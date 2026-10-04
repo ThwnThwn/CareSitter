@@ -14,14 +14,13 @@ Set-StrictMode -Version Latest
 
 $backendRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = Split-Path -Parent $backendRoot
-$composeFile = Join-Path $backendRoot 'docker-compose.yml'
 $migrationDirectory = Join-Path $backendRoot 'init-db'
 $solution = Join-Path $backendRoot 'CareSitter.sln'
 $apiHostDirectory = Join-Path (Join-Path $backendRoot 'caresitter-be') 'ApiHost'
 $apiProject = Join-Path $apiHostDirectory 'CareSitter.ApiHost.csproj'
 $smokeScript = Join-Path $PSScriptRoot 'smoke-test.ps1'
 $updateDbScript = Join-Path $PSScriptRoot 'update-db.ps1'
-$runId = Get-Date -Format 'yyyyMMdd-HHmmss'
+$runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
 if ([string]::IsNullOrWhiteSpace($ArtifactsDirectory)) {
     $ArtifactsDirectory = Join-Path $backendRoot "artifacts\phase7\$runId"
@@ -33,6 +32,22 @@ $temporaryContainers = [System.Collections.Generic.List[string]]::new()
 $temporaryDirectories = [System.Collections.Generic.List[string]]::new()
 $runSummaries = [System.Collections.Generic.List[object]]::new()
 $apiProcess = $null
+
+function Get-SourceFingerprint {
+    # Content hashes identify the tested dirty worktree without exporting a diff
+    # or credentials. Generated/ignored dependencies and reports are excluded.
+    $paths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard --
+        .gitignore .github global.json backend deploy frontend) | Sort-Object -Unique
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot fingerprint the source worktree.' }
+    $lines = foreach ($path in $paths) {
+        $absolutePath = Join-Path $repoRoot $path
+        if (Test-Path -LiteralPath $absolutePath -PathType Leaf) {
+            "$path $((Get-FileHash -LiteralPath $absolutePath -Algorithm SHA256).Hash)"
+        }
+    }
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))
+    return [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+}
 
 function Invoke-CheckedCommand {
     param(
@@ -91,24 +106,6 @@ function Wait-ContainerHealthy {
 
     $logs = Get-DockerLogs -ContainerName $ContainerName
     throw "Container '$ContainerName' did not become healthy.`n$logs"
-}
-
-function Get-ContainerEnvironment {
-    param([Parameter(Mandatory)][string]$ContainerName)
-
-    $container = (& docker inspect $ContainerName | ConvertFrom-Json)[0]
-    if ($LASTEXITCODE -ne 0 -or $null -eq $container) {
-        throw "Unable to inspect container '$ContainerName'."
-    }
-
-    $values = @{}
-    foreach ($entry in $container.Config.Env) {
-        $parts = $entry -split '=', 2
-        if ($parts.Count -eq 2) {
-            $values[$parts[0]] = $parts[1]
-        }
-    }
-    return $values
 }
 
 function Get-PublishedPort {
@@ -173,7 +170,7 @@ function Start-TemporaryPostgres {
         throw "Unable to start temporary PostgreSQL container '$containerName'."
     }
 
-    $temporaryContainers.Add($containerName)
+    $temporaryContainers.Add($containerId.Trim())
     Wait-ContainerHealthy -ContainerName $containerName
 
     $initialized = $false
@@ -211,6 +208,27 @@ function Start-TemporaryPostgres {
         Password = $databasePassword
         Database = $databaseName
         Port = Get-PublishedPort -ContainerName $containerName -ContainerPort '5432/tcp'
+    }
+}
+
+function Start-TemporaryRedis {
+    $containerName = "caresitter-phase7-redis-$runId"
+    $password = [Guid]::NewGuid().ToString('N')
+    $containerId = & docker run --detach --rm --name $containerName `
+        --label "caresitter.test-run=$runId" `
+        --publish '127.0.0.1::6379' `
+        --health-cmd "redis-cli -a $password ping" `
+        --health-interval 2s --health-timeout 3s --health-retries 30 `
+        redis:7-alpine redis-server --requirepass $password
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($containerId)) {
+        throw 'Unable to start disposable Redis.'
+    }
+    $temporaryContainers.Add($containerId.Trim())
+    Wait-ContainerHealthy -ContainerName $containerName
+    return [pscustomobject]@{
+        Name = $containerName
+        Password = $password
+        Port = Get-PublishedPort -ContainerName $containerName -ContainerPort '6379/tcp'
     }
 }
 
@@ -282,6 +300,10 @@ SELECT (
   AND to_regclass('catalog.service_types') IS NOT NULL
   AND to_regclass('booking.bookings') IS NOT NULL
   AND to_regclass('payments.ledger_entries') IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'payments' AND table_name = 'payment_intents'
+      AND column_name = 'provider_create_date' AND character_maximum_length = 14)
   AND to_regclass('support.disputes') IS NOT NULL
   AND EXISTS (
     SELECT 1 FROM information_schema.columns
@@ -296,6 +318,23 @@ SELECT (
     WHERE table_schema = 'identity' AND table_name = 'users'
       AND column_name = 'notification_prefs')
   AND to_regprocedure('booking.prevent_active_beneficiary_booking_overlap()') IS NOT NULL
+  AND to_regclass('promotion.promotions') IS NOT NULL
+  AND (
+    SELECT count(*) FROM information_schema.columns
+    WHERE table_schema = 'booking'
+      AND table_name IN ('care_timeline_events', 'gps_tracks')
+      AND column_name IN ('latitude', 'longitude')
+      AND data_type = 'double precision') = 4
+  AND to_regprocedure('booking.sync_timeline_coordinates()') IS NOT NULL
+  AND to_regprocedure('booking.sync_gps_coordinates()') IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'booking.care_timeline_events'::regclass
+      AND tgname = 'sync_timeline_coordinates' AND NOT tgisinternal)
+  AND EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'booking.gps_tracks'::regclass
+      AND tgname = 'sync_gps_coordinates' AND NOT tgisinternal)
 )::text;
 "@
     $valid = Invoke-PsqlScalar `
@@ -304,7 +343,7 @@ SELECT (
         -DatabaseName $Database.Database `
         -Sql $sql
     if ($valid -ne 'true' -and $valid -ne 't') {
-        throw 'The clean database does not contain all Phase 7/8 schema objects.'
+        throw 'The database does not contain the required schema through migration 31.'
     }
 }
 
@@ -348,9 +387,17 @@ function Test-LegacyUpgrade {
     }
     Assert-Phase7Schema -Database $legacyDatabase
 
+    # Checksum-based replay must not reapply SQL or change protected row counts.
+    $null = & $updateDbScript -From 26 -AllowDestructive `
+        -ContainerName $legacyDatabase.Name -SkipStart -MigrationPath $legacyDirectory
+    if ((Get-DataSignature -Database $legacyDatabase) -ne $after) {
+        throw 'Replaying the legacy upgrade changed protected seed-row counts.'
+    }
+
     return [pscustomobject]@{
         Before = $before
         After = $after
+        Replay = 'passed'
     }
 }
 
@@ -503,20 +550,15 @@ try {
         throw 'Docker daemon is not running.'
     }
 
-    Write-Host 'Starting Docker Compose PostgreSQL and Redis...'
-    & docker compose -f $composeFile up -d db redis
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to start Docker Compose services.'
+    $contextJson = & docker context inspect
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the active Docker context.' }
+    $context = @($contextJson | ConvertFrom-Json)[0]
+    $dockerEndpoint = if ($env:DOCKER_HOST) { $env:DOCKER_HOST } else { $context.Endpoints.docker.Host }
+    if ($dockerEndpoint -notmatch '^(npipe|unix)://') {
+        throw 'Baseline tests require a local Docker context, not a remote Docker host.'
     }
-    Wait-ContainerHealthy -ContainerName 'caresitter-db'
-    Wait-ContainerHealthy -ContainerName 'caresitter-redis'
-
-    $redisEnvironment = Get-ContainerEnvironment -ContainerName 'caresitter-redis'
-    $redisPassword = $redisEnvironment['REDIS_PASSWORD']
-    if ([string]::IsNullOrWhiteSpace($redisPassword)) {
-        $redisPassword = 'caresitter'
-    }
-    $redisPort = Get-PublishedPort -ContainerName 'caresitter-redis' -ContainerPort '6379/tcp'
+    $sourceFingerprint = Get-SourceFingerprint
+    $redis = Start-TemporaryRedis
 
     Invoke-CheckedCommand `
         -FilePath 'dotnet' `
@@ -533,8 +575,7 @@ try {
 
     for ($run = 1; $run -le $Repeat; $run++) {
         Write-Host "`n========== PHASE 7 ACCEPTANCE $run/$Repeat =========="
-        Wait-ContainerHealthy -ContainerName 'caresitter-db'
-        Wait-ContainerHealthy -ContainerName 'caresitter-redis'
+        Wait-ContainerHealthy -ContainerName $redis.Name
 
         $cleanDatabase = Start-TemporaryPostgres `
             -NameSuffix "clean-$run" `
@@ -546,8 +587,8 @@ try {
 
         $api = Start-Phase7Api `
             -Database $cleanDatabase `
-            -RedisPort $redisPort `
-            -RedisPassword $redisPassword `
+            -RedisPort $redis.Port `
+            -RedisPassword $redis.Password `
             -Port ($ApiPort + $run - 1) `
             -RunNumber $run
         $apiProcess = $api.Process
@@ -598,7 +639,7 @@ try {
         }
 
         $testCounters = Get-TestCounters -ResultsDirectory $testResultsDirectory
-        if ($testCounters.Failed -ne 0 -or $testCounters.NotExecuted -ne 0 -or
+        if ($testCounters.Total -eq 0 -or $testCounters.Failed -ne 0 -or $testCounters.NotExecuted -ne 0 -or
             $testCounters.Total -ne $testCounters.Passed) {
             throw "Backend tests were not fully green: $($testCounters | ConvertTo-Json -Compress)"
         }
@@ -635,6 +676,12 @@ try {
                 -Description "Install admin web dependencies ($run/$Repeat)"
             Invoke-CheckedCommand `
                 -FilePath $npmCommand `
+                -Arguments @('test') `
+                -WorkingDirectory $adminDirectory `
+                -LogPath (Join-Path $ArtifactsDirectory "admin-test-run-$run.log") `
+                -Description "Test admin web ($run/$Repeat)"
+            Invoke-CheckedCommand `
+                -FilePath $npmCommand `
                 -Arguments @('run', 'build') `
                 -WorkingDirectory $adminDirectory `
                 -LogPath (Join-Path $ArtifactsDirectory "admin-build-run-$run.log") `
@@ -647,20 +694,27 @@ try {
             CleanDatabaseSignature = $cleanSignature
             LegacySignatureBefore = $legacyResult.Before
             LegacySignatureAfter = $legacyResult.After
+            LegacyReplay = $legacyResult.Replay
             BackendTests = $testCounters
             FrontendChecked = -not $SkipFrontend
             Smoke = 'passed'
-            ComposeHealth = 'passed'
+            IsolatedServicesHealth = 'passed'
         })
 
         Write-Host "PASS  Phase 7 acceptance run $run/$Repeat"
     }
 
+    if ((Get-SourceFingerprint) -ne $sourceFingerprint) {
+        throw 'Source changed during acceptance; rerun the baseline on a stable worktree.'
+    }
     $summary = [pscustomobject]@{
         Status = 'passed'
         RunId = $runId
         StartedFromCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
         WorkingTreeDirty = (@(& git -C $repoRoot status --porcelain)).Count -gt 0
+        SourceSha256 = $sourceFingerprint
+        DotnetSdk = (& dotnet --version).Trim()
+        Migrations = @(Get-ChildItem -LiteralPath $migrationDirectory -Filter '*.sql' | Sort-Object Name | Select-Object -ExpandProperty Name)
         Repeat = $Repeat
         CompletedAt = (Get-Date).ToString('o')
         Runs = $runSummaries
@@ -672,12 +726,21 @@ try {
 }
 finally {
     Stop-Phase7Api -Process $apiProcess
-    foreach ($containerName in $temporaryContainers) {
-        & docker rm --force $containerName *> $null
+    foreach ($containerId in $temporaryContainers) {
+        & docker rm --force $containerId *> $null
     }
     foreach ($directory in $temporaryDirectories) {
         if (Test-Path -LiteralPath $directory) {
-            Remove-Item -LiteralPath $directory -Recurse -Force
+            $resolved = (Resolve-Path -LiteralPath $directory).Path
+            $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+            $item = Get-Item -LiteralPath $resolved
+            if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
+                $item.Name -notmatch '^caresitter-phase7-(legacy|api)-' -or
+                ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                Write-Warning 'Refusing to delete an unexpected temporary-directory target.'
+                continue
+            }
+            Remove-Item -LiteralPath $resolved -Recurse -Force
         }
     }
 }

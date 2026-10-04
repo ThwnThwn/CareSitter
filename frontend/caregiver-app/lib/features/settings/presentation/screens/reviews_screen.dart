@@ -147,7 +147,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       idx < avg.floor()
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,
-                      color: const Color(0xFFF1C40F),
+                      color: AppColors.secondary,
                       size: 20,
                     );
                   }),
@@ -206,7 +206,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               color: AppColors.textSecondary),
         ),
         const SizedBox(width: 4),
-        const Icon(Icons.star_rounded, color: Color(0xFFF1C40F), size: 13),
+        const Icon(Icons.star_rounded, color: AppColors.secondary, size: 13),
         const SizedBox(width: 8),
         Expanded(
           child: ClipRRect(
@@ -310,7 +310,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                         idx < review.rating
                             ? Icons.star_rounded
                             : Icons.star_border_rounded,
-                        color: const Color(0xFFF1C40F),
+                        color: AppColors.secondary,
                         size: 14,
                       );
                     }),

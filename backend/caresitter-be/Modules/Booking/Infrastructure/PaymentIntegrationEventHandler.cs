@@ -44,10 +44,23 @@ internal sealed class PaymentIntegrationEventHandler(
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var booking = await LockBookingAsync(notification.BookingId, ct)
             ?? throw new InvalidOperationException($"Booking {notification.BookingId} was not found.");
-        if (booking.Status == BookingStatus.Confirmed)
+        // A payment URL may have been issued before an unpaid booking was repriced.
+        // Leave the durable outbox message unprocessed for reconciliation instead of
+        // confirming care backed by a different amount of money.
+        if (notification.Amount != booking.CustomerPayableAmount)
+            throw new InvalidOperationException(
+                $"Payment amount {notification.Amount} does not match booking {booking.Id} payable amount {booking.CustomerPayableAmount}.");
+
+        // The sync event is persisted in the same transaction as confirmation and
+        // remains a receipt even after the booking advances to another state.
+        var paymentAlreadyApplied = booking.Status == BookingStatus.Confirmed ||
+            await db.BookingSyncEvents.AnyAsync(x => x.BookingId == booking.Id &&
+                x.EventType == BookingSyncEventTypes.PaymentConfirmed, ct);
+        if (paymentAlreadyApplied)
         {
             await tx.CommitAsync(ct);
-            await FinalizePromotionAsync(booking, ct);
+            if (booking.Status is not (BookingStatus.Cancelled or BookingStatus.Refunded))
+                await FinalizePromotionAsync(booking, ct);
             return;
         }
         if (booking.Status is not (BookingStatus.PendingPayment or

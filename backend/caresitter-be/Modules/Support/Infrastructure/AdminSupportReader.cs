@@ -16,6 +16,7 @@ internal sealed class AdminSupportReader(SupportDbContext db) : IAdminSupportRea
         var ticketItems = await db.SupportTickets.AsNoTracking()
             .Where(x => x.Status == "NEW" || x.Status == "IN_PROGRESS")
             .OrderByDescending(x => x.Priority == "CRITICAL")
+            .ThenByDescending(x => x.Priority == "HIGH")
             .ThenBy(x => x.CreatedAt)
             .Take(5)
             .Select(x => new AdminQueueItem(
@@ -24,7 +25,7 @@ internal sealed class AdminSupportReader(SupportDbContext db) : IAdminSupportRea
                 x.Title,
                 x.Type + " · " + x.Priority,
                 x.Status,
-                x.CreatedAt))
+                x.CreatedAt) { Priority = x.Priority })
             .ToListAsync(ct);
 
         var disputeItems = await db.Disputes.AsNoTracking()

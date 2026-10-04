@@ -18,12 +18,16 @@ using Npgsql;
 
 namespace CareSitter.IntegrationTests;
 
+[Trait("Category", "PostgreSQL")]
 public sealed class PaymentRaceTests : IAsyncLifetime
 {
     private PostgresRaceTestDatabase _database = null!;
 
     public Task InitializeAsync() => InitializeDatabaseAsync();
-    public async Task DisposeAsync() => await _database.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (_database is not null) await _database.DisposeAsync();
+    }
 
     [PostgresFact]
     public async Task ConcurrentPayouts_CannotReserveMoreThanAvailableBalance()
@@ -212,6 +216,64 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         Assert.Equal("CONFIRMED", reader.GetString(0));
         Assert.Equal(1, reader.GetInt64(1));
         Assert.Equal(1, reader.GetInt64(2));
+    }
+
+    [PostgresFact]
+    public async Task OriginalVnpayCreateDate_survives_database_reload_and_generates_identical_link()
+    {
+        var booking = await CreateBookingAsync("PENDING_PAYMENT", null);
+        var createdAt = new DateTimeOffset(2026, 9, 30, 3, 0, 0, TimeSpan.Zero);
+        var intent = PaymentIntent.Create(booking.BookingId, booking.CustomerId, "VNPAY",
+            100000, Guid.NewGuid().ToString("N"), createdAt: createdAt).Value;
+        Assert.True(intent.SetProviderOrderRef("CSdate01").IsSuccess);
+        Assert.True(intent.MarkPending().IsSuccess);
+        var options = new VNPayOptions
+        {
+            TmnCode = "TEST0001", HashSecret = "local-test-key",
+            ReturnUrl = "https://example.test/return"
+        };
+        var service = new VNPayService(new HttpClient());
+        var original = service.BuildPaymentUrl(intent, options);
+        await using (var db = CreatePaymentsDbContext())
+        {
+            db.PaymentIntents.Add(intent);
+            await db.SaveChangesAsync();
+        }
+        await using var reloadedDb = CreatePaymentsDbContext();
+        var reloaded = await reloadedDb.PaymentIntents.AsNoTracking().SingleAsync(x => x.Id == intent.Id);
+        Assert.Equal("20260930100000", reloaded.ProviderCreateDate);
+        Assert.Equal(original, service.BuildPaymentUrl(reloaded, options));
+    }
+
+    [PostgresFact]
+    public async Task Legacy_payment_original_date_is_not_backfilled_from_created_at()
+    {
+        var booking = await CreateBookingAsync("PENDING_PAYMENT", null);
+        var intent = PaymentIntent.Create(booking.BookingId, booking.CustomerId, "VNPAY",
+            100000, Guid.NewGuid().ToString("N")).Value;
+        Assert.True(intent.SetProviderOrderRef("CSlegacy01").IsSuccess);
+        Assert.True(intent.MarkPending().IsSuccess);
+        await using (var db = CreatePaymentsDbContext())
+        {
+            db.PaymentIntents.Add(intent);
+            await db.SaveChangesAsync();
+        }
+        await using (var connection = await _database.OpenConnectionAsync())
+        {
+            await using var command = new NpgsqlCommand(
+                "UPDATE payments.payment_intents SET provider_create_date = NULL WHERE id = @id", connection);
+            command.Parameters.AddWithValue("id", intent.Id);
+            await command.ExecuteNonQueryAsync();
+        }
+        await using var reloadedDb = CreatePaymentsDbContext();
+        var legacy = await reloadedDb.PaymentIntents.AsNoTracking().SingleAsync(x => x.Id == intent.Id);
+        Assert.Null(legacy.ProviderCreateDate);
+        var result = await new VNPayService(new HttpClient()).QueryTransactionAsync(legacy, new VNPayOptions
+        {
+            TmnCode = "TEST0001", HashSecret = "local-test-key"
+        });
+        Assert.Equal(VNPayQueryState.Unknown, result.State);
+        Assert.Equal("MISSING_ORIGINAL_CREATE_DATE", result.ResponseCode);
     }
 
     private async Task InitializeDatabaseAsync() =>

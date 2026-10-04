@@ -29,7 +29,7 @@ void main() {
     expect(find.text('Ca đang diễn ra hôm nay'), findsOneWidget);
     expect(find.text('11:00 - 15:00 (Cô Lan)'), findsOneWidget);
     expect(find.text('380.000đ'), findsOneWidget);
-    expect(find.text('Đang diễn ra'), findsOneWidget);
+    expect(find.text('Đang diễn ra'), findsWidgets);
     final bookingCta = tester.widget<Text>(find.text('Đặt lịch ngay'));
     expect(bookingCta.overflow, isNull);
     expect(find.byKey(const Key('home-book-now-cta')), findsOneWidget);

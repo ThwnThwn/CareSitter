@@ -31,6 +31,10 @@ internal sealed class AcceptBookingCommandHandler(
         var accepted = await acceptanceTransaction.ExecuteAsync(request.BookingId,
             async (booking, innerCt) =>
             {
+                // An offer or customer selection can outlive the caregiver's KYC approval.
+                if (!await people.IsCaregiverApprovedAsync(caregiverId, innerCt))
+                    return BookingErrors.CaregiverNotEligible();
+
                 if (booking.CaregiverId is { } assignedCaregiverId)
                 {
                     if (assignedCaregiverId != caregiverId)

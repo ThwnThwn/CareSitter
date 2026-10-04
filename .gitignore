@@ -6,6 +6,10 @@
 # ---------- Chỉ theo dõi source chính ----------
 /*
 !/.gitignore
+!/.github/
+!/.github/**
+!/global.json
+!/vercel.json
 !/backend/
 !/backend/**
 !/deploy/
@@ -80,6 +84,7 @@ artifacts/
 *.pdb
 TestResults/
 [Tt]est[Rr]esults/
+**/test-results/
 project.lock.json
 *.nupkg
 
