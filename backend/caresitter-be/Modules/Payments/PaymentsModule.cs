@@ -1,5 +1,6 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Application.Refunds;
 using CareSitter.Modules.Payments.Application.Payouts;
 using CareSitter.Modules.Payments.Application.Payouts.ApprovePayout;
 using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
@@ -67,6 +68,15 @@ public sealed class PaymentsModule : IModule
             .ValidateOnStart();
         services.AddHttpClient<IVNPayService, VNPayService>(client =>
             client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddOptions<VNPayRefundOptions>()
+            .Bind(configuration.GetSection(VNPayRefundOptions.SectionName))
+            .Validate(options => !options.Enabled || VNPayRefundGateway.IsValidEndpoint(options.ApiUrl),
+                "Enabled VNPAY refunds require an explicit HTTPS API endpoint.")
+            .ValidateOnStart();
+        // No redirect or retry handler: a second POST can move money a second time.
+        services.AddHttpClient<IVNPayRefundGateway, VNPayRefundGateway>(client =>
+            client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddScoped<IPaymentFinalizationService, PaymentFinalizationService>();
         services.AddScoped<IPaymentWebhookProcessor, PaymentWebhookProcessor>();
         services.AddScoped<IVnPayCallbackProcessor, VNPayCallbackProcessor>();

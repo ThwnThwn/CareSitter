@@ -95,6 +95,7 @@ internal sealed class BookingJobsService : IBookingJobsService
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
         var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
+        var sync = scope.ServiceProvider.GetRequiredService<IBookingSyncService>();
 
         var expiredShifts = await db.Bookings
             .Where(b => b.Status == BookingStatus.InProgress && b.ScheduledEnd <= cutoff)
@@ -109,6 +110,9 @@ internal sealed class BookingJobsService : IBookingJobsService
         {
             var oldStatus = ToApi(booking.Status);
             var requestedAt = DateTimeOffset.UtcNow;
+            if (await db.CareTasks.AnyAsync(t => t.BookingId == booking.Id &&
+                    (t.Status == "PENDING" || (t.IsRequired && t.Status == "SKIPPED"))))
+                booking.MarkNeedsReview();
             var result = booking.RequestSystemTimeoutCheckout(requestedAt);
             if (result.IsFailure)
             {
@@ -127,6 +131,8 @@ internal sealed class BookingJobsService : IBookingJobsService
                 source: "SYSTEM",
                 metadata: "{\"reason\":\"session_timeout_auto_checkout\"}");
             db.TimelineEvents.Add(evt);
+            sync.WriteSyncEvent(booking, BookingSyncEventTypes.CheckoutRequested);
+            await db.SaveChangesAsync();
 
             await hub.Clients
                 .Group(CareTrackingHub.BookingGroup(booking.Id))
@@ -157,9 +163,13 @@ internal sealed class BookingJobsService : IBookingJobsService
         var hub = scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>();
         var disputeLookup = scope.ServiceProvider.GetRequiredService<IDisputeLookupService>();
         var notifications = scope.ServiceProvider.GetRequiredService<IUserNotificationService>();
+        var sync = scope.ServiceProvider.GetRequiredService<IBookingSyncService>();
 
         var candidateIds = await db.Bookings.AsNoTracking()
             .Where(b => b.Status == BookingStatus.CheckoutPendingReview
+                && !b.NeedsReview
+                && !db.CareTasks.Any(t => t.BookingId == b.Id &&
+                    (t.Status == "PENDING" || (t.IsRequired && t.Status == "SKIPPED")))
                 && b.CheckoutPendingReviewAt != null
                 && b.CheckoutPendingReviewAt <= cutoff)
             .Select(b => b.Id)
@@ -174,7 +184,10 @@ internal sealed class BookingJobsService : IBookingJobsService
 
             await using var tx = await db.Database.BeginTransactionAsync();
             var booking = await db.Bookings.SingleOrDefaultAsync(b =>
-                b.Id == bookingId && b.Status == BookingStatus.CheckoutPendingReview);
+                b.Id == bookingId && b.Status == BookingStatus.CheckoutPendingReview
+                && !b.NeedsReview
+                && !db.CareTasks.Any(t => t.BookingId == b.Id &&
+                    (t.Status == "PENDING" || (t.IsRequired && t.Status == "SKIPPED"))));
             if (booking is null)
             {
                 await tx.RollbackAsync();
@@ -218,6 +231,7 @@ internal sealed class BookingJobsService : IBookingJobsService
                 source: "SYSTEM",
                 metadata: "{\"reason\":\"auto_confirm_after_customer_timeout\"}"));
 
+            sync.WriteSyncEvent(booking, BookingSyncEventTypes.Completed);
             await db.SaveChangesAsync();
             await tx.CommitAsync();
 

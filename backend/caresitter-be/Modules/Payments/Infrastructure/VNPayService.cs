@@ -23,10 +23,12 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             throw new InvalidOperationException("VNPay TmnCode và HashSecret chưa được cấu hình.");
         if (string.IsNullOrWhiteSpace(intent.ProviderOrderRef))
             throw new InvalidOperationException("PaymentIntent chua co ProviderOrderRef.");
+        if (!DateTime.TryParseExact(intent.ProviderCreateDate, "yyyyMMddHHmmss",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var vietnamCreatedAt))
+            throw new InvalidOperationException("PaymentIntent is missing the exact original VNPAY create date.");
 
-        // VNPay quy dinh vnp_CreateDate/vnp_ExpireDate theo GMT+7, khong phai UTC.
-        // Dung chung mot moc thoi gian de tranh lech giay giua hai tham so.
-        var vietnamNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, VietnamTimeZone);
+        // Preserve the original wire timestamp across reload/retry; refund/querydr need
+        // the EXACT vnp_CreateDate, not a newly generated URL timestamp.
         var timeoutMinutes = Math.Clamp(options.PaymentTimeoutMinutes, 5, 60);
         var values = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
@@ -34,8 +36,8 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             ["vnp_Command"] = "pay",
             ["vnp_TmnCode"] = options.TmnCode,
             ["vnp_Amount"] = checked(intent.Amount * 100).ToString(CultureInfo.InvariantCulture),
-            ["vnp_CreateDate"] = vietnamNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
-            ["vnp_ExpireDate"] = vietnamNow.AddMinutes(timeoutMinutes).ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
+            ["vnp_CreateDate"] = intent.ProviderCreateDate,
+            ["vnp_ExpireDate"] = vietnamCreatedAt.AddMinutes(timeoutMinutes).ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
             ["vnp_CurrCode"] = intent.Currency,
             ["vnp_IpAddr"] = "127.0.0.1",
             ["vnp_Locale"] = options.Locale,
@@ -89,8 +91,11 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             throw new InvalidOperationException("PaymentIntent chua co vnp_TxnRef.");
 
         var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, VietnamTimeZone);
-        var transactionDate = TimeZoneInfo.ConvertTime(intent.CreatedAt, VietnamTimeZone)
-            .ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+        if (!DateTime.TryParseExact(intent.ProviderCreateDate, "yyyyMMddHHmmss",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return new(VNPayQueryState.Unknown, null, "MISSING_ORIGINAL_CREATE_DATE", null,
+                "{}", "Legacy payment requires provider-assisted reconciliation of its original create date.");
+        var transactionDate = intent.ProviderCreateDate;
         var requestId = Guid.NewGuid().ToString("N");
         var createDate = now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         const string command = "querydr";

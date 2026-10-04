@@ -58,7 +58,7 @@ public sealed class CaregiverSlotHold : Entity
     /// <summary>Giải phóng hold khi thanh toán hết hạn, thất bại hoặc booking bị hủy.</summary>
     public void Release()
     {
-        if (Status != "HELD") return;
+        if (Status is not ("HELD" or "COMMITTED")) return;
         Status = "RELEASED";
         ReleasedAt = DateTimeOffset.UtcNow;
     }
@@ -74,5 +74,18 @@ public sealed class CaregiverSlotHold : Entity
     {
         if (Status == "HELD" && expiresAt > ExpiresAt)
             ExpiresAt = expiresAt;
+    }
+
+    /// <summary>Di chuyển slot cùng booking; exclusion constraint kiểm tra lịch mới khi lưu.</summary>
+    public Result Reschedule(DateTimeOffset scheduledStart, DateTimeOffset scheduledEnd)
+    {
+        if (Status is not ("HELD" or "COMMITTED"))
+            return Error.Conflict("caregiver_slot_hold.inactive", "Slot đã được giải phóng.");
+        if (scheduledEnd <= scheduledStart)
+            return Error.Validation("caregiver_slot_hold.schedule", "scheduled_end phải sau scheduled_start.");
+
+        ScheduledStart = scheduledStart;
+        ScheduledEnd = scheduledEnd;
+        return Result.Success();
     }
 }

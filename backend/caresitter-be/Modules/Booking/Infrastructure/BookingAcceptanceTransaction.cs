@@ -2,6 +2,7 @@ using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Commands;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CareSitter.Modules.Booking.Infrastructure;
 
@@ -37,7 +38,9 @@ internal sealed class BookingAcceptanceTransaction(BookingDbContext db)
             await tx.RollbackAsync(ct);
             return BookingErrors.AlreadyAccepted();
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
+            { SqlState: PostgresErrorCodes.ExclusionViolation } or PostgresException
+            { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "uq_active_slot_hold_booking" })
         {
             await tx.RollbackAsync(ct);
             return BookingErrors.CaregiverScheduleConflict();

@@ -1,5 +1,6 @@
 ﻿using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
+using System.Globalization;
 
 namespace CareSitter.Modules.Payments.Domain;
 
@@ -18,8 +19,11 @@ public sealed class PaymentIntent : AggregateRoot
         string provider,
         long amount,
         string currency,
-        string idempotencyKey) : base(id)
+        string idempotencyKey,
+        DateTimeOffset? createdAt) : base(id)
     {
+        CreatedAt = createdAt ?? CreatedAt;
+        UpdatedAt = CreatedAt;
         BookingId = bookingId;
         CustomerId = customerId;
         Provider = provider;
@@ -27,6 +31,9 @@ public sealed class PaymentIntent : AggregateRoot
         Currency = currency;
         IdempotencyKey = idempotencyKey;
         Status = "CREATED";
+        if (provider == "VNPAY")
+            ProviderCreateDate = CreatedAt.ToOffset(TimeSpan.FromHours(7))
+                .ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
     }
 
     public Guid BookingId { get; private set; }
@@ -43,6 +50,9 @@ public sealed class PaymentIntent : AggregateRoot
 
     public string? ProviderTransactionId { get; private set; }
     public string? ProviderOrderRef { get; private set; }
+    /// <summary>Exact immutable vnp_CreateDate used in the original payment URL.
+    /// Legacy rows stay null; CreatedAt/PayDate are not safe substitutes.</summary>
+    public string? ProviderCreateDate { get; private set; }
     public string IdempotencyKey { get; private set; } = null!;
     public string? RequestPayload { get; private set; }
     public string? ResponsePayload { get; private set; }
@@ -60,7 +70,8 @@ public sealed class PaymentIntent : AggregateRoot
         string provider,
         long amount,
         string idempotencyKey,
-        string currency = "VND")
+        string currency = "VND",
+        DateTimeOffset? createdAt = null)
     {
         if (string.IsNullOrWhiteSpace(provider))
             return Error.Validation("payment_intent.provider", "provider không được rỗng.");
@@ -69,7 +80,7 @@ public sealed class PaymentIntent : AggregateRoot
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             return Error.Validation("payment_intent.idempotency_key", "idempotency_key không được rỗng.");
 
-        return new PaymentIntent(Guid.NewGuid(), bookingId, customerId, provider, amount, currency, idempotencyKey);
+        return new PaymentIntent(Guid.NewGuid(), bookingId, customerId, provider, amount, currency, idempotencyKey, createdAt);
     }
 
     public Result MarkSucceeded(string? providerTransactionId = null, string? responsePayload = null,

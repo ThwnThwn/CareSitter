@@ -1,8 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
-    "deploymentEnabled": {
-      "feat/google-sign-in-account-chooser": false
-    }
+    "deploymentEnabled": false
   }
 }

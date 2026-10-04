@@ -1,5 +1,6 @@
 using CareSitter.Modules.Booking.Domain;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CareSitter.Modules.Booking.Infrastructure;
 
@@ -101,7 +102,13 @@ internal sealed class BookingRepository(BookingDbContext db) : IBookingRepositor
             await db.SaveChangesAsync(ct);
             return true;
         }
-        catch (DbUpdateException)
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
+            { SqlState: PostgresErrorCodes.ExclusionViolation } or PostgresException
+            { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "uq_active_slot_hold_booking" })
         {
             return false;
         }

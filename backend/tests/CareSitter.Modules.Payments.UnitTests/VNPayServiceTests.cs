@@ -54,6 +54,49 @@ public sealed class VNPayServiceTests
         Assert.DoesNotContain(intent.ProviderOrderRef!, query["vnp_OrderInfo"]);
     }
 
+    [Fact]
+    public void BuildPaymentUrl_preserves_persisted_original_timestamp_and_expiry()
+    {
+        var createdAt = new DateTimeOffset(2026, 9, 30, 3, 0, 0, TimeSpan.Zero);
+        var intent = PaymentIntent.Create(Guid.NewGuid(), Guid.NewGuid(), "VNPAY", 520000,
+            "timestamp-key", createdAt: createdAt).Value;
+        Assert.True(intent.SetProviderOrderRef("CSorder01").IsSuccess);
+        var service = new VNPayService(new HttpClient());
+        var first = service.BuildPaymentUrl(intent, QueryOptions());
+        var second = service.BuildPaymentUrl(intent, QueryOptions());
+        Assert.Equal(first, second);
+        var query = ParseQuery(new Uri(first).Query);
+        Assert.Equal("20260930100000", query["vnp_CreateDate"]);
+        Assert.Equal("20260930101500", query["vnp_ExpireDate"]);
+        Assert.Equal("20260930100000", intent.ProviderCreateDate);
+    }
+
+    [Fact]
+    public async Task Query_uses_exact_persisted_original_timestamp()
+    {
+        var handler = new CapturingHandler("{}");
+        var intent = PaymentIntent.Create(Guid.NewGuid(), Guid.NewGuid(), "VNPAY", 520000,
+            "timestamp-key", createdAt: new DateTimeOffset(2026, 9, 30, 3, 0, 0, TimeSpan.Zero)).Value;
+        Assert.True(intent.SetProviderOrderRef("CSorder01").IsSuccess);
+        await new VNPayService(new HttpClient(handler)).QueryTransactionAsync(intent, QueryOptions());
+        var body = JsonSerializer.Deserialize<Dictionary<string, string>>(handler.RequestBody!)!;
+        Assert.Equal("20260930100000", body["vnp_TransactionDate"]);
+    }
+
+    [Fact]
+    public async Task Legacy_intent_without_original_date_is_unknown_and_does_not_send_a_guess()
+    {
+        var intent = CreatePendingIntent();
+        typeof(PaymentIntent).GetProperty(nameof(PaymentIntent.ProviderCreateDate))!.SetValue(intent, null);
+        var handler = new CapturingHandler("{}");
+        var service = new VNPayService(new HttpClient(handler));
+        var result = await service.QueryTransactionAsync(intent, QueryOptions());
+        Assert.Equal(VNPayQueryState.Unknown, result.State);
+        Assert.Equal("MISSING_ORIGINAL_CREATE_DATE", result.ResponseCode);
+        Assert.Null(handler.RequestBody);
+        Assert.Throws<InvalidOperationException>(() => service.BuildPaymentUrl(intent, QueryOptions()));
+    }
+
     [Theory]
     [InlineData("00", "00", VNPayQueryState.Succeeded)]
     [InlineData("00", "01", VNPayQueryState.Processing)]
