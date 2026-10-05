@@ -35,7 +35,7 @@ public sealed class BaselineGateContractTests
     }
 
     [Fact]
-    public void Local_baseline_uses_disposable_services_and_includes_admin_tests_and_schema_31()
+    public void Local_baseline_uses_disposable_services_and_includes_admin_tests_and_schema_32()
     {
         var runner = Read("backend/scripts/test-phase7.ps1");
         Assert.DoesNotContain("docker compose", runner);
@@ -50,6 +50,8 @@ public sealed class BaselineGateContractTests
         Assert.Contains("booking.sync_gps_coordinates()", runner);
         Assert.Contains("promotion.promotions", runner);
         Assert.Contains("provider_create_date", runner);
+        Assert.Contains("cccd_front_media_id", runner);
+        Assert.Contains("delivery_type", runner);
         Assert.Contains("LegacyReplay", runner);
     }
 
@@ -71,6 +73,18 @@ public sealed class BaselineGateContractTests
         Assert.Contains("Join-Path $testResultsDirectory $testProject.BaseName", runner);
         Assert.Contains("$testCounters.Files -ne $testProjects.Count", runner);
         Assert.Contains("Test results directory already exists", runner);
+    }
+
+    [Fact]
+    public void Actor_scoped_media_rate_limit_runs_after_authentication_before_authorization()
+    {
+        var program = Read("backend/caresitter-be/ApiHost/Program.cs");
+        var authenticate = program.IndexOf("app.UseAuthentication();", StringComparison.Ordinal);
+        var rateLimit = program.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
+        var authorize = program.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);
+        Assert.True(authenticate >= 0 && rateLimit > authenticate && authorize > rateLimit);
+        Assert.Contains("options.AddPolicy(\"media-read\"", program);
+        Assert.Contains("context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)", program);
     }
 
     [Fact]

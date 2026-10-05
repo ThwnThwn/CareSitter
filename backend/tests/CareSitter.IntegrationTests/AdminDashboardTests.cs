@@ -1,5 +1,8 @@
 using System.Text.Json;
 using CareSitter.ApiHost.Controllers;
+using CareSitter.ApiHost.Application.Admin;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using CareSitter.Contracts.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +18,15 @@ public sealed class AdminDashboardTests
         var critical = Item("SUPPORT", now) with { Priority = "CRITICAL" };
         var high = Item("SUPPORT", now.AddMinutes(-1)) with { Priority = "HIGH" };
         var readers = new Readers(olderPayments, [high, critical]);
-        var controller = new AdminDashboardController(readers, readers, readers, readers, readers);
+        var services = new ServiceCollection();
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAdminDashboardQuery>());
+        services.AddSingleton<IAdminBookingReader>(readers);
+        services.AddSingleton<IAdminPeopleReader>(readers);
+        services.AddSingleton<IAdminPaymentsReader>(readers);
+        services.AddSingleton<IAdminSupportReader>(readers);
+        services.AddSingleton<IAdminIdentityReader>(readers);
+        using var provider = services.BuildServiceProvider();
+        var controller = new AdminDashboardController(provider.GetRequiredService<IMediator>());
 
         var result = Assert.IsType<OkObjectResult>(await controller.Get(CancellationToken.None));
         var payload = JsonSerializer.SerializeToElement(result.Value);

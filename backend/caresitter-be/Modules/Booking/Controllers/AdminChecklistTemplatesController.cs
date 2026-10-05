@@ -8,13 +8,20 @@ namespace CareSitter.Modules.Booking.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/v1/admin/services/{serviceTypeId:guid}/checklist-templates")]
-public sealed class AdminChecklistTemplatesController(ISender sender) : ControllerBase
+public sealed class AdminChecklistTemplatesController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public AdminChecklistTemplatesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpPatch("/api/v1/admin/services/{serviceTypeId:guid}/checklist-policy")]
     public async Task<IActionResult> SetPolicy(
         Guid serviceTypeId, [FromBody] ChecklistPolicyRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new SetChecklistPolicyCommand(serviceTypeId, request.AllowAdHocTasks), ct);
         return result.ToActionResult(this);
     }
@@ -22,7 +29,7 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
     [HttpGet]
     public async Task<IActionResult> List(Guid serviceTypeId, CancellationToken ct)
     {
-        var result = await sender.Send(new ListChecklistTemplatesQuery(serviceTypeId), ct);
+        var result = await _mediator.Send(new ListChecklistTemplatesQuery(serviceTypeId), ct);
         return result.ToActionResult(this);
     }
 
@@ -30,7 +37,7 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
     public async Task<IActionResult> Create(
         Guid serviceTypeId, [FromBody] UpsertChecklistTemplateRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateChecklistTemplateCommand(
+        var result = await _mediator.Send(new CreateChecklistTemplateCommand(
             serviceTypeId, ToInput(request)), ct);
         return result.ToActionResult(this, value => Created(
             $"/api/v1/admin/services/{serviceTypeId}/checklist-templates/{value.Id}", value));
@@ -41,7 +48,7 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
         Guid serviceTypeId, Guid templateId,
         [FromBody] UpsertChecklistTemplateRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new UpdateChecklistTemplateCommand(
+        var result = await _mediator.Send(new UpdateChecklistTemplateCommand(
             serviceTypeId, templateId, ToInput(request)), ct);
         return result.ToActionResult(this);
     }
@@ -51,7 +58,7 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
         Guid serviceTypeId, Guid templateId,
         [FromBody] SetChecklistTemplateActiveRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new SetChecklistTemplateActiveCommand(
+        var result = await _mediator.Send(new SetChecklistTemplateActiveCommand(
             serviceTypeId, templateId, request.IsActive), ct);
         return result.ToActionResult(this);
     }
@@ -60,7 +67,7 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
     public async Task<IActionResult> Delete(
         Guid serviceTypeId, Guid templateId, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new DeleteChecklistTemplateCommand(serviceTypeId, templateId), ct);
         return result.ToActionResult(this, NoContent);
     }
@@ -69,8 +76,3 @@ public sealed class AdminChecklistTemplatesController(ISender sender) : Controll
         new(request.Name, request.Description, request.IsRequired,
             request.RequiresPhoto, request.SortOrder);
 }
-
-public sealed record UpsertChecklistTemplateRequest(
-    string Name, string? Description, bool IsRequired, bool RequiresPhoto, int SortOrder);
-public sealed record SetChecklistTemplateActiveRequest(bool IsActive);
-public sealed record ChecklistPolicyRequest(bool AllowAdHocTasks);

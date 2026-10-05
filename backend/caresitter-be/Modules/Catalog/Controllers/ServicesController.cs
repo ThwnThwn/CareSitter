@@ -12,14 +12,21 @@ namespace CareSitter.Modules.Catalog.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/services")]
-public sealed class ServicesController(ISender sender) : ControllerBase
+public sealed class ServicesController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public ServicesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Lấy danh sách tất cả dịch vụ đang hoạt động, sắp xếp theo tên.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        return Ok(await sender.Send(new ListActiveServicesQuery(), ct));
+        return Ok(await _mediator.Send(new ListActiveServicesQuery(), ct));
     }
 
     /// <summary>Xem chi tiết một dịch vụ theo ID. Trả về 404 nếu không tồn tại hoặc đã vô hiệu hóa.</summary>
@@ -28,7 +35,7 @@ public sealed class ServicesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var item = await sender.Send(new GetActiveServiceQuery(id), ct);
+        var item = await _mediator.Send(new GetActiveServiceQuery(id), ct);
         return item is null ? NotFound() : Ok(item);
     }
 
@@ -43,10 +50,8 @@ public sealed class ServicesController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Quote(Guid id, [FromBody] QuoteRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new QuoteServiceCommand(id,
+        var result = await _mediator.Send(new QuoteServiceCommand(id,
             request.ScheduledStart, request.ScheduledEnd), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record QuoteRequest(DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);

@@ -17,8 +17,16 @@ namespace CareSitter.Modules.People.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
-public sealed class CaregiverKycController(ISender sender) : ControllerBase
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+public sealed class CaregiverKycController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public CaregiverKycController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>
     /// Tạo hồ sơ caregiver cho tài khoản CAREGIVER hiện tại.
     /// Endpoint idempotent để app có thể tự phục hồi tài khoản cũ còn thiếu profile.
@@ -28,7 +36,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     public async Task<IActionResult> CreateMyProfile(
         [FromBody] CreateCaregiverProfileRequest req, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateCaregiverProfileCommand(req.FullName), ct);
+        var result = await _mediator.Send(new CreateCaregiverProfileCommand(req.FullName), ct);
         return result.ToActionResult(this, value => value.Created
             ? Created("/api/v1/caregivers/me/profile", value.Profile)
             : Ok(value.Profile));
@@ -42,7 +50,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> GetMyProfile(CancellationToken ct)
     {
-        var result = await sender.Send(new GetMyCaregiverProfileQuery(), ct);
+        var result = await _mediator.Send(new GetMyCaregiverProfileQuery(), ct);
         return result.ToActionResult(this);
     }
 
@@ -51,15 +59,15 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     /// Số CCCD được mã hóa AES (lưu vào DB) và tính HMAC (dùng kiểm tra trùng lặp) trước khi lưu.
     /// Sau khi nộp, trạng thái KYC chuyển sang PENDING — chờ Admin duyệt.
     /// </summary>
-    /// <param name="req">Số CCCD gốc (plaintext) và danh sách URL chứng chỉ (tùy chọn).</param>
+    /// <param name="req">CCCD và media IDs đã upload bằng tài khoản hiện tại; không nhận URL.</param>
     /// <param name="ct">Token hủy tác vụ bất đồng bộ.</param>
     /// <returns>200 OK kèm trạng thái KYC mới sau khi nộp.</returns>
     [HttpPost("api/v1/caregivers/me/kyc")]
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> SubmitKyc([FromBody] SubmitKycRequest req, CancellationToken ct)
     {
-        var result = await sender.Send(new SubmitCaregiverKycCommand(req.CccdNumber,
-            req.CccdFrontUrl, req.CccdBackUrl, req.CertificateUrls), ct);
+        var result = await _mediator.Send(new SubmitCaregiverKycCommand(req.CccdNumber,
+            req.CccdFrontMediaId, req.CccdBackMediaId, req.CertificateMediaIds), ct);
         return result.ToActionResult(this);
     }
 
@@ -75,7 +83,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateCaregiverProfileRequest req, CancellationToken ct)
     {
-        var result = await sender.Send(new UpdateCaregiverProfileCommand(req.FullName,
+        var result = await _mediator.Send(new UpdateCaregiverProfileCommand(req.FullName,
             req.Bio, req.YearsOfExperience, req.Skills, req.ServiceCity,
             req.ServiceDistrict, req.Gender, req.DateOfBirth), ct);
         return result.ToActionResult(this);
@@ -89,7 +97,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     public async Task<IActionResult> UpdateMyAvailabilityStatus(
         [FromBody] UpdateCaregiverStatusRequest req, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new UpdateCaregiverAvailabilityStatusCommand(req.Status), ct);
         return result.ToActionResult(this);
     }
@@ -101,7 +109,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
         string? status = "PENDING", int page = 1, int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListCaregiverKycQuery(status, page, pageSize), ct);
+        var result = await _mediator.Send(new ListCaregiverKycQuery(status, page, pageSize), ct);
         return result.ToActionResult(this);
     }
 
@@ -110,7 +118,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> GetKyc(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetCaregiverKycQuery(id), ct);
+        var result = await _mediator.Send(new GetCaregiverKycQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -126,7 +134,7 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> ApproveKyc(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new ApproveCaregiverKycCommand(id), ct);
+        var result = await _mediator.Send(new ApproveCaregiverKycCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -143,22 +151,8 @@ public sealed class CaregiverKycController(ISender sender) : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> RejectKyc(Guid id, [FromBody] RejectKycRequest? req, CancellationToken ct)
     {
-        var result = await sender.Send(new RejectCaregiverKycCommand(id, req?.Reason), ct);
+        var result = await _mediator.Send(new RejectCaregiverKycCommand(id, req?.Reason), ct);
         return result.ToActionResult(this);
     }
 
 }
-
-public sealed record CreateCaregiverProfileRequest(string? FullName = null);
-public sealed record SubmitKycRequest(
-    string CccdNumber,
-    string CccdFrontUrl,
-    string CccdBackUrl,
-    string[]? CertificateUrls = null);
-public sealed record RejectKycRequest(string? Reason);
-public sealed record UpdateCaregiverStatusRequest(string Status);
-public sealed record UpdateCaregiverProfileRequest(
-    string? FullName = null, string? Bio = null, int? YearsOfExperience = null,
-    string? Skills = null,
-    string? ServiceCity = null, string? ServiceDistrict = null,
-    string? Gender = null, DateOnly? DateOfBirth = null);

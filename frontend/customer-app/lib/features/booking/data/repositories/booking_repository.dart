@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:caresitter_customer/core/realtime/gps_update.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
@@ -154,10 +156,12 @@ class BookingRepository {
     try {
       final resp =
           await _dio.get<Map<String, dynamic>>(ApiPaths.latestGps(bookingId));
+      GpsUpdate.fromJson(
+          resp.data ?? {}); // Validate the same contract as push events.
       return GpsTrackModel.fromJson(resp.data ?? {});
-    } on Exception catch (e) {
+    } on DioException catch (e) {
       // 404 = chưa có GPS track → return null
-      if (e.toString().contains('404')) return null;
+      if (e.response?.statusCode == 404) return null;
       rethrow;
     }
   }

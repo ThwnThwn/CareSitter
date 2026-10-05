@@ -163,9 +163,10 @@ export type KycProfile = {
   dateOfBirth?: string;
   gender?: string;
   kycStatus: string;
-  cccdFrontUrl?: string;
-  cccdBackUrl?: string;
-  certificateUrls: string[];
+  cccdFrontMediaId?: string;
+  cccdBackMediaId?: string;
+  certificateMediaIds?: string[];
+  requiresSecureResubmission?: boolean;
   createdAt: string;
   updatedAt: string;
 };

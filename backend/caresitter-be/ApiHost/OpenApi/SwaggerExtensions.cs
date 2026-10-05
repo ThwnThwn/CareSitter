@@ -128,7 +128,8 @@ internal sealed class FormFileOperationFilter : IOperationFilter
                     Description = "File upload"
                 };
             }
-            else if (p.Source?.Id == "Form")
+            // Minimal API reports scalar multipart fields as FormFile too.
+            else if (p.Source?.Id is "Form" or "FormFile")
             {
                 properties[p.Name] = new OpenApiSchema
                 {

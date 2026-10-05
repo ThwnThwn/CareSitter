@@ -76,6 +76,18 @@ public static class BookingResultExtensions
             });
         if (error.Code == BookingErrors.GpsTrackingDisabledCode)
             return controller.StatusCode(StatusCodes.Status410Gone, new { error = error.Message });
+        if (error.Code == "booking.gps.rate_limited")
+        {
+            controller.Response.Headers.RetryAfter = "15";
+            return controller.StatusCode(StatusCodes.Status429TooManyRequests,
+                new ProblemDetails { Title = error.Code, Detail = error.Message });
+        }
+        if (error.Code == "booking.gps.unavailable")
+        {
+            controller.Response.Headers.RetryAfter = "5";
+            return controller.StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new ProblemDetails { Title = error.Code, Detail = error.Message });
+        }
 
         return error.Type switch
         {

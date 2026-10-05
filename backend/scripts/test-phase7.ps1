@@ -305,6 +305,14 @@ SELECT (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'payments' AND table_name = 'payment_intents'
       AND column_name = 'provider_create_date' AND character_maximum_length = 14)
+  AND (
+    SELECT count(*) FROM information_schema.columns
+    WHERE table_schema = 'people' AND table_name = 'caregiver_profiles'
+      AND column_name IN ('cccd_front_media_id', 'cccd_back_media_id', 'certificate_media_ids')) = 3
+  AND (
+    SELECT count(*) FROM information_schema.columns
+    WHERE table_schema = 'catalog' AND table_name = 'media_assets'
+      AND column_name IN ('delivery_type', 'file_format')) = 2
   AND to_regclass('support.disputes') IS NOT NULL
   AND EXISTS (
     SELECT 1 FROM information_schema.columns
@@ -344,7 +352,7 @@ SELECT (
         -DatabaseName $Database.Database `
         -Sql $sql
     if ($valid -ne 'true' -and $valid -ne 't') {
-        throw 'The database does not contain the required schema through migration 31.'
+        throw 'The database does not contain the required schema through migration 32.'
     }
 }
 

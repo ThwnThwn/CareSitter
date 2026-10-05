@@ -33,17 +33,23 @@ class DocumentStatusScreen extends ConsumerWidget {
           children: [
             _buildOverallStatus(statusText, status == 'APPROVED'),
             const SizedBox(height: 24),
-            if (profile.cccdFrontUrl == null && profile.cccdBackUrl == null)
+            if (profile.requiresSecureResubmission) ...[
+              const Text(
+                  'Tài liệu cũ cần chuyển sang lưu trữ riêng tư. Nếu hồ sơ đang chờ duyệt hoặc đã duyệt, hãy liên hệ hỗ trợ để được hướng dẫn nộp lại.'),
+              const SizedBox(height: 16),
+            ],
+            if (profile.cccdFrontMediaId == null &&
+                profile.cccdBackMediaId == null)
               const AppEmptyState(
                 icon: Icons.description_outlined,
                 title: 'Chưa nộp tài liệu',
                 message: 'Bạn cần nộp đủ hai mặt CCCD để bắt đầu xác minh.',
               )
             else ...[
-              _documentTile('Mặt trước CCCD', profile.cccdFrontUrl),
+              _documentTile('Mặt trước CCCD', profile.cccdFrontMediaId),
               const SizedBox(height: 12),
-              _documentTile('Mặt sau CCCD', profile.cccdBackUrl),
-              ...profile.certificateUrls.indexed.map((entry) => Padding(
+              _documentTile('Mặt sau CCCD', profile.cccdBackMediaId),
+              ...profile.certificateMediaIds.indexed.map((entry) => Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: _documentTile('Chứng chỉ ${entry.$1 + 1}', entry.$2),
                   )),

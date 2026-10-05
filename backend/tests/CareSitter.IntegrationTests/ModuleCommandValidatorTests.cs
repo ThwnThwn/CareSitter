@@ -44,7 +44,7 @@ public sealed class ModuleCommandValidatorTests
         var validator = new SubmitCaregiverKycCommandValidator();
 
         var result = validator.Validate(new SubmitCaregiverKycCommand(
-            "abc", "invalid", "invalid", null));
+            "abc", Guid.Empty, Guid.Empty, null));
 
         Assert.False(result.IsValid);
         Assert.Single(result.Errors);

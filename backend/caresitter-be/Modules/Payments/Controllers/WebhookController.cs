@@ -6,22 +6,21 @@ namespace CareSitter.Modules.Payments.Controllers;
 
 [ApiController]
 [Route("api/v1/payments/webhook")]
-public sealed class WebhookController(ISender sender) : ControllerBase
+public sealed class WebhookController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public WebhookController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpPost]
     public async Task<IActionResult> Handle([FromBody] WebhookRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new ProcessPaymentWebhookCommand(
+        var result = await _mediator.Send(new ProcessPaymentWebhookCommand(
             request.Provider, request.ProviderEventId, request.EventType,
             request.ProviderTransactionId, request.ProviderOrderRef, request.Payload), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record WebhookRequest(
-    string Provider,
-    string ProviderEventId,
-    string? EventType = null,
-    string? ProviderTransactionId = null,
-    string? ProviderOrderRef = null,
-    string? Payload = null);

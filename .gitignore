@@ -10,13 +10,26 @@
 !/.github/**
 !/global.json
 !/vercel.json
+!/MEAL_RECOMMENDATION_PLAN.md
 !/backend/
 !/backend/**
 !/deploy/
 !/deploy/**
 !/frontend/
 !/frontend/**
-/backend/docs/
+# Chỉ theo dõi runbook/schema archive đã review; giữ docs cục bộ khác bị ignore.
+/backend/docs/*
+!/backend/docs/MIGRATIONS.md
+!/backend/docs/legacy-ef-migrations/
+/backend/docs/legacy-ef-migrations/*
+!/backend/docs/legacy-ef-migrations/README.md
+!/backend/docs/legacy-ef-migrations/identity/
+/backend/docs/legacy-ef-migrations/identity/*
+!/backend/docs/legacy-ef-migrations/identity/20260911143929_AddAvatarUrlAndNotificationPrefsToUsers.cs
+!/backend/docs/legacy-ef-migrations/identity/20260911143929_AddAvatarUrlAndNotificationPrefsToUsers.Designer.cs
+!/backend/docs/legacy-ef-migrations/identity/20260913062836_AddRefreshTokenSessions.cs
+!/backend/docs/legacy-ef-migrations/identity/20260913062836_AddRefreshTokenSessions.Designer.cs
+!/backend/docs/legacy-ef-migrations/identity/IdentityDbContextModelSnapshot.cs
 
 # ---------- Secrets / môi trường ----------
 # Chỉ commit *.env.example, KHÔNG commit file thật

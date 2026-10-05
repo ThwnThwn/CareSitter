@@ -1,4 +1,6 @@
 using CareSitter.Modules.Booking.Application;
+using CareSitter.Modules.Booking.Application.Bookings.Dtos.Requests;
+using CareSitter.Modules.Booking.Application.Bookings.Mapping;
 using CareSitter.Modules.Booking.Application.Commands.AcceptBooking;
 using CareSitter.Modules.Booking.Application.Commands.CancelBooking;
 using CareSitter.Modules.Booking.Application.Commands.CheckInBooking;
@@ -26,8 +28,15 @@ namespace CareSitter.Modules.Booking.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/bookings")]
-public sealed class BookingsController(ISender sender) : ControllerBase
+public sealed class BookingsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public BookingsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     // ──────────────────────────────────────────────
     //  CRUD
     // ──────────────────────────────────────────────
@@ -35,9 +44,9 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     /// <summary>Tạo booking mới qua MediatR CreateBookingCommand. Trả về đầy đủ BookingResponse để FE không cần gọi thêm GET.</summary>
     [HttpPost]
     [Authorize(Roles = "CUSTOMER")]
-    public async Task<IActionResult> Create([FromBody] CreateBookingCommand command, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateBookingRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(command, ct);
+        var result = await _mediator.Send(request.ToCommand(), ct);
         return result.ToActionResult(this,
             booking => Created($"/api/v1/bookings/{booking.Id}", booking));
     }
@@ -46,7 +55,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> List(string? status, int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListBookingsQuery(status, page, pageSize), ct);
+        var result = await _mediator.Send(new ListBookingsQuery(status, page, pageSize), ct);
         return result.ToActionResult(this);
     }
 
@@ -54,7 +63,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetBookingQuery(id), ct);
+        var result = await _mediator.Send(new GetBookingQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -69,7 +78,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [HttpGet("sync")]
     public async Task<IActionResult> Sync([FromQuery] long cursor = 0, CancellationToken ct = default)
     {
-        var result = await sender.Send(new SyncBookingsQuery(cursor), ct);
+        var result = await _mediator.Send(new SyncBookingsQuery(cursor), ct);
         return result.ToActionResult(this);
     }
 
@@ -81,7 +90,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER")]
     public async Task<IActionResult> GetCaregiverSuggestions(Guid id, int limit = 10, CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetCaregiverSuggestionsQuery(id, limit), ct);
+        var result = await _mediator.Send(new GetCaregiverSuggestionsQuery(id, limit), ct);
         return result.ToActionResult(this);
     }
 
@@ -90,7 +99,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER")]
     public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelBookingRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CancelBookingCommand(id, request.Reason), ct);
+        var result = await _mediator.Send(new CancelBookingCommand(id, request.Reason), ct);
         return result.ToActionResult(this);
     }
 
@@ -99,7 +108,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER")]
     public async Task<IActionResult> Reschedule(Guid id, [FromBody] RescheduleBookingRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new RescheduleBookingCommand(
+        var result = await _mediator.Send(new RescheduleBookingCommand(
             id, request.ScheduledStart, request.ScheduledEnd), ct);
         return result.ToActionResult(this);
     }
@@ -109,7 +118,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER")]
     public async Task<IActionResult> SelectCaregiver(Guid id, [FromBody] SelectCaregiverRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new SelectCaregiverCommand(id, request.CaregiverId), ct);
+        var result = await _mediator.Send(new SelectCaregiverCommand(id, request.CaregiverId), ct);
         return result.ToActionResult(this);
     }
 
@@ -121,7 +130,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> Accept(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new AcceptBookingCommand(id), ct);
+        var result = await _mediator.Send(new AcceptBookingCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -131,7 +140,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     public async Task<IActionResult> Decline(Guid id, [FromBody] DeclineBookingRequest? request,
         CancellationToken ct)
     {
-        var result = await sender.Send(new DeclineBookingCommand(id, request?.Reason), ct);
+        var result = await _mediator.Send(new DeclineBookingCommand(id, request?.Reason), ct);
         return result.ToActionResult(this, _ => NoContent());
     }
 
@@ -140,7 +149,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> StartEnRoute(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new StartBookingEnRouteCommand(id), ct);
+        var result = await _mediator.Send(new StartBookingEnRouteCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -152,7 +161,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> CheckIn(Guid id, [FromBody] CheckInRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CheckInBookingCommand(
+        var result = await _mediator.Send(new CheckInBookingCommand(
             id, request.Latitude, request.Longitude, request.AccuracyMeters), ct);
         return result.ToActionResult(this);
     }
@@ -164,7 +173,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     public async Task<IActionResult> UploadCheckInSelfie(Guid id, IFormFile? file, CancellationToken ct)
     {
         await using var stream = file?.OpenReadStream();
-        var result = await sender.Send(new UploadCheckInSelfieCommand(
+        var result = await _mediator.Send(new UploadCheckInSelfieCommand(
             id, stream, file?.FileName ?? string.Empty,
             file?.ContentType ?? string.Empty, file?.Length ?? 0), ct);
         return result.ToActionResult(this);
@@ -175,7 +184,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CAREGIVER")]
     public async Task<IActionResult> RequestCheckout(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new RequestBookingCheckoutCommand(id), ct);
+        var result = await _mediator.Send(new RequestBookingCheckoutCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -187,7 +196,7 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER,ADMIN")]
     public async Task<IActionResult> Complete(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new CompleteBookingCommand(id), ct);
+        var result = await _mediator.Send(new CompleteBookingCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -199,15 +208,8 @@ public sealed class BookingsController(ISender sender) : ControllerBase
     [Authorize(Roles = "CUSTOMER,CAREGIVER,ADMIN")]
     public async Task<IActionResult> RaiseSos(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new RaiseBookingSosCommand(id), ct);
+        var result = await _mediator.Send(new RaiseBookingSosCommand(id), ct);
         return result.ToActionResult(this);
     }
 
 }
-
-// ── DTOs ──
-public sealed record CancelBookingRequest(string? Reason);
-public sealed record RescheduleBookingRequest(DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);
-public sealed record SelectCaregiverRequest(Guid CaregiverId);
-public sealed record CheckInRequest(double Latitude, double Longitude, double? AccuracyMeters = null);
-public sealed record DeclineBookingRequest(string? Reason);

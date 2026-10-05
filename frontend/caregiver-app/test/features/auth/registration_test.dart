@@ -11,7 +11,8 @@ class RecordingDioClient implements DioClient {
   Map<String, dynamic>? body;
 
   @override
-  Future<Response<T>> post<T>(String path, {dynamic data}) async {
+  Future<Response<T>> post<T>(String path,
+      {dynamic data, CancelToken? cancelToken}) async {
     this.path = path;
     body = data as Map<String, dynamic>;
     return Response<T>(

@@ -17,8 +17,15 @@ namespace CareSitter.Modules.Catalog.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/addresses")]
-public sealed class AddressesController(ISender sender) : ControllerBase
+public sealed class AddressesController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public AddressesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Gợi ý địa chỉ thật từ Geoapify. Chỉ gợi ý trong Việt Nam.</summary>
     [HttpGet("autocomplete")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -28,7 +35,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
         [FromQuery] string? sessionToken,
         CancellationToken ct)
     {
-        var result = await sender.Send(new AutocompletePlacesQuery(input, sessionToken), ct);
+        var result = await _mediator.Send(new AutocompletePlacesQuery(input, sessionToken), ct);
         return result.ToActionResult(this);
     }
 
@@ -42,7 +49,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
         [FromQuery] string? sessionToken,
         CancellationToken ct)
     {
-        var result = await sender.Send(new GetPlaceDetailsQuery(placeId, sessionToken), ct);
+        var result = await _mediator.Send(new GetPlaceDetailsQuery(placeId, sessionToken), ct);
         return result.ToActionResult(this);
     }
 
@@ -52,7 +59,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var result = await sender.Send(new ListOwnedAddressesQuery(), ct);
+        var result = await _mediator.Send(new ListOwnedAddressesQuery(), ct);
         return result.ToActionResult(this);
     }
 
@@ -62,7 +69,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetOwnedAddressQuery(id), ct);
+        var result = await _mediator.Send(new GetOwnedAddressQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -72,7 +79,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] AddressUpsertRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateAddressCommand(request.PlaceId,
+        var result = await _mediator.Send(new CreateAddressCommand(request.PlaceId,
             request.SessionToken, request.Label, request.Note), ct);
         return result.ToActionResult(this,
             address => Created($"/api/v1/addresses/{address.Id}", address));
@@ -84,7 +91,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] AddressUpsertRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new UpdateAddressCommand(id, request.PlaceId,
+        var result = await _mediator.Send(new UpdateAddressCommand(id, request.PlaceId,
             request.SessionToken, request.Label, request.Note), ct);
         return result.ToActionResult(this);
     }
@@ -96,7 +103,7 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new DeleteAddressCommand(id), ct);
+        var result = await _mediator.Send(new DeleteAddressCommand(id), ct);
         return result.ToActionResult(this, _ => NoContent());
     }
 
@@ -110,14 +117,8 @@ public sealed class AddressesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetDefault(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new SetDefaultAddressCommand(id), ct);
+        var result = await _mediator.Send(new SetDefaultAddressCommand(id), ct);
         return result.ToActionResult(this);
     }
 
 }
-
-public sealed record AddressUpsertRequest(
-    string PlaceId,
-    string? SessionToken,
-    string? Label,
-    string? Note = null);

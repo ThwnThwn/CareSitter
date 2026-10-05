@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
 
 class ShiftTrackingScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -20,17 +23,22 @@ class ShiftTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // Vị trí caregiver — cập nhật qua SignalR GpsUpdated event
   LatLng? _caregiverPos;
   StreamSubscription<GpsUpdate>? _gpsSub;
   StreamSubscription<BookingStatusChange>? _statusSub;
   StreamSubscription<void>? _reconnectSub;
   late final CareSignalRService _signalR;
-  int? _etaSeconds;
-  double? _heading;
+  final _fixes = LiveGpsAccumulator();
+  Timer? _pollTimer;
+  Timer? _ageTimer;
+  bool _foreground = true;
+  bool _trackingStopped = false;
+  bool _loadingLocation = false;
+  int _locationEpoch = 0;
+  String? _locationError;
   final MapController _mapController = MapController();
-  final List<LatLng> _gpsHistory = [];
   late final AnimationController _pulseController;
   late final AnimationController _positionController;
   LatLng? _animatedCaregiverPos;
@@ -40,6 +48,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _signalR = ref.read(careSignalRProvider);
     _pulseController = AnimationController(
       vsync: this,
@@ -50,12 +59,24 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       duration: const Duration(milliseconds: 450),
     )..addListener(_onPositionAnimationTick);
     _connectSignalR();
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_foreground && mounted && ModalRoute.of(context)?.isCurrent == true) {
+        unawaited(_reloadLocation());
+      }
+    });
+    _ageTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted && _foreground) setState(() {});
+    });
     unawaited(
         ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _locationEpoch++;
+    _pollTimer?.cancel();
+    _ageTimer?.cancel();
     _gpsSub?.cancel();
     _statusSub?.cancel();
     _reconnectSub?.cancel();
@@ -68,49 +89,21 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   }
 
   Future<void> _connectSignalR() async {
-    await _signalR.joinBooking(widget.bookingId);
-
     // ── Lắng nghe GPS updates ────────────────────────────────────
     _gpsSub = _signalR.gpsStream
         .where((e) => e.bookingId == widget.bookingId)
-        .listen((gps) {
-      if (!mounted) return;
-      final bk = ref
-          .read(bookingStoreProvider)
-          .where((b) => b.id == widget.bookingId)
-          .firstOrNull;
-      if (bk == null) return;
-
-      final dest = bk.addressLatitude == null || bk.addressLongitude == null
-          ? null
-          : LatLng(bk.addressLatitude!, bk.addressLongitude!);
-      if (dest == null) return;
-      final distM = const Distance().as(
-        LengthUnit.Meter,
-        LatLng(gps.latitude, gps.longitude),
-        dest,
-      );
-      final next = LatLng(gps.latitude, gps.longitude);
-      if (_gpsHistory.isEmpty || _gpsHistory.last != next) {
-        _gpsHistory.add(next);
-        if (_gpsHistory.length > 250) _gpsHistory.removeAt(0);
-      }
-      setState(() {
-        _caregiverPos = next;
-        _heading = gps.heading ?? _heading;
-        final speedMs = gps.speed;
-        _etaSeconds = speedMs != null && speedMs > 0.5
-            ? (distM / speedMs).round()
-            : _etaSeconds;
-      });
-      _animateCaregiverTo(next);
-    });
+        .listen(_acceptGps);
 
     // ── Lắng nghe booking status changes ─────────────────────────
     _statusSub = _signalR.statusStream
         .where((e) => e.bookingId == widget.bookingId)
         .listen((change) {
       if (!mounted) return;
+      if (change.newStatus.toLowerCase() != 'caregiver_en_route') {
+        _trackingStopped = true;
+        _locationEpoch++;
+        _clearLocation();
+      }
       // Refresh booking store để UI cập nhật trạng thái
       ref.read(bookingStoreProvider.notifier).refresh();
     });
@@ -119,10 +112,142 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     _reconnectSub = _signalR.onReconnected.listen((_) {
       if (!mounted) return;
       ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId);
+      unawaited(_reloadLocation());
+    });
+    // Subscribe before joining, then merge the REST snapshot by server version.
+    await _signalR.joinBooking(widget.bookingId);
+    if (!mounted) return;
+    await _reloadLocation();
+  }
+
+  void _acceptGps(GpsUpdate gps) {
+    if (!mounted || !_foreground || _trackingStopped) return;
+    final booking = ref
+        .read(bookingStoreProvider)
+        .where((b) => b.id == widget.bookingId)
+        .firstOrNull;
+    if (booking == null ||
+        !_fixes.accept(gps,
+            bookingId: widget.bookingId,
+            caregiverId: booking.caregiverId,
+            enRoute: booking.status == 'caregiver_en_route')) {
+      return;
+    }
+    final first = _caregiverPos == null;
+    final next = LatLng(gps.latitude, gps.longitude);
+    setState(() {
+      _caregiverPos = next;
+      _locationError = null;
+    });
+    _animateCaregiverTo(next);
+    if (first) {
+      try {
+        _mapController.move(next, _mapController.camera.zoom);
+      } catch (_) {}
+    }
+  }
+
+  void _clearLocation() {
+    if (!mounted) return;
+    _positionController.stop();
+    setState(() {
+      _fixes.clear();
+      _caregiverPos =
+          _animatedCaregiverPos = _positionFrom = _positionTo = null;
     });
   }
 
+  Future<void> _reloadLocation() async {
+    if (!mounted || !_foreground || _loadingLocation) return;
+    _loadingLocation = true;
+    final epoch = _locationEpoch;
+    final watermark = _fixes.version;
+    try {
+      await ref.read(bookingStoreProvider.notifier).refresh();
+      if (!mounted || !_foreground || epoch != _locationEpoch) return;
+      final booking = ref
+          .read(bookingStoreProvider)
+          .where((b) => b.id == widget.bookingId)
+          .firstOrNull;
+      if (_trackingStopped ||
+          booking == null ||
+          booking.status != 'caregiver_en_route') {
+        _trackingStopped = true;
+        _clearLocation();
+        return;
+      }
+      final latest = await ref
+          .read(bookingRepositoryProvider)
+          .getLatestGps(widget.bookingId);
+      if (!mounted ||
+          !_foreground ||
+          epoch != _locationEpoch ||
+          _trackingStopped) {
+        return;
+      }
+      setState(() => _locationError = null);
+      if (latest == null) {
+        if (_fixes.version == watermark) _clearLocation();
+      } else {
+        _acceptGps(GpsUpdate(
+            bookingId: latest.bookingId,
+            caregiverId: latest.caregiverId,
+            latitude: latest.latitude,
+            longitude: latest.longitude,
+            recordedAt: latest.recordedAt,
+            version: latest.version,
+            bookingVersion: latest.bookingVersion,
+            sessionId: latest.sessionId,
+            receivedAt: latest.receivedAt,
+            accuracyMeters: latest.accuracyMeters,
+            speed: latest.speed,
+            heading: latest.heading));
+      }
+    } on DioException catch (error) {
+      if (!mounted || epoch != _locationEpoch) return;
+      if (error.response?.statusCode == 403 ||
+          error.response?.statusCode == 410) {
+        _clearLocation();
+      }
+      setState(() => _locationError = error.response?.statusCode == 410
+          ? 'Chia sẻ vị trí chưa được bật'
+          : 'Mất kết nối · đang thử lại');
+    } catch (_) {
+      if (mounted && epoch == _locationEpoch) {
+        setState(() => _locationError = 'Chưa tải được vị trí');
+      }
+    } finally {
+      _loadingLocation = false;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    if (!_foreground) {
+      _locationEpoch++;
+      return;
+    }
+    unawaited(_reloadLocation());
+  }
+
+  String get _locationLabel {
+    if (_trackingStopped) return 'Đã dừng theo dõi di chuyển';
+    if (_locationError != null) return _locationError!;
+    final fix = _fixes.latest;
+    if (fix == null) return 'Đang chờ vị trí';
+    final age =
+        DateTime.now().difference(fix.recordedAt).inSeconds.clamp(0, 999999);
+    if (age > 60) return 'Vị trí cũ · ${age ~/ 60} phút trước';
+    if ((fix.accuracyMeters ?? 0) > 100) return 'GPS kém · $age giây trước';
+    return '${_signalR.isReady ? 'Đang cập nhật' : 'Kết nối lại'} · $age giây trước';
+  }
+
   void _animateCaregiverTo(LatLng next) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      setState(() => _animatedCaregiverPos = next);
+      return;
+    }
     final from = _animatedCaregiverPos ?? _caregiverPos ?? next;
     _positionFrom = from;
     _positionTo = next;
@@ -142,24 +267,23 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       from.longitude + (to.longitude - from.longitude) * t,
     );
     setState(() => _animatedCaregiverPos = position);
-    try {
-      _mapController.move(position, _mapController.camera.zoom);
-    } catch (_) {
-      // The first GPS update may arrive before FlutterMap attaches its controller.
-    }
-  }
-
-  String get _etaLabel {
-    final seconds = _etaSeconds;
-    if (seconds == null) return 'Đang cập nhật';
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    if (m == 0) return '$s giây';
-    return '$m phút ${s > 0 ? '$s giây' : ''}';
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(bookingStoreProvider, (before, after) {
+      final booking = after.where((b) => b.id == widget.bookingId).firstOrNull;
+      final previous =
+          before?.where((b) => b.id == widget.bookingId).firstOrNull;
+      // Khi booking xuất hiện lần đầu sau refresh, request latest đang chạy vẫn
+      // được giữ. Chỉ hủy snapshot khi ca đã dừng hoặc đổi caregiver thực sự.
+      if (booking?.status != 'caregiver_en_route' ||
+          (previous != null && booking?.caregiverId != previous.caregiverId)) {
+        _locationEpoch++;
+        _trackingStopped = booking?.status != 'caregiver_en_route';
+        _clearLocation();
+      }
+    });
     final bookingId = widget.bookingId;
     final matches =
         ref.watch(bookingStoreProvider).where((b) => b.id == bookingId);
@@ -510,6 +634,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         children: [
           RepaintBoundary(
             child: FlutterMap(
+              mapController: _mapController,
               key: ValueKey(bk.id),
               options: MapOptions(
                 initialCenter:
@@ -527,25 +652,9 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.caresitter.app',
                 ),
-                // Đường polyline từ caregiver đến nhà khách (en_route)
-                if (_gpsHistory.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: [
-                          ..._gpsHistory,
-                          if (_animatedCaregiverPos != null)
-                            _animatedCaregiverPos!,
-                        ],
-                        color: AppColors.primary.withValues(alpha: 0.65),
-                        strokeWidth: 4,
-                      ),
-                    ],
-                  ),
                 MarkerLayer(
                   markers: [
                     // Marker nhà khách (đích đến)
@@ -578,7 +687,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       ),
                     ),
                     // Marker Caregiver đang di chuyển (chỉ hiện khi en_route)
-                    if ((_animatedCaregiverPos ?? _caregiverPos) != null)
+                    if (isEnRoute &&
+                        (_animatedCaregiverPos ?? _caregiverPos) != null)
                       Marker(
                         point: _animatedCaregiverPos ?? _caregiverPos!,
                         width: 82,
@@ -587,6 +697,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                       ),
                   ],
                 ),
+                RichAttributionWidget(attributions: [
+                  TextSourceAttribution('OpenStreetMap contributors',
+                      onTap: () => launchUrl(Uri.parse(
+                          'https://www.openstreetmap.org/copyright'))),
+                ]),
               ],
             ),
           ),
@@ -610,14 +725,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.podcasts, color: AppColors.primary, size: 13),
-                  SizedBox(width: 4),
+                  const Icon(Icons.podcasts,
+                      color: AppColors.primary, size: 13),
+                  const SizedBox(width: 4),
                   Text(
-                    'Trực tiếp',
-                    style: TextStyle(
+                    isEnRoute ? _locationLabel : 'Caregiver đã đến',
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -834,9 +950,8 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                         ),
                         children: [
                           TextSpan(text: '${bk.caregiverName} · '),
-                          const TextSpan(text: 'Dự kiến đến: '),
                           TextSpan(
-                            text: '$_etaLabel (còn ~1.8 km)',
+                            text: _locationLabel,
                             style: const TextStyle(
                               color: AppColors.warning,
                               fontWeight: FontWeight.w700,

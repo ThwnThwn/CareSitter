@@ -30,6 +30,9 @@ public sealed class CaregiverProfile : AggregateRoot
     public string? CccdFrontUrl { get; private set; }
     public string? CccdBackUrl { get; private set; }
     public string? CertificateUrls { get; private set; } = "[]";
+    public Guid? CccdFrontMediaId { get; private set; }
+    public Guid? CccdBackMediaId { get; private set; }
+    public string CertificateMediaIds { get; private set; } = "[]";
     public string? Bio { get; private set; }
     public int? YearsOfExperience { get; private set; }
     public decimal RatingAvg { get; private set; }
@@ -83,6 +86,10 @@ public sealed class CaregiverProfile : AggregateRoot
         CccdFrontUrl = cccdFrontUrl;
         CccdBackUrl = cccdBackUrl;
         CertificateUrls = string.IsNullOrWhiteSpace(certificateUrls) ? "[]" : certificateUrls;
+        // Legacy imports must not retain references from an earlier secure submission.
+        CccdFrontMediaId = null;
+        CccdBackMediaId = null;
+        CertificateMediaIds = "[]";
         KycStatus = "PENDING";
         return Result.Success();
     }
@@ -92,6 +99,22 @@ public sealed class CaregiverProfile : AggregateRoot
         if (KycStatus != "PENDING")
             return Error.Conflict("caregiver.kyc_status", $"không thể duyet KYC khi trạng thái la {KycStatus}.");
         KycStatus = "APPROVED";
+        return Result.Success();
+    }
+
+    public Result SubmitSecureKyc(string cccdEncrypted, string cccdHash,
+        Guid frontMediaId, Guid backMediaId, string certificateMediaIds)
+    {
+        if (frontMediaId == Guid.Empty || backMediaId == Guid.Empty || frontMediaId == backMediaId)
+            return Error.Validation("caregiver.kyc_media", "Cần đủ hai mặt CCCD khác nhau.");
+        var result = SubmitKyc(cccdEncrypted, cccdHash, frontMediaId.ToString(), backMediaId.ToString());
+        if (result.IsFailure) return result;
+        CccdFrontMediaId = frontMediaId;
+        CccdBackMediaId = backMediaId;
+        CertificateMediaIds = certificateMediaIds;
+        CccdFrontUrl = null;
+        CccdBackUrl = null;
+        CertificateUrls = "[]";
         return Result.Success();
     }
 

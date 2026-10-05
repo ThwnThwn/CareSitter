@@ -10,6 +10,7 @@ import 'package:caregiver_app/core/router/app_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/home/presentation/controllers/notifications_controller.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/live_tracking_controller.dart';
 
 class CaregiverApp extends ConsumerStatefulWidget {
   const CaregiverApp({super.key});
@@ -51,6 +52,14 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(liveTrackingProvider);
+    ref.listen(shiftsProvider, (_, shifts) {
+      for (final shift in shifts) {
+        ref
+            .read(liveTrackingProvider.notifier)
+            .reconcileStatus(shift.id, shift.status);
+      }
+    });
     ref.listen(authStateProvider, (_, next) {
       final isAuthenticated = next.value?.isAuthenticated ?? false;
       if (isAuthenticated) {

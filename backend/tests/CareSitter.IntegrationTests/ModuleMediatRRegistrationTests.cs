@@ -1,3 +1,5 @@
+using CareSitter.Modules.Booking;
+using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Catalog;
 using CareSitter.Modules.Catalog.Application;
 using CareSitter.Modules.Catalog.Application.Commands.CreateAddress;
@@ -7,6 +9,8 @@ using CareSitter.Modules.People.Application.Commands.CreateFamilyContact;
 using CareSitter.Modules.Payments;
 using CareSitter.Modules.Payments.Application.Payouts;
 using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
+using CareSitter.Modules.Promotion;
+using CareSitter.Modules.Promotion.Application;
 using CareSitter.Modules.Support;
 using CareSitter.Modules.Support.Application;
 using CareSitter.Modules.Support.Application.Commands.CreateDispute;
@@ -26,6 +30,20 @@ public sealed class ModuleMediatRRegistrationTests
                 "Host=localhost;Database=caresitter;Username=test;Password=test"
         })
         .Build();
+
+    [Fact]
+    public void Booking_registers_split_command_and_query_handlers()
+    {
+        var services = new ServiceCollection();
+        new BookingModule().RegisterServices(services, Configuration);
+
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<CreateCareTaskCommand, Result<CareTaskResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<GetLatestBookingGpsQuery, Result<GpsTrackResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<GetBookingQuery, Result<BookingResponse>>));
+    }
 
     [Fact]
     public void Catalog_registers_command_handlers()
@@ -55,6 +73,18 @@ public sealed class ModuleMediatRRegistrationTests
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<CreateDisputeCommand, Result<DisputeResponse>>));
+    }
+
+    [Fact]
+    public void Promotion_registers_split_command_and_query_handlers()
+    {
+        var services = new ServiceCollection();
+        new PromotionModule().RegisterServices(services, Configuration);
+
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<PreviewPromotionCommand, Result<PromotionPreviewResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<ListActivePromotionsQuery, IReadOnlyList<PromotionResponse>>));
     }
 
     [Fact]

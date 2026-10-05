@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
+    <InternalsVisibleTo Include="CareSitter.Modules.Booking.UnitTests" />
   </ItemGroup>
 
   <PropertyGroup>

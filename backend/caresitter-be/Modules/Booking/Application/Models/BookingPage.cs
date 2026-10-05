@@ -1,0 +1,12 @@
+using System.Text.Json.Serialization;
+using CareSitter.Contracts.Services;
+using CareSitter.Modules.Booking.Application.Commands;
+using CareSitter.Modules.Booking.Application.Sync;
+using CareSitter.Modules.Booking.Domain;
+using CareSitter.SharedKernel.Results;
+using MediatR;
+
+namespace CareSitter.Modules.Booking.Application;
+
+internal sealed record BookingPage(
+    IReadOnlyList<Domain.Booking> Items, int Total);

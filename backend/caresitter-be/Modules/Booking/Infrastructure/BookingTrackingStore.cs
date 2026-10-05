@@ -59,6 +59,12 @@ internal sealed class BookingTrackingStore(BookingDbContext db) : IBookingTracki
 internal sealed class BookingTrackingNotifier(IHubContext<CareTrackingHub> hub)
     : IBookingTrackingNotifier
 {
+    // Only the customer's server-assigned group receives GPS. A previous caregiver
+    // remaining in a booking group after reassignment cannot receive coordinates.
+    public Task GpsUpdatedAsync(Guid customerId, GpsTrackResponse value, CancellationToken ct = default) =>
+        hub.Clients.Group(CareTrackingHub.CustomerGroup(customerId))
+            .SendAsync("GpsUpdated", value, ct);
+
     public Task TimelineAddedAsync(
         TimelineEventResponse value, CancellationToken ct = default) =>
         hub.Clients.Group(CareTrackingHub.BookingGroup(value.BookingId))

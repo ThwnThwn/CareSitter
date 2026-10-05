@@ -80,24 +80,37 @@ class ProfileRepository {
     return response.statusCode == 200;
   }
 
-  Future<String> uploadKycImage(File imageFile) async {
+  Future<String> uploadKycImage(File imageFile, String documentType) async {
+    final extension = _fileName(imageFile).split('.').last.toLowerCase();
+    final mime = switch (extension) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => throw const AppApiException(
+          message: 'Chỉ nhận ảnh JPG, PNG hoặc WEBP.'),
+    };
     final response = await _dio.postForm<Map<String, dynamic>>(
       '/media/upload',
       FormData.fromMap({
         'file': await MultipartFile.fromFile(
           imageFile.path,
           filename: _fileName(imageFile),
+          contentType: DioMediaType.parse(mime),
         ),
         'folder': 'kyc',
+        'documentType': documentType,
       }),
     );
-    final url = response.data?['url']?.toString().trim();
-    if (url == null || url.isEmpty) {
+    final mediaId = response.data?['mediaId']?.toString().trim();
+    if (mediaId == null ||
+        !RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
+            .hasMatch(mediaId)) {
       throw const AppApiException(
-        message: 'Máy chủ không trả về URL ảnh KYC.',
+        message:
+            'Máy chủ không trả về mã tài liệu KYC an toàn. Không gửi URL ảnh thay thế.',
       );
     }
-    return url;
+    return mediaId;
   }
 
   Future<void> submitKyc({
@@ -106,19 +119,19 @@ class ProfileRepository {
     required File cccdBack,
     List<File> certificates = const [],
   }) async {
-    final frontUrl = await uploadKycImage(cccdFront);
-    final backUrl = await uploadKycImage(cccdBack);
-    final certificateUrls = <String>[];
+    final frontId = await uploadKycImage(cccdFront, 'CCCD_FRONT');
+    final backId = await uploadKycImage(cccdBack, 'CCCD_BACK');
+    final certificateIds = <String>[];
     for (final certificate in certificates) {
-      certificateUrls.add(await uploadKycImage(certificate));
+      certificateIds.add(await uploadKycImage(certificate, 'OTHER'));
     }
     await _dio.post<Map<String, dynamic>>(
       '/caregivers/me/kyc',
       data: {
         'cccdNumber': cccdNumber.trim(),
-        'cccdFrontUrl': frontUrl,
-        'cccdBackUrl': backUrl,
-        'certificateUrls': certificateUrls,
+        'cccdFrontMediaId': frontId,
+        'cccdBackMediaId': backId,
+        'certificateMediaIds': certificateIds,
       },
     );
   }

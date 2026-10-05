@@ -104,6 +104,9 @@ internal sealed class PostgresRaceTestDatabase : IAsyncDisposable
                     $"Failed to apply test schema file '{Path.GetFileName(file)}'.", exception);
             }
         }
+        // The first connection loads types before CREATE EXTENSION postgis runs.
+        // Refresh that data source so EF can bind nullable geography parameters too.
+        await connection.ReloadTypesAsync();
     }
 
     private static string FindMigrationDirectory()

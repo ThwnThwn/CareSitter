@@ -16,12 +16,15 @@ internal sealed class CloudinaryMediaService : IMediaService
 {
     private readonly Cloudinary _cloudinary;
     private readonly ILogger<CloudinaryMediaService> _logger;
+    private readonly IKycMediaService _kyc;
 
     public CloudinaryMediaService(
         IOptions<CloudinarySettings> options,
-        ILogger<CloudinaryMediaService> logger)
+        ILogger<CloudinaryMediaService> logger,
+        IKycMediaService kyc)
     {
         _logger = logger;
+        _kyc = kyc;
         var settings = options.Value;
         var account = new Account(
             settings.CloudName,
@@ -31,15 +34,20 @@ internal sealed class CloudinaryMediaService : IMediaService
         _cloudinary.Api.Secure = true;
     }
 
-    public Task<Result<string>> CreateSignedUrlAsync(Guid mediaId, TimeSpan ttl, CancellationToken ct = default)
+    public async Task<Result<string>> CreateSignedUrlAsync(Guid mediaId, TimeSpan ttl, CancellationToken ct = default)
     {
-        // For Cloudinary, usually we store public URLs, or use signed URLs.
-        // If needed, can be implemented later.
-        return Task.FromResult(Result.Success(string.Empty));
+        var access = await _kyc.CreateReadUrlAsync(mediaId, ttl, ct);
+        // Fragment is not sent/logged in HTTP URLs. Clients must extract it into
+        // X-Kyc-Read-Ticket and also send their JWT; /access exposes this structured grant.
+        return access.IsSuccess
+            ? Result.Success($"{access.Value.Url}#ticket={Uri.EscapeDataString(access.Value.Ticket)}")
+            : access.Error;
     }
 
     public async Task<Result<string>> UploadImageAsync(Stream fileStream, string fileName, string folder, CancellationToken ct = default)
     {
+        if (folder.StartsWith("CareSitter/Kyc", StringComparison.OrdinalIgnoreCase))
+            return DomainError.Validation("kyc.secure_upload_required", "KYC phải dùng upload media an toàn.");
         if (fileStream == null || !fileStream.CanRead)
         {
             return CareSitter.SharedKernel.Results.Error.Validation("upload.empty", "File stream is empty.");

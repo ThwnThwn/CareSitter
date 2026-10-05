@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:caregiver_app/core/api/api_constants.dart';
 
@@ -6,23 +7,45 @@ final gpsRepositoryProvider = Provider<GpsRepository>(
   (ref) => GpsRepository(ref.read(dioClientProvider)),
 );
 
-/// API GPS legacy. GPS tracking định kỳ đã bị tắt; app chỉ lấy GPS một lần khi check-in.
+/// A single foreground sender owns one server-issued session per booking.
 class GpsRepository {
   final DioClient _dio;
   const GpsRepository(this._dio);
 
-  /// Không gọi trong luồng hiện tại. Backend trả 410 để ngăn lưu GPS tracking định kỳ.
+  Future<Map<String, dynamic>> openSession(String bookingId, String sourceId,
+      {CancelToken? cancelToken}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+        '${ApiPaths.postGps(bookingId)}/session',
+        data: {'sourceInstanceId': sourceId},
+        cancelToken: cancelToken);
+    return response.data ?? {};
+  }
+
+  Future<String> bookingStatus(String bookingId,
+      {CancelToken? cancelToken}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.booking(bookingId),
+        cancelToken: cancelToken);
+    return response.data?['status']?.toString() ?? '';
+  }
+
   Future<void> postLocation(
     String bookingId, {
+    required String sessionId,
+    required DateTime capturedAt,
     required double latitude,
     required double longitude,
     double? accuracyMeters,
     double? speed,
     double? heading,
+    CancelToken? cancelToken,
   }) async {
     await _dio.post<void>(
       ApiPaths.postGps(bookingId),
+      cancelToken: cancelToken,
       data: {
+        'sessionId': sessionId,
+        'capturedAt': capturedAt.toUtc().toIso8601String(),
         'latitude': latitude,
         'longitude': longitude,
         if (accuracyMeters != null) 'accuracyMeters': accuracyMeters,

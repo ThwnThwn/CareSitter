@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using FluentValidation;
+using CareSitter.Infrastructure.Persistence;
+using Npgsql;
 
 namespace CareSitter.Modules.People;
 
@@ -18,9 +20,10 @@ public sealed class PeopleModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<PeopleDbContext>(options =>
+        services.AddSpatialDataSource(configuration);
+        services.AddDbContext<PeopleDbContext>((provider, options) =>
             options.UseNpgsql(
-                configuration.GetConnectionString("CareSitter"),
+                provider.GetRequiredService<NpgsqlDataSource>(),
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", PeopleDbContext.SchemaName)));
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
@@ -31,6 +34,7 @@ public sealed class PeopleModule : IModule
         services.AddScoped<IMatchingCaregiverReader, MatchingCaregiverReader>();
         services.AddScoped<ICaregiverRegistrationService, CaregiverRegistrationService>();
         services.AddScoped<IAdminPeopleReader, AdminPeopleReader>();
+        services.AddScoped<IKycDocumentAccess, KycDocumentAccess>();
 
         // Đăng ký Controllers nằm trong assembly của People module
         services.AddControllers()

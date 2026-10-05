@@ -42,6 +42,8 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.IsSensitive).HasColumnName("is_sensitive");
             b.Property(x => x.ExifMetadata).HasColumnName("exif_metadata").HasColumnType("jsonb");
             b.Property(x => x.DocumentType).HasColumnName("document_type").HasMaxLength(50);
+            b.Property(x => x.DeliveryType).HasColumnName("delivery_type").HasMaxLength(30);
+            b.Property(x => x.FileFormat).HasColumnName("file_format").HasMaxLength(10);
             b.Property(x => x.VerificationStatus).HasColumnName("verification_status").HasMaxLength(50);
             b.Property(x => x.RejectedReason).HasColumnName("rejected_reason");
             b.Property(x => x.ReviewedByAdminId).HasColumnName("reviewed_by_admin_id");

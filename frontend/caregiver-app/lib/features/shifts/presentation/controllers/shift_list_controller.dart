@@ -6,6 +6,7 @@ import 'package:caregiver_app/core/realtime/care_signalr_service.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/data/repositories/shift_repository.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_checkin_controller.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/live_tracking_controller.dart';
 
 /// Quản lý state danh sách ca của caregiver.
 ///
@@ -186,6 +187,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       rethrow;
     }
     _updateStatus(bookingId, to: 'caregiver_en_route');
+    await _ref.read(liveTrackingProvider.notifier).start(bookingId);
   }
 
   /// GPS check-in tại địa điểm → status: in_progress.
@@ -195,6 +197,9 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
     try {
       actualStart =
           await _ref.read(shiftCheckinControllerProvider).checkIn(bookingId);
+      _ref
+          .read(liveTrackingProvider.notifier)
+          .reconcileStatus(bookingId, 'in_progress');
     } catch (e) {
       // ignore: avoid_print
       print('[ShiftListController] checkIn error: $e');

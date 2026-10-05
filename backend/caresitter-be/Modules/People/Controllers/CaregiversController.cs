@@ -9,8 +9,15 @@ namespace CareSitter.Modules.People.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/caregivers")]
-public sealed class CaregiversController(ISender sender) : ControllerBase
+public sealed class CaregiversController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public CaregiversController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> List(
@@ -20,7 +27,7 @@ public sealed class CaregiversController(ISender sender) : ControllerBase
         DateTimeOffset? start, DateTimeOffset? end,
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await sender.Send(new SearchCaregiversQuery(
+        var result = await _mediator.Send(new SearchCaregiversQuery(
             lat, lng, city, district, skill, minRating, availabilityStatus,
             start, end, page, pageSize), ct);
         return Ok(result);
@@ -30,7 +37,7 @@ public sealed class CaregiversController(ISender sender) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetApprovedCaregiverQuery(id), ct);
+        var result = await _mediator.Send(new GetApprovedCaregiverQuery(id), ct);
         return result is null ? NotFound() : Ok(result);
     }
 }

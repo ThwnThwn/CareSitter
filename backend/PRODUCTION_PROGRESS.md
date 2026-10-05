@@ -60,6 +60,35 @@ Baseline kỹ thuật local đạt; **chưa đóng toàn bộ G0/policy** (polic
 
 Người dùng xác nhận **chưa có tài liệu chi hộ/sandbox**. Cần lấy từ VNPAY và xác minh create/query/callback/signature, external reference, retry/idempotency, xử lý unknown và final settlement. Không tự dựng endpoint chi hộ từ API thanh toán/refund. Bug approve ghi PAYOUT trước xác nhận chuyển tiền chưa được đánh dấu đã sửa.
 
+## SEC01 — CCCD/KYC private media (04/10/2026)
+
+- Đã lập đánh giá thế mạnh/rủi ro, triển khai luồng mới và runbook trong [SEC01_PLAN.md](SEC01_PLAN.md). Phạm vi đợt này chỉ local develop; chưa commit/push/merge/deploy hoặc thay đổi Cloudinary/DB dev thật.
+- Upload KYC authenticated, trả media ID thay URL; submit/approve kiểm owner/type/delivery. Grant TTL + JWT + kiểm quyền mỗi GET, backend proxy không redirect, no-store/no-referrer, audit IDs và không log signed provider URL. Hàm signed URL không còn stub rỗng.
+- API giấu legacy URLs, chặn approve URL-only, app/admin chuyển sang media IDs/private blobs; giữ dữ liệu legacy và trạng thái APPROVED để chuyển đổi có kiểm soát. **Chưa thu hồi public/CDN URLs cũ.** Migration 32 phải có trước app mới; chỉ chạy trên DB test tạm trong đợt này.
+- Backend local hai vòng liên tiếp **338/338/vòng**, 0 fail/skip, build 0 warning/error, 12 TRX, schema 00–32/legacy upgrade/replay/smoke đạt. Evidence: `backend/artifacts/sec01-20261004-final-acceptance/summary.json`; cập nhật tài liệu sau nghiệm thu, không sửa runtime/test/schema. Admin **38/38** + build, caregiver analyze/**17 test**/web build, customer analyze/**55 test** đạt; native shutdown regression đạt.
+- Lượt nested pwsh trước đó treo sau test xanh, không có summary; đã dừng/dọn đúng tài nguyên test, giữ log/TRX. Không dùng lượt đó chứng nhận baseline hoàn tất; lượt cuối chạy script trực tiếp. Chưa kết luận nguyên nhân treo hoặc xác nhận CI GitHub của source mới (chưa push).
+- **SEC01 production vẫn mở:** cần Cloudinary sandbox original/derivative/TTL, inventory/migration/revoke legacy, key ring nhiều replica, retention/orphan cleanup, admin least privilege và load/device/security evidence. Provider giả lập và local tests không thay thế các gate này; media nhạy cảm ngoài KYC còn cần đợt riêng.
+
+## Chuẩn hóa cấu trúc backend — 04/10/2026
+
+- Giữ SQL là cơ chế schema duy nhất; 5 file EF migration/snapshot Identity chuyển vào archive ngoài runtime, không mất lịch sử. Runbook: [docs/MIGRATIONS.md](docs/MIGRATIONS.md); có guard source và kiểm tra assembly 7 module không compile EF migration/snapshot.
+- [module.md](module.md) đã mô tả 7 module, Controllers/host media endpoints, bảng hiện hành và quy ước Application feature-first cho code mới; không đổi hàng loạt namespace của module nhỏ.
+- Architecture guards duyệt Application mọi module, XML ProjectReference bắt cả sibling/slash/absolute/case/conditional; dynamic references fail closed. Mỗi module phải có unit project được đăng ký trong solution.
+- Tách policy thuần Matching, PaymentIntentCreation, PromotionEligibility/reservation binding. Infrastructure vẫn giữ IO, transaction/lock, unique-race, offer/outbox và side effects; đây chưa phải refactor toàn bộ orchestration.
+- Bổ sung unit suites Identity/Catalog/People/Support và regression policy Booking/Payments/Promotion. Không bỏ IntegrationTests hiện có; unit suites mới là coverage nền, chưa đầy đủ mọi use case.
+- Dọn thư mục rỗng bị công cụ chặn nên giữ nguyên các thư mục cũ; không xóa file người dùng hoặc generated residue. EF archive có thể truy hồi; việc chuyển file không tác động DB dev/production.
+- Baseline đầu và baseline cuối sau allowlist đều đạt hai vòng **402/402/vòng**, 0 fail/skip, 10 TRX/vòng (20 tổng), build 0 warning/error, schema 00–32/legacy upgrade/replay/smoke đạt. Evidence cuối: `backend/artifacts/architecture-20261004-final/summary.json`, `Status=passed`; native shutdown/log-drain regression cũng đạt. Sau nghiệm thu chỉ cập nhật dòng tài liệu này; không sửa runtime/test/SQL. Không dùng local evidence đóng FIN01/FIN02/SEC01 hay thay CI remote.
+- Migration runner còn thiếu khóa một-runner và atomic SQL+checksum/crash recovery; bootstrap chưa ghi checksum toàn bộ. Đã ghi rõ trong runbook, không tuyên bố deployment migration production đã hoàn tất.
+- Phạm vi local develop: giữ nguyên SEC01 đang có; chưa commit/push/merge/deploy.
+
+## Chuẩn hóa DTO — 04/10/2026
+
+- Chuẩn hóa 115 DTO của cả 7 module theo feature/Dtos/Requests, Responses hoặc value/page DTO; một type một file, port/CQRS/handler/model nội bộ tách riêng. Di chuyển 289 declaration giữ nguyên namespace và thân type; không đổi nghiệp vụ refund/payout/KYC hay chạy DB thật.
+- Thêm HTTP input DTO và mapping cho 7 body trước đây bind command trực tiếp: send OTP, OTP/password login, register, refresh, cập nhật profile và tạo booking. Validator command/authorization tiếp tục như trước. Giữ JSON trường/default/null, Google role server-owned, KYC media IDs, VNPAY IPN key casing và booking sync null omission.
+- Giữ namespace cũ của type hiện hữu để giảm breaking change. Schema OpenAPI của 7 input mới mang tên Request thay Command; client sinh từ OpenAPI phải regenerate/review. Cấu trúc và giới hạn: [module.md](module.md).
+- Có source architecture guard và compiled DTO/controller/JSON mapping tests; bổ sung 20 case/guard so với baseline cấu trúc trước đó. Baseline cuối đạt hai vòng liên tiếp **422/422/vòng**, 0 fail/skip, 10 TRX/vòng (20 tổng), Release build 0 warning/error, schema 00–32/legacy upgrade/replay/smoke đạt; runner exit 0 và `Status=passed`. Evidence: `backend/artifacts/dto-20261004/summary.json`, source SHA256 `62b761bf746cb1f1d9f0eb8d39e2183ccc87f01c296d7f496ef7fa4383460ba5`. Sau nghiệm thu chỉ cập nhật dòng tài liệu này; không sửa runtime/test/SQL. Không chạy lại frontend trong đợt DTO và chưa chạy CI remote.
+- Phạm vi local develop; không commit/push/merge/deploy trong đợt này. SEC01/frontend và các thay đổi khác đang có được giữ nguyên; FIN01/FIN02/SEC01 production vẫn mở.
+
 ## Thứ tự tiếp theo
 
 G0/policy → FIN01 + FIN02 + SEC01 → FIN03/FIN04 + SAFE01 → E2E thiết bị/tích hợp → restore/rollback/security RC → pilot → go/no-go công khai.

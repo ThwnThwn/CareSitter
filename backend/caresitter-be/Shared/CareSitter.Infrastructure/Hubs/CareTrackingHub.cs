@@ -8,8 +8,8 @@ namespace CareSitter.Infrastructure.Hubs;
 /// SignalR Hub cho real-time GPS tracking, booking status updates và delta sync danh sách booking.
 ///
 /// Groups được quản lý:
-///   - booking-{bookingId} : tracking chi tiết GPS/timeline của 1 ca (join qua JoinBookingGroup)
-///   - customer-{userId}   : delta sync danh sách booking (tự động join nếu là CUSTOMER)
+///   - booking-{bookingId} : trạng thái/timeline của 1 ca (join qua JoinBookingGroup)
+///   - customer-{userId}   : GPS trực tiếp và delta sync (tự động join nếu là CUSTOMER)
 ///   - caregiver-{userId}  : thay đổi offer của caregiver (tự động join nếu là CAREGIVER)
 ///
 /// URL: ws://localhost:5033/hubs/care-tracking
@@ -76,14 +76,15 @@ public sealed class CareTrackingHub : Hub
             return "unauthorized";
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, BookingGroup(bookingId));
+        await Groups.AddToGroupAsync(Context.ConnectionId, BookingGroup(bookingGuid));
         return "ok";
     }
 
     /// <summary>Client gọi để rời group khi thoát màn hình tracking.</summary>
     public async Task LeaveBookingGroup(string bookingId)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, BookingGroup(bookingId));
+        if (Guid.TryParse(bookingId, out var id))
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, BookingGroup(id));
     }
 
     /// <summary>Tên group theo booking ID — dùng cho tracking chi tiết GPS/timeline.</summary>

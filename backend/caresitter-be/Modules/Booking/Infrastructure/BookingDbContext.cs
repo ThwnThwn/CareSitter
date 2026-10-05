@@ -27,6 +27,7 @@ public sealed class BookingDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new LiveLocationConfiguration());
 
         modelBuilder.Entity<Domain.Booking>(b =>
         {

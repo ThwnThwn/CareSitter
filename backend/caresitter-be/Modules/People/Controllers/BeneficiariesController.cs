@@ -17,13 +17,20 @@ namespace CareSitter.Modules.People.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/beneficiaries")]
-public sealed class BeneficiariesController(ISender sender) : ControllerBase
+public sealed class BeneficiariesController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public BeneficiariesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Lấy danh sách tất cả hồ sơ người thân của user, sắp xếp theo tên.</summary>
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var result = await sender.Send(new ListBeneficiariesQuery(), ct);
+        var result = await _mediator.Send(new ListBeneficiariesQuery(), ct);
         return result.ToActionResult(this);
     }
 
@@ -31,7 +38,7 @@ public sealed class BeneficiariesController(ISender sender) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetBeneficiaryQuery(id), ct);
+        var result = await _mediator.Send(new GetBeneficiaryQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -41,7 +48,7 @@ public sealed class BeneficiariesController(ISender sender) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] BeneficiaryUpsertRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(ToCreateCommand(request), ct);
+        var result = await _mediator.Send(ToCreateCommand(request), ct);
         return result.ToActionResult(this,
             beneficiary => Created($"/api/v1/beneficiaries/{beneficiary.Id}", beneficiary));
     }
@@ -50,7 +57,7 @@ public sealed class BeneficiariesController(ISender sender) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] BeneficiaryUpsertRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(ToUpdateCommand(id, request), ct);
+        var result = await _mediator.Send(ToUpdateCommand(id, request), ct);
         return result.ToActionResult(this);
     }
 
@@ -58,7 +65,7 @@ public sealed class BeneficiariesController(ISender sender) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new DeleteBeneficiaryCommand(id), ct);
+        var result = await _mediator.Send(new DeleteBeneficiaryCommand(id), ct);
         return result.ToActionResult(this, _ => NoContent());
     }
 
@@ -79,10 +86,3 @@ public sealed class BeneficiariesController(ISender sender) : ControllerBase
             request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
             request.Medications);
 }
-
-public sealed record BeneficiaryUpsertRequest(string FullName, DateOnly? DateOfBirth,
-    string? Gender, string? RelationshipToCustomer, string? Phone, Guid? DefaultAddressId,
-    string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
-    JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
-    string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
-    JsonElement? Medications);
