@@ -1,5 +1,6 @@
 using System.Data;
 using CareSitter.Contracts.Services;
+using CareSitter.Modules.Promotion.Domain.Policies;
 using CareSitter.Modules.Promotion.Domain;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -51,8 +52,9 @@ internal sealed class PromotionApplicationService(
             x => x.BookingId == request.BookingId, ct);
         if (existing is not null)
         {
-            if (existing.PromotionId != promotion.Id || existing.CustomerId != request.CustomerId)
-                return PromotionErrors.InvalidReservation();
+            var binding = PromotionEligibilityPolicy.CheckReservationBinding(
+                existing, promotion.Id, request.CustomerId);
+            if (binding.IsFailure) return binding.Error;
             var refreshed = existing.Refresh(eligibility.Value, request.ExpiresAt, now);
             if (refreshed.IsFailure) return refreshed.Error;
         }
@@ -123,12 +125,11 @@ internal sealed class PromotionApplicationService(
         Guid customerId, Guid serviceTypeId, long grossAmount, DateTimeOffset now,
         Guid? bookingId, CancellationToken ct)
     {
-        if (!promotion.IsAvailableAt(now)) return PromotionErrors.NotActive();
-        if (!promotion.AppliesToService(serviceTypeId))
-            return PromotionErrors.ServiceNotEligible();
-        if (promotion.FirstPaidBookingOnly &&
-            await bookingLookup.HasPaidBookingAsync(customerId, ct))
-            return PromotionErrors.FirstBookingOnly();
+        var applicability = PromotionEligibilityPolicy.CheckApplicability(promotion, serviceTypeId, now);
+        if (applicability.IsFailure) return applicability.Error;
+        var history = PromotionEligibilityPolicy.CheckCustomerHistory(promotion,
+            promotion.FirstPaidBookingOnly && await bookingLookup.HasPaidBookingAsync(customerId, ct));
+        if (history.IsFailure) return history.Error;
 
         var activeUsages = db.PromotionRedemptions.AsNoTracking().Where(x =>
             x.PromotionId == promotion.Id &&
@@ -137,14 +138,11 @@ internal sealed class PromotionApplicationService(
         if (bookingId is { } excludedBookingId)
             activeUsages = activeUsages.Where(x => x.BookingId != excludedBookingId);
 
-        if (promotion.TotalUsageLimit is { } totalLimit &&
-            await activeUsages.CountAsync(ct) >= totalLimit)
-            return PromotionErrors.UsageLimitReached();
-        if (await activeUsages.CountAsync(x => x.CustomerId == customerId, ct) >=
-            promotion.PerCustomerUsageLimit)
-            return PromotionErrors.CustomerUsageLimitReached();
-
-        return promotion.CalculateDiscount(grossAmount);
+        var totalUsage = promotion.TotalUsageLimit is not null ? await activeUsages.CountAsync(ct) : 0;
+        var quota = PromotionEligibilityPolicy.CheckTotalUsage(promotion, totalUsage);
+        if (quota.IsFailure) return quota.Error;
+        var customerUsage = await activeUsages.CountAsync(x => x.CustomerId == customerId, ct);
+        return PromotionEligibilityPolicy.CalculateDiscount(promotion, grossAmount, customerUsage);
     }
 
     private static PromotionPriceQuote ToQuote(Domain.Promotion promotion,

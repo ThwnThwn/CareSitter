@@ -203,6 +203,8 @@ var moduleAssemblies = new[]
     typeof(CareSitter.Modules.Promotion.PromotionModule).Assembly
 };
 builder.Services.AddModules(builder.Configuration, moduleAssemblies);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<
+    CareSitter.ApiHost.Application.Admin.GetAdminDashboardQuery>());
 
 // --- Cross-cutting ---
 builder.Services.AddProblemDetails();
@@ -213,9 +215,27 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCareSitterSwagger();
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddPolicy("booking-gps", context => RateLimitPartition.GetSlidingWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 30, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 6,
+            QueueLimit = 0, AutoReplenishment = true
+        }));
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) =>
     {
+        if (context.HttpContext.Request.Path.Value?.Contains("/gps", StringComparison.Ordinal) == true)
+        {
+            context.HttpContext.Response.Headers.RetryAfter = "60";
+            await context.HttpContext.Response.WriteAsJsonAsync(new
+            {
+                title = "booking.gps.rate_limited",
+                detail = "Vui lòng chờ trước khi gửi lại vị trí."
+            }, ct);
+            return;
+        }
         context.HttpContext.Response.ContentType = "application/problem+json";
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
@@ -258,6 +278,14 @@ builder.Services.AddRateLimiter(options =>
             Window = TimeSpan.FromMinutes(10),
             QueueLimit = 0,
             AutoReplenishment = true
+        }));
+    options.AddPolicy("media-read", context => RateLimitPartition.GetSlidingWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value ?? Partition(context),
+        _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 120, Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 6,
+            QueueLimit = 0, AutoReplenishment = true
         }));
 });
 builder.Services.AddCors(options =>
@@ -384,7 +412,6 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("crm");
-app.UseRateLimiter();
 
 // Serve static files từ wwwroot (chỉ dùng khi Development — vd: google-token-tester.html)
 if (app.Environment.IsDevelopment())
@@ -392,6 +419,9 @@ if (app.Environment.IsDevelopment())
 
 // Sử dụng Middleware xác thực (Authentication) và ủy quyền (Authorization)
 app.UseAuthentication();
+// Actor-scoped media limits need the validated JWT principal; auth policies
+// still use the forwarded client IP and apply before authorization rejects.
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).WithTags("System");
@@ -440,6 +470,9 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 // Every instance writes the same stable recurring IDs into the shared PostgreSQL
 // store; Hangfire's distributed lock prevents duplicate scheduling across servers.
 RecurringJob.RemoveIfExists("expire-pending-payments");
+RecurringJob.AddOrUpdate<CareSitter.Modules.Booking.Infrastructure.LiveLocationCleanupJob>(
+    recurringJobId: "cleanup-live-locations", methodCall: job => job.RunAsync(CancellationToken.None),
+    cronExpression: "*/5 * * * *", queue: "booking");
 RecurringJob.AddOrUpdate<IBookingJobsService>(
     recurringJobId: "reconcile-pending-payments",
     methodCall: svc => svc.ReconcilePendingPaymentsAsync(),

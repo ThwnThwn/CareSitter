@@ -14,13 +14,20 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/notifications")]
-public sealed class NotificationsController(ISender sender) : ControllerBase
+public sealed class NotificationsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public NotificationsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Lấy danh sách thông báo của người dùng (phân trang).</summary>
     [HttpGet]
     public async Task<IActionResult> List(int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListNotificationsQuery(page, pageSize), ct);
+        var result = await _mediator.Send(new ListNotificationsQuery(page, pageSize), ct);
         return result.ToActionResult(this);
     }
 
@@ -28,7 +35,7 @@ public sealed class NotificationsController(ISender sender) : ControllerBase
     [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkRead(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new MarkNotificationReadCommand(id), ct);
+        var result = await _mediator.Send(new MarkNotificationReadCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -36,7 +43,7 @@ public sealed class NotificationsController(ISender sender) : ControllerBase
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllRead(CancellationToken ct)
     {
-        var result = await sender.Send(new MarkAllNotificationsReadCommand(), ct);
+        var result = await _mediator.Send(new MarkAllNotificationsReadCommand(), ct);
         return result.ToActionResult(this);
     }
 
@@ -44,7 +51,7 @@ public sealed class NotificationsController(ISender sender) : ControllerBase
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount(CancellationToken ct)
     {
-        var result = await sender.Send(new GetUnreadNotificationCountQuery(), ct);
+        var result = await _mediator.Send(new GetUnreadNotificationCountQuery(), ct);
         return result.ToActionResult(this);
     }
 }

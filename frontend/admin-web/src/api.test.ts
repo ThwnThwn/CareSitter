@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { api, logoutSession, TOKEN_KEY } from './api';
+import { api, kycImage, logoutSession, TOKEN_KEY } from './api';
 
 describe('session handling', () => {
   it('keeps the session on 403 and exposes the permission error', async () => {
@@ -49,5 +49,25 @@ describe('session handling', () => {
   it('rejects an HTML fallback returned with status 200', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>app</html>')));
     await expect(api('/data')).rejects.toThrow('không hợp lệ');
+  });
+});
+
+describe('private KYC media', () => {
+  it('rejects an external content URL before sending a bearer token', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'current');
+    const fetch = vi.fn().mockResolvedValue(Response.json({ url: 'https://external.invalid/cccd.png', ticket: 'test' }));
+    vi.stubGlobal('fetch', fetch);
+    await expect(kycImage('media-id', new AbortController().signal)).rejects.toThrow('không hợp lệ');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it('expires the current session when the private image fetch receives 401', async () => {
+    sessionStorage.setItem(TOKEN_KEY, 'current');
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({ url: '/api/v1/media/media-id/content', ticket: 'test' }))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }));
+    vi.stubGlobal('fetch', fetch);
+    const dispatch = vi.spyOn(window, 'dispatchEvent');
+    await expect(kycImage('media-id', new AbortController().signal)).rejects.toThrow();
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'admin:unauthorized' }));
+    expect(String(fetch.mock.calls[1][0])).not.toContain('ticket=');
   });
 });

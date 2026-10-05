@@ -36,6 +36,15 @@ public sealed class BookingModule : IModule
             .ValidateOnStart();
         services.AddOptions<BookingPaymentOptions>()
             .Bind(configuration.GetSection(BookingPaymentOptions.SectionName));
+        // ASP.NET ánh xạ LiveTracking__* trong .env/biến môi trường vào section này.
+        // Không đặt cấu hình tracking trong appsettings; giá trị mặc định tắt tính năng.
+        services.AddOptions<LiveTrackingOptions>()
+            .Bind(configuration.GetSection(LiveTrackingOptions.SectionName))
+            .Validate(x => x.SendIntervalSeconds is >= 10 and <= 15 &&
+                x.LeaseSeconds is >= 60 and <= 600 && x.RetentionHours is >= 1 and <= 48 &&
+                x.MaxSampleAgeSeconds is >= 30 and <= 120 && x.MaxFutureSkewSeconds is >= 0 and <= 30,
+                "LiveTracking configuration is outside the supported range.")
+            .ValidateOnStart();
 
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
@@ -67,6 +76,8 @@ public sealed class BookingModule : IModule
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
+        services.AddScoped<ILiveLocationStore, LiveLocationStore>();
+        services.AddScoped(sp => new LiveLocationCleanupJob(sp.GetRequiredService<ILiveLocationStore>()));
         services.AddScoped<ICareTaskManager, CareTaskManager>();
         services.AddScoped<IBookingReadStore, BookingReadStore>();
         services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();

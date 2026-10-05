@@ -3,18 +3,26 @@ using CareSitter.Modules.Booking.Application.Commands.PostBookingGps;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CareSitter.Modules.Booking.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("api/v1/bookings/{id:guid}")]
-public sealed class BookingTrackingController(ISender sender) : ControllerBase
+public sealed class BookingTrackingController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public BookingTrackingController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet("timeline")]
     public async Task<IActionResult> ListTimeline(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new ListBookingTimelineQuery(id), ct);
+        var result = await _mediator.Send(new ListBookingTimelineQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -22,7 +30,7 @@ public sealed class BookingTrackingController(ISender sender) : ControllerBase
     public async Task<IActionResult> AddTimelineNote(
         Guid id, [FromBody] AddTimelineNoteRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new AddBookingTimelineNoteCommand(id, request.Title, request.Note), ct);
         return result.ToActionResult(this, value => Created(
             $"/api/v1/bookings/{id}/timeline/{value.Id}", value));
@@ -30,28 +38,37 @@ public sealed class BookingTrackingController(ISender sender) : ControllerBase
 
     [HttpPost("gps")]
     [Authorize(Roles = "CAREGIVER")]
-    public async Task<IActionResult> PostGps(Guid id, CancellationToken ct)
+    [EnableRateLimiting("booking-gps")]
+    public async Task<IActionResult> PostGps(Guid id, [FromBody] PostGpsRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new PostBookingGpsCommand(id), ct);
+        var result = await _mediator.Send(new PostBookingGpsCommand(id, request.SessionId,
+            request.Latitude, request.Longitude, request.CapturedAt,
+            request.AccuracyMeters, request.Speed, request.Heading), ct);
         return result.ToActionResult(this, _ => NoContent());
+    }
+
+    [HttpPost("gps/session")]
+    [Authorize(Roles = "CAREGIVER")]
+    [EnableRateLimiting("booking-gps")]
+    public async Task<IActionResult> OpenGpsSession(Guid id, [FromBody] OpenGpsSessionRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        var result = await _mediator.Send(new OpenGpsSessionCommand(id, request.SourceInstanceId), ct);
+        return result.ToActionResult(this);
     }
 
     [HttpGet("gps/latest")]
     public async Task<IActionResult> GetLatestGps(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetLatestBookingGpsQuery(id), ct);
+        Response.Headers.CacheControl = "no-store";
+        var result = await _mediator.Send(new GetLatestBookingGpsQuery(id), ct);
         return result.ToActionResult(this);
     }
 
     [HttpGet("gps-tracks")]
     public async Task<IActionResult> ListGpsTracks(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new ListBookingGpsTracksQuery(id), ct);
+        var result = await _mediator.Send(new ListBookingGpsTracksQuery(id), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record AddTimelineNoteRequest(string? Title, string? Note);
-public sealed record PostGpsRequest(
-    double Latitude, double Longitude, double? AccuracyMeters = null,
-    double? Speed = null, double? Heading = null);

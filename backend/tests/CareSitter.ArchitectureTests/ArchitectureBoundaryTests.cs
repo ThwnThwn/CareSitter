@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace CareSitter.ArchitectureTests;
 
@@ -69,153 +70,80 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
-    public void Clean_catalog_application_does_not_depend_on_framework_adapters()
+    public void Every_module_application_is_free_of_framework_adapters()
     {
-        var catalogApplication = Path.Combine(ModulesRoot, "Catalog", "Application");
         var forbidden = new[]
         {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
+            "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore",
+            "Microsoft.Extensions.Caching", "Microsoft.Extensions.Configuration",
+            "System.Net.Http", "DbContext"
         };
-
-        var violations = Directory.EnumerateFiles(catalogApplication, "*.cs", SearchOption.AllDirectories)
+        var violations = FilesUnderLayer("Application")
             .SelectMany(path => forbidden
                 .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
                 .Select(token => $"{Relative(path)} -> {token}"))
             .ToArray();
 
         Assert.True(violations.Length == 0,
-            "Catalog Application adapter violations:" + Environment.NewLine +
+            "Application adapter violations:" + Environment.NewLine +
             string.Join(Environment.NewLine, violations));
     }
 
     [Fact]
-    public void Clean_people_application_does_not_depend_on_framework_adapters()
+    public void Every_module_has_its_own_registered_unit_test_project()
     {
-        var peopleApplication = Path.Combine(ModulesRoot, "People", "Application");
-        var forbidden = new[]
+        var solution = File.ReadAllText(Path.Combine(RepositoryRoot, "backend", "CareSitter.sln"));
+        foreach (var module in Directory.EnumerateFiles(ModulesRoot, "CareSitter.Modules.*.csproj",
+                     SearchOption.AllDirectories).Where(IsSourceFile))
         {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
-        };
-
-        var violations = Directory.EnumerateFiles(peopleApplication, "*.cs", SearchOption.AllDirectories)
-            .SelectMany(path => forbidden
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => $"{Relative(path)} -> {token}"))
-            .ToArray();
-
-        Assert.True(violations.Length == 0,
-            "People Application adapter violations:" + Environment.NewLine +
-            string.Join(Environment.NewLine, violations));
+            var name = Path.GetFileNameWithoutExtension(module);
+            var testDirectory = Path.Combine(RepositoryRoot, "backend", "tests", $"{name}.UnitTests");
+            var testProject = Path.Combine(testDirectory, $"{name}.UnitTests.csproj");
+            Assert.True(File.Exists(testProject), $"Missing unit test project: {testProject}");
+            Assert.Contains($"{name}.UnitTests.csproj", solution);
+            Assert.Contains(Directory.EnumerateFiles(testDirectory, "*.cs", SearchOption.AllDirectories)
+                .Where(IsSourceFile), file => File.ReadAllText(file).Contains("[Fact]", StringComparison.Ordinal) ||
+                    File.ReadAllText(file).Contains("[Theory]", StringComparison.Ordinal));
+            Assert.Contains(ReadProjectReferences(File.ReadAllText(testProject)),
+                include => include.Replace('\\', '/').EndsWith($"/{name}.csproj", StringComparison.Ordinal));
+        }
     }
 
     [Fact]
-    public void Clean_support_application_does_not_depend_on_framework_adapters()
+    public void Each_contract_or_response_dto_has_its_own_file_without_handlers_or_ports()
     {
-        var supportApplication = Path.Combine(ModulesRoot, "Support", "Application");
-        var forbidden = new[]
-        {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
-        };
-
-        var violations = Directory.EnumerateFiles(supportApplication, "*.cs", SearchOption.AllDirectories)
-            .SelectMany(path => forbidden
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => $"{Relative(path)} -> {token}"))
+        var dtoFiles = FilesUnderLayer("Controllers")
+            .Where(path => path.Split(Path.DirectorySeparatorChar).Contains("Contracts"))
+            .Where(path => Path.GetFileNameWithoutExtension(path).EndsWith("Request", StringComparison.Ordinal) ||
+                Path.GetFileNameWithoutExtension(path).EndsWith("Response", StringComparison.Ordinal))
+            .Concat(FilesUnderLayer("Application")
+                .Where(path => Path.GetFileNameWithoutExtension(path).EndsWith("Response", StringComparison.Ordinal) ||
+                    Path.GetFileNameWithoutExtension(path).EndsWith("Dto", StringComparison.Ordinal)))
             .ToArray();
-
-        Assert.True(violations.Length == 0,
-            "Support Application adapter violations:" + Environment.NewLine +
-            string.Join(Environment.NewLine, violations));
+        Assert.NotEmpty(dtoFiles);
+        var declaration = new Regex(
+            @"(?m)^\s*(?:(?:public|internal|private|protected|sealed|static|abstract|partial|readonly)\s+)*" +
+            @"(?:record(?:\s+(?:class|struct))?|class|interface|enum|struct)\s+(?<name>[A-Za-z_]\w*)");
+        foreach (var file in dtoFiles)
+        {
+            var source = File.ReadAllText(file);
+            var type = Assert.Single(declaration.Matches(source).Cast<Match>());
+            Assert.Equal(Path.GetFileNameWithoutExtension(file), type.Groups["name"].Value);
+            Assert.DoesNotMatch(@"\bIRequest(?:Handler)?\b|\binterface\s+|using\s+MediatR\s*;", source);
+            Assert.DoesNotMatch(@"using\s+CareSitter\.Modules\.[^.]+\.Domain\s*;", source);
+        }
     }
 
     [Fact]
-    public void Clean_identity_application_does_not_depend_on_framework_adapters()
+    public void Controller_source_does_not_declare_request_or_response_types()
     {
-        var identityApplication = Path.Combine(ModulesRoot, "Identity", "Application");
-        var forbidden = new[]
-        {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
-        };
-
-        var violations = Directory.EnumerateFiles(identityApplication, "*.cs", SearchOption.AllDirectories)
-            .SelectMany(path => forbidden
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => $"{Relative(path)} -> {token}"))
-            .ToArray();
-
-        Assert.True(violations.Length == 0,
-            "Identity Application adapter violations:" + Environment.NewLine +
-            string.Join(Environment.NewLine, violations));
-    }
-
-    [Fact]
-    public void Clean_payments_application_does_not_depend_on_framework_adapters()
-    {
-        var paymentsApplication = Path.Combine(ModulesRoot, "Payments", "Application");
-        var forbidden = new[]
-        {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
-        };
-
-        var violations = Directory.EnumerateFiles(paymentsApplication, "*.cs", SearchOption.AllDirectories)
-            .SelectMany(path => forbidden
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => $"{Relative(path)} -> {token}"))
-            .ToArray();
-
-        Assert.True(violations.Length == 0,
-            "Payments Application adapter violations:" + Environment.NewLine +
-            string.Join(Environment.NewLine, violations));
-    }
-
-    [Fact]
-    public void Clean_booking_application_does_not_depend_on_framework_adapters()
-    {
-        var bookingApplication = Path.Combine(ModulesRoot, "Booking", "Application");
-        var forbidden = new[]
-        {
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "Microsoft.Extensions.Caching",
-            "Microsoft.Extensions.Configuration",
-            "System.Net.Http",
-            "DbContext"
-        };
-
-        var violations = Directory.EnumerateFiles(bookingApplication, "*.cs", SearchOption.AllDirectories)
-            .SelectMany(path => forbidden
-                .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
-                .Select(token => $"{Relative(path)} -> {token}"))
-            .ToArray();
-
-        Assert.True(violations.Length == 0,
-            "Booking Application adapter violations:" + Environment.NewLine +
-            string.Join(Environment.NewLine, violations));
+        var violations = FilesUnderLayer("Controllers")
+            .Where(file => !file.Split(Path.DirectorySeparatorChar).Contains("Contracts"))
+            .Where(file =>
+            Regex.IsMatch(File.ReadAllText(file),
+                @"\b(?:record|class)\s+\w*(?:Request|Response)\b"))
+            .Select(Relative).ToArray();
+        Assert.True(violations.Length == 0, "Move HTTP DTOs into Controllers/Contracts: " + string.Join(", ", violations));
     }
 
     [Fact]
@@ -231,14 +159,83 @@ public sealed class ArchitectureBoundaryTests
         {
             var source = Path.GetFileNameWithoutExtension(projectFile)
                 .Replace("CareSitter.Modules.", string.Empty, StringComparison.OrdinalIgnoreCase);
-            var contents = File.ReadAllText(projectFile);
-            foreach (Match match in Regex.Matches(contents, @"Modules[\\/](?<target>[^\\/]+)[\\/]CareSitter\.Modules\.[^\""']+\.csproj"))
+            foreach (var include in ReadProjectReferences(File.ReadAllText(projectFile)))
             {
-                actual.Add($"{source}->{match.Groups["target"].Value}");
+                var target = ModuleReferenceTarget(include);
+                if (target is not null) actual.Add($"{source}->{target}");
             }
         }
 
         AssertNoNewDebt(actual, allowed, "cross-module project reference");
+    }
+
+    [Theory]
+    [InlineData(@"..\People\CareSitter.Modules.People.csproj", "People")]
+    [InlineData("../People/CareSitter.Modules.People.csproj", "People")]
+    [InlineData(@"..\..\Modules\Promotion\CareSitter.Modules.Promotion.csproj", "Promotion")]
+    [InlineData(@"D:\repo\Modules\People\CareSitter.Modules.People.csproj", "People")]
+    [InlineData("/repo/Modules/People/CareSitter.Modules.People.csproj", "People")]
+    [InlineData(@"..\People\caresitter.modules.people.CSPROJ", "people")]
+    [InlineData(@"  ..\People\CareSitter.Modules.People.csproj  ", "People")]
+    [InlineData(@"..\..\Shared\CareSitter.Contracts\CareSitter.Contracts.csproj", null)]
+    public void Project_reference_detection_handles_all_path_forms(string include, string? expected)
+        => Assert.Equal(expected, ModuleReferenceTarget(include));
+
+    [Theory]
+    [InlineData("$(ModuleProject)")]
+    [InlineData("../*/CareSitter.Modules.*.csproj")]
+    [InlineData("../People/CareSitter.Modules.People.csproj;../Catalog/CareSitter.Modules.Catalog.csproj")]
+    public void Dynamic_project_references_require_an_explicit_guard_change(string include)
+        => Assert.Throws<InvalidDataException>(() => ModuleReferenceTarget(include));
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\"")]
+    public void Project_reference_reader_uses_xml_and_not_comments(string xmlNamespace)
+    {
+        var xml = $"<Project{xmlNamespace}><!-- <ProjectReference Include='ignored'/> -->" +
+            "<ItemGroup><ProjectReference Condition=\"false\" " +
+            "Include='../People/CareSitter.Modules.People.csproj' /></ItemGroup></Project>";
+        // Conditional references still count: another build configuration can activate them.
+        Assert.Equal(new[] { "../People/CareSitter.Modules.People.csproj" }, ReadProjectReferences(xml));
+    }
+
+    [Fact]
+    public void Sql_is_the_only_runtime_schema_migration_mechanism()
+    {
+        var runtimeRoot = Path.Combine(RepositoryRoot, "backend", "caresitter-be");
+        var forbidden = new Regex(
+            @"Microsoft\.EntityFrameworkCore\.Migrations|:\s*(?:Migration|ModelSnapshot)\b|" +
+            @"\.Database\s*\.\s*(?:Migrate|MigrateAsync|EnsureCreated|EnsureCreatedAsync)\s*\(");
+        var violations = Directory.EnumerateFiles(runtimeRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(IsSourceFile)
+            .Where(path => forbidden.IsMatch(File.ReadAllText(path)))
+            .Select(path => Path.GetRelativePath(runtimeRoot, path)).ToArray();
+        Assert.True(violations.Length == 0,
+            "Runtime EF schema management is forbidden; use init-db SQL: " + string.Join(", ", violations));
+
+        foreach (var project in Directory.EnumerateFiles(runtimeRoot, "*.csproj", SearchOption.AllDirectories))
+        {
+            var xml = XDocument.Load(project);
+            Assert.DoesNotContain(xml.Descendants().Where(x => x.Name.LocalName == "Compile"),
+                x => ((string?)x.Attribute("Include") ?? "").Contains("legacy-ef-migrations",
+                    StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private static string[] ReadProjectReferences(string xml) => XDocument.Parse(xml)
+        .Descendants().Where(x => x.Name.LocalName == "ProjectReference")
+        .Select(x => (string?)x.Attribute("Include") ??
+            throw new InvalidDataException("ProjectReference must have an explicit Include.")).ToArray();
+
+    private static string? ModuleReferenceTarget(string include)
+    {
+        if (include.IndexOfAny(['$', '*', '?', ';']) >= 0)
+            throw new InvalidDataException($"Dynamic ProjectReference is not covered by this guard: {include}");
+        var filename = include.Trim().Replace('\\', '/').Split('/').Last();
+        var match = Regex.Match(filename, @"^CareSitter\.Modules\.(?<target>[^.]+)\.csproj$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        return match.Success ? match.Groups["target"].Value : null;
     }
 
     [Fact]

@@ -9,7 +9,13 @@ public static class MediaExtensions
     public static IServiceCollection AddCloudinaryMediaService(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
-        services.AddSingleton<IMediaService, CloudinaryMediaService>();
+        services.AddDataProtection();
+        services.AddScoped<IMediaService, CloudinaryMediaService>();
+        services.AddScoped<IKycMediaService, KycMediaService>();
+        services.AddHttpClient<IKycImageGateway, CloudinaryKycGateway>(client =>
+            client.Timeout = TimeSpan.FromSeconds(30))
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         return services;
     }
 }

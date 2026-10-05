@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using CareSitter.Modules.Identity.Application.Authentication.Dtos.Requests;
+using CareSitter.Modules.Identity.Application.Authentication.Mapping;
 using CareSitter.Modules.Identity.Application.GoogleLogin;
 using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Application.LoginWithPassword;
@@ -7,6 +9,7 @@ using CareSitter.Modules.Identity.Application.Logout;
 using CareSitter.Modules.Identity.Application.RefreshToken;
 using CareSitter.Modules.Identity.Application.Register;
 using CareSitter.Modules.Identity.Application.SendOtp;
+using CareSitter.Modules.Identity.Domain.Policies;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -23,9 +26,12 @@ namespace CareSitter.Modules.Identity.Controllers;
 [Route("api/v1/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly IMediator _mediator;
 
-    public AuthController(ISender sender) => _sender = sender;
+    public AuthController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
 
     /// <summary>
     /// Sends a 6-digit OTP to the requested email address.
@@ -34,9 +40,9 @@ public sealed class AuthController : ControllerBase
     [EnableRateLimiting("auth-send-otp")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _mediator.Send(request.ToCommand());
         return result.IsSuccess ? Ok() : HandleFailure(result.Error);
     }
 
@@ -48,9 +54,9 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _mediator.Send(request.ToCommand());
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
@@ -84,7 +90,7 @@ public sealed class AuthController : ControllerBase
 
         var expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expUnixSeconds);
         // Gửi refreshToken (nếu có) để server revoke session bền vững trong PostgreSQL.
-        var result = await _sender.Send(new LogoutCommand(
+        var result = await _mediator.Send(new LogoutCommand(
             jti, expiresAtUtc, userId, sessionId, body?.RefreshToken));
 
         return result.IsSuccess ? NoContent() : HandleFailure(result.Error);
@@ -94,15 +100,15 @@ public sealed class AuthController : ControllerBase
     /// Đăng ký tài khoản người dùng mới (CUSTOMER hoặc CAREGIVER).
     /// Trả về JWT Access Token và Refresh Token khi thành công.
     /// </summary>
-    /// <param name="command">Thông tin đăng ký gồm Phone, FullName, Email và Roles. Password là tuỳ chọn.</param>
+    /// <param name="request">Thông tin đăng ký gồm Phone, FullName, Email và Roles. Password là tuỳ chọn.</param>
     [HttpPost("register")]
     [EnableRateLimiting("auth-register")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _mediator.Send(request.ToCommand());
         return result.IsSuccess
             ? Created("api/v1/auth/login", result.Value)
             : HandleFailure(result.Error);
@@ -112,14 +118,14 @@ public sealed class AuthController : ControllerBase
     /// Đăng nhập bằng Email và mật khẩu.
     /// Yêu cầu tài khoản đã thiết lập mật khẩu khi đăng ký.
     /// </summary>
-    /// <param name="command">Email và mật khẩu.</param>
+    /// <param name="request">Email và mật khẩu.</param>
     [HttpPost("login/password")]
     [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> LoginWithPassword([FromBody] LoginWithPasswordCommand command)
+    public async Task<IActionResult> LoginWithPassword([FromBody] LoginWithPasswordRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _mediator.Send(request.ToCommand());
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
@@ -134,9 +140,9 @@ public sealed class AuthController : ControllerBase
     [EnableRateLimiting("auth-refresh")]
     [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
     {
-        var result = await _sender.Send(command);
+        var result = await _mediator.Send(request.ToCommand());
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
@@ -150,7 +156,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GoogleCustomer([FromBody] GoogleLoginRequest request)
     {
-        var result = await _sender.Send(new GoogleLoginCommand(
+        var result = await _mediator.Send(new GoogleLoginCommand(
             request.IdToken, GoogleLoginRolePolicy.Customer));
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
@@ -165,7 +171,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GoogleCaregiver([FromBody] GoogleLoginRequest request)
     {
-        var result = await _sender.Send(new GoogleLoginCommand(
+        var result = await _mediator.Send(new GoogleLoginCommand(
             request.IdToken, GoogleLoginRolePolicy.Caregiver));
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
@@ -186,9 +192,3 @@ public sealed class AuthController : ControllerBase
         Detail = error.Message,
     };
 }
-
-/// <summary>
-/// Body cho POST /auth/logout.
-/// RefreshToken là tùy chọn — nếu gửi, server sẽ revoke session trong PostgreSQL.
-/// </summary>
-public sealed record LogoutRequest(string? RefreshToken = null);

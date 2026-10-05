@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_sync_model.dart';
+import 'gps_update.dart';
+export 'gps_update.dart';
 
 /// URL của SignalR Hub trên backend.
 /// Phải là URL gốc (không có /api/v1) vì Hub nằm ở /hubs/care-tracking.
@@ -19,38 +21,6 @@ final careSignalRProvider = Provider<CareSignalRService>((ref) {
   ref.onDispose(service.dispose);
   return service;
 });
-
-/// Mô tả một event GPS nhận từ backend.
-class GpsUpdate {
-  final String bookingId;
-  final double latitude;
-  final double longitude;
-  final double? accuracyMeters;
-  final double? speed;
-  final double? heading;
-  final DateTime recordedAt;
-
-  const GpsUpdate({
-    required this.bookingId,
-    required this.latitude,
-    required this.longitude,
-    this.accuracyMeters,
-    this.speed,
-    this.heading,
-    required this.recordedAt,
-  });
-
-  factory GpsUpdate.fromJson(Map<String, dynamic> json) => GpsUpdate(
-        bookingId: _string(json['bookingId']) ?? '',
-        latitude: _double(json['latitude']),
-        longitude: _double(json['longitude']),
-        accuracyMeters: _nullableDouble(json['accuracyMeters']),
-        speed: _nullableDouble(json['speed']),
-        heading: _nullableDouble(json['heading']),
-        recordedAt: DateTime.tryParse(json['recordedAt']?.toString() ?? '') ??
-            DateTime.now(),
-      );
-}
 
 /// Mô tả sự thay đổi trạng thái booking nhận từ backend.
 class BookingStatusChange {
@@ -129,8 +99,14 @@ enum SignalRConnectionState {
 ///   signalR.onReconnected.listen(...);      // khi reconnect thành công
 class CareSignalRService {
   final Ref _ref;
+  final HubConnection Function()? _connectionFactory;
   HubConnection? _connection;
   Future<void>? _connectOperation;
+  Timer? _retryTimer;
+  int _retryAttempt = 0;
+  int _generation = 0;
+  bool _disposed = false;
+  bool _hasConnected = false;
 
   // Stream controllers
   final _gpsController = StreamController<GpsUpdate>.broadcast();
@@ -175,7 +151,8 @@ class CareSignalRService {
   Stream<BookingListSyncSignal> get customerSyncStream =>
       _customerSyncController.stream;
 
-  CareSignalRService(this._ref) {
+  CareSignalRService(this._ref, {HubConnection Function()? connectionFactory})
+      : _connectionFactory = connectionFactory {
     _authNotifier = _ref.read(authStateProvider.notifier);
     _authNotifier.registerLogoutCleanup(disconnect);
   }
@@ -183,13 +160,19 @@ class CareSignalRService {
   late final AuthNotifier _authNotifier;
 
   /// Danh sách booking ID đang theo dõi — dùng để re-join sau khi reconnect.
-  final Set<String> _activeBookings = {};
+  final Map<String, int> _activeBookings = {};
+  final Set<String> _joinedBookings = {};
+  bool _groupsReady = false;
 
   bool get isConnected => _connection?.state == HubConnectionState.Connected;
+  bool get isReady => isConnected && _groupsReady;
 
   /// Kết nối tới Hub và đăng ký handlers.
   /// Tự động đính kèm JWT access token vào query string.
   Future<void> connect() {
+    if (_disposed || _connection?.state == HubConnectionState.Reconnecting) {
+      return Future.value();
+    }
     if (isConnected) return Future.value();
     return _connectOperation ??=
         _connectInternal().whenComplete(() => _connectOperation = null);
@@ -197,32 +180,42 @@ class CareSignalRService {
 
   Future<void> _connectInternal() async {
     if (isConnected) return;
+    final generation = _generation;
 
     final token = _ref.read(authStateProvider).value?.accessToken;
     if (token == null) return; // Chưa login → không kết nối
 
-    if (_connection != null) {
+    final previous = _connection;
+    _connection = null;
+    if (previous != null) {
       try {
-        await _connection!.stop();
+        await previous.stop();
       } catch (_) {}
     }
+    if (_disposed || generation != _generation) return;
 
-    _connection = HubConnectionBuilder()
-        .withUrl(
-      '$_hubBaseUrl/hubs/care-tracking',
-      options: HttpConnectionOptions(
-        accessTokenFactory: () async =>
-            _ref.read(authStateProvider).value?.accessToken ?? '',
-      ),
-    )
-        .withAutomaticReconnect(retryDelays: [
-      2000, 5000, 10000, 30000, // ms
-    ]).build();
+    _connection = _connectionFactory?.call() ??
+        HubConnectionBuilder()
+            .withUrl(
+          '$_hubBaseUrl/hubs/care-tracking',
+          options: HttpConnectionOptions(
+            accessTokenFactory: () async =>
+                _ref.read(authStateProvider).value?.accessToken ?? '',
+          ),
+        )
+            .withAutomaticReconnect(retryDelays: [
+          2000, 5000, 10000, 30000, // ms
+        ]).build();
+    final connection = _connection!;
+    bool current() =>
+        !_disposed &&
+        generation == _generation &&
+        identical(_connection, connection);
 
     // ── Đăng ký event handlers ──────────────────────────────────────
 
     _connection!.on('GpsUpdated', (args) {
-      if (args == null || args.isEmpty) return;
+      if (!current() || args == null || args.isEmpty) return;
       try {
         final data = Map<String, dynamic>.from(args[0] as Map);
         _gpsController.add(GpsUpdate.fromJson(data));
@@ -271,65 +264,81 @@ class CareSignalRService {
     });
 
     _connection!.onclose(({error}) {
+      if (!current()) return;
+      _groupsReady = false;
+      _joinedBookings.clear();
       debugPrint('[SignalR] Connection closed.');
       _lifecycleController.add(SignalRConnectionState.closed);
+      _scheduleRetry();
     });
 
     _connection!.onreconnecting(({error}) {
+      if (!current()) return;
+      _groupsReady = false;
+      _joinedBookings.clear();
       debugPrint('[SignalR] Reconnecting.');
       _lifecycleController.add(SignalRConnectionState.reconnecting);
     });
 
-    _connection!.onreconnected(({connectionId}) {
+    _connection!.onreconnected(({connectionId}) async {
+      if (!current()) return;
       debugPrint(
           '[SignalR] Reconnected: $connectionId — re-joining ${_activeBookings.length} groups');
       // ⚠️ ConnectionId mới → booking group membership bị mất.
       // Customer group được backend tự join lại qua OnConnectedAsync khi reconnect.
       // Chỉ cần re-join booking groups (tracking chi tiết).
-      for (final bid in _activeBookings) {
-        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((_) {
-          debugPrint('[SignalR] Re-join failed for $bid.');
-          return null;
-        });
+      await _rejoinBookings(connection);
+      if (current() && _groupsReady) {
+        _lifecycleController.add(SignalRConnectionState.reconnected);
       }
-      _lifecycleController.add(SignalRConnectionState.reconnected);
     });
 
     _lifecycleController.add(SignalRConnectionState.connecting);
     try {
-      await _connection!.start();
+      await connection.start();
+      if (!current()) {
+        await connection.stop();
+        return;
+      }
+      _retryAttempt = 0;
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      await _rejoinBookings(connection);
+      if (!current()) return;
       debugPrint('[SignalR] Connected to CareTrackingHub');
-      _lifecycleController.add(SignalRConnectionState.connected);
+      if (_groupsReady) {
+        _lifecycleController.add(_hasConnected
+            ? SignalRConnectionState.reconnected
+            : SignalRConnectionState.connected);
+      }
+      _hasConnected = true;
     } catch (_) {
+      if (!current()) return;
       // SignalR errors may contain the full negotiation URL with access_token.
       debugPrint('[SignalR] Connection failed; retry will continue.');
       _lifecycleController.add(SignalRConnectionState.closed);
+      _scheduleRetry();
     }
   }
 
   /// Join group theo dõi một booking cụ thể.
   /// Gọi sau khi connect() thành công.
   Future<void> joinBooking(String bookingId) async {
+    _activeBookings.update(bookingId, (count) => count + 1, ifAbsent: () => 1);
     await connect();
     if (!isConnected) return;
-    try {
-      final result =
-          await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
-      if (result == 'unauthorized') {
-        debugPrint('[SignalR] joinBooking UNAUTHORIZED: $bookingId');
-        return;
-      }
-      // Lưu lại để re-join sau khi reconnect
-      _activeBookings.add(bookingId);
-      debugPrint('[SignalR] Joined booking group: $bookingId');
-    } catch (_) {
-      debugPrint('[SignalR] Could not join booking group.');
-    }
+    await _rejoinBookings(_connection!);
   }
 
   /// Rời group khi thoát màn hình tracking.
   Future<void> leaveBooking(String bookingId) async {
+    final count = _activeBookings[bookingId] ?? 0;
+    if (count > 1) {
+      _activeBookings[bookingId] = count - 1;
+      return;
+    }
     _activeBookings.remove(bookingId); // Không re-join sau reconnect
+    _joinedBookings.remove(bookingId);
     if (!isConnected) return;
     try {
       await _connection!.invoke('LeaveBookingGroup', args: [bookingId]);
@@ -339,7 +348,13 @@ class CareSignalRService {
   }
 
   Future<void> disconnect() async {
+    _generation++;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _hasConnected = false;
+    _groupsReady = false;
     _activeBookings.clear();
+    _joinedBookings.clear();
     final connection = _connection;
     _connection = null;
     try {
@@ -352,6 +367,7 @@ class CareSignalRService {
 
   /// Dừng kết nối và đóng stream controllers.
   Future<void> dispose() async {
+    _disposed = true;
     _authNotifier.unregisterLogoutCleanup(disconnect);
     await disconnect();
     await _gpsController.close();
@@ -361,16 +377,56 @@ class CareSignalRService {
     await _customerSyncController.close();
     await _taskUpdateController.close();
   }
+
+  Future<void> _rejoinBookings(HubConnection connection) async {
+    var success = true;
+    for (final id in _activeBookings.keys.toList()) {
+      if (_joinedBookings.contains(id)) continue;
+      try {
+        final result = await connection.invoke('JoinBookingGroup', args: [id]);
+        if (!identical(connection, _connection) || _disposed) return;
+        if (!_activeBookings.containsKey(id)) {
+          await connection.invoke('LeaveBookingGroup', args: [id]);
+        } else if (result == 'ok') {
+          _joinedBookings.add(id);
+        } else {
+          success = false;
+        }
+      } catch (_) {
+        success = false;
+      }
+    }
+    if (!identical(connection, _connection) || _disposed) return;
+    _groupsReady = success;
+    if (!success) _scheduleRetry();
+  }
+
+  void _scheduleRetry() {
+    if (_disposed ||
+        _retryTimer != null ||
+        _ref.read(authStateProvider).value?.accessToken == null) {
+      return;
+    }
+    final seconds = [2, 5, 10, 30][_retryAttempt.clamp(0, 3)];
+    _retryAttempt++;
+    _retryTimer = Timer(Duration(seconds: seconds), () async {
+      _retryTimer = null;
+      if (_disposed) return;
+      if (isConnected) {
+        await _rejoinBookings(_connection!);
+        if (!_disposed && isReady) {
+          _lifecycleController.add(SignalRConnectionState.reconnected);
+        }
+      } else {
+        await connect();
+      }
+    });
+  }
 }
 
 String? _string(Object? value) {
   final text = value?.toString().trim();
   return text == null || text.isEmpty ? null : text;
-}
-
-double _double(Object? value) {
-  if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 double? _nullableDouble(Object? value) {

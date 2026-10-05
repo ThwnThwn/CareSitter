@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using FluentValidation;
+using CareSitter.Infrastructure.Persistence;
+using Npgsql;
 
 namespace CareSitter.Modules.Catalog;
 
@@ -18,9 +20,10 @@ public sealed class CatalogModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<CatalogDbContext>(options =>
+        services.AddSpatialDataSource(configuration);
+        services.AddDbContext<CatalogDbContext>((provider, options) =>
             options.UseNpgsql(
-                configuration.GetConnectionString("CareSitter"),
+                provider.GetRequiredService<NpgsqlDataSource>(),
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", CatalogDbContext.SchemaName)));
 
@@ -30,6 +33,7 @@ public sealed class CatalogModule : IModule
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
         services.AddScoped<ICatalogAdminRepository, CatalogAdminRepository>();
         services.AddScoped<IBookingMediaStore, BookingMediaStore>();
+        services.AddScoped<IKycMediaStore, KycMediaStore>();
         services.AddScoped<IServiceChecklistCatalog, ServiceChecklistCatalog>();
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/live_tracking_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
@@ -241,7 +242,7 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
       case 'caregiver_en_route':
         return (
           label: 'Đang di chuyển',
-          subtitle: 'Khách hàng theo dõi vị trí của bạn',
+          subtitle: 'Chia sẻ vị trí khi mở ứng dụng',
           color: AppColors.statusInProgress,
           bgColor: AppColors.statusInProgressBg,
           icon: Icons.directions_car_rounded
@@ -900,36 +901,49 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
       ),
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton.icon(
-          onPressed: () async {
-            try {
-              await ref.read(shiftsProvider.notifier).startEnRoute(booking.id);
-              if (!context.mounted) return;
-              AppToast.success(context,
-                  '🚗 Bắt đầu di chuyển! Khách hàng theo dõi vị trí của bạn.');
-            } catch (error) {
-              if (!context.mounted) return;
-              AppToast.error(context, 'Chưa thể bắt đầu di chuyển: $error');
-            }
-          },
-          icon: const Icon(Icons.directions_car_rounded,
-              color: Colors.white, size: 20),
-          label: const Text(
-            'Bắt đầu di chuyển đến điểm hẹn',
-            style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Khi bắt đầu đi, vị trí được chia sẻ với gia đình của ca này khi bạn mở app. Chia sẻ dừng khi check-in; vị trí được xóa khi ca kết thúc.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ),
-      ),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              try {
+                await ref
+                    .read(shiftsProvider.notifier)
+                    .startEnRoute(booking.id);
+                if (!context.mounted) return;
+                AppToast.success(
+                    context, 'Đã chuyển trạng thái sang đang di chuyển.');
+              } catch (error) {
+                if (!context.mounted) return;
+                AppToast.error(context, 'Chưa thể bắt đầu di chuyển: $error');
+              }
+            },
+            icon: const Icon(Icons.directions_car_rounded,
+                color: Colors.white, size: 20),
+            label: const Text(
+              'Bắt đầu đi và chia sẻ vị trí',
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ]),
     );
   }
 
@@ -1022,13 +1036,14 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
 
   Widget _buildEnRouteBanner(
       BuildContext context, WidgetRef ref, ShiftModel booking) {
+    final tracking = ref.watch(liveTrackingProvider);
+    final isThisBooking = tracking.bookingId == booking.id;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1046,11 +1061,24 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Khách hàng đang theo dõi vị trí của bạn.\nHãy check-in khi đến nơi trong bán kính quy định.',
-            style: TextStyle(
+          Text(
+            isThisBooking
+                ? tracking.message
+                : 'Chưa chia sẻ vị trí cho ca này. Gia đình đang chờ vị trí.',
+            style: const TextStyle(
                 fontSize: 13, color: AppColors.textSecondary, height: 1.4),
           ),
+          const Text(
+              'Vị trí chỉ chia sẻ với gia đình khi mở ứng dụng và dừng khi check-in.',
+              style: TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
+          if (!isThisBooking || !tracking.sending)
+            TextButton.icon(
+              onPressed: () =>
+                  ref.read(liveTrackingProvider.notifier).start(booking.id),
+              icon: const Icon(Icons.my_location),
+              label: const Text('Bật / thử lại chia sẻ vị trí'),
+            ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,

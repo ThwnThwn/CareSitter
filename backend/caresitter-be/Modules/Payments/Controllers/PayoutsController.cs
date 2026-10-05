@@ -15,8 +15,15 @@ namespace CareSitter.Modules.Payments.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/payments/payouts")]
-public sealed class PayoutsController(ISender sender) : ControllerBase
+public sealed class PayoutsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public PayoutsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Caregiver tạo yêu cầu rút tiền từ available balance.</summary>
     [HttpPost]
     [Authorize(Roles = "CAREGIVER")]
@@ -25,7 +32,7 @@ public sealed class PayoutsController(ISender sender) : ControllerBase
         [FromHeader(Name = "Idempotency-Key")] string? headerIdempotencyKey,
         CancellationToken ct)
     {
-        var result = await sender.Send(new CreatePayoutCommand(
+        var result = await _mediator.Send(new CreatePayoutCommand(
             request.Amount,
             request.BankName,
             request.AccountHolderName,
@@ -46,7 +53,7 @@ public sealed class PayoutsController(ISender sender) : ControllerBase
         int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListMyPayoutsQuery(page, pageSize), ct);
+        var result = await _mediator.Send(new ListMyPayoutsQuery(page, pageSize), ct);
         return result.ToActionResult(this);
     }
 
@@ -59,7 +66,7 @@ public sealed class PayoutsController(ISender sender) : ControllerBase
         int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new ListPendingPayoutsQuery(status, page, pageSize), ct);
         return result.ToActionResult(this);
     }
@@ -69,7 +76,7 @@ public sealed class PayoutsController(ISender sender) : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new ApprovePayoutCommand(id), ct);
+        var result = await _mediator.Send(new ApprovePayoutCommand(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -81,17 +88,8 @@ public sealed class PayoutsController(ISender sender) : ControllerBase
         [FromBody] RejectPayoutRequest? request,
         CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new RejectPayoutCommand(id, request?.Reason), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record CreatePayoutRequest(
-    long Amount,
-    string BankName,
-    string AccountHolderName,
-    string AccountNumber,
-    string? IdempotencyKey = null);
-
-public sealed record RejectPayoutRequest(string? Reason);

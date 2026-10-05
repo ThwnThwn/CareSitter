@@ -28,6 +28,10 @@ class CaregiverProfileModel {
   final String? cccdFrontUrl;
   final String? cccdBackUrl;
   final List<String> certificateUrls;
+  final String? cccdFrontMediaId;
+  final String? cccdBackMediaId;
+  final List<String> certificateMediaIds;
+  final bool requiresSecureResubmission;
 
   const CaregiverProfileModel({
     required this.id,
@@ -48,6 +52,10 @@ class CaregiverProfileModel {
     this.cccdFrontUrl,
     this.cccdBackUrl,
     this.certificateUrls = const [],
+    this.cccdFrontMediaId,
+    this.cccdBackMediaId,
+    this.certificateMediaIds = const [],
+    this.requiresSecureResubmission = false,
   });
 
   bool get isOnline => availabilityStatus == 'ONLINE';
@@ -106,11 +114,16 @@ class CaregiverProfileModel {
       gender: _str(json['gender'] ?? json['Gender']),
       dateOfBirth: _str(json['dateOfBirth'] ?? json['DateOfBirth']),
       avatarUrl: _str(json['avatarUrl'] ?? json['AvatarUrl']),
-      cccdFrontUrl: _str(json['cccdFrontUrl'] ?? json['CccdFrontUrl']),
-      cccdBackUrl: _str(json['cccdBackUrl'] ?? json['CccdBackUrl']),
-      certificateUrls: _parseStringList(
-        json['certificateUrls'] ?? json['CertificateUrls'],
-      ),
+      // Never render legacy public KYC URLs, including responses from an old API.
+      cccdFrontMediaId:
+          _str(json['cccdFrontMediaId'] ?? json['CccdFrontMediaId']),
+      cccdBackMediaId: _str(json['cccdBackMediaId'] ?? json['CccdBackMediaId']),
+      certificateMediaIds: _parseStringList(
+          json['certificateMediaIds'] ?? json['CertificateMediaIds']),
+      requiresSecureResubmission: json['requiresSecureResubmission'] == true ||
+          json['RequiresSecureResubmission'] == true ||
+          _str(json['cccdFrontUrl'] ?? json['CccdFrontUrl']) != null ||
+          _str(json['cccdBackUrl'] ?? json['CccdBackUrl']) != null,
     );
   }
 

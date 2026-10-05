@@ -31,11 +31,13 @@ class DioClient {
     _dio.interceptors.add(_ErrorInterceptor());
   }
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? query}) =>
-      _dio.get(path, queryParameters: query);
+  Future<Response<T>> get<T>(String path,
+          {Map<String, dynamic>? query, CancelToken? cancelToken}) =>
+      _dio.get(path, queryParameters: query, cancelToken: cancelToken);
 
-  Future<Response<T>> post<T>(String path, {dynamic data}) =>
-      _dio.post(path, data: data);
+  Future<Response<T>> post<T>(String path,
+          {dynamic data, CancelToken? cancelToken}) =>
+      _dio.post(path, data: data, cancelToken: cancelToken);
 
   Future<Response<T>> put<T>(String path, {dynamic data}) =>
       _dio.put(path, data: data);

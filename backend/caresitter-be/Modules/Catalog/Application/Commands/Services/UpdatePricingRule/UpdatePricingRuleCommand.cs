@@ -1,0 +1,18 @@
+using CareSitter.Modules.Catalog.Domain;
+using CareSitter.SharedKernel.Results;
+using MediatR;
+
+namespace CareSitter.Modules.Catalog.Application;
+
+public sealed record UpdatePricingRuleCommand(
+    Guid ServiceId,
+    Guid RuleId,
+    string Name,
+    long BaseHourlyPrice,
+    decimal NightMultiplier,
+    decimal HolidayMultiplier,
+    decimal PlatformFeePercent,
+    int DisputeWindowHours,
+    DateTimeOffset EffectiveFrom,
+    DateTimeOffset? EffectiveTo,
+    bool IsActive) : IRequest<Result<PricingRuleResponse>>;

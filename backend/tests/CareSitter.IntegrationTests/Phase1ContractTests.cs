@@ -6,6 +6,18 @@ namespace CareSitter.IntegrationTests;
 public sealed class Phase1ContractTests
 {
     [Fact]
+    public void Legacy_resubmission_cannot_retain_secure_references_from_an_older_submission()
+    {
+        var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;
+        Assert.True(profile.SubmitSecureKyc("encrypted", "hash", Guid.NewGuid(), Guid.NewGuid(), "[]").IsSuccess);
+        Assert.True(profile.RejectKyc().IsSuccess);
+        Assert.True(profile.SubmitKyc("encrypted", "hash", "https://legacy.invalid/front.png", "https://legacy.invalid/back.png").IsSuccess);
+        Assert.Null(profile.CccdFrontMediaId);
+        Assert.Null(profile.CccdBackMediaId);
+        Assert.Equal("[]", profile.CertificateMediaIds);
+    }
+
+    [Fact]
     public void Kyc_requires_both_cccd_images_before_pending()
     {
         var profile = CaregiverProfile.Create(Guid.NewGuid()).Value;

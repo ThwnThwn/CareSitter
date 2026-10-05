@@ -63,6 +63,18 @@ public sealed class MediaAsset : Entity
 
     /// <summary>Allowed: 'CCCD_FRONT', 'CCCD_BACK', 'PORTRAIT', 'NURSING_CERT', 'HEALTH_CERT', 'CRIMINAL_RECORD', 'OTHER'.</summary>
     public string? DocumentType { get; private set; }
+    public string? DeliveryType { get; private set; }
+    public string? FileFormat { get; private set; }
+
+    public static MediaAsset CreateSecureKyc(Guid id, Guid owner, string cloudName,
+        string objectKey, string format, string documentType, long sizeBytes)
+    {
+        return new MediaAsset(id, "CLOUDINARY", cloudName, objectKey,
+            documentType is "CCCD_FRONT" or "CCCD_BACK" ? "DOCUMENT" : "CERTIFICATE",
+            owner, null, null, format == "jpg" ? "image/jpeg" : $"image/{format}",
+            sizeBytes, null, true, null, documentType)
+        { DeliveryType = "authenticated", FileFormat = format };
+    }
 
     /// <summary>Allowed: 'PENDING', 'APPROVED', 'REJECTED'.</summary>
     public string? VerificationStatus { get; private set; }

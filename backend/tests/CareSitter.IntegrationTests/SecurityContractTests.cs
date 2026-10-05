@@ -12,6 +12,7 @@ using CareSitter.Modules.Catalog.Controllers;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Modules.Identity.Application.Login;
 using CareSitter.Modules.Identity.Application.GoogleLogin;
+using CareSitter.Modules.Identity.Domain.Policies;
 using CareSitter.Modules.Identity.Infrastructure;
 using CareSitter.Modules.Identity.Controllers;
 using CareSitter.Modules.Identity.Domain;

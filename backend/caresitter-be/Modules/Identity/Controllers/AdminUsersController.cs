@@ -8,14 +8,21 @@ namespace CareSitter.Modules.Identity.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/v1/admin/users")]
-public sealed class AdminUsersController(ISender sender) : ControllerBase
+public sealed class AdminUsersController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public AdminUsersController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet]
     public async Task<IActionResult> List(
         string? query = null, string? role = null, string? status = null,
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new ListAdminUsersQuery(query, role, status, page, pageSize), ct);
         return result.ToActionResult(this);
     }
@@ -23,7 +30,7 @@ public sealed class AdminUsersController(ISender sender) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetAdminUserQuery(id), ct);
+        var result = await _mediator.Send(new GetAdminUserQuery(id), ct);
         return result.ToActionResult(this);
     }
 
@@ -31,7 +38,7 @@ public sealed class AdminUsersController(ISender sender) : ControllerBase
     public async Task<IActionResult> SetStatus(
         Guid id, [FromBody] AdminUserStatusRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new SetAdminUserStatusCommand(id, request.Status), ct);
+        var result = await _mediator.Send(new SetAdminUserStatusCommand(id, request.Status), ct);
         return result.ToActionResult(this);
     }
 
@@ -39,10 +46,7 @@ public sealed class AdminUsersController(ISender sender) : ControllerBase
     public async Task<IActionResult> SetRoles(
         Guid id, [FromBody] AdminUserRolesRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new SetAdminUserRolesCommand(id, request.Roles), ct);
+        var result = await _mediator.Send(new SetAdminUserRolesCommand(id, request.Roles), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record AdminUserStatusRequest(string Status);
-public sealed record AdminUserRolesRequest(string[]? Roles);

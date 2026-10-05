@@ -50,6 +50,30 @@ export async function logoutSession(): Promise<string> {
   }
 }
 
+export async function kycImage(mediaId: string, signal: AbortSignal): Promise<Blob> {
+  const access = await api<{ url: string; ticket: string }>(`/api/v1/media/${mediaId}/access`, { method: 'POST', cache: 'no-store', signal });
+  // Only send the JWT back to our fixed content route, never to a provider/client URL.
+  if (access.url !== `/api/v1/media/${mediaId}/content` ||
+      typeof access.ticket !== 'string' || !/^[A-Za-z0-9_-]{1,2048}$/.test(access.ticket)) {
+    throw new ApiError('Đường đọc tài liệu không hợp lệ.', 502);
+  }
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  if (!token) throw new ApiError('Phiên đăng nhập đã kết thúc.', 401);
+  const response = await fetch(`${API_BASE}${access.url}`, {
+    headers: { Authorization: `Bearer ${token}`, 'X-Kyc-Read-Ticket': access.ticket }, cache: 'no-store', referrerPolicy: 'no-referrer', signal,
+  });
+  if (response.status === 401 && sessionStorage.getItem(TOKEN_KEY) === token) {
+    window.dispatchEvent(new CustomEvent('admin:unauthorized'));
+  }
+  if (!response.ok) throw new ApiError('Không thể đọc tài liệu. Phiên/link có thể đã hết hạn; hãy thử lại.', response.status);
+  if (sessionStorage.getItem(TOKEN_KEY) !== token) throw new ApiError('Phiên đăng nhập đã thay đổi.', 401);
+  const blob = await response.blob();
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type) || blob.size > 10 * 1024 * 1024) {
+    throw new ApiError('Tài liệu trả về không phải ảnh hợp lệ.', 502);
+  }
+  return blob;
+}
+
 export function qs(values: Record<string, string | number | undefined | null>) {
   const params = new URLSearchParams();
   Object.entries(values).forEach(([key, value]) => {

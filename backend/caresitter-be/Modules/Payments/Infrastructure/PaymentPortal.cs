@@ -2,6 +2,7 @@ using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Application.PaymentIntents;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -24,19 +25,16 @@ internal sealed class PaymentPortal(
         var booking = await bookings.GetForCustomerAsync(bookingId, userId, ct);
         if (booking is null)
             return Error.NotFound("payments.booking_not_found", "Không tìm thấy booking.");
-        if (booking.State != BookingPaymentState.PendingPayment)
-            return Conflict("Booking khong o trạng thái cho thanh toan.");
-        if (booking.PaymentDeadline <= clock.UtcNow)
-            return Conflict("Booking da het thoi han thanh toan va dang cho doi soat.",
-                "BOOKING_PAYMENT_DEADLINE_EXPIRED", paymentDeadline: booking.PaymentDeadline);
+        var admission = PaymentIntentCreationPolicy.CheckBooking(booking, clock.UtcNow);
+        if (admission is not null) return Conflict(admission);
 
         var paymentTimeout = TimeSpan.FromMinutes(
             Math.Clamp(vnPayOptions.Value.PaymentTimeoutMinutes, 1, 60));
         var latestAttempt = await paymentsDb.PaymentIntents
             .Where(x => x.BookingId == bookingId && x.CustomerId == userId && x.Provider == "VNPAY")
             .OrderByDescending(x => x.CreatedAt).FirstOrDefaultAsync(ct);
-        if (latestAttempt?.Status == "SUCCEEDED")
-            return Conflict("Booking da thanh toan thành công.", "PAYMENT_ALREADY_SUCCEEDED");
+        var previous = PaymentIntentCreationPolicy.CheckPreviousAttempt(latestAttempt?.Status);
+        if (previous is not null) return Conflict(previous);
 
         if (latestAttempt?.Status == "PENDING")
         {
@@ -47,32 +45,22 @@ internal sealed class PaymentPortal(
             }
             catch
             {
-                return Conflict(
-                    "Chua the xac minh trạng thái giao dịch truoc. Vui long thu lai sau.",
-                    "PAYMENT_STATUS_UNKNOWN");
+                return Conflict(PaymentIntentCreationPolicy.QueryUnavailable());
             }
 
-            if (query.State == VNPayQueryState.Succeeded)
+            var retry = PaymentIntentCreationPolicy.EvaluateRetry(
+                query.State, latestAttempt.CreatedAt, paymentTimeout);
+            if (retry.Action == PaymentRetryAction.Finalize)
             {
                 var finalized = await finalizer.FinalizeSuccessfulPaymentAsync(latestAttempt.Id,
                     query.TransactionId, query.RawPayload, PaymentFinalizationSource.RetryPreflight, ct);
-                return finalized.Succeeded
-                    ? Conflict("giao dịch truoc da thanh toan thành công.",
-                        "PAYMENT_ALREADY_SUCCEEDED")
-                    : Conflict("giao dịch da thành công nhung booking chua the chot tu dong.",
-                        "PAYMENT_NEEDS_REVIEW");
+                return Conflict(PaymentIntentCreationPolicy.FinalizationConflict(finalized.Succeeded));
             }
 
-            if (query.State is VNPayQueryState.Processing or VNPayQueryState.Unknown)
-                return Conflict(
-                    query.State == VNPayQueryState.Processing
-                        ? "Giao dịch trước vẫn đang được VNPay xử lý."
-                        : "VNPay chưa trả về trạng thái chắc chắn cho giao dịch trước.",
-                    query.State == VNPayQueryState.Processing
-                        ? "PAYMENT_IN_PROGRESS" : "PAYMENT_STATUS_UNKNOWN",
-                    expiresAt: latestAttempt.CreatedAt.Add(paymentTimeout));
+            if (retry.Action == PaymentRetryAction.Block)
+                return Conflict(retry.Conflict!);
 
-            var closedStatus = query.State == VNPayQueryState.NotFound ? "EXPIRED" : "FAILED";
+            var closedStatus = retry.Action == PaymentRetryAction.CloseExpired ? "EXPIRED" : "FAILED";
             var closeStatus = await ClosePendingIntentAsync(
                 latestAttempt.Id, closedStatus, query.RawPayload,
                 PaymentFinalizationSource.RetryPreflight.ToString(), ct);
@@ -211,6 +199,9 @@ internal sealed class PaymentPortal(
         string error, string? code = null, DateTimeOffset? paymentDeadline = null,
         DateTimeOffset? expiresAt = null) => new PaymentIntentCreationOutcome(
             null, false, new PaymentIntentConflict(error, code, paymentDeadline, expiresAt));
+
+    private static Result<PaymentIntentCreationOutcome> Conflict(PaymentIntentConflict conflict) =>
+        new PaymentIntentCreationOutcome(null, false, conflict);
 
     private static PaymentIntentResponse ToResponse(
         PaymentIntent intent, IVNPayService? service = null, VNPayOptions? options = null,

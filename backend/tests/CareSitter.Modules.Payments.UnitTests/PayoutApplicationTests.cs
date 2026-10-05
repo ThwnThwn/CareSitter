@@ -12,12 +12,12 @@ namespace CareSitter.Modules.Payments.UnitTests;
 public sealed class PayoutApplicationTests
 {
     [Fact]
-    public void PayoutController_DependsOnlyOnSender()
+    public void PayoutController_DependsOnlyOnMediator()
     {
         var constructor = Assert.Single(typeof(PayoutsController).GetConstructors());
         var parameter = Assert.Single(constructor.GetParameters());
 
-        Assert.Equal(typeof(ISender), parameter.ParameterType);
+        Assert.Equal(typeof(IMediator), parameter.ParameterType);
     }
 
     [Fact]

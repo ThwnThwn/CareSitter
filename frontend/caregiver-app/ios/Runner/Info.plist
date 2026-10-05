@@ -38,7 +38,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>CareSitter uses your location to verify check-in at the care address.</string>
+	<string>CareSitter dùng vị trí để chia sẻ hành trình đến ca với gia đình khi bạn mở ứng dụng và xác nhận check-in tại địa điểm chăm sóc.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

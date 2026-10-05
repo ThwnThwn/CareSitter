@@ -8,16 +8,23 @@ namespace CareSitter.Modules.Catalog.Controllers;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/v1/admin/catalog/services")]
-public sealed class AdminCatalogController(ISender sender) : ControllerBase
+public sealed class AdminCatalogController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public AdminCatalogController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok(await sender.Send(new ListAdminServicesQuery(), ct));
+        Ok(await _mediator.Send(new ListAdminServicesQuery(), ct));
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] UpsertServiceRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateServiceCommand(
+        var result = await _mediator.Send(new CreateServiceCommand(
             request.Code, request.Name, request.Description,
             request.DefaultDurationMinutes, request.IsActive), ct);
         return result.ToActionResult(this,
@@ -28,7 +35,7 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpsertServiceRequest request,
         CancellationToken ct)
     {
-        var result = await sender.Send(new UpdateServiceCommand(
+        var result = await _mediator.Send(new UpdateServiceCommand(
             id, request.Code, request.Name, request.Description,
             request.DefaultDurationMinutes, request.IsActive), ct);
         return result.ToActionResult(this);
@@ -38,7 +45,7 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
     public async Task<IActionResult> SetActive(Guid id, [FromBody] SetCatalogActiveRequest request,
         CancellationToken ct)
     {
-        var result = await sender.Send(new SetServiceActiveCommand(id, request.IsActive), ct);
+        var result = await _mediator.Send(new SetServiceActiveCommand(id, request.IsActive), ct);
         return result.ToActionResult(this);
     }
 
@@ -46,7 +53,7 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
     public async Task<IActionResult> CreatePricing(Guid serviceId,
         [FromBody] UpsertPricingRuleRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(ToCreatePricingCommand(serviceId, request), ct);
+        var result = await _mediator.Send(ToCreatePricingCommand(serviceId, request), ct);
         return result.ToActionResult(this,
             value => Created(
                 $"/api/v1/admin/catalog/services/{serviceId}/pricing-rules/{value.Id}", value));
@@ -56,7 +63,7 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
     public async Task<IActionResult> UpdatePricing(Guid serviceId, Guid ruleId,
         [FromBody] UpsertPricingRuleRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new UpdatePricingRuleCommand(
+        var result = await _mediator.Send(new UpdatePricingRuleCommand(
             serviceId, ruleId, request.Name, request.BaseHourlyPrice,
             request.NightMultiplier, request.HolidayMultiplier, request.PlatformFeePercent,
             request.DisputeWindowHours, request.EffectiveFrom, request.EffectiveTo,
@@ -68,7 +75,7 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
     public async Task<IActionResult> SetPricingActive(Guid serviceId, Guid ruleId,
         [FromBody] SetCatalogActiveRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new SetPricingRuleActiveCommand(serviceId, ruleId, request.IsActive), ct);
         return result.ToActionResult(this);
     }
@@ -80,23 +87,3 @@ public sealed class AdminCatalogController(ISender sender) : ControllerBase
         request.DisputeWindowHours, request.EffectiveFrom, request.EffectiveTo,
         request.IsActive);
 }
-
-public sealed record UpsertServiceRequest(
-    string Code,
-    string Name,
-    string? Description,
-    int DefaultDurationMinutes = 60,
-    bool IsActive = true);
-
-public sealed record SetCatalogActiveRequest(bool IsActive);
-
-public sealed record UpsertPricingRuleRequest(
-    string Name,
-    long BaseHourlyPrice,
-    decimal NightMultiplier,
-    decimal HolidayMultiplier,
-    decimal PlatformFeePercent,
-    int DisputeWindowHours,
-    DateTimeOffset EffectiveFrom,
-    DateTimeOffset? EffectiveTo,
-    bool IsActive = true);

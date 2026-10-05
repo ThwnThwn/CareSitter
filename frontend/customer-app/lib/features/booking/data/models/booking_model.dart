@@ -422,6 +422,10 @@ class GpsTrackModel {
   final String id;
   final String bookingId;
   final String caregiverId;
+  final int version;
+  final int bookingVersion;
+  final DateTime? receivedAt;
+  final String? sessionId;
   final double latitude;
   final double longitude;
   final double? accuracyMeters;
@@ -433,6 +437,10 @@ class GpsTrackModel {
     required this.id,
     required this.bookingId,
     required this.caregiverId,
+    this.version = 0,
+    this.bookingVersion = 0,
+    this.receivedAt,
+    this.sessionId,
     required this.latitude,
     required this.longitude,
     this.accuracyMeters,
@@ -445,13 +453,17 @@ class GpsTrackModel {
         id: _string(json['id']) ?? '',
         bookingId: _string(json['bookingId']) ?? '',
         caregiverId: _string(json['caregiverId']) ?? '',
+        version: (json['version'] as num?)?.toInt() ?? 0,
+        bookingVersion: (json['bookingVersion'] as num?)?.toInt() ?? 0,
+        receivedAt: DateTime.tryParse(json['receivedAt']?.toString() ?? ''),
+        sessionId: _string(json['sessionId']),
         latitude: _double(json['latitude']),
         longitude: _double(json['longitude']),
         accuracyMeters: _nullableDouble(json['accuracyMeters']),
         speed: _nullableDouble(json['speed']),
         heading: _nullableDouble(json['heading']),
-        recordedAt: DateTime.tryParse(json['recordedAt']?.toString() ?? '') ??
-            DateTime.now(),
+        recordedAt: DateTime.parse(
+            (json['capturedAt'] ?? json['recordedAt']).toString()),
       );
 
   LatLng get latLng => LatLng(latitude, longitude);

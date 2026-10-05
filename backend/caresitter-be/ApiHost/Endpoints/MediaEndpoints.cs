@@ -14,18 +14,46 @@ internal static class MediaEndpoints
     {
         var group = app.MapGroup("/api/v1/media")
             .WithTags("Media")
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .RequireRateLimiting("media-read");
 
         group.MapPost("/upload", UploadImage)
             .DisableAntiforgery()
             .RequireAuthorization()
             .WithSummary("Upload ảnh lên Cloudinary");
+        group.MapPost("/{id:guid}/access", async (Guid id, IKycMediaService media, HttpContext context, CancellationToken ct) =>
+        {
+            SetPrivateHeaders(context);
+            var result = await media.CreateReadUrlAsync(id, TimeSpan.FromMinutes(2), ct);
+            return result.IsSuccess ? Results.Ok(result.Value) : Failure(result.Error);
+        });
+        group.MapGet("/{id:guid}/content", async (Guid id, [FromHeader(Name = "X-Kyc-Read-Ticket")] string? ticket, IKycMediaService media, HttpContext context, CancellationToken ct) =>
+        {
+            SetPrivateHeaders(context);
+            var result = await media.ReadAsync(id, ticket ?? "", ct);
+            return result.IsSuccess ? Results.Bytes(result.Value.Bytes, result.Value.ContentType) : Failure(result.Error);
+        });
     }
+
+    private static void SetPrivateHeaders(HttpContext context)
+    {
+        context.Response.Headers.CacheControl = "no-store, private";
+        context.Response.Headers.Pragma = "no-cache";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; sandbox";
+    }
+
+    private static IResult Failure(Error error) => Results.Problem(title: error.Code, detail: error.Message,
+        statusCode: error.Type switch { ErrorType.Validation => 400, ErrorType.Forbidden => 403,
+            ErrorType.NotFound => 404, ErrorType.Unavailable => 503, _ => 500 });
 
     private static async Task<IResult> UploadImage(
         [AsParameters] UploadImageRequest request,
         IMediaService mediaService,
+        IKycMediaService kycMedia,
         ICurrentUser currentUser,
+        HttpContext context,
         CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId)
@@ -42,6 +70,8 @@ internal static class MediaEndpoints
             return Results.BadRequest(new { error = "Only JPEG, PNG or WEBP images are allowed." });
 
         var folder = request.Folder?.Trim().ToLowerInvariant();
+        if (request.DocumentType != null && folder != "kyc")
+            return Results.BadRequest(new { error = "KYC document uploads must use folder=kyc." });
         if (folder == "kyc" && !currentUser.IsInRole("CAREGIVER"))
             return Results.Forbid();
         if (folder is "checklist" or "checklists" && !currentUser.IsInRole("CAREGIVER"))
@@ -50,12 +80,18 @@ internal static class MediaEndpoints
             return Results.Forbid();
 
         using var stream = file.OpenReadStream();
+        if (folder == "kyc")
+        {
+            SetPrivateHeaders(context);
+            var uploaded = await kycMedia.UploadAsync(stream, file.FileName,
+                request.DocumentType?.Trim().ToUpperInvariant() ?? "", ct);
+            return uploaded.IsSuccess ? Results.Ok(new { mediaId = uploaded.Value }) : Failure(uploaded.Error);
+        }
         var targetFolder = folder switch
         {
             "avatars" or "avatar" => $"CareSitter/Avatars/{userId}",
             "checklist" or "checklists" => $"CareSitter/Checklist/{userId}",
             "beneficiary" or "beneficiaries" => $"CareSitter/Beneficiaries/{userId}",
-            "kyc" => $"CareSitter/Kyc/{userId}",
             "support" => $"CareSitter/Support/{userId}",
             _ => $"CareSitter/Uploads/{userId}",
         };
@@ -81,5 +117,8 @@ public sealed class UploadImageRequest
     public IFormFile File { get; set; } = null!;
 
     /// <summary>Thư mục lưu trữ trên Cloudinary (tuỳ chọn, mặc định: "general")</summary>
+    [FromForm]
     public string? Folder { get; set; }
+    [FromForm]
+    public string? DocumentType { get; set; }
 }

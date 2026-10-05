@@ -7,13 +7,20 @@ namespace CareSitter.Modules.Payments.Controllers;
 
 [ApiController]
 [Authorize]
-public sealed class PaymentsController(ISender sender) : ControllerBase
+public sealed class PaymentsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public PaymentsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpPost("api/v1/payments/intents")]
     public async Task<IActionResult> CreateIntent(
         [FromBody] CreatePaymentIntentRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new CreatePaymentIntentCommand(request.BookingId, User.Identity?.Name), ct);
         return result.ToActionResult(this, outcome =>
         {
@@ -42,14 +49,14 @@ public sealed class PaymentsController(ISender sender) : ControllerBase
     [HttpGet("api/v1/payments/intents/{id:guid}")]
     public async Task<IActionResult> GetIntent(Guid id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetPaymentIntentQuery(id), ct);
+        var result = await _mediator.Send(new GetPaymentIntentQuery(id), ct);
         return result.ToActionResult(this);
     }
 
     [HttpGet("api/v1/wallet")]
     public async Task<IActionResult> GetMyWallet(CancellationToken ct)
     {
-        var result = await sender.Send(new GetMyWalletQuery(), ct);
+        var result = await _mediator.Send(new GetMyWalletQuery(), ct);
         return result.ToActionResult(this);
     }
 
@@ -57,7 +64,7 @@ public sealed class PaymentsController(ISender sender) : ControllerBase
     public async Task<IActionResult> ListMyWalletTransactions(
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        var result = await sender.Send(
+        var result = await _mediator.Send(
             new ListMyWalletTransactionsQuery(page, pageSize), ct);
         return result.ToActionResult(this);
     }
@@ -68,9 +75,7 @@ public sealed class PaymentsController(ISender sender) : ControllerBase
         Guid? bookingId = null, int page = 1, int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new ListLedgerQuery(bookingId, page, pageSize), ct);
+        var result = await _mediator.Send(new ListLedgerQuery(bookingId, page, pageSize), ct);
         return result.ToActionResult(this);
     }
 }
-
-public sealed record CreatePaymentIntentRequest(Guid BookingId);

@@ -1,7 +1,7 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Domain;
-using CareSitter.Modules.Booking.Infrastructure;
+using CareSitter.Modules.Booking.Application.Matching;
 using CareSitter.Modules.People.Domain;
 using Xunit;
 
@@ -104,7 +104,7 @@ public class MatchingLogicTests
         var address = new MatchingAddress("Bình Chánh", "Hồ Chí Minh", null);
 
         // Act: distance is 15km, but max distance is 10km (and profile default radius)
-        var result = MatchingService.AreaMatches(profile, address, distance: 15000, maxDistanceMeters: 10000);
+        var result = MatchingPolicy.AreaMatches(profile, address, distance: 15000, maxDistanceMeters: 10000);
 
         // Assert: MUST return false despite matching district because GPS distance exceeds radius!
         Assert.False(result);
@@ -118,7 +118,7 @@ public class MatchingLogicTests
         var address = new MatchingAddress("Quận 1", "Hồ Chí Minh", null);
 
         // Act: distance 3km within 10km radius
-        var result = MatchingService.AreaMatches(profile, address, distance: 3000, maxDistanceMeters: 10000);
+        var result = MatchingPolicy.AreaMatches(profile, address, distance: 3000, maxDistanceMeters: 10000);
 
         // Assert
         Assert.True(result);
@@ -132,7 +132,7 @@ public class MatchingLogicTests
         var address = new MatchingAddress("Châu Thành", "Tiền Giang", null);
 
         // Act
-        var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
+        var result = MatchingPolicy.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
 
         // Assert: MUST return false because cities are different!
         Assert.False(result);
@@ -146,7 +146,7 @@ public class MatchingLogicTests
         var address = new MatchingAddress("Châu Thành", "Bến Tre", null);
 
         // Act
-        var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
+        var result = MatchingPolicy.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
 
         // Assert: MUST return false when city is missing
         Assert.False(result);
@@ -160,7 +160,7 @@ public class MatchingLogicTests
         var address = new MatchingAddress("Quận 1", "Hồ Chí Minh", null);
 
         // Act
-        var result = MatchingService.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
+        var result = MatchingPolicy.AreaMatches(profile, address, distance: null, maxDistanceMeters: 10000);
 
         // Assert
         Assert.True(result);
@@ -173,7 +173,7 @@ public class MatchingLogicTests
         var raw = "tiêm thuốc, thay băng; xoa bóp";
 
         // Act
-        var skills = MatchingService.ParseSkills(raw);
+        var skills = MatchingPolicy.ParseSkills(raw);
 
         // Assert
         Assert.Equal(3, skills.Count);
@@ -189,7 +189,7 @@ public class MatchingLogicTests
         var raw = "[{\"name\":\"Elderly Care\"}, {\"code\":\"DEMENTIA\"}]";
 
         // Act
-        var skills = MatchingService.ParseSkills(raw);
+        var skills = MatchingPolicy.ParseSkills(raw);
 
         // Assert
         Assert.Equal(2, skills.Count);

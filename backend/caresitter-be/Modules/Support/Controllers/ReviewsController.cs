@@ -13,13 +13,20 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/reviews")]
-public sealed class ReviewsController(ISender sender) : ControllerBase
+public sealed class ReviewsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public ReviewsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     /// <summary>Khách hàng tạo đánh giá cho một booking đã hoàn thành.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReviewRequest req, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateReviewCommand(req.BookingId,
+        var result = await _mediator.Send(new CreateReviewCommand(req.BookingId,
             req.CaregiverId, req.Rating, req.Comment, req.ExperienceTags), ct);
         return result.ToActionResult(this,
             review => Created($"/api/v1/reviews/{review.Id}", review));
@@ -30,11 +37,8 @@ public sealed class ReviewsController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetCaregiverReviews(Guid caregiverId,
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
-        return Ok(await sender.Send(
+        return Ok(await _mediator.Send(
             new ListCaregiverReviewsQuery(caregiverId, page, pageSize), ct));
     }
 
 }
-
-public sealed record CreateReviewRequest(Guid BookingId, Guid CaregiverId, int Rating,
-    string? Comment = null, string? ExperienceTags = null);

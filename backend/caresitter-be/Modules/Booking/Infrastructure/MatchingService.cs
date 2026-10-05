@@ -8,11 +8,13 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static CareSitter.Modules.Booking.Application.Matching.MatchingPolicy;
 
 namespace CareSitter.Modules.Booking.Infrastructure;
 
 /// <summary>
-/// Booking-owned matching policy. People and Catalog data is obtained through
+/// Matching IO/offer orchestration. Pure rules live in Application.Matching.
+/// People and Catalog data is obtained through
 /// public read contracts; this service never receives their DbContexts.
 /// </summary>
 internal sealed class MatchingService(
@@ -76,44 +78,19 @@ internal sealed class MatchingService(
         {
             if (rejected.Contains(profile.Id) || !IsEligible(
                     profile, booking, address,
-                    conflicts.Where(x => x.CaregiverId == profile.Id)))
+                    conflicts.Where(x => x.CaregiverId == profile.Id), Config))
                 continue;
 
-            var straightLineDistance = DistanceMeters(profile.ServiceCenter, address.Location);
-            var skillMatch = SkillMatchScore(requiredSkills, ParseSkills(profile.Skills));
-            var ratingScore = profile.RatingCount == 0
-                ? 0.5m
-                : Math.Clamp(profile.RatingAverage / 5m, 0m, 1m);
-            var experienceScore = Math.Clamp((profile.YearsOfExperience ?? 0) / 10m, 0m, 1m);
-            eligible.Add(new EligibleCandidate(
-                profile.Id, profile.ServiceCenter, straightLineDistance,
-                ratingScore, skillMatch, experienceScore));
+            eligible.Add(PrepareCandidate(profile, address, requiredSkills));
         }
 
-        var shortlist = eligible
-            .Where(x => x.Origin is not null)
-            .OrderBy(x => x.StraightLineDistanceMeters ?? int.MaxValue)
-            .Take(Math.Max(1, Config.RouteCandidateLimit))
-            .ToArray();
+        var shortlist = Shortlist(eligible, Config);
         if (shortlist.Length == 0)
             return Array.Empty<MatchingCandidate>();
 
         var routes = await routeMatrix.CalculateAsync(
             shortlist.Select(x => x.Origin!).ToArray(), address.Location, ct);
-        var routeByOrigin = routes.ToDictionary(x => x.OriginIndex);
-        return shortlist.Select((candidate, index) =>
-            {
-                routeByOrigin.TryGetValue(index, out var route);
-                return route?.IsRoutable == true ? Score(candidate, route) : null;
-            })
-            .OfType<ScoredCandidate>()
-            .OrderByDescending(x => x.Score)
-            .ThenBy(x => x.DurationSeconds ?? int.MaxValue)
-            .ThenBy(x => x.DistanceMeters ?? int.MaxValue)
-            .Select((x, index) => new MatchingCandidate(
-                x.CaregiverId, index + 1, decimal.Round(x.Score, 4),
-                x.DistanceMeters, x.ScoreBreakdown))
-            .ToArray();
+        return Rank(shortlist, routes, Config);
     }
 
     public async Task<IReadOnlyList<Guid>> GetOpenBookingIdsForCaregiverAsync(
@@ -286,143 +263,4 @@ internal sealed class MatchingService(
                 bookingId, changeType, DateTimeOffset.UtcNow), ct);
     }
 
-    private bool IsEligible(
-        MatchingCaregiverProfile profile,
-        Domain.Booking booking,
-        MatchingAddress address,
-        IEnumerable<CaregiverBookingWindow> conflicts)
-    {
-        if (profile.DeletedAt is not null || profile.KycStatus != "APPROVED" ||
-            profile.AvailabilityStatus != "ONLINE")
-            return false;
-        if (conflicts.Any(x => x.BookingId != booking.Id &&
-            x.ScheduledStart < booking.ScheduledEnd && x.ScheduledEnd > booking.ScheduledStart))
-            return false;
-        var distance = DistanceMeters(profile.ServiceCenter, address.Location);
-        if (!AreaMatches(profile, address, distance, Config.MaxDistanceMeters))
-            return false;
-        var required = ParseSkills(booking.RequiredSkills);
-        if (required.Count > 0 && SkillMatchScore(required, ParseSkills(profile.Skills)) < 1m)
-            return false;
-        return profile.RatingCount <= 0 || profile.RatingAverage >= Config.MinimumRating;
-    }
-
-    internal static bool AreaMatches(
-        MatchingCaregiverProfile profile, MatchingAddress address,
-        int? distance, int maxDistanceMeters)
-    {
-        if (distance is { } meters)
-            return meters <= (profile.ServiceRadiusMeters ?? maxDistanceMeters);
-        return !string.IsNullOrWhiteSpace(profile.ServiceDistrict) &&
-            !string.IsNullOrWhiteSpace(address.District) &&
-            !string.IsNullOrWhiteSpace(profile.ServiceCity) &&
-            !string.IsNullOrWhiteSpace(address.City) &&
-            Normalize(profile.ServiceDistrict) == Normalize(address.District) &&
-            Normalize(profile.ServiceCity) == Normalize(address.City);
-    }
-
-    private static int? DistanceMeters(GeoPoint? from, GeoPoint? to)
-    {
-        if (from is null || to is null) return null;
-        const double earthRadius = 6371000d;
-        var lat1 = from.Latitude * Math.PI / 180d;
-        var lat2 = to.Latitude * Math.PI / 180d;
-        var deltaLat = (to.Latitude - from.Latitude) * Math.PI / 180d;
-        var deltaLng = (to.Longitude - from.Longitude) * Math.PI / 180d;
-        var a = Math.Sin(deltaLat / 2) * Math.Sin(deltaLat / 2) +
-            Math.Cos(lat1) * Math.Cos(lat2) *
-            Math.Sin(deltaLng / 2) * Math.Sin(deltaLng / 2);
-        return (int)Math.Round(earthRadius * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a)));
-    }
-
-    private static decimal SkillMatchScore(IReadOnlySet<string> required, IReadOnlySet<string> actual)
-    {
-        if (required.Count == 0) return 1m;
-        var matched = required.Count(skill => actual.Any(candidate =>
-            candidate.Contains(skill, StringComparison.OrdinalIgnoreCase) ||
-            skill.Contains(candidate, StringComparison.OrdinalIgnoreCase)));
-        return (decimal)matched / required.Count;
-    }
-
-    internal static HashSet<string> ParseSkills(string? raw)
-    {
-        var skills = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (string.IsNullOrWhiteSpace(raw)) return skills;
-        var trimmed = raw.Trim();
-        try
-        {
-            if (trimmed.StartsWith('[') || trimmed.StartsWith('{'))
-            {
-                using var document = JsonDocument.Parse(trimmed);
-                if (document.RootElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var item in document.RootElement.EnumerateArray())
-                    {
-                        string? value = item.ValueKind == JsonValueKind.String ? item.GetString() : null;
-                        if (value is null && item.ValueKind == JsonValueKind.Object)
-                        {
-                            value = item.EnumerateObject()
-                                .Where(x => x.Name is "name" or "code" or "label")
-                                .Select(x => x.Value.ValueKind == JsonValueKind.String
-                                    ? x.Value.GetString() : null)
-                                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-                        }
-                        if (!string.IsNullOrWhiteSpace(value)) skills.Add(Normalize(value));
-                    }
-                    return skills;
-                }
-            }
-        }
-        catch (JsonException)
-        {
-            // Delimited legacy values are parsed below.
-        }
-
-        foreach (var token in trimmed.Split([',', ';', '\n', '\r'],
-                     StringSplitOptions.RemoveEmptyEntries))
-        {
-            var clean = token.Trim().Trim('"', '\'', '[', ']');
-            if (!string.IsNullOrWhiteSpace(clean)) skills.Add(Normalize(clean));
-        }
-        return skills;
-    }
-
-    private static string Normalize(string value) =>
-        string.Join(' ', value.Trim().ToLowerInvariant()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries));
-
-    private static bool CanRankCaregiversForStatus(BookingStatus status, bool allowPrePayment) =>
-        status == BookingStatus.Confirmed ||
-        (allowPrePayment && status is BookingStatus.Draft or BookingStatus.PendingPayment);
-
-    private ScoredCandidate Score(EligibleCandidate candidate, RouteMatrixItem route)
-    {
-        var distanceScore = route.DistanceMeters is null
-            ? 0m
-            : Math.Clamp(1m - (decimal)route.DistanceMeters.Value / Config.MaxDistanceMeters, 0m, 1m);
-        var breakdown = new Dictionary<string, decimal>
-        {
-            ["distance"] = distanceScore,
-            ["rating"] = candidate.RatingScore,
-            ["skillMatch"] = candidate.SkillMatchScore,
-            ["experience"] = candidate.ExperienceScore
-        };
-        if (route.DurationSeconds is { } seconds)
-            breakdown["travelTimeMinutes"] = decimal.Round(seconds / 60m, 2);
-        var score = distanceScore * Config.Weights.Distance +
-            candidate.RatingScore * Config.Weights.Rating +
-            candidate.SkillMatchScore * Config.Weights.SkillMatch +
-            candidate.ExperienceScore * Config.Weights.Experience;
-        return new ScoredCandidate(candidate.CaregiverId, score,
-            route.DistanceMeters, route.DurationSeconds, breakdown);
-    }
-
-    private sealed record CaregiverBookingWindow(
-        Guid CaregiverId, Guid BookingId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);
-    private sealed record EligibleCandidate(
-        Guid CaregiverId, GeoPoint? Origin, int? StraightLineDistanceMeters,
-        decimal RatingScore, decimal SkillMatchScore, decimal ExperienceScore);
-    private sealed record ScoredCandidate(
-        Guid CaregiverId, decimal Score, int? DistanceMeters, int? DurationSeconds,
-        IReadOnlyDictionary<string, decimal> ScoreBreakdown);
 }

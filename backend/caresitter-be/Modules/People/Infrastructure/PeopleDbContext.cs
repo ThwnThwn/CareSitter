@@ -81,6 +81,9 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.CccdFrontUrl).HasColumnName("cccd_front_url");
             b.Property(x => x.CccdBackUrl).HasColumnName("cccd_back_url");
             b.Property(x => x.CertificateUrls).HasColumnName("certificate_urls").HasColumnType("jsonb");
+            b.Property(x => x.CccdFrontMediaId).HasColumnName("cccd_front_media_id");
+            b.Property(x => x.CccdBackMediaId).HasColumnName("cccd_back_media_id");
+            b.Property(x => x.CertificateMediaIds).HasColumnName("certificate_media_ids").HasColumnType("jsonb");
             b.Property(x => x.Bio).HasColumnName("bio");
             b.Property(x => x.YearsOfExperience).HasColumnName("years_of_experience");
             b.Property(x => x.RatingAvg).HasColumnName("rating_avg").HasColumnType("numeric(3,2)");
