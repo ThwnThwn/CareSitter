@@ -6,9 +6,9 @@ namespace CareSitter.Modules.Promotion.Controllers;
 internal static class PromotionResultExtensions
 {
     public static IActionResult ToActionResult<T>(this Result<T> result,
-        ControllerBase controller)
+        ControllerBase controller, Func<T, IActionResult>? onSuccess = null)
     {
-        if (result.IsSuccess) return controller.Ok(result.Value);
+        if (result.IsSuccess) return onSuccess?.Invoke(result.Value) ?? controller.Ok(result.Value);
         var problem = new ProblemDetails
         {
             Title = result.Error.Code,

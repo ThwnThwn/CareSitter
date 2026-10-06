@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
@@ -73,6 +74,50 @@ public sealed class Promotion : AggregateRoot
     public bool AppliesToService(Guid serviceTypeId) =>
         _serviceScopes.Count == 0 || _serviceScopes.Any(x => x.ServiceTypeId == serviceTypeId);
 
+    public static Result<Promotion> Create(PromotionConfiguration configuration)
+    {
+        var promotion = new Promotion(Guid.NewGuid());
+        var result = promotion.Configure(configuration);
+        return result.IsSuccess ? promotion : result.Error;
+    }
+
+    public Result Configure(PromotionConfiguration configuration)
+    {
+        var validation = configuration.Validate();
+        if (validation.IsFailure) return validation;
+        Code = configuration.Code.Trim().ToUpperInvariant();
+        Title = configuration.Title.Trim();
+        Summary = configuration.Summary.Trim();
+        Description = configuration.Description?.Trim();
+        BadgeText = configuration.BadgeText.Trim();
+        TermsJson = JsonSerializer.Serialize(configuration.Terms.Select(x => x.Trim()));
+        DiscountType = configuration.DiscountType;
+        DiscountValue = configuration.DiscountValue;
+        MaxDiscountAmount = configuration.MaxDiscountAmount;
+        MinOrderAmount = configuration.MinOrderAmount;
+        StartsAt = configuration.StartsAt.ToUniversalTime();
+        EndsAt = configuration.EndsAt.ToUniversalTime();
+        IsActive = configuration.IsActive;
+        FirstPaidBookingOnly = configuration.FirstPaidBookingOnly;
+        TotalUsageLimit = configuration.TotalUsageLimit;
+        PerCustomerUsageLimit = configuration.PerCustomerUsageLimit;
+        Priority = configuration.Priority;
+        IsFeatured = configuration.IsFeatured;
+        _serviceScopes.RemoveAll(x => !configuration.EligibleServiceIds.Contains(x.ServiceTypeId));
+        foreach (var id in configuration.EligibleServiceIds.Where(id => !_serviceScopes.Any(x => x.ServiceTypeId == id)))
+            _serviceScopes.Add(new PromotionServiceScope(Id, id));
+        return Result.Success();
+    }
+
+    public bool HasSameBookingRules(PromotionConfiguration configuration) =>
+        Code == configuration.Code.Trim().ToUpperInvariant() &&
+        DiscountType == configuration.DiscountType && DiscountValue == configuration.DiscountValue &&
+        MaxDiscountAmount == configuration.MaxDiscountAmount && MinOrderAmount == configuration.MinOrderAmount &&
+        StartsAt == configuration.StartsAt && FirstPaidBookingOnly == configuration.FirstPaidBookingOnly &&
+        _serviceScopes.Select(x => x.ServiceTypeId).ToHashSet().SetEquals(configuration.EligibleServiceIds);
+
+    public void SetActive(bool isActive) => IsActive = isActive;
+
     public Result<long> CalculateDiscount(long grossAmount)
     {
         if (grossAmount <= 0)
@@ -112,6 +157,12 @@ public sealed class Promotion : AggregateRoot
 public sealed class PromotionServiceScope
 {
     private PromotionServiceScope() { }
+
+    internal PromotionServiceScope(Guid promotionId, Guid serviceTypeId)
+    {
+        PromotionId = promotionId;
+        ServiceTypeId = serviceTypeId;
+    }
 
     public Guid PromotionId { get; private set; }
     public Guid ServiceTypeId { get; private set; }

@@ -106,7 +106,10 @@ public sealed class GetAdminMetadataQueryHandler(
                 Option("KYC", "KYC", "neutral"),
                 Option("PAYOUT", "Rút tiền", "neutral"),
                 Option("SUPPORT", "Hỗ trợ", "neutral"),
-                Option("DISPUTE", "Khiếu nại", "neutral")
+                Option("DISPUTE", "Khiếu nại", "neutral"),
+                Option("INACTIVE", "Đã tắt", "neutral"),
+                Option("SCHEDULED", "Sắp diễn ra", "info"),
+                Option("EXPIRED", "Đã hết hạn", "neutral")
             })
             .GroupBy(x => x.Value, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => new { x.First().Label, x.First().Tone }, StringComparer.OrdinalIgnoreCase);
@@ -131,6 +134,7 @@ public sealed class GetAdminMetadataQueryHandler(
                 new AdminNavigation("support", "Hỗ trợ", ["SUPPORT"]),
                 new AdminNavigation("disputes", "Khiếu nại", ["DISPUTE"]),
                 new AdminNavigation("services", "Dịch vụ", []),
+                new AdminNavigation("promotions", "Ưu đãi", []),
                 new AdminNavigation("users", "Tài khoản", [])
             },
             statusDefinitions,

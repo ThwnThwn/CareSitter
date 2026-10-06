@@ -215,6 +215,26 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
 .subheading { margin: 22px 0 12px; font-size: 14px; }
 .section-divider { margin: 25px 0; border: 0; border-top: 1px solid var(--line); }
 
+.promotion-table { min-width: 980px; }
+.promotion-table td:first-child { min-width: 220px; }
+.promotion-table td:first-child strong { overflow-wrap: anywhere; }
+.promotion-title { border: 0; padding: 0; color: var(--green-dark); background: transparent; font-weight: 650; text-align: left; overflow-wrap: anywhere; }
+.promotion-title:hover { text-decoration: underline; }
+.promotion-form fieldset { min-width: 0; margin: 0; padding: 0 0 20px; border: 0; border-bottom: 1px solid var(--line); display: grid; gap: 14px; }
+.promotion-form legend { margin-bottom: 14px; padding: 0; color: var(--ink); font-size: 14px; font-weight: 700; }
+.promotion-form label small, .promotion-number-field > small, .form-help { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.promotion-number-field { display: grid; gap: 5px; }
+.promotion-scopes { max-height: 230px; overflow-y: auto; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; }
+.promotion-preview { margin-top: 24px; padding: 18px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); overflow-wrap: anywhere; }
+.promotion-preview h3 { margin: 0 0 16px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.promotion-preview h4 { margin: 12px 0 8px; font-size: 17px; }
+.promotion-preview p, .promotion-preview li { color: var(--ink); font-size: 12px; line-height: 1.6; }
+.promotion-preview .mono { display: block; margin-top: 12px; color: var(--green-dark); font-size: 12px; font-weight: 700; }
+.promotion-description { white-space: pre-wrap; }
+.promotion-actions { margin-top: 24px; display: grid; gap: 12px; }
+.promotion-actions h3 { margin: 0; font-size: 14px; }
+.promotion-actions > button { justify-self: start; }
+
 .stack-list { display: grid; }
 .stack-list article { min-height: 62px; padding: 13px 2px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .stack-list article:last-child { border-bottom: 0; }
@@ -293,6 +313,7 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
   .sidebar .brand-mark { width: 34px; height: 34px; }
   .sidebar nav { grid-column: 1 / -1; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
   .sidebar nav::-webkit-scrollbar { display: none; }
+  .sidebar nav .nav-item { flex: 0 0 auto; }
   .nav-item { min-width: 46px; width: auto; padding: 0 13px; justify-content: center; }
   .nav-item span { display: inline; white-space: nowrap; }
   .sidebar-account { display: none; }

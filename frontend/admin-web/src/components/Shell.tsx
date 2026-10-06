@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import {
   CalendarCheck, ClipboardList, HandCoins, Headphones,
-  LayoutDashboard, LogOut, Package, ShieldCheck, UsersRound,
+  LayoutDashboard, LogOut, Package, ShieldCheck, TicketPercent, UsersRound,
 } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 import { PageKey } from '../types';
@@ -14,6 +14,7 @@ const pageIcons: Record<PageKey, typeof LayoutDashboard> = {
   support: Headphones,
   disputes: ClipboardList,
   services: Package,
+  promotions: TicketPercent,
   users: UsersRound,
 };
 
@@ -30,7 +31,7 @@ export function Shell({ page, onNavigate, onLogout, children }: {
       <nav aria-label="Điều hướng quản trị">{navigation.map((item) => {
         const Icon = pageIcons[item.key];
         return <button key={item.key} className={`nav-item ${page === item.key ? 'active' : ''}`}
-          aria-current={page === item.key ? 'page' : undefined} onClick={() => onNavigate(item.key)}>
+          aria-label={item.label} title={item.label} aria-current={page === item.key ? 'page' : undefined} onClick={() => onNavigate(item.key)}>
           <Icon size={19} aria-hidden="true" /><span>{item.label}</span>
         </button>;
       })}</nav>
