@@ -3,7 +3,7 @@ export const API_BASE = (import.meta.env.VITE_API_BASE_URL || defaultApiBase).re
 export const TOKEN_KEY = 'caresitter_admin_access_token';
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(message: string, public status: number, public code?: string) {
     super(message);
   }
 }
@@ -32,7 +32,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const payload = await response.json().catch(() => null);
   const fallback = response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.'
     : response.status === 409 ? 'Dữ liệu đã thay đổi. Vui lòng tải lại trước khi tiếp tục.' : 'Không thể hoàn tất yêu cầu.';
-  if (!response.ok) throw new ApiError(errorMessage(payload, fallback), response.status);
+  if (!response.ok) throw new ApiError(errorMessage(payload, fallback), response.status,
+    payload && typeof payload === 'object' && typeof payload.title === 'string' ? payload.title : undefined);
   if (payload === null) throw new ApiError('Phản hồi máy chủ không hợp lệ. Vui lòng thử lại.', response.status);
   return payload as T;
 }

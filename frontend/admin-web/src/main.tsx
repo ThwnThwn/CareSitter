@@ -9,6 +9,7 @@ import { DisputesPage } from './pages/DisputesPage';
 import { KycPage } from './pages/KycPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { ServicesPage } from './pages/ServicesPage';
+import { PromotionsPage } from './pages/PromotionsPage';
 import { SupportPage } from './pages/SupportPage';
 import { UsersPage } from './pages/UsersPage';
 import { AdminMetadata, PageKey } from './types';
@@ -23,6 +24,7 @@ const pageRenderers: Record<PageKey, (navigate: (page: PageKey) => void) => Reac
   support: () => <SupportPage />,
   disputes: () => <DisputesPage />,
   services: () => <ServicesPage />,
+  promotions: () => <PromotionsPage />,
   users: () => <UsersPage />,
 };
 const pages = Object.keys(pageRenderers) as PageKey[];

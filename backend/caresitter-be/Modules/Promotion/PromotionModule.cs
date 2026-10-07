@@ -4,6 +4,8 @@ using CareSitter.Modules.Promotion.Application;
 using CareSitter.Modules.Promotion.Infrastructure;
 using CareSitter.SharedKernel.Modules;
 using FluentValidation;
+using MediatR;
+using CareSitter.SharedKernel.Results;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,7 +26,18 @@ public sealed class PromotionModule : IModule
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssemblyContaining<PromotionModule>());
         services.AddValidatorsFromAssemblyContaining<PromotionModule>();
+        services.AddTransient<IPipelineBehavior<CreateAdminPromotionCommand, Result<AdminPromotionResponse>>,
+            PromotionAdminValidationBehavior<CreateAdminPromotionCommand, AdminPromotionResponse>>();
+        services.AddTransient<IPipelineBehavior<UpdateAdminPromotionCommand, Result<AdminPromotionResponse>>,
+            PromotionAdminValidationBehavior<UpdateAdminPromotionCommand, AdminPromotionResponse>>();
+        services.AddTransient<IPipelineBehavior<SetAdminPromotionActiveCommand, Result<AdminPromotionResponse>>,
+            PromotionAdminValidationBehavior<SetAdminPromotionActiveCommand, AdminPromotionResponse>>();
+        services.AddTransient<IPipelineBehavior<DeleteAdminPromotionCommand, Result<bool>>,
+            PromotionAdminValidationBehavior<DeleteAdminPromotionCommand, bool>>();
+        services.AddTransient<IPipelineBehavior<ListAdminPromotionsQuery, Result<AdminPromotionPage>>,
+            PromotionAdminValidationBehavior<ListAdminPromotionsQuery, AdminPromotionPage>>();
         services.AddScoped<IPromotionReadStore, PromotionReadStore>();
+        services.AddScoped<IPromotionAdminStore, PromotionAdminStore>();
         services.AddScoped<IPromotionService, PromotionApplicationService>();
         services.AddControllers()
             .AddApplicationPart(Assembly.GetAssembly(typeof(PromotionModule))!);

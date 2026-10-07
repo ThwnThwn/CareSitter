@@ -1,4 +1,16 @@
-export type PageKey = 'dashboard' | 'bookings' | 'kyc' | 'payments' | 'support' | 'disputes' | 'services' | 'users';
+export type PageKey = 'dashboard' | 'bookings' | 'kyc' | 'payments' | 'support' | 'disputes' | 'services' | 'promotions' | 'users';
+
+export type AdminPromotion = {
+  id: string; code: string; title: string; summary: string; description?: string;
+  badgeText: string; terms: string[]; discountType: 'percentage' | 'fixed_amount';
+  discountValue: number; maxDiscountAmount: number | null; minOrderAmount: number;
+  startsAt: string; endsAt: string; isActive: boolean; firstPaidBookingOnly: boolean;
+  totalUsageLimit: number | null; perCustomerUsageLimit: number; priority: number;
+  isFeatured: boolean; eligibleServiceIds: string[];
+  status: 'ACTIVE' | 'SCHEDULED' | 'EXPIRED' | 'INACTIVE';
+  reservedCount: number; redeemedCount: number; releasedCount: number;
+  hasHistory: boolean; canDelete: boolean; createdAt: string; updatedAt: string;
+};
 
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
