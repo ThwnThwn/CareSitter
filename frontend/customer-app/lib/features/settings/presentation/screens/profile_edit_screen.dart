@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -326,9 +327,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
               TextFormField(
                 controller: _emailCtrl,
+                readOnly: true,
+                onTap: () => context.push('/settings/recovery-email'),
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
+                  helperText: 'Chạm để xác minh hoặc đổi email an toàn.',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
                 validator: (v) {

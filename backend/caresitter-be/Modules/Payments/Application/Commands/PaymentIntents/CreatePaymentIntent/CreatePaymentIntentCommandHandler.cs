@@ -11,7 +11,7 @@ internal sealed class CreatePaymentIntentCommandHandler(
     public Task<Result<PaymentIntentCreationOutcome>> Handle(
         CreatePaymentIntentCommand request, CancellationToken ct) =>
         currentUser.UserId is { } userId
-            ? portal.CreateIntentAsync(request.BookingId, userId, request.CustomerName, ct)
+            ? portal.CreateIntentAsync(request.BookingId, userId, request.CustomerName, ct, request.Provider)
             : Task.FromResult<Result<PaymentIntentCreationOutcome>>(
                 PaymentPortalErrors.Unauthenticated());
 }

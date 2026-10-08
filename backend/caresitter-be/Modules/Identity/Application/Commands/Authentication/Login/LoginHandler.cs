@@ -44,6 +44,10 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
         if (await _attemptLimiter.IsBlockedAsync("otp-login", email, ct))
             return InvalidOtp();
 
+        // Giữ phiên bản user từ trước khi kiểm OTP; reset đồng thời không được
+        // biến bằng chứng OTP cũ thành một phiên mới ở phiên bản mới.
+        var user = await _store.FindUserByEmailAsync(email, ct);
+
         // Lấy OTP từ Redis và đối chiếu
         var cachedOtp = await _otpStore.GetAsync(email, ct);
         if (cachedOtp is null || cachedOtp != otp)
@@ -57,8 +61,6 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
         var now = DateTimeOffset.UtcNow;
 
         // Tìm user theo email
-        var user = await _store.FindUserByEmailAsync(email, ct);
-
         if (user is null || user.Status != "ACTIVE")
             return InvalidOtp();
 
@@ -72,10 +74,13 @@ internal sealed class LoginHandler : IRequestHandler<LoginCommand, Result<LoginR
 
         // Ghi nhận thời gian đăng nhập gần nhất
         user.RecordLogin(now);
+        user.VerifyEmail(now);
 
         await _store.SaveChangesAsync(ct);
 
-        var tokens = await _sessions.IssueAsync(user, ct);
+        var issued = await _sessions.TryIssueAsync(user, ct);
+        if (issued.IsFailure) return issued.Error;
+        var tokens = issued.Value;
         return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
 

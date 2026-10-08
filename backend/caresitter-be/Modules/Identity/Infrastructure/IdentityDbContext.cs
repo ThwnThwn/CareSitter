@@ -19,10 +19,13 @@ public sealed class IdentityDbContext : ModuleDbContext
     public DbSet<UserDevice> UserDevices => Set<UserDevice>();
     public DbSet<RefreshTokenSession> RefreshTokenSessions => Set<RefreshTokenSession>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    internal DbSet<RecoveryChallengeRecord> RecoveryChallenges => Set<RecoveryChallengeRecord>();
+    internal DbSet<RecoveryEmailRecord> RecoveryEmails => Set<RecoveryEmailRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        RecoveryRecords.Configure(modelBuilder);
 
         modelBuilder.Entity<User>(b =>
         {
@@ -33,6 +36,8 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.Id).HasColumnName("id");
             b.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(20);
             b.Property(x => x.Email).HasColumnName("email").HasMaxLength(255);
+            b.Property(x => x.EmailVerifiedAt).HasColumnName("email_verified_at");
+            b.Property(x => x.RecoveryVersion).HasColumnName("recovery_version").IsConcurrencyToken();
             b.Property(x => x.DisplayName).HasColumnName("display_name").HasMaxLength(255);
             b.Property(x => x.AvatarMediaId).HasColumnName("avatar_media_id");
             b.Property(x => x.AvatarUrl).HasColumnName("avatar_url").HasMaxLength(2048);
@@ -93,9 +98,9 @@ public sealed class IdentityDbContext : ModuleDbContext
             b.Property(x => x.EntityId).HasColumnName("entity_id");
             b.Property(x => x.BeforeData).HasColumnName("before_data").HasColumnType("jsonb");
             b.Property(x => x.AfterData).HasColumnName("after_data").HasColumnType("jsonb");
-            // Dùng "text" thay vì "inet" vì Npgsql không tự convert C# string ↔ PostgreSQL inet.
-            // Giá trị IP address vẫn được lưu đúng, chỉ mất validation kiểu inet ở DB level.
-            b.Property(x => x.IpAddress).HasColumnName("ip_address").HasColumnType("text");
+            b.Property(x => x.IpAddress).HasColumnName("ip_address")
+                .HasConversion(value => value == null ? null : System.Net.IPAddress.Parse(value),
+                    value => value == null ? null : value.ToString()).HasColumnType("inet");
             b.Property(x => x.UserAgent).HasColumnName("user_agent");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
         });

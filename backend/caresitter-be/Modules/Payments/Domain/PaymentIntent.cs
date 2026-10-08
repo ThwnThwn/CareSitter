@@ -39,7 +39,7 @@ public sealed class PaymentIntent : AggregateRoot
     public Guid BookingId { get; private set; }
     public Guid CustomerId { get; private set; }
 
-    /// <summary>Allowed values: 'VNPAY', 'MOMO', 'CARD'.</summary>
+    /// <summary>Allowed values: 'VNPAY', 'PAYOS', 'MOMO', 'CARD'.</summary>
     public string Provider { get; private set; } = null!;
 
     public long Amount { get; private set; }
@@ -53,6 +53,10 @@ public sealed class PaymentIntent : AggregateRoot
     /// <summary>Exact immutable vnp_CreateDate used in the original payment URL.
     /// Legacy rows stay null; CreatedAt/PayDate are not safe substitutes.</summary>
     public string? ProviderCreateDate { get; private set; }
+    public string? ProviderLinkId { get; private set; }
+    public string? CheckoutUrl { get; private set; }
+    public string? ProviderAccountNumber { get; private set; }
+    public DateTimeOffset? ProviderExpiresAt { get; private set; }
     public string IdempotencyKey { get; private set; } = null!;
     public string? RequestPayload { get; private set; }
     public string? ResponsePayload { get; private set; }
@@ -92,6 +96,7 @@ public sealed class PaymentIntent : AggregateRoot
         ProviderTransactionId = providerTransactionId;
         ResponsePayload = responsePayload;
         FinalizedSource = finalizedSource;
+        ManualReviewReason = null;
         NextReconciliationAt = null;
         return Result.Success();
     }
@@ -163,6 +168,26 @@ public sealed class PaymentIntent : AggregateRoot
         if (ProviderOrderRef is not null && ProviderOrderRef != providerOrderRef)
             return Error.Conflict("payment_intent.provider_order_ref", "Payment intent da co provider order ref.");
         ProviderOrderRef = providerOrderRef;
+        return Result.Success();
+    }
+
+    public Result ConfigurePayOS(DateTimeOffset expiresAt)
+    {
+        if (Provider != "PAYOS" || Status != "CREATED" || expiresAt <= CreatedAt)
+            return Error.Validation("payment_intent.payos_expiry", "Thời hạn thanh toán không hợp lệ.");
+        ProviderExpiresAt = expiresAt;
+        return Result.Success();
+    }
+
+    public Result AttachPayOSLink(string linkId, string checkoutUrl, string? accountNumber = null)
+    {
+        if (Provider != "PAYOS" || string.IsNullOrWhiteSpace(linkId) || string.IsNullOrWhiteSpace(checkoutUrl))
+            return Error.Validation("payment_intent.payos_link", "Link thanh toán không hợp lệ.");
+        if (ProviderLinkId is not null && ProviderLinkId != linkId)
+            return Error.Conflict("payment_intent.payos_link", "Mã link thanh toán đã được gán.");
+        ProviderLinkId = linkId;
+        CheckoutUrl = checkoutUrl;
+        ProviderAccountNumber ??= accountNumber;
         return Result.Success();
     }
 }

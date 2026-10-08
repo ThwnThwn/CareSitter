@@ -2,6 +2,10 @@
     encode zstd gzip
     header Strict-Transport-Security "max-age=31536000"
 
+    # Worker endpoints are reachable only on the internal API network.
+    @private path /internal/*
+    respond @private 404
+
     @backend path /api/* /hubs/* /health /health/* /hangfire /hangfire/*
     handle @backend {
         reverse_proxy api:8080

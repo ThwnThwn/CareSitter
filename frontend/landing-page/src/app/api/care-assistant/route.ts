@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
 const recommendationSchema = {
   type: "object",
@@ -13,11 +13,11 @@ const recommendationSchema = {
       ],
     },
     hours: { type: "integer", minimum: 2, maximum: 12 },
-    summary: { type: "string", minLength: 1, maxLength: 240 },
-    nextStep: { type: "string", minLength: 1, maxLength: 160 },
+    summary: { type: "string" },
+    nextStep: { type: "string" },
   },
   required: ["serviceCategory", "hours", "summary", "nextStep"],
-} as const;
+};
 
 const instructions = `Bạn là trợ lý CareSitter trên landing page. CareSitter kết nối gia đình với người chăm sóc tại nhà cho các nhu cầu phi y tế: chăm sóc người cao tuổi, đồng hành sinh hoạt và hỗ trợ đi lại.
 
@@ -30,20 +30,11 @@ Quy tắc chọn dịch vụ:
 
 Không lặp lại dữ liệu nhạy cảm trong câu trả lời. Chỉ dùng thông tin người dùng vừa nhập.`;
 
-function getOutputText(response: unknown) {
-  const output = (response as { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }).output ?? [];
-  return output
-    .flatMap((item) => item.content ?? [])
-    .filter((item) => item.type === "output_text" && item.text)
-    .map((item) => item.text)
-    .join("");
-}
-
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return Response.json(
-      { error: "AI chưa được cấu hình. Vui lòng dùng form đặt ca để tiếp tục." },
+      { error: "AI chưa được cấu hình (Thiếu GEMINI_API_KEY). Vui lòng dùng form đặt ca để tiếp tục." },
       { status: 503 },
     );
   }
@@ -64,23 +55,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = new OpenAI({ apiKey });
-    const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5-mini",
-      store: false,
-      instructions,
-      input: message,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "care_recommendation",
-          strict: true,
-          schema: recommendationSchema,
-        },
-      },
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: message,
+      config: {
+        systemInstruction: instructions,
+        responseMimeType: "application/json",
+        responseSchema: recommendationSchema,
+      }
     });
 
-    const text = response.output_text || getOutputText(response);
+    const text = response.text;
+    if (!text) {
+      throw new Error("Empty response from Gemini");
+    }
     const recommendation = JSON.parse(text);
     return Response.json({ recommendation });
   } catch (error) {

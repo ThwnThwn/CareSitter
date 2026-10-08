@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
+import 'package:caresitter_customer/core/widgets/confirm_action_dialog.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/verified_address_field.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
@@ -23,6 +26,9 @@ class SavedAddressesScreen extends ConsumerStatefulWidget {
 }
 
 class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
+  String? _deletingAddressId;
+  bool _isDeleting = false;
+
   Future<void> _addNewAddress() async {
     final data = await showDialog<_AddressFormData>(
       context: context,
@@ -58,20 +64,37 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
   }
 
   Future<void> _deleteAddress(AddressModel address) async {
+    if (_deletingAddressId != null) return;
+    setState(() => _deletingAddressId = address.id);
     try {
+      final confirmed = await showConfirmActionDialog(
+        context,
+        title: 'Xóa địa chỉ?',
+        message: '“${address.displayLabel}” (${address.fullAddress}) '
+            'sẽ được gỡ khỏi danh sách địa chỉ đã lưu.',
+        confirmLabel: 'Xóa địa chỉ',
+      );
+      if (!confirmed || !mounted) return;
+      setState(() => _isDeleting = true);
+
       await ref.read(addressStoreProvider.notifier).deleteAddress(address.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã xoá địa chỉ')),
-      );
-    } catch (_) {
+      AppToast.success(context, 'Đã xóa địa chỉ');
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Địa chỉ đang được sử dụng hoặc không thể xoá.'),
-          backgroundColor: AppColors.error,
-        ),
+      AppToast.error(
+        context,
+        error is AppApiException
+            ? error.message
+            : 'Không thể xóa địa chỉ. Vui lòng thử lại.',
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _deletingAddressId = null;
+          _isDeleting = false;
+        });
+      }
     }
   }
 
@@ -239,12 +262,14 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                               Icon(Icons.star_border,
                                   size: 16, color: AppColors.primary),
                               SizedBox(width: 4),
-                              Text(
-                                'Đặt làm mặc định',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  'Đặt làm mặc định',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -269,12 +294,21 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
                   )
                 else
                   IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: AppColors.textHint,
-                      size: 20,
-                    ),
-                    onPressed: () => _deleteAddress(address),
+                    tooltip: 'Xóa ${address.displayLabel}',
+                    icon: _isDeleting && _deletingAddressId == address.id
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.delete_outline,
+                            color: AppColors.textHint,
+                            size: 20,
+                          ),
+                    onPressed: _deletingAddressId != null
+                        ? null
+                        : () => _deleteAddress(address),
                   ),
               ],
             ),

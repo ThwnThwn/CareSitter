@@ -52,7 +52,7 @@ internal sealed class GmailSmtpSender : IEmailSender
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Gmail SMTP không thể gửi email.");
+            _logger.LogError("Gmail SMTP không thể gửi email ({ErrorType}).", ex.GetType().Name);
             throw;
         }
         finally
@@ -65,7 +65,7 @@ internal sealed class GmailSmtpSender : IEmailSender
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Không thể đóng kết nối Gmail SMTP đúng cách.");
+                    _logger.LogWarning("Không thể đóng kết nối Gmail SMTP đúng cách ({ErrorType}).", ex.GetType().Name);
                 }
             }
         }

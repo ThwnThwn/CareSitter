@@ -33,8 +33,8 @@ function ReconciliationQueue() {
       : <div className="table-wrap"><table className="data-table"><thead><tr><th>Booking / TxnRef</th><th>Số tiền</th><th>Lần query</th><th>Deadline</th><th /></tr></thead><tbody>
         {filtered.map((item) => <tr key={item.intentId}><td><strong>{shortId(item.bookingId)}</strong><small className="mono">{item.providerOrderRef || 'Chưa có TxnRef'}</small></td>
           <td><strong>{formatMoney(item.amount)}</strong><small>{item.currency}</small></td><td>{item.reconciliationAttempts} lần</td>
-          <td><strong>{formatDate(item.paymentDeadline)}</strong><small>{new Date(item.paymentDeadline) < new Date() ? 'Đã quá hạn' : 'Còn hiệu lực'}</small></td>
-          <td><button className="row-action" onClick={() => setSelected(item)}>Xử lý</button></td></tr>)}</tbody></table></div>}
+          <td><strong>{formatDate(item.paymentDeadline ?? undefined)}</strong><small>{!item.paymentDeadline ? 'Cần đối chiếu' : new Date(item.paymentDeadline) < new Date() ? 'Đã quá hạn' : 'Còn hiệu lực'}</small></td>
+          <td><button className="row-action" onClick={() => setSelected(item)}>{item.canResolve === false ? 'Xem đối soát' : 'Xử lý'}</button></td></tr>)}</tbody></table></div>}
     {selected && <ReconciliationDrawer key={selected.intentId} item={selected} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />}
   </section>;
 }
@@ -45,9 +45,9 @@ function ReconciliationDrawer({ item, onClose, onChanged }: { item: PaymentRevie
   const [busy, setBusy] = useState<'confirm' | 'reject' | ''>('');
   const [error, setError] = useState('');
   async function resolve(succeeded: boolean) {
-    if (busy) return;
+    if (busy || item.canResolve === false) return;
     if (reason.trim().length < 5) return setError('Ghi chú đối chiếu cần ít nhất 5 ký tự.');
-    if (succeeded && !transactionId.trim()) return setError('Nhập mã giao dịch VNPay khi xác nhận thanh toán.');
+    if (succeeded && !transactionId.trim()) return setError('Nhập mã giao dịch từ cổng thanh toán khi xác nhận thanh toán.');
     if (!window.confirm(`${succeeded ? 'Xác nhận đã nhận' : 'Từ chối'} ${formatMoney(item.amount)} cho booking ${shortId(item.bookingId)}?\n${succeeded ? 'Mã giao dịch: ' + transactionId.trim() : 'Booking sẽ bị hủy và slot caregiver được trả lại.'}`)) return;
     setBusy(succeeded ? 'confirm' : 'reject'); setError('');
     try {
@@ -56,12 +56,14 @@ function ReconciliationDrawer({ item, onClose, onChanged }: { item: PaymentRevie
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể chốt giao dịch.'); }
     finally { setBusy(''); }
   }
-  return <Drawer title="Chốt giao dịch" subtitle="Đối soát thủ công" busy={!!busy} onClose={onClose} footer={<><button className="danger" disabled={!!busy} onClick={() => void resolve(false)}><Ban size={17} /> {busy === 'reject' ? 'Đang hủy…' : 'Từ chối thanh toán'}</button><button className="primary" disabled={!!busy} onClick={() => void resolve(true)}><BadgeCheck size={17} /> {busy === 'confirm' ? 'Đang xác nhận…' : 'Xác nhận đã thanh toán'}</button></>}>
-    <div className="warning-box"><strong>Quyết định ảnh hưởng trực tiếp đến booking</strong><p>Xác nhận sẽ kích hoạt booking và khóa escrow; từ chối sẽ hủy booking và trả slot caregiver.</p></div>
+  return <Drawer title={item.canResolve === false ? 'Chi tiết đối soát' : 'Chốt giao dịch'} subtitle="Đối soát thủ công" busy={!!busy} onClose={onClose} footer={item.canResolve !== false && <><button className="danger" disabled={!!busy} onClick={() => void resolve(false)}><Ban size={17} /> {busy === 'reject' ? 'Đang hủy…' : 'Từ chối thanh toán'}</button><button className="primary" disabled={!!busy} onClick={() => void resolve(true)}><BadgeCheck size={17} /> {busy === 'confirm' ? 'Đang xác nhận…' : 'Xác nhận đã thanh toán'}</button></>}>
+    {item.canResolve === false
+      ? <div className="warning-box"><strong>Cần xử lý khoản tiền với ngân hàng</strong><p>Booking hoặc giao dịch đã đóng, hoặc có tiền chuyển thêm. Hãy đối chiếu sao kê và xử lý hoàn tiền theo quy trình vận hành; không xác nhận lại lịch hẹn.</p></div>
+      : <div className="warning-box"><strong>Quyết định ảnh hưởng trực tiếp đến booking</strong><p>Xác nhận sẽ kích hoạt booking và ghi nhận khoản thanh toán; từ chối sẽ hủy booking và trả slot caregiver.</p></div>}
     {error && <ErrorBanner message={error} />}
-    <DetailList items={[{ label: 'Booking', value: item.bookingId }, { label: 'VNPay TxnRef', value: item.providerOrderRef }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Lần query', value: item.reconciliationAttempts }, { label: 'Lỗi gần nhất', value: item.lastReconciliationError || item.manualReviewReason }]} />
-    <label>Mã giao dịch VNPay<input value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="Nhập từ merchant portal" /></label>
-    <label>Ghi chú đối chiếu<textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder="Ví dụ: Đã đối chiếu merchant portal lúc 15:42" /></label>
+    <DetailList items={[{ label: 'Booking', value: item.bookingId }, { label: 'Cổng thanh toán', value: item.provider || 'VNPAY' }, { label: 'Trạng thái giao dịch', value: item.intentStatus }, { label: 'Mã đơn thanh toán', value: item.providerOrderRef }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Lần query', value: item.reconciliationAttempts }, { label: 'Lỗi gần nhất', value: item.lastReconciliationError || item.manualReviewReason }]} />
+    <label>Mã giao dịch thanh toán<input disabled={item.canResolve === false} value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="Nhập từ merchant portal" /></label>
+    <label>Ghi chú đối chiếu<textarea disabled={item.canResolve === false} value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder="Ví dụ: Đã đối chiếu merchant portal lúc 15:42" /></label>
   </Drawer>;
 }
 

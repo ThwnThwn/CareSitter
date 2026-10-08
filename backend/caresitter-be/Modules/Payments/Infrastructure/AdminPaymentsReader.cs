@@ -10,10 +10,10 @@ internal sealed class AdminPaymentsReader(PaymentsDbContext db) : IAdminPayments
         var pendingPayouts = await db.PayoutRequests.AsNoTracking()
             .CountAsync(x => x.Status == "PENDING", ct);
         var manualPayments = await db.PaymentIntents.AsNoTracking()
-            .CountAsync(x => x.Status == "PENDING" && x.ManualReviewReason != null, ct);
+            .CountAsync(x => x.ManualReviewReason != null && (x.Status == "PENDING" || x.Provider == "PAYOS"), ct);
 
         var paymentItems = await db.PaymentIntents.AsNoTracking()
-            .Where(x => x.Status == "PENDING" && x.ManualReviewReason != null)
+            .Where(x => x.ManualReviewReason != null && (x.Status == "PENDING" || x.Provider == "PAYOS"))
             .OrderBy(x => x.ReconciliationStartedAt)
             .Take(5)
             .Select(x => new

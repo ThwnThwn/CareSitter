@@ -5,6 +5,13 @@ enum AppEnvironment { development, staging, production }
 /// Ví dụ:
 /// `flutter run --dart-define=APP_ENV=staging --dart-define=BASE_URL=https://.../api/v1`
 abstract final class EnvConfig {
+  /// Có thể truyền từ JSON hoặc .env qua `--dart-define-from-file`.
+  static const _cartoApiKey = String.fromEnvironment('CARTO_API_KEY');
+  static const _mapProvider =
+      String.fromEnvironment('MAP_PROVIDER', defaultValue: 'carto');
+  static String get cartoApiKey => _cartoApiKey.trim();
+  static String get mapProvider =>
+      _mapProvider.trim().toLowerCase() == 'osm' ? 'osm' : 'carto';
   static const String environmentName = String.fromEnvironment(
     'APP_ENV',
     defaultValue: 'development',

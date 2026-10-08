@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
-import 'package:caresitter_customer/features/caregiver/presentation/controllers/caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/controllers/nearby_caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/widgets/caregiver_location_selector.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/service_controller.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
@@ -1212,7 +1213,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   SizedBox(width: 4),
-                  Text('📍', style: TextStyle(fontSize: 14)),
+                  Icon(Icons.location_on_outlined,
+                      size: 16, color: AppColors.primary),
                 ],
               ),
             ),
@@ -1230,9 +1232,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         const SizedBox(height: 14),
+        const CaregiverLocationSelector(),
+        const SizedBox(height: 14),
         Consumer(
           builder: (context, ref, _) {
-            final caregiverAsync = ref.watch(caregiverStoreProvider);
+            final caregiverAsync = ref.watch(nearbyCaregiversProvider);
             return caregiverAsync.when(
               loading: () => const SizedBox(
                 height: 200,
@@ -1243,10 +1247,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, __) => Column(children: [
+                const Text('Chưa tải được chăm sóc viên gần địa chỉ này.'),
+                TextButton(
+                    onPressed: () => ref.invalidate(nearbyCaregiversProvider),
+                    child: const Text('Thử lại')),
+              ]),
               data: (caregivers) {
                 if (caregivers.isEmpty) {
-                  return _buildCaregiverEmptyState(context);
+                  return _buildCaregiverEmptyState(context,
+                      hasLocation: ref
+                              .watch(caregiverSearchAddressProvider)
+                              .valueOrNull !=
+                          null);
                 }
                 final preview = caregivers.take(5).toList();
                 return SingleChildScrollView(
@@ -1280,7 +1293,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onTap: () => context.push('/caregivers/${c.id}'),
       child: Container(
         width: 180 * textScale,
-        constraints: const BoxConstraints(minHeight: 220),
+        constraints:
+            BoxConstraints(minHeight: c.distanceLabel == null ? 220 : 246),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1360,6 +1374,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
             const SizedBox(height: 8),
+            if (c.distanceLabel != null) ...[
+              Row(children: [
+                const Icon(Icons.near_me_outlined,
+                    size: 13, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Flexible(
+                    child: Text('Khoảng ${c.distanceLabel}',
+                        style: const TextStyle(
+                            color: AppColors.primary, fontSize: 12))),
+              ]),
+              const SizedBox(height: 8),
+            ],
             if (c.skills.isNotEmpty) ...[
               Row(
                 children: [
@@ -1418,7 +1444,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCaregiverEmptyState(BuildContext context) {
+  Widget _buildCaregiverEmptyState(BuildContext context,
+      {required bool hasLocation}) {
     return HomeHoverButton(
       onTap: () => context.go('/caregivers'),
       child: Container(
@@ -1429,14 +1456,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.border),
         ),
-        child: const Column(
+        child: Column(
           children: [
-            Icon(Icons.people_alt_outlined,
+            const Icon(Icons.people_alt_outlined,
                 color: AppColors.textHint, size: 36),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Chưa có chăm sóc viên trong khu vực',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              hasLocation
+                  ? 'Chưa có chăm sóc viên phục vụ địa chỉ này'
+                  : 'Chọn địa chỉ chăm sóc để xem người ở gần',
+              textAlign: TextAlign.center,
+              style:
+                  const TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
           ],
         ),

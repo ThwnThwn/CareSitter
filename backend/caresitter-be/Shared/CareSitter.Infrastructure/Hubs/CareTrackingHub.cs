@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using CareSitter.Contracts.Services;
 
 namespace CareSitter.Infrastructure.Hubs;
 
@@ -34,6 +35,12 @@ public sealed class CareTrackingHub : Hub
         await base.OnConnectedAsync();
 
         var userId = GetUserId();
+        var sid = Context.User?.FindFirst("sid")?.Value;
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        if (!userId.HasValue || !Guid.TryParse(sid, out var sessionId)) { Context.Abort(); return; }
+        scope.ServiceProvider.GetService<RealtimeSessionRegistry>()?.Register(userId.Value, sessionId, Context);
+        var validator = scope.ServiceProvider.GetRequiredService<IAccessSessionValidator>();
+        if (!await validator.IsActiveAsync(userId.Value, sessionId, Context.ConnectionAborted)) { Context.Abort(); return; }
         if (userId.HasValue && IsCustomer())
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, CustomerGroup(userId.Value));
@@ -59,6 +66,9 @@ public sealed class CareTrackingHub : Hub
             return "unauthorized";
 
         await using var scope = _scopeFactory.CreateAsyncScope();
+        if (!Guid.TryParse(Context.User?.FindFirst("sid")?.Value, out var sessionId) ||
+            !await scope.ServiceProvider.GetRequiredService<IAccessSessionValidator>().IsActiveAsync(userId.Value, sessionId, Context.ConnectionAborted))
+        { Context.Abort(); return "unauthorized"; }
         var checker = scope.ServiceProvider.GetService<IBookingMembershipChecker>();
 
         if (checker is null)
@@ -85,6 +95,13 @@ public sealed class CareTrackingHub : Hub
     {
         if (Guid.TryParse(bookingId, out var id))
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, BookingGroup(id));
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        scope.ServiceProvider.GetService<RealtimeSessionRegistry>()?.Remove(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
     }
 
     /// <summary>Tên group theo booking ID — dùng cho tracking chi tiết GPS/timeline.</summary>

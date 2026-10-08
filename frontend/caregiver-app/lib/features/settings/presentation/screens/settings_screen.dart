@@ -31,6 +31,12 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Cài đặt hồ sơ',
               items: [
                 _SettingsItem(
+                  icon: Icons.mark_email_read_outlined,
+                  title: 'Email khôi phục',
+                  subtitle: 'Xác minh hoặc đổi email đăng nhập',
+                  onTap: () => context.push('/settings/recovery-email'),
+                ),
+                _SettingsItem(
                   icon: Icons.person_outline,
                   title: 'Thông tin cá nhân',
                   onTap: () => context.push('/settings/profile/edit'),

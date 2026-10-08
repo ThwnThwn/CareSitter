@@ -20,6 +20,7 @@ internal static class SupportErrors
     public const string ReviewCaregiverMismatchCode = "support.review.caregiver_mismatch";
     public const string ReviewAlreadyExistsCode = "support.review.already_exists";
     public const string ReviewConcurrentDuplicateCode = "support.review.concurrent_duplicate";
+    public const string ReviewNotFoundCode = "support.review.not_found";
     public const string InvalidAttachmentsCode = "support.ticket.invalid_attachments";
 
     public static Error Unauthenticated() =>
@@ -48,4 +49,6 @@ internal static class SupportErrors
         ReviewAlreadyExistsCode, "Booking nay da co review.");
     public static Error ReviewConcurrentDuplicate() => Error.Conflict(
         ReviewConcurrentDuplicateCode, "Booking này đã có review.");
+    public static Error ReviewNotFound() => Error.NotFound(
+        ReviewNotFoundCode, "Không tìm thấy đánh giá cho booking này.");
 }

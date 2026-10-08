@@ -4,4 +4,4 @@ namespace CareSitter.Modules.Identity.Application.UpdateProfile;
 
 public sealed record ProfileResponse(Guid Id, string? Phone, string Email, string FullName,
     string DisplayName, DateOnly? DateOfBirth, string? Gender, Guid? AvatarMediaId,
-    string? AvatarUrl, Guid? DefaultAddressId, string[] Roles);
+    string? AvatarUrl, Guid? DefaultAddressId, string[] Roles, DateTimeOffset? EmailVerifiedAt = null, bool HasPassword = false);

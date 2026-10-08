@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/live_tracking_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:caregiver_app/core/maps/map_tile_config.dart';
+import 'package:caregiver_app/core/maps/map_tile_attribution.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -358,11 +360,12 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
           const Icon(Icons.access_time_rounded,
               color: AppColors.primary, size: 18),
           const SizedBox(width: 8),
-          Text(booking.time,
-              style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500)),
+          Expanded(
+              child: Text(booking.time,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -533,12 +536,12 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
                       Icon(Icons.directions_rounded,
                           size: 16, color: AppColors.primary),
                       SizedBox(width: 6),
-                      Text('Xem chỉ đường trên bản đồ',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600)),
-                      Spacer(),
+                      Expanded(
+                          child: Text('Xem chỉ đường trên bản đồ',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600))),
                       Icon(Icons.chevron_right_rounded,
                           size: 16, color: AppColors.primary),
                     ],
@@ -578,105 +581,112 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
     ShiftModel booking,
     LatLng destination,
   ) {
+    final tiles = ref.watch(mapTileConfigProvider);
     return SizedBox(
       height: 170,
       width: double.infinity,
-      child: Stack(
-        children: [
-          FlutterMap(
-            options: MapOptions(
-              initialCenter: destination,
-              initialZoom: 16,
-              interactionOptions:
-                  const InteractionOptions(flags: InteractiveFlag.none),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                retinaMode: true,
-                userAgentPackageName: 'com.caresitter.caregiver',
+      child: Column(children: [
+        Expanded(
+            child: Stack(
+          children: [
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: destination,
+                initialZoom: 16,
+                interactionOptions:
+                    const InteractionOptions(flags: InteractiveFlag.none),
               ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: destination,
-                    width: 56,
-                    height: 68,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
+              children: [
+                TileLayer(
+                  tileProvider: ref.watch(mapTileProviderProvider),
+                  urlTemplate: tiles.urlTemplate,
+                  subdomains: tiles.subdomains,
+                  retinaMode: tiles.usesCarto,
+                  maxNativeZoom: tiles.maxNativeZoom,
+                  userAgentPackageName: 'com.caresitter.caregiver',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: destination,
+                      width: 56,
+                      height: 68,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.45),
+                                  blurRadius: 16,
+                                  spreadRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.home_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          Container(
+                            width: 2,
+                            height: 10,
                             color: AppColors.primary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.45),
-                                blurRadius: 16,
-                                spreadRadius: 4,
-                              ),
-                            ],
                           ),
-                          child: const Icon(
-                            Icons.home_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        Container(
-                          width: 2,
-                          height: 10,
-                          color: AppColors.primary,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.94),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on_rounded,
-                      size: 14, color: AppColors.primary),
-                  SizedBox(width: 4),
-                  Text(
-                    'Địa điểm khách hàng',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                  ],
+                ),
+              ],
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_on_rounded,
+                        size: 14, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Địa điểm khách hàng',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned.fill(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _openMap(context, booking),
-                child: const SizedBox.expand(),
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _openMap(context, booking),
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        )),
+        MapTileAttribution(config: tiles)
+      ]),
     );
   }
 

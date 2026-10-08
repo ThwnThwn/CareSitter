@@ -19,18 +19,19 @@ internal sealed class PaymentReconciliationProcessor(
         CancellationToken ct = default)
     {
         var intents = await paymentsDb.PaymentIntents.AsNoTracking()
-            .Where(x => x.Status == "PENDING" && x.ManualReviewReason != null)
+            .Where(x => x.ManualReviewReason != null && (x.Status == "PENDING" || x.Provider == "PAYOS"))
             .OrderBy(x => x.ReconciliationStartedAt).Take(100).ToListAsync(ct);
         var bookingIds = intents.Select(x => x.BookingId).Distinct().ToArray();
         var reviewBookings = await bookings.GetManualReviewBookingsAsync(bookingIds, ct);
 
-        return intents.Where(x => reviewBookings.ContainsKey(x.BookingId)).Select(x =>
+        return intents.Where(x => reviewBookings.ContainsKey(x.BookingId) || x.Provider == "PAYOS").Select(x =>
             new PaymentReconciliationItem(x.Id, x.BookingId, x.CustomerId, x.Amount,
                 x.Currency, x.ProviderOrderRef, x.ProviderTransactionId,
                 x.ReconciliationAttempts, x.ReconciliationStartedAt,
                 x.LastReconciliationAt, x.LastReconciliationError,
-                x.ManualReviewReason, "needs_manual_review",
-                reviewBookings[x.BookingId].PaymentDeadline)).ToArray();
+                x.ManualReviewReason, reviewBookings.ContainsKey(x.BookingId) ? "needs_manual_review" : "closed_or_changed",
+                reviewBookings.GetValueOrDefault(x.BookingId)?.PaymentDeadline,
+                x.Provider, x.Status, x.Status == "PENDING" && reviewBookings.ContainsKey(x.BookingId))).ToArray();
     }
 
     public async Task<Result<PaymentReviewResolution>> ResolveAsync(
@@ -43,6 +44,10 @@ internal sealed class PaymentReconciliationProcessor(
             x => x.Id == command.IntentId, ct);
         if (intent is null)
             return Error.NotFound("payments.intent_not_found", "Không tìm thấy payment intent.");
+        var reviewBookings = await bookings.GetManualReviewBookingsAsync(new[] { intent.BookingId }, ct);
+        if (intent.Status != "PENDING" || !reviewBookings.ContainsKey(intent.BookingId))
+            return Error.Conflict("payments.review_not_resolvable",
+                "Booking đã đóng hoặc chưa ở trạng thái đối soát. Cần xử lý khoản tiền với ngân hàng; không thể xác nhận lại lịch hẹn.");
         var before = new { intent.Status, intent.BookingId, intent.Amount, intent.ManualReviewReason };
 
         if (command.Succeeded)

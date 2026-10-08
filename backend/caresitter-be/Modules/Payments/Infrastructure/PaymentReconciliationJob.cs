@@ -15,7 +15,7 @@ namespace CareSitter.Modules.Payments.Infrastructure;
 internal sealed class PaymentReconciliationJob(
     PaymentsDbContext db,
     IBookingPaymentGateway bookings,
-    IVNPayService vnPay,
+    IPaymentStatusGateway gateway,
     IOptions<VNPayOptions> options,
     IPaymentFinalizationService finalizer,
     IPaymentOutboxDispatcher outbox,
@@ -34,7 +34,7 @@ internal sealed class PaymentReconciliationJob(
         Guid bookingId, DateTimeOffset now, CancellationToken ct)
     {
         var succeeded = await db.PaymentIntents.AsNoTracking()
-            .Where(x => x.BookingId == bookingId && x.Provider == "VNPAY" &&
+            .Where(x => x.BookingId == bookingId && (x.Provider == "VNPAY" || x.Provider == "PAYOS") &&
                 x.Status == "SUCCEEDED")
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(ct);
@@ -45,13 +45,13 @@ internal sealed class PaymentReconciliationJob(
                 PaymentFinalizationSource.ReconciliationJob, ct);
             if (!result.Succeeded)
                 logger.LogWarning(
-                    "Could not finalize successful VNPay intent {IntentId}: {Message}",
+                    "Could not finalize successful payment intent {IntentId}: {Message}",
                     succeeded.Id, result.Message);
             return;
         }
 
         var intent = await db.PaymentIntents.AsNoTracking()
-            .Where(x => x.BookingId == bookingId && x.Provider == "VNPAY" &&
+            .Where(x => x.BookingId == bookingId && (x.Provider == "VNPAY" || x.Provider == "PAYOS") &&
                 x.Status == "PENDING")
             .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(ct);
@@ -67,25 +67,25 @@ internal sealed class PaymentReconciliationJob(
         await EnqueueAndDispatchAsync(
             new PaymentReconciliationStarted(bookingId, intent.Id), ct);
 
-        VNPayQueryResult query;
+        PaymentProviderQuery query;
         try
         {
-            query = await vnPay.QueryTransactionAsync(intent, options.Value, ct);
+            query = await gateway.QueryAsync(intent, ct);
         }
-        catch (Exception exception)
+        catch (Exception) when (!ct.IsCancellationRequested)
         {
-            query = new VNPayQueryResult(
-                VNPayQueryState.Unknown, null, "NETWORK", null, "{}", exception.Message);
+            query = new PaymentProviderQuery(
+                PaymentProviderState.Unknown, null, "{}", "Không kết nối được cổng thanh toán.");
         }
 
-        if (query.State == VNPayQueryState.Succeeded)
+        if (query.State == PaymentProviderState.Succeeded)
         {
             var result = await finalizer.FinalizeSuccessfulPaymentAsync(
                 intent.Id, query.TransactionId, query.RawPayload,
                 PaymentFinalizationSource.ReconciliationJob, ct);
             if (!result.Succeeded)
                 logger.LogWarning(
-                    "Could not finalize reconciled VNPay intent {IntentId}: {Message}",
+                    "Could not finalize reconciled payment intent {IntentId}: {Message}",
                     intent.Id, result.Message);
             return;
         }
@@ -103,7 +103,7 @@ internal sealed class PaymentReconciliationJob(
                 return;
             }
 
-            var error = query.Message ?? $"VNPay state: {query.State}";
+            var error = query.Message ?? $"{intent.Provider} state: {query.State}";
             var reachedLimit = locked.ReconciliationAttempts + 1 >=
                     options.Value.MaxReconciliationAttempts ||
                 now - (locked.ReconciliationStartedAt ?? now) >=
@@ -116,9 +116,9 @@ internal sealed class PaymentReconciliationJob(
                 return;
 
             IIntegrationEvent? integrationEvent = null;
-            if (query.State is VNPayQueryState.Failed or VNPayQueryState.NotFound)
+            if (query.State is PaymentProviderState.Failed or PaymentProviderState.NotFound)
             {
-                var closed = query.State == VNPayQueryState.NotFound
+                var closed = query.State == PaymentProviderState.NotFound
                     ? locked.MarkExpired(PaymentFinalizationSource.ReconciliationJob.ToString(),
                         query.RawPayload)
                     : locked.MarkFailed(query.RawPayload,

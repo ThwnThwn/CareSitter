@@ -7,7 +7,7 @@ namespace CareSitter.Modules.Payments.Application;
 public interface IPaymentPortal
 {
     Task<Result<PaymentIntentCreationOutcome>> CreateIntentAsync(
-        Guid bookingId, Guid userId, string? customerName, CancellationToken ct = default);
+        Guid bookingId, Guid userId, string? customerName, CancellationToken ct = default, string provider = "VNPAY");
     Task<PaymentIntentResponse?> GetIntentAsync(
         Guid intentId, Guid userId, CancellationToken ct = default);
     Task<WalletResponse> GetWalletAsync(

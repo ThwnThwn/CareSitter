@@ -27,6 +27,12 @@ public sealed class CaregiversController : ControllerBase
         DateTimeOffset? start, DateTimeOffset? end,
         int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
+        if (lat.HasValue != lng.HasValue ||
+            (lat.HasValue && (!double.IsFinite(lat.Value) || lat.Value is < -90 or > 90 ||
+                              !double.IsFinite(lng!.Value) || lng.Value is < -180 or > 180)))
+            return BadRequest(new { code = "caregiver.invalid_coordinates",
+                message = "Cần gửi đầy đủ vĩ độ và kinh độ hợp lệ để tìm chăm sóc viên gần địa chỉ." });
+
         var result = await _mediator.Send(new SearchCaregiversQuery(
             lat, lng, city, district, skill, minRating, availabilityStatus,
             start, end, page, pageSize), ct);

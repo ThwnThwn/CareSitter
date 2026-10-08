@@ -68,6 +68,7 @@ app.*.map.json
 **/linux/flutter/ephemeral/
 
 # ---------- Environment ----------
+maps.local.json
 .env
 .env.local
 !.env.example

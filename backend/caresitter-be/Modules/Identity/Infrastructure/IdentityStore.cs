@@ -77,7 +77,11 @@ internal sealed class IdentityStore(IdentityDbContext db) : IIdentityStore
 
     public void AddUser(User user) => db.Users.Add(user);
 
-    public Task SaveChangesAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
+    public async Task SaveChangesAsync(CancellationToken ct = default)
+    {
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw new AuthenticationStateChangedException(); }
+    }
 
     internal static AdminUserResponse ToAdminResponse(User user) => new(
         user.Id, user.Email, user.Phone, user.DisplayName, user.FullName, user.AvatarUrl,

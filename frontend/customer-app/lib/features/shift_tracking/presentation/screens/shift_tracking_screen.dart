@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:caresitter_customer/core/realtime/care_signalr_service.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -23,7 +22,7 @@ class ShiftTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with WidgetsBindingObserver {
   // Vị trí caregiver — cập nhật qua SignalR GpsUpdated event
   LatLng? _caregiverPos;
   StreamSubscription<GpsUpdate>? _gpsSub;
@@ -38,32 +37,15 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   bool _loadingLocation = false;
   int _locationEpoch = 0;
   String? _locationError;
-  final MapController _mapController = MapController();
-  late final AnimationController _pulseController;
-  late final AnimationController _positionController;
-  LatLng? _animatedCaregiverPos;
-  LatLng? _positionFrom;
-  LatLng? _positionTo;
+  StreamSubscription<SignalRConnectionState>? _connectionSub;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _signalR = ref.read(careSignalRProvider);
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-    _positionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    )..addListener(_onPositionAnimationTick);
     _connectSignalR();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_foreground && mounted && ModalRoute.of(context)?.isCurrent == true) {
-        unawaited(_reloadLocation());
-      }
-    });
+    _scheduleLocationPolling();
     _ageTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted && _foreground) setState(() {});
     });
@@ -80,15 +62,17 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     _gpsSub?.cancel();
     _statusSub?.cancel();
     _reconnectSub?.cancel();
-    _pulseController.dispose();
-    _positionController.dispose();
-    _mapController.dispose();
+    _connectionSub?.cancel();
+
     // Rời group khi thoát màn hình
     _signalR.leaveBooking(widget.bookingId).ignore();
     super.dispose();
   }
 
   Future<void> _connectSignalR() async {
+    _connectionSub = _signalR.lifecycleStream.listen((_) {
+      if (mounted) _scheduleLocationPolling();
+    });
     // ── Lắng nghe GPS updates ────────────────────────────────────
     _gpsSub = _signalR.gpsStream
         .where((e) => e.bookingId == widget.bookingId)
@@ -101,6 +85,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       if (!mounted) return;
       if (change.newStatus.toLowerCase() != 'caregiver_en_route') {
         _trackingStopped = true;
+        _scheduleLocationPolling();
         _locationEpoch++;
         _clearLocation();
       }
@@ -115,9 +100,24 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
       unawaited(_reloadLocation());
     });
     // Subscribe before joining, then merge the REST snapshot by server version.
-    await _signalR.joinBooking(widget.bookingId);
-    if (!mounted) return;
+    final joined = _signalR.joinBooking(widget.bookingId).catchError((_) {});
+    // REST vẫn lấy vị trí ban đầu ngay cả khi Hub chưa kết nối được.
     await _reloadLocation();
+    await joined;
+  }
+
+  void _scheduleLocationPolling() {
+    _pollTimer?.cancel();
+    if (!_foreground || _trackingStopped) return;
+    // Mất SignalR: lấy snapshot nhanh hơn; tránh tạo kết nối Hub thứ hai.
+    _pollTimer = Timer.periodic(
+      Duration(seconds: _signalR.isReady ? 30 : 10),
+      (_) {
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          unawaited(_reloadLocation());
+        }
+      },
+    );
   }
 
   void _acceptGps(GpsUpdate gps) {
@@ -133,27 +133,20 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
             enRoute: booking.status == 'caregiver_en_route')) {
       return;
     }
-    final first = _caregiverPos == null;
+
     final next = LatLng(gps.latitude, gps.longitude);
     setState(() {
       _caregiverPos = next;
       _locationError = null;
     });
-    _animateCaregiverTo(next);
-    if (first) {
-      try {
-        _mapController.move(next, _mapController.camera.zoom);
-      } catch (_) {}
-    }
   }
 
   void _clearLocation() {
     if (!mounted) return;
-    _positionController.stop();
+
     setState(() {
       _fixes.clear();
-      _caregiverPos =
-          _animatedCaregiverPos = _positionFrom = _positionTo = null;
+      _caregiverPos = null;
     });
   }
 
@@ -173,6 +166,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           booking == null ||
           booking.status != 'caregiver_en_route') {
         _trackingStopped = true;
+        _scheduleLocationPolling();
         _clearLocation();
         return;
       }
@@ -224,6 +218,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _foreground = state == AppLifecycleState.resumed;
+    _scheduleLocationPolling();
     if (!_foreground) {
       _locationEpoch++;
       return;
@@ -243,32 +238,6 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     return '${_signalR.isReady ? 'Đang cập nhật' : 'Kết nối lại'} · $age giây trước';
   }
 
-  void _animateCaregiverTo(LatLng next) {
-    if (MediaQuery.disableAnimationsOf(context)) {
-      setState(() => _animatedCaregiverPos = next);
-      return;
-    }
-    final from = _animatedCaregiverPos ?? _caregiverPos ?? next;
-    _positionFrom = from;
-    _positionTo = next;
-    _positionController
-      ..stop()
-      ..value = 0
-      ..forward();
-  }
-
-  void _onPositionAnimationTick() {
-    final from = _positionFrom;
-    final to = _positionTo;
-    if (!mounted || from == null || to == null) return;
-    final t = Curves.easeOutCubic.transform(_positionController.value);
-    final position = LatLng(
-      from.latitude + (to.latitude - from.latitude) * t,
-      from.longitude + (to.longitude - from.longitude) * t,
-    );
-    setState(() => _animatedCaregiverPos = position);
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.listen(bookingStoreProvider, (before, after) {
@@ -281,6 +250,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           (previous != null && booking?.caregiverId != previous.caregiverId)) {
         _locationEpoch++;
         _trackingStopped = booking?.status != 'caregiver_en_route';
+        _scheduleLocationPolling();
         _clearLocation();
       }
     });
@@ -313,7 +283,6 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
       appBar: _buildFloatingAppBar(context),
       bottomNavigationBar: _BottomActionBar(bk: bk, bookingId: bookingId),
       body: SingleChildScrollView(
@@ -621,260 +590,33 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
 
   // ── Map section ────────────────────────────────────────────────────────────
   Widget _buildMapSection(BookingModel bk) {
-    final destCoord = bk.addressLatitude == null || bk.addressLongitude == null
-        ? null
-        : LatLng(bk.addressLatitude!, bk.addressLongitude!);
-    final isEnRoute = bk.status == 'caregiver_en_route';
-    if (destCoord == null) {
+    final lat = bk.addressLatitude;
+    final lng = bk.addressLongitude;
+    if (lat == null ||
+        lng == null ||
+        !lat.isFinite ||
+        !lng.isFinite ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180) {
       return _buildMapUnavailable();
     }
+    final enRoute = bk.status == 'caregiver_en_route';
+    final fix = _fixes.latest;
+    final stale =
+        fix != null && DateTime.now().difference(fix.recordedAt).inSeconds > 60;
     return SizedBox(
-      height: isEnRoute ? 280 : 230, // cao hơn khi đang di chuyển
-      child: Stack(
-        children: [
-          RepaintBoundary(
-            child: FlutterMap(
-              mapController: _mapController,
-              key: ValueKey(bk.id),
-              options: MapOptions(
-                initialCenter:
-                    _animatedCaregiverPos ?? _caregiverPos ?? destCoord,
-                initialZoom: isEnRoute ? 15 : 16,
-                onMapReady: () {
-                  final position = _animatedCaregiverPos ?? _caregiverPos;
-                  if (position != null) {
-                    _mapController.move(position, isEnRoute ? 15 : 16);
-                  }
-                },
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
-                ),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.caresitter.app',
-                ),
-                MarkerLayer(
-                  markers: [
-                    // Marker nhà khách (đích đến)
-                    Marker(
-                      point: destCoord,
-                      width: 56,
-                      height: 68,
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.45),
-                                  blurRadius: 16,
-                                  spreadRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.home_rounded,
-                                color: Colors.white, size: 22),
-                          ),
-                          Container(
-                              width: 2, height: 10, color: AppColors.primary),
-                        ],
-                      ),
-                    ),
-                    // Marker Caregiver đang di chuyển (chỉ hiện khi en_route)
-                    if (isEnRoute &&
-                        (_animatedCaregiverPos ?? _caregiverPos) != null)
-                      Marker(
-                        point: _animatedCaregiverPos ?? _caregiverPos!,
-                        width: 82,
-                        height: 92,
-                        child: _buildLiveHomeMarker(),
-                      ),
-                  ],
-                ),
-                RichAttributionWidget(attributions: [
-                  TextSourceAttribution('OpenStreetMap contributors',
-                      onTap: () => launchUrl(Uri.parse(
-                          'https://www.openstreetmap.org/copyright'))),
-                ]),
-              ],
-            ),
-          ),
-
-          // Badge trạng thái (Trực tiếp / Đang di chuyển)
-          Positioned(
-            top: 60,
-            right: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(20),
-                border:
-                    Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.podcasts,
-                      color: AppColors.primary, size: 13),
-                  const SizedBox(width: 4),
-                  Text(
-                    isEnRoute ? _locationLabel : 'Caregiver đã đến',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Address pill
-          Positioned(
-            bottom: 10,
-            left: 16,
-            right: 16,
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.96),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.8)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 10)
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.location_on,
-                        color: AppColors.primary, size: 15),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        bk.address,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle,
-                              color: AppColors.primary, size: 10),
-                          SizedBox(width: 3),
-                          Text('Đã xác thực',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            right: 12,
-            bottom: 58,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color(0xDFFFFFFF),
-                borderRadius: BorderRadius.all(Radius.circular(5)),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                child: Text('© CARTO',
-                    style:
-                        TextStyle(fontSize: 9, color: AppColors.textSecondary)),
-              ),
-            ),
-          ),
-        ],
+      height: enRoute ? 320 : 260,
+      child: LiveCaregiverMap(
+        key: ValueKey(bk.id),
+        destination: LatLng(lat, lng),
+        caregiverPosition: enRoute ? _caregiverPos : null,
+        heading: enRoute ? fix?.heading : null,
+        stale: stale,
+        locationLabel: enRoute ? _locationLabel : 'Địa chỉ chăm sóc',
+        addressLabel: bk.address,
       ),
-    );
-  }
-
-  Widget _buildLiveHomeMarker() {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        final pulse = _pulseController.value;
-        final scale = 0.72 + pulse * 0.62;
-        final opacity = (1 - pulse) * 0.32;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Transform.scale(
-              scale: scale,
-              child: Container(
-                width: 62,
-                height: 62,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: opacity),
-                ),
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.42),
-                        blurRadius: 14,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.home_rounded,
-                      color: Colors.white, size: 23),
-                ),
-                Container(width: 3, height: 11, color: AppColors.primary),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -902,13 +644,6 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
           color: AppColors.secondary.withValues(alpha: 0.55),
           width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -934,7 +669,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Caregiver đang trên đường đến',
+                      'Chăm sóc viên đang đến',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -984,18 +719,6 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Micro progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: 0.75,
-              backgroundColor: AppColors.secondary.withValues(alpha: 0.18),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.secondary),
-              minHeight: 5,
-            ),
-          ),
         ],
       ),
     );
@@ -1007,6 +730,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     final avatarText = caregiverAvatar.isNotEmpty && caregiverAvatar.length <= 3
         ? caregiverAvatar
         : bk.caregiverInitials;
+    final statusLabel = bk.status == 'caregiver_en_route'
+        ? 'Đang đến'
+        : bk.status == 'checkout_pending_review'
+            ? 'Chờ duyệt'
+            : 'Đang làm';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1014,17 +742,11 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border, width: 0.9),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Stack(
                 children: [
@@ -1062,23 +784,12 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                   children: [
                     Text(
                       bk.caregiverName ?? 'Người chăm sóc',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      child: const Text(
-                        'Đang theo dõi ca chăm sóc',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1089,37 +800,21 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
                         fontSize: 12,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+                    const SizedBox(height: 8),
                     Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      'Đang làm',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      child: Text(statusLabel,
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -2109,7 +1804,7 @@ class _BottomActionBar extends ConsumerWidget {
               ),
               icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
               label: const Text(
-                'Gửi lời nhắn nhanh cho Caregiver',
+                'Gửi tin nhắn',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),

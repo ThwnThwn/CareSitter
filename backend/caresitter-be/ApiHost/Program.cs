@@ -27,6 +27,7 @@ using System.Text.Json;
 using CareSitter.Contracts.Services.Routing;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Features;
+using CareSitter.Messaging.Kafka;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
 // TraversePath() tim .env tu thu muc hien tai len cac thu muc cha (repo root).
@@ -34,6 +35,21 @@ using Microsoft.AspNetCore.Http.Features;
 DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+// Network contracts remain independent of the existing in-process MediatR events.
+builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
+{
+    events.Add<CareSitter.Messaging.Contracts.Events.NotificationRequested>(
+        "caresitter.notifications.requested", 1, options.NotificationsTopic);
+    events.Add<CareSitter.Messaging.Contracts.Events.PaymentSucceeded>(
+        "caresitter.payments.succeeded", 1, options.PaymentsTopic);
+    events.Add<CareSitter.Messaging.Contracts.Events.MealPlanSelected>(
+        "caresitter.nutrition.mealplan-selected", 1, options.NutritionTopic);
+});
+builder.Services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+    MessagingServiceAuthenticationHandler>("MessagingService", _ => { });
+if (builder.Configuration["KAFKA_FLOW_NOTIFICATIONS_ENABLED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) == true &&
+    (builder.Configuration["KAFKA_INTERNAL_SERVICE_KEY"]?.Length is not (>= 32 and <= 256)))
+    throw new InvalidOperationException("KAFKA_INTERNAL_SERVICE_KEY must contain 32..256 characters.");
 // Hosting request diagnostics include query strings (OAuth codes/state).
 // Keep warnings/errors without logging authentication callback URLs.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
@@ -215,6 +231,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCareSitterSwagger();
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddPolicy("auth-recovery", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20, Window = TimeSpan.FromMinutes(10), QueueLimit = 0, AutoReplenishment = true
+        }));
     options.AddPolicy("booking-gps", context => RateLimitPartition.GetSlidingWindowLimiter(
         context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
             ?? context.User.FindFirst("sub")?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -308,6 +329,8 @@ builder.Services.AddCors(options =>
 // JWT cho SignalR WebSocket: browser không gửi được header,
 // nên phải đọc token từ query string ?access_token=...
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<RealtimeSessionRegistry>();
+builder.Services.AddHostedService<RealtimeSessionWatchdog>();
 builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
 {
     var originalOnMessageReceived = options.Events?.OnMessageReceived;
@@ -450,7 +473,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 }).WithTags("System");
 
 // --- SignalR Hub ---
-app.MapHub<CareTrackingHub>("/hubs/care-tracking");
+app.MapHub<CareTrackingHub>("/hubs/care-tracking", options => options.CloseOnAuthenticationExpiration = true);
 
 // --- Hangfire Dashboard ---
 // Dev: localhost-only (không cần JWT).

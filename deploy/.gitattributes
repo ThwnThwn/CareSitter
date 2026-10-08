@@ -1,0 +1,2 @@
+# Keep the Bash topic initializer executable on Linux after Windows checkouts.
+kafka-init.sh text eol=lf

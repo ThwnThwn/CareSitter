@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/password_recovery_screen.dart';
+import 'package:caresitter_customer/features/auth/presentation/screens/recovery_email_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/features/auth/presentation/screens/login_screen.dart';
@@ -131,6 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
     },
     routes: [
+      GoRoute(
+          path: '/auth/forgot-password',
+          builder: (ctx, state) => const PasswordRecoveryScreen()),
+      GoRoute(
+          path: '/settings/recovery-email',
+          builder: (ctx, state) => const RecoveryEmailScreen()),
       // ── Auth Routes ─────────────────────────────
       GoRoute(
         path: '/auth/login',
@@ -281,6 +289,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           pageKey: state.pageKey,
           child: PaymentResultScreen(
             bookingId: state.uri.queryParameters['bookingId'],
+            intentId: state.uri.queryParameters['intentId'],
             result: state.uri.queryParameters['result'] ?? 'failed',
           ),
         ),

@@ -60,6 +60,43 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
     }
 
     [PostgresFact]
+    public async Task CancelUnassignedBooking_AppearsFirstInCustomerHistoryAsync()
+    {
+        await using var db = CreateDb();
+        var booking = await SeedBookingAsync(db, "PENDING_PAYMENT");
+        var previousCancellation = await SeedBookingAsync(db, "CANCELLED");
+        var beforeCancellation = DateTimeOffset.UtcNow.AddDays(-1);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE booking.bookings SET caregiver_id = NULL,
+                created_at = {beforeCancellation}, updated_at = {beforeCancellation}
+            WHERE id = {booking.Id}
+            """);
+        await db.Entry(booking).ReloadAsync();
+        Assert.True(booking.ScheduledStart < previousCancellation.ScheduledStart);
+
+        var handler = new CancelBookingCommandHandler(new BookingRepository(db),
+            new Actor(booking.CustomerId, "CUSTOMER"), new SystemClock(), new Promotions(),
+            new BookingSyncService(db), new PostCommit(), new Mapper());
+        var result = await handler.Handle(new(booking.Id, null), default);
+
+        Assert.True(result.IsSuccess, result.Error.Message);
+        Assert.Null(booking.CaregiverId);
+        Assert.NotNull(booking.CancelledAt);
+        Assert.True(booking.UpdatedAt > previousCancellation.UpdatedAt);
+
+        // Đọc bằng context mới để kiểm tra thứ tự đã lưu, trước khi phân trang.
+        await using var readDb = CreateDb();
+        var store = new BookingReadStore(readDb);
+        var criteria = new BookingPageCriteria(BookingReadAudience.Customer,
+            booking.CustomerId, null, BookingStatus.Cancelled, 1, 1);
+        var firstPage = await store.GetPageAsync(criteria);
+        var nextPage = await store.GetPageAsync(criteria with { Page = 2 });
+        Assert.Equal(booking.Id, Assert.Single(firstPage.Items).Id);
+        Assert.DoesNotContain(nextPage.Items, item => item.Id == booking.Id);
+        Assert.Equal(firstPage.Total, nextPage.Total);
+    }
+
+    [PostgresFact]
     public async Task RescheduleUnpaidBooking_MovesExistingSlotToNewWindow()
     {
         await using var db = CreateDb();

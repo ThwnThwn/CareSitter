@@ -80,6 +80,12 @@ class SettingsScreen extends ConsumerWidget {
                   index: 3,
                   child: _buildSection('Bảo mật', [
                     _SettingsItem(
+                      icon: Icons.mark_email_read_outlined,
+                      title: 'Email khôi phục',
+                      subtitle: 'Xác minh hoặc đổi email đăng nhập',
+                      onTap: () => context.push('/settings/recovery-email'),
+                    ),
+                    _SettingsItem(
                       icon: Icons.lock_outline,
                       title: 'Đổi mật khẩu',
                       onTap: () => context.push('/settings/password'),
@@ -100,6 +106,12 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Liên hệ hỗ trợ',
                       subtitle: 'Hotline: 1800 6789',
                       onTap: () => context.push('/settings/support'),
+                    ),
+                    _SettingsItem(
+                      icon: Icons.info_outline,
+                      title: 'Giấy phép nguồn mở',
+                      onTap: () => showLicensePage(
+                          context: context, applicationName: 'CareSitter'),
                     ),
                   ]),
                 ),

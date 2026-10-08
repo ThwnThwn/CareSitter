@@ -211,7 +211,10 @@ export type PaymentReview = {
   lastReconciliationError?: string;
   manualReviewReason?: string;
   bookingStatus: string;
-  paymentDeadline: string;
+  paymentDeadline?: string | null;
+  provider?: string;
+  intentStatus?: string;
+  canResolve?: boolean;
 };
 
 export type SupportTicket = {

@@ -12,6 +12,7 @@ class CaregiverModel {
   final List<String> skills;
   final String? serviceCity;
   final String? serviceDistrict;
+  final int? distanceMeters;
 
   const CaregiverModel({
     required this.id,
@@ -26,6 +27,7 @@ class CaregiverModel {
     required this.skills,
     this.serviceCity,
     this.serviceDistrict,
+    this.distanceMeters,
   });
 
   String get displayName => fullName ?? 'Người chăm sóc';
@@ -38,6 +40,14 @@ class CaregiverModel {
   }
 
   bool get isOnline => availabilityStatus == 'ONLINE';
+  String? get distanceLabel {
+    final meters = distanceMeters;
+    if (meters == null || meters < 0) return null;
+    if (meters < 100) return 'Dưới 100 m';
+    if (meters < 1000) return '$meters m';
+    return '${(meters / 1000).toStringAsFixed(1).replaceAll('.', ',')} km';
+  }
+
   String get location => [serviceDistrict, serviceCity]
       .where((s) => s != null && s.isNotEmpty)
       .join(', ');
@@ -64,6 +74,9 @@ class CaregiverModel {
             json['serviceCity'] as String? ?? json['ServiceCity'] as String?,
         serviceDistrict: json['serviceDistrict'] as String? ??
             json['ServiceDistrict'] as String?,
+        distanceMeters:
+            ((json['distanceMeters'] ?? json['DistanceMeters']) as num?)
+                ?.round(),
       );
 
   static List<String> _parseSkills(dynamic raw) {

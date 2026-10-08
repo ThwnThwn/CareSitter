@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using FluentValidation;
+using CareSitter.Messaging.Persistence;
+using CareSitter.Modules.Support.Application.Ports;
 
 namespace CareSitter.Modules.Support;
 
@@ -28,6 +30,9 @@ public sealed class SupportModule : IModule
         services.AddScoped<ISupportRepository, SupportRepository>();
         services.AddScoped<ISupportReadStore, SupportReadStore>();
         services.AddScoped<IUserNotificationService, UserNotificationService>();
+        services.AddScoped<INotificationDeliveryStore, NotificationDeliveryStore>();
+        services.AddModuleOutbox<SupportDbContext>(configuration, SupportDbContext.SchemaName,
+            string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));
         services.AddScoped<IDisputeLookupService, DisputeLookupService>();
         services.AddScoped<IAdminSupportReader, AdminSupportReader>();
 

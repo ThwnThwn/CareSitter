@@ -67,7 +67,9 @@ internal sealed class LoginWithPasswordHandler : IRequestHandler<LoginWithPasswo
         await _store.SaveChangesAsync(ct);
         await _attemptLimiter.ResetAsync("password-login", identifierLower, ct);
 
-        var tokens = await _sessions.IssueAsync(user, ct);
+        var issued = await _sessions.TryIssueAsync(user, ct);
+        if (issued.IsFailure) return issued.Error;
+        var tokens = issued.Value;
         return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
 

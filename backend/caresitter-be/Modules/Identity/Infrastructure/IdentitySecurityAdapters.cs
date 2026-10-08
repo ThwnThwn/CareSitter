@@ -29,6 +29,8 @@ internal sealed class GoogleIdentityVerifier(IConfiguration configuration) : IGo
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken,
                 new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] });
             var email = payload.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!payload.EmailVerified)
+                return Error.Validation("auth.google_email_unverified", "Google chưa xác minh email của tài khoản này.");
             if (string.IsNullOrWhiteSpace(email))
                 return Error.Validation("auth.google_email_missing",
                     "Tài khoản Google không cung cấp địa chỉ email.");
