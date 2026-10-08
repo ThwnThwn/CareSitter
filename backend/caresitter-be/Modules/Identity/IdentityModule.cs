@@ -25,6 +25,7 @@ public sealed class IdentityModule : IModule
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<IdentityModule>());
         services.AddScoped<IPushNotificationService, FirebasePushNotificationService>();
+        services.AddScoped<INotificationRecipientReader, NotificationRecipientReader>();
         services.AddScoped<IRefreshTokenSessionService, RefreshTokenSessionService>();
         services.AddScoped<IAccessSessionValidator, AccessSessionValidator>();
         services.AddScoped<IAuditLogger, IdentityAuditLogger>();
@@ -37,10 +38,21 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IOtpStore, OtpStore>();
         services.AddScoped<IAccessTokenRevocationStore, AccessTokenRevocationStore>();
         services.AddScoped<IAdminIdentityReader, AdminIdentityReader>();
+        services.AddOptions<RecoveryOptions>()
+            .Bind(configuration.GetSection("PasswordRecovery"))
+            .Validate(x => !x.Enabled || x.SecretKey.Length >= 32, "PasswordRecovery:SecretKey cần ít nhất 32 ký tự.")
+            .Validate(x => x.CodeMinutes is >= 1 and <= 30 && x.GrantMinutes is >= 1 and <= 10 &&
+                x.ResendSeconds is >= 30 and <= 300 && x.RequestsPerHour is >= 1 and <= 10 &&
+                x.MaxAttempts is >= 1 and <= 5 && x.MetadataRetentionDays is >= 1 and <= 30, "PasswordRecovery TTL/limit không hợp lệ.")
+            .ValidateOnStart();
+        services.AddScoped<RecoverySecrets>();
+        services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
+        services.AddScoped<RecoveryEmailDispatcher>();
+        services.AddHostedService<RecoveryEmailWorker>();
 
         // Đăng ký Controllers nằm trong assembly của Identity module
         // (AuthController được khai báo trong project này, không phải ApiHost)
-        services.AddControllers()
+        services.AddControllers(options => options.Filters.Add<Controllers.IdentityConcurrencyExceptionFilter>())
             .AddApplicationPart(Assembly.GetAssembly(typeof(IdentityModule))!);
     }
 

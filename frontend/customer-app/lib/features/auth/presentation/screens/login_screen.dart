@@ -552,11 +552,10 @@ class _AuxRowState extends State<_AuxRow> {
         const SizedBox(width: 8),
         Flexible(
           child: TextButton(
-            onPressed: widget.isLoading ? null : () {},
+            onPressed: widget.isLoading ? null : () => context.push('/auth/forgot-password'),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: const Size(44, 44),
             ),
             child: const Text(
               'Quên mật khẩu?',

@@ -62,14 +62,8 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
         // Validate password nếu được cung cấp (tối thiểu 8 ký tự, 1 chữ hoa, 1 chữ số)
         if (request.Password is not null)
         {
-            var pwd = request.Password;
-            if (pwd.Length < 8 ||
-                !pwd.Any(char.IsUpper) ||
-                !pwd.Any(char.IsDigit))
-            {
-                return Error.Validation("auth.weak_password",
-                    "Mật khẩu phải có ít nhất 8 ký tự, bao gồm 1 chữ hoa và 1 chữ số.");
-            }
+            var policy = Domain.Policies.PasswordPolicy.Validate(request.Password);
+            if (policy.IsFailure) return policy.Error;
 
             // ConfirmPassword phải được cung cấp và khớp với Password
             if (request.ConfirmPassword is null)
@@ -133,7 +127,9 @@ internal sealed class RegisterHandler : IRequestHandler<RegisterCommand, Result<
             await _caregiverRegistration.EnsureProfileAsync(user.Id, request.FullName, ct);
         }
 
-        var tokens = await _sessions.IssueAsync(user, ct);
+        var issued = await _sessions.TryIssueAsync(user, ct);
+        if (issued.IsFailure) return issued.Error;
+        var tokens = issued.Value;
         return new LoginResponse(tokens.AccessToken, tokens.RefreshToken, user.Id, user.Roles, user.DisplayName);
     }
 }

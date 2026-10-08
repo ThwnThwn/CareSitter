@@ -1,6 +1,6 @@
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
-import 'package:caresitter_customer/features/caregiver/presentation/controllers/caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/controllers/nearby_caregiver_controller.dart';
 import 'package:caresitter_customer/features/caregiver/presentation/screens/caregiver_list_screen.dart';
 import 'package:caresitter_customer/features/home/presentation/screens/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +19,7 @@ void main() {
       ProviderScope(
         overrides: [
           bookingStoreProvider.overrideWith(_HomeBookingStore.new),
-          caregiverStoreProvider.overrideWith(_HomeCaregiverStore.new),
+          nearbyCaregiversProvider.overrideWith((ref) async => _homeCaregivers),
         ],
         child: const MaterialApp(home: HomeScreen()),
       ),
@@ -133,7 +133,7 @@ void main() {
       ProviderScope(
         overrides: [
           bookingStoreProvider.overrideWith(_HomeBookingStore.new),
-          caregiverStoreProvider.overrideWith(_HomeCaregiverStore.new),
+          nearbyCaregiversProvider.overrideWith((ref) async => _homeCaregivers),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -170,7 +170,7 @@ void main() {
       ProviderScope(
         overrides: [
           bookingStoreProvider.overrideWith(_HomeBookingStore.new),
-          caregiverStoreProvider.overrideWith(_HomeCaregiverStore.new),
+          nearbyCaregiversProvider.overrideWith((ref) async => _homeCaregivers),
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -295,30 +295,27 @@ class _UpcomingBookingStore extends BookingStore {
   }
 }
 
-class _HomeCaregiverStore extends CaregiverStore {
-  @override
-  Future<List<CaregiverModel>> build() async => const [
-        CaregiverModel(
-          id: 'caregiver-lan',
-          userId: 'user-lan',
-          fullName: 'Cô Lan',
-          ratingAvg: 4.9,
-          ratingCount: 20,
-          availabilityStatus: 'ONLINE',
-          skills: ['Chăm sóc người cao tuổi'],
-          serviceCity: 'Hồ Chí Minh',
-          serviceDistrict: 'Bình Thạnh',
-        ),
-        CaregiverModel(
-          id: 'caregiver-minh',
-          userId: 'user-minh',
-          fullName: 'Chú Minh',
-          ratingAvg: 4.8,
-          ratingCount: 18,
-          availabilityStatus: 'ONLINE',
-          skills: ['Vật lý trị liệu'],
-          serviceCity: 'Hồ Chí Minh',
-          serviceDistrict: 'Quận 1',
-        ),
-      ];
-}
+const _homeCaregivers = <CaregiverModel>[
+  CaregiverModel(
+    id: 'caregiver-lan',
+    userId: 'user-lan',
+    fullName: 'Cô Lan',
+    ratingAvg: 4.9,
+    ratingCount: 20,
+    availabilityStatus: 'ONLINE',
+    skills: ['Chăm sóc người cao tuổi'],
+    serviceCity: 'Hồ Chí Minh',
+    serviceDistrict: 'Bình Thạnh',
+  ),
+  CaregiverModel(
+    id: 'caregiver-minh',
+    userId: 'user-minh',
+    fullName: 'Chú Minh',
+    ratingAvg: 4.8,
+    ratingCount: 18,
+    availabilityStatus: 'ONLINE',
+    skills: ['Vật lý trị liệu'],
+    serviceCity: 'Hồ Chí Minh',
+    serviceDistrict: 'Quận 1',
+  ),
+];

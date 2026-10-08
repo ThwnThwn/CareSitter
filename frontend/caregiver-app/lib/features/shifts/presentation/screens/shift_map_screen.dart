@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caregiver_app/core/maps/map_tile_config.dart';
+import 'package:caregiver_app/core/maps/map_tile_attribution.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,7 +11,7 @@ import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
 
-class ShiftMapScreen extends StatefulWidget {
+class ShiftMapScreen extends ConsumerStatefulWidget {
   final String bookingId;
   final String beneficiaryName;
   final String address;
@@ -25,10 +28,10 @@ class ShiftMapScreen extends StatefulWidget {
   });
 
   @override
-  State<ShiftMapScreen> createState() => _ShiftMapScreenState();
+  ConsumerState<ShiftMapScreen> createState() => _ShiftMapScreenState();
 }
 
-class _ShiftMapScreenState extends State<ShiftMapScreen> {
+class _ShiftMapScreenState extends ConsumerState<ShiftMapScreen> {
   Position? _currentPosition;
   String? _locationError;
   bool _loadingLocation = true;
@@ -143,6 +146,7 @@ class _ShiftMapScreenState extends State<ShiftMapScreen> {
       );
 
   Widget _buildMap(LatLng destination) {
+    final tiles = ref.watch(mapTileConfigProvider);
     final current = _currentPosition == null
         ? null
         : LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
@@ -152,130 +156,140 @@ class _ShiftMapScreenState extends State<ShiftMapScreen> {
             (destination.longitude + current.longitude) / 2);
     final distance = _distanceLabel(destination);
 
-    return Stack(
-      children: [
-        FlutterMap(
-          options: MapOptions(
-              initialCenter: center, initialZoom: current == null ? 15 : 13.5),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.caresitter.caregiver',
-            ),
-            if (current != null)
-              PolylineLayer(polylines: [
-                Polyline(
-                    points: [current, destination],
-                    color: AppColors.primary,
-                    strokeWidth: 4),
-              ]),
-            MarkerLayer(markers: [
-              if (current != null)
-                Marker(
-                  point: current,
-                  width: 44,
-                  height: 44,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 2),
-                      boxShadow: AppShadows.card,
-                    ),
-                    child: const Icon(Icons.navigation_rounded,
-                        color: AppColors.primary, size: 22),
-                  ),
-                ),
-              Marker(
-                point: destination,
-                width: 48,
-                height: 48,
-                child: const Icon(Icons.location_on_rounded,
-                    color: AppColors.error, size: 40),
+    return Column(children: [
+      Expanded(
+          child: Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(
+                initialCenter: center,
+                initialZoom: current == null ? 15 : 13.5),
+            children: [
+              TileLayer(
+                tileProvider: ref.watch(mapTileProviderProvider),
+                urlTemplate: tiles.urlTemplate,
+                subdomains: tiles.subdomains,
+                retinaMode: tiles.usesCarto,
+                maxNativeZoom: tiles.maxNativeZoom,
+                userAgentPackageName: 'com.caresitter.caregiver',
               ),
-            ]),
-          ],
-        ),
-        Positioned(
-          bottom: 20,
-          left: 20,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4))
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Icon(Icons.directions_car_rounded,
-                      color: AppColors.primary, size: 24),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                      child: Text('Thông tin di chuyển',
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary))),
-                  if (distance != null)
-                    Flexible(
-                        child: Text(distance,
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold))),
+              if (current != null)
+                PolylineLayer(polylines: [
+                  Polyline(
+                      points: [current, destination],
+                      color: AppColors.primary,
+                      strokeWidth: 4),
                 ]),
-                if (_loadingLocation) ...[
-                  const SizedBox(height: 10),
-                  const LinearProgressIndicator(),
-                ] else if (_locationError != null) ...[
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Expanded(
-                        child: Text(_locationError!,
-                            style: const TextStyle(
-                                fontSize: 12, color: AppColors.textSecondary))),
-                    TextButton(
-                        onPressed: _loadCurrentPosition,
-                        child: const Text('Thử lại')),
-                  ]),
+              MarkerLayer(markers: [
+                if (current != null)
+                  Marker(
+                    point: current,
+                    width: 44,
+                    height: 44,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary, width: 2),
+                        boxShadow: AppShadows.card,
+                      ),
+                      child: const Icon(Icons.navigation_rounded,
+                          color: AppColors.primary, size: 22),
+                    ),
+                  ),
+                Marker(
+                  point: destination,
+                  width: 48,
+                  height: 48,
+                  child: const Icon(Icons.location_on_rounded,
+                      color: AppColors.error, size: 40),
+                ),
+              ]),
+            ],
+          ),
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4))
                 ],
-                const SizedBox(height: 16),
-                Text('Khách hàng: ${widget.beneficiaryName}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 4),
-                Text(widget.address,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        height: 1.4)),
-                const SizedBox(height: 20),
-                AppButton(
-                    label: 'Mở Google Maps chỉ đường',
-                    icon: Icons.navigation_outlined,
-                    onPressed: _openGoogleMaps),
-              ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(Icons.directions_car_rounded,
+                        color: AppColors.primary, size: 24),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                        child: Text('Thông tin di chuyển',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary))),
+                    if (distance != null)
+                      Flexible(
+                          child: Text(distance,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold))),
+                  ]),
+                  if (_loadingLocation) ...[
+                    const SizedBox(height: 10),
+                    const LinearProgressIndicator(),
+                  ] else if (_locationError != null) ...[
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                          child: Text(_locationError!,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary))),
+                      TextButton(
+                          onPressed: _loadCurrentPosition,
+                          child: const Text('Thử lại')),
+                    ]),
+                  ],
+                  const SizedBox(height: 16),
+                  Text('Khách hàng: ${widget.beneficiaryName}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text(widget.address,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.4)),
+                  const SizedBox(height: 20),
+                  AppButton(
+                      label: 'Mở Google Maps',
+                      icon: Icons.navigation_outlined,
+                      onPressed: _openGoogleMaps),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      )),
+      MapTileAttribution(config: tiles)
+    ]);
   }
 }
 

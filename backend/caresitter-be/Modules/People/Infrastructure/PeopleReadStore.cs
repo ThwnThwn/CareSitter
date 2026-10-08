@@ -108,16 +108,20 @@ internal sealed class PeopleReadStore(PeopleDbContext db) : IPeopleReadStore
                     x.ServiceRadiusMeters ?? DefaultRadiusMeters));
 
             var total = await query.CountAsync(ct);
-            var entities = await query
+            var results = await query
                 .OrderBy(x => x.ServiceCenterLocation!.Distance(customerPoint))
                 .ThenByDescending(x => x.RatingAvg)
                 .ThenByDescending(x => x.RatingCount)
+                .ThenBy(x => x.Id)
                 .Skip((criteria.Page - 1) * criteria.PageSize)
                 .Take(criteria.PageSize)
+                // PostGIS geography trả mét; tính sau ToList sẽ dùng độ của NTS.
+                .Select(x => new { Profile = x,
+                    DistanceMeters = x.ServiceCenterLocation!.Distance(customerPoint) })
                 .ToListAsync(ct);
-            return new PeoplePage<CaregiverResponse>(entities.Select(x =>
-                PeopleResponseMapper.ToCaregiverResponse(x,
-                    (int?)x.ServiceCenterLocation?.Distance(customerPoint))).ToArray(),
+            return new PeoplePage<CaregiverResponse>(results.Select(x =>
+                PeopleResponseMapper.ToCaregiverResponse(x.Profile,
+                    (int)Math.Round(x.DistanceMeters))).ToArray(),
                 total, criteria.Page, criteria.PageSize);
         }
 
@@ -130,6 +134,7 @@ internal sealed class PeopleReadStore(PeopleDbContext db) : IPeopleReadStore
         var fallbackEntities = await query
             .OrderByDescending(x => x.RatingAvg)
             .ThenByDescending(x => x.RatingCount)
+            .ThenBy(x => x.Id)
             .Skip((criteria.Page - 1) * criteria.PageSize)
             .Take(criteria.PageSize)
             .ToListAsync(ct);

@@ -19,6 +19,7 @@ public interface ISupportReadStore
 
     Task<SupportPage<ReviewResponse>> ListCaregiverReviewsAsync(
         Guid caregiverId, int page, int pageSize, CancellationToken ct = default);
+    Task<ReviewResponse?> GetReviewByBookingAsync(Guid bookingId, CancellationToken ct = default);
 
     Task<SupportPage<SupportTicketResponse>> ListTicketsAsync(
         Guid userId, bool isAdmin, string? status, string? type, string? priority,

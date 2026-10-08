@@ -71,6 +71,13 @@ internal sealed class SupportReadStore(SupportDbContext db) : ISupportReadStore
             entities.Select(SupportResponseMapper.ToResponse).ToArray(), total, page, pageSize);
     }
 
+    public async Task<ReviewResponse?> GetReviewByBookingAsync(Guid bookingId, CancellationToken ct = default)
+    {
+        var review = await db.Reviews.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.BookingId == bookingId, ct);
+        return review is null ? null : SupportResponseMapper.ToResponse(review);
+    }
+
     public async Task<SupportPage<SupportTicketResponse>> ListTicketsAsync(
         Guid userId, bool isAdmin, string? status, string? type, string? priority,
         int page, int pageSize, CancellationToken ct = default)

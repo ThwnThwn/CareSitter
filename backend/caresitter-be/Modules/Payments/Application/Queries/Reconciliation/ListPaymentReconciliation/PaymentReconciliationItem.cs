@@ -16,4 +16,7 @@ public sealed record PaymentReconciliationItem(
     string? LastReconciliationError,
     string? ManualReviewReason,
     string BookingStatus,
-    DateTimeOffset? PaymentDeadline);
+    DateTimeOffset? PaymentDeadline,
+    string Provider = "VNPAY",
+    string IntentStatus = "PENDING",
+    bool CanResolve = true);

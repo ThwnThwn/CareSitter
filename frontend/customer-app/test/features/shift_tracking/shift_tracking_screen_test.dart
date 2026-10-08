@@ -36,7 +36,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('Theo dõi ca chăm sóc'), findsOneWidget);
-    expect(find.text('Caregiver đang trên đường đến'), findsOneWidget);
+    expect(find.text('Chăm sóc viên đang đến'), findsOneWidget);
     final error = tester.takeException();
     debugDefaultTargetPlatformOverride = null;
     expect(error, isNull);

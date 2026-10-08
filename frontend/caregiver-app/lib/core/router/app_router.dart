@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:caregiver_app/features/auth/presentation/screens/password_recovery_screen.dart';
+import 'package:caregiver_app/features/auth/presentation/screens/recovery_email_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
@@ -126,11 +128,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/auth/forgot-password', builder: (ctx, state) => const PasswordRecoveryScreen()),
+      GoRoute(path: '/settings/recovery-email', builder: (ctx, state) => const RecoveryEmailScreen()),
       // ── Auth Routes ─────────────────────────────
       GoRoute(
         path: '/auth/phone',
         pageBuilder: (ctx, state) =>
-            _modalPage(pageKey: state.pageKey, child: const PhoneInputScreen()),
+            _modalPage(pageKey: state.pageKey, child: PhoneInputScreen(startWithOtp: state.uri.queryParameters['method'] == 'otp')),
       ),
       GoRoute(
         path: '/auth/otp',

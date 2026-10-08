@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../CareSitter.Messaging.Abstractions/CareSitter.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../CareSitter.Messaging.Contracts/CareSitter.Messaging.Contracts.csproj" />
+    <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

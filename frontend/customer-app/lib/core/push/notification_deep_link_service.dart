@@ -145,6 +145,22 @@ class NotificationDeepLinkService {
       ].where((e) => e.isNotEmpty).join('/')}';
     }
 
+    if (uri != null &&
+        (uri.scheme.isEmpty ||
+            uri.scheme == 'caresitter' ||
+            uri.scheme == 'caresitter-customer') &&
+        (route == '/payment-result' || uri.path == '/payment-result')) {
+      final bookingId = _safeId(uri.queryParameters['bookingId']);
+      if (bookingId == null) return null;
+      final intentId = _safeId(uri.queryParameters['intentId']);
+      return Uri(path: '/payment-result', queryParameters: {
+        'bookingId': bookingId,
+        if (intentId != null) 'intentId': intentId,
+        // Callback chỉ mở màn hình. Backend quyết định kết quả tài chính.
+        'result': 'pending',
+      }).toString();
+    }
+
     final patterns = [
       RegExp(r'^/bookings/[A-Za-z0-9-]+$'),
       RegExp(r'^/bookings/[A-Za-z0-9-]+/(tracking|timeline|review|dispute)$'),

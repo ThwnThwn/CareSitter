@@ -6,53 +6,121 @@ import 'package:go_router/go_router.dart';
 
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
 
-/// Màn hình đích sau callback VNPay. Luôn tải lại booking để trạng thái hiển thị
+/// Màn hình đích sau callback thanh toán. Luôn tải lại booking để trạng thái hiển thị
 /// phản ánh kết quả đã được backend xác nhận, thay vì chỉ tin query string.
 class PaymentResultScreen extends ConsumerStatefulWidget {
   const PaymentResultScreen(
-      {super.key, required this.bookingId, required this.result});
+      {super.key,
+      required this.bookingId,
+      required this.result,
+      this.intentId});
 
   final String? bookingId;
   final String result;
+  final String? intentId;
 
   @override
   ConsumerState<PaymentResultScreen> createState() =>
       _PaymentResultScreenState();
 }
 
-class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen> {
+class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen>
+    with WidgetsBindingObserver {
   var _isRefreshing = true;
+  BookingModel? _booking;
+  String? _intentStatus;
+  Timer? _timer;
+  int _attempts = 0;
+  bool _requesting = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_refresh());
   }
 
   Future<void> _refresh() async {
+    if (_requesting || !mounted) return;
+    _requesting = true;
+    _timer?.cancel();
     setState(() => _isRefreshing = true);
-    await ref.read(bookingStoreProvider.notifier).refresh();
-    if (mounted) setState(() => _isRefreshing = false);
+    final repository = ref.read(bookingRepositoryProvider);
+    try {
+      if (widget.intentId?.isNotEmpty == true) {
+        final intent = await repository.getPaymentIntent(widget.intentId!);
+        if (!mounted) return;
+        _intentStatus = intent.status;
+      }
+    } catch (_) {
+      // Booking vẫn phải được đọc khi cổng thanh toán tạm thời không phản hồi.
+    }
+    try {
+      if (widget.bookingId != null) {
+        final booking = await repository.getBooking(widget.bookingId!);
+        if (!mounted) return;
+        _booking = booking;
+      }
+    } catch (_) {
+      // Giữ trạng thái chưa xác minh; lỗi mạng không phải là thanh toán thất bại.
+    } finally {
+      _requesting = false;
+    }
+    if (!mounted) return;
+    setState(() => _isRefreshing = false);
+    if (_state == _PaymentResultState.syncing && ++_attempts < 5) {
+      _timer = Timer(const Duration(seconds: 2), () => unawaited(_refresh()));
+    } else if (_state == _PaymentResultState.success) {
+      unawaited(ref.read(bookingStoreProvider.notifier).refresh());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _attempts = 0;
+      unawaited(_refresh());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  _PaymentResultState get _state {
+    const paidStatuses = {
+      'confirmed',
+      'caregiver_accepted',
+      'caregiver_en_route',
+      'in_progress',
+      'checkout_pending_review',
+      'completed',
+      'crisis'
+    };
+    if (paidStatuses.contains(_booking?.status)) {
+      return _PaymentResultState.success;
+    }
+    if (const {'needs_manual_review', 'disputed'}.contains(_booking?.status)) {
+      return _PaymentResultState.review;
+    }
+    if (const {'FAILED', 'EXPIRED', 'CANCELLED', 'SUPERSEDED'}
+            .contains(_intentStatus) ||
+        const {'cancelled', 'refunded', 'matching_failed'}
+            .contains(_booking?.status)) {
+      return _PaymentResultState.failure;
+    }
+    if (_intentStatus == 'SUCCEEDED') return _PaymentResultState.syncing;
+    return _PaymentResultState.syncing;
   }
 
   @override
   Widget build(BuildContext context) {
-    final booking = widget.bookingId == null
-        ? null
-        : ref
-            .watch(bookingStoreProvider)
-            .where((item) => item.id == widget.bookingId)
-            .firstOrNull;
-    final confirmed = booking?.status == 'confirmed';
-    final failed = widget.result != 'success';
-    final syncing = !failed && _isRefreshing && !confirmed;
-    final succeeded = !failed && !syncing;
-    final state = succeeded
-        ? _PaymentResultState.success
-        : syncing
-            ? _PaymentResultState.syncing
-            : _PaymentResultState.failure;
+    final state = _state;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,14 +143,18 @@ class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen> {
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               child: _PaymentResultContent(
                 state: state,
+                refreshing: _isRefreshing,
                 bookingId: widget.bookingId,
                 onOpenBooking: widget.bookingId == null
                     ? null
                     : () => context.go('/bookings/${widget.bookingId}'),
                 onOpenBookings: () => context.go('/bookings'),
-                onRetry: widget.bookingId == null
+                onRetry: _isRefreshing
                     ? null
-                    : () => context.go('/bookings/${widget.bookingId}'),
+                    : () {
+                        _attempts = 0;
+                        unawaited(_refresh());
+                      },
               ),
             ),
           ),
@@ -92,7 +164,7 @@ class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen> {
   }
 }
 
-enum _PaymentResultState { success, syncing, failure }
+enum _PaymentResultState { success, syncing, failure, review }
 
 class _PaymentResultContent extends StatelessWidget {
   const _PaymentResultContent({
@@ -101,6 +173,7 @@ class _PaymentResultContent extends StatelessWidget {
     required this.onOpenBooking,
     required this.onOpenBookings,
     required this.onRetry,
+    required this.refreshing,
   });
 
   final _PaymentResultState state;
@@ -108,6 +181,7 @@ class _PaymentResultContent extends StatelessWidget {
   final VoidCallback? onOpenBooking;
   final VoidCallback onOpenBookings;
   final VoidCallback? onRetry;
+  final bool refreshing;
 
   @override
   Widget build(BuildContext context) {
@@ -118,15 +192,15 @@ class _PaymentResultContent extends StatelessWidget {
           iconBackground: AppColors.successLight,
           title: 'Thanh toán thành công',
           message:
-              'Lịch hẹn của bạn đã được xác nhận. Chúng tôi đang tìm người chăm sóc phù hợp.',
+              'Khoản thanh toán đã được xác nhận. Bạn có thể xem trạng thái mới nhất trong chi tiết lịch hẹn.',
           label: 'ĐÃ XÁC NHẬN',
           labelColor: AppColors.success,
           labelBackground: AppColors.successLight,
           highlights: [
             _Highlight(Icons.verified_user_outlined,
-                'Khoản thanh toán đã được giữ ký quỹ an toàn.'),
+                'CareSitter đã ghi nhận khoản thanh toán của bạn.'),
             _Highlight(Icons.person_search_outlined,
-                'Bạn sẽ nhận thông báo ngay khi có người nhận ca.'),
+                'Theo dõi người chăm sóc và tiến độ ca trong lịch hẹn.'),
           ],
         ),
       _PaymentResultState.syncing => const _ResultDetails(
@@ -135,13 +209,13 @@ class _PaymentResultContent extends StatelessWidget {
           iconBackground: AppColors.infoLight,
           title: 'Đang xác nhận thanh toán',
           message:
-              'Chúng tôi đã nhận kết quả từ VNPay và đang cập nhật lịch hẹn của bạn.',
+              'Hệ thống đang kiểm tra giao dịch với cổng thanh toán. Lịch hẹn sẽ được cập nhật sau khi xác nhận.',
           label: 'ĐANG ĐỒNG BỘ',
           labelColor: AppColors.info,
           labelBackground: AppColors.infoLight,
           highlights: [
             _Highlight(Icons.schedule_outlined,
-                'Quá trình này thường chỉ mất vài giây.'),
+                'Nếu đã chuyển tiền, hãy chờ xác nhận và kiểm tra lại.'),
             _Highlight(Icons.notifications_none_rounded,
                 'Bạn có thể mở lại lịch hẹn để xem trạng thái mới nhất.'),
           ],
@@ -152,17 +226,31 @@ class _PaymentResultContent extends StatelessWidget {
           iconBackground: AppColors.errorLight,
           title: 'Thanh toán chưa hoàn tất',
           message:
-              'Giao dịch chưa được xác nhận. Bạn chưa bị mất lịch hẹn và có thể thử lại khi sẵn sàng.',
+              'Giao dịch hoặc lịch hẹn đã đóng. Hãy mở chi tiết lịch hẹn để kiểm tra trước khi thanh toán lại.',
           label: 'CẦN THANH TOÁN LẠI',
           labelColor: AppColors.error,
           labelBackground: AppColors.errorLight,
           highlights: [
             _Highlight(Icons.lock_outline_rounded,
-                'Không có khoản nào được xác nhận từ giao dịch này.'),
+                'Kiểm tra lịch sử chuyển khoản tại ngân hàng của bạn.'),
             _Highlight(Icons.support_agent_outlined,
                 'Nếu tiền đã bị trừ, hãy liên hệ hỗ trợ để được đối soát.'),
           ],
         ),
+      _PaymentResultState.review => const _ResultDetails(
+            icon: Icons.support_agent_outlined,
+            iconColor: AppColors.info,
+            iconBackground: AppColors.infoLight,
+            title: 'Giao dịch cần đối soát',
+            message:
+                'CareSitter cần kiểm tra thêm giao dịch này. Vui lòng chưa thanh toán lại và liên hệ hỗ trợ nếu tiền đã bị trừ.',
+            label: 'ĐANG KIỂM TRA',
+            labelColor: AppColors.info,
+            labelBackground: AppColors.infoLight,
+            highlights: [
+              _Highlight(Icons.receipt_long_outlined,
+                  'Giữ lại biên lai chuyển khoản để hỗ trợ đối chiếu.')
+            ]),
     };
     final isFailure = state == _PaymentResultState.failure;
     final isSyncing = state == _PaymentResultState.syncing;
@@ -262,7 +350,7 @@ class _PaymentResultContent extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${bookingId!.substring(0, 8).toUpperCase()}…',
+                        '${bookingId!.substring(0, bookingId!.length.clamp(0, 8)).toUpperCase()}…',
                         style: Theme.of(context)
                             .textTheme
                             .labelLarge
@@ -279,20 +367,26 @@ class _PaymentResultContent extends StatelessWidget {
             SizedBox(
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: isFailure ? onRetry : onOpenBooking,
+                onPressed: onOpenBooking,
                 icon: Icon(isFailure
                     ? Icons.refresh_rounded
                     : Icons.calendar_month_outlined),
-                label: Text(
-                    isFailure ? 'Thử thanh toán lại' : 'Xem chi tiết lịch hẹn'),
+                label: const Text('Xem chi tiết lịch hẹn'),
               ),
             )
-          else
+          else if (refreshing)
             const Center(
                 child: SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5))),
+                    child: CircularProgressIndicator(strokeWidth: 2.5)))
+          else
+            SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Kiểm tra lại thanh toán'))),
           const SizedBox(height: 10),
           TextButton(
             onPressed: onOpenBookings,

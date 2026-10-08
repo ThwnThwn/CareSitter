@@ -1,38 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'payment_checkout_sheet.dart';
+import '../../data/repositories/booking_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
-import 'package:caresitter_customer/core/api/dio_client.dart'
-    show AppApiException;
+import 'package:caresitter_customer/core/widgets/confirm_action_dialog.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/booking/presentation/models/booking_status_presentation.dart';
 
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
-class BookingDetailScreen extends ConsumerWidget {
+class BookingDetailScreen extends ConsumerStatefulWidget {
   final String id;
 
   const BookingDetailScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final matches = ref.watch(bookingStoreProvider).where((b) => b.id == id);
+  ConsumerState<BookingDetailScreen> createState() =>
+      _BookingDetailScreenState();
+}
+
+class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
+  bool _isCancelling = false;
+  bool _cancelDialogOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final matches =
+        ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
     if (matches.isEmpty) {
       return const Scaffold(
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final booking = matches.first;
-    final status = booking.presentationStatusAt(DateTime.now());
-    // Trạng thái booking là nguồn sự thật. Dữ liệu hồ sơ caregiver chỉ là enrichment
-    // và không được phép làm UI quay lại "Đang tìm" sau khi ca đã được nhận.
-    final isWaitingCaregiver = status == 'confirmed';
-    final statusConfig = isWaitingCaregiver
-        ? _waitingCaregiverStatusConfig()
-        : _getStatusConfig(status);
+    final now = DateTime.now();
+    final status = booking.presentationStatusAt(now);
+    final statusConfig = BookingStatusPresentation.forBooking(booking, now: now);
+    final isWaitingCaregiver = statusConfig.isWaitingCaregiver;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -57,10 +65,10 @@ class BookingDetailScreen extends ConsumerWidget {
             margin: const EdgeInsets.symmetric(vertical: 11),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: statusConfig['bg'] as Color,
+              color: statusConfig.backgroundColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: (statusConfig['color'] as Color).withValues(alpha: 0.25),
+                color: statusConfig.color.withValues(alpha: 0.25),
               ),
             ),
             child: Row(
@@ -70,16 +78,15 @@ class BookingDetailScreen extends ConsumerWidget {
                   width: 7,
                   height: 7,
                   decoration: BoxDecoration(
-                    color: statusConfig['color'] as Color,
+                    color: statusConfig.color,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  statusConfig['shortLabel'] as String? ??
-                      statusConfig['label'] as String,
+                  statusConfig.label,
                   style: TextStyle(
-                    color: statusConfig['color'] as Color,
+                    color: statusConfig.color,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -89,7 +96,9 @@ class BookingDetailScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.more_vert),
-            onPressed: () => _showMoreOptions(context, ref, booking),
+            onPressed: _isCancelling || _cancelDialogOpen
+                ? null
+                : () => _showMoreOptions(context, ref, booking),
           ),
         ],
       ),
@@ -243,7 +252,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       _buildCancelButton(context, ref, booking),
                     ] else if (status == 'payment_reconciliation_pending') ...[
                       _buildStatusBanner(
-                          'Hệ thống đang đối soát giao dịch gần nhất với VNPay. Vui lòng chưa tạo thêm thanh toán để tránh bị trừ tiền hai lần.'),
+                          'Hệ thống đang đối soát giao dịch gần nhất với cổng thanh toán. Vui lòng chưa tạo thêm thanh toán để tránh bị trừ tiền hai lần.'),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
                     ] else if (status == 'needs_manual_review') ...[
@@ -260,7 +269,10 @@ class BookingDetailScreen extends ConsumerWidget {
                         status == 'caregiver_accepted' ||
                         status == 'assigned') ...[
                       _buildStatusBanner(
-                          'Ca đã được nhận. Vui lòng chờ caregiver bắt đầu di chuyển hoặc check-in từ ứng dụng caregiver.'),
+                        status == 'confirmed'
+                            ? 'Lịch hẹn đã được xác nhận. Bạn sẽ nhận thông báo khi chăm sóc viên cập nhật tiến trình ca.'
+                            : 'Ca đã được nhận. Vui lòng chờ caregiver bắt đầu di chuyển hoặc check-in từ ứng dụng caregiver.',
+                      ),
                       const SizedBox(height: 10),
                       _buildCancelButton(context, ref, booking),
                     ] else if (status == 'caregiver_en_route') ...[
@@ -465,224 +477,69 @@ class BookingDetailScreen extends ConsumerWidget {
     BookingModel booking,
   ) {
     return OutlinedButton.icon(
-      onPressed: () {
-        ref.read(bookingStoreProvider.notifier).cancel(booking.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã huỷ booking prototype')),
-        );
-      },
-      icon: const Icon(Icons.cancel_outlined, color: AppColors.error),
-      label:
-          const Text('Huỷ lịch hẹn', style: TextStyle(color: AppColors.error)),
+      onPressed: _isCancelling || _cancelDialogOpen
+          ? null
+          : () => _confirmCancel(booking),
+      icon: _isCancelling
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.cancel_outlined, color: AppColors.error),
+      label: Text(_isCancelling ? 'Đang hủy...' : 'Hủy lịch hẹn'),
       style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.error,
         minimumSize: const Size(double.infinity, 52),
         side: const BorderSide(color: AppColors.error),
       ),
     );
   }
 
-  Map<String, dynamic> _getStatusConfig(String status) {
-    switch (status.toLowerCase()) {
-      case 'in_progress':
-        return {
-          'label': 'Đang diễn ra',
-          'shortLabel': 'Đang diễn ra',
-          'emoji': '🟢',
-          'icon': Icons.play_arrow_rounded,
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-          'currentStep': 2,
-          'description': 'Ca chăm sóc đang diễn ra theo kế hoạch.',
-        };
-      case 'checkout_pending_review':
-        return {
-          'label': 'Chờ xác nhận kết thúc',
-          'shortLabel': 'Chờ xác nhận',
-          'emoji': '🟣',
-          'icon': Icons.rate_review_outlined,
-          'color': const Color(0xFF8E44AD),
-          'bg': const Color(0xFFF4ECF7),
-          'currentStep': 2,
-          'description':
-              'Người chăm sóc đã gửi yêu cầu kết thúc ca. Vui lòng kiểm tra.',
-        };
-      case 'disputed':
-        return {
-          'label': 'Đang xử lý khiếu nại',
-          'shortLabel': 'Khiếu nại',
-          'emoji': '⚠️',
-          'icon': Icons.warning_amber_rounded,
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-          'currentStep': 2,
-          'description':
-              'Bộ phận CSKH đang hỗ trợ xử lý khiếu nại cho ca hẹn này.',
-        };
-      case 'caregiver_en_route':
-        return {
-          'label': 'Người chăm sóc đang đến',
-          'shortLabel': 'Đang đến',
-          'emoji': '🚗',
-          'icon': Icons.directions_car_outlined,
-          'color': const Color(0xFF0284C7),
-          'bg': const Color(0xFFE0F2FE),
-          'currentStep': 2,
-          'description':
-              'Người chăm sóc đang trên đường di chuyển đến địa chỉ của bạn.',
-        };
-      case 'caregiver_accepted':
-      case 'assigned':
-        return {
-          'label': 'Người chăm sóc đã nhận ca',
-          'shortLabel': 'Đã nhận ca',
-          'emoji': '🤝',
-          'icon': Icons.handshake_outlined,
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-          'currentStep': 1,
-          'description':
-              'Người chăm sóc đã nhận ca hẹn. Sẵn sàng thực hiện nhiệm vụ.',
-        };
-      case 'confirmed':
-        return {
-          'label': 'Đã xác nhận đặt lịch',
-          'shortLabel': 'Đã xác nhận',
-          'emoji': '✅',
-          'icon': Icons.verified_outlined,
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-          'currentStep': 1,
-          'description': 'Lịch hẹn đã được xác nhận thành công.',
-        };
-      case 'pending':
-      case 'pending_payment':
-      case 'draft':
-        return {
-          'label': 'Chờ thanh toán / xác nhận',
-          'shortLabel': 'Chờ xử lý',
-          'emoji': '🟡',
-          'icon': Icons.schedule,
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-          'currentStep': 0,
-          'description': 'Đang chờ hoàn tất thủ tục đặt lịch ca hẹn.',
-        };
-      case 'payment_reconciliation_pending':
-        return {
-          'label': 'Đang đối soát thanh toán',
-          'shortLabel': 'Đang đối soát',
-          'emoji': '🔎',
-          'icon': Icons.manage_search_rounded,
-          'color': const Color(0xFF0369A1),
-          'bg': const Color(0xFFE0F2FE),
-          'currentStep': 0,
-          'description':
-              'Hệ thống đang xác minh trạng thái giao dịch trực tiếp với VNPay.',
-        };
-      case 'needs_manual_review':
-        return {
-          'label': 'Cần kiểm tra thanh toán',
-          'shortLabel': 'Chờ kiểm tra',
-          'emoji': '🛡️',
-          'icon': Icons.admin_panel_settings_outlined,
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-          'currentStep': 0,
-          'description':
-              'Bộ phận vận hành đang kiểm tra giao dịch trước khi xác nhận hoặc hủy booking.',
-        };
-      case 'completed':
-        return {
-          'label': 'Đã hoàn tất ca hẹn',
-          'shortLabel': 'Hoàn thành',
-          'emoji': '✨',
-          'icon': Icons.task_alt,
-          'color': AppColors.success,
-          'bg': AppColors.successLight,
-          'currentStep': 3,
-          'description': 'Ca chăm sóc đã kết thúc an toàn và trọn vẹn.',
-        };
-      case 'crisis':
-        return {
-          'label': 'Báo động khẩn cấp',
-          'shortLabel': 'Khẩn cấp',
-          'emoji': '🚨',
-          'icon': Icons.emergency,
-          'color': AppColors.error,
-          'bg': AppColors.errorLight,
-          'currentStep': 2,
-          'description': 'Hệ thống đã nhận tín hiệu hỗ trợ khẩn cấp.',
-        };
-      case 'refunded':
-        return {
-          'label': 'Đã hoàn tiền vào Ví CareSitter',
-          'shortLabel': 'Đã hoàn tiền',
-          'emoji': '↩️',
-          'icon': Icons.account_balance_wallet_outlined,
-          'color': AppColors.primaryDark,
-          'bg': AppColors.successLight,
-          'currentStep': -1,
-          'description':
-              'Không tìm được người chăm sóc phù hợp. Tiền đã được cộng vào Ví CareSitter.',
-        };
-      case 'cancelled':
-        return {
-          'label': 'Đã huỷ lịch hẹn',
-          'shortLabel': 'Đã huỷ',
-          'emoji': '❌',
-          'icon': Icons.cancel_outlined,
-          'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC),
-          'currentStep': -1,
-          'description': 'Lịch hẹn này đã được huỷ.',
-        };
-      case 'matching_failed':
-        return {
-          'label': 'Chưa tìm thấy người chăm sóc',
-          'shortLabel': 'Chưa ghép được',
-          'emoji': '🟡',
-          'icon': Icons.person_off_outlined,
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-          'currentStep': 1,
-          'description': 'Hiện chưa có người chăm sóc phù hợp nhận ca này.',
-        };
-      default:
-        final formattedLabel = status.replaceAll('_', ' ');
-        return {
-          'label': formattedLabel.isEmpty
-              ? 'Chi tiết ca'
-              : formattedLabel[0].toUpperCase() + formattedLabel.substring(1),
-          'shortLabel': formattedLabel,
-          'emoji': '📋',
-          'icon': Icons.info_outline,
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-          'currentStep': 1,
-          'description': 'Trạng thái hiện tại: $formattedLabel',
-        };
+  Future<void> _confirmCancel(BookingModel booking) async {
+    if (_isCancelling || _cancelDialogOpen) return;
+    setState(() => _cancelDialogOpen = true);
+    try {
+      final confirmed = await showConfirmActionDialog(
+        context,
+        title: 'Hủy lịch hẹn?',
+        message: 'Lịch hẹn ngày ${booking.date}, ${booking.time} sẽ bị hủy.\n'
+            'Khoản thanh toán (nếu có) vẫn cần được đối soát.',
+        confirmLabel: 'Hủy lịch hẹn',
+      );
+      if (!confirmed || !mounted) return;
+      setState(() {
+        _cancelDialogOpen = false;
+        _isCancelling = true;
+      });
+
+      await ref.read(bookingStoreProvider.notifier).cancel(booking.id);
+      if (!mounted) return;
+      AppToast.success(context, 'Đã hủy lịch hẹn');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        error is AppApiException
+            ? error.message
+            : 'Không thể hủy lịch hẹn. Vui lòng thử lại.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _cancelDialogOpen = false;
+          _isCancelling = false;
+        });
+      }
     }
   }
 
-  Map<String, dynamic> _waitingCaregiverStatusConfig() => {
-        'label': 'Chờ người chăm sóc nhận ca',
-        'shortLabel': 'Đang tìm',
-        'emoji': '⏳',
-        'icon': Icons.hourglass_top,
-        'color': AppColors.warning,
-        'bg': AppColors.warningLight,
-        'currentStep': 1,
-        'description':
-            'Hệ thống đang điều phối người chăm sóc tốt nhất cho bạn.',
-      };
-
   Widget _buildProgressTracker(
     BuildContext context,
-    Map<String, dynamic> statusConfig,
+    BookingStatusPresentation statusConfig,
     BookingModel booking,
   ) {
-    final currentStep = statusConfig['currentStep'] as int? ?? 1;
-    final isCancelled = currentStep == -1;
+    final currentStep = statusConfig.currentStep;
 
     final steps = [
       {'title': 'Đặt lịch', 'icon': Icons.check},
@@ -766,171 +623,116 @@ class BookingDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (isCancelled) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDEDEC),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final trackWidth = constraints.maxWidth - 36;
+              final progressWidth =
+                  trackWidth * (currentStep.clamp(0, 3) / 3.0);
+
+              return Stack(
+                alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.cancel_outlined,
-                      color: Color(0xFFE74C3C), size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      statusConfig['description'] as String,
-                      style: const TextStyle(
-                        color: Color(0xFFC0392B),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  // Background track line
+                  Positioned(
+                    top: 14,
+                    left: 18,
+                    right: 18,
+                    child: Container(
+                      height: 2,
+                      color: AppColors.border,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ] else ...[
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final trackWidth = constraints.maxWidth - 36;
-                final progressWidth =
-                    trackWidth * (currentStep.clamp(0, 3) / 3.0);
-
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Background track line
-                    Positioned(
-                      top: 14,
-                      left: 18,
-                      right: 18,
-                      child: Container(
-                        height: 2,
-                        color: AppColors.border,
-                      ),
+                  // Active progress track line
+                  Positioned(
+                    top: 14,
+                    left: 18,
+                    child: Container(
+                      height: 2,
+                      width: progressWidth,
+                      color: AppColors.primary,
                     ),
-                    // Active progress track line
-                    Positioned(
-                      top: 14,
-                      left: 18,
-                      child: Container(
-                        height: 2,
-                        width: progressWidth,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(steps.length, (idx) {
-                        final isPassed = idx < currentStep;
-                        final isActive = idx == currentStep;
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(steps.length, (idx) {
+                      final isPassed = idx < currentStep;
+                      final isActive = idx == currentStep;
 
-                        Color circleBg;
-                        Color iconColor;
-                        Border? border;
+                      Color circleBg;
+                      Color iconColor;
+                      Border? border;
 
-                        if (isPassed) {
-                          circleBg = AppColors.primary;
-                          iconColor = Colors.white;
-                        } else if (isActive) {
-                          circleBg = AppColors.primary;
-                          iconColor = Colors.white;
-                          border = Border.all(
-                            color: AppColors.primaryContainer,
-                            width: 3,
-                          );
-                        } else {
-                          circleBg = AppColors.border;
-                          iconColor = AppColors.textSecondary;
-                        }
-
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: circleBg,
-                                shape: BoxShape.circle,
-                                border: border,
-                                boxShadow: isActive
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.25),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isPassed
-                                      ? Icons.check
-                                      : (steps[idx]['icon'] as IconData),
-                                  size: 14,
-                                  color: iconColor,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              steps[idx]['title'] as String,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: isActive
-                                    ? FontWeight.w700
-                                    : (isPassed
-                                        ? FontWeight.w600
-                                        : FontWeight.w400),
-                                color: isActive
-                                    ? AppColors.primary
-                                    : (isPassed
-                                        ? AppColors.textPrimary
-                                        : AppColors.textSecondary),
-                              ),
-                            ),
-                          ],
+                      if (isPassed) {
+                        circleBg = AppColors.primary;
+                        iconColor = Colors.white;
+                      } else if (isActive) {
+                        circleBg = AppColors.primary;
+                        iconColor = Colors.white;
+                        border = Border.all(
+                          color: AppColors.primaryContainer,
+                          width: 3,
                         );
-                      }),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 14),
-            // Current status description banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: statusConfig['bg'] as Color,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    statusConfig['emoji'] as String,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      statusConfig['description'] as String,
-                      style: TextStyle(
-                        color: statusConfig['color'] as Color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                      } else {
+                        circleBg = AppColors.border;
+                        iconColor = AppColors.textSecondary;
+                      }
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: circleBg,
+                              shape: BoxShape.circle,
+                              border: border,
+                              boxShadow: isActive
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isPassed
+                                    ? Icons.check
+                                    : (steps[idx]['icon'] as IconData),
+                                size: 14,
+                                color: iconColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            steps[idx]['title'] as String,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : (isPassed
+                                      ? FontWeight.w600
+                                      : FontWeight.w400),
+                              color: isActive
+                                  ? AppColors.primary
+                                  : (isPassed
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -1320,125 +1122,20 @@ class BookingDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     BookingModel booking,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final intent = await showModalBottomSheet<PaymentIntentModel>(
       context: context,
-      builder: (dCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.shield_outlined, color: AppColors.primary, size: 26),
-            SizedBox(width: 10),
-            Text('Thanh toán ký quỹ (Escrow)', style: TextStyle(fontSize: 17)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Số tiền thanh toán: ${_formatCurrency(booking.totalPrice)}đ',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEBF5FB),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.security, size: 16, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Khoản tiền này sẽ được giữ an toàn trên CareSitter Platform (Escrow) và chỉ giải ngân cho người chăm sóc sau khi ca trực hoàn tất thành công.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dCtx, false),
-            child: const Text('Hủy',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(dCtx, true),
-            child: const Text('Xác nhận thanh toán'),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      constraints: const BoxConstraints(maxWidth: 520),
+      builder: (_) => PaymentCheckoutSheet(booking: booking),
     );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final intent = await ref
-            .read(bookingStoreProvider.notifier)
-            .createVnPayPayment(booking.id);
-        final uri = Uri.tryParse(intent.paymentUrl);
-        if (uri == null ||
-            !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          throw Exception('Không mở được trang thanh toán VNPay Sandbox.');
-        }
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Đã mở VNPay Sandbox. Sau khi thanh toán, quay lại app để cập nhật trạng thái.'),
-              backgroundColor: AppColors.success,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          final message = _paymentErrorMessage(e);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppColors.textPrimary,
-              duration: const Duration(seconds: 6),
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  String _paymentErrorMessage(Object error) {
-    final apiError = error is DioException && error.error is AppApiException
-        ? error.error as AppApiException
-        : error is AppApiException
-            ? error
-            : null;
-    if (apiError?.code == 'PAYMENT_IN_PROGRESS') {
-      final expiresAt = DateTime.tryParse(
-        apiError?.details?['expiresAt']?.toString() ?? '',
-      )?.toLocal();
-      final retryAt = expiresAt == null
-          ? ''
-          : ' Bạn có thể thử lại lúc ${expiresAt.hour.toString().padLeft(2, '0')}:${expiresAt.minute.toString().padLeft(2, '0')}.';
-      return 'Giao dịch trước vẫn đang được xử lý.$retryAt Nếu tab VNPay còn mở, hãy hoàn tất tại đó.';
-    }
-    return apiError?.message ??
-        'Không thể mở cổng thanh toán. Vui lòng thử lại.';
+    if (intent == null || !context.mounted) return;
+    context.go(Uri(path: '/payment-result', queryParameters: {
+      'bookingId': booking.id,
+      if (intent.id.isNotEmpty) 'intentId': intent.id,
+      'result': 'pending',
+    }).toString());
   }
 
   String _formatCurrency(double amount) {
@@ -1563,9 +1260,16 @@ class BookingDetailScreen extends ConsumerWidget {
                   );
                 },
               ),
-              if (status == 'pending' ||
-                  status == 'confirmed' ||
-                  status == 'caregiver_accepted')
+              if (const {
+                'pending',
+                'pending_payment',
+                'payment_reconciliation_pending',
+                'needs_manual_review',
+                'confirmed',
+                'caregiver_accepted',
+                'assigned',
+                'caregiver_en_route',
+              }.contains(status))
                 ListTile(
                   leading:
                       const Icon(Icons.cancel_outlined, color: AppColors.error),
@@ -1573,38 +1277,7 @@ class BookingDetailScreen extends ConsumerWidget {
                       style: TextStyle(color: AppColors.error)),
                   onTap: () {
                     Navigator.pop(ctx);
-                    showDialog(
-                      context: context,
-                      builder: (dCtx) => AlertDialog(
-                        title: const Text('Xác nhận hủy'),
-                        content: const Text(
-                            'Bạn có chắc muốn hủy lịch hẹn này không?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dCtx),
-                            child: const Text('Không'),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.error),
-                            onPressed: () {
-                              ref
-                                  .read(bookingStoreProvider.notifier)
-                                  .cancel(booking.id);
-                              Navigator.pop(dCtx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content:
-                                      Text('✅ Đã gửi yêu cầu hủy lịch hẹn'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            },
-                            child: const Text('Hủy lịch'),
-                          ),
-                        ],
-                      ),
-                    );
+                    _confirmCancel(booking);
                   },
                 ),
               ListTile(

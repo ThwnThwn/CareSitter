@@ -5,6 +5,9 @@ using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using CareSitter.Messaging.Abstractions;
+using CareSitter.Messaging.Contracts;
+using CareSitter.Messaging.Persistence.Outbox;
 
 namespace CareSitter.Modules.Payments.Infrastructure;
 
@@ -16,8 +19,12 @@ internal sealed class PaymentFinalizationService(
     PaymentsDbContext paymentsDb,
     IPaymentOutboxDispatcher outbox,
     IAuditLogger auditLogger,
-    ILogger<PaymentFinalizationService> logger) : IPaymentFinalizationService
+    ILogger<PaymentFinalizationService> logger,
+    MessagingSettings? messaging = null,
+    IEventSerializer? serializer = null,
+    OutboxWriter<PaymentsDbContext>? kafkaOutbox = null) : IPaymentFinalizationService
 {
+    /// <summary>Commits payment, ledger and independent outboxes together before invoking the legacy dispatcher.</summary>
     public async Task<PaymentFinalizationResult> FinalizeSuccessfulPaymentAsync(
         Guid intentId, string? transactionId, string? payload,
         PaymentFinalizationSource source, CancellationToken ct = default)
@@ -63,6 +70,12 @@ internal sealed class PaymentFinalizationService(
             var integrationEvent = new PaymentSucceeded(intent.BookingId, intent.Id, intent.Amount);
             var message = OutboxMessage.Create(integrationEvent);
             paymentsDb.OutboxMessages.Add(message);
+            // Keep Booking confirmation on the existing MediatR outbox. Kafka has independent state.
+            if (messaging is { Enabled: true, PaymentsEnabled: true })
+                kafkaOutbox!.Add(serializer!.Create(new CareSitter.Messaging.Contracts.Events.PaymentSucceeded(
+                    intent.BookingId, intent.Id, integrationEvent.OccurredOnUtc),
+                    new EventMetadata(integrationEvent.EventId, integrationEvent.OccurredOnUtc,
+                        messaging.Producer, intent.BookingId.ToString(), System.Diagnostics.Activity.Current?.TraceId.ToString())));
             outboxMessageId = message.Id;
             finalizedIntent = intent;
 

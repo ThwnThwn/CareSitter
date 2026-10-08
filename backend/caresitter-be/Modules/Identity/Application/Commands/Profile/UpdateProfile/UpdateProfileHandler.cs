@@ -43,13 +43,13 @@ internal sealed class UpdateProfileHandler(
         if (user is null)
             return Error.NotFound("profile.user_not_found", "Khong tim thay tai khoan người dùng.");
 
-        if (await store.EmailExistsAsync(email, userId, ct))
-            return Error.Conflict("profile.email_exists", "Email đã được sử dụng bởi tài khoản khác.");
+        if (email != user.Email)
+            return Error.Validation("profile.email_verification_required", "Hãy dùng mục Email khôi phục để xác minh khi đổi email.");
 
         user.UpdateProfile(fullName, email, displayName, request.DateOfBirth, gender);
         await store.SaveChangesAsync(ct);
 
         return new ProfileResponse(user.Id, user.Phone, user.Email, user.FullName!, user.DisplayName!,
-            user.DateOfBirth, user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles);
+            user.DateOfBirth, user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles, user.EmailVerifiedAt, user.PasswordHash is not null);
     }
 }

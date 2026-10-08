@@ -5,7 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
-import 'package:caresitter_customer/features/caregiver/presentation/controllers/caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/controllers/nearby_caregiver_controller.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
 
 class CaregiverProfileScreen extends ConsumerWidget {
@@ -13,24 +13,16 @@ class CaregiverProfileScreen extends ConsumerWidget {
 
   const CaregiverProfileScreen({super.key, required this.id});
 
-  CaregiverModel? _findCaregiver(List<CaregiverModel> caregivers) {
-    for (final caregiver in caregivers) {
-      if (caregiver.id == id) return caregiver;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final caregiverAsync = ref.watch(caregiverStoreProvider);
+    final caregiverAsync = ref.watch(caregiverDetailProvider(id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: caregiverAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Lỗi: $e')),
-        data: (caregivers) {
-          final caregiver = _findCaregiver(caregivers);
+        data: (caregiver) {
           if (caregiver == null) {
             return const Center(
               child: Text('Không tìm thấy hồ sơ người chăm sóc'),
@@ -75,8 +67,7 @@ class CaregiverProfileScreen extends ConsumerWidget {
         },
       ),
       bottomNavigationBar: caregiverAsync.maybeWhen(
-        data: (caregivers) {
-          final caregiver = _findCaregiver(caregivers);
+        data: (caregiver) {
           return caregiver == null
               ? const SizedBox.shrink()
               : _buildBottomBar(context, caregiver);

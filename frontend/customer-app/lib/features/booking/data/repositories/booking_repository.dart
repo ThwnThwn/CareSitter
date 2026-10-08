@@ -37,13 +37,31 @@ class BookingRepository {
   final DioClient _dio;
   const BookingRepository(this._dio);
 
-  /// Tạo hoặc lấy lại PaymentIntent VNPay theo booking, không gửi amount từ app.
-  Future<PaymentIntentModel> createVnPayIntent(String bookingId) async {
+  /// Backend quyết định số tiền và tái sử dụng giao dịch đang mở của booking.
+  Future<PaymentIntentModel> createPaymentIntent(
+      String bookingId, String provider) async {
     final resp = await _dio.post<Map<String, dynamic>>(
       ApiPaths.paymentIntents,
-      data: {'bookingId': bookingId},
+      data: {'bookingId': bookingId, 'provider': provider},
     );
     return PaymentIntentModel.fromJson(resp.data ?? {});
+  }
+
+  Future<PaymentIntentModel> createVnPayIntent(String bookingId) =>
+      createPaymentIntent(bookingId, 'VNPAY');
+
+  Future<List<PaymentProviderModel>> getPaymentProviders() async {
+    final response = await _dio.get<List<dynamic>>('/payments/providers');
+    return (response.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(PaymentProviderModel.fromJson)
+        .toList();
+  }
+
+  Future<PaymentIntentModel> getPaymentIntent(String id) async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('${ApiPaths.paymentIntents}/$id');
+    return PaymentIntentModel.fromJson(response.data ?? {});
   }
 
   // ── Mutations ────────────────────────────────────────────────────────────────
@@ -208,11 +226,13 @@ class BookingRepository {
   }
 
   /// Huỷ booking.
-  Future<void> cancelBooking(String bookingId, {String? reason}) async {
-    await _dio.post<void>(
+  Future<BookingModel> cancelBooking(String bookingId, {String? reason}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.bookingCancel(bookingId),
-      data: reason != null ? {'reason': reason} : null,
+      // API yêu cầu JSON body kể cả khi không có lý do hủy.
+      data: {'reason': reason},
     );
+    return BookingModel.fromJson(response.data ?? {});
   }
 
   // ── GPS push (Caregiver) ─────────────────────────────────────────────────────
@@ -240,7 +260,25 @@ class BookingRepository {
   }
 }
 
-/// Dữ liệu URL và trạng thái thanh toán VNPay trả về cho customer app.
+class PaymentProviderModel {
+  const PaymentProviderModel(
+      {required this.code,
+      required this.name,
+      required this.description,
+      required this.enabled});
+  final String code;
+  final String name;
+  final String description;
+  final bool enabled;
+  factory PaymentProviderModel.fromJson(Map<String, dynamic> json) =>
+      PaymentProviderModel(
+          code: json['code']?.toString() ?? '',
+          name: json['name']?.toString() ?? '',
+          description: json['description']?.toString() ?? '',
+          enabled: json['enabled'] == true);
+}
+
+/// URL và trạng thái được backend xác nhận, không suy ra từ callback trình duyệt.
 class PaymentIntentModel {
   final String id;
   final String status;

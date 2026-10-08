@@ -88,9 +88,12 @@ internal sealed class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, R
             return roleRequirement.Error;
 
         user.RecordLogin(now);
+        if (user.Email == email) user.VerifyEmail(now);
         await _store.SaveChangesAsync(ct);
 
-        var tokens = await _sessions.IssueAsync(user, ct);
+        var issued = await _sessions.TryIssueAsync(user, ct);
+        if (issued.IsFailure) return issued.Error;
+        var tokens = issued.Value;
 
         return new GoogleLoginResponse(
             tokens.AccessToken, tokens.RefreshToken,

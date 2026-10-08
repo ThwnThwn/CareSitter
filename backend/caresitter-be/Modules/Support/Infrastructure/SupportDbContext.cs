@@ -2,6 +2,7 @@ using CareSitter.Infrastructure.Persistence;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Support.Domain;
 using Microsoft.EntityFrameworkCore;
+using CareSitter.Messaging.Persistence.Outbox;
 
 namespace CareSitter.Modules.Support.Infrastructure;
 
@@ -23,6 +24,21 @@ public sealed class SupportDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyKafkaOutbox(SchemaName);
+        modelBuilder.Entity<NotificationDelivery>(b =>
+        {
+            b.ToTable("notification_deliveries", SchemaName);
+            b.HasKey(x => new { x.EventId, x.Channel });
+            b.Property(x => x.EventId).HasColumnName("event_id");
+            b.Property(x => x.Channel).HasColumnName("channel");
+            b.Property(x => x.NotificationId).HasColumnName("notification_id");
+            b.Property(x => x.Status).HasColumnName("status");
+            b.Property(x => x.ClaimToken).HasColumnName("claim_token");
+            b.Property(x => x.LeaseUntil).HasColumnName("lease_until");
+            b.Property(x => x.SentAt).HasColumnName("sent_at");
+            b.Property(x => x.LastError).HasColumnName("last_error");
+            b.HasOne<Notification>().WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<Dispute>(b =>
         {

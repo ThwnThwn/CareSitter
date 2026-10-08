@@ -31,11 +31,20 @@ public abstract class ModuleDbContext : DbContext
         return await base.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Không dùng SaveChanges() đồng bộ — sẽ bỏ qua RLS context.
+    /// Luôn dùng SaveChangesAsync để đảm bảo set_config được gọi trước khi ghi.
+    /// </summary>
+    [Obsolete("Dùng SaveChangesAsync để đảm bảo RLS context được thiết lập trước khi ghi.", error: true)]
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        => throw new InvalidOperationException(
+            "SaveChanges() đồng bộ không được phép trong ModuleDbContext vì sẽ bỏ qua RLS context. Dùng SaveChangesAsync().");
+
+    /// <inheritdoc cref="SaveChanges(bool)"/>
+    [Obsolete("Dùng SaveChangesAsync để đảm bảo RLS context được thiết lập trước khi ghi.", error: true)]
     public override int SaveChanges()
-    {
-        UpdateTimestamps();
-        return base.SaveChanges();
-    }
+        => throw new InvalidOperationException(
+            "SaveChanges() đồng bộ không được phép trong ModuleDbContext vì sẽ bỏ qua RLS context. Dùng SaveChangesAsync().");
 
     private void UpdateTimestamps()
     {
@@ -68,10 +77,13 @@ public abstract class ModuleDbContext : DbContext
         if (_currentUser?.UserId is not { } userId)
             return;
 
-        // SET LOCAL chi co hieu luc trong transaction hien tai.
+        // Dùng false (session-level) thay SET LOCAL (transaction-local) để RLS context
+        // có tác dụng kể cả khi SaveChangesAsync gọi ngoài outer transaction.
+        // Connection pool tự reset session khi trả connection về pool;
+        // không cần reset thủ công giữa các request.
         await Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT set_config('app.current_user_id', {userId.ToString()}, true)", ct);
+            $"SELECT set_config('app.current_user_id', {userId.ToString()}, false)", ct);
         await Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT set_config('app.current_user_role', {string.Join(',', _currentUser.Roles)}, true)", ct);
+            $"SELECT set_config('app.current_user_role', {string.Join(',', _currentUser.Roles)}, false)", ct);
     }
 }

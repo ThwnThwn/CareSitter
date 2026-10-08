@@ -51,6 +51,7 @@ app.*.map.json
 *.class
 
 # ---------- Environment ----------
+maps.local.json
 .env
 .env.local
 !.env.example

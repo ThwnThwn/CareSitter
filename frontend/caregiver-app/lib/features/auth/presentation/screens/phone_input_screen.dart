@@ -6,7 +6,8 @@ import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
-  const PhoneInputScreen({super.key});
+  const PhoneInputScreen({super.key, this.startWithOtp = false});
+  final bool startWithOtp;
 
   @override
   ConsumerState<PhoneInputScreen> createState() => _PhoneInputScreenState();
@@ -19,6 +20,12 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   bool _isLoading = false;
   bool _usePassword = true;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _usePassword = !widget.startWithOtp;
+  }
 
   @override
   void dispose() {
@@ -334,6 +341,13 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                               onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword),
                             ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _isLoading ? null : () => context.push('/auth/forgot-password'),
+                            child: const Text('Quên mật khẩu?'),
                           ),
                         ),
                         const SizedBox(height: 20),

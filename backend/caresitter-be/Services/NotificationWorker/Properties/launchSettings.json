@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CareSitter.NotificationWorker": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:52156;http://localhost:52157"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "MAP_PROVIDER": "carto",
+  "CARTO_API_KEY": "",
+  "GOOGLE_MAPS_ANDROID_API_KEY": "",
+  "GOOGLE_MAPS_IOS_API_KEY": "",
+  "GOOGLE_MAPS_WEB_API_KEY": ""
+}

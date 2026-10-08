@@ -37,4 +37,33 @@ void main() {
       isNull,
     );
   });
+
+  test(
+      'payment callbacks retain safe identifiers and never trust supplied success',
+      () {
+    expect(
+        service.resolveRoute({
+          'deepLink':
+              'caresitter-customer:/payment-result?bookingId=booking-123&intentId=intent-123&result=success&redirect=https://evil.example'
+        }),
+        '/payment-result?bookingId=booking-123&intentId=intent-123&result=pending');
+    expect(
+        service.resolveRoute({
+          'deepLink':
+              'caresitter-customer://payment-result?bookingId=booking-123'
+        }),
+        '/payment-result?bookingId=booking-123&result=pending');
+    expect(
+        service.resolveRoute({
+          'deepLink':
+              'https://evil.example/payment-result?bookingId=booking-123&result=success'
+        }),
+        isNull);
+    expect(
+        service.resolveRoute({
+          'deepLink':
+              'caresitter-customer:/payment-result?bookingId=../settings'
+        }),
+        isNull);
+  });
 }

@@ -93,6 +93,7 @@ class BookingModel {
   final String
       status; // pending | confirmed | caregiver_en_route | in_progress | ...
   final int escrowAmount;
+  final int? customerPayableAmount;
   final int platformFeeAmount;
   final DateTime? cancelledAt;
   final String? cancelReason;
@@ -127,6 +128,7 @@ class BookingModel {
     this.checkoutSource,
     required this.status,
     required this.escrowAmount,
+    this.customerPayableAmount,
     required this.platformFeeAmount,
     this.cancelledAt,
     this.cancelReason,
@@ -220,7 +222,8 @@ class BookingModel {
   double get totalPrice => escrowAmount.toDouble();
   String? get disputeReason => cancelReason;
   bool get isSystemMatched => true;
-  String get paymentLabel => 'Ví CareSitter';
+  String get paymentLabel => 'Thanh toán CareSitter';
+  int get payableAmount => customerPayableAmount ?? escrowAmount;
   double get platformRevenue => platformFeeAmount.toDouble();
   double get caregiverEarning => (escrowAmount - platformFeeAmount).toDouble();
   DateTime? get consentAcceptedAt => createdAt;
@@ -297,6 +300,7 @@ class BookingModel {
       checkoutSource: checkoutSource ?? this.checkoutSource,
       status: status ?? this.status,
       escrowAmount: escrowAmount,
+      customerPayableAmount: customerPayableAmount,
       platformFeeAmount: platformFeeAmount,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancelReason: cancelReason ?? this.cancelReason,
@@ -342,6 +346,9 @@ class BookingModel {
       checkoutSource: _string(json['checkoutSource']),
       status: _normalizeStatus(_string(json['status']) ?? 'draft'),
       escrowAmount: _int(json['escrowAmount']),
+      customerPayableAmount: json['customerPayableAmount'] == null
+          ? null
+          : _int(json['customerPayableAmount']),
       platformFeeAmount: _int(json['platformFeeAmount']),
       cancelledAt: _parseNullableApiDateTime(json['cancelledAt']),
       cancelReason: _string(json['cancelReason']),

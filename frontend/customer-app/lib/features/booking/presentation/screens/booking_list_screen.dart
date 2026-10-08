@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/booking/presentation/models/booking_status_presentation.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
 
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
@@ -224,17 +225,11 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   }
 
   Widget _buildBookingCard(BookingModel booking) {
-    final status = booking.presentationStatusAt(DateTime.now());
-    final isWaitingCaregiver =
-        status == 'confirmed' && booking.caregiverId == null;
-    final statusConfig = isWaitingCaregiver
-        ? {
-            'label': 'Chờ ghép CSV',
-            'color': AppColors.warning,
-            'bg': AppColors.warningLight,
-          }
-        : _getStatusConfig(status);
-    final borderColor = statusConfig['color'] as Color;
+    final now = DateTime.now();
+    final status = booking.presentationStatusAt(now);
+    final statusConfig = BookingStatusPresentation.forBooking(booking, now: now);
+    final isWaitingCaregiver = statusConfig.isWaitingCaregiver;
+    final borderColor = statusConfig.color;
 
     return GestureDetector(
       onTap: () => context.push('/bookings/${booking.id}'),
@@ -278,11 +273,11 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: (statusConfig['bg'] as Color),
+                          color: statusConfig.backgroundColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          statusConfig['label'] as String,
+                          statusConfig.label,
                           style: TextStyle(
                               color: borderColor,
                               fontSize: 11,
@@ -463,112 +458,6 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
         ),
       ),
     );
-  }
-
-  Map<String, dynamic> _getStatusConfig(String status) {
-    switch (status.toLowerCase()) {
-      case 'in_progress':
-        return {
-          'label': 'Đang diễn ra',
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-        };
-      case 'caregiver_en_route':
-        return {
-          'label': 'Đang đến',
-          'color': const Color(0xFF0284C7),
-          'bg': const Color(0xFFE0F2FE),
-        };
-      case 'caregiver_accepted':
-      case 'assigned':
-        return {
-          'label': 'Đã nhận ca',
-          'color': const Color(0xFF2980B9),
-          'bg': const Color(0xFFEBF5FB),
-        };
-      case 'checkout_pending_review':
-        return {
-          'label': 'Chờ xác nhận',
-          'color': const Color(0xFF8E44AD),
-          'bg': const Color(0xFFF4ECF7),
-        };
-      case 'disputed':
-        return {
-          'label': 'Đang xử lý',
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-        };
-      case 'confirmed':
-        return {
-          'label': 'Đã xác nhận',
-          'color': AppColors.primary,
-          'bg': AppColors.primaryContainer,
-        };
-      case 'pending':
-      case 'pending_payment':
-        return {
-          'label': 'Chờ thanh toán',
-          'color': AppColors.secondary,
-          'bg': AppColors.warningLight,
-        };
-      case 'payment_reconciliation_pending':
-        return {
-          'label': 'Đang đối soát',
-          'color': const Color(0xFF0369A1),
-          'bg': const Color(0xFFE0F2FE),
-        };
-      case 'needs_manual_review':
-        return {
-          'label': 'Chờ kiểm tra',
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-        };
-      case 'draft':
-        return {
-          'label': 'Bản nháp',
-          'color': AppColors.textHint,
-          'bg': AppColors.background,
-        };
-      case 'completed':
-        return {
-          'label': 'Hoàn thành',
-          'color': AppColors.textSecondary,
-          'bg': AppColors.surface,
-        };
-      case 'cancelled':
-        return {
-          'label': 'Đã huỷ',
-          'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC),
-        };
-      case 'refunded':
-        return {
-          'label': 'Đã hoàn tiền',
-          'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC),
-        };
-      case 'crisis':
-        return {
-          'label': 'Khẩn cấp',
-          'color': AppColors.error,
-          'bg': AppColors.errorLight,
-        };
-      case 'matching_failed':
-        return {
-          'label': 'Chưa ghép được',
-          'color': AppColors.warning,
-          'bg': AppColors.warningLight,
-        };
-      default:
-        final formattedLabel = status.replaceAll('_', ' ');
-        return {
-          'label': formattedLabel.isEmpty
-              ? 'Chi tiết ca'
-              : formattedLabel[0].toUpperCase() + formattedLabel.substring(1),
-          'color': AppColors.textSecondary,
-          'bg': AppColors.surface,
-        };
-    }
   }
 
   String _formatCurrencyFull(double amount) {

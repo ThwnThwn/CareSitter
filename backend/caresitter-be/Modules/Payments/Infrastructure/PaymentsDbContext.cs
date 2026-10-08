@@ -3,6 +3,7 @@ using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Outbox;
 using CareSitter.Modules.Payments.Domain;
 using Microsoft.EntityFrameworkCore;
+using CareSitter.Messaging.Persistence.Outbox;
 
 namespace CareSitter.Modules.Payments.Infrastructure;
 
@@ -26,6 +27,7 @@ public sealed class PaymentsDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyKafkaOutbox(SchemaName);
 
         modelBuilder.Entity<WalletAccount>(b =>
         {
@@ -56,6 +58,10 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.ProviderTransactionId).HasColumnName("provider_transaction_id").HasMaxLength(255);
             b.Property(x => x.ProviderOrderRef).HasColumnName("provider_order_ref").HasMaxLength(100);
             b.Property(x => x.ProviderCreateDate).HasColumnName("provider_create_date").HasMaxLength(14);
+            b.Property(x => x.ProviderLinkId).HasColumnName("provider_link_id").HasMaxLength(100);
+            b.Property(x => x.CheckoutUrl).HasColumnName("checkout_url");
+            b.Property(x => x.ProviderAccountNumber).HasColumnName("provider_account_number").HasMaxLength(100);
+            b.Property(x => x.ProviderExpiresAt).HasColumnName("provider_expires_at");
             b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(255);
             b.Property(x => x.RequestPayload).HasColumnName("request_payload").HasColumnType("jsonb");
             b.Property(x => x.ResponsePayload).HasColumnName("response_payload").HasColumnType("jsonb");
@@ -70,9 +76,12 @@ public sealed class PaymentsDbContext : ModuleDbContext
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.HasIndex(x => x.IdempotencyKey).IsUnique();
             b.HasIndex(x => new { x.Provider, x.ProviderOrderRef }).IsUnique();
-            b.HasIndex(x => new { x.BookingId, x.Provider })
+            b.HasIndex(x => new { x.Provider, x.ProviderLinkId }).IsUnique()
+                .HasFilter("provider_link_id IS NOT NULL")
+                .HasDatabaseName("ux_payment_intent_provider_link");
+            b.HasIndex(x => x.BookingId)
                 .IsUnique()
-                .HasFilter("status = 'PENDING'")
+                .HasFilter("status IN ('CREATED', 'PENDING')")
                 .HasDatabaseName("ux_payment_intent_one_pending_per_booking");
             b.Ignore(x => x.DomainEvents);
         });

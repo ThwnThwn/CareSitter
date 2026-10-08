@@ -121,7 +121,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
     if (!isAuth) return;
     try {
       final response = await _repo.getBookings(pageSize: 50);
-      state = response.items;
+      state = _sortByRecentActivity(response.items);
       // Đặt cursor từ response initial load — dùng làm mốc bắt đầu delta sync.
       _lastCursor = response.syncCursor;
     } catch (e) {
@@ -207,8 +207,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
         changed.add(b);
       }
     }
-    state = map.values.toList()
-      ..sort((a, b) => b.scheduledStart.compareTo(a.scheduledStart));
+    state = _sortByRecentActivity(map.values);
     return changed;
   }
 
@@ -222,7 +221,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
         caregiverId: draft.caregiverId!,
       );
     }
-    state = [created, ...state];
+    state = _sortByRecentActivity([created, ...state]);
     return created;
   }
 
@@ -278,12 +277,12 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   Future<void> cancel(String bookingId, {String? reason}) async {
     try {
-      await _repo.cancelBooking(bookingId, reason: reason);
-      // Cập nhật status local để UI phản hồi ngay
-      _updateStatus(bookingId, 'cancelled');
+      final updated = await _repo.cancelBooking(bookingId, reason: reason);
+      _applyUpdate(updated);
     } catch (e) {
       // ignore: avoid_print
       print('[BookingStore] cancel error: $e');
+      rethrow;
     }
   }
 
@@ -456,16 +455,17 @@ class BookingStore extends Notifier<List<BookingModel>> {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _applyUpdate(BookingModel updated) {
-    state = [
+    state = _sortByRecentActivity([
       for (final b in state)
         if (b.id == updated.id) updated else b,
-    ];
+    ]);
   }
 
-  void _updateStatus(String id, String newStatus) {
-    state = [
-      for (final b in state)
-        if (b.id == id) b.copyWith(status: newStatus) else b,
-    ];
-  }
+  /// Đồng nhất thứ tự sau GET, delta sync và thao tác trực tiếp với API.
+  List<BookingModel> _sortByRecentActivity(Iterable<BookingModel> bookings) =>
+      bookings.toList()
+        ..sort((a, b) {
+          final byUpdatedAt = b.updatedAt.compareTo(a.updatedAt);
+          return byUpdatedAt != 0 ? byUpdatedAt : b.id.compareTo(a.id);
+        });
 }

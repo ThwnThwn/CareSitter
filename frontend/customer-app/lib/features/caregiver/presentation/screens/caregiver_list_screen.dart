@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/loading_list.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
-import 'package:caresitter_customer/features/caregiver/presentation/controllers/caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/controllers/nearby_caregiver_controller.dart';
+import 'package:caresitter_customer/features/caregiver/presentation/widgets/caregiver_location_selector.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
 
@@ -56,7 +57,9 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final caregiverAsync = ref.watch(caregiverStoreProvider);
+    final caregiverAsync = ref.watch(nearbyCaregiversProvider);
+    final hasLocation =
+        ref.watch(caregiverSearchAddressProvider).valueOrNull != null;
     final topPadding = MediaQuery.of(context).padding.top;
     final unreadCount = ref
             .watch(notificationsProvider)
@@ -68,16 +71,23 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: caregiverAsync.when(
-        skipError: true,
-        loading: () => const SafeArea(child: LoadingList()),
+        skipLoadingOnRefresh: false,
+        loading: () => const SafeArea(
+            child: Column(children: [
+          Padding(
+              padding: EdgeInsets.all(16), child: CaregiverLocationSelector()),
+          Expanded(child: LoadingList()),
+        ])),
         error: (e, _) => Center(
             child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Padding(
+                padding: EdgeInsets.all(16),
+                child: CaregiverLocationSelector()),
             const Text('Chưa tải được danh sách chăm sóc viên.'),
             TextButton(
-                onPressed: () =>
-                    ref.read(caregiverStoreProvider.notifier).refresh(),
+                onPressed: () => ref.invalidate(nearbyCaregiversProvider),
                 child: const Text('Thử lại')),
           ],
         )),
@@ -86,19 +96,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (caregiverAsync.isLoading) const LinearProgressIndicator(),
-              if (caregiverAsync.hasError)
-                SafeArea(
-                    bottom: false,
-                    child: ListTile(
-                      title: const Text(
-                          'Chưa cập nhật được. Đang hiển thị dữ liệu đã tải.'),
-                      trailing: TextButton(
-                        onPressed: () =>
-                            ref.read(caregiverStoreProvider.notifier).refresh(),
-                        child: const Text('Thử lại'),
-                      ),
-                    )),
               // ── Flat header ──
               Container(
                 color: Colors.white,
@@ -136,7 +133,9 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  '${allCaregivers.length} sẵn sàng',
+                                  hasLocation
+                                      ? '${allCaregivers.length} trong khu vực'
+                                      : 'Chưa chọn địa chỉ',
                                   style: const TextStyle(
                                     color: AppColors.primary,
                                     fontSize: 11,
@@ -147,23 +146,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          const Row(
-                            children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 13, color: AppColors.textSecondary),
-                              SizedBox(width: 2),
-                              Expanded(
-                                child: Text(
-                                  'Hồ Chí Minh (Q.1, Q.3, Bình Thạnh)',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -204,6 +186,8 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 child: Column(
                   children: [
+                    const CaregiverLocationSelector(),
+                    const SizedBox(height: 12),
                     // Search
                     TextField(
                       controller: _searchCtrl,
@@ -241,19 +225,14 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                       child: Row(
                         children: [
                           _FilterChip(
-                            label: '📍 Gần tôi nhất',
-                            isActive: true,
-                            onTap: () {},
+                            label: 'Tất cả trong khu vực',
+                            isActive: !_showAvailableOnly,
+                            onTap: () =>
+                                setState(() => _showAvailableOnly = false),
                           ),
                           const SizedBox(width: 8),
                           _FilterChip(
-                            label: '🏥 Có chứng chỉ',
-                            isActive: false,
-                            onTap: () {},
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterChip(
-                            label: '💰 Giá ưu đãi',
+                            label: 'Đang trực tuyến',
                             isActive: _showAvailableOnly,
                             onTap: () => setState(
                                 () => _showAvailableOnly = !_showAvailableOnly),
@@ -269,15 +248,27 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
               // ── List ──
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('🔍', style: TextStyle(fontSize: 40)),
-                            SizedBox(height: 12),
+                            Icon(
+                              hasLocation
+                                  ? Icons.search
+                                  : Icons.location_on_outlined,
+                              size: 40,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(height: 12),
                             Text(
-                              'Không tìm thấy người chăm sóc phù hợp',
-                              style: TextStyle(color: AppColors.textSecondary),
+                              !hasLocation
+                                  ? 'Chọn địa chỉ chăm sóc để xem người ở gần.'
+                                  : allCaregivers.isEmpty
+                                      ? 'Chưa có chăm sóc viên phục vụ địa chỉ này.\nThử đổi địa chỉ chăm sóc.'
+                                      : 'Không có chăm sóc viên khớp bộ lọc.\nThử đổi từ khóa hoặc trạng thái trực tuyến.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -379,27 +370,33 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Icon(Icons.star_rounded,
-                              color: AppColors.secondary, size: 14),
-                          const SizedBox(width: 3),
-                          Text(
-                            caregiver.ratingAvg.toStringAsFixed(1),
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            '  (${caregiver.ratingCount})',
-                            style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 12),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded,
+                                  color: AppColors.secondary, size: 14),
+                              const SizedBox(width: 3),
+                              Text(
+                                caregiver.ratingAvg.toStringAsFixed(1),
+                                style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                ' (${caregiver.ratingCount})',
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12),
+                              ),
+                            ],
                           ),
                           if (caregiver.yearsOfExperience != null) ...[
-                            const Text('  △  ',
-                                style: TextStyle(
-                                    color: AppColors.textHint, fontSize: 11)),
                             Text(
                               '${caregiver.yearsOfExperience} năm kinh nghiệm',
                               style: const TextStyle(
@@ -424,6 +421,12 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
             ),
 
             // ── Skills ──
+            if (caregiver.distanceLabel != null) ...[
+              const SizedBox(height: 10),
+              Text('Khoảng ${caregiver.distanceLabel} từ địa chỉ chăm sóc',
+                  style:
+                      const TextStyle(color: AppColors.primary, fontSize: 12)),
+            ],
             if (caregiver.skills.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
@@ -455,30 +458,27 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
             const SizedBox(height: 12),
 
             // ── Price + Action buttons ──
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Giá dịch vụ',
-                        style:
-                            TextStyle(color: AppColors.textHint, fontSize: 11),
-                      ),
-                      Text(
-                        caregiver.hourlyRateExpected != null
-                            ? '${_formatCurrency(caregiver.hourlyRateExpected!.toDouble())}/giờ'
-                            : 'Liên hệ',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+            LayoutBuilder(builder: (context, constraints) {
+              final price = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Giá dịch vụ',
+                    style: TextStyle(color: AppColors.textHint, fontSize: 11),
                   ),
-                ),
+                  Text(
+                    caregiver.hourlyRateExpected != null
+                        ? '${_formatCurrency(caregiver.hourlyRateExpected!.toDouble())}/giờ'
+                        : 'Liên hệ',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              );
+              final actions = <Widget>[
                 OutlinedButton(
                   onPressed: () => context.push('/caregivers/${caregiver.id}'),
                   style: OutlinedButton.styleFrom(
@@ -494,7 +494,6 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                       style:
                           TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
-                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () =>
                       context.push('/booking/new?caregiverId=${caregiver.id}'),
@@ -511,8 +510,25 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
                     elevation: 0,
                   ),
                 ),
-              ],
-            ),
+              ];
+              final textScale = MediaQuery.textScalerOf(context).scale(13) / 13;
+              if (constraints.maxWidth < 360 * textScale) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    price,
+                    const SizedBox(height: 10),
+                    Wrap(spacing: 8, runSpacing: 8, children: actions),
+                  ],
+                );
+              }
+              return Row(children: [
+                Expanded(child: price),
+                actions[0],
+                const SizedBox(width: 8),
+                actions[1],
+              ]);
+            }),
           ],
         ),
       ),

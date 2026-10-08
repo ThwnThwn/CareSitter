@@ -23,9 +23,14 @@ internal sealed class BookingReadStore(BookingDbContext db) : IBookingReadStore
             query = query.Where(x => x.Status == criteria.Status.Value);
 
         var total = await query.CountAsync(ct);
-        query = criteria.Audience == BookingReadAudience.OfferInbox
-            ? query.OrderBy(x => x.ScheduledStart)
-            : query.OrderByDescending(x => x.ScheduledStart);
+        query = criteria.Audience switch
+        {
+            // Ưu tiên thao tác gần nhất (đặt, hủy, hoàn tất) trước khi phân trang.
+            BookingReadAudience.Customer => query.OrderByDescending(x => x.UpdatedAt)
+                .ThenByDescending(x => x.Id),
+            BookingReadAudience.OfferInbox => query.OrderBy(x => x.ScheduledStart),
+            _ => query.OrderByDescending(x => x.ScheduledStart)
+        };
         var items = await query.Skip((criteria.Page - 1) * criteria.PageSize)
             .Take(criteria.PageSize).ToListAsync(ct);
         return new BookingPage(items, total);

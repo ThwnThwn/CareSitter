@@ -35,6 +35,12 @@ internal sealed class RefreshTokenSessionService(
         string? deviceInfo = null,
         string? ipAddress = null)
     {
+        var expectedVersion = user.RecoveryVersion;
+        await using var issuanceTransaction = await db.Database.BeginTransactionAsync(ct);
+        var current = await db.Users.FromSqlInterpolated($"SELECT * FROM identity.users WHERE id = {user.Id} FOR UPDATE")
+            .AsNoTracking().SingleOrDefaultAsync(ct);
+        if (current is null || current.RecoveryVersion != expectedVersion || current.Status != "ACTIVE" || current.DeletedAt is not null)
+            throw new AuthenticationStateChangedException();
         deviceId ??= CurrentHeader("X-Device-Id");
         deviceInfo ??= CurrentHeader("User-Agent");
         ipAddress ??= httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
@@ -51,10 +57,11 @@ internal sealed class RefreshTokenSessionService(
 
         db.RefreshTokenSessions.Add(session);
         await db.SaveChangesAsync(ct); // DB first: cache failure must not lose the session.
+        await issuanceTransaction.CommitAsync(ct);
         await TrySetCacheAsync(session, ct);
 
         return new IssuedTokenPair(
-            jwtTokenService.GenerateAccessToken(user.Id, user.Roles, user.DisplayName, session.Id),
+            jwtTokenService.GenerateAccessToken(current.Id, current.Roles, current.DisplayName, session.Id),
             rawRefreshToken);
     }
 
@@ -108,6 +115,10 @@ internal sealed class RefreshTokenSessionService(
         int revoked;
         await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
+            user = await db.Users.FromSqlInterpolated($"SELECT * FROM identity.users WHERE id = {session.UserId} FOR UPDATE")
+                .AsNoTracking().SingleOrDefaultAsync(ct);
+            if (user is null || user.Status != "ACTIVE" || user.DeletedAt is not null)
+                return Error.Validation("auth.invalid_refresh_token", "Phiên đăng nhập không còn hiệu lực.");
             db.RefreshTokenSessions.Add(newSession);
             await db.SaveChangesAsync(ct);
 
@@ -250,34 +261,7 @@ internal sealed class RefreshTokenSessionService(
         var session = await db.RefreshTokenSessions.AsNoTracking()
             .SingleOrDefaultAsync(x => x.TokenHash == tokenHash, ct);
 
-        // Rolling-deploy compatibility: the previous implementation cached a
-        // plain userId. Import that still-valid legacy session into PostgreSQL
-        // on its first refresh, then all later rotations use durable records.
-        if (session is null && Guid.TryParse(cachedSessionId, out var legacyUserId))
-        {
-            var userExists = await db.Users.AsNoTracking()
-                .AnyAsync(x => x.Id == legacyUserId && x.Status == "ACTIVE", ct);
-            if (userExists)
-            {
-                var now = DateTimeOffset.UtcNow;
-                var imported = RefreshTokenSession.Create(
-                    legacyUserId, tokenHash, now, now.Add(_lifetime));
-                db.RefreshTokenSessions.Add(imported);
-                try
-                {
-                    await db.SaveChangesAsync(ct);
-                    session = imported;
-                    logger.LogInformation(
-                        "Imported a legacy Redis refresh session into PostgreSQL.");
-                }
-                catch (DbUpdateException)
-                {
-                    db.Entry(imported).State = EntityState.Detached;
-                    session = await db.RefreshTokenSessions.AsNoTracking()
-                        .SingleOrDefaultAsync(x => x.TokenHash == tokenHash, ct);
-                }
-            }
-        }
+        // Không nhập session Redis kiểu cũ: chúng không có bản ghi để reset thu hồi.
 
         if (session is not null && session.IsActiveAt(DateTimeOffset.UtcNow))
             await TrySetCacheAsync(session, ct); // warm cache after Redis restart/eviction.

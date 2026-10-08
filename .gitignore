@@ -152,4 +152,6 @@ yarn-error.log*
 pnpm-debug.log*
 
 # =====================  DOCS/REPORTS  ===============
+# Tài liệu Markdown tập trung trong plan/ và chỉ lưu local theo yêu cầu.
+/plan/
 baocao/

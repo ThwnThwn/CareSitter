@@ -6,5 +6,6 @@ public enum PaymentFinalizationSource
     ReturnFallback,
     RetryPreflight,
     ReconciliationJob,
-    AdminManual
+    AdminManual,
+    PayOSWebhook
 }

@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using CareSitter.Messaging.Persistence;
 
 namespace CareSitter.Modules.Payments;
 
@@ -78,6 +79,15 @@ public sealed class PaymentsModule : IModule
             client.Timeout = TimeSpan.FromSeconds(10))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddScoped<IPaymentFinalizationService, PaymentFinalizationService>();
+        services.AddOptions<PayOSOptions>().Bind(configuration.GetSection(PayOSOptions.SectionName))
+            .Validate(PayOSOptions.IsValid, "payOS bật cần đủ ClientId, ApiKey, ChecksumKey và URL HTTPS.")
+            .ValidateOnStart();
+        services.AddHttpClient<IPayOSService, PayOSService>(client => client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddScoped<IPayOSPaymentPortal, PayOSPaymentPortal>();
+        services.AddScoped<IPaymentStatusGateway, PaymentStatusGateway>();
+        services.AddModuleOutbox<PaymentsDbContext>(configuration, PaymentsDbContext.SchemaName,
+            string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));
         services.AddScoped<IPaymentWebhookProcessor, PaymentWebhookProcessor>();
         services.AddScoped<IVnPayCallbackProcessor, VNPayCallbackProcessor>();
         services.AddScoped<IPaymentReconciliationProcessor, PaymentReconciliationProcessor>();

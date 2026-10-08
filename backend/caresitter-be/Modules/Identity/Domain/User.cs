@@ -14,6 +14,8 @@ public sealed class User : AggregateRoot
 
     public string? Phone { get; private set; }
     public string Email { get; private set; } = null!;
+    public DateTimeOffset? EmailVerifiedAt { get; private set; }
+    public long RecoveryVersion { get; private set; }
     public string? DisplayName { get; private set; }
     public Guid? AvatarMediaId { get; private set; }
     /// <summary>URL ảnh đại diện trên Cloudinary. Ưu tiên dùng cái này để render.</summary>
@@ -80,7 +82,7 @@ public sealed class User : AggregateRoot
         FullName = fullName?.Trim();
         if (!string.IsNullOrWhiteSpace(email))
         {
-            Email = email.Trim().ToLowerInvariant();
+            ChangeEmail(email);
         }
         DisplayName = !string.IsNullOrWhiteSpace(displayName) ? displayName.Trim() : fullName?.Trim();
     }
@@ -96,7 +98,7 @@ public sealed class User : AggregateRoot
         string? gender)
     {
         FullName = fullName.Trim();
-        Email = email.Trim().ToLowerInvariant();
+        ChangeEmail(email);
         DisplayName = string.IsNullOrWhiteSpace(displayName)
             ? FullName
             : displayName.Trim();
@@ -109,6 +111,7 @@ public sealed class User : AggregateRoot
     /// </summary>
     public void SetRoles(string[] roles)
     {
+        if (!Roles.SequenceEqual(roles ?? Array.Empty<string>())) RecoveryVersion++;
         Roles = roles ?? Array.Empty<string>();
     }
 
@@ -118,6 +121,7 @@ public sealed class User : AggregateRoot
         if (normalized is not ("ACTIVE" or "SUSPENDED" or "LOCKED"))
             return Error.Validation("user.status", "Trạng thái phải là ACTIVE, SUSPENDED hoặc LOCKED.");
 
+        if (Status != normalized) RecoveryVersion++;
         Status = normalized;
         return Result.Success();
     }
@@ -160,6 +164,18 @@ public sealed class User : AggregateRoot
     public void SetPassword(string passwordHash)
     {
         PasswordHash = passwordHash;
+        RecoveryVersion++;
+    }
+
+    public void VerifyEmail(DateTimeOffset time) => EmailVerifiedAt = time;
+
+    public void ChangeEmail(string email)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        if (Email == normalized) return;
+        Email = normalized;
+        EmailVerifiedAt = null;
+        RecoveryVersion++;
     }
 
     /// <summary>

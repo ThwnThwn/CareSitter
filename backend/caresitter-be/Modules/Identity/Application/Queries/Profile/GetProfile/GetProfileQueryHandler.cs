@@ -18,5 +18,5 @@ internal sealed class GetProfileQueryHandler(IIdentityStore store, ICurrentUser 
 
     internal static ProfileResponse ToProfile(User user) => new(
         user.Id, user.Phone, user.Email, user.FullName!, user.DisplayName!, user.DateOfBirth,
-        user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles);
+        user.Gender, user.AvatarMediaId, user.AvatarUrl, user.DefaultAddressId, user.Roles, user.EmailVerifiedAt, user.PasswordHash is not null);
 }

@@ -16,17 +16,28 @@ internal sealed class PaymentPortal(
     IVNPayService vnPay,
     IPaymentFinalizationService finalizer,
     IPaymentOutboxDispatcher outbox,
+    IPayOSPaymentPortal payOS,
     IOptions<VNPayOptions> vnPayOptions,
     IClock clock) : IPaymentPortal
 {
     public async Task<Result<PaymentIntentCreationOutcome>> CreateIntentAsync(
-        Guid bookingId, Guid userId, string? customerName, CancellationToken ct = default)
+        Guid bookingId, Guid userId, string? customerName, CancellationToken ct = default, string provider = "VNPAY")
     {
+        provider = provider?.Trim().ToUpperInvariant() ?? "";
+        if (provider == "PAYOS") return await payOS.CreateIntentAsync(bookingId, userId, ct);
+        if (provider != "VNPAY") return Error.Validation("payments.provider", "Phương thức thanh toán không hợp lệ.");
+        if (string.IsNullOrWhiteSpace(vnPayOptions.Value.TmnCode) || string.IsNullOrWhiteSpace(vnPayOptions.Value.HashSecret))
+            return Error.Validation("PAYMENT_PROVIDER_UNAVAILABLE", "Phương thức thanh toán này hiện chưa khả dụng.");
         var booking = await bookings.GetForCustomerAsync(bookingId, userId, ct);
         if (booking is null)
             return Error.NotFound("payments.booking_not_found", "Không tìm thấy booking.");
         var admission = PaymentIntentCreationPolicy.CheckBooking(booking, clock.UtcNow);
         if (admission is not null) return Conflict(admission);
+        if (await paymentsDb.PaymentIntents.AnyAsync(x => x.BookingId == bookingId && x.Status == "SUCCEEDED", ct))
+            return Conflict("Booking đã thanh toán thành công.", "PAYMENT_ALREADY_SUCCEEDED");
+        if (await paymentsDb.PaymentIntents.AnyAsync(x => x.BookingId == bookingId &&
+                x.Provider != "VNPAY" && (x.Status == "CREATED" || x.Status == "PENDING"), ct))
+            return Conflict("Booking đang có giao dịch tại cổng khác. Hãy hoàn tất giao dịch đó trước.", "PAYMENT_PROVIDER_IN_PROGRESS");
 
         var paymentTimeout = TimeSpan.FromMinutes(
             Math.Clamp(vnPayOptions.Value.PaymentTimeoutMinutes, 1, 60));
@@ -107,6 +118,9 @@ internal sealed class PaymentPortal(
             if (raced is not null)
                 return new PaymentIntentCreationOutcome(
                     ToResponse(raced, vnPay, vnPayOptions.Value, customerName), false);
+            if (await paymentsDb.PaymentIntents.AsNoTracking().AnyAsync(x => x.BookingId == bookingId &&
+                    (x.Status == "CREATED" || x.Status == "PENDING"), ct))
+                return Conflict("Booking đang có giao dịch tại cổng khác.", "PAYMENT_PROVIDER_IN_PROGRESS");
             if (hold.CreatedHoldId is { } holdId)
                 await bookings.ReleaseSlotHoldAsync(booking.BookingId, holdId, ct);
             throw;
@@ -121,6 +135,13 @@ internal sealed class PaymentPortal(
     {
         var intent = await paymentsDb.PaymentIntents.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == intentId && x.CustomerId == userId, ct);
+        if (intent?.Provider == "PAYOS")
+        {
+            await payOS.RefreshAsync(intent.Id, ct);
+            paymentsDb.ChangeTracker.Clear();
+            intent = await paymentsDb.PaymentIntents.AsNoTracking().SingleAsync(x => x.Id == intentId, ct);
+            return PayOSPaymentPortal.ToResponse(intent);
+        }
         return intent is null ? null : ToResponse(intent);
     }
 

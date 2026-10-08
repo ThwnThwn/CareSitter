@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="../../Shared/CareSitter.Messaging.Contracts/CareSitter.Messaging.Contracts.csproj" />
+    <ProjectReference Include="../../Shared/CareSitter.Messaging.Abstractions/CareSitter.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../../Shared/CareSitter.Messaging.Persistence/CareSitter.Messaging.Persistence.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Contracts\CareSitter.Contracts.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Infrastructure\CareSitter.Infrastructure.csproj" />
@@ -13,6 +16,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
+    <InternalsVisibleTo Include="CareSitter.Messaging.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

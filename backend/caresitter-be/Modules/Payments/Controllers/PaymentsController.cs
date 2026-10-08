@@ -21,7 +21,7 @@ public sealed class PaymentsController : ControllerBase
         [FromBody] CreatePaymentIntentRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(
-            new CreatePaymentIntentCommand(request.BookingId, User.Identity?.Name), ct);
+            new CreatePaymentIntentCommand(request.BookingId, User.Identity?.Name, request.Provider), ct);
         return result.ToActionResult(this, outcome =>
         {
             if (outcome.Conflict is { } conflict)
@@ -52,6 +52,10 @@ public sealed class PaymentsController : ControllerBase
         var result = await _mediator.Send(new GetPaymentIntentQuery(id), ct);
         return result.ToActionResult(this);
     }
+
+    [HttpGet("api/v1/payments/providers")]
+    public async Task<IActionResult> ListProviders(CancellationToken ct) =>
+        Ok(await _mediator.Send(new ListPaymentProvidersQuery(), ct));
 
     [HttpGet("api/v1/wallet")]
     public async Task<IActionResult> GetMyWallet(CancellationToken ct)
