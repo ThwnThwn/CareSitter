@@ -17,8 +17,20 @@ internal sealed class PeopleRepository(PeopleDbContext db) : IPeopleRepository
 
     public Task<Beneficiary?> GetBeneficiaryAsync(
         Guid id, Guid customerId, CancellationToken ct = default) =>
-        db.Beneficiaries.SingleOrDefaultAsync(x =>
-            x.Id == id && x.CustomerId == customerId && x.DeletedAt == null, ct);
+        // Update/delete/link khóa cùng hàng để không sửa hoặc xóa dựa trên cờ self cũ.
+        db.Beneficiaries.FromSqlInterpolated($"SELECT * FROM people.beneficiaries WHERE id = {id} AND customer_id = {customerId} AND deleted_at IS NULL FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+
+    public async Task LockSelfBeneficiaryAsync(Guid customerId, CancellationToken ct = default)
+    {
+        // Khóa theo owner đến hết transaction: POST và link dùng chung bất biến singleton.
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({'s' + customerId.ToString()}, 0))", ct);
+    }
+
+    public Task<Beneficiary?> GetSelfBeneficiaryAsync(Guid customerId, CancellationToken ct = default) =>
+        db.Beneficiaries.Where(x => x.CustomerId == customerId && x.IsSelf)
+            .OrderBy(x => x.DeletedAt != null).FirstOrDefaultAsync(ct);
 
     public void AddBeneficiary(Beneficiary beneficiary) => db.Beneficiaries.Add(beneficiary);
 

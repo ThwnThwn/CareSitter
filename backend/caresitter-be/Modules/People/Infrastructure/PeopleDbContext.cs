@@ -29,6 +29,13 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id");
             b.Property(x => x.CustomerId).HasColumnName("customer_id");
+            b.Property(x => x.IsSelf).HasColumnName("is_self");
+            b.Property(x => x.HealthProfileRevision).HasColumnName("health_profile_revision").ValueGeneratedOnAddOrUpdate();
+            b.Property(x => x.FoodAllergyStatus).HasColumnName("food_allergy_status");
+            b.Property(x => x.FoodAllergyConfirmedAt).HasColumnName("food_allergy_confirmed_at");
+            b.Property(x => x.FoodAllergyConfirmedBy).HasColumnName("food_allergy_confirmed_by");
+            b.HasIndex(x => x.CustomerId).HasDatabaseName("ux_beneficiaries_active_self_customer")
+                .IsUnique().HasFilter("is_self = true AND deleted_at IS NULL");
             b.Property(x => x.FullName).HasColumnName("full_name").HasMaxLength(255);
             b.Property(x => x.DateOfBirth).HasColumnName("date_of_birth").HasColumnType("date");
             b.Property(x => x.Gender).HasColumnName("gender").HasMaxLength(20);

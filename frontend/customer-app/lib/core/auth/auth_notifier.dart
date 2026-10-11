@@ -15,7 +15,16 @@ final authStateProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
   final Set<Future<void> Function()> _logoutCleanups = {};
-  bool _isLoggingOut = false;
+  int _sessionGeneration = 0;
+  int? _loggingOutGeneration;
+  Future<void> _storageWrites = Future<void>.value();
+  int get sessionGeneration => _sessionGeneration;
+  Future<void> _persist(Future<void> Function() action) {
+    final operation = _storageWrites.then((_) => action(),
+        onError: (Object error, StackTrace stack) => action());
+    _storageWrites = operation;
+    return operation;
+  }
 
   @override
   Future<AuthState> build() async {
@@ -45,34 +54,49 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String userId,
     required String phone,
   }) async {
-    await _storage.write(key: _kAccessToken, value: accessToken);
-    await _storage.write(key: _kRefreshToken, value: refreshToken);
-    await _storage.write(key: _kUserId, value: userId);
-    await _storage.write(key: _kPhone, value: phone);
-    state = AsyncData(AuthState(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      userId: userId,
-      phone: phone,
-      isAuthenticated: true,
-    ));
+    final generation = ++_sessionGeneration;
+    await _persist(() async {
+      if (generation != _sessionGeneration) return;
+      await _storage.write(key: _kAccessToken, value: accessToken);
+      await _storage.write(key: _kRefreshToken, value: refreshToken);
+      await _storage.write(key: _kUserId, value: userId);
+      await _storage.write(key: _kPhone, value: phone);
+      if (generation == _sessionGeneration) {
+        state = AsyncData(AuthState(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            userId: userId,
+            phone: phone,
+            isAuthenticated: true));
+      }
+    });
   }
 
   Future<void> updateTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
-    await _storage.write(key: _kAccessToken, value: accessToken);
-    await _storage.write(key: _kRefreshToken, value: refreshToken);
-    state = AsyncData(state.value!.copyWith(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    ));
+    final generation = _sessionGeneration;
+    final previous = state.value;
+    if (previous?.isAuthenticated != true) return;
+    await _persist(() async {
+      if (generation != _sessionGeneration ||
+          state.value?.refreshToken != previous!.refreshToken) {
+        return;
+      }
+      await _storage.write(key: _kAccessToken, value: accessToken);
+      await _storage.write(key: _kRefreshToken, value: refreshToken);
+      if (generation == _sessionGeneration) {
+        state = AsyncData(previous.copyWith(
+            accessToken: accessToken, refreshToken: refreshToken));
+      }
+    });
   }
 
   Future<void> logout() async {
-    if (_isLoggingOut) return;
-    _isLoggingOut = true;
+    if (_loggingOutGeneration == _sessionGeneration) return;
+    final generation = ++_sessionGeneration;
+    _loggingOutGeneration = generation;
     try {
       for (final cleanup in List.of(_logoutCleanups)) {
         try {
@@ -81,10 +105,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           // Logout must still clear the local session when remote cleanup fails.
         }
       }
-      await _storage.deleteAll();
-      state = const AsyncData(AuthState.initial());
+      await _persist(() async {
+        if (generation != _sessionGeneration) return;
+        await _storage.deleteAll();
+        if (generation == _sessionGeneration) {
+          state = const AsyncData(AuthState.initial());
+        }
+      });
     } finally {
-      _isLoggingOut = false;
+      if (_loggingOutGeneration == generation) _loggingOutGeneration = null;
     }
   }
 

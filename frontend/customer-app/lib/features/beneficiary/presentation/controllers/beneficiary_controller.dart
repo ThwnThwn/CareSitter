@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -16,6 +15,16 @@ final beneficiaryStoreProvider =
 );
 
 class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
+  int _sessionGeneration = 0;
+  int _loadGeneration = 0;
+  String? get _userId => ref.read(authStateProvider).value?.userId;
+
+  void acceptSaved(BeneficiaryModel value) {
+    if (_userId == null) return;
+    _loadGeneration++;
+    state = [...state.where((b) => b.id != value.id), value];
+  }
+
   BeneficiaryRepository get _repository =>
       ref.read(beneficiaryRepositoryProvider);
 
@@ -23,6 +32,10 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
   List<BeneficiaryModel> build() {
     // Lắng nghe đăng nhập để tải dữ liệu người thân của user thật
     ref.listen(authStateProvider, (prev, next) {
+      if (prev?.value?.userId != next.value?.userId) {
+        _sessionGeneration++;
+        state = const [];
+      }
       final isAuth = next.value?.isAuthenticated ?? false;
       if (isAuth) {
         _loadFromBackend();
@@ -37,18 +50,27 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
   }
 
   Future<void> _loadFromBackend() async {
+    final session = _sessionGeneration;
+    final userId = _userId;
+    final generation = ++_loadGeneration;
     final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) return;
 
     try {
       final addresses = await _readAddresses();
       final addressesById = {
-        for (final address in addresses) address.id: address
+        for (final address in addresses) address.id: address.fullAddress
       };
       final data = await _repository.getBeneficiaries();
+      if (session != _sessionGeneration ||
+          userId != _userId ||
+          generation != _loadGeneration) {
+        return;
+      }
       if (data.isNotEmpty) {
         final list = data
-            .map((item) => _fromBackend(item, addressesById: addressesById))
+            .map((item) => BeneficiaryModel.fromBackend(item,
+                addressesById: addressesById))
             .toList();
         state = list;
       } else {
@@ -61,7 +83,8 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
 
   Future<BeneficiaryModel> add({
     required String name,
-    required int age,
+    required DateTime? dateOfBirth,
+    required String? gender,
     required String relation,
     required String condition,
     required String careLevel,
@@ -70,6 +93,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     required List<EmergencyContact> emergencyContacts,
     XFile? avatarFile,
   }) async {
+    final session = _sessionGeneration;
     final initials = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -81,10 +105,11 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     final beneficiary = BeneficiaryModel(
       id: localId,
       name: name.trim(),
-      age: age,
+      dateOfBirth: dateOfBirth,
+      gender: gender,
       relation: relation,
       avatarInitial: initials.isNotEmpty ? initials : 'B',
-      condition: condition.isEmpty ? 'Chưa có ghi chú' : condition,
+      condition: condition.trim(),
       careLevel: careLevel,
       notes: notes.trim(),
       address: defaultAddress.fullAddress,
@@ -97,39 +122,32 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
 
     try {
       final synced = await _syncAddToBackend(beneficiary, avatarFile);
-      return synced ?? beneficiary;
+      return synced;
     } catch (_) {
-      state = previousState;
+      if (session == _sessionGeneration) state = previousState;
       rethrow;
     }
   }
 
-  Future<BeneficiaryModel?> _syncAddToBackend(
+  Future<BeneficiaryModel> _syncAddToBackend(
     BeneficiaryModel b,
     XFile? avatarFile,
   ) async {
-    final approxBirthYear = DateTime.now().year - b.age;
+    final session = _sessionGeneration;
     final avatarUrl = await _uploadAvatar(avatarFile);
-    final data = await _repository.createBeneficiary({
-      'FullName': b.name,
-      'DateOfBirth': '$approxBirthYear-01-01',
-      'RelationshipToCustomer': b.relation,
-      'GeneralNote': b.condition,
-      'CareInstructions': b.notes,
-      'DefaultAddressId': b.defaultAddressId,
-      'CareLevel': b.careLevel,
-      'EmergencyContacts': b.emergencyContacts
-          .map((contact) => contact.toJson())
-          .toList(growable: false),
-      'AvatarUrl': avatarUrl,
-    });
+    if (session != _sessionGeneration) throw StateError('Phiên đã thay đổi.');
+    final data = await _repository.createBeneficiary(
+      b.toProfileRequest(avatarUrl: avatarUrl),
+    );
+    if (session != _sessionGeneration) throw StateError('Phiên đã thay đổi.');
 
-    final synced = data == null
-        ? null
-        : _fromBackend(
-            data,
-            addressesById: const {},
-          );
+    final synced = BeneficiaryModel.fromBackend(data, addressesById: {
+      if (b.defaultAddressId != null) b.defaultAddressId!: b.address
+    });
+    state = [
+      for (final item in state)
+        if (item.id == b.id) synced else item
+    ];
     await _loadFromBackend();
     return synced;
   }
@@ -137,7 +155,8 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
   Future<void> update(
     String id, {
     String? name,
-    int? age,
+    required DateTime? dateOfBirth,
+    required String? gender,
     String? relation,
     String? condition,
     String? careLevel,
@@ -146,6 +165,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     List<EmergencyContact>? emergencyContacts,
     XFile? avatarFile,
   }) async {
+    final session = _sessionGeneration;
     final previousState = state;
     BeneficiaryModel? matched;
     for (final beneficiary in state) {
@@ -155,7 +175,7 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
       }
     }
     final current = matched;
-    if (current == null) return;
+    if (current == null) throw StateError('Không tìm thấy hồ sơ người thân.');
     BeneficiaryModel? updatedItem;
     state = [
       for (final b in state)
@@ -163,7 +183,8 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
           (() {
             final updated = b.copyWith(
               name: name,
-              age: age,
+              dateOfBirth: dateOfBirth,
+              gender: gender,
               relation: relation,
               avatarInitial: name
                   ?.trim()
@@ -194,10 +215,10 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
         id,
         updatedItem!,
         avatarFile,
-        current.avatarPath,
+        current,
       );
     } catch (_) {
-      state = previousState;
+      if (session == _sessionGeneration) state = previousState;
       rethrow;
     }
   }
@@ -206,38 +227,43 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     String id,
     BeneficiaryModel b,
     XFile? avatarFile,
-    String? currentAvatarUrl,
+    BeneficiaryModel previous,
   ) async {
+    final session = _sessionGeneration;
     final isGuid = RegExp(
             r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
         .hasMatch(id);
-    if (!isGuid) return;
+    if (!isGuid) throw StateError('Hồ sơ chưa được lưu trên máy chủ.');
 
-    final approxBirthYear = DateTime.now().year - b.age;
     final uploadedAvatarUrl = await _uploadAvatar(avatarFile);
+    if (session != _sessionGeneration) throw StateError('Phiên đã thay đổi.');
     final avatarUrl = uploadedAvatarUrl ??
-        (_isRemoteUrl(currentAvatarUrl) ? currentAvatarUrl : null);
-    await _repository.updateBeneficiary(id, {
-      'FullName': b.name,
-      'DateOfBirth': '$approxBirthYear-01-01',
-      'RelationshipToCustomer': b.relation,
-      'GeneralNote': b.condition,
-      'CareInstructions': b.notes,
-      'DefaultAddressId': b.defaultAddressId,
-      'CareLevel': b.careLevel,
-      'EmergencyContacts': b.emergencyContacts
-          .map((contact) => contact.toJson())
-          .toList(growable: false),
-      'AvatarUrl': avatarUrl,
+        (_isRemoteUrl(previous.avatarPath) ? previous.avatarPath : null);
+    final data = await _repository.updateBeneficiary(
+      id,
+      b.toProfileRequest(previous: previous, avatarUrl: avatarUrl),
+    );
+    if (session != _sessionGeneration) throw StateError('Phiên đã thay đổi.');
+    final synced = BeneficiaryModel.fromBackend(data, addressesById: {
+      if (b.defaultAddressId != null) b.defaultAddressId!: b.address
     });
+    state = [
+      for (final item in state)
+        if (item.id == id) synced else item
+    ];
     await _loadFromBackend();
   }
 
-  void delete(String id) {
-    state = state.where((b) => b.id != id).toList();
-    try {
-      unawaited(_repository.deleteBeneficiary(id));
-    } catch (_) {}
+  Future<void> delete(String id) async {
+    if (state.any((b) => b.id == id && b.isSelf)) {
+      throw StateError(
+          'Vui lòng sửa thông tin chăm sóc của tôi thay vì xóa hồ sơ.');
+    }
+    final session = _sessionGeneration;
+    await _repository.deleteBeneficiary(id);
+    if (session == _sessionGeneration) {
+      state = state.where((b) => b.id != id).toList();
+    }
   }
 
   Future<List<AddressModel>> _readAddresses() async {
@@ -248,91 +274,12 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     }
   }
 
-  BeneficiaryModel _fromBackend(
-    Map<String, dynamic> map, {
-    required Map<String, AddressModel> addressesById,
-  }) {
-    final id = (map['id'] ?? map['Id'])?.toString() ?? '';
-    final fullName =
-        (map['fullName'] ?? map['FullName']) as String? ?? 'Người thân';
-    final dobStr = (map['dateOfBirth'] ?? map['DateOfBirth']) as String?;
-    var age = 70;
-    if (dobStr != null) {
-      final parsedDob = DateTime.tryParse(dobStr);
-      if (parsedDob != null) {
-        age = DateTime.now().year - parsedDob.year;
-      }
-    }
-    final relation = (map['relationshipToCustomer'] ??
-            map['RelationshipToCustomer']) as String? ??
-        'Người thân';
-    final mobilityNote =
-        (map['mobilityNote'] ?? map['MobilityNote']) as String?;
-    final generalNote = (map['generalNote'] ?? map['GeneralNote']) as String?;
-    final careInstructions =
-        (map['careInstructions'] ?? map['CareInstructions']) as String? ?? '';
-    final defaultAddressId =
-        (map['defaultAddressId'] ?? map['DefaultAddressId'])?.toString();
-    final address = defaultAddressId == null
-        ? ''
-        : addressesById[defaultAddressId]?.fullAddress ?? '';
-    final careLevel = (map['careLevel'] ?? map['CareLevel'])?.toString().trim();
-    final avatarUrl = (map['avatarUrl'] ?? map['AvatarUrl'])?.toString().trim();
-    final emergencyContacts = _readEmergencyContacts(
-      map['emergencyContacts'] ?? map['EmergencyContacts'],
-    );
-
-    final initials = fullName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) => part[0].toUpperCase())
-        .take(3)
-        .join();
-
-    return BeneficiaryModel(
-      id: id,
-      name: fullName,
-      age: age,
-      relation: relation,
-      avatarInitial: initials.isNotEmpty ? initials : 'B',
-      condition: generalNote ?? mobilityNote ?? 'Bình thường',
-      careLevel:
-          careLevel == null || careLevel.isEmpty ? 'Trung bình' : careLevel,
-      notes: careInstructions,
-      address: address,
-      defaultAddressId: defaultAddressId,
-      emergencyContacts: emergencyContacts,
-      avatarPath: avatarUrl == null || avatarUrl.isEmpty ? null : avatarUrl,
-    );
-  }
-
   Future<String?> _uploadAvatar(XFile? avatarFile) async {
     if (avatarFile == null) return null;
     return _repository.uploadAvatar(
       await avatarFile.readAsBytes(),
       avatarFile.name,
     );
-  }
-
-  List<EmergencyContact> _readEmergencyContacts(Object? raw) {
-    Object? value = raw;
-    if (value is String && value.trim().isNotEmpty) {
-      try {
-        value = jsonDecode(value);
-      } catch (_) {
-        return const [];
-      }
-    }
-    if (value is! List) return const [];
-
-    return value
-        .whereType<Map>()
-        .map((item) => EmergencyContact.fromJson(
-              item.map((key, value) => MapEntry(key.toString(), value)),
-            ))
-        .where((contact) => contact.name.isNotEmpty && contact.phone.isNotEmpty)
-        .toList(growable: false);
   }
 
   bool _isRemoteUrl(String? value) {

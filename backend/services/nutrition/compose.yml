@@ -1,0 +1,37 @@
+services:
+  nutrition-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: nutrition
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${NUTRITION_DB_ADMIN_PASSWORD:?Set administrative DB password}
+      NUTRITION_DB_APP_PASSWORD: ${NUTRITION_DB_APP_PASSWORD:?Set runtime DB password}
+    volumes:
+      - nutrition-data:/var/lib/postgresql/data
+      - ../../init-db/nutrition-service/01-nutrition-workflow.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../init-db/nutrition-service/02-runtime-role.sql:/runtime-role.sql:ro
+      - ./scripts/02-runtime-role.sh:/docker-entrypoint-initdb.d/02-runtime-role.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d nutrition"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  nutrition:
+    build: .
+    ports: ["127.0.0.1:5035:8080"]
+    depends_on:
+      nutrition-db: {condition: service_healthy}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Nutrition: Host=nutrition-db;Database=nutrition;Username=nutrition_app;Password=${NUTRITION_DB_APP_PASSWORD:?Set runtime DB password}
+      Jwt__SecretKey: ${NUTRITION_JWT_SECRET:?Use JWT validation key of Identity}
+      Jwt__Issuer: ${NUTRITION_JWT_ISSUER:?Set issuer}
+      Jwt__Audience: ${NUTRITION_JWT_AUDIENCE:?Set audience}
+      People__BaseUrl: ${NUTRITION_PEOPLE_URL:-http://host.docker.internal:5033/}
+      People__ServiceKey: ${NUTRITION_INTERNAL_SERVICE_KEY:?Set internal credential}
+      Nutrition__Enabled: ${NUTRITION_ENABLED:-false}
+      Nutrition__AssessmentsEnabled: ${NUTRITION_ASSESSMENTS_ENABLED:-false}
+      Nutrition__RecommendationsEnabled: ${NUTRITION_RECOMMENDATIONS_ENABLED:-false}
+      Cors__AllowedOrigins__0: ${NUTRITION_CUSTOMER_ORIGIN:-http://localhost:3000}
+volumes:
+  nutrition-data:

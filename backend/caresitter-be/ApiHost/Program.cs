@@ -47,6 +47,11 @@ builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
 });
 builder.Services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
     MessagingServiceAuthenticationHandler>("MessagingService", _ => { });
+builder.Services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
+    NutritionServiceAuthenticationHandler>("NutritionService", _ => { });
+if (builder.Configuration["NutritionIntegration:ServiceKey"] is { Length: > 0 } nutritionServiceKey &&
+    nutritionServiceKey.Length is not (>= 32 and <= 256))
+    throw new InvalidOperationException("NutritionIntegration:ServiceKey must contain 32..256 characters.");
 if (builder.Configuration["KAFKA_FLOW_NOTIFICATIONS_ENABLED"]?.Equals("true", StringComparison.OrdinalIgnoreCase) == true &&
     (builder.Configuration["KAFKA_INTERNAL_SERVICE_KEY"]?.Length is not (>= 32 and <= 256)))
     throw new InvalidOperationException("KAFKA_INTERNAL_SERVICE_KEY must contain 32..256 characters.");
@@ -231,6 +236,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCareSitterSwagger();
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddPolicy("auth-session", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
     options.AddPolicy("auth-recovery", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
         {

@@ -1,4 +1,5 @@
 using CareSitter.Contracts.Services;
+using CareSitter.Contracts.Nutrition;
 using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Domain;
 using CareSitter.Modules.People.Infrastructure;
@@ -29,6 +30,7 @@ public sealed class PeopleModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
         services.AddValidatorsFromAssemblyContaining<PeopleModule>();
         services.AddScoped<IPeopleRepository, PeopleRepository>();
+        services.AddScoped<IBeneficiaryHealthSnapshotReader, BeneficiaryHealthSnapshotReader>();
         services.AddScoped<IPeopleReadStore, PeopleReadStore>();
         services.AddScoped<IPeopleLookupService, PeopleLookupService>();
         services.AddScoped<IMatchingCaregiverReader, MatchingCaregiverReader>();

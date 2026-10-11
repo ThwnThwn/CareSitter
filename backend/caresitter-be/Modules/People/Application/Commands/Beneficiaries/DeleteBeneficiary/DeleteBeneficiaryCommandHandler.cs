@@ -15,7 +15,8 @@ internal sealed class DeleteBeneficiaryCommandHandler(
         await using var tx = await repository.BeginUserScopeAsync(userId, ct);
         var entity = await repository.GetBeneficiaryAsync(request.BeneficiaryId, userId, ct);
         if (entity is null) return PeopleErrors.NotFound();
-        entity.Delete(DateTimeOffset.UtcNow);
+        var deleted = entity.Delete(DateTimeOffset.UtcNow);
+        if (deleted.IsFailure) return deleted.Error;
         await repository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Unit.Value;

@@ -33,6 +33,12 @@ public sealed class AuthController : ControllerBase
         _mediator = mediator;
     }
 
+    // Dịch vụ khác kiểm phiên qua JWT pipeline hiện hành, không đọc DB Identity.
+    [Authorize]
+    [HttpGet("session")]
+    [EnableRateLimiting("auth-session")]
+    public IActionResult Session() => NoContent();
+
     /// <summary>
     /// Sends a 6-digit OTP to the requested email address.
     /// </summary>

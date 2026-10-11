@@ -10,7 +10,7 @@ internal static class PeopleResponseMapper
         value.Phone, value.DefaultAddressId, value.MobilityNote, value.GeneralNote,
         Json(value.HealthHistory), Json(value.Allergies), Json(value.ChronicConditions),
         value.CareInstructions, value.CareLevel, value.AvatarUrl,
-        Json(value.EmergencyContacts), Json(value.Medications));
+        Json(value.EmergencyContacts), Json(value.Medications), value.IsSelf);
 
     public static FamilyContactResponse ToResponse(FamilyContact value) =>
         new(value.Id, value.FullName, value.PhoneNumber, value.Note);

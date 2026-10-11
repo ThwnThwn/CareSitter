@@ -7,4 +7,4 @@ public sealed record BeneficiaryResponse(Guid Id, string FullName, DateOnly? Dat
     string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
     JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
     string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
-    JsonElement? Medications);
+    JsonElement? Medications, bool IsSelf = false);

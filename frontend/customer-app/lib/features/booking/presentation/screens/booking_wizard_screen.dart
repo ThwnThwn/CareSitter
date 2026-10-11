@@ -1,3 +1,8 @@
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
+import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
+import '../controllers/self_recipient_controller.dart';
+import '../widgets/self_recipient_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +37,16 @@ class BookingWizardScreen extends ConsumerStatefulWidget {
 
 class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   int _currentStep = 0;
+  bool _forSelf = false;
+  bool _selfDateValid = true;
+  bool _initialResolved = false;
+  bool _bookingUncertain = false;
+  int _sessionVersion = 0;
+  BookingDraft? _uncertainDraft;
+  String _submitLabel = 'Đang đặt lịch…';
+  ProviderSubscription<AsyncValue<List<BeneficiaryModel>>>?
+      _recipientSubscription;
+  ProviderSubscription<AsyncValue<dynamic>>? _sessionSubscription;
   String? _selectedServiceId;
   String? _selectedBeneficiaryId;
   String? _selectedCaregiverId;
@@ -44,6 +59,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   String? _selectedAddressId; // ID địa chỉ thật từ API
 
   bool get _hasUnsavedChanges =>
+      _forSelf ||
       _selectedServiceId != widget.initialServiceId ||
       _selectedBeneficiaryId != widget.initialBeneficiaryId ||
       _selectedCaregiverId != null ||
@@ -60,42 +76,65 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     _selectedServiceId = widget.initialServiceId;
     _selectedBeneficiaryId = widget.initialBeneficiaryId;
 
-    // Nếu có initialBeneficiaryId, auto-set địa chỉ mặc định và bỏ qua bước chọn người thân
-    if (_selectedBeneficiaryId != null) {
+    _currentStep = _selectedServiceId == null ? 0 : 1;
+    _recipientSubscription =
+        ref.listenManual(bookingRecipientsProvider, (_, next) {
+      if (_initialResolved || widget.initialBeneficiaryId == null || !mounted) {
+        return;
+      }
+      final records = next.valueOrNull;
+      if (records == null) return;
+      _initialResolved = true;
+      final version = _sessionVersion;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final all = ref.read(beneficiaryStoreProvider);
-        try {
-          final b = all.firstWhere((b) => b.id == _selectedBeneficiaryId);
-          if (b.defaultAddressId != null) {
-            setState(() => _selectedAddressId = b.defaultAddressId);
-          }
-        } catch (_) {
-          // list chưa load xong hoặc không tìm thấy — bỏ qua, user có thể chọn địa chỉ thủ công
+        if (!mounted || version != _sessionVersion) return;
+        final matches =
+            records.where((b) => b.id == widget.initialBeneficiaryId);
+        if (matches.isEmpty) {
+          setState(() => _selectedBeneficiaryId = null);
+          return;
         }
+        final profile = matches.single;
+        if (profile.isSelf) {
+          ref.read(selfRecipientProvider.notifier).acceptExisting(profile);
+        }
+        setState(() {
+          _forSelf = profile.isSelf;
+          _selectedAddressId = profile.defaultAddressId;
+        });
       });
-    }
-
-    // Tính bước khởi đầu:
-    // - Có cả service lẫn beneficiary → Bước 2 (Lịch & địa chỉ)
-    // - Chỉ có beneficiary → Bước 0 (Dịch vụ) nhưng bước người thân đã pre-filled
-    // - Chỉ có service → Bước 1 (Người thân)
-    if (_selectedServiceId != null && _selectedBeneficiaryId != null) {
-      _currentStep = 2;
-    } else if (_selectedServiceId != null) {
-      _currentStep = 1;
-    }
-    // nếu chỉ có beneficiaryId thì vẫn bắt đầu từ Bước 0 để chọn dịch vụ
+    }, fireImmediately: true);
+    _sessionSubscription =
+        ref.listenManual(authStateProvider, (previous, next) {
+      if (previous?.value?.userId == next.value?.userId || !mounted) return;
+      _sessionVersion++;
+      setState(() {
+        _forSelf = false;
+        _selectedBeneficiaryId = null;
+        _selectedAddressId = null;
+        _selectedCaregiverId = null;
+        _selectedServiceId = null;
+        _selectedDate = null;
+        _startTime = null;
+        _consentAccepted = false;
+        _bookingUncertain = false;
+        _uncertainDraft = null;
+        _currentStep = 0;
+        _initialResolved = true;
+      });
+    });
   }
 
   @override
   void dispose() {
+    _recipientSubscription?.close();
+    _sessionSubscription?.close();
     super.dispose();
   }
 
   final List<String> _stepTitles = [
     'Dịch vụ',
-    'Người thân',
+    'Người nhận',
     'Lịch & địa chỉ',
     'Chăm sóc viên',
     'Đồng ý',
@@ -107,27 +146,29 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     final servicesAsync = ref.read(serviceStoreProvider);
     final list = servicesAsync.valueOrNull ?? [];
     if (list.isEmpty) return null;
-    return list.firstWhere((s) => s.id == _selectedServiceId,
-        orElse: () => list.first);
+    return list.where((s) => s.id == _selectedServiceId).firstOrNull;
   }
 
   BeneficiaryModel? get _selectedBeneficiary {
-    if (_selectedBeneficiaryId == null) return null;
-    final all = ref.read(beneficiaryStoreProvider);
-    if (all.isEmpty) return null;
-    return all.firstWhere(
-      (b) => b.id == _selectedBeneficiaryId,
-      orElse: () => all.first,
-    );
+    if (_forSelf) return ref.read(selfRecipientProvider).valueOrNull?.profile;
+    return ref
+        .read(bookingRecipientsProvider)
+        .valueOrNull
+        ?.where((b) => b.id == _selectedBeneficiaryId && !b.isSelf)
+        .firstOrNull;
   }
+
+  bool get _recipientReady => _forSelf
+      ? _selfDateValid &&
+          (ref.read(selfRecipientProvider).valueOrNull?.isComplete ?? false)
+      : _selectedBeneficiary != null;
 
   CaregiverModel? get _selectedCaregiver {
     if (_selectedCaregiverId == null) return null;
     final caregiverAsync = ref.read(caregiverStoreProvider);
     final list = caregiverAsync.valueOrNull ?? [];
     if (list.isEmpty) return null;
-    return list.firstWhere((c) => c.id == _selectedCaregiverId,
-        orElse: () => list.first);
+    return list.where((c) => c.id == _selectedCaregiverId).firstOrNull;
   }
 
   bool get _hasValidSchedule {
@@ -193,9 +234,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   bool get _canContinue {
     switch (_currentStep) {
       case 0:
-        return _selectedServiceId != null;
+        return _selectedService != null;
       case 1:
-        return _selectedBeneficiaryId != null;
+        return _recipientReady;
       case 2:
         return _hasValidSchedule && _selectedAddressIsVerified;
       case 3:
@@ -203,12 +244,19 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       case 4:
         return _consentAccepted;
       default:
-        return true;
+        return _recipientReady &&
+            _hasValidSchedule &&
+            _selectedAddressIsVerified &&
+            _consentAccepted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(bookingRecipientsProvider);
+    ref.watch(selfRecipientProvider);
+    ref.watch(serviceStoreProvider);
+    ref.watch(addressStoreProvider);
     return DiscardChangesGuard(
       hasChanges: () => _hasUnsavedChanges,
       fallbackRoute: '/home',
@@ -232,13 +280,16 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                child: FadeSlideStaggered(
-                  key: ValueKey(_currentStep),
-                  index: 0,
-                  child: _buildCurrentStep(),
-                ),
+                child: AbsorbPointer(
+                    absorbing: _isSubmitting || _bookingUncertain,
+                    child: FadeSlideStaggered(
+                      key: ValueKey(_currentStep),
+                      index: 0,
+                      child: _buildCurrentStep(),
+                    )),
               ),
             ),
+            if (_bookingUncertain) _buildUncertainBooking(),
             _buildBottomBar(context),
           ],
         ),
@@ -444,156 +495,203 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildBeneficiaryStep() {
-    final beneficiaries = ref.watch(beneficiaryStoreProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Người được chăm sóc',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        const Text('Chọn người thân cần được chăm sóc',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        if (widget.initialBeneficiaryId != null &&
-            _selectedBeneficiary != null) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryContainer,
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle,
-                    color: AppColors.primary, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Đã chọn sẵn: ${_selectedBeneficiary!.name} — bạn có thể đổi sang người khác nếu muốn.',
-                    style:
-                        const TextStyle(color: AppColors.primary, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 16),
-        ...beneficiaries.map((b) {
-          final isSelected = _selectedBeneficiaryId == b.id;
-          return GestureDetector(
-            onTap: () => setState(() {
-              _selectedBeneficiaryId = b.id;
-              if (b.defaultAddressId != null) {
-                _selectedAddressId = b.defaultAddressId;
-              }
-            }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                    width: isSelected ? 2 : 1),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.primaryLight,
-                    child: Text(b.avatarInitial,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(b.name,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600)),
-                        Text('${b.age} tuổi • ${b.relation} • ${b.careLevel}',
-                            style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 12)),
-                        Text(b.condition,
-                            style: const TextStyle(
-                                color: AppColors.textHint, fontSize: 11),
-                            overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    const Icon(Icons.check_circle,
-                        color: AppColors.primary, size: 22),
-                ],
-              ),
-            ),
-          );
-        }),
-        const SizedBox(height: 8),
-        // Nút thêm người thân mới từ trong wizard
-        GestureDetector(
-          onTap: () async {
-            await context.push('/beneficiaries/create');
-            // Sau khi pop về, beneficiaryStoreProvider đã cập nhật tự động
-            // Nếu chưa chọn ai, tự chọn hồ sơ mới nhất
-            if (_selectedBeneficiaryId == null && mounted) {
-              final updated = ref.read(beneficiaryStoreProvider);
-              final newOnes = updated
-                  .where((b) => !const ['b001', 'b002', 'b003'].contains(b.id))
-                  .toList();
-              if (newOnes.isNotEmpty) {
-                setState(() => _selectedBeneficiaryId = newOnes.last.id);
-              }
-            }
+    final records = ref.watch(bookingRecipientsProvider);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Bạn đặt dịch vụ cho ai?',
+          style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 12),
+      SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(
+                value: true,
+                label: Text('Tôi'),
+                icon: Icon(Icons.person_outline)),
+            ButtonSegment(
+                value: false,
+                label: Text('Người thân'),
+                icon: Icon(Icons.people_outline)),
+          ],
+          selected: {
+            _forSelf
           },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.5),
-                  width: 1.5,
-                  style: BorderStyle.solid),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.person_add_outlined,
-                    color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
-                Text('+ Thêm người thân mới',
-                    style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+          onSelectionChanged: (value) => setState(() {
+                _forSelf = value.single;
+                _selectedAddressId = _selectedBeneficiary?.defaultAddressId;
+              })),
+      const SizedBox(height: 20),
+      if (_forSelf)
+        _buildSelfRecipient()
+      else
+        records.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => _recipientError(
+                () => ref.invalidate(bookingRecipientsProvider)),
+            data: (items) => Column(children: [
+                  if (items.where((b) => !b.isSelf).isEmpty)
+                    const Text(
+                        'Chưa có hồ sơ người thân. Bạn có thể thêm ngay tại đây.'),
+                  for (final b in items.where((b) => !b.isSelf))
+                    RadioGroup<String>(
+                        groupValue: _selectedBeneficiaryId,
+                        onChanged: (id) => setState(() {
+                              _selectedBeneficiaryId = id;
+                              _selectedAddressId = b.defaultAddressId;
+                            }),
+                        child: RadioListTile<String>(
+                          value: b.id,
+                          title: Text(b.name),
+                          subtitle: Text('${b.ageLabel} • ${b.relation}'),
+                        )),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                      icon: const Icon(Icons.person_add_outlined),
+                      label: const Text('Thêm người thân mới'),
+                      onPressed: () async {
+                        final userId =
+                            ref.read(authStateProvider).value?.userId;
+                        final id =
+                            await context.push<String>('/beneficiaries/create');
+                        if (!mounted ||
+                            ref.read(authStateProvider).value?.userId !=
+                                userId ||
+                            id == null) {
+                          return;
+                        }
+                        ref.invalidate(bookingRecipientsProvider);
+                        try {
+                          final items =
+                              await ref.read(bookingRecipientsProvider.future);
+                          if (!mounted ||
+                              ref.read(authStateProvider).value?.userId !=
+                                  userId) {
+                            return;
+                          }
+                          final profile = items
+                              .where((b) => b.id == id && !b.isSelf)
+                              .firstOrNull;
+                          if (profile != null) {
+                            setState(() {
+                              _selectedBeneficiaryId = profile.id;
+                              _selectedAddressId = profile.defaultAddressId;
+                            });
+                          }
+                        } catch (_) {
+                          /* Provider hiển thị lỗi tải và thao tác thử lại. */
+                        }
+                      }),
+                ])),
+    ]);
   }
+
+  Widget _recipientError(VoidCallback retry) => Column(children: [
+        const Text('Không tải được thông tin. Vui lòng thử lại.'),
+        TextButton(onPressed: retry, child: const Text('Thử lại')),
+      ]);
+
+  Widget _buildSelfRecipient() => ref.watch(selfRecipientProvider).when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => _recipientError(
+          () => ref.read(selfRecipientProvider.notifier).load()),
+      data: (selected) {
+        final profile = selected.profile;
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (selected.kind != SelfRecipientKind.draft) ...[
+            Text('Tôi — ${profile.name}',
+                style: Theme.of(context).textTheme.titleMedium),
+            Text('${profile.ageLabel} • ${profile.careLevelLabel}'),
+            if (profile.condition.isNotEmpty) Text(profile.condition),
+            if (profile.notes.isNotEmpty) Text(profile.notes),
+            for (final contact in profile.emergencyContacts)
+              Text('${contact.name}: ${contact.phone}'),
+            if (!selected.isComplete)
+              const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text(
+                      'Vui lòng bổ sung họ tên và hai liên hệ khẩn cấp trước khi tiếp tục.')),
+            TextButton.icon(
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Sửa thông tin chăm sóc'),
+                onPressed: () async {
+                  ref
+                      .read(beneficiaryStoreProvider.notifier)
+                      .acceptSaved(profile);
+                  final userId = ref.read(authStateProvider).value?.userId;
+                  await context.push('/beneficiaries/${profile.id}/edit');
+                  if (!mounted ||
+                      ref.read(authStateProvider).value?.userId != userId) {
+                    return;
+                  }
+                  ref.invalidate(bookingRecipientsProvider);
+                  if (selected.kind == SelfRecipientKind.existing) {
+                    await ref.read(selfRecipientProvider.notifier).load();
+                  } else {
+                    try {
+                      final updated = await ref
+                          .read(beneficiaryRepositoryProvider)
+                          .getBeneficiary(profile.id);
+                      if (!mounted ||
+                          ref.read(authStateProvider).value?.userId != userId) {
+                        return;
+                      }
+                      ref
+                          .read(selfRecipientProvider.notifier)
+                          .selectLink(updated);
+                    } catch (_) {
+                      if (mounted) {
+                        ref.read(selfRecipientProvider.notifier).load();
+                      }
+                    }
+                  }
+                }),
+            if (selected.kind == SelfRecipientKind.link)
+              TextButton(
+                  onPressed: () =>
+                      ref.read(selfRecipientProvider.notifier).useDraft(),
+                  child: const Text('Dùng thông tin tài khoản')),
+          ] else ...[
+            SelfRecipientForm(
+                initial: profile,
+                onDateValidityChanged: (valid) {
+                  if (_selfDateValid != valid) {
+                    setState(() => _selfDateValid = valid);
+                  }
+                },
+                onChanged: (value) => ref
+                    .read(selfRecipientProvider.notifier)
+                    .updateDraft(value)),
+            const SizedBox(height: 16),
+            ExpansionTile(
+                title: const Text('Dùng hồ sơ đã có của tôi'),
+                children: [
+                  ref.watch(bookingRecipientsProvider).when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (_, __) => _recipientError(
+                          () => ref.invalidate(bookingRecipientsProvider)),
+                      data: (items) => Column(children: [
+                            if (items.where((b) => !b.isSelf).isEmpty)
+                              const ListTile(
+                                  title: Text('Chưa có hồ sơ để chọn.')),
+                            for (final item in items.where((b) => !b.isSelf))
+                              ListTile(
+                                  title: Text(item.name),
+                                  subtitle: Text(
+                                      '${item.ageLabel} • ${item.relation}'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () {
+                                    ref
+                                        .read(selfRecipientProvider.notifier)
+                                        .selectLink(item);
+                                    setState(() {
+                                      _selfDateValid = true;
+                                      _selectedAddressId =
+                                          item.defaultAddressId;
+                                    });
+                                  }),
+                          ]))
+                ]),
+          ],
+        ]);
+      });
 
   Widget _buildCaregiverStep() {
     // ref.watch → widget tự rebuild khi caregiver store load xong
@@ -840,7 +938,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 child: child!,
               ),
             );
-            if (picked != null) {
+            if (mounted && picked != null) {
               setState(() {
                 _selectedDate = picked;
                 _startTime = null;
@@ -956,7 +1054,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                       child: child!,
                     ),
                   );
-                  if (picked != null) {
+                  if (mounted && picked != null) {
                     final snapped = _snapToFiveMinutes(picked);
                     setState(() {
                       _startTime = snapped.time;
@@ -1089,38 +1187,16 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Tiêu đề
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.hourglass_top_rounded,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Thời lượng ca chăm sóc',
+                  const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Thời lượng ca chăm sóc',
                             style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'Linh hoạt theo giờ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                                fontSize: 15, fontWeight: FontWeight.w700)),
+                        Text('Linh hoạt theo giờ',
+                            style: TextStyle(
+                                fontSize: 12, color: AppColors.textSecondary)),
+                      ]),
                   const SizedBox(height: 14),
 
                   // 2. 4 Gói presets (2h, 4h, 8h, 12h)
@@ -1367,8 +1443,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 24),
 
         // ── Địa chỉ chăm sóc ────────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
           children: [
             const Text('Địa chỉ chăm sóc',
                 style: TextStyle(
@@ -1814,10 +1892,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             children: [
               Icon(Icons.info_outline, size: 14, color: AppColors.textHint),
               SizedBox(width: 6),
-              Text(
+              Expanded(
+                  child: Text(
                 'Bạn cần đồng ý với điều khoản để tiếp tục',
                 style: TextStyle(fontSize: 12, color: AppColors.textHint),
-              ),
+              )),
             ],
           ),
         ],
@@ -1877,8 +1956,15 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 10),
         _buildConfirmCard('Người được chăm sóc', [
           if (beneficiary != null)
-            _buildConfirmRow(
-                '👤', '${beneficiary.name} (${beneficiary.age} tuổi)'),
+            _buildConfirmRow('👤',
+                '${_forSelf ? 'Tôi — ' : ''}${beneficiary.name} (${beneficiary.ageLabel})'),
+          if (beneficiary != null && _forSelf) ...[
+            Text(beneficiary.careLevelLabel),
+            if (beneficiary.condition.isNotEmpty) Text(beneficiary.condition),
+            if (beneficiary.notes.isNotEmpty) Text(beneficiary.notes),
+            for (final c in beneficiary.emergencyContacts)
+              Text('${c.name}: ${c.phone}'),
+          ],
         ]),
         const SizedBox(height: 10),
         _buildConfirmCard('Người chăm sóc', [
@@ -2021,14 +2107,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         children: [
           if (_currentStep > 0) ...[
             IconButton(
-              onPressed: () => setState(() {
-                // Nếu đang ở bước 2 và người thân đã chọn sẵn → quay về bước 0 (bỏ qua bước 1)
-                if (_currentStep == 2 && widget.initialBeneficiaryId != null) {
-                  _currentStep = 0;
-                } else {
-                  _currentStep--;
-                }
-              }),
+              onPressed: _isSubmitting || _bookingUncertain
+                  ? null
+                  : () => setState(() => _currentStep--),
               tooltip: 'Quay lại bước trước',
               icon: const Icon(Icons.arrow_back_ios_new, size: 20),
               style: IconButton.styleFrom(
@@ -2041,34 +2122,24 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ],
           Expanded(
             child: ElevatedButton(
-              onPressed: _canContinue && !_isSubmitting
+              onPressed: _canContinue && !_isSubmitting && !_bookingUncertain
                   ? () {
                       if (isLastStep) {
                         _submitBooking();
                       } else {
                         setState(() {
-                          // Khi isSystemMatched=true: giữ caregiverId=null
-                          // Backend sẽ tự chọn caregiver phù hợp nhất.
-                          // Không force-set caregiverId ở đây.
-                          // Nếu đang ở bước 0 và người thân đã được chọn sẵn từ ngoài
-                          // → bỏ qua bước 1, nhảy thẳng sang bước 2
-                          if (_currentStep == 0 &&
-                              widget.initialBeneficiaryId != null) {
-                            _currentStep = 2;
-                          } else {
-                            _currentStep++;
+                          if (_currentStep == 1 && _selectedAddressId == null) {
+                            _selectedAddressId =
+                                _selectedBeneficiary?.defaultAddressId;
                           }
+                          _currentStep++;
                         });
                       }
                     }
                   : null,
               style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
               child: isLastStep && _isSubmitting
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white))
+                  ? Text(_submitLabel, textAlign: TextAlign.center)
                   : Text(isLastStep ? 'Xác nhận đặt lịch' : 'Tiếp theo'),
             ),
           ),
@@ -2078,13 +2149,25 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Future<void> _submitBooking() async {
-    if (_isSubmitting) return; // chặn double-submit
+    if (_isSubmitting || _bookingUncertain) return;
+    final sessionVersion = _sessionVersion;
+    final userId = ref.read(authStateProvider).value?.userId;
+    bool currentSession() =>
+        mounted &&
+        _sessionVersion == sessionVersion &&
+        ref.read(authStateProvider).value?.userId == userId;
     final service = _selectedService;
-    final beneficiary = _selectedBeneficiary;
+    var beneficiary = _selectedBeneficiary;
     final caregiver = _selectedCaregiver;
 
     // Guard: tat ca fields bat buoc phai co
-    if (service == null ||
+    if (userId == null ||
+        !_recipientReady ||
+        !_hasValidSchedule ||
+        !_selectedAddressIsVerified ||
+        !_consentAccepted ||
+        (!_isSystemMatched && caregiver == null) ||
+        service == null ||
         beneficiary == null ||
         _selectedDate == null ||
         _startTime == null ||
@@ -2112,18 +2195,38 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     final end = start.add(Duration(hours: _duration));
 
     try {
+      if (_forSelf) {
+        setState(() => _submitLabel = 'Đang lưu thông tin chăm sóc…');
+        final resolved = await ref
+            .read(selfRecipientProvider.notifier)
+            .resolve(_selectedAddressId!);
+        if (!mounted || !currentSession()) return;
+        beneficiary = resolved.profile;
+        ref.invalidate(bookingRecipientsProvider);
+        ref.read(beneficiaryStoreProvider.notifier).acceptSaved(beneficiary);
+        if (resolved.needsReview ||
+            !ref.read(selfRecipientProvider).requireValue.isComplete) {
+          setState(() => _currentStep = 1);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'Hồ sơ đã được cập nhật. Vui lòng kiểm tra lại trước khi đặt lịch.')));
+          return;
+        }
+      }
+      if (!mounted || !currentSession()) return;
+      setState(() => _submitLabel = 'Đang đặt lịch…');
+      final draft = BookingDraft(
+          beneficiaryId: beneficiary.id,
+          serviceTypeId: service.id,
+          caregiverId: caregiver?.id,
+          isSystemMatched: _isSystemMatched,
+          addressId: _selectedAddressId!,
+          scheduledStart: start,
+          scheduledEnd: end);
+      _uncertainDraft = draft;
       final booking =
-          await ref.read(bookingStoreProvider.notifier).createBooking(
-                BookingDraft(
-                  beneficiaryId: beneficiary.id,
-                  serviceTypeId: service.id,
-                  caregiverId: caregiver?.id,
-                  isSystemMatched: _isSystemMatched,
-                  addressId: _selectedAddressId!,
-                  scheduledStart: start,
-                  scheduledEnd: end,
-                ),
-              );
+          await ref.read(bookingStoreProvider.notifier).createBooking(draft);
+      if (!mounted || !currentSession()) return;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2134,7 +2237,16 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         );
         context.pushReplacement('/bookings/${booking.id}');
       }
+    } on BookingCreatedException catch (e) {
+      if (!mounted || !currentSession()) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Lịch đã được tạo. Chưa xác nhận được người chăm sóc; hãy kiểm tra trên lịch này.')));
+      context.pushReplacement('/bookings/${e.booking.id}');
+    } on BookingOutcomeUnknown {
+      if (currentSession()) setState(() => _bookingUncertain = true);
     } on DioException catch (e) {
+      if (!mounted || !currentSession()) return;
       final apiError = e.error;
       if (apiError is AppApiException) {
         _showSubmitApiError(apiError);
@@ -2142,9 +2254,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         _showGenericSubmitError();
       }
     } on AppApiException catch (e) {
+      if (!mounted || !currentSession()) return;
       _showSubmitApiError(e);
     } catch (e) {
-      _showGenericSubmitError();
+      if (currentSession()) _showGenericSubmitError();
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -2153,7 +2266,16 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   void _showSubmitApiError(AppApiException e) {
     if (!mounted) return;
 
-    final isCaregiverConflict = e.statusCode == 409;
+    final isCaregiverConflict = const {
+      'booking.caregiver.schedule_conflict',
+      'booking.caregiver.new_schedule_conflict',
+    }.contains(e.code);
+    if (e.code?.startsWith('beneficiary.') ?? false) {
+      setState(() => _currentStep = 1);
+      if (e.code == 'beneficiary.self_exists') {
+        ref.read(selfRecipientProvider.notifier).load();
+      }
+    }
     final msg = isCaregiverConflict
         ? 'Chăm sóc viên đã có lịch trong khung giờ này. Vui lòng chọn chăm sóc viên khác hoặc đổi giờ.'
         : e.message;
@@ -2178,12 +2300,62 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     );
   }
 
+  Widget _buildUncertainBooking() => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text(
+            'Chưa xác định được lịch đã tạo hay chưa. Kiểm tra lịch đã gửi trước khi đặt tiếp.'),
+        TextButton(
+            onPressed: _isSubmitting ? null : _checkUncertainBooking,
+            child: const Text('Kiểm tra lịch đã gửi')),
+        TextButton(
+            onPressed: () => context.go('/bookings'),
+            child: const Text('Xem danh sách lịch')),
+      ]));
+
+  Future<void> _checkUncertainBooking() async {
+    final draft = _uncertainDraft;
+    if (draft == null || _isSubmitting) return;
+    final userId = ref.read(authStateProvider).value?.userId;
+    setState(() => _isSubmitting = true);
+    try {
+      final result =
+          await ref.read(bookingRepositoryProvider).getBookings(pageSize: 100);
+      if (!mounted || ref.read(authStateProvider).value?.userId != userId) {
+        return;
+      }
+      final matches = result.items
+          .where((b) =>
+              b.beneficiaryId == draft.beneficiaryId &&
+              b.serviceTypeId == draft.serviceTypeId &&
+              b.addressId == draft.addressId &&
+              b.scheduledStart.isAtSameMomentAs(draft.scheduledStart) &&
+              b.scheduledEnd.isAtSameMomentAs(draft.scheduledEnd))
+          .toList();
+      if (matches.length == 1) {
+        context.pushReplacement('/bookings/${matches.single.id}');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Chưa xác minh được kết quả. Vui lòng kiểm tra danh sách lịch hoặc liên hệ hỗ trợ.')));
+      }
+    } catch (_) {
+      if (mounted && ref.read(authStateProvider).value?.userId == userId) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Chưa tải được lịch. Vui lòng kiểm tra lại.')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   void _showGenericSubmitError() {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Lỗi tạo booking. Vui lòng thử lại sau.'),
+        content: Text(
+            'Chưa hoàn tất đặt lịch. Vui lòng kiểm tra thông tin và thử lại.'),
         backgroundColor: AppColors.error,
       ),
     );
