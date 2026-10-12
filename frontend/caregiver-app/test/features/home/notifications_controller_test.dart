@@ -36,7 +36,7 @@ AppNotificationModel notification(String id, {bool read = false}) =>
         id: id,
         title: 'Title',
         body: 'Body',
-        time: 'Now',
+        createdAt: DateTime.utc(2026, 10, 12),
         type: 'system',
         isRead: read);
 Future<void> flush() => Future<void>.delayed(Duration.zero);

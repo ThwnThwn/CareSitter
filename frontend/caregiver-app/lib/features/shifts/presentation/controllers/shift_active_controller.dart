@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,14 +18,12 @@ final shiftActiveProvider = StateNotifierProvider.autoDispose
   ref.watch(authStateProvider
       .select((s) => (s.valueOrNull?.userId, s.valueOrNull?.isAuthenticated)));
   final controller = ShiftActiveController(RiverpodShiftActiveActions(ref, id));
-  ref.listen(
-      shiftsProvider,
-      (_, next) =>
-          controller.reconcile(next.where((b) => b.id == id).firstOrNull));
+  ref.listen(shiftsProvider,
+      (_, next) => controller.reconcile(next.where((b) => b.id == id).firstOrNull));
   Future.microtask(() {
     if (!controller.mounted) return;
-    controller.reconcile(
-        ref.read(shiftsProvider).where((b) => b.id == id).firstOrNull);
+    controller
+        .reconcile(ref.read(shiftsProvider).where((b) => b.id == id).firstOrNull);
     controller.loadTasks();
   });
   return controller;
@@ -58,8 +57,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         checkedIn: true,
         step: 3,
         startedAt: start,
-        elapsed: ShiftActiveRules.elapsed(
-            start, booking.checkoutRequestedAt ?? now));
+        elapsed:
+            ShiftActiveRules.elapsed(start, booking.checkoutRequestedAt ?? now));
     if (booking.status == 'in_progress' && enableTimer) {
       _timer ??= Timer.periodic(const Duration(seconds: 1), (_) => tick());
     } else {
@@ -70,8 +69,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
 
   void tick() {
     if (!mounted || state.startedAt == null) return;
-    state = state.copyWith(
-        elapsed: ShiftActiveRules.elapsed(state.startedAt!, _now()));
+    state =
+        state.copyWith(elapsed: ShiftActiveRules.elapsed(state.startedAt!, _now()));
   }
 
   Future<void> loadTasks() async {
@@ -89,12 +88,10 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
   }
 
   void setNote(String value) => state = state.copyWith(note: value);
-  Future<ShiftActionResult> uploadSelfie(XFile image) =>
-      _run('selfie', () async {
+  Future<ShiftActionResult> uploadSelfie(XFile image) => _run('selfie', () async {
         final url = await actions.uploadSelfie(image);
         if (url.isEmpty) {
-          throw const AppApiException(
-              message: 'Máy chủ chưa trả về ảnh selfie.');
+          throw const AppApiException(message: 'Máy chủ chưa trả về ảnh selfie.');
         }
         if (mounted) state = state.copyWith(selfieUrl: url, step: 2);
       });
@@ -107,10 +104,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         await actions.checkIn();
         if (mounted) reconcile(actions.snapshot);
       });
-  Future<ShiftActionResult> completeTask(String id) =>
-      _run('task:$id', () async {
-        final task =
-            actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
+  Future<ShiftActionResult> completeTask(String id) => _run('task:$id', () async {
+        final task = actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
         if (actions.snapshot?.canWorkChecklist != true ||
             task?.canComplete != true) {
           throw const AppApiException(
@@ -133,8 +128,7 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
       });
   Future<ShiftActionResult> uploadTaskPhoto(String id, XFile image) =>
       _run('task:$id', () async {
-        final task =
-            actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
+        final task = actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
         if (actions.snapshot?.canWorkChecklist != true ||
             task?.canUploadEvidence != true) {
           throw const AppApiException(
@@ -176,8 +170,7 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         await actions.raiseSos();
         if (_current(generation)) await actions.addNote(note);
       });
-  Future<ShiftActionResult> _run(
-      String key, Future<void> Function() action) async {
+  Future<ShiftActionResult> _run(String key, Future<void> Function() action) async {
     if (!mounted || state.busy.contains(key)) return const ShiftActionIgnored();
     final generation = _generation;
     state = state.copyWith(busy: {...state.busy, key});

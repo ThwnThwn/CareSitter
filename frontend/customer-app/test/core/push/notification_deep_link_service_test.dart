@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/app/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,10 @@ void main() {
   late NotificationDeepLinkService service;
 
   setUp(() {
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: [
+      notificationDeepLinkServiceProvider
+          .overrideWith(createNotificationDeepLinkService),
+    ]);
     service = container.read(notificationDeepLinkServiceProvider);
   });
 
@@ -38,8 +42,7 @@ void main() {
     );
   });
 
-  test(
-      'payment callbacks retain safe identifiers and never trust supplied success',
+  test('payment callbacks retain safe identifiers and never trust supplied success',
       () {
     expect(
         service.resolveRoute({
@@ -49,8 +52,7 @@ void main() {
         '/payment-result?bookingId=booking-123&intentId=intent-123&result=pending');
     expect(
         service.resolveRoute({
-          'deepLink':
-              'caresitter-customer://payment-result?bookingId=booking-123'
+          'deepLink': 'caresitter-customer://payment-result?bookingId=booking-123'
         }),
         '/payment-result?bookingId=booking-123&result=pending');
     expect(
@@ -61,8 +63,7 @@ void main() {
         isNull);
     expect(
         service.resolveRoute({
-          'deepLink':
-              'caresitter-customer:/payment-result?bookingId=../settings'
+          'deepLink': 'caresitter-customer:/payment-result?bookingId=../settings'
         }),
         isNull);
   });

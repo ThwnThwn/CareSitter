@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import '../models/booking_draft.dart';
 import '../models/payment_provider_model.dart';
 import '../models/payment_intent_model.dart';
@@ -22,17 +23,13 @@ class BookingRepository {
   const BookingRepository(this._dio);
 
   /// Backend quyết định số tiền và tái sử dụng giao dịch đang mở của booking.
-  Future<PaymentIntentModel> createPaymentIntent(
-      String bookingId, String provider,
+  Future<PaymentIntentModel> createPaymentIntent(String bookingId, String provider,
       {String? idempotencyKey}) async {
     final data = {'bookingId': bookingId, 'provider': provider};
     final resp = idempotencyKey == null
-        ? await _dio.post<Map<String, dynamic>>(ApiPaths.paymentIntents,
-            data: data)
-        : await _dio.postIdempotent<Map<String, dynamic>>(
-            ApiPaths.paymentIntents,
-            data: data,
-            idempotencyKey: idempotencyKey);
+        ? await _dio.post<Map<String, dynamic>>(ApiPaths.paymentIntents, data: data)
+        : await _dio.postIdempotent<Map<String, dynamic>>(ApiPaths.paymentIntents,
+            data: data, idempotencyKey: idempotencyKey);
     return PaymentIntentModel.fromJson(resp.data ?? {});
   }
 
@@ -102,9 +99,8 @@ class BookingRepository {
     final data = resp.data ?? {};
     final resetRequired = data['resetRequired'] == true;
     final nextCursor = (data['nextCursor'] as num?)?.toInt() ?? cursor;
-    final serverTime =
-        DateTime.tryParse(data['serverTime']?.toString() ?? '') ??
-            DateTime.now().toUtc();
+    final serverTime = DateTime.tryParse(data['serverTime']?.toString() ?? '') ??
+        DateTime.now().toUtc();
     final hasMore = data['hasMore'] == true;
 
     if (resetRequired) {
@@ -117,8 +113,7 @@ class BookingRepository {
       );
     }
 
-    final rawItems =
-        (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final rawItems = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final items = rawItems.map(BookingModel.fromJson).toList();
 
     return BookingSyncResponse(
@@ -178,8 +173,7 @@ class BookingRepository {
 
   /// Caregiver bắt đầu di chuyển → status: caregiver_en_route
   Future<BookingModel> startEnRoute(String bookingId) async {
-    final resp =
-        await _dio.post<Map<String, dynamic>>(ApiPaths.enRoute(bookingId));
+    final resp = await _dio.post<Map<String, dynamic>>(ApiPaths.enRoute(bookingId));
     return BookingModel.fromJson(resp.data ?? {});
   }
 
@@ -203,15 +197,14 @@ class BookingRepository {
 
   /// Caregiver yêu cầu kết thúc ca → status: checkout_pending_review
   Future<BookingModel> requestCheckout(String bookingId) async {
-    final resp = await _dio
-        .post<Map<String, dynamic>>(ApiPaths.checkoutRequest(bookingId));
+    final resp =
+        await _dio.post<Map<String, dynamic>>(ApiPaths.checkoutRequest(bookingId));
     return BookingModel.fromJson(resp.data ?? {});
   }
 
   /// Customer xác nhận kết thúc ca → status: completed
   Future<BookingModel> completeBooking(String bookingId) async {
-    final resp =
-        await _dio.post<Map<String, dynamic>>(ApiPaths.complete(bookingId));
+    final resp = await _dio.post<Map<String, dynamic>>(ApiPaths.complete(bookingId));
     return BookingModel.fromJson(resp.data ?? {});
   }
 

@@ -2,7 +2,6 @@ import 'care_task_model.dart';
 import 'booking_status_codec.dart';
 export 'care_task_model.dart';
 export 'gps_track_model.dart';
-export 'booking_list_response.dart';
 
 class BookingModel {
   final String id;
@@ -146,8 +145,7 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
-    final scheduledStart =
-        _parseNullableApiDateTime(json['scheduledStart']) ?? now;
+    final scheduledStart = _parseNullableApiDateTime(json['scheduledStart']) ?? now;
     final scheduledEnd = _parseNullableApiDateTime(json['scheduledEnd']) ??
         scheduledStart.add(const Duration(hours: 1));
 
@@ -177,8 +175,7 @@ class BookingModel {
       caregiverName: _string(json['caregiverName']),
       caregiverAvatar: _string(json['caregiverAvatar']),
       beneficiaryName: _string(json['beneficiaryName']),
-      beneficiaryNotes:
-          _string(json['beneficiaryNotes']) ?? _string(json['note']),
+      beneficiaryNotes: _string(json['beneficiaryNotes']) ?? _string(json['note']),
       addressText: _string(json['addressText']),
       addressLatitude: _double(json['addressLatitude']),
       addressLongitude: _double(json['addressLongitude']),

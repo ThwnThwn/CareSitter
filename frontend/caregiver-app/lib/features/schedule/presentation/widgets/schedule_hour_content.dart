@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/schedule/data/models/schedule_slot_model.dart';

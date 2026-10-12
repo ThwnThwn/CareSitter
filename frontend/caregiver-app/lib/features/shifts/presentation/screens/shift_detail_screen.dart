@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/features/shifts/presentation/models/shift_detail_status.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_detail_body.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_detail_app_bar.dart';
@@ -200,10 +201,7 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
     LatLng destination,
   ) =>
       ShiftDetailMapPreview(
-          ref: ref,
-          destination: destination,
-          openMap: _openMap,
-          booking: booking);
+          ref: ref, destination: destination, openMap: _openMap, booking: booking);
 
   Widget _buildMapUnavailablePreview() => const ShiftDetailMapUnavailable();
 
@@ -221,8 +219,7 @@ class _ShiftDetailScreenState extends ConsumerState<ShiftDetailScreen> {
       child: ShiftSafetyContent(
           safetyExpanded: _safetyExpanded,
           safetyItem: _safetyItem,
-          callbackAction1: () =>
-              setState(() => _safetyExpanded = !_safetyExpanded)),
+          callbackAction1: () => setState(() => _safetyExpanded = !_safetyExpanded)),
     );
   }
 

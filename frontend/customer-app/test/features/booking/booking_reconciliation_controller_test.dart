@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
@@ -24,14 +25,12 @@ void main() {
   });
   test('hitting the page limit cannot claim that a match is unique', () async {
     var pages = 0;
-    final controller = BookingReconciliationController((
-        {required page, required pageSize}) async {
+    final controller =
+        BookingReconciliationController(({required page, required pageSize}) async {
       pages++;
       return _page(
-          List.generate(
-              50,
-              (index) =>
-                  _booking('$page-$index', match: page == 1 && index == 0)),
+          List.generate(50,
+              (index) => _booking('$page-$index', match: page == 1 && index == 0)),
           page: page,
           total: 1000);
     });
@@ -39,8 +38,7 @@ void main() {
         isA<BookingSubmitMessage>());
     expect(pages, 10);
   });
-  test(
-      'a late result after session close is ignored without querying the next page',
+  test('a late result after session close is ignored without querying the next page',
       () async {
     var active = true, calls = 0;
     final pending = Completer<BookingListResponse>();
@@ -71,7 +69,6 @@ BookingModel _booking(String id, {bool match = true}) => BookingModel.fromJson({
       'scheduledStart': '2026-10-15T07:00:00Z',
       'scheduledEnd': '2026-10-15T09:00:00Z',
     });
-BookingListResponse _page(List<BookingModel> items,
-        {int page = 1, int? total}) =>
+BookingListResponse _page(List<BookingModel> items, {int page = 1, int? total}) =>
     BookingListResponse(
         items: items, total: total ?? items.length, page: page, pageSize: 50);

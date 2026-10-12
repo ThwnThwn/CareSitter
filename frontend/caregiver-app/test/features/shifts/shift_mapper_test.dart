@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/models/shift_display_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_mapper.dart';
 

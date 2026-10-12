@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +12,7 @@ class ShiftCheckinFlow extends ConsumerWidget {
   final ShiftModel booking;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final step =
-        ref.watch(shiftActiveProvider(booking.id).select((s) => s.step));
+    final step = ref.watch(shiftActiveProvider(booking.id).select((s) => s.step));
     return Card(
         child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -25,8 +25,8 @@ class ShiftCheckinFlow extends ConsumerWidget {
               AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   child: switch (step) {
-                    1 => ShiftSelfieStep(
-                        key: const ValueKey(1), bookingId: booking.id),
+                    1 =>
+                      ShiftSelfieStep(key: const ValueKey(1), bookingId: booking.id),
                     2 => ShiftGpsStep(key: const ValueKey(2), booking: booking),
                     3 => const Text('Check-in thành công!'),
                     _ => Column(children: [
@@ -35,8 +35,7 @@ class ShiftCheckinFlow extends ConsumerWidget {
                         FilledButton(
                             onPressed: booking.canCheckIn
                                 ? ref
-                                    .read(shiftActiveProvider(booking.id)
-                                        .notifier)
+                                    .read(shiftActiveProvider(booking.id).notifier)
                                     .startCheckIn
                                 : null,
                             child: const Text('Bắt đầu check-in'))

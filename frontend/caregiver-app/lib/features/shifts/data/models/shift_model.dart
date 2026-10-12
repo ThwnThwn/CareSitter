@@ -15,9 +15,6 @@ class ShiftModel {
   final String? serviceId;
   final String serviceName;
   final String? serviceDescription;
-  final String date;
-  final String time;
-  final String duration;
   final DateTime? scheduledStart;
   final DateTime? scheduledEnd;
   final String status;
@@ -30,7 +27,6 @@ class ShiftModel {
   final DateTime? offerExpiresAt;
   final int? offerRank;
   final bool isSystemMatched;
-  final String paymentLabel;
   final DateTime? consentAcceptedAt;
   final DateTime? actualStart;
   final DateTime? checkoutRequestedAt;
@@ -53,14 +49,6 @@ class ShiftModel {
 
   ShiftStatus get statusType => ShiftStatus.fromApi(status);
 
-  bool get canAccept =>
-      statusType == ShiftStatus.open || statusType == ShiftStatus.pending;
-  bool get canStartEnRoute =>
-      statusType == ShiftStatus.confirmed || statusType == ShiftStatus.assigned;
-  bool get canCheckIn => statusType == ShiftStatus.caregiverEnRoute;
-  bool get canWorkChecklist => statusType == ShiftStatus.inProgress;
-  bool get canRequestCheckout => statusType == ShiftStatus.inProgress;
-
   const ShiftModel({
     required this.id,
     this.beneficiaryId,
@@ -71,9 +59,6 @@ class ShiftModel {
     this.serviceId,
     required this.serviceName,
     this.serviceDescription,
-    required this.date,
-    required this.time,
-    required this.duration,
     this.scheduledStart,
     this.scheduledEnd,
     required this.status,
@@ -86,7 +71,6 @@ class ShiftModel {
     this.offerExpiresAt,
     this.offerRank,
     this.isSystemMatched = false,
-    this.paymentLabel = 'Ví CareSitter',
     this.consentAcceptedAt,
     this.actualStart,
     this.checkoutRequestedAt,
@@ -134,9 +118,6 @@ class ShiftModel {
       serviceId: serviceId,
       serviceName: serviceName,
       serviceDescription: serviceDescription,
-      date: date,
-      time: time,
-      duration: duration,
       scheduledStart: scheduledStart,
       scheduledEnd: scheduledEnd,
       status: status ?? this.status,
@@ -149,7 +130,6 @@ class ShiftModel {
       offerExpiresAt: offerExpiresAt ?? this.offerExpiresAt,
       offerRank: offerRank ?? this.offerRank,
       isSystemMatched: isSystemMatched,
-      paymentLabel: paymentLabel,
       consentAcceptedAt: consentAcceptedAt,
       actualStart: actualStart ?? this.actualStart,
       checkoutRequestedAt: checkoutRequestedAt ?? this.checkoutRequestedAt,

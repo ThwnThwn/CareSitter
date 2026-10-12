@@ -1,29 +1,16 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/booking/presentation/models/booking_status_presentation.dart';
 
-class BookingDetailAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
+class BookingDetailAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
   const BookingDetailAppBar(
-      {super.key,
-      required this.statusConfig,
-      required this.isCancelling,
-      required this.cancelDialogOpen,
-      required this.showMoreOptions,
-      required this.ref,
-      required this.booking});
+      {super.key, required this.statusConfig, this.onMoreOptions});
   final BookingStatusPresentation statusConfig;
-  final bool isCancelling;
-  final bool cancelDialogOpen;
-  final void Function(BuildContext, WidgetRef, BookingModel) showMoreOptions;
-  final WidgetRef ref;
-  final BookingModel booking;
+  final VoidCallback? onMoreOptions;
   @override
   Widget build(BuildContext context) => AppBar(
         title: const Text(
@@ -78,9 +65,7 @@ class BookingDetailAppBar extends StatelessWidget
           ),
           IconButton(
             icon: const Icon(Icons.more_vert),
-            onPressed: isCancelling || cancelDialogOpen
-                ? null
-                : () => showMoreOptions(context, ref, booking),
+            onPressed: onMoreOptions,
           ),
         ],
       );

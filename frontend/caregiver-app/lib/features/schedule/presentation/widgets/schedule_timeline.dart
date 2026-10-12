@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:caregiver_app/core/theme/app_spacing.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_hour_marker.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_hour_label.dart';

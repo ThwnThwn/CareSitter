@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/widgets/app_messenger.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -27,8 +28,7 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
     WidgetsBinding.instance.addObserver(this);
     ref.read(notificationDeepLinkServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(
-          ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+      unawaited(ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
     });
   }
 
@@ -63,9 +63,8 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
     ref.listen(authStateProvider, (_, next) {
       final isAuthenticated = next.value?.isAuthenticated ?? false;
       if (isAuthenticated) {
-        unawaited(ref
-            .read(pushNotificationServiceProvider)
-            .syncTokenForCurrentUser());
+        unawaited(
+            ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
         unawaited(ref.read(careSignalRProvider).connect());
         unawaited(ref.read(notificationDeepLinkServiceProvider).flushPending());
       }
@@ -76,7 +75,7 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
       title: 'CareSitter Caregiver',
       theme: AppTheme.lightTheme,
       routerConfig: router,
-      scaffoldMessengerKey: notificationMessengerKey,
+      scaffoldMessengerKey: appMessengerKey,
       debugShowCheckedModeBanner: false,
     );
   }

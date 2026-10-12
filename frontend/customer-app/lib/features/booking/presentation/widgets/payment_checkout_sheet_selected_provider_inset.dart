@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
+import 'package:caresitter_customer/features/booking/data/models/payment_provider_model.dart';
 
 class PaymentCheckoutSheetSelectedProviderInset extends StatelessWidget {
   const PaymentCheckoutSheetSelectedProviderInset(
@@ -49,9 +49,7 @@ class PaymentCheckoutSheetSelectedProviderInset extends StatelessWidget {
                           ? AppColors.textPrimary
                           : AppColors.textSecondary)),
               subtitle: Text(
-                  provider.enabled
-                      ? provider.description
-                      : 'Hiện chưa khả dụng',
+                  provider.enabled ? provider.description : 'Hiện chưa khả dụng',
                   style: const TextStyle(color: AppColors.textSecondary)),
               trailing: Icon(
                   selected == provider.code

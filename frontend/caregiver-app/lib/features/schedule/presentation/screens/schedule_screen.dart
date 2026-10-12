@@ -1,3 +1,5 @@
+import 'package:caregiver_app/features/schedule/presentation/models/availability_display_model.dart';
+import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_day_cell.dart';
 import 'package:caregiver_app/features/schedule/presentation/models/schedule_date_labels.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_content.dart';

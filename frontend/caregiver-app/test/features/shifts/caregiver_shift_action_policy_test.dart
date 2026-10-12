@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
@@ -34,8 +35,7 @@ void main() {
     expect(withoutEvidence.canUploadEvidence, isTrue);
     expect(withoutEvidence.canComplete, isFalse);
     expect(withEvidence.canComplete, isTrue);
-    expect(
-        withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
+    expect(withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
   });
 
   test('checkout request is enabled only during an active shift', () {
@@ -51,9 +51,6 @@ ShiftModel _shift(String status) => ShiftModel(
       caregiverName: 'Caregiver',
       caregiverAvatar: 'CG',
       serviceName: 'Chăm sóc tại nhà',
-      date: '21/09/2026',
-      time: '08:00 - 10:00',
-      duration: '2 giờ',
       status: status,
       totalPrice: 200000,
       address: 'TP.HCM',

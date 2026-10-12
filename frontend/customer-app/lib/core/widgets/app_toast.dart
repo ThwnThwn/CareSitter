@@ -1,7 +1,7 @@
 import 'package:caresitter_customer/core/widgets/toast_message_content.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
+import 'package:caresitter_customer/core/widgets/app_messenger.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 enum AppToastType { success, error, loading }
@@ -45,8 +45,7 @@ final class AppToast {
   }
 
   static ScaffoldMessengerState? _messengerFor(BuildContext context) =>
-      notificationMessengerKey.currentState ??
-      ScaffoldMessenger.maybeOf(context);
+      appMessengerKey.currentState ?? ScaffoldMessenger.maybeOf(context);
 
   static void _show(
     BuildContext context, {
@@ -74,7 +73,7 @@ final class AppToast {
         ),
     };
     dismiss(context);
-    final overlayContext = notificationMessengerKey.currentContext ?? context;
+    final overlayContext = appMessengerKey.currentContext ?? context;
     final overlay = Overlay.maybeOf(overlayContext, rootOverlay: true);
     if (overlay == null) return;
 
@@ -127,8 +126,7 @@ class _TopToast extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reducedMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return Positioned(
       top: MediaQuery.of(context).padding.top + 12,
       left: 16,

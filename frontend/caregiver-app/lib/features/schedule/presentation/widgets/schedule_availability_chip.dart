@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/schedule/presentation/models/availability_display_model.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';

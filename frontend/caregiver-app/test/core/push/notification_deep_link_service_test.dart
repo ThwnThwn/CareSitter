@@ -1,3 +1,4 @@
+import 'package:caregiver_app/app/push/notification_deep_link_service.dart';
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,10 @@ void main() {
   late NotificationDeepLinkService service;
 
   setUp(() {
-    container = ProviderContainer();
+    container = ProviderContainer(overrides: [
+      notificationDeepLinkServiceProvider
+          .overrideWith(createNotificationDeepLinkService),
+    ]);
     service = container.read(notificationDeepLinkServiceProvider);
   });
 

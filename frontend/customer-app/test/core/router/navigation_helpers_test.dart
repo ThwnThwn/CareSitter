@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
+import 'package:caresitter_customer/app/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/app/care_sitter_app.dart';
 import 'package:caresitter_customer/app/router/app_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -116,7 +118,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final container = ProviderContainer();
+    final container = ProviderContainer(overrides: [
+      notificationDeepLinkServiceProvider
+          .overrideWith(createNotificationDeepLinkService)
+    ]);
     addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(

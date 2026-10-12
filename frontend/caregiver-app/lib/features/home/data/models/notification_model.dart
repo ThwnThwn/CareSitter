@@ -4,7 +4,7 @@ class AppNotificationModel {
   final String id;
   final String title;
   final String body;
-  final String time;
+  final DateTime? createdAt;
   final String type;
   final bool isRead;
   final String? deepLink;
@@ -13,22 +13,20 @@ class AppNotificationModel {
     required this.id,
     required this.title,
     required this.body,
-    required this.time,
+    required this.createdAt,
     required this.type,
     required this.isRead,
     this.deepLink,
   });
 
   factory AppNotificationModel.fromJson(Map<String, dynamic> json) {
-    final createdAt =
-        DateTime.tryParse(json['createdAt']?.toString() ?? '')?.toLocal() ??
-            DateTime.now();
+    final createdAt = DateTime.tryParse(json['createdAt']?.toString() ?? '');
     final data = _decodeData(json['data']);
     return AppNotificationModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Thông báo',
       body: json['body']?.toString() ?? '',
-      time: _relativeTime(createdAt),
+      createdAt: createdAt,
       type: json['type']?.toString() ?? 'system',
       isRead: json['readAt'] != null,
       deepLink: data['deepLink']?.toString(),
@@ -40,7 +38,7 @@ class AppNotificationModel {
       id: id,
       title: title,
       body: body,
-      time: time,
+      createdAt: createdAt,
       type: type,
       isRead: isRead ?? this.isRead,
       deepLink: deepLink,
@@ -56,14 +54,5 @@ class AppNotificationModel {
       } catch (_) {}
     }
     return const {};
-  }
-
-  static String _relativeTime(DateTime value) {
-    final diff = DateTime.now().difference(value);
-    if (diff.inMinutes < 1) return 'Vừa xong';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
-    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
-    return '${value.day}/${value.month}/${value.year}';
   }
 }

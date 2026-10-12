@@ -1,26 +1,24 @@
+import 'booking_detail_screen_status_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class BookingCompletedActions extends StatelessWidget {
   const BookingCompletedActions(
-      {super.key,
-      required this.buildStatusBanner,
-      required this.action6,
-      required this.action7});
-  final Widget Function(String) buildStatusBanner;
-  final void Function() action6;
-  final void Function() action7;
+      {super.key, required this.onComplete, required this.onDispute});
+  final void Function() onComplete;
+  final void Function() onDispute;
 
   @override
   Widget build(BuildContext context) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            buildStatusBanner(
-                'Caregiver đã gửi yêu cầu kết thúc ca. Hãy xác nhận để hoàn tất.'),
+            const BookingDetailScreenStatusBanner(
+                message:
+                    'Caregiver đã gửi yêu cầu kết thúc ca. Hãy xác nhận để hoàn tất.'),
             const SizedBox(height: AppSpacing.control),
             ElevatedButton.icon(
-              onPressed: action6,
+              onPressed: onComplete,
               icon: const Icon(Icons.check_circle_outline),
               label: const Text('Đã hoàn thành'),
               style: ElevatedButton.styleFrom(
@@ -30,9 +28,9 @@ class BookingCompletedActions extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.control),
             OutlinedButton.icon(
-              onPressed: action7,
-              icon: const Icon(Icons.report_problem_outlined,
-                  color: AppColors.error),
+              onPressed: onDispute,
+              icon:
+                  const Icon(Icons.report_problem_outlined, color: AppColors.error),
               label: const Text('Có vấn đề với ca chăm sóc',
                   style: TextStyle(color: AppColors.error)),
               style: OutlinedButton.styleFrom(

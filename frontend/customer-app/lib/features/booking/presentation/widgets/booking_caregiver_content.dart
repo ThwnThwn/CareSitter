@@ -8,13 +8,11 @@ class BookingCaregiverContent extends StatelessWidget {
   const BookingCaregiverContent(
       {super.key,
       required this.avatarUrl,
-      required this.buildCaregiverInitials,
       required this.booking,
       required this.caregiverName,
       required this.callbackAction1,
       required this.callbackAction2});
   final String? avatarUrl;
-  final Widget Function(BookingModel) buildCaregiverInitials;
   final BookingModel booking;
   final String caregiverName;
   final void Function() callbackAction1;
@@ -25,17 +23,13 @@ class BookingCaregiverContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           BookingCaregiverIdentity(
-              avatarUrl: avatarUrl,
-              buildCaregiverInitials: buildCaregiverInitials,
-              booking: booking,
-              caregiverName: caregiverName),
+              avatarUrl: avatarUrl, booking: booking, caregiverName: caregiverName),
           const SizedBox(height: AppSpacing.inset),
           const Divider(height: 1, color: AppColors.background),
           const SizedBox(height: AppSpacing.compact),
           // Quick Action Buttons (matching Stitch)
           BookingCaregiverContactActions(
-              callbackAction1: callbackAction1,
-              callbackAction2: callbackAction2),
+              callbackAction1: callbackAction1, callbackAction2: callbackAction2),
         ],
       );
 }

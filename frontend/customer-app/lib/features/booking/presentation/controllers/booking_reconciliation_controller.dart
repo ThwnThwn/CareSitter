@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import '../../data/models/booking_model.dart';
 import '../../data/models/booking_draft.dart';
 import 'booking_submit_result.dart';
@@ -35,8 +36,7 @@ class BookingReconciliationController {
               'Chưa xác minh được kết quả. Vui lòng kiểm tra danh sách lịch hoặc liên hệ hỗ trợ.');
     } catch (_) {
       return current()
-          ? const BookingSubmitMessage(
-              'Chưa tải được lịch. Vui lòng kiểm tra lại.')
+          ? const BookingSubmitMessage('Chưa tải được lịch. Vui lòng kiểm tra lại.')
           : const BookingSubmitIgnored();
     }
   }
