@@ -21,6 +21,7 @@ public sealed class SelfBeneficiaryTests : IAsyncLifetime
     private Guid _address;
     private Guid _relative;
     private string _role = "self_test_" + Guid.NewGuid().ToString("N");
+    private readonly string _rolePassword = Guid.NewGuid().ToString("N");
     private string _connection = "";
     private NpgsqlDataSource _dataSource = null!;
 
@@ -39,14 +40,15 @@ public sealed class SelfBeneficiaryTests : IAsyncLifetime
             _owner = reader.GetGuid(0); _relative = reader.GetGuid(1); _address = reader.GetGuid(2);
         }
         // Role thật không owner/BYPASSRLS: mọi handler đều phải giữ owner và scope.
+        // Mật khẩu riêng cho role test hỗ trợ SCRAM mà không nới quyền RLS.
         await using (var command = new NpgsqlCommand($"""
-            CREATE ROLE "{_role}" LOGIN;
+            CREATE ROLE "{_role}" LOGIN PASSWORD '{_rolePassword}';
             GRANT USAGE ON SCHEMA people, booking, identity TO "{_role}";
             GRANT SELECT, INSERT, UPDATE, DELETE ON people.beneficiaries TO "{_role}";
             GRANT SELECT ON booking.bookings, people.caregiver_profiles, identity.users TO "{_role}";
             """, connection)) await command.ExecuteNonQueryAsync();
         _connection = new NpgsqlConnectionStringBuilder(_database.ConnectionString)
-        { Username = _role, Password = "" }.ConnectionString;
+        { Username = _role, Password = _rolePassword }.ConnectionString;
         var builder = new NpgsqlDataSourceBuilder(_connection);
         builder.UseNetTopologySuite();
         _dataSource = builder.Build();
