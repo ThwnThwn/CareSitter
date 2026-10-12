@@ -1,7 +1,8 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'map_tile_config.dart';
+import 'package:caregiver_app/core/maps/map_tile_config.dart';
 
 class MapTileAttribution extends StatelessWidget {
   final MapTileConfig config;
@@ -11,8 +12,9 @@ class MapTileAttribution extends StatelessWidget {
   Widget build(BuildContext context) => ColoredBox(
         color: Colors.white,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Wrap(spacing: 8, children: [
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          child: Wrap(spacing: AppSpacing.sm, children: [
             _source('© OpenStreetMap contributors',
                 'https://www.openstreetmap.org/copyright'),
             if (config.usesCarto)
@@ -24,7 +26,7 @@ class MapTileAttribution extends StatelessWidget {
   Widget _source(String label, String url) => InkWell(
         onTap: () => launchUrl(Uri.parse(url)),
         child: Text(label,
-            style:
-                const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: AppFontSizes.s11)),
       );
 }

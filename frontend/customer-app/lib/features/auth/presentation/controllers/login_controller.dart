@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
 import 'package:caresitter_customer/features/auth/data/models/auth_models.dart';
-import 'package:caresitter_customer/features/auth/data/repositories/auth_repository.dart';
+import 'package:caresitter_customer/features/auth/presentation/controllers/auth_session_controller.dart';
 import 'package:caresitter_customer/features/auth/data/mappers/auth_error_mapper.dart';
 import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
 
@@ -56,7 +56,7 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
 
     state = const LoginState(isLoading: true);
     try {
-      await ref.read(authRepositoryProvider).login(
+      await ref.read(authSessionControllerProvider).login(
             LoginRequest(
               email: email.trim(),
               password: password,
@@ -93,7 +93,7 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
 
     try {
       await ref
-          .read(authRepositoryProvider)
+          .read(authSessionControllerProvider)
           .loginWithGoogleIdToken(credential.idToken);
       if (_disposed) return;
       state = const LoginState();

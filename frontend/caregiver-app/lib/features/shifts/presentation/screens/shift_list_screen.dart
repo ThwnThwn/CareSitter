@@ -1,12 +1,10 @@
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_list_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_card.dart';
 
 class ShiftListScreen extends ConsumerWidget {
   const ShiftListScreen({super.key});
@@ -87,39 +85,12 @@ class ShiftListScreen extends ConsumerWidget {
     required String emptyTitle,
     required String emptyMessage,
     required String storageKey,
-  }) {
-    final shifts = filtered.toList(growable: false);
-    if (shifts.isEmpty) {
-      return AppEmptyState(
-        icon: emptyIcon,
-        title: emptyTitle,
-        message: emptyMessage,
-      );
-    }
-
-    return ListView.builder(
-      key: PageStorageKey(storageKey),
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      itemCount: shifts.length,
-      itemBuilder: (context, index) {
-        final shift = shifts[index];
-        final isInvitation = shift.statusType == ShiftStatus.pending ||
-            shift.statusType == ShiftStatus.open;
-        return ShiftCard(
-          shift: shift,
-          onTap: () => context.push(
-            shift.statusType == ShiftStatus.inProgress
-                ? '/shifts/${shift.id}/active'
-                : '/shifts/${shift.id}',
-          ),
-          onDecline: isInvitation
-              ? () => ref.read(shiftsProvider.notifier).declineBooking(shift.id)
-              : null,
-          onViewOffer:
-              isInvitation ? () => context.push('/shifts/${shift.id}') : null,
-        );
-      },
-    );
-  }
+  }) =>
+      ShiftListList(
+          filtered: filtered,
+          emptyIcon: emptyIcon,
+          emptyTitle: emptyTitle,
+          emptyMessage: emptyMessage,
+          storageKey: storageKey,
+          ref: ref);
 }

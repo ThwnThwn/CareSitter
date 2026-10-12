@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -42,15 +43,16 @@ class FaqScreen extends StatelessWidget {
         leading: const AppBackButton(fallbackRoute: '/settings'),
       ),
       body: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.lg),
         itemCount: _faqs.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.compact),
         itemBuilder: (ctx, i) {
           final faq = _faqs[i];
           return Container(
             decoration: BoxDecoration(
               color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(color: AppColors.border),
               boxShadow: [
                 BoxShadow(
@@ -70,17 +72,18 @@ class FaqScreen extends StatelessWidget {
                   faq['q']!,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: AppFontSizes.s15,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
                     child: Text(
                       faq['a']!,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSizes.s14,
                         color: AppColors.textSecondary,
                         height: 1.5,
                       ),

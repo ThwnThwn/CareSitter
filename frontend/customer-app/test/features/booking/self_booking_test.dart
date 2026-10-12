@@ -1,3 +1,7 @@
+import 'package:caresitter_customer/core/api/dio_client.dart' show DioClient;
+import 'package:caresitter_customer/features/booking/presentation/controllers/booking_wizard_controller.dart';
+import 'package:caresitter_customer/features/booking/presentation/controllers/booking_submit_result.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -14,7 +18,6 @@ import 'package:caresitter_customer/features/catalog/presentation/controllers/ad
 import 'package:caresitter_customer/features/catalog/presentation/controllers/service_controller.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:caresitter_customer/features/settings/data/repositories/profile_repository.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +54,12 @@ final _draft = BookingDraft(
 
 Future<void> _loaded(SelfRecipientController controller) async {
   for (var i = 0; i < 20 && controller.state.isLoading; i++) {
+    await Future<void>.delayed(Duration.zero);
+  }
+}
+
+Future<void> _flushWizard() async {
+  for (var i = 0; i < 10; i++) {
     await Future<void>.delayed(Duration.zero);
   }
 }
@@ -248,6 +257,53 @@ void main() {
         throwsA(isA<BookingOutcomeUnknown>()));
     expect(repository.creates, 1);
     expect(repository.selections, 0);
+  });
+
+  test(
+      'wizard controller guards concurrent submission and carries a stable operation key',
+      () async {
+    final bookings = _Bookings()..pendingCreate = Completer<BookingModel>();
+    final container = ProviderContainer(overrides: [
+      authStateProvider.overrideWith(_Auth.new),
+      beneficiaryRepositoryProvider.overrideWithValue(people),
+      profileRepositoryProvider.overrideWithValue(account),
+      serviceStoreProvider.overrideWith(_Services.new),
+      addressStoreProvider.overrideWith(_Addresses.new),
+      caregiverStoreProvider.overrideWith(_Caregivers.new),
+      beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+      bookingStoreProvider.overrideWith(_BookingStore.new),
+      bookingRepositoryProvider.overrideWithValue(bookings),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(authStateProvider.future);
+    const args = (serviceId: 'service', beneficiaryId: null);
+    final sub = container.listen(bookingWizardProvider(args), (_, __) {});
+    addTearDown(sub.close);
+    await container.read(serviceStoreProvider.future);
+    await container.read(addressStoreProvider.future);
+    await _flushWizard();
+    final self = container.read(selfRecipientProvider.notifier);
+    self.updateDraft(
+        self.state.requireValue.profile.copyWith(emergencyContacts: _contacts));
+    final flow = container.read(bookingWizardProvider(args).notifier);
+    flow.forSelf(true);
+    flow.next();
+    flow.selectDate(DateTime.now().add(const Duration(days: 1)));
+    flow.selectTime(480);
+    flow.selectAddress('address');
+    flow.next();
+    flow.next();
+    flow.setConsent(true);
+    flow.next();
+    expect(container.read(bookingWizardProvider(args)).step, 5);
+    final first = flow.submit();
+    await _loaded(container.read(selfRecipientProvider.notifier));
+    expect(await flow.submit(), isA<BookingSubmitIgnored>());
+    expect(bookings.creates, 1);
+    expect(bookings.lastDraft!.idempotencyKey, isNotEmpty);
+    bookings.pendingCreate!
+        .complete(BookingModel.fromJson({'id': 'created-booking'}));
+    expect(await first, isA<BookingSubmitted>());
   });
 
   for (final width in [320.0, 390.0]) {
@@ -471,7 +527,8 @@ void main() {
   }
 }
 
-class _People implements BeneficiaryRepository {
+class _People extends BeneficiaryRepository {
+  _People() : super(_UnusedPeopleClient());
   BeneficiaryModel? self;
   bool failGet = false, timeoutCreate = false;
   int creates = 0, links = 0;
@@ -502,9 +559,7 @@ class _People implements BeneficiaryRepository {
       'RelationshipToCustomer': 'Bản thân'
     });
     if (timeoutCreate) {
-      throw DioException(
-          requestOptions: RequestOptions(),
-          type: DioExceptionType.receiveTimeout);
+      throw const AppApiException(message: 'Mất response');
     }
     return (beneficiary: self!, created: created);
   }
@@ -553,14 +608,14 @@ class _Bookings implements BookingRepository {
   int creates = 0, selections = 0;
   bool failSelection = false, timeoutCreate = false;
   BookingDraft? lastDraft;
+  Completer<BookingModel>? pendingCreate;
   @override
   Future<BookingModel> createBooking(BookingDraft draft) async {
     creates++;
     lastDraft = draft;
+    if (pendingCreate != null) return pendingCreate!.future;
     if (timeoutCreate) {
-      throw DioException(
-          requestOptions: RequestOptions(),
-          type: DioExceptionType.receiveTimeout);
+      throw const AppApiException(message: 'Mất response');
     }
     return BookingModel.fromJson({
       'id': 'created-booking',
@@ -608,4 +663,9 @@ class _Caregivers extends CaregiverStore {
 class _Beneficiaries extends BeneficiaryStore {
   @override
   List<BeneficiaryModel> build() => [];
+}
+
+class _UnusedPeopleClient implements DioClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

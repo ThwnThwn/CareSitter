@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
-import 'package:caresitter_customer/features/booking/data/models/booking_sync_model.dart';
+import 'package:caresitter_customer/core/realtime/booking_list_sync_signal.dart';
 import 'gps_update.dart';
 export 'gps_update.dart';
 

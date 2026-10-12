@@ -3,6 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:caregiver_app/core/api/api_constants.dart';
+import '../models/shift_model.dart';
+import '../models/shift_mapper.dart';
+import '../models/task_photo_model.dart';
 
 final shiftRepositoryProvider = Provider<ShiftRepository>(
   (ref) => ShiftRepository(ref.read(dioClientProvider)),
@@ -12,6 +15,33 @@ final shiftRepositoryProvider = Provider<ShiftRepository>(
 class ShiftRepository {
   final DioClient _dio;
   const ShiftRepository(this._dio);
+
+  /// Giữ DTO/mapping API ở biên data, kể cả hợp nhất các offer đang mở.
+  Future<List<ShiftModel>> loadAssignedAndOffers() async {
+    final results = await Future.wait(
+        [getShifts(pageSize: 50), getOpenOffers(pageSize: 20)]);
+    final merged = <String, Map<String, dynamic>>{};
+    for (final item in results.expand((items) => items)) {
+      final id = item['id']?.toString();
+      if (id != null && id.isNotEmpty) merged[id] = item;
+    }
+    return merged.values.map(mapShiftFromApi).toList();
+  }
+
+  Future<List<CareTaskModel>> loadCareTasks(String id) async =>
+      (await getTasks(id)).map(CareTaskModel.fromApi).toList();
+  Future<CareTaskModel> completeCareTask(String id, String taskId) async =>
+      CareTaskModel.fromApi(await completeTask(id, taskId));
+  Future<CareTaskModel> skipCareTask(
+          String id, String taskId, String reason) async =>
+      CareTaskModel.fromApi(await skipTask(id, taskId, reason));
+  Future<CareTaskModel> createCareTask(String id, String name,
+          {String? description}) async =>
+      CareTaskModel.fromApi(
+          await createTask(id, name, description: description));
+  Future<TaskPhotoModel> attachTaskPhoto(
+          String id, String taskId, XFile image) async =>
+      TaskPhotoModel.fromJson(await uploadTaskPhoto(id, taskId, image));
 
   /// Lấy danh sách ca làm việc của caregiver → GET /bookings
   Future<List<Map<String, dynamic>>> getShifts({

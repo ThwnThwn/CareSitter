@@ -1,5 +1,7 @@
+import '../../domain/self_recipient_rules.dart';
+import 'package:caresitter_customer/core/utils/phone_formatter.dart' as phone;
 import 'dart:convert';
-import 'package:dio/dio.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
@@ -22,21 +24,13 @@ class SelfRecipient {
   final BeneficiaryModel profile;
   const SelfRecipient(this.kind, this.profile);
 
-  static String normalizePhone(String value) {
-    final phone = value.replaceAll(RegExp(r'[\s().-]'), '');
-    return phone.startsWith('+84') ? '0${phone.substring(3)}' : phone;
-  }
+  static String normalizePhone(String value) => phone.normalizePhone(value);
 
-  bool get isComplete {
-    final contacts = profile.emergencyContacts;
-    final phones = contacts.map((c) => normalizePhone(c.phone)).toSet();
-    return profile.name.trim().isNotEmpty &&
-        contacts.length >= 2 &&
-        phones.length == contacts.length &&
-        contacts.every((c) =>
-            c.name.trim().isNotEmpty &&
-            RegExp(r'^0[3-9][0-9]{8}$').hasMatch(normalizePhone(c.phone)));
-  }
+  bool get isComplete => SelfRecipientRules.isComplete(
+      profile.name,
+      profile.emergencyContacts
+          .map((c) => (name: c.name, phone: normalizePhone(c.phone)))
+          .toList());
 }
 
 final selfRecipientProvider = StateNotifierProvider.autoDispose<
@@ -107,13 +101,6 @@ class SelfRecipientController extends StateNotifier<AsyncValue<SelfRecipient>> {
     state = AsyncData(SelfRecipient(SelfRecipientKind.existing, profile));
   }
 
-  Map<String, dynamic> _request(BeneficiaryModel profile, String addressId) => {
-        ...profile.toProfileRequest(avatarUrl: profile.avatarPath)
-          ..remove('RelationshipToCustomer'),
-        'Phone': profile.phone,
-        'DefaultAddressId': addressId,
-      };
-
   String _fingerprint(BeneficiaryModel profile,
           {bool includeRelation = true}) =>
       jsonEncode({
@@ -156,14 +143,14 @@ class SelfRecipientController extends StateNotifier<AsyncValue<SelfRecipient>> {
           needsReview = _fingerprint(profile, includeRelation: false) !=
               _fingerprint(selected.profile, includeRelation: false);
         case SelfRecipientKind.draft:
-          final result = await repository
-              .createSelf(_request(selected.profile, addressId));
+          final result =
+              await repository.createSelfProfile(selected.profile, addressId);
           profile = result.beneficiary;
           needsReview = !result.created;
       }
-    } on DioException catch (error) {
+    } on AppApiException catch (error) {
       // Sau lỗi mất response, GET xác minh; tuyệt đối không lặp POST booking.
-      if (error.response != null) rethrow;
+      if (error.statusCode != null) rethrow;
       final saved = await repository.getSelf();
       if (saved == null) rethrow;
       profile = saved;

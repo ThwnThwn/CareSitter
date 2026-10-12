@@ -1,31 +1,15 @@
+import '../models/booking_draft.dart';
+import '../models/payment_provider_model.dart';
+import '../models/payment_intent_model.dart';
+export '../models/booking_draft.dart';
+export '../models/payment_provider_model.dart';
+export '../models/payment_intent_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import 'package:caresitter_customer/core/realtime/gps_update.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_sync_model.dart';
-
-/// Dữ liệu cần thiết để tạo một booking mới.
-class BookingDraft {
-  final String beneficiaryId;
-  final String serviceTypeId;
-  final String? caregiverId;
-  final bool isSystemMatched;
-  final String addressId;
-  final DateTime scheduledStart;
-  final DateTime scheduledEnd;
-
-  const BookingDraft({
-    required this.beneficiaryId,
-    required this.serviceTypeId,
-    this.caregiverId,
-    this.isSystemMatched = true,
-    required this.addressId,
-    required this.scheduledStart,
-    required this.scheduledEnd,
-  });
-}
 
 final bookingRepositoryProvider = Provider<BookingRepository>(
   (ref) => BookingRepository(ref.read(dioClientProvider)),
@@ -39,11 +23,16 @@ class BookingRepository {
 
   /// Backend quyết định số tiền và tái sử dụng giao dịch đang mở của booking.
   Future<PaymentIntentModel> createPaymentIntent(
-      String bookingId, String provider) async {
-    final resp = await _dio.post<Map<String, dynamic>>(
-      ApiPaths.paymentIntents,
-      data: {'bookingId': bookingId, 'provider': provider},
-    );
+      String bookingId, String provider,
+      {String? idempotencyKey}) async {
+    final data = {'bookingId': bookingId, 'provider': provider};
+    final resp = idempotencyKey == null
+        ? await _dio.post<Map<String, dynamic>>(ApiPaths.paymentIntents,
+            data: data)
+        : await _dio.postIdempotent<Map<String, dynamic>>(
+            ApiPaths.paymentIntents,
+            data: data,
+            idempotencyKey: idempotencyKey);
     return PaymentIntentModel.fromJson(resp.data ?? {});
   }
 
@@ -68,16 +57,17 @@ class BookingRepository {
 
   /// Tạo booking mới từ BookingDraft.
   Future<BookingModel> createBooking(BookingDraft draft) async {
-    final resp = await _dio.post<Map<String, dynamic>>(
-      ApiPaths.bookings,
-      data: {
-        'beneficiaryId': draft.beneficiaryId,
-        'serviceTypeId': draft.serviceTypeId,
-        'addressId': draft.addressId,
-        'scheduledStart': draft.scheduledStart.toUtc().toIso8601String(),
-        'scheduledEnd': draft.scheduledEnd.toUtc().toIso8601String(),
-      },
-    );
+    final data = {
+      'beneficiaryId': draft.beneficiaryId,
+      'serviceTypeId': draft.serviceTypeId,
+      'addressId': draft.addressId,
+      'scheduledStart': draft.scheduledStart.toUtc().toIso8601String(),
+      'scheduledEnd': draft.scheduledEnd.toUtc().toIso8601String(),
+    };
+    final resp = draft.idempotencyKey == null
+        ? await _dio.post<Map<String, dynamic>>(ApiPaths.bookings, data: data)
+        : await _dio.postIdempotent<Map<String, dynamic>>(ApiPaths.bookings,
+            data: data, idempotencyKey: draft.idempotencyKey!);
     return BookingModel.fromJson(resp.data ?? {});
   }
 
@@ -177,9 +167,9 @@ class BookingRepository {
       GpsUpdate.fromJson(
           resp.data ?? {}); // Validate the same contract as push events.
       return GpsTrackModel.fromJson(resp.data ?? {});
-    } on DioException catch (e) {
+    } on AppApiException catch (e) {
       // 404 = chưa có GPS track → return null
-      if (e.response?.statusCode == 404) return null;
+      if (e.statusCode == 404) return null;
       rethrow;
     }
   }
@@ -257,45 +247,5 @@ class BookingRepository {
       },
     );
     return GpsTrackModel.fromJson(resp.data ?? {});
-  }
-}
-
-class PaymentProviderModel {
-  const PaymentProviderModel(
-      {required this.code,
-      required this.name,
-      required this.description,
-      required this.enabled});
-  final String code;
-  final String name;
-  final String description;
-  final bool enabled;
-  factory PaymentProviderModel.fromJson(Map<String, dynamic> json) =>
-      PaymentProviderModel(
-          code: json['code']?.toString() ?? '',
-          name: json['name']?.toString() ?? '',
-          description: json['description']?.toString() ?? '',
-          enabled: json['enabled'] == true);
-}
-
-/// URL và trạng thái được backend xác nhận, không suy ra từ callback trình duyệt.
-class PaymentIntentModel {
-  final String id;
-  final String status;
-  final String paymentUrl;
-
-  const PaymentIntentModel({
-    required this.id,
-    required this.status,
-    required this.paymentUrl,
-  });
-
-  /// Parse response payment intent từ backend.
-  factory PaymentIntentModel.fromJson(Map<String, dynamic> json) {
-    return PaymentIntentModel(
-      id: json['id']?.toString() ?? '',
-      status: json['status']?.toString() ?? '',
-      paymentUrl: json['paymentUrl']?.toString() ?? '',
-    );
   }
 }

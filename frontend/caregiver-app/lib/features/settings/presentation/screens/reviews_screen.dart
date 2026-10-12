@@ -1,10 +1,14 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caregiver_app/features/settings/data/models/caregiver_review_model.dart';
-import 'package:caregiver_app/features/settings/data/repositories/settings_repository.dart';
+import 'package:caregiver_app/features/settings/presentation/controllers/settings_controller.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/review_rating_summary_card.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/review_item_card.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/review_load_error.dart';
 
 class ReviewsScreen extends ConsumerStatefulWidget {
   const ReviewsScreen({super.key});
@@ -32,7 +36,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     }
     try {
       final reviews = await ref
-          .read(settingsRepositoryProvider)
+          .read(settingsControllerProvider)
           .getCaregiverReviews(profile.id);
       if (!mounted) return;
       setState(() {
@@ -71,23 +75,38 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _hasLoadError
-              ? _buildLoadError()
+              ? ReviewLoadError(
+                  onRetry: () {
+                    setState(() {
+                      _isLoading = true;
+                      _hasLoadError = false;
+                    });
+                    _loadReviews();
+                  },
+                )
               : SingleChildScrollView(
                   child: Column(
                     children: [
                       // ── Rating Header Summary ──
-                      _buildRatingSummaryCard(
-                          avgRating, totalReviews, ratingCounts),
-                      const SizedBox(height: 12),
+                      ReviewRatingSummaryCard(
+                        avgRating: avgRating,
+                        totalReviews: totalReviews,
+                        ratingCounts: ratingCounts,
+                      ),
+                      const SizedBox(height: AppSpacing.compact),
+
                       // ── Reviews List ──
                       if (_reviews.isEmpty)
                         const Padding(
-                          padding: EdgeInsets.fromLTRB(24, 12, 24, 24),
+                          padding: EdgeInsets.fromLTRB(AppSpacing.lg,
+                              AppSpacing.compact, AppSpacing.lg, AppSpacing.lg),
                           child: Text(
                             'Chưa có đánh giá nào. Các nhận xét từ khách hàng sẽ hiển thị tại đây.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                color: AppColors.textSecondary, fontSize: 14),
+                              color: AppColors.textSecondary,
+                              fontSize: AppFontSizes.s14,
+                            ),
                           ),
                         )
                       else
@@ -95,249 +114,20 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 8),
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
                           itemCount: _reviews.length,
                           separatorBuilder: (_, __) =>
-                              const SizedBox(height: 16),
+                              const SizedBox(height: AppSpacing.md),
                           itemBuilder: (context, index) {
-                            final review = _reviews[index];
-                            return _buildReviewItem(review);
+                            return ReviewItemCard(review: _reviews[index]);
                           },
                         ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),
-    );
-  }
-
-  Widget _buildRatingSummaryCard(
-      double avg, int total, List<int> ratingCounts) {
-    return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          // Left: Big number
-          Expanded(
-            flex: 4,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  avg.toStringAsFixed(1),
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (idx) {
-                    return Icon(
-                      idx < avg.floor()
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: AppColors.secondary,
-                      size: 20,
-                    );
-                  }),
-                ),
-                const SizedBox(height: 8),  
-                Text(
-                  '$total lượt đánh giá',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Middle divider
-          Container(
-            height: 80,
-            width: 1,
-            color: AppColors.border,
-          ),
-          // Right: Star Breakout
-          Expanded(
-            flex: 6,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 20),
-              child: Column(
-                children: [
-                  _buildProgressBar(5, ratingCounts[4], total),
-                  const SizedBox(height: 4),
-                  _buildProgressBar(4, ratingCounts[3], total),
-                  const SizedBox(height: 4),
-                  _buildProgressBar(3, ratingCounts[2], total),
-                  const SizedBox(height: 4),
-                  _buildProgressBar(2, ratingCounts[1], total),
-                  const SizedBox(height: 4),
-                  _buildProgressBar(1, ratingCounts[0], total),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar(int stars, int count, int total) {
-    return Row(
-      children: [
-        Text(
-          '$stars',
-          style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary),
-        ),
-        const SizedBox(width: 4),
-        const Icon(Icons.star_rounded, color: AppColors.secondary, size: 13),
-        const SizedBox(width: 8),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: total == 0 ? 0 : count / total,
-              minHeight: 6,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: AppColors.error, size: 36),
-            const SizedBox(height: 12),
-            const Text('Không tải được đánh giá',
-                style: TextStyle(
-                    fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _isLoading = true;
-                  _hasLoadError = false;
-                });
-                _loadReviews();
-              },
-              child: const Text('Thử lại'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewItem(CaregiverReviewModel review) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.primaryContainer,
-                child: Text(
-                  review.reviewerInitial,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.reviewerName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      review.shiftService,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    children: List.generate(5, (idx) {
-                      return Icon(
-                        idx < review.rating
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: AppColors.secondary,
-                        size: 14,
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    review.date,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textHint,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            review.comment,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

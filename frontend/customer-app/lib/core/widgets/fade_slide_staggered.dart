@@ -1,14 +1,10 @@
+export 'package:caresitter_customer/core/widgets/fade_slide_staggered_presentation_helpers.dart';
+import 'package:caresitter_customer/core/widgets/fade_slide_staggered_presentation_helpers.dart';
 import 'package:flutter/material.dart';
 
 // ────────────────────────────────────────────────────────────────────────────────
 // List entry transition — content is visible without a stagger timer.
 // ────────────────────────────────────────────────────────────────────────────────
-
-/// Spring-like curve giống Grab: ease-out cực nhanh, dừng mềm
-const _kGrabSpring = Cubic(0.16, 1.0, 0.30, 1.0);
-
-/// Duration tổng cho mỗi item: đủ nhanh để không cảm thấy chờ
-const _kItemDuration = Duration(milliseconds: 180);
 
 class FadeSlideStaggered extends StatefulWidget {
   final Widget child;
@@ -48,13 +44,13 @@ class _FadeSlideStaggeredState extends State<FadeSlideStaggered>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: _kItemDuration);
+    _ctrl = AnimationController(vsync: this, duration: staggeredItemDuration);
 
     // Fade: nhanh ở đầu (80% đầu của animation)
     _fade = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(
         parent: _ctrl,
-        curve: const Interval(0.0, 0.75, curve: _kGrabSpring),
+        curve: const Interval(0.0, 0.75, curve: staggeredSpring),
       ),
     );
 
@@ -63,13 +59,13 @@ class _FadeSlideStaggeredState extends State<FadeSlideStaggered>
     _slide = Tween<Offset>(
       begin: Offset(0, dy),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: _kGrabSpring));
+    ).animate(CurvedAnimation(parent: _ctrl, curve: staggeredSpring));
 
     // Scale: nhỏ nhẹ → bình thường
     _scale = Tween<double>(begin: 0.97, end: 1.0).animate(
       CurvedAnimation(
         parent: _ctrl,
-        curve: const Interval(0.0, 0.85, curve: _kGrabSpring),
+        curve: const Interval(0.0, 0.85, curve: staggeredSpring),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -103,7 +104,7 @@ class _BrandIntroScreenState extends State<BrandIntroScreen>
       backgroundColor: AppColors.background,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -140,7 +141,7 @@ class _BrandIntroScreenState extends State<BrandIntroScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.inset),
               ClipRect(
                 child: FadeTransition(
                   opacity: _nameOpacity,
@@ -162,7 +163,7 @@ class _BrandIntroScreenState extends State<BrandIntroScreen>
                       key: ValueKey('caresitter-logo-name'),
                       maxLines: 1,
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: AppFontSizes.s26,
                         fontWeight: FontWeight.w700,
                         height: 1.1,
                       ),

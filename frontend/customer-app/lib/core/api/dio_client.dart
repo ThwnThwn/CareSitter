@@ -48,31 +48,66 @@ class DioClient {
   }
 
   Future<Response<T>> get<T>(String path, {Map<String, dynamic>? query}) =>
-      _dio.get(path, queryParameters: query);
+      _request(() => _dio.get<T>(path, queryParameters: query));
 
   Future<Response<T>> post<T>(String path, {dynamic data}) =>
-      _dio.post(path, data: data);
+      _request(() => _dio.post<T>(path, data: data));
+
+  Future<Response<T>> postIdempotent<T>(String path,
+          {dynamic data, required String idempotencyKey}) =>
+      _request(() => _dio.post<T>(path,
+          data: data,
+          options: Options(headers: {'Idempotency-Key': idempotencyKey})));
 
   Future<Response<T>> put<T>(String path, {dynamic data}) =>
-      _dio.put(path, data: data);
+      _request(() => _dio.put<T>(path, data: data));
 
   Future<Response<T>> patch<T>(String path, {dynamic data}) =>
-      _dio.patch(path, data: data);
+      _request(() => _dio.patch<T>(path, data: data));
 
   Future<Response<T>> getCancelable<T>(String path,
           {Map<String, dynamic>? query, required CancelToken cancelToken}) =>
-      _dio.get(path, queryParameters: query, cancelToken: cancelToken);
+      _request(() =>
+          _dio.get<T>(path, queryParameters: query, cancelToken: cancelToken));
   Future<Response<T>> postCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
-      _dio.post(path, data: data, cancelToken: cancelToken);
+      _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
   Future<Response<T>> patchCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
-      _dio.patch(path, data: data, cancelToken: cancelToken);
+      _request(() => _dio.patch<T>(path, data: data, cancelToken: cancelToken));
 
-  Future<Response<T>> delete<T>(String path) => _dio.delete(path);
+  Future<Response<T>> delete<T>(String path) =>
+      _request(() => _dio.delete<T>(path));
 
   Future<Response<T>> postForm<T>(String path, FormData data) =>
-      _dio.post(path, data: data);
+      _request(() => _dio.post<T>(path, data: data));
+  Future<Response<T>> _request<T>(Future<Response<T>> Function() action) async {
+    try {
+      return await action();
+    } on DioException catch (error) {
+      final wrapped = error.error;
+      final data = error.response?.data;
+      throw AppApiException(
+        message: wrapped is AppApiException
+            ? wrapped.message
+            : 'Chưa kết nối được máy chủ. Vui lòng thử lại.',
+        statusCode: error.response?.statusCode,
+        code: wrapped is AppApiException
+            ? wrapped.code
+            : data is Map
+                ? (data['code'] ?? data['title'])?.toString()
+                : null,
+        details: wrapped is AppApiException
+            ? wrapped.details
+            : data is Map
+                ? Map<String, dynamic>.from(data)
+                : null,
+        isCancelled: error.type == DioExceptionType.cancel,
+        retryAfterSeconds:
+            int.tryParse(error.response?.headers.value('retry-after') ?? ''),
+      );
+    }
+  }
 }
 
 class _AuthInterceptor extends Interceptor {

@@ -1,11 +1,12 @@
+import 'package:caregiver_app/core/widgets/app_toast_type.dart';
+export 'package:caregiver_app/core/widgets/app_toast_type.dart';
+import 'package:caregiver_app/core/widgets/toast_message_content.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-
-enum AppToastType { success, error, loading }
 
 /// Toast nổi dùng cho các thao tác quan trọng; mỗi lần hiển thị thay thế toast trước đó.
 final class AppToast {
@@ -83,63 +84,13 @@ final class AppToast {
                   child: child,
                 ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: accent.withValues(alpha: .24)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: .08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      if (type == AppToastType.loading)
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: accent,
-                          ),
-                        )
-                      else
-                        Icon(icon, color: accent, size: 21),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Text(
-                          message,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                      if (type != AppToastType.loading)
-                        IconButton(
-                          onPressed: () => _remove(entry),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                          tooltip: 'Đóng',
-                          visualDensity: VisualDensity.compact,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+              child: ToastMessageContent(
+                  surface: surface,
+                  accent: accent,
+                  type: type,
+                  icon: icon,
+                  message: message,
+                  callbackAction1: () => _remove(entry)),
             ),
           ),
         );

@@ -1,6 +1,37 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  // Palette cũ được gom về đây để giữ nguyên màu khi refactor.
+  static const Color legacyError = Color(0xFFE74C3C);
+  static const Color legacyInfo = Color(0xFF2980B9);
+  static const Color legacyInfoLight = Color(0xFFEBF5FB);
+  static const Color purple = Color(0xFF8E44AD);
+  static const Color purpleLight = Color(0xFFF4ECF7);
+  static const Color blueDark = Color(0xFF0369A1);
+  static const Color legacyErrorLight = Color(0xFFFDEDEC);
+  static const Color softGreen = Color(0xFFE8F5F0);
+  static const Color softOrange = Color(0xFFFFF3E8);
+  static const Color brownOrange = Color(0xFFA85A16);
+  static const Color softBlue = Color(0xFFE8F0FF);
+  static const Color brightBlue = Color(0xFF2255CC);
+  static const Color pinkLight = Color(0xFFFFF0F5);
+  static const Color pinkDark = Color(0xFFB5226B);
+  static const Color limeLight = Color(0xFFF0F8E8);
+  static const Color limeDark = Color(0xFF4A7C1F);
+  static const Color violetLight = Color(0xFFF5F0FF);
+  static const Color violetDark = Color(0xFF6633BB);
+  static const Color amberSurface = Color(0xFFFFF8E1);
+  static const Color amberBorder = Color(0xFFFFCC80);
+  static const Color amber = Color(0xFFFFB74D);
+  static const Color amberText = Color(0xFF5D4037);
+  static const Color amberLight = Color(0xFFFFE082);
+  static const Color brown = Color(0xFF8D6E63);
+  static const Color goldSurface = Color(0xFFFFFBF0);
+  static const Color goldBorder = Color(0xFFFFE090);
+  static const Color gold = Color(0xFFD4A012);
+  static const Color goldDark = Color(0xFFB8860B);
+  static const Color goldText = Color(0xFF7A5812);
+
   // Brand tokens shared with frontend/landing-page/src/app/globals.css.
   static const Color primary = Color(0xFF006B5B);
   static const Color primaryLight = Color(0xFF00806D);
@@ -441,6 +472,17 @@ class AppSpacing {
   static const double lg = 24;
   static const double xl = 32;
   static const double xxl = 48;
+  static const double hairline = 1;
+  static const double micro = 2;
+  static const double tiny = 3;
+  static const double tight = 6;
+  static const double control = 10;
+  static const double compact = 12;
+  static const double inset = 14;
+  static const double comfortable = 18;
+  static const double section = 20;
+  static const double wide = 28;
+  static const double hero = 64;
 }
 
 class AppRadius {
@@ -451,6 +493,9 @@ class AppRadius {
   static const double xl = 20;
   static const double xxl = 24;
   static const double full = 100;
+  static const double xs = 4;
+  static const double tight = 6;
+  static const double compact = 10;
 }
 
 class AppBreakpoints {

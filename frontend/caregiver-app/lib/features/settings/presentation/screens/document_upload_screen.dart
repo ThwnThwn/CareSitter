@@ -1,3 +1,7 @@
+import 'package:caregiver_app/features/settings/presentation/widgets/document_identity_images.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/document_identity_number_field.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/document_certificate_chips.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/document_certificate_heading.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -60,14 +64,15 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
     }
 
     setState(() => _submitting = true);
+    final controller = ref.read(profileProvider.notifier);
     try {
-      await ref.read(profileProvider.notifier).submitKyc(
-            cccdNumber: _cccdController.text,
-            cccdFront: File(_front!.path),
-            cccdBack: File(_back!.path),
-            certificates: _certificates.map((file) => File(file.path)).toList(),
-          );
-      if (!mounted) return;
+      await controller.submitKyc(
+        cccdNumber: _cccdController.text,
+        cccdFront: File(_front!.path),
+        cccdBack: File(_back!.path),
+        certificates: _certificates.map((file) => File(file.path)).toList(),
+      );
+      if (!mounted || ref.read(profileProvider.notifier) != controller) return;
       _showMessage('Hồ sơ KYC đã được gửi và đang chờ duyệt.', false);
       Navigator.of(context).pop();
     } catch (error) {
@@ -96,60 +101,30 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             const Text(
               'Ảnh phải rõ nét, không bị che góc. Hồ sơ chỉ chuyển sang chờ duyệt sau khi máy chủ nhận đủ dữ liệu.',
               style: TextStyle(color: AppColors.textSecondary, height: 1.45),
             ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _cccdController,
-              keyboardType: TextInputType.number,
-              maxLength: 12,
-              decoration: const InputDecoration(
-                labelText: 'Số CCCD',
-                hintText: 'Nhập 9 hoặc 12 chữ số',
-              ),
-              validator: (value) {
-                final text = value?.trim() ?? '';
-                return RegExp(r'^(\d{9}|\d{12})$').hasMatch(text)
-                    ? null
-                    : 'Số CCCD phải gồm 9 hoặc 12 chữ số';
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _ImagePickerCard(
-                    label: 'Mặt trước CCCD',
-                    file: _front,
-                    onTap: () => _pickRequiredImage(true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ImagePickerCard(
-                    label: 'Mặt sau CCCD',
-                    file: _back,
-                    onTap: () => _pickRequiredImage(false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Chứng chỉ chuyên môn (không bắt buộc)',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                Text('${_certificates.length}/10',
-                    style: const TextStyle(color: AppColors.textSecondary)),
-              ],
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.lg),
+            DocumentIdentityNumberField(
+                cccdController: _cccdController,
+                callbackAction1: (value) {
+                  final text = value?.trim() ?? '';
+                  return RegExp(r'^(\d{9}|\d{12})$').hasMatch(text)
+                      ? null
+                      : 'Số CCCD phải gồm 9 hoặc 12 chữ số';
+                }),
+            const SizedBox(height: AppSpacing.md),
+            DocumentIdentityImages(
+                front: _front,
+                back: _back,
+                callbackAction1: () => _pickRequiredImage(true),
+                callbackAction2: () => _pickRequiredImage(false)),
+            const SizedBox(height: AppSpacing.lg),
+            DocumentCertificateHeading(certificates: _certificates),
+            const SizedBox(height: AppSpacing.compact),
             AppButton(
               label: 'Chọn ảnh chứng chỉ',
               icon: Icons.add_photo_alternate_outlined,
@@ -157,72 +132,20 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
               onPressed: _certificates.length < 10 ? _pickCertificates : null,
             ),
             if (_certificates.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: List.generate(_certificates.length, (index) {
-                  return InputChip(
-                    label: Text('Chứng chỉ ${index + 1}'),
-                    onDeleted: _submitting
-                        ? null
-                        : () => setState(() => _certificates.removeAt(index)),
-                  );
-                }),
-              ),
+              const SizedBox(height: AppSpacing.compact),
+              DocumentCertificateChips(
+                  certificates: _certificates,
+                  submitting: _submitting,
+                  onRemove: (index) =>
+                      setState(() => _certificates.removeAt(index))),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
             AppButton(
               label: 'Gửi hồ sơ KYC',
               icon: Icons.cloud_upload_outlined,
               isLoading: _submitting,
               onPressed: _submitting ? null : _submit,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ImagePickerCard extends StatelessWidget {
-  final String label;
-  final XFile? file;
-  final VoidCallback onTap;
-
-  const _ImagePickerCard(
-      {required this.label, required this.file, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 150,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: file == null ? AppColors.border : AppColors.primary),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(file == null ? Icons.add_a_photo_outlined : Icons.check_circle,
-                color: file == null ? AppColors.textHint : AppColors.primary,
-                size: 36),
-            const SizedBox(height: 10),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(file == null ? 'Chạm để chọn ảnh' : file!.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 11)),
           ],
         ),
       ),

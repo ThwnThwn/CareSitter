@@ -1,12 +1,13 @@
+import 'package:caregiver_app/features/settings/presentation/controllers/support_submission_controller.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/support_request_form.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/support_contact_card.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:caregiver_app/core/error/failure.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
-import 'package:caregiver_app/core/widgets/app_widgets.dart';
-import 'package:caregiver_app/features/settings/data/repositories/settings_repository.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key});
@@ -21,7 +22,6 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   final _descController = TextEditingController();
   final _picker = ImagePicker();
   final List<XFile> _attachments = [];
-  bool _submitting = false;
 
   @override
   void dispose() {
@@ -53,48 +53,35 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   }
 
   Future<void> _submitRequest() async {
-    if (_submitting || !_formKey.currentState!.validate()) return;
-    setState(() => _submitting = true);
-    try {
-      final attachmentUrls = <String>[];
-      for (final file in _attachments) {
-        attachmentUrls.add(
-          await ref
-              .read(settingsRepositoryProvider)
-              .uploadSupportAttachment(file),
-        );
-      }
-      final ticketId =
-          await ref.read(settingsRepositoryProvider).createSupportTicket(
-                title: _titleController.text,
-                description: _descController.text,
-                attachmentUrls: attachmentUrls,
-              );
-      if (!mounted) return;
+    if (ref.read(supportSubmissionControllerProvider) ||
+        !_formKey.currentState!.validate()) {
+      return;
+    }
+    final result = await ref
+        .read(supportSubmissionControllerProvider.notifier)
+        .submit(_titleController.text, _descController.text, _attachments);
+    if (!mounted || result is SupportIgnored) return;
+    if (result is SupportSubmitted) {
       _titleController.clear();
       _descController.clear();
       setState(() => _attachments.clear());
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ticketId == null
-            ? 'Yêu cầu hỗ trợ đã được gửi.'
-            : 'Đã gửi yêu cầu hỗ trợ. Mã: $ticketId'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ));
-    } catch (error) {
-      if (!mounted) return;
+          content: Text(result.ticketId == null
+              ? 'Yêu cầu hỗ trợ đã được gửi.'
+              : 'Đã gửi yêu cầu hỗ trợ. Mã: ${result.ticketId!}'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating));
+    } else if (result is SupportFailed) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(apiErrorMessage(error)),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ));
-    } finally {
-      if (mounted) setState(() => _submitting = false);
+          content: Text(result.message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final submitting = ref.watch(supportSubmissionControllerProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -102,7 +89,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
         leading: const AppBackButton(fallbackRoute: '/settings'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -114,7 +101,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
               color: AppColors.primary,
               onTap: _callHotline,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             // Email Card
             _buildContactCard(
               title: 'Gửi email hỗ trợ',
@@ -123,87 +110,33 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
               color: AppColors.info,
               onTap: _sendEmail,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xl),
 
             // Form Title
             const Text(
               'Gửi yêu cầu hỗ trợ trực tuyến',
               style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSizes.s16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
 
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    validator: (val) => val == null || val.isEmpty
-                        ? 'Vui lòng nhập tiêu đề'
-                        : null,
-                    decoration: InputDecoration(
-                      labelText: 'Tiêu đề vấn đề',
-                      hintText: 'Ví dụ: Lỗi không check-in được',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descController,
-                    maxLines: 4,
-                    validator: (val) => (val?.trim().length ?? 0) < 10
-                        ? 'Nội dung cần ít nhất 10 ký tự'
-                        : null,
-                    decoration: InputDecoration(
-                      labelText: 'Mô tả chi tiết',
-                      hintText:
-                          'Mô tả sự cố bạn đang gặp phải và cung cấp thêm thông tin nếu có...',
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: 'Đính kèm ảnh (${_attachments.length}/5)',
-                    icon: Icons.attach_file_rounded,
-                    isOutlined: true,
-                    onPressed:
-                        _attachments.length < 5 ? _pickAttachments : null,
-                  ),
-                  if (_attachments.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(_attachments.length, (index) {
-                        return InputChip(
-                          label: Text(_attachments[index].name,
-                              overflow: TextOverflow.ellipsis),
-                          onDeleted: _submitting
-                              ? null
-                              : () =>
-                                  setState(() => _attachments.removeAt(index)),
-                        );
-                      }),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  AppButton(
-                    label: 'Gửi yêu cầu',
-                    isLoading: _submitting,
-                    onPressed: _submitting ? null : _submitRequest,
-                  ),
-                ],
-              ),
-            ),
+            SupportRequestForm(
+                formKey: _formKey,
+                titleController: _titleController,
+                descController: _descController,
+                attachments: _attachments,
+                pickAttachments: _pickAttachments,
+                submitting: submitting,
+                onRemove: (index) =>
+                    setState(() => _attachments.removeAt(index)),
+                submitRequest: _submitRequest,
+                callbackAction2: (val) =>
+                    val == null || val.isEmpty ? 'Vui lòng nhập tiêu đề' : null,
+                callbackAction3: (val) => (val?.trim().length ?? 0) < 10
+                    ? 'Nội dung cần ít nhất 10 ký tự'
+                    : null),
           ],
         ),
       ),
@@ -216,54 +149,11 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.card,
-        ),
-        child: Row(
-          children: [
-            Container(
-              height: 48,
-              width: 48,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: AppColors.textHint, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
+  }) =>
+      SupportContactCard(
+          onTap: onTap,
+          color: color,
+          icon: icon,
+          title: title,
+          subtitle: subtitle);
 }

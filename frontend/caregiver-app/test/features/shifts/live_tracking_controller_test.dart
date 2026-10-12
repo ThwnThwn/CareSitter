@@ -1,11 +1,12 @@
+import 'package:caregiver_app/core/api/api_cancellation.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:caregiver_app/features/shifts/data/repositories/gps_repository.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/live_tracking_controller.dart';
-import 'package:caregiver_app/features/shifts/presentation/controllers/tracking_location_source.dart';
+import 'package:caregiver_app/features/shifts/data/repositories/tracking_location_source.dart';
 
 class FakeLocations extends TrackingLocationSource {
   final stream = StreamController<Position>.broadcast(sync: true);
@@ -26,19 +27,20 @@ class FakeGps implements GpsRepository {
   int statusChecks = 0;
   int sessions = 0;
   final samples = <DateTime>[];
-  CancelToken? lastCancel;
+  ApiCancellation? lastCancel;
   Completer<void>? pendingUpload;
   Completer<String>? pendingStatus;
-  DioException? nextError;
+  AppApiException? nextError;
   @override
-  Future<String> bookingStatus(String id, {CancelToken? cancelToken}) async {
+  Future<String> bookingStatus(String id,
+      {ApiCancellation? cancelToken}) async {
     statusChecks++;
     return pendingStatus == null ? status : await pendingStatus!.future;
   }
 
   @override
   Future<Map<String, dynamic>> openSession(String id, String sourceId,
-      {CancelToken? cancelToken}) async {
+      {ApiCancellation? cancelToken}) async {
     sessions++;
     return {'sessionId': 'session-$sessions', 'sendIntervalSeconds': 10};
   }
@@ -52,7 +54,7 @@ class FakeGps implements GpsRepository {
       double? accuracyMeters,
       double? speed,
       double? heading,
-      CancelToken? cancelToken}) async {
+      ApiCancellation? cancelToken}) async {
     samples.add(capturedAt);
     lastCancel = cancelToken;
     final error = nextError;
@@ -191,16 +193,9 @@ void main() {
   testWidgets(
       '429 respects Retry-After while keeping only the newest pending position',
       (tester) async {
-    final request = RequestOptions(path: '/gps');
     final api = FakeGps()
-      ..nextError = DioException(
-          requestOptions: request,
-          response: Response(
-              requestOptions: request,
-              statusCode: 429,
-              headers: Headers.fromMap({
-                'retry-after': ['20']
-              })));
+      ..nextError = const AppApiException(
+          message: 'Quá nhiều yêu cầu', statusCode: 429, retryAfterSeconds: 20);
     final locations = FakeLocations();
     final controller = LiveTrackingController(api, locations,
         observeLifecycle: false, now: tester.binding.clock.now);

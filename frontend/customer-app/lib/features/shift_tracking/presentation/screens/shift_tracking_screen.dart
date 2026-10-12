@@ -1,16 +1,30 @@
+import '../models/shift_status_presentation.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_show_extend_shift_sheet_selected_hours_format_currency_content.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_show_photo_preview_dialog_url_decoration.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_content.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_missing_state.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_app_bar.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_not_live_scaffold.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_map_section.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_en_route_banner.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_caregiver_card.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_needs_review_banner.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_progress_strip.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_task_list.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_task_row.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_family_note.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_info_row.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screeninfo_card.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_screen_trust_guarantee_card.dart';
+import '../controllers/shift_tracking_controller.dart';
+import '../controllers/shift_tracking_state.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map.dart';
-import 'package:latlong2/latlong.dart' hide Path;
-import 'package:caresitter_customer/core/realtime/care_signalr_service.dart';
-import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
-import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
 
 class ShiftTrackingScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -23,243 +37,47 @@ class ShiftTrackingScreen extends ConsumerStatefulWidget {
 
 class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     with WidgetsBindingObserver {
-  // Vị trí caregiver — cập nhật qua SignalR GpsUpdated event
-  LatLng? _caregiverPos;
-  StreamSubscription<GpsUpdate>? _gpsSub;
-  StreamSubscription<BookingStatusChange>? _statusSub;
-  StreamSubscription<void>? _reconnectSub;
-  late final CareSignalRService _signalR;
-  final _fixes = LiveGpsAccumulator();
-  Timer? _pollTimer;
-  Timer? _ageTimer;
-  bool _foreground = true;
-  bool _trackingStopped = false;
-  bool _loadingLocation = false;
-  int _locationEpoch = 0;
-  String? _locationError;
-  StreamSubscription<SignalRConnectionState>? _connectionSub;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _signalR = ref.read(careSignalRProvider);
-    _connectSignalR();
-    _scheduleLocationPolling();
-    _ageTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted && _foreground) setState(() {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = ModalRoute.of(context)?.isCurrent ?? true;
+    Future.microtask(() {
+      if (mounted) {
+        ref
+            .read(shiftTrackingControllerProvider(widget.bookingId).notifier)
+            .setVisible(visible);
+      }
     });
-    unawaited(
-        ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    ref
+        .read(shiftTrackingControllerProvider(widget.bookingId).notifier)
+        .setForeground(state == AppLifecycleState.resumed);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _locationEpoch++;
-    _pollTimer?.cancel();
-    _ageTimer?.cancel();
-    _gpsSub?.cancel();
-    _statusSub?.cancel();
-    _reconnectSub?.cancel();
-    _connectionSub?.cancel();
-
-    // Rời group khi thoát màn hình
-    _signalR.leaveBooking(widget.bookingId).ignore();
     super.dispose();
-  }
-
-  Future<void> _connectSignalR() async {
-    _connectionSub = _signalR.lifecycleStream.listen((_) {
-      if (mounted) _scheduleLocationPolling();
-    });
-    // ── Lắng nghe GPS updates ────────────────────────────────────
-    _gpsSub = _signalR.gpsStream
-        .where((e) => e.bookingId == widget.bookingId)
-        .listen(_acceptGps);
-
-    // ── Lắng nghe booking status changes ─────────────────────────
-    _statusSub = _signalR.statusStream
-        .where((e) => e.bookingId == widget.bookingId)
-        .listen((change) {
-      if (!mounted) return;
-      if (change.newStatus.toLowerCase() != 'caregiver_en_route') {
-        _trackingStopped = true;
-        _scheduleLocationPolling();
-        _locationEpoch++;
-        _clearLocation();
-      }
-      // Refresh booking store để UI cập nhật trạng thái
-      ref.read(bookingStoreProvider.notifier).refresh();
-    });
-
-    // ── Lắng nghe reconnect để load lại checklist ─────────────────
-    _reconnectSub = _signalR.onReconnected.listen((_) {
-      if (!mounted) return;
-      ref.read(bookingStoreProvider.notifier).loadTasks(widget.bookingId);
-      unawaited(_reloadLocation());
-    });
-    // Subscribe before joining, then merge the REST snapshot by server version.
-    final joined = _signalR.joinBooking(widget.bookingId).catchError((_) {});
-    // REST vẫn lấy vị trí ban đầu ngay cả khi Hub chưa kết nối được.
-    await _reloadLocation();
-    await joined;
-  }
-
-  void _scheduleLocationPolling() {
-    _pollTimer?.cancel();
-    if (!_foreground || _trackingStopped) return;
-    // Mất SignalR: lấy snapshot nhanh hơn; tránh tạo kết nối Hub thứ hai.
-    _pollTimer = Timer.periodic(
-      Duration(seconds: _signalR.isReady ? 30 : 10),
-      (_) {
-        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-          unawaited(_reloadLocation());
-        }
-      },
-    );
-  }
-
-  void _acceptGps(GpsUpdate gps) {
-    if (!mounted || !_foreground || _trackingStopped) return;
-    final booking = ref
-        .read(bookingStoreProvider)
-        .where((b) => b.id == widget.bookingId)
-        .firstOrNull;
-    if (booking == null ||
-        !_fixes.accept(gps,
-            bookingId: widget.bookingId,
-            caregiverId: booking.caregiverId,
-            enRoute: booking.status == 'caregiver_en_route')) {
-      return;
-    }
-
-    final next = LatLng(gps.latitude, gps.longitude);
-    setState(() {
-      _caregiverPos = next;
-      _locationError = null;
-    });
-  }
-
-  void _clearLocation() {
-    if (!mounted) return;
-
-    setState(() {
-      _fixes.clear();
-      _caregiverPos = null;
-    });
-  }
-
-  Future<void> _reloadLocation() async {
-    if (!mounted || !_foreground || _loadingLocation) return;
-    _loadingLocation = true;
-    final epoch = _locationEpoch;
-    final watermark = _fixes.version;
-    try {
-      await ref.read(bookingStoreProvider.notifier).refresh();
-      if (!mounted || !_foreground || epoch != _locationEpoch) return;
-      final booking = ref
-          .read(bookingStoreProvider)
-          .where((b) => b.id == widget.bookingId)
-          .firstOrNull;
-      if (_trackingStopped ||
-          booking == null ||
-          booking.status != 'caregiver_en_route') {
-        _trackingStopped = true;
-        _scheduleLocationPolling();
-        _clearLocation();
-        return;
-      }
-      final latest = await ref
-          .read(bookingRepositoryProvider)
-          .getLatestGps(widget.bookingId);
-      if (!mounted ||
-          !_foreground ||
-          epoch != _locationEpoch ||
-          _trackingStopped) {
-        return;
-      }
-      setState(() => _locationError = null);
-      if (latest == null) {
-        if (_fixes.version == watermark) _clearLocation();
-      } else {
-        _acceptGps(GpsUpdate(
-            bookingId: latest.bookingId,
-            caregiverId: latest.caregiverId,
-            latitude: latest.latitude,
-            longitude: latest.longitude,
-            recordedAt: latest.recordedAt,
-            version: latest.version,
-            bookingVersion: latest.bookingVersion,
-            sessionId: latest.sessionId,
-            receivedAt: latest.receivedAt,
-            accuracyMeters: latest.accuracyMeters,
-            speed: latest.speed,
-            heading: latest.heading));
-      }
-    } on DioException catch (error) {
-      if (!mounted || epoch != _locationEpoch) return;
-      if (error.response?.statusCode == 403 ||
-          error.response?.statusCode == 410) {
-        _clearLocation();
-      }
-      setState(() => _locationError = error.response?.statusCode == 410
-          ? 'Chia sẻ vị trí chưa được bật'
-          : 'Mất kết nối · đang thử lại');
-    } catch (_) {
-      if (mounted && epoch == _locationEpoch) {
-        setState(() => _locationError = 'Chưa tải được vị trí');
-      }
-    } finally {
-      _loadingLocation = false;
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = state == AppLifecycleState.resumed;
-    _scheduleLocationPolling();
-    if (!_foreground) {
-      _locationEpoch++;
-      return;
-    }
-    unawaited(_reloadLocation());
-  }
-
-  String get _locationLabel {
-    if (_trackingStopped) return 'Đã dừng theo dõi di chuyển';
-    if (_locationError != null) return _locationError!;
-    final fix = _fixes.latest;
-    if (fix == null) return 'Đang chờ vị trí';
-    final age =
-        DateTime.now().difference(fix.recordedAt).inSeconds.clamp(0, 999999);
-    if (age > 60) return 'Vị trí cũ · ${age ~/ 60} phút trước';
-    if ((fix.accuracyMeters ?? 0) > 100) return 'GPS kém · $age giây trước';
-    return '${_signalR.isReady ? 'Đang cập nhật' : 'Kết nối lại'} · $age giây trước';
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(bookingStoreProvider, (before, after) {
-      final booking = after.where((b) => b.id == widget.bookingId).firstOrNull;
-      final previous =
-          before?.where((b) => b.id == widget.bookingId).firstOrNull;
-      // Khi booking xuất hiện lần đầu sau refresh, request latest đang chạy vẫn
-      // được giữ. Chỉ hủy snapshot khi ca đã dừng hoặc đổi caregiver thực sự.
-      if (booking?.status != 'caregiver_en_route' ||
-          (previous != null && booking?.caregiverId != previous.caregiverId)) {
-        _locationEpoch++;
-        _trackingStopped = booking?.status != 'caregiver_en_route';
-        _scheduleLocationPolling();
-        _clearLocation();
-      }
-    });
+    final location =
+        ref.watch(shiftTrackingControllerProvider(widget.bookingId));
     final bookingId = widget.bookingId;
     final matches =
         ref.watch(bookingStoreProvider).where((b) => b.id == bookingId);
     if (matches.isEmpty) {
-      return const Scaffold(
-          body: Center(child: Text('Không tìm thấy booking')));
+      return const ShiftTrackingMissingState();
     }
     final bk = matches.first;
     final now = DateTime.now();
@@ -281,83 +99,27 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     final totalCount = bk.tasks.length;
     final progressPct = totalCount > 0 ? doneCount / totalCount : 0.0;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildFloatingAppBar(context),
-      bottomNavigationBar: _BottomActionBar(bk: bk, bookingId: bookingId),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildMapSection(bk),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                children: [
-                  if (bk.status == 'caregiver_en_route') ...[
-                    _buildEnRouteBanner(bk),
-                    const SizedBox(height: 14),
-                  ],
-                  _buildCaregiverCard(context, bk),
-                  const SizedBox(height: 14),
-                  if (bk.status != 'caregiver_en_route') ...[
-                    if (bk.needsReview ||
-                        bk.tasks.any((t) => t.isRequired && t.isSkipped)) ...[
-                      _buildNeedsReviewBanner(context, bk),
-                      const SizedBox(height: 14),
-                    ],
-                    _buildProgressStrip(bk, doneCount, totalCount, progressPct,
-                        skippedCount: skippedCount),
-                    const SizedBox(height: 14),
-                    _buildTaskList(context, ref, bk),
-                    const SizedBox(height: 14),
-                    if (bk.beneficiaryNotes?.trim().isNotEmpty == true) ...[
-                      _buildFamilyNote(bk.beneficiaryNotes!.trim()),
-                      const SizedBox(height: 14),
-                    ],
-                  ],
-                  _buildInfoRow(bk),
-                  const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.push('/bookings/$bookingId/timeline'),
-                    icon: const Icon(Icons.history_edu_outlined, size: 18),
-                    label: const Text('Xem nhật ký chăm sóc'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(
-                          color: AppColors.primary, width: 1.2),
-                      backgroundColor:
-                          AppColors.successLight.withValues(alpha: 0.5),
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildTrustGuaranteeCard(),
-                  if (bk.status == 'in_progress') ...[
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () => _showExtendShiftSheet(context, bk),
-                      icon: const Icon(Icons.more_time_outlined, size: 16),
-                      label: const Text('Yêu cầu gia hạn ca'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.secondaryStrong,
-                        side:
-                            const BorderSide(color: AppColors.secondaryStrong),
-                        minimumSize: const Size(double.infinity, 46),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return ShiftTrackingContent(
+        buildFloatingAppBar: _buildFloatingAppBar,
+        bk: bk,
+        bookingId: bookingId,
+        buildMapSection: _buildMapSection,
+        location: location,
+        buildEnRouteBanner: _buildEnRouteBanner,
+        buildCaregiverCard: _buildCaregiverCard,
+        buildNeedsReviewBanner: _buildNeedsReviewBanner,
+        buildProgressStrip: _buildProgressStrip,
+        doneCount: doneCount,
+        totalCount: totalCount,
+        progressPct: progressPct,
+        skippedCount: skippedCount,
+        buildTaskList: _buildTaskList,
+        ref: ref,
+        buildFamilyNote: _buildFamilyNote,
+        buildInfoRow: _buildInfoRow,
+        buildTrustGuaranteeCard: _buildTrustGuaranteeCard,
+        action1: () => context.push('/bookings/$bookingId/timeline'),
+        action2: () => _showExtendShiftSheet(context, bk));
   }
 
   // ── Fallback khi ca chưa/không còn ở trạng thái live ───────────────────────
@@ -365,266 +127,29 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     BuildContext context,
     BookingModel bk,
     String presentationStatus,
-  ) {
-    final info = _notLiveInfo(presentationStatus);
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const Text('Theo dõi ca chăm sóc',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        leading: const AppBackButton(
-          fallbackRoute: '/bookings',
-          color: AppColors.textPrimary,
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(info.icon, size: 56, color: AppColors.primary),
-              const SizedBox(height: 16),
-              Text(
-                info.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                info.message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 14, color: AppColors.textSecondary, height: 1.5),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () =>
-                    popOrGo(context, fallbackRoute: '/bookings/${bk.id}'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                child: Text(info.actionLabel),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  ({IconData icon, String title, String message, String actionLabel})
-      _notLiveInfo(String status) {
-    switch (status) {
-      case 'pending':
-        return (
-          icon: Icons.hourglass_empty_rounded,
-          title: 'Ca chưa bắt đầu',
-          message:
-              'Đang chờ người chăm sóc nhận ca. Bạn có thể theo dõi trực tiếp ngay khi ca bắt đầu.',
-          actionLabel: 'Xem chi tiết lịch hẹn',
-        );
-      case 'confirmed':
-      case 'caregiver_accepted':
-      case 'caregiver_en_route':
-        return (
-          icon: Icons.directions_car_rounded,
-          title: 'Caregiver chưa bắt đầu di chuyển',
-          message:
-              'Caregiver chưa khởi động hành trình. Màn hình Live Tracking sẽ tự mở khi họ bắt đầu di chuyển.',
-          actionLabel: 'Xem chi tiết lịch hẹn',
-        );
-      case 'completed':
-        return (
-          icon: Icons.check_circle_outline_rounded,
-          title: 'Ca đã hoàn thành',
-          message: 'Ca chăm sóc này đã kết thúc. Xem lại chi tiết và đánh giá.',
-          actionLabel: 'Xem chi tiết',
-        );
-      case 'disputed':
-        return (
-          icon: Icons.report_problem_outlined,
-          title: 'Ca đang được xử lý khiếu nại',
-          message:
-              'Yêu cầu của bạn đang được xem xét. Xem chi tiết để biết cập nhật.',
-          actionLabel: 'Xem chi tiết',
-        );
-      case 'cancelled':
-        return (
-          icon: Icons.cancel_outlined,
-          title: 'Ca đã bị huỷ',
-          message: 'Ca chăm sóc này đã bị huỷ.',
-          actionLabel: 'Xem chi tiết',
-        );
-      default:
-        return (
-          icon: Icons.info_outline_rounded,
-          title: 'Không thể theo dõi ca này',
-          message: 'Trạng thái ca hiện không hỗ trợ theo dõi trực tiếp.',
-          actionLabel: 'Xem chi tiết',
-        );
-    }
-  }
+  ) =>
+      ShiftTrackingScreenNotLiveScaffold(
+          notLiveInfo: shiftNotLiveInfo,
+          presentationStatus: presentationStatus,
+          bk: bk);
 
   // ── Floating transparent AppBar ────────────────────────────────────────────
   PreferredSizeWidget _buildFloatingAppBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      centerTitle: true,
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.successLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.5, end: 1.0),
-              duration: const Duration(milliseconds: 900),
-              builder: (_, v, __) => Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: v),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Flexible(
-              child: Text(
-                'Theo dõi ca chăm sóc',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
-      leading: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.95),
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
-            ],
-          ),
-          child: const AppBackButton(
-            fallbackRoute: '/bookings',
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              shape: BoxShape.circle,
-              border:
-                  Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
-              ],
-            ),
-            child: Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_none_rounded,
-                      size: 20, color: AppColors.textPrimary),
-                  onPressed: () {},
-                ),
-                Positioned(
-                  top: 9,
-                  right: 9,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return const ShiftTrackingAppBar();
   }
 
   // ── Map section ────────────────────────────────────────────────────────────
-  Widget _buildMapSection(BookingModel bk) {
-    final lat = bk.addressLatitude;
-    final lng = bk.addressLongitude;
-    if (lat == null ||
-        lng == null ||
-        !lat.isFinite ||
-        !lng.isFinite ||
-        lat < -90 ||
-        lat > 90 ||
-        lng < -180 ||
-        lng > 180) {
-      return _buildMapUnavailable();
-    }
-    final enRoute = bk.status == 'caregiver_en_route';
-    final fix = _fixes.latest;
-    final stale =
-        fix != null && DateTime.now().difference(fix.recordedAt).inSeconds > 60;
-    return SizedBox(
-      height: enRoute ? 320 : 260,
-      child: LiveCaregiverMap(
-        key: ValueKey(bk.id),
-        destination: LatLng(lat, lng),
-        caregiverPosition: enRoute ? _caregiverPos : null,
-        heading: enRoute ? fix?.heading : null,
-        stale: stale,
-        locationLabel: enRoute ? _locationLabel : 'Địa chỉ chăm sóc',
-        addressLabel: bk.address,
-      ),
-    );
-  }
+  Widget _buildMapSection(BookingModel bk, ShiftTrackingState location) =>
+      ShiftTrackingScreenMapSection(
+          bk: bk,
+          buildMapUnavailable: _buildMapUnavailable,
+          location: location);
 
   Widget _buildMapUnavailable() {
     return Container(
       color: AppColors.surfaceVariant,
       alignment: Alignment.center,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: const Text(
         'Chưa có tọa độ địa chỉ để hiển thị bản đồ.',
         textAlign: TextAlign.center,
@@ -634,314 +159,16 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   }
 
   // ── Banner caregiver đang trên đường đến (en_route) ────────────────────────────────────────────
-  Widget _buildEnRouteBanner(BookingModel bk) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.warningLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.secondary.withValues(alpha: 0.55),
-          width: 1.2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.directions_car_rounded,
-                  color: AppColors.warning,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Chăm sóc viên đang đến',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                        children: [
-                          TextSpan(text: '${bk.caregiverName} · '),
-                          TextSpan(
-                            text: _locationLabel,
-                            style: const TextStyle(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.5, end: 1.0),
-                duration: const Duration(milliseconds: 900),
-                builder: (_, v, __) => Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: v),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.secondary.withValues(alpha: v * 0.5),
-                        blurRadius: 6,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildEnRouteBanner(BookingModel bk, ShiftTrackingState location) =>
+      ShiftTrackingScreenEnRouteBanner(bk: bk, location: location);
 
   // ── Caregiver card ─────────────────────────────────────────────────────────
-  Widget _buildCaregiverCard(BuildContext context, BookingModel bk) {
-    final caregiverAvatar = bk.caregiverAvatar ?? '';
-    final avatarText = caregiverAvatar.isNotEmpty && caregiverAvatar.length <= 3
-        ? caregiverAvatar
-        : bk.caregiverInitials;
-    final statusLabel = bk.status == 'caregiver_en_route'
-        ? 'Đang đến'
-        : bk.status == 'checkout_pending_review'
-            ? 'Chờ duyệt'
-            : 'Đang làm';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.9),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppColors.primaryContainer,
-                    child: Text(
-                      avatarText,
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      bk.caregiverName ?? 'Người chăm sóc',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Chăm sóc: ${bk.beneficiaryName ?? "Người thân"}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(statusLabel,
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('💬 Kết nối liên hệ với ${bk.caregiverName}...'),
-                      backgroundColor: AppColors.primary,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  ),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-                  label: const Text('Liên hệ'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side:
-                        const BorderSide(color: AppColors.primary, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton.icon(
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content:
-                        Text('🚨 Đang kích hoạt tín hiệu SOS khẩn cấp 24/7...'),
-                    backgroundColor: AppColors.error,
-                    duration: Duration(seconds: 3),
-                  ),
-                ),
-                icon: const Icon(Icons.emergency_share_outlined, size: 16),
-                label: const Text('SOS'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(100, 44),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildCaregiverCard(BuildContext context, BookingModel bk) =>
+      ShiftTrackingScreenCaregiverCard(bk: bk);
 
   // ── Needs review banner ───────────────────────────────────────────────────
-  Widget _buildNeedsReviewBanner(BuildContext context, BookingModel bk) {
-    final skippedRequiredCount =
-        bk.tasks.where((t) => t.isRequired && t.isSkipped).length;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1), // amber.shade50
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFCC80), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFB74D).withValues(alpha: 0.25),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: AppColors.warning,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ca trực cần xem lại',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.warning,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  skippedRequiredCount > 0
-                      ? 'Có $skippedRequiredCount công việc bắt buộc không thể thực hiện trong ca. Người chăm sóc đã ghi rõ lý do bên dưới để gia đình tiện theo dõi.'
-                      : 'Ca trực này có các công việc cần lưu ý xem xét.',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF5D4037),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildNeedsReviewBanner(BuildContext context, BookingModel bk) =>
+      ShiftTrackingScreenNeedsReviewBanner(bk: bk);
 
   // ── Progress strip ─────────────────────────────────────────────────────────
   Widget _buildProgressStrip(
@@ -950,479 +177,33 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     int total,
     double pct, {
     int skippedCount = 0,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${bk.serviceName ?? "Dịch vụ"} • ${bk.duration}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '$done / $total công việc hoàn thành',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (skippedCount > 0) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    '• $skippedCount việc không thực hiện được',
-                    style: const TextStyle(
-                      color: Color(0xFFFFE082),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: pct,
-                    backgroundColor: Colors.white.withValues(alpha: 0.25),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: 6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Icon(Icons.schedule, color: Colors.white, size: 16),
-              const SizedBox(height: 4),
-              Text(
-                bk.time,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                bk.date,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  }) =>
+      ShiftTrackingScreenProgressStrip(
+          bk: bk,
+          done: done,
+          total: total,
+          skippedCount: skippedCount,
+          pct: pct);
 
   // ── Task list (Read-only) ──────────────────────────────────────────────────
-  Widget _buildTaskList(BuildContext context, WidgetRef ref, BookingModel bk) {
-    final doneCount = bk.tasks.where((t) => t.isCompleted).length;
-    final skippedCount = bk.tasks.where((t) => t.isSkipped).length;
-    final allDone = bk.tasks.isNotEmpty && doneCount == bk.tasks.length;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'Tiến độ chăm sóc',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              if (skippedCount > 0) ...[
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.warningLight,
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: const Color(0xFFFFB74D), width: 0.6),
-                  ),
-                  child: Text(
-                    '$skippedCount bỏ qua',
-                    style: const TextStyle(
-                      color: AppColors.warning,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: allDone
-                      ? AppColors.successLight
-                      : AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$doneCount/${bk.tasks.length}',
-                  style: TextStyle(
-                    color: allDone ? AppColors.success : AppColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (bk.tasks.isEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              alignment: Alignment.center,
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.checklist_outlined,
-                    size: 36,
-                    color: AppColors.textHint.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Gói dịch vụ này chưa có checklist',
-                    style: TextStyle(
-                      color: AppColors.textHint,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ...bk.tasks.map((task) => _buildTaskRow(task, bk, context)),
-        ],
-      ),
-    );
-  }
+  Widget _buildTaskList(BuildContext context, WidgetRef ref, BookingModel bk) =>
+      ShiftTrackingScreenTaskList(bk: bk, buildTaskRow: _buildTaskRow);
 
   Widget _buildTaskRow(
-      CareTaskModel task, BookingModel bk, BuildContext context) {
-    final isDone = task.isCompleted;
-    final isSkipped = task.isSkipped;
-
-    Color itemBg = AppColors.surfaceVariant.withValues(alpha: 0.3);
-    Color borderColor = AppColors.border.withValues(alpha: 0.6);
-    if (isDone) {
-      itemBg = AppColors.successLight.withValues(alpha: 0.4);
-      borderColor = AppColors.success.withValues(alpha: 0.25);
-    } else if (isSkipped) {
-      itemBg = const Color(0xFFFFF8E1).withValues(alpha: 0.7);
-      borderColor = const Color(0xFFFFCC80).withValues(alpha: 0.5);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: itemBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Status icon
-              Container(
-                width: 28,
-                height: 28,
-                margin: const EdgeInsets.only(top: 1, right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDone
-                      ? AppColors.success
-                      : isSkipped
-                          ? const Color(0xFFFFB74D)
-                          : AppColors.surface,
-                  border: Border.all(
-                    color: isDone
-                        ? AppColors.success
-                        : isSkipped
-                            ? AppColors.warning
-                            : AppColors.border,
-                    width: 1.5,
-                  ),
-                ),
-                child: isDone
-                    ? const Icon(Icons.check_rounded,
-                        size: 16, color: Colors.white)
-                    : isSkipped
-                        ? const Icon(Icons.remove_rounded,
-                            size: 16, color: Colors.white)
-                        : Icon(
-                            _iconForTask(task.title),
-                            size: 14,
-                            color: AppColors.textHint,
-                          ),
-              ),
-              // Title and badges
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            task.title,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight:
-                                  isDone ? FontWeight.w500 : FontWeight.w600,
-                              color: isSkipped
-                                  ? AppColors.textSecondary
-                                  : AppColors.textPrimary,
-                              decoration:
-                                  isSkipped ? TextDecoration.lineThrough : null,
-                              decorationColor: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        if (task.isAdHoc) ...[
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryContainer,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Phát sinh',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (task.isRequired && !task.isTerminal) ...[
-                          Container(
-                            margin: const EdgeInsets.only(left: 4),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: const Text(
-                              'Bắt buộc',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (task.description != null &&
-                        task.description!.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        task.description!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Skip reason banner
-          if (isSkipped &&
-              task.skipReason != null &&
-              task.skipReason!.isNotEmpty) ...[
-            Container(
-              margin: const EdgeInsets.only(top: 8, left: 38),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.warningLight,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFCC80), width: 0.6),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    size: 14,
-                    color: AppColors.warning,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Lý do: ${task.skipReason}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF8D6E63),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          // Photos gallery
-          if (task.photoUrls.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 8, left: 38),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: task.photoUrls.map((url) {
-                  return GestureDetector(
-                    onTap: () => _showPhotoPreviewDialog(context, url),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        url,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 50,
-                          height: 50,
-                          color: AppColors.surface,
-                          child: const Icon(
-                            Icons.broken_image_outlined,
-                            size: 18,
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-          // Completion timestamp
-          if (isDone && task.completedAt != null) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 38),
-              child: Text(
-                'Hoàn thành lúc ${task.completedAt!.hour.toString().padLeft(2, '0')}:${task.completedAt!.minute.toString().padLeft(2, '0')}',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textHint,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+          CareTaskModel task, BookingModel bk, BuildContext context) =>
+      ShiftTrackingScreenTaskRow(
+          task: task,
+          iconForTask: _iconForTask,
+          showPhotoPreviewDialog: _showPhotoPreviewDialog);
 
   void _showPhotoPreviewDialog(BuildContext context, String url) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            InteractiveViewer(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) => Container(
-                    padding: const EdgeInsets.all(32),
-                    color: Colors.black87,
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.broken_image_outlined,
-                            color: Colors.white70, size: 48),
-                        SizedBox(height: 8),
-                        Text(
-                          'Không thể tải ảnh',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                icon: const CircleAvatar(
-                  backgroundColor: Colors.black54,
-                  child: Icon(Icons.close, color: Colors.white, size: 20),
-                ),
-              ),
-            ),
-          ],
-        ),
+        insetPadding: const EdgeInsets.all(AppSpacing.md),
+        child: ShiftTrackingShowPhotoPreviewDialogUrlDecoration(
+            url: url, action1: () => Navigator.of(ctx).pop()),
       ),
     );
   }
@@ -1454,160 +235,23 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
   }
 
   // ── Note supplied by the customer/family when creating the booking ─────────
-  Widget _buildFamilyNote(String note) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBF0),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFE090), width: 0.8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.sticky_note_2_outlined,
-              color: Color(0xFFD4A012), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Ghi chú của gia đình',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB8860B))),
-                const SizedBox(height: 4),
-                Text(
-                  note,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textPrimary, height: 1.5),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildFamilyNote(String note) =>
+      ShiftTrackingScreenFamilyNote(note: note);
 
   // ── Info chips ─────────────────────────────────────────────────────────────
-  Widget _buildInfoRow(BookingModel bk) {
-    return Row(
-      children: [
-        Expanded(
-          child: _infoCard(
-            icon: Icons.person_outline_rounded,
-            label: 'Người thân',
-            value: bk.beneficiaryName ?? 'Người thân',
-            subtext: 'Thông tin người được chăm sóc',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _infoCard(
-            icon: Icons.access_time_outlined,
-            label: 'Ca làm',
-            value: '${bk.time} • ${bk.duration}',
-            subtext: bk.date,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildInfoRow(BookingModel bk) =>
+      ShiftTrackingScreenInfoRow(infoCard: _infoCard, bk: bk);
 
   Widget _infoCard({
     required IconData icon,
     required String label,
     required String value,
     required String subtext,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border, width: 0.9),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: AppColors.primary),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textHint,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  }) =>
+      ShiftTrackingScreeninfoCard(icon: icon, label: label, value: value);
 
-  Widget _buildTrustGuaranteeCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.warningLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.verified_user_rounded, color: AppColors.warning, size: 18),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Cam kết Đồng hành Phi Y tế & Bảo hiểm CareSitter CareGuard 24/7',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF7A5812),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTrustGuaranteeCard() =>
+      const ShiftTrackingScreenTrustGuaranteeCard();
 
   void _showExtendShiftSheet(BuildContext context, BookingModel bk) {
     int selectedHours = 1;
@@ -1625,321 +269,31 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.fromLTRB(
               20, 20, 20, 32 + MediaQuery.of(ctx).viewInsets.bottom),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Gia hạn ca chăm sóc',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 32),
-                    onPressed: selectedHours > 1
-                        ? () => setSheetState(() => selectedHours--)
-                        : null,
-                  ),
-                  const SizedBox(width: 24),
-                  Text('$selectedHours giờ',
-                      style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary)),
-                  const SizedBox(width: 24),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 32),
-                    onPressed: selectedHours < 4
-                        ? () => setSheetState(() => selectedHours++)
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                  'Phí ước tính: ${_formatCurrency(selectedHours * effectiveHourlyRate)}'),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          '✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
-                },
-                child: const Text('Gửi yêu cầu gia hạn'),
-              ),
-            ],
-          ),
+          child:
+              ShiftTrackingShowExtendShiftSheetSelectedHoursFormatCurrencyContent(
+                  selectedHours: selectedHours,
+                  formatCurrency: _formatCurrency,
+                  effectiveHourlyRate: effectiveHourlyRate,
+                  callbackAction1: () => setSheetState(() => selectedHours--),
+                  callbackAction2: () => setSheetState(() => selectedHours++),
+                  callbackAction3: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '✅ Đã gửi yêu cầu gia hạn $selectedHours giờ đến người chăm sóc.'),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    );
+                  }),
         ),
       ),
     );
   }
 
   String _formatCurrency(double amount) {
-    return '${amount.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        )} ₫';
+    return formatVnd(amount);
   }
 }
 
 // ── Bottom action bar ──────────────────────────────────────────────────────────
-class _BottomActionBar extends ConsumerWidget {
-  final BookingModel bk;
-  final String bookingId;
-  const _BottomActionBar({required this.bk, required this.bookingId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bottomPad = MediaQuery.of(context).padding.bottom;
-
-    if (bk.status == 'checkout_pending_review') {
-      return Container(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPad * 0.5),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, -4))
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => _confirmComplete(context, ref, bk),
-              icon: const Icon(Icons.lock_open_rounded, size: 18),
-              label: const Text('Xác nhận kết thúc ca',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/bookings/$bookingId/dispute'),
-              icon: const Icon(Icons.report_problem_outlined,
-                  color: AppColors.error, size: 15),
-              label: const Text('Báo cáo vấn đề',
-                  style: TextStyle(color: AppColors.error)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.error),
-                minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (bk.status == 'in_progress') {
-      return Container(
-        padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomPad * 0.5),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          border: const Border(top: BorderSide(color: AppColors.border)),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -3))
-          ],
-        ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.lock_outline, size: 13, color: AppColors.textHint),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Nút kết thúc mở sau khi người chăm sóc gửi báo cáo',
-                    style: TextStyle(fontSize: 11, color: AppColors.textHint),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (bk.status == 'caregiver_en_route') {
-      return Container(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPad * 0.5),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          border: const Border(top: BorderSide(color: AppColors.border)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                      Text('💬 Mở tin nhắn nhanh cho ${bk.caregiverName}...'),
-                  backgroundColor: AppColors.primary,
-                  duration: const Duration(seconds: 2),
-                ),
-              ),
-              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-              label: const Text(
-                'Gửi tin nhắn',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                elevation: 2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            InkWell(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('⚠️ Đang kết nối tổng đài giám sát viên 24/7...'),
-                  backgroundColor: AppColors.error,
-                  duration: Duration(seconds: 2),
-                ),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        size: 13, color: AppColors.error),
-                    SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'Báo cáo sự cố hoặc liên hệ giám sát viên 24/7',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  void _confirmComplete(BuildContext context, WidgetRef ref, BookingModel bk) {
-    showDialog(
-      context: context,
-      builder: (dCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle_outline,
-                color: AppColors.success, size: 26),
-            SizedBox(width: 10),
-            Text('Xác nhận hoàn thành', style: TextStyle(fontSize: 17)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Bạn xác nhận ca chăm sóc của ${bk.caregiverName} đã hoàn tất?',
-              style: const TextStyle(
-                  fontSize: 14, color: AppColors.textPrimary, height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.25)),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline, size: 14, color: AppColors.success),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Nếu không xác nhận, hệ thống sẽ tự hoàn tất sau 24 giờ kể từ khi yêu cầu checkout được gửi.',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                          height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dCtx),
-            child: const Text('Chưa',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-            onPressed: () async {
-              Navigator.pop(dCtx);
-              AppToast.loading(context, 'Đang xác nhận hoàn tất ca…');
-              try {
-                await ref
-                    .read(bookingStoreProvider.notifier)
-                    .confirmCompleted(bk.id);
-                if (!context.mounted) return;
-                AppToast.success(
-                    context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
-                popOrGo(context, fallbackRoute: '/bookings');
-              } catch (_) {
-                if (!context.mounted) return;
-                AppToast.error(
-                    context, 'Không thể xác nhận lúc này. Vui lòng thử lại.');
-              }
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
-    );
-  }
-}

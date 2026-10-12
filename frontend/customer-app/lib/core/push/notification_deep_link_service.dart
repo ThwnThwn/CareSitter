@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
-import 'package:caresitter_customer/core/router/app_router.dart';
+import 'package:caresitter_customer/app/router/app_router.dart';
 
 final notificationMessengerKey = GlobalKey<ScaffoldMessengerState>();
 

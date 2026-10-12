@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,7 +41,7 @@ class ShellScaffold extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_tabs.length, (i) {
@@ -92,15 +93,16 @@ class _NavBarItem extends StatelessWidget {
             curve: Curves.easeInOut,
             height: 3,
             width: isSelected ? 24 : 0,
-            margin: const EdgeInsets.only(bottom: 4),
+            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppRadius.s2),
             ),
           ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm, vertical: AppSpacing.tight),
             decoration: BoxDecoration(
               color: isSelected
                   ? AppColors.primary.withValues(alpha: 0.12)
@@ -121,7 +123,7 @@ class _NavBarItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.beVietnamPro(
-                    fontSize: 10,
+                    fontSize: AppFontSizes.s10,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                     color: isSelected ? AppColors.primary : AppColors.textHint,
                   ),

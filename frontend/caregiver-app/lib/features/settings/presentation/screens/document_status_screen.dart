@@ -1,3 +1,5 @@
+import 'package:caregiver_app/features/settings/presentation/widgets/document_status_tile.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/document_status_overall_status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,16 +29,16 @@ class DocumentStatusScreen extends ConsumerWidget {
         leading: const AppBackButton(fallbackRoute: '/settings'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildOverallStatus(statusText, status == 'APPROVED'),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             if (profile.requiresSecureResubmission) ...[
               const Text(
                   'Tài liệu cũ cần chuyển sang lưu trữ riêng tư. Nếu hồ sơ đang chờ duyệt hoặc đã duyệt, hãy liên hệ hỗ trợ để được hướng dẫn nộp lại.'),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
             ],
             if (profile.cccdFrontMediaId == null &&
                 profile.cccdBackMediaId == null)
@@ -47,15 +49,15 @@ class DocumentStatusScreen extends ConsumerWidget {
               )
             else ...[
               _documentTile('Mặt trước CCCD', profile.cccdFrontMediaId),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.compact),
               _documentTile('Mặt sau CCCD', profile.cccdBackMediaId),
               ...profile.certificateMediaIds.indexed.map((entry) => Padding(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: AppSpacing.compact),
                     child: _documentTile('Chứng chỉ ${entry.$1 + 1}', entry.$2),
                   )),
             ],
             if (status == 'DRAFT' || status == 'REJECTED') ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               AppButton(
                 label: status == 'REJECTED' ? 'Nộp lại hồ sơ' : 'Nộp hồ sơ KYC',
                 icon: Icons.upload_file_rounded,
@@ -68,82 +70,9 @@ class DocumentStatusScreen extends ConsumerWidget {
     );
   }
 
-  Widget _documentTile(String title, String? url) {
-    final available = url != null && url.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            available
-                ? Icons.check_circle_rounded
-                : Icons.error_outline_rounded,
-            color: available ? AppColors.success : AppColors.warning,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          Text(
-            available ? 'Đã tải lên' : 'Còn thiếu',
-            style: TextStyle(
-              color: available ? AppColors.success : AppColors.warning,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _documentTile(String title, String? url) =>
+      DocumentStatusTile(url: url, title: title);
 
-  Widget _buildOverallStatus(String statusText, bool approved) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary),
-      ),
-      child: Row(
-        children: [
-          Icon(
-              approved
-                  ? Icons.verified_user_rounded
-                  : Icons.info_outline_rounded,
-              color: AppColors.primary,
-              size: 40),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  statusText,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  approved
-                      ? 'Bạn đủ điều kiện nhận ca theo trạng thái từ hệ thống.'
-                      : 'Hãy cập nhật hồ sơ khi backend cung cấp yêu cầu bổ sung.',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.primary.withValues(alpha: 0.8)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildOverallStatus(String statusText, bool approved) =>
+      DocumentStatusOverallStatus(approved: approved, statusText: statusText);
 }

@@ -1,3 +1,7 @@
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_item_is_last_event_content.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_item_event_is_last_fields.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_event.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -29,7 +33,7 @@ class CareTimelineScreen extends ConsumerWidget {
         children: [
           // Summary bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             color: AppColors.cardBackground,
             child: Row(children: [
               CircleAvatar(
@@ -38,31 +42,32 @@ class CareTimelineScreen extends ConsumerWidget {
                   child: Text(bk.caregiverAvatar ?? bk.caregiverInitials,
                       style: const TextStyle(
                           color: AppColors.primary,
-                          fontSize: 11,
+                          fontSize: AppFontSizes.s11,
                           fontWeight: FontWeight.w800))),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.compact),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                     Text(bk.caregiverName ?? 'Người chăm sóc',
                         style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontSizes.s14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary)),
                     Text('${bk.date} · ${bk.time}',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
+                            fontSize: AppFontSizes.s12,
+                            color: AppColors.textSecondary)),
                   ])),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.control, vertical: 5),
                 decoration: BoxDecoration(
                     color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(AppRadius.compact)),
                 child: Text(bk.duration,
                     style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSizes.s12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary)),
               ),
@@ -73,7 +78,7 @@ class CareTimelineScreen extends ConsumerWidget {
           // Timeline
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: events.length,
               itemBuilder: (_, i) =>
                   _buildTimelineItem(events[i], i == events.length - 1),
@@ -84,10 +89,10 @@ class CareTimelineScreen extends ConsumerWidget {
     );
   }
 
-  List<_TimelineEvent> _buildEvents(BookingModel bk) {
+  List<CareTimelineTimelineEvent> _buildEvents(BookingModel bk) {
     if (bk.tasks.isEmpty) {
       return [
-        _TimelineEvent(
+        CareTimelineTimelineEvent(
           'Bắt đầu',
           'Check-in ca chăm sóc',
           bk.actualStart != null
@@ -97,7 +102,7 @@ class CareTimelineScreen extends ConsumerWidget {
           bk.actualStart != null ? AppColors.success : AppColors.warning,
           bk.actualStart != null,
         ),
-        _TimelineEvent(
+        CareTimelineTimelineEvent(
           'Ca trực',
           'Thực hiện các hoạt động chăm sóc',
           bk.status == 'in_progress' || bk.status == 'completed'
@@ -109,7 +114,7 @@ class CareTimelineScreen extends ConsumerWidget {
               : AppColors.warning,
           bk.status == 'in_progress' || bk.status == 'completed',
         ),
-        _TimelineEvent(
+        CareTimelineTimelineEvent(
           'Kết thúc',
           'Check-out & Báo cáo',
           bk.isCompleted
@@ -128,7 +133,7 @@ class CareTimelineScreen extends ConsumerWidget {
       final isLast = entry.key == bk.tasks.length - 1;
       final title = task.title as String? ?? 'Nhiệm vụ ${entry.key + 1}';
       final isCompleted = (task.isCompleted as bool?) ?? false;
-      return _TimelineEvent(
+      return CareTimelineTimelineEvent(
         'B${entry.key + 1}',
         title,
         isCompleted
@@ -145,7 +150,7 @@ class CareTimelineScreen extends ConsumerWidget {
     }).toList(growable: false);
   }
 
-  Widget _buildTimelineItem(_TimelineEvent event, bool isLast) {
+  Widget _buildTimelineItem(CareTimelineTimelineEvent event, bool isLast) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -154,7 +159,7 @@ class CareTimelineScreen extends ConsumerWidget {
           width: 52,
           child: Text(event.time,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSizes.s12,
                 fontWeight: FontWeight.w700,
                 color:
                     event.isDone ? AppColors.textPrimary : AppColors.textHint,
@@ -162,94 +167,14 @@ class CareTimelineScreen extends ConsumerWidget {
         ),
 
         // Line + dot
-        Column(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: event.isDone
-                    ? event.color.withValues(alpha: 0.15)
-                    : AppColors.surfaceVariant,
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: event.isDone ? event.color : AppColors.border,
-                    width: 2),
-              ),
-              child: Icon(event.icon,
-                  size: 16,
-                  color: event.isDone ? event.color : AppColors.textHint),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 60,
-                color: event.isDone
-                    ? event.color.withValues(alpha: 0.2)
-                    : AppColors.border,
-              ),
-          ],
-        ),
+        CareTimelineTimelineItemEventIsLastFields(event: event, isLast: isLast),
 
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.compact),
 
         // Content
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(event.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: event.isDone
-                          ? AppColors.textPrimary
-                          : AppColors.textHint,
-                    )),
-                const SizedBox(height: 4),
-                Text(event.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: event.isDone
-                          ? AppColors.textSecondary
-                          : AppColors.textHint,
-                      height: 1.4,
-                    )),
-                if (!event.isDone && event.title != 'Check-out (dự kiến)') ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text('Đang diễn ra',
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.warning)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+        CareTimelineTimelineItemIsLastEventContent(
+            isLast: isLast, event: event),
       ],
     );
   }
-}
-
-class _TimelineEvent {
-  final String time;
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final bool isDone;
-
-  const _TimelineEvent(this.time, this.title, this.description, this.icon,
-      this.color, this.isDone);
 }

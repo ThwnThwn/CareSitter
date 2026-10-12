@@ -1,4 +1,4 @@
-import 'package:caresitter_customer/core/router/shell_scaffold.dart';
+import 'package:caresitter_customer/app/router/shell_scaffold.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

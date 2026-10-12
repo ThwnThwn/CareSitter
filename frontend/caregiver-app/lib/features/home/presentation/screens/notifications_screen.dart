@@ -1,3 +1,8 @@
+import 'package:caregiver_app/features/home/presentation/widgets/notification_title.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/notification_body.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/notifications_app_bar.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/notifications_empty_state.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/notification_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
@@ -14,46 +19,20 @@ class NotificationsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Thông báo'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              notifier.markAllAsRead();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đã đánh dấu đọc toàn bộ thông báo'),
-                  backgroundColor: AppColors.primary,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: const Text(
-              'Đọc tất cả',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+      appBar: NotificationsAppBar(callbackAction1: () {
+        notifier.markAllAsRead();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã đánh dấu đọc toàn bộ thông báo'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
-      ),
+        );
+      }),
       body: list.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_none_rounded,
-                      size: 64, color: AppColors.textHint),
-                  SizedBox(height: 16),
-                  Text(
-                    'Không có thông báo nào',
-                    style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            )
+          ? const NotificationsEmptyState()
           : ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               itemCount: list.length,
               separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
               itemBuilder: (context, index) {
@@ -69,64 +48,10 @@ class NotificationsScreen extends ConsumerWidget {
                     color: Colors.transparent,
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: iconData['bg'] as Color,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(iconData['icon'] as IconData,
-                            color: iconData['color'] as Color),
-                      ),
-                      title: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notif.title,
-                              style: TextStyle(
-                                fontWeight:
-                                    isRead ? FontWeight.w500 : FontWeight.w700,
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          if (!isRead)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              margin: const EdgeInsets.only(left: 8),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(
-                            notif.body,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            notif.time,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textHint,
-                            ),
-                          ),
-                        ],
-                      ),
+                          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      leading: NotificationIcon(iconData: iconData),
+                      title: NotificationTitle(notif: notif, isRead: isRead),
+                      subtitle: NotificationBody(notif: notif),
                       onTap: () {
                         notifier.markAsRead(notif.id);
                         ref.read(notificationDeepLinkServiceProvider).handle({

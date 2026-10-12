@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/verified_beneficiary_address_picker_address_picker_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,10 +51,10 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
     final addresses = ref.watch(addressStoreProvider);
     return addresses.when(
       loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.compact),
         child: LinearProgressIndicator(),
       ),
-      error: (_, __) => _AddressPickerButton(
+      error: (_, __) => VerifiedBeneficiaryAddressPickerAddressPickerButton(
         onTap: () => _openSelector(context, ref),
         title: 'Không tải được danh sách địa chỉ',
         subtitle: 'Chạm để thử lại hoặc chọn một địa chỉ khác.',
@@ -70,7 +71,7 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
         }
 
         if (selected != null && selected.isVerified) {
-          return _AddressPickerButton(
+          return VerifiedBeneficiaryAddressPickerAddressPickerButton(
             onTap: () => _openSelector(context, ref),
             title: selected.displayLabel,
             subtitle: selected.fullAddress,
@@ -80,7 +81,7 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
           );
         }
 
-        return _AddressPickerButton(
+        return VerifiedBeneficiaryAddressPickerAddressPickerButton(
           onTap: () => _openSelector(context, ref),
           title: 'Chọn địa chỉ đã xác minh',
           subtitle: items.any((address) => address.isVerified)
@@ -94,63 +95,4 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
       },
     );
   }
-}
-
-class _AddressPickerButton extends StatelessWidget {
-  const _AddressPickerButton({
-    required this.onTap,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    this.selected = false,
-  });
-
-  final VoidCallback onTap;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primaryContainer
-                : AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: selected ? AppColors.primary : AppColors.border),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: TextStyle(
-                            color: color, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 13)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textHint),
-            ],
-          ),
-        ),
-      );
 }

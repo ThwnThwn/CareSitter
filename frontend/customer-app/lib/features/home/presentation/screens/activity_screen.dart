@@ -1,6 +1,12 @@
+import 'package:caresitter_customer/features/home/presentation/widgets/activity_recent_content.dart';
+import 'package:caresitter_customer/features/home/presentation/widgets/activity_content.dart';
+import 'package:caresitter_customer/features/home/presentation/widgets/activity_active_card.dart';
+import 'package:caresitter_customer/features/home/presentation/widgets/activity_recent_row.dart';
+import 'package:caresitter_customer/features/home/presentation/widgets/activity_empty_state.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
@@ -29,45 +35,10 @@ class ActivityScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           // ── App Bar ──────────────────────────────────
-          SliverAppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            pinned: true,
-            title: const Text(
-              'Hoạt động',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            actions: [
-              TextButton.icon(
-                onPressed: () => context.go('/bookings'),
-                icon: const Icon(Icons.history_rounded,
-                    color: AppColors.primary, size: 18),
-                label: const Text(
-                  'Lịch sử',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.primaryContainer,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
+          const ActivityContent(),
 
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // ── Active shift section ─────────────────
@@ -78,73 +49,19 @@ class ActivityScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader('Đang diễn ra'),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppSpacing.control),
                         ...active.map((b) => _buildActiveCard(b, context)),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.lg),
                       ],
                     ),
                   ),
 
                 // ── Recent section ───────────────────────
                 if (recent.isNotEmpty)
-                  FadeSlideStaggered(
-                    index: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader('Gần đây'),
-                        const SizedBox(height: 10),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: List.generate(recent.length, (i) {
-                              final b = recent[i];
-                              final isLast = i == recent.length - 1;
-                              return Column(
-                                key: ValueKey('recent_${b.id}'),
-                                children: [
-                                  _buildRecentRow(b, context),
-                                  if (!isLast)
-                                    const Divider(
-                                        height: 1,
-                                        indent: 64,
-                                        endIndent: 16,
-                                        color: AppColors.surfaceVariant),
-                                ],
-                              );
-                            }),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Xem lịch sử link
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () => context.push('/bookings'),
-                            icon: const Text(
-                              'Xem lịch sử',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            label: const Icon(Icons.arrow_forward_rounded,
-                                color: AppColors.primary, size: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ActivityRecentContent(
+                      buildSectionHeader: _buildSectionHeader,
+                      recent: recent,
+                      buildRecentRow: _buildRecentRow),
 
                 if (active.isEmpty && recent.isEmpty)
                   FadeSlideStaggered(
@@ -166,322 +83,24 @@ class ActivityScreen extends ConsumerWidget {
       title,
       style: const TextStyle(
         color: AppColors.textPrimary,
-        fontSize: 17,
+        fontSize: AppFontSizes.s17,
         fontWeight: FontWeight.w800,
       ),
     );
   }
 
   // ── Active shift card (nổi bật, full card) ──────────────────
-  Widget _buildActiveCard(BookingModel booking, BuildContext context) {
-    return GestureDetector(
-      key: ValueKey('active_${booking.id}'),
-      onTap: () => context.push('/bookings/${booking.id}/tracking'),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.28),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                // Pulsing dot indicator
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text('🟢', style: TextStyle(fontSize: 22)),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Ca đang diễn ra',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        booking.caregiverName ?? 'Người chăm sóc',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      Text(
-                        'Cho: ${booking.beneficiaryName ?? "Người thân"}',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.chevron_right_rounded,
-                      color: Colors.white, size: 22),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Info row
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.access_time_rounded,
-                      color: Colors.white, size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    booking.time,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.home_repair_service_outlined,
-                      color: Colors.white, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      booking.serviceName ?? 'Dịch vụ chăm sóc',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Theo dõi button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () =>
-                    context.push('/bookings/${booking.id}/tracking'),
-                icon: const Icon(Icons.location_on_rounded, size: 18),
-                label: const Text('Theo dõi ca chăm sóc'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  textStyle: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildActiveCard(BookingModel booking, BuildContext context) =>
+      ActivityActiveCard(booking: booking);
 
   // ── Recent booking row (Grab style) ─────────────────────────
-  Widget _buildRecentRow(BookingModel booking, BuildContext context) {
-    final status = booking.presentationStatusAt(DateTime.now());
-    final statusConfig = _getStatusConfig(status);
-    final isCancelled = status == 'cancelled';
+  Widget _buildRecentRow(BookingModel booking, BuildContext context) =>
+      ActivityRecentRow(
+          booking: booking,
+          getStatusConfig: _getStatusConfig,
+          formatCurrency: _formatCurrency);
 
-    return GestureDetector(
-      onTap: () => context.push('/bookings/${booking.id}'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar icon
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  booking.caregiverAvatar ?? booking.caregiverInitials,
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isCancelled)
-                    const Text(
-                      'Đã huỷ',
-                      style: TextStyle(
-                        color: Color(0xFFE74C3C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  Text(
-                    booking.caregiverName ?? 'Người chăm sóc',
-                    style: TextStyle(
-                      color: isCancelled
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${booking.serviceName ?? "Dịch vụ chăm sóc"} • Cho: ${booking.beneficiaryName ?? "Người thân"}',
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                  Text(
-                    '${booking.time} • ${booking.date}',
-                    style: const TextStyle(
-                        color: AppColors.textHint, fontSize: 11),
-                  ),
-                  if (!isCancelled && status == 'completed') ...[
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: () => context.push('/booking/new'),
-                      child: const Text(
-                        'Đặt lại →',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Price + status badge
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatCurrency(booking.totalPrice),
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusConfig['bg'] as Color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    statusConfig['shortLabel'] as String,
-                    style: TextStyle(
-                      color: statusConfig['color'] as Color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          children: [
-            Icon(Icons.track_changes_rounded,
-                size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            const Text(
-              'Chưa có ca chăm sóc nào',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Đặt lịch ngay để bắt đầu theo dõi\nca chăm sóc cho người thân.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textHint, fontSize: 13),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/booking/new'),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Đặt lịch ngay'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildEmptyState(BuildContext context) => const ActivityEmptyState();
 
   Map<String, dynamic> _getStatusConfig(String status) {
     switch (status.toLowerCase()) {
@@ -494,21 +113,21 @@ class ActivityScreen extends ConsumerWidget {
       case 'caregiver_en_route':
         return {
           'shortLabel': 'Đang đến',
-          'color': const Color(0xFF0284C7),
-          'bg': const Color(0xFFE0F2FE),
+          'color': AppColors.info,
+          'bg': AppColors.infoLight,
         };
       case 'caregiver_accepted':
       case 'assigned':
         return {
           'shortLabel': 'Đã nhận ca',
-          'color': const Color(0xFF2980B9),
-          'bg': const Color(0xFFEBF5FB),
+          'color': AppColors.legacyInfo,
+          'bg': AppColors.legacyInfoLight,
         };
       case 'checkout_pending_review':
         return {
           'shortLabel': 'Chờ xác nhận',
-          'color': const Color(0xFF8E44AD),
-          'bg': const Color(0xFFF4ECF7),
+          'color': AppColors.purple,
+          'bg': AppColors.purpleLight,
         };
       case 'disputed':
         return {
@@ -533,8 +152,8 @@ class ActivityScreen extends ConsumerWidget {
       case 'payment_reconciliation_pending':
         return {
           'shortLabel': 'Đang đối soát',
-          'color': const Color(0xFF0369A1),
-          'bg': const Color(0xFFE0F2FE),
+          'color': AppColors.blueDark,
+          'bg': AppColors.infoLight,
         };
       case 'needs_manual_review':
         return {
@@ -545,15 +164,15 @@ class ActivityScreen extends ConsumerWidget {
       case 'completed':
         return {
           'shortLabel': 'Hoàn thành',
-          'color': const Color(0xFF2980B9),
-          'bg': const Color(0xFFEBF5FB),
+          'color': AppColors.legacyInfo,
+          'bg': AppColors.legacyInfoLight,
         };
       case 'cancelled':
       case 'refunded':
         return {
           'shortLabel': 'Đã huỷ',
-          'color': const Color(0xFFE74C3C),
-          'bg': const Color(0xFFFDEDEC),
+          'color': AppColors.legacyError,
+          'bg': AppColors.legacyErrorLight,
         };
       case 'matching_failed':
         return {
@@ -574,9 +193,6 @@ class ActivityScreen extends ConsumerWidget {
   }
 
   String _formatCurrency(double amount) {
-    return '${amount.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]}.',
-        )} ₫';
+    return formatVnd(amount);
   }
 }

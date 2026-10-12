@@ -1,0 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+
+class BookingPaymentRow extends StatelessWidget {
+  const BookingPaymentRow(
+      {super.key, required this.label, required this.amount});
+  final String label;
+  final double amount;
+  @override
+  Widget build(BuildContext context) =>
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label,
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: AppFontSizes.s13)),
+        Text(amount == 0 ? 'Miễn phí' : '${formatVnd(amount)}đ',
+            style: TextStyle(
+                color: amount == 0 ? AppColors.success : AppColors.textPrimary,
+                fontSize: AppFontSizes.s13,
+                fontWeight: FontWeight.w500)),
+      ]);
+}

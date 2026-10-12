@@ -1,6 +1,11 @@
+import 'package:caregiver_app/features/auth/presentation/widgets/otp_resend_action.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/otp_confirm_action.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/otp_email_notice.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/otp_security_icon.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/otp_digit_field.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
@@ -71,6 +76,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   }
 
   Future<void> _verify() async {
+    if (_isVerifying || _isResending || _otp.length != 6) return;
     setState(() => _isVerifying = true);
     try {
       await ref.read(otpVerifyControllerProvider).verify(widget.email, _otp);
@@ -92,6 +98,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   }
 
   Future<void> _resendOtp() async {
+    if (_isVerifying || _isResending || _countdown > 0) return;
     setState(() => _isResending = true);
     try {
       await ref.read(otpVerifyControllerProvider).resend(widget.email);
@@ -124,110 +131,36 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.shield_outlined,
-                    color: Colors.white, size: 32),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.md),
+              const OtpSecurityIcon(),
+              const SizedBox(height: AppSpacing.lg),
               const Text(
                 'Xác minh OTP',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 26,
+                  fontSize: AppFontSizes.s26,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.5),
-                  children: [
-                    const TextSpan(text: 'Mã OTP đã được gửi đến\n'),
-                    TextSpan(
-                      text: widget.email,
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: AppSpacing.sm),
+              OtpEmailNotice(routeEmail: widget.email),
               const SizedBox(height: 40),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) => _buildOtpBox(index)),
               ),
               const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _otp.length == 6 && !_isVerifying ? _verify : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.border,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          'Xác nhận',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: _countdown > 0
-                    ? RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 14),
-                          children: [
-                            const TextSpan(text: 'Gửi lại sau '),
-                            TextSpan(
-                              text: '${_countdown}s',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      )
-                    : TextButton(
-                        onPressed: _isResending ? null : _resendOtp,
-                        child: Text(
-                          _isResending ? 'Đang gửi lại...' : 'Gửi lại mã OTP',
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
-              ),
+              OtpConfirmAction(
+                  otp: _otp, isVerifying: _isVerifying, verify: _verify),
+              const SizedBox(height: AppSpacing.lg),
+              OtpResendAction(
+                  countdown: _countdown,
+                  isResending: _isResending,
+                  resendOtp: _resendOtp),
             ],
           ),
         ),
@@ -235,50 +168,9 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     );
   }
 
-  Widget _buildOtpBox(int index) {
-    final isFocused = _focusNodes[index].hasFocus;
-    final hasValue = _controllers[index].text.isNotEmpty;
-    return SizedBox(
-      width: 48,
-      height: 56,
-      child: TextField(
-        controller: _controllers[index],
-        focusNode: _focusNodes[index],
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          color: AppColors.primary,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor:
-              isFocused ? AppColors.primaryContainer : AppColors.cardBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: hasValue ? AppColors.primary : AppColors.border,
-              width: isFocused ? 2 : 1.5,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: hasValue ? AppColors.primary : AppColors.border,
-              width: 1.5,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
-        ),
-        onChanged: (v) => _onDigitChanged(index, v),
-      ),
-    );
-  }
+  Widget _buildOtpBox(int index) => OtpDigitField(
+      focusNodes: _focusNodes,
+      index: index,
+      controllers: _controllers,
+      onDigitChanged: _onDigitChanged);
 }

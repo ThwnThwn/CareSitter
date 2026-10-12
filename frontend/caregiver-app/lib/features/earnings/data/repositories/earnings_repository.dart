@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import 'package:caregiver_app/core/api/api_constants.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
@@ -24,6 +23,7 @@ class EarningsRepository {
     required String bankName,
     required String accountHolderName,
     required String accountNumber,
+    required String idempotencyKey,
   }) async {
     await _dio.post<Map<String, dynamic>>(
       '/payments/payouts',
@@ -32,7 +32,7 @@ class EarningsRepository {
         'bankName': bankName,
         'accountHolderName': accountHolderName,
         'accountNumber': accountNumber,
-        'idempotencyKey': const Uuid().v4(),
+        'idempotencyKey': idempotencyKey,
       },
     );
   }

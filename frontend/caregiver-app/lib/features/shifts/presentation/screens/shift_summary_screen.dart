@@ -1,3 +1,9 @@
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_details.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_report_action.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_status_icon.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_status_label.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_summary_row.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -31,139 +37,61 @@ class ShiftSummaryScreen extends StatelessWidget {
     this.checkoutPendingReview = false,
   });
 
-  String _formatCurrency(double amount) {
-    final str = amount.round().toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
               // Success Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  checkoutPendingReview
-                      ? Icons.hourglass_top_rounded
-                      : Icons.check_circle_rounded,
-                  color: checkoutPendingReview
-                      ? AppColors.warning
-                      : AppColors.success,
-                  size: 80,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                checkoutPendingReview
-                    ? 'Đã gửi yêu cầu checkout'
-                    : 'Hoàn thành ca làm việc!',
-                style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 8),
+              ShiftSummaryStatusIcon(
+                  checkoutPendingReview: checkoutPendingReview),
+              const SizedBox(height: AppSpacing.lg),
+              ShiftSummaryStatusLabel(
+                  checkoutPendingReview: checkoutPendingReview),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Báo cáo tổng kết ca $bookingId',
                 style: const TextStyle(
-                    fontSize: 14, color: AppColors.textSecondary),
+                    fontSize: AppFontSizes.s14, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
 
               // Summary Stats Card
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: AppShadows.card,
-                ),
-                child: Column(
-                  children: [
-                    _buildSummaryRow(
-                      icon: Icons.person_outline_rounded,
-                      label: 'Người được chăm sóc',
-                      value: beneficiaryName,
-                    ),
-                    const Divider(height: 24),
-                    _buildSummaryRow(
-                      icon: Icons.timer_outlined,
-                      label: 'Thời gian chăm sóc',
-                      value: duration,
-                    ),
-                    const Divider(height: 24),
-                    _buildSummaryRow(
-                      icon: Icons.task_alt_rounded,
-                      label: 'Công việc hoàn thành',
-                      value: '$completedTasks/$totalTasks việc',
-                      valueColor: AppColors.success,
-                    ),
-                    const Divider(height: 24),
-                    _buildSummaryRow(
-                      icon: Icons.monetization_on_outlined,
-                      label: checkoutPendingReview
-                          ? 'Thu nhập dự kiến'
-                          : 'Thu nhập nhận được',
-                      value: '${_formatCurrency(caregiverEarning)} đ',
-                      valueColor: checkoutPendingReview
-                          ? AppColors.textSecondary
-                          : AppColors.primary,
-                      isBold: true,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 48),
+              ShiftSummaryDetails(
+                  buildSummaryRow: _buildSummaryRow,
+                  beneficiaryName: beneficiaryName,
+                  duration: duration,
+                  completedTasks: completedTasks,
+                  totalTasks: totalTasks,
+                  checkoutPendingReview: checkoutPendingReview,
+                  caregiverEarning: caregiverEarning),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Button — View Customer Report
-              OutlinedButton.icon(
-                icon: const Icon(Icons.receipt_long_rounded),
-                label: const Text('Xem báo cáo khách hàng'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  foregroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                onPressed: () {
-                  context.push(
-                    '/shifts/$bookingId/customer-report',
-                    extra: {
-                      'beneficiaryName': beneficiaryName,
-                      'caregiverName': caregiverName,
-                      'caregiverEarning': caregiverEarning,
-                      'completedTasks': completedTasks,
-                      'totalTasks': totalTasks,
-                      'duration': duration,
-                      'checkInTime': checkInTime,
-                      'caregiverNote': caregiverNote,
-                      'taskPhotos': taskPhotos,
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
+              ShiftSummaryReportAction(callbackAction1: () {
+                context.push(
+                  '/shifts/$bookingId/customer-report',
+                  extra: {
+                    'beneficiaryName': beneficiaryName,
+                    'caregiverName': caregiverName,
+                    'caregiverEarning': caregiverEarning,
+                    'completedTasks': completedTasks,
+                    'totalTasks': totalTasks,
+                    'duration': duration,
+                    'checkInTime': checkInTime,
+                    'caregiverNote': caregiverNote,
+                    'taskPhotos': taskPhotos,
+                  },
+                );
+              }),
+              const SizedBox(height: AppSpacing.inset),
 
               // Button to Home
               AppButton(
@@ -186,33 +114,11 @@ class ShiftSummaryScreen extends StatelessWidget {
     required String value,
     Color? valueColor,
     bool isBold = false,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.textSecondary, size: 20),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            value,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: valueColor ?? AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  }) =>
+      ShiftSummarySummaryRow(
+          icon: icon,
+          label: label,
+          value: value,
+          isBold: isBold,
+          valueColor: valueColor);
 }

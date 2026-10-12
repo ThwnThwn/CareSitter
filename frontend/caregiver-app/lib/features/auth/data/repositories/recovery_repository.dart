@@ -1,3 +1,8 @@
+import '../models/recovery_grant_model.dart';
+export '../models/recovery_grant_model.dart';
+import '../models/recovery_challenge_model.dart';
+export '../models/recovery_challenge_model.dart';
+import 'package:caregiver_app/features/auth/data/models/recovery_email_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
@@ -6,27 +11,6 @@ import 'package:caregiver_app/core/error/app_exception.dart';
 final recoveryRepositoryProvider = Provider<RecoveryRepository>(
   (ref) => RecoveryRepository(ref.read(dioClientProvider)),
 );
-
-class RecoveryChallenge {
-  const RecoveryChallenge(
-      this.id, this.expiresIn, this.resendAfter, this.message);
-  final String id;
-  final int expiresIn;
-  final int resendAfter;
-  final String message;
-  factory RecoveryChallenge.fromJson(Map<String, dynamic> json) =>
-      RecoveryChallenge(
-          json['challengeId'] as String,
-          (json['expiresIn'] as num).toInt(),
-          (json['resendAfter'] as num).toInt(),
-          json['message'] as String);
-}
-
-class RecoveryGrant {
-  const RecoveryGrant(this.token, this.expiresIn);
-  final String token;
-  final int expiresIn;
-}
 
 class RecoveryRepository {
   RecoveryRepository(this.client);
@@ -56,6 +40,8 @@ class RecoveryRepository {
 
   Future<Map<String, dynamic>> profile() async =>
       (await client.get<Map<String, dynamic>>('/profile')).data!;
+  Future<RecoveryEmailModel> emailProfile() async =>
+      RecoveryEmailModel.fromJson(await profile());
   Future<RecoveryChallenge> requestEmail(String email, String? password) async {
     final response = await client
         .post<Map<String, dynamic>>('/profile/recovery-email/request', data: {
@@ -71,9 +57,13 @@ class RecoveryRepository {
               '/profile/recovery-email/confirm',
               data: {'challengeId': challengeId, 'code': code}))
           .data!;
+  Future<RecoveryEmailModel> confirmEmailProfile(
+          String id, String code) async =>
+      RecoveryEmailModel.fromJson(await confirmEmail(id, code));
 }
 
 String recoveryError(Object error) {
+  if (error is AppApiException) return error.message;
   if (error is DioException) {
     if (error.error is AppApiException) {
       return (error.error as AppApiException).message;

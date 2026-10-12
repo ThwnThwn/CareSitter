@@ -1,3 +1,5 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
+import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -12,15 +14,16 @@ class ShiftStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = ShiftStatusStyle.of(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.control, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: style.backgroundColor,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Text(
         style.label,
         style: GoogleFonts.beVietnamPro(
-          fontSize: 11,
+          fontSize: AppFontSizes.s11,
           fontWeight: FontWeight.w600,
           color: style.color,
         ),

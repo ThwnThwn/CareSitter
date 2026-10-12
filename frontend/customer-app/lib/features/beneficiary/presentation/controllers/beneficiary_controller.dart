@@ -254,6 +254,9 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     await _loadFromBackend();
   }
 
+  Future<BeneficiaryModel> fetchProfile(String id) =>
+      _repository.getBeneficiary(id);
+
   Future<void> delete(String id) async {
     if (state.any((b) => b.id == id && b.isSelf)) {
       throw StateError(

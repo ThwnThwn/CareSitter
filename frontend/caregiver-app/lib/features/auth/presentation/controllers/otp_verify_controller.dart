@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:caregiver_app/features/auth/data/repositories/auth_repository.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/auth_session_controller.dart';
 
 final otpVerifyControllerProvider = Provider<OtpVerifyController>((ref) {
-  return OtpVerifyController(ref.read(authRepositoryProvider));
+  return OtpVerifyController(ref.read(authSessionControllerProvider));
 });
 
 class OtpVerifyController {
-  final AuthRepository _repository;
+  final AuthSessionController _repository;
 
   const OtpVerifyController(this._repository);
 

@@ -1,11 +1,12 @@
-import 'package:dio/dio.dart';
+import 'package:caresitter_customer/features/settings/presentation/widgets/change_password_form_key_old_pass_ctrl_form.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/settings/data/repositories/settings_repository.dart';
+import 'package:caresitter_customer/features/settings/presentation/controllers/password_controller.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -45,7 +46,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     String? errorMsg;
     try {
-      final changed = await ref.read(settingsRepositoryProvider).changePassword(
+      final changed = await ref.read(passwordControllerProvider).changePassword(
             currentPassword: _oldPassCtrl.text,
             newPassword: _newPassCtrl.text,
           );
@@ -63,11 +64,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         await ref.read(authStateProvider.notifier).logout();
         return;
       }
-    } on DioException catch (e) {
-      final apiError = e.error;
-      errorMsg = apiError is AppApiException
-          ? apiError.message
-          : 'Không thể đổi mật khẩu. Vui lòng thử lại.';
+    } on AppApiException catch (e) {
+      final apiError = e;
+      errorMsg = apiError.message;
     } catch (_) {
       errorMsg = 'Không thể đổi mật khẩu. Vui lòng thử lại.';
     } finally {
@@ -98,108 +97,51 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             onPressed: requestExit,
           ),
         ),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.4)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        color: AppColors.warning, size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ cái và số.',
-                        style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 13,
-                            height: 1.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildLabel('Mật khẩu hiện tại'),
-              _buildPasswordField(
-                controller: _oldPassCtrl,
-                hint: 'Nhập mật khẩu hiện tại',
-                obscure: _obscureOld,
-                onToggle: () => setState(() => _obscureOld = !_obscureOld),
-                validator: (v) => (v == null || v.isEmpty)
-                    ? 'Vui lòng nhập mật khẩu cũ'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              _buildLabel('Mật khẩu mới'),
-              _buildPasswordField(
-                controller: _newPassCtrl,
-                hint: 'Nhập mật khẩu mới',
-                obscure: _obscureNew,
-                onToggle: () => setState(() => _obscureNew = !_obscureNew),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Vui lòng nhập mật khẩu mới';
-                  }
-                  if (v.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildLabel('Xác nhận mật khẩu mới'),
-              _buildPasswordField(
-                controller: _confirmPassCtrl,
-                hint: 'Nhập lại mật khẩu mới',
-                obscure: _obscureConfirm,
-                onToggle: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Vui lòng xác nhận mật khẩu';
-                  }
-                  if (v != _newPassCtrl.text) {
-                    return 'Mật khẩu xác nhận không khớp';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _isSaving ? null : _submit,
-                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5),
-                      )
-                    : const Text('Cập nhật mật khẩu',
-                        style: TextStyle(fontSize: 15)),
-              ),
-            ],
-          ),
-        ),
+        body: ChangePasswordFormKeyOldPassCtrlForm(
+            formKey: _formKey,
+            buildLabel: _buildLabel,
+            buildPasswordField: _buildPasswordField,
+            oldPassCtrl: _oldPassCtrl,
+            obscureOld: _obscureOld,
+            newPassCtrl: _newPassCtrl,
+            obscureNew: _obscureNew,
+            confirmPassCtrl: _confirmPassCtrl,
+            obscureConfirm: _obscureConfirm,
+            isSaving: _isSaving,
+            submit: _submit,
+            callbackAction1: () => setState(() => _obscureOld = !_obscureOld),
+            callbackAction2: (v) =>
+                (v == null || v.isEmpty) ? 'Vui lòng nhập mật khẩu cũ' : null,
+            callbackAction3: () => setState(() => _obscureNew = !_obscureNew),
+            callbackAction4: (v) {
+              if (v == null || v.isEmpty) {
+                return 'Vui lòng nhập mật khẩu mới';
+              }
+              if (v.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự';
+              return null;
+            },
+            callbackAction5: () =>
+                setState(() => _obscureConfirm = !_obscureConfirm),
+            callbackAction6: (v) {
+              if (v == null || v.isEmpty) {
+                return 'Vui lòng xác nhận mật khẩu';
+              }
+              if (v != _newPassCtrl.text) {
+                return 'Mật khẩu xác nhận không khớp';
+              }
+              return null;
+            }),
       ),
     );
   }
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: AppFontSizes.s14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),

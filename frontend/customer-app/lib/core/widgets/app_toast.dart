@@ -1,7 +1,6 @@
+import 'package:caresitter_customer/core/widgets/toast_message_content.dart';
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -134,86 +133,20 @@ class _TopToast extends StatelessWidget {
       top: MediaQuery.of(context).padding.top + 12,
       left: 16,
       right: 16,
-      child: Semantics(
-        liveRegion: true,
-        child: TweenAnimationBuilder<double>(
-          duration:
-              reducedMotion ? Duration.zero : const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          tween: Tween(begin: 0, end: 1),
-          builder: (context, value, child) => Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(0, -24 * (1 - value)),
-              child: child,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: accent.withValues(alpha: .24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  if (isLoading)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: accent,
-                      ),
-                    )
-                  else
-                    Icon(icon, color: accent, size: 21),
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                  if (!isLoading && actionLabel != null && onAction != null)
-                    TextButton(
-                      onPressed: () {
-                        onDismiss();
-                        onAction!();
-                      },
-                      child: Text(actionLabel!),
-                    ),
-                  if (!isLoading)
-                    IconButton(
-                      onPressed: onDismiss,
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      tooltip: 'Đóng',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      child: ToastMessageContent(
+          reducedMotion: reducedMotion,
+          surface: surface,
+          accent: accent,
+          isLoading: isLoading,
+          icon: icon,
+          message: message,
+          actionLabel: actionLabel,
+          onAction: onAction,
+          onDismiss: onDismiss,
+          callbackAction1: () {
+            onDismiss();
+            onAction!();
+          }),
     );
   }
 }

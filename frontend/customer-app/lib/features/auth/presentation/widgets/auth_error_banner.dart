@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -37,7 +38,7 @@ class AuthErrorBanner extends StatelessWidget {
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.error,
-                    fontSize: 13,
+                    fontSize: AppFontSizes.s13,
                     fontWeight: FontWeight.w500,
                   ),
             ),
