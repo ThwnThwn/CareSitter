@@ -1,3 +1,7 @@
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_list_app_bar.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_list_groups.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_list_card_summary.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,81 +16,12 @@ class BeneficiaryListScreen extends ConsumerWidget {
     final beneficiaries = ref.watch(beneficiaryStoreProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Hồ sơ chăm sóc',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.2,
-              ),
-            ),
-            if (beneficiaries.isNotEmpty)
-              Text(
-                '${beneficiaries.length} hồ sơ đang quản lý',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-          ],
-        ),
-        centerTitle: false,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.7),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_add_outlined,
-                  color: AppColors.primary,
-                  size: 18,
-                ),
-              ),
-              onPressed: () => context.push('/beneficiaries/create'),
-            ),
-          ),
-        ],
-      ),
+      appBar: BeneficiaryListAppBar(beneficiaries: beneficiaries),
       body: beneficiaries.isEmpty
           ? _buildEmptyState(context)
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              children: [
-                  if (beneficiaries.any((b) => b.isSelf)) ...[
-                    const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Thông tin chăm sóc của tôi',
-                            style: TextStyle(fontWeight: FontWeight.w700))),
-                    _buildBeneficiaryCard(
-                        beneficiaries.firstWhere((b) => b.isSelf), context),
-                  ],
-                  const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text('Người thân',
-                          style: TextStyle(fontWeight: FontWeight.w700))),
-                  if (!beneficiaries.any((b) => !b.isSelf))
-                    const Text('Chưa có hồ sơ người thân.'),
-                  for (final b in beneficiaries.where((b) => !b.isSelf))
-                    Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _buildBeneficiaryCard(b, context)),
-                ]),
+          : BeneficiaryListGroups(
+              beneficiaries: beneficiaries,
+              buildBeneficiaryCard: _buildBeneficiaryCard),
     );
   }
 
@@ -94,7 +29,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -111,26 +46,26 @@ class BeneficiaryListScreen extends ConsumerWidget {
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.section),
             const Text(
               'Chưa có hồ sơ người thân',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: AppFontSizes.s17,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const Text(
               'Hãy thêm hồ sơ người thân để đặt lịch\nchăm sóc chu đáo nhất.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSizes.s13,
                 color: AppColors.textSecondary,
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
               onPressed: () => context.push('/beneficiaries/create'),
               icon: const Icon(Icons.add_rounded, size: 18),
@@ -138,10 +73,10 @@ class BeneficiaryListScreen extends ConsumerWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: AppSpacing.compact),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.control),
                 ),
               ),
             ),
@@ -154,21 +89,22 @@ class BeneficiaryListScreen extends ConsumerWidget {
   // ── Beneficiary Card ─────────────────────────────────────────────────────
   Widget _buildBeneficiaryCard(BeneficiaryModel b, BuildContext context) {
     final careColor = b.careLevel == 'Nặng'
-        ? const Color(0xFFE74C3C)
+        ? AppColors.legacyError
         : b.careLevel == 'Trung bình'
             ? AppColors.warning
             : AppColors.success;
 
     return Material(
       color: AppColors.cardBackground,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: () => context.push('/beneficiaries/${b.id}'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.inset, vertical: AppSpacing.inset),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: AppColors.border.withValues(alpha: 0.7),
               width: 1,
@@ -192,58 +128,17 @@ class BeneficiaryListScreen extends ConsumerWidget {
                     b.avatarInitial,
                     style: const TextStyle(
                       color: AppColors.primary,
-                      fontSize: 13,
+                      fontSize: AppFontSizes.s13,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.compact),
 
               // ── Info ──
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      b.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${b.relation} • ${b.ageLabel}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: careColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        b.careLevelLabel,
-                        style: TextStyle(
-                          color: careColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
+              BeneficiaryListCardSummary(b: b, careColor: careColor),
+              const SizedBox(width: AppSpacing.sm),
 
               // ── Chevron ──
               Icon(

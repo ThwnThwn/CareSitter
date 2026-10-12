@@ -1,10 +1,12 @@
+import 'package:caresitter_customer/features/auth/presentation/widgets/otp_verification_content.dart';
+import '../controllers/otp_controller.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/auth/data/repositories/auth_repository.dart';
 
 class OtpVerifyScreen extends ConsumerStatefulWidget {
   final String email;
@@ -18,15 +20,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  int _countdown = 60;
-  Timer? _timer;
-  bool _isVerifying = false;
-  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _startCountdown();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes[0].requestFocus();
     });
@@ -34,7 +31,6 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -44,37 +40,13 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     super.dispose();
   }
 
-  void _startCountdown() {
-    _countdown = 60;
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_countdown == 0) {
-        t.cancel();
-      } else {
-        setState(() => _countdown--);
-      }
-    });
-  }
-
   Future<void> _resendOtp() async {
-    _startCountdown();
-    setState(() => _errorMessage = null);
-    try {
-      await ref.read(authRepositoryProvider).sendOtp(widget.email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Không thể gửi lại mã OTP. Vui lòng thử lại sau.';
-        });
-      }
+    final sent =
+        await ref.read(otpControllerProvider(widget.email).notifier).resend();
+    if (mounted && sent) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
+          backgroundColor: AppColors.primary));
     }
   }
 
@@ -92,30 +64,18 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   }
 
   Future<void> _verify() async {
-    if (_otp.length < 6) return;
-    setState(() {
-      _isVerifying = true;
-      _errorMessage = null;
-    });
-    try {
-      await ref.read(authRepositoryProvider).loginWithOtp(
-            widget.email,
-            _otp,
-          );
-      // The authenticated-route redirect runs the CareSitter logo intro.
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isVerifying = false;
-          _errorMessage =
-              'Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.';
-          for (final c in _controllers) {
-            c.clear();
-          }
-        });
-        _focusNodes[0].requestFocus();
-      }
+    final success = await ref
+        .read(otpControllerProvider(widget.email).notifier)
+        .submit(_otp);
+    if (!mounted ||
+        success ||
+        ref.read(otpControllerProvider(widget.email)).error == null) {
+      return;
     }
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    _focusNodes[0].requestFocus();
   }
 
   @override
@@ -130,148 +90,13 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
           color: AppColors.textPrimary,
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.shield_outlined,
-                    color: Colors.white, size: 32),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Xác minh OTP',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.5),
-                  children: [
-                    const TextSpan(
-                        text: 'Mã xác thực 6 chữ số đã được gửi đến\n'),
-                    TextSpan(
-                      text: widget.email,
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (_errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline_rounded,
-                          color: AppColors.error, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (index) => _buildOtpBox(index)),
-              ),
-              const SizedBox(height: 36),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _otp.length == 6 && !_isVerifying ? _verify : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.border,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: _isVerifying
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2.5),
-                        )
-                      : const Text(
-                          'Xác nhận đăng nhập',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: _countdown > 0
-                    ? RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 14),
-                          children: [
-                            const TextSpan(text: 'Gửi lại sau '),
-                            TextSpan(
-                              text: '${_countdown}s',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      )
-                    : TextButton.icon(
-                        onPressed: _resendOtp,
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        label: const Text(
-                          'Gửi lại mã OTP',
-                          style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: OtpVerificationContent(
+          ref: ref,
+          buildOtpBox: _buildOtpBox,
+          otp: _otp,
+          verify: _verify,
+          resendOtp: _resendOtp,
+          routeEmail: widget.email),
     );
   }
 
@@ -289,7 +114,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         maxLength: 1,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: AppFontSizes.s20,
           fontWeight: FontWeight.w800,
           color: AppColors.primary,
         ),
@@ -299,24 +124,25 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
           fillColor:
               isFocused ? AppColors.primaryContainer : AppColors.cardBackground,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(
               color: hasValue ? AppColors.primary : AppColors.border,
               width: isFocused ? 2 : 1.5,
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(
               color: hasValue ? AppColors.primary : AppColors.border,
               width: 1.5,
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: AppSpacing.compact),
         ),
         onChanged: (value) => _onDigitChanged(index, value),
       ),

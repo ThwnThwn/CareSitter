@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/auth/auth_state.dart';
 
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -24,6 +26,7 @@ void main() {
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        authStateProvider.overrideWith(_SignedInAuth.new),
         bookingStoreProvider.overrideWith(_BookingStore.new),
         bookingRepositoryProvider.overrideWith((ref) {
           return repository = _CancelRepository(DioClient(ref));
@@ -147,6 +150,12 @@ void main() {
     expect(repository.calls, 0);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _SignedInAuth extends AuthNotifier {
+  @override
+  Future<AuthState> build() async =>
+      const AuthState(userId: 'customer', isAuthenticated: true);
 }
 
 class _CancelRepository extends BookingRepository {

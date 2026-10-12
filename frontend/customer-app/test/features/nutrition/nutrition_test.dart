@@ -1,12 +1,16 @@
+import 'package:caresitter_customer/features/nutrition/data/models/health_profile_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_capabilities_model.dart';
+import 'package:caresitter_customer/core/api/api_cancellation.dart';
 import 'dart:async';
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
-import 'package:caresitter_customer/features/nutrition/data/nutrition_repository.dart';
-import 'package:caresitter_customer/features/nutrition/presentation/nutrition_controller.dart';
-import 'package:caresitter_customer/features/nutrition/presentation/nutrition_screen.dart';
-import 'package:dio/dio.dart';
+import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_repository.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_controller.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +22,111 @@ Future<void> settle() async {
 }
 
 void main() {
+  testWidgets(
+      'structured restriction is saved sparsely and survives a failed save',
+      (tester) async {
+    final repository = _Repository()..patchError = _error(503);
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+        ],
+        child:
+            const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
+    await tester.pumpAndSettle();
+    final section = find.text('Thuốc và nhu cầu ăn uống');
+    await tester.ensureVisible(section);
+    await tester.tap(section);
+    await tester.pumpAndSettle();
+    final route = find.byKey(const ValueKey('nutrition-feedingRoute'));
+    await tester.ensureVisible(route);
+    await tester.tap(route);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ăn qua ống').last);
+    await tester.pumpAndSettle();
+    final save =
+        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(repository.patches.single, {
+      'nutritionProfile': {'feedingRoute': 'tube'}
+    });
+    await tester.ensureVisible(route);
+    expect(find.text('Ăn qua ống'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('editing medication keeps existing instructions and dates',
+      (tester) async {
+    Map<String, dynamic>? changes;
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: ListView(children: [
+      NutritionHealthFields(health: const {
+        'medications': [
+          {
+            'name': 'Thuốc đã lưu',
+            'dosage': 'Thông tin cũ',
+            'schedule': 'Theo đơn',
+            'instruction': 'Ghi chú đã lưu',
+            'start_date': '2026-10-01',
+            'is_active': true
+          }
+        ]
+      }, enabled: true, onChanged: (value) => changes = value),
+    ]))));
+    await tester.tap(find.text('Thuốc và nhu cầu ăn uống'));
+    await tester.pumpAndSettle();
+    final name =
+        find.widgetWithText(TextField, 'Tên thuốc theo thông tin hiện có');
+    await tester.ensureVisible(name);
+    await tester.enterText(name, 'Tên đã đối chiếu');
+    final medication = (changes!['medications'] as List).single as Map;
+    expect(medication['name'], 'Tên đã đối chiếu');
+    expect(medication['instruction'], 'Ghi chú đã lưu');
+    expect(medication['start_date'], '2026-10-01');
+    expect(medication['schedule'], 'Theo đơn');
+    expect(medication['dosage'], 'Thông tin cũ');
+    expect(changes!.containsKey('nutritionProfile'), isFalse);
+  });
+
+  for (final width in [320.0, 390.0]) {
+    testWidgets(
+        'expanded structured health fields fit width $width at large text',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(
+          builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!),
+          home: Scaffold(
+              body: ListView(children: [
+            NutritionHealthFields(
+                health: const {}, enabled: true, onChanged: (_) {})
+          ]))));
+      await tester.tap(find.text('Thuốc và nhu cầu ăn uống'));
+      await tester.pumpAndSettle();
+      for (final field in [
+        'medicationsStatus',
+        'feedingRoute',
+        'swallowingStatus',
+        'fluidRestriction',
+        'electrolyteRestriction'
+      ]) {
+        final choice = find.byKey(ValueKey('nutrition-$field'));
+        await tester.ensureVisible(choice);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    });
+  }
+
   test(
       'unknown allergies remain unknown and existing structured data needs no new description',
       () async {
@@ -25,12 +134,12 @@ void main() {
     final c = NutritionFlowController(repository, 'first', 'owner');
     addTearDown(c.dispose);
     await settle();
-    expect(c.state.health!['allergyStatus'], 'unknown');
-    expect(c.state.health!['generalNote'], isNull);
+    expect(c.view.health!['allergyStatus'], 'unknown');
+    expect(c.view.health!['generalNote'], isNull);
     await c.assess();
     expect(repository.writes.single.data.keys,
         unorderedEquals(['expectedHealthRevision', 'idempotencyKey']));
-    expect(c.state.resource!['status'], 'no_content');
+    expect(c.view.resource!['status'], 'no_content');
   });
 
   test(
@@ -59,8 +168,8 @@ void main() {
     addTearDown(c.dispose);
     await settle();
     await c.assess();
-    expect(c.state.resource!['status'], 'failed');
-    expect(c.state.health!['allergyStatus'], 'unknown');
+    expect(c.view.resource!['status'], 'failed');
+    expect(c.view.health!['allergyStatus'], 'unknown');
     expect(repository.writes.single.route, 'nutrition-assessments');
   });
 
@@ -72,8 +181,8 @@ void main() {
     await c.assess();
     repository.writeError = _error(404);
     await c.confirm();
-    expect(c.state.health, isNull);
-    expect(c.state.resource, isNull);
+    expect(c.view.health, isNull);
+    expect(c.view.resource, isNull);
   });
 
   test('late response after cancellation cannot restore an old result',
@@ -88,7 +197,7 @@ void main() {
     expect(repository.tokens.last.isCancelled, isTrue);
     repository.pending!.complete(_resource('suggested', {'meals': []}));
     await request;
-    expect(c.state.resource, isNull);
+    expect(c.view.resource, isNull);
   });
 
   test('profile or catalog conflict marks previous recommendation stale',
@@ -100,7 +209,7 @@ void main() {
     await c.assess();
     repository.writeError = _error(409, code: 'nutrition.profile_changed');
     await c.save();
-    expect(c.state.resource!['status'], 'stale');
+    expect(c.view.resource!['status'], 'stale');
   });
 
   test('switching session disposes its controller and cancels in-flight work',
@@ -117,7 +226,7 @@ void main() {
         container.listen(nutritionFlowProvider('first'), (previous, next) {});
     addTearDown(subscription.close);
     await settle();
-    final old = container.read(nutritionFlowProvider('first').notifier);
+    final old = container.read(nutritionControllerProvider('first').notifier);
     repository.pending = Completer<Map<String, dynamic>>();
     final request = old.assess();
     auth.set(const AuthState.initial());
@@ -154,8 +263,14 @@ void main() {
       expect(find.text('Dị ứng thực phẩm'), findsOneWidget);
       final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
       await tester.scrollUntilVisible(check, 250);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(check);
+      await tester.pumpAndSettle();
       await tester.tap(check);
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+          find.text('Chưa có công thức đã duyệt cho nhu cầu này'), 150,
+          scrollable: find.byType(Scrollable).first);
       expect(find.text('Chưa có công thức đã duyệt cho nhu cầu này'),
           findsOneWidget);
       expect(find.text('Fixture recipe'), findsNothing);
@@ -213,12 +328,11 @@ void main() {
 
 Map<String, dynamic> _resource(String status, Map<String, dynamic> data) =>
     {'id': 'resource', 'status': status, 'healthRevision': 7, 'data': data};
-DioException _error(int status, {String? code}) => DioException(
-    requestOptions: RequestOptions(path: '/'),
-    response: Response(
-        requestOptions: RequestOptions(path: '/'),
-        statusCode: status,
-        data: {'title': code, 'detail': 'Yêu cầu chưa thành công'}));
+AppApiException _error(int status, {String? code}) => AppApiException(
+    message: 'Yêu cầu chưa thành công',
+    statusCode: status,
+    code: code,
+    details: {'title': code, 'detail': 'Yêu cầu chưa thành công'});
 
 class _UnusedDio implements DioClient {
   @override
@@ -231,43 +345,47 @@ class _Repository extends NutritionRepository {
     'decision': {'state': 'no_content'},
     'meals': []
   });
-  DioException? writeError, patchError;
+  AppApiException? writeError, patchError;
   Completer<Map<String, dynamic>>? pending;
   final writes = <({String route, Map<String, dynamic> data})>[];
-  final tokens = <CancelToken>[];
+  final tokens = <ApiCancellation>[];
   final patches = <Map<String, dynamic>>[];
   @override
   bool get isConfigured => true;
   @override
-  Future<Map<String, dynamic>> capabilities(CancelToken token) async => {
-        'enabled': true,
-        'assessmentsEnabled': true,
-        'recommendationsEnabled': true
-      };
+  Future<NutritionCapabilitiesModel> capabilities(
+          ApiCancellation token) async =>
+      const NutritionCapabilitiesModel(
+          enabled: true,
+          assessmentsEnabled: true,
+          recommendationsEnabled: true);
   @override
-  Future<Map<String, dynamic>> health(String id, CancelToken token) async => {
+  Future<HealthProfileModel> health(String id, ApiCancellation token) async =>
+      HealthProfileModel.fromJson({
         'revision': 7,
         'allergyStatus': 'unknown',
         'generalNote': null,
         'healthHistory': {
           'nutrition': {'schemaVersion': 1, 'conditionsStatus': 'reported_none'}
         }
-      };
+      });
   @override
-  Future<Map<String, dynamic>> write(String id, String route,
-      Map<String, dynamic> data, CancelToken token) async {
+  Future<NutritionResourceModel> write(String id, String route,
+      Map<String, dynamic> data, ApiCancellation token) async {
     writes.add((route: route, data: data));
     tokens.add(token);
     if (writeError != null) throw writeError!;
-    return pending != null ? await pending!.future : result;
+    return NutritionResourceModel.fromJson(
+        pending != null ? await pending!.future : result);
   }
 
   @override
-  Future<Map<String, dynamic>> patch(String id, int revision,
-      Map<String, dynamic> changes, CancelToken token) async {
+  Future<HealthProfileModel> patch(String id, int revision,
+      Map<String, dynamic> changes, ApiCancellation token) async {
     patches.add(changes);
     if (patchError != null) throw patchError!;
-    return {...await health(id, token), 'revision': 8, ...changes};
+    return HealthProfileModel.fromJson(
+        {...await health(id, token), 'revision': 8, ...changes});
   }
 }
 

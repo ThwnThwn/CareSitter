@@ -30,6 +30,13 @@ class AddressStore extends AsyncNotifier<List<AddressModel>> {
     return _repo.getAddresses();
   }
 
+  Future<List<PlaceSuggestionModel>> autocompletePlaces(
+          {required String input, required String sessionToken}) =>
+      _repo.autocompletePlaces(input: input, sessionToken: sessionToken);
+  Future<VerifiedPlaceDetailsModel> getPlaceDetails(
+          {required String placeId, required String sessionToken}) =>
+      _repo.getPlaceDetails(placeId: placeId, sessionToken: sessionToken);
+
   /// Reload danh sach dia chi tu BE.
   Future<void> refresh() => ref.refresh(addressStoreProvider.future);
 

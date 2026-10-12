@@ -1,21 +1,16 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/api/api_constants.dart';
-import 'package:caresitter_customer/core/auth/auth_notifier.dart';
-import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 import 'package:caresitter_customer/features/auth/data/models/auth_models.dart';
-import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.read(dioClientProvider), ref),
+  (ref) => AuthRepository(ref.read(dioClientProvider)),
 );
 
 class AuthRepository {
   final DioClient _dio;
-  final Ref _ref;
 
-  AuthRepository(this._dio, this._ref);
+  AuthRepository(this._dio);
 
   // ── Đăng nhập bằng Email + Password → POST /auth/login/password ────────────
   Future<AuthResponse> loginWithPassword(LoginRequest request) async {
@@ -23,7 +18,7 @@ class AuthRepository {
       '/auth/login/password',
       data: request.toJson(),
     );
-    return _saveAndReturn(AuthResponse.fromJson(resp.data ?? {}));
+    return AuthResponse.fromJson(resp.data ?? {});
   }
 
   /// Alias để tương thích với login_screen.dart đang gọi `.login(...)`
@@ -36,9 +31,7 @@ class AuthRepository {
       ApiPaths.googleCustomer,
       data: {'idToken': idToken},
     );
-    final authResponse = AuthResponse.fromJson(resp.data ?? {});
-    await _ref.read(googleIdentityGatewayProvider).clearLocalSelection();
-    return _saveAndReturn(authResponse);
+    return AuthResponse.fromJson(resp.data ?? {});
   }
 
   // ── Đăng ký tài khoản mới → POST /auth/register ───────────────────────────
@@ -68,60 +61,17 @@ class AuthRepository {
       ApiPaths.login,
       data: OtpVerifyRequest(email: email, otp: otp).toJson(),
     );
-    return _saveAndReturn(AuthResponse.fromJson(resp.data ?? {}));
+    return AuthResponse.fromJson(resp.data ?? {});
   }
 
-  // ── Đăng xuất ─────────────────────────────────────────────────────────────
-  Future<void> logout() async {
-    final authNotifier = _ref.read(authStateProvider.notifier);
-    var refreshToken = authNotifier.refreshToken;
-    try {
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        try {
-          final refreshResp = await _dio.post<Map<String, dynamic>>(
-            '/auth/refresh',
-            data: {'refreshToken': refreshToken},
-          );
-          final refreshed = AuthResponse.fromJson(refreshResp.data ?? {});
-          if (refreshed.accessToken.isNotEmpty &&
-              refreshed.refreshToken.isNotEmpty) {
-            await authNotifier.updateTokens(
-              accessToken: refreshed.accessToken,
-              refreshToken: refreshed.refreshToken,
-            );
-            refreshToken = refreshed.refreshToken;
-          }
-        } catch (_) {
-          // Refresh token đã invalid/expired thì chỉ cần xóa local session.
-        }
-      }
-
-      // Gửi refreshToken mới nhất để server revoke session trong PostgreSQL.
-      await _dio.post<dynamic>(
-        '/auth/logout',
-        data: refreshToken != null ? {'refreshToken': refreshToken} : null,
-      );
-    } catch (_) {
-      // Vẫn xóa local token dù server lỗi
-    } finally {
-      await _ref.read(googleIdentityGatewayProvider).clearLocalSelection();
-      await authNotifier.logout();
-      _ref.read(profileStoreProvider.notifier).reset();
-    }
+  Future<AuthResponse> refresh(String refreshToken) async {
+    final response = await _dio.post<Map<String, dynamic>>('/auth/refresh',
+        data: {'refreshToken': refreshToken});
+    return AuthResponse.fromJson(response.data ?? {});
   }
 
-  // ── Private helper ────────────────────────────────────────────────────────
-  Future<AuthResponse> _saveAndReturn(AuthResponse authResp) async {
-    await _ref.read(authStateProvider.notifier).login(
-          accessToken: authResp.accessToken,
-          refreshToken: authResp.refreshToken,
-          userId: authResp.userId,
-          phone: authResp.displayName ?? authResp.userId,
-        );
-    _ref.read(profileStoreProvider.notifier).setFromAuth(
-          name: authResp.displayName,
-        );
-    unawaited(_ref.read(profileStoreProvider.notifier).fetchProfile());
-    return authResp;
+  Future<void> logout({String? refreshToken}) async {
+    await _dio.post<dynamic>('/auth/logout',
+        data: refreshToken == null ? null : {'refreshToken': refreshToken});
   }
 }

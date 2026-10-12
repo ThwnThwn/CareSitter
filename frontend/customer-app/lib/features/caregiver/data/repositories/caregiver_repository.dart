@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 
 import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
@@ -58,8 +57,8 @@ class CaregiverRepository {
           await _dio.get<Map<String, dynamic>>(ApiPaths.caregiver(id));
       final data = response.data;
       return data == null ? null : CaregiverModel.fromJson(data);
-    } on DioException catch (error) {
-      if (error.response?.statusCode == 404) return null;
+    } on AppApiException catch (error) {
+      if (error.statusCode == 404) return null;
       rethrow;
     }
   }

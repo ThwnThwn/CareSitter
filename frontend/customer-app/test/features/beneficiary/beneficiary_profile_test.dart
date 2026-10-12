@@ -1,5 +1,5 @@
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_birth_date_field.dart';
+import 'package:caresitter_customer/core/widgets/birth_date_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -75,16 +75,14 @@ void main() {
   test(
       'date entry accepts leap days but never silently normalizes an invalid date',
       () {
-    expect(
-        BeneficiaryBirthDateField.parse('29/02/1960'), DateTime(1960, 2, 29));
-    expect(BeneficiaryBirthDateField.parse('29/02/1961'), isNull);
-    expect(BeneficiaryBirthDateField.parse('31/04/1960'), isNull);
-    expect(BeneficiaryBirthDateField.parse('00/01/1960'), isNull);
-    expect(BeneficiaryBirthDateField.parse('01/13/1960'), isNull);
-    expect(BeneficiaryBirthDateField.parse('01/01/0000'), isNull);
-    expect(BeneficiaryBirthDateField.parse(''), isNull);
-    expect(
-        BeneficiaryBirthDateField.format(DateTime(1960, 2, 29)), '29/02/1960');
+    expect(BirthDateField.parse('29/02/1960'), DateTime(1960, 2, 29));
+    expect(BirthDateField.parse('29/02/1961'), isNull);
+    expect(BirthDateField.parse('31/04/1960'), isNull);
+    expect(BirthDateField.parse('00/01/1960'), isNull);
+    expect(BirthDateField.parse('01/13/1960'), isNull);
+    expect(BirthDateField.parse('01/01/0000'), isNull);
+    expect(BirthDateField.parse(''), isNull);
+    expect(BirthDateField.format(DateTime(1960, 2, 29)), '29/02/1960');
   });
 
   testWidgets(
@@ -97,7 +95,7 @@ void main() {
         home: Scaffold(
             body: Form(
       key: key,
-      child: BeneficiaryBirthDateField(controller: controller),
+      child: BirthDateField(controller: controller),
     ))));
     expect(key.currentState!.validate(), isTrue);
     await tester.enterText(find.byType(TextFormField), '31/04/1960');

@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/features/settings/presentation/widgets/notification_settings_prefs_toggle_list.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -26,7 +28,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.compact),
               const Text('Không tải được cài đặt.'),
               TextButton(
                 onPressed: () => ref.invalidate(notificationPrefsProvider),
@@ -35,85 +37,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (prefs) => ListView(
-          children: [
-            _buildSectionHeader('Đặt lịch & Booking'),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.calendar_today_outlined,
-              title: 'Cập nhật booking',
-              subtitle: 'Xác nhận, thay đổi, hủy lịch chăm sóc',
-              value: prefs.bookingUpdates,
-              onChanged: (v) => _toggle(ref, prefs.copyWith(bookingUpdates: v)),
-            ),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.payments_outlined,
-              title: 'Thông báo thanh toán',
-              subtitle: 'Biên lai, hoàn tiền, hóa đơn',
-              value: prefs.paymentUpdates,
-              onChanged: (v) => _toggle(ref, prefs.copyWith(paymentUpdates: v)),
-            ),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.directions_walk_outlined,
-              title: 'Caregiver đang đến',
-              subtitle: 'Nhắc khi caregiver cách bạn < 15 phút',
-              value: prefs.caregiverArriving,
-              onChanged: (v) =>
-                  _toggle(ref, prefs.copyWith(caregiverArriving: v)),
-            ),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.alarm_outlined,
-              title: 'Nhắc lịch',
-              subtitle: 'Nhắc 1 giờ trước khi lịch bắt đầu',
-              value: prefs.scheduleReminder,
-              onChanged: (v) =>
-                  _toggle(ref, prefs.copyWith(scheduleReminder: v)),
-            ),
-            const Divider(height: 1),
-            _buildSectionHeader('Tin nhắn & Khuyến mãi'),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.chat_bubble_outline,
-              title: 'Tin nhắn',
-              subtitle: 'Tin nhắn từ caregiver trong lịch',
-              value: prefs.chatMessage,
-              onChanged: (v) => _toggle(ref, prefs.copyWith(chatMessage: v)),
-            ),
-            _buildTile(
-              context,
-              ref,
-              prefs,
-              icon: Icons.local_offer_outlined,
-              title: 'Ưu đãi & Khuyến mãi',
-              subtitle: 'Voucher, giảm giá, sự kiện',
-              value: prefs.promotion,
-              onChanged: (v) => _toggle(ref, prefs.copyWith(promotion: v)),
-            ),
-            const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Thay đổi được tự động lưu. Bạn vẫn có thể nhận thông báo hệ thống bắt buộc (OTP, bảo mật).',
-                style: TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary, height: 1.5),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+        data: (prefs) => NotificationSettingsPrefsToggleList(
+            buildSectionHeader: _buildSectionHeader,
+            buildTile: _buildTile,
+            ref: ref,
+            prefs: prefs,
+            toggle: _toggle),
       ),
     );
   }
@@ -124,11 +53,12 @@ class NotificationSettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.section, AppSpacing.md, AppSpacing.xs),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSizes.s12,
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
           letterSpacing: 0.5,
@@ -153,7 +83,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         height: 40,
         decoration: BoxDecoration(
           color: value ? AppColors.primaryContainer : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.compact),
         ),
         child: Icon(icon,
             size: 20,
@@ -162,10 +92,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
       title: Text(title,
           style: const TextStyle(
               fontWeight: FontWeight.w500,
-              fontSize: 14,
+              fontSize: AppFontSizes.s14,
               color: AppColors.textPrimary)),
       subtitle: Text(subtitle,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          style: const TextStyle(
+              fontSize: AppFontSizes.s12, color: AppColors.textSecondary)),
       value: value,
       onChanged: onChanged,
       activeThumbColor: AppColors.primary,

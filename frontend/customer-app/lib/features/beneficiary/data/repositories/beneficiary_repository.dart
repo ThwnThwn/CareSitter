@@ -30,11 +30,9 @@ class BeneficiaryRepository {
           (await _dio.get<Map<String, dynamic>>('/beneficiaries/self')).data);
       if (!value.isSelf) throw StateError('Hồ sơ bản thân chưa hợp lệ.');
       return value;
-    } on DioException catch (e) {
-      final error = e.error;
-      if (e.response?.statusCode == 404 &&
-          error is AppApiException &&
-          error.code == 'beneficiary.self_not_found') {
+    } on AppApiException catch (e) {
+      final error = e;
+      if (e.statusCode == 404 && error.code == 'beneficiary.self_not_found') {
         return null;
       }
       rethrow;
@@ -49,6 +47,15 @@ class BeneficiaryRepository {
     if (!value.isSelf) throw StateError('Hồ sơ bản thân chưa hợp lệ.');
     return (beneficiary: value, created: response.statusCode == 201);
   }
+
+  Future<({BeneficiaryModel beneficiary, bool created})> createSelfProfile(
+          BeneficiaryModel profile, String addressId) =>
+      createSelf({
+        ...profile.toProfileRequest(avatarUrl: profile.avatarPath)
+          ..remove('RelationshipToCustomer'),
+        'Phone': profile.phone,
+        'DefaultAddressId': addressId,
+      });
 
   Future<BeneficiaryModel> linkSelf(String id) async {
     final response = await _dio.put<Map<String, dynamic>>(

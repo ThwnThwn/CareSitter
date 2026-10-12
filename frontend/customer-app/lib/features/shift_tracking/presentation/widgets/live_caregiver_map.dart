@@ -1,3 +1,7 @@
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map_layout.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_google_map.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_fallback_map.dart';
+export 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map_presentation_helpers.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -6,14 +10,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart' as osm;
 import 'package:google_maps_flutter/google_maps_flutter.dart' as google;
 import 'package:latlong2/latlong.dart';
-import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:caresitter_customer/core/maps/google_maps_runtime.dart';
 import 'package:caresitter_customer/core/maps/map_tile_config.dart';
-import 'package:caresitter_customer/core/maps/map_tile_attribution.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 // Cho phép thay nguồn tile dự phòng (ví dụ cache hoặc nguồn dùng khi kiểm thử).
-final trackingTileProviderProvider = Provider<osm.TileProvider?>((ref) => null);
 
 class LiveCaregiverMap extends ConsumerStatefulWidget {
   final LatLng destination;
@@ -174,7 +175,7 @@ class _LiveCaregiverMapState extends ConsumerState<LiveCaregiverMap>
     if (_osmReady) {
       _osm.fitCamera(osm.CameraFit.coordinates(
           coordinates: points,
-          padding: const EdgeInsets.fromLTRB(40, 124, 68, 64),
+          padding: const EdgeInsets.fromLTRB(40, 124, 68, AppSpacing.hero),
           maxZoom: 16));
     }
     final south = math.min(widget.destination.latitude, caregiver.latitude);
@@ -213,197 +214,59 @@ class _LiveCaregiverMapState extends ConsumerState<LiveCaregiverMap>
     } else {
       _google = null;
     }
-    return Column(children: [
-      Expanded(
-          child: Stack(children: [
-        Positioned.fill(
-            child: availability.isLoading
-                ? const ColoredBox(
-                    color: AppColors.primaryContainer,
-                    child: Center(child: CircularProgressIndicator()))
-                : useGoogle
-                    ? _googleMap()
-                    : _fallbackMap()),
-        Positioned(
-          top: 12,
-          left: 12,
-          right: 68,
-          child: PointerInterceptor(
-              child: DecoratedBox(
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.locationLabel,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                    if (!useGoogle) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                          availability.isLoading
-                              ? 'Đang mở Google Maps...'
-                              : tiles.label,
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 11)),
-                    ],
-                  ]),
-            ),
-          )),
-        ),
-        Positioned(
-            top: 12,
-            right: 12,
-            child: PointerInterceptor(
-                child: Column(children: [
-              _mapButton(
-                  key: const Key('tracking-follow'),
-                  tooltip: _follow
-                      ? 'Đang bám theo chăm sóc viên'
-                      : 'Theo dõi chăm sóc viên',
-                  icon: Icons.my_location,
-                  active: _follow && widget.caregiverPosition != null,
-                  onPressed:
-                      widget.caregiverPosition == null ? null : _resumeFollow),
-              const SizedBox(height: 8),
-              _mapButton(
-                  key: const Key('tracking-fit-both'),
-                  tooltip: 'Xem cả hai điểm',
-                  icon: Icons.zoom_out_map,
-                  onPressed: () {
-                    _pauseFollow();
-                    _fitBoth();
-                  }),
-            ]))),
-      ])),
-      Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(12),
-        child: Row(children: [
-          const Icon(Icons.location_on_outlined,
-              color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-              child: Text(widget.addressLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      height: 1.4))),
-        ]),
-      ),
-    ]);
+    return LiveCaregiverMapLayout(
+        availability: availability,
+        useGoogle: useGoogle,
+        googleMap: _googleMap,
+        fallbackMap: _fallbackMap,
+        tiles: tiles,
+        mapButton: _mapButton,
+        follow: _follow,
+        resumeFollow: _resumeFollow,
+        routeLocationLabel: widget.locationLabel,
+        routeCaregiverPosition: widget.caregiverPosition,
+        routeAddressLabel: widget.addressLabel,
+        action1: () {
+          _pauseFollow();
+          _fitBoth();
+        });
   }
 
-  Widget _googleMap() => Listener(
-        // Camera tự animate cũng phát onCameraMoveStarted. Chỉ thao tác của người
-        // dùng mới tắt follow, tránh camera tự tắt follow sau mỗi mẫu GPS.
-        onPointerDown: (_) => _pauseFollow(),
-        child: google.GoogleMap(
-          key: const Key('google-live-caregiver-map'),
-          initialCameraPosition: google.CameraPosition(
-              target: google.LatLng(
-                  widget.destination.latitude, widget.destination.longitude),
-              zoom: 15),
-          onMapCreated: (controller) {
-            if (!mounted) return;
-            _google = controller;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _fitBoth();
-            });
-          },
-          mapToolbarEnabled: false,
-          myLocationButtonEnabled: false,
-          myLocationEnabled: false,
-          zoomControlsEnabled: false,
-          compassEnabled: false,
-          tiltGesturesEnabled: false,
-          // Chừa chỗ cho nhãn GPS và hai nút, để fit bounds không che marker.
-          padding: const EdgeInsets.only(top: 76, right: 36),
-          markers: {
-            google.Marker(
-                markerId: const google.MarkerId('destination'),
-                position: google.LatLng(
-                    widget.destination.latitude, widget.destination.longitude),
-                icon: _homeIcon ??
-                    google.BitmapDescriptor.defaultMarkerWithHue(
-                        google.BitmapDescriptor.hueCyan),
-                anchor: const Offset(.5, .5),
-                infoWindow: const google.InfoWindow(title: 'Địa chỉ chăm sóc')),
-            if (_position != null)
-              google.Marker(
-                  markerId: const google.MarkerId('caregiver'),
-                  position:
-                      google.LatLng(_position!.latitude, _position!.longitude),
-                  icon: _caregiverIcon ??
-                      google.BitmapDescriptor.defaultMarkerWithHue(
-                          google.BitmapDescriptor.hueGreen),
-                  anchor: const Offset(.5, .5),
-                  flat: true,
-                  rotation: widget.heading ?? 0,
-                  alpha: widget.stale ? .5 : 1,
-                  infoWindow: google.InfoWindow(
-                      title: 'Chăm sóc viên', snippet: widget.locationLabel)),
-          },
-        ),
-      );
+  Widget _googleMap() => LiveCaregiverGoogleMap(
+      homeIcon: _homeIcon,
+      position: _position,
+      caregiverIcon: _caregiverIcon,
+      routeDestination: widget.destination,
+      routeHeading: widget.heading,
+      routeStale: widget.stale,
+      routeLocationLabel: widget.locationLabel,
+      action1: (_) => _pauseFollow(),
+      action2: (controller) {
+        if (!mounted) return;
+        _google = controller;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _fitBoth();
+        });
+      });
 
   Widget _fallbackMap() {
     final tiles = ref.watch(mapTileConfigProvider);
-    return osm.FlutterMap(
-      key: const Key('fallback-live-caregiver-map'),
-      mapController: _osm,
-      options: osm.MapOptions(
-          initialCenter: widget.destination,
-          initialZoom: 15,
-          onMapReady: () {
-            _osmReady = true;
-            _fitBoth();
-          },
-          onPositionChanged: (_, hasGesture) {
-            if (hasGesture) _pauseFollow();
-          },
-          interactionOptions: const osm.InteractionOptions(
-              flags: osm.InteractiveFlag.pinchZoom | osm.InteractiveFlag.drag)),
-      children: [
-        osm.TileLayer(
-            tileProvider: ref.watch(trackingTileProviderProvider),
-            urlTemplate: tiles.urlTemplate,
-            subdomains: tiles.subdomains,
-            retinaMode: tiles.usesCarto,
-            maxNativeZoom: tiles.maxNativeZoom,
-            userAgentPackageName: 'vn.caresitter.customer'),
-        osm.MarkerLayer(markers: [
-          osm.Marker(
-              point: widget.destination,
-              width: 42,
-              height: 42,
-              child: _pin(Icons.home_rounded)),
-          if (_position != null)
-            osm.Marker(
-                point: _position!,
-                width: 42,
-                height: 42,
-                child: Opacity(
-                    opacity: widget.stale ? .5 : 1,
-                    child: Transform.rotate(
-                        angle: (widget.heading ?? 0) * math.pi / 180,
-                        child: _pin(Icons.navigation_rounded)))),
-        ]),
-        Align(
-            alignment: Alignment.bottomLeft,
-            child: MapTileAttribution(config: tiles)),
-      ],
-    );
+    return LiveCaregiverFallbackMap(
+        mapController: _osm,
+        ref: ref,
+        tiles: tiles,
+        pin: _pin,
+        position: _position,
+        routeDestination: widget.destination,
+        routeStale: widget.stale,
+        routeHeading: widget.heading,
+        action1: () {
+          _osmReady = true;
+          _fitBoth();
+        },
+        action2: (_, hasGesture) {
+          if (hasGesture) _pauseFollow();
+        });
   }
 
   Widget _pin(IconData icon) => DecoratedBox(
@@ -422,7 +285,7 @@ class _LiveCaregiverMapState extends ConsumerState<LiveCaregiverMap>
       Material(
         color: active ? AppColors.primaryContainer : Colors.white,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.compact),
             side: const BorderSide(color: AppColors.border)),
         child: IconButton(
             key: key,

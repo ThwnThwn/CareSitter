@@ -1,3 +1,4 @@
+import 'booking_display_model.dart';
 import 'package:flutter/material.dart';
 
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -45,23 +46,23 @@ class BookingStatusPresentation {
       case 'caregiver_en_route':
         return const BookingStatusPresentation(
           label: 'Đang đến',
-          color: Color(0xFF0284C7),
-          backgroundColor: Color(0xFFE0F2FE),
+          color: AppColors.info,
+          backgroundColor: AppColors.infoLight,
           currentStep: 2,
         );
       case 'caregiver_accepted':
       case 'assigned':
         return const BookingStatusPresentation(
           label: 'Đã nhận ca',
-          color: Color(0xFF2980B9),
-          backgroundColor: Color(0xFFEBF5FB),
+          color: AppColors.legacyInfo,
+          backgroundColor: AppColors.legacyInfoLight,
           currentStep: 1,
         );
       case 'checkout_pending_review':
         return const BookingStatusPresentation(
           label: 'Chờ xác nhận',
-          color: Color(0xFF8E44AD),
-          backgroundColor: Color(0xFFF4ECF7),
+          color: AppColors.purple,
+          backgroundColor: AppColors.purpleLight,
           currentStep: 2,
         );
       case 'disputed':
@@ -89,8 +90,8 @@ class BookingStatusPresentation {
       case 'payment_reconciliation_pending':
         return const BookingStatusPresentation(
           label: 'Đang đối soát',
-          color: Color(0xFF0369A1),
-          backgroundColor: Color(0xFFE0F2FE),
+          color: AppColors.blueDark,
+          backgroundColor: AppColors.infoLight,
           currentStep: 0,
         );
       case 'needs_manual_review':
@@ -117,15 +118,15 @@ class BookingStatusPresentation {
       case 'cancelled':
         return const BookingStatusPresentation(
           label: 'Đã huỷ',
-          color: Color(0xFFE74C3C),
-          backgroundColor: Color(0xFFFDEDEC),
+          color: AppColors.legacyError,
+          backgroundColor: AppColors.legacyErrorLight,
           currentStep: -1,
         );
       case 'refunded':
         return const BookingStatusPresentation(
           label: 'Đã hoàn tiền',
-          color: Color(0xFFE74C3C),
-          backgroundColor: Color(0xFFFDEDEC),
+          color: AppColors.legacyError,
+          backgroundColor: AppColors.legacyErrorLight,
           currentStep: -1,
         );
       case 'crisis':

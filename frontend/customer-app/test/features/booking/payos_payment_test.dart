@@ -22,6 +22,7 @@ class FakePayments extends BookingRepository {
   FakePayments(super.client);
   bool enabled = true;
   int creates = 0;
+  final keys = <String?>[];
   String? usedProvider;
   Completer<PaymentIntentModel>? pending;
   BookingModel current = booking();
@@ -41,9 +42,11 @@ class FakePayments extends BookingRepository {
       ];
   @override
   Future<PaymentIntentModel> createPaymentIntent(
-      String bookingId, String provider) async {
+      String bookingId, String provider,
+      {String? idempotencyKey}) async {
     creates++;
     usedProvider = provider;
+    keys.add(idempotencyKey);
     if (pending != null) return pending!.future;
     return const PaymentIntentModel(
         id: 'intent-123',
@@ -66,6 +69,22 @@ class QuietBookingStore extends BookingStore {
 }
 
 void main() {
+  test('payment retries reuse a key and another provider gets a different key',
+      () async {
+    final repository = FakePayments(_UnusedPaymentClient());
+    final container = ProviderContainer(overrides: [
+      bookingRepositoryProvider.overrideWithValue(repository),
+      bookingStoreProvider.overrideWith(QuietBookingStore.new)
+    ]);
+    addTearDown(container.dispose);
+    final controller = container.read(bookingStoreProvider.notifier);
+    await controller.createPaymentIntent('booking', 'PAYOS');
+    await controller.createPaymentIntent('booking', 'PAYOS');
+    await controller.createPaymentIntent('booking', 'VNPAY');
+    expect(repository.keys.first, isNotEmpty);
+    expect(repository.keys[1], repository.keys.first);
+    expect(repository.keys[2], isNot(repository.keys.first));
+  });
   late FakePayments repository;
   Future<void> pump(WidgetTester tester, Widget child,
       {bool enabled = true,
@@ -171,4 +190,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Tiếp tục thanh toán'), findsOneWidget);
   });
+}
+
+class _UnusedPaymentClient implements DioClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

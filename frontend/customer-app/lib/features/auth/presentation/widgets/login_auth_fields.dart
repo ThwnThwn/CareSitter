@@ -1,0 +1,113 @@
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_tokens.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_welcome_heading.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_input_field.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_aux_row.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_login_button.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_or_divider.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_social_login_row.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/login_otp_login_button.dart';
+import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
+import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
+import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
+
+class LoginAuthFields extends StatelessWidget {
+  const LoginAuthFields(
+      {super.key,
+      required this.loginState,
+      required this.heroInputTheme,
+      required this.formKey,
+      required this.emailCtrl,
+      required this.passCtrl,
+      required this.obscurePass,
+      required this.callbackAction1,
+      required this.togglePassword,
+      required this.login});
+  final LoginState loginState;
+  final InputDecorationTheme Function() heroInputTheme;
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailCtrl;
+  final TextEditingController passCtrl;
+  final bool obscurePass;
+  final void Function(String) callbackAction1;
+  final void Function() togglePassword;
+  final Future<void> Function() login;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const LoginWelcomeHeading(),
+          const SizedBox(height: AppSpacing.section),
+          if (loginState.errorMessage case final message?) ...[
+            AuthErrorBanner(message: message),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: heroInputTheme(),
+            ),
+            child: AutofillGroup(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LoginHeroInputField(
+                      controller: emailCtrl,
+                      label: 'Email hoặc Số điện thoại',
+                      hint: 'nhapten@email.com',
+                      icon: Icons.mail_outline_rounded,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: AuthValidators.loginEmail,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
+                      enabled: !loginState.isLoading,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    LoginHeroInputField(
+                      controller: passCtrl,
+                      label: 'Mật khẩu',
+                      hint: 'Nhập mật khẩu của bạn',
+                      icon: Icons.lock_outline_rounded,
+                      obscureText: obscurePass,
+                      validator: AuthValidators.loginPassword,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.password],
+                      enabled: !loginState.isLoading,
+                      onFieldSubmitted: callbackAction1,
+                      suffixIcon: IconButton(
+                        tooltip: obscurePass ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+                        icon: Icon(
+                          obscurePass
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 20,
+                          color: LoginHeroTokens.outline,
+                        ),
+                        onPressed: loginState.isLoading ? null : togglePassword,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    LoginAuxRow(isLoading: loginState.isLoading),
+                    const SizedBox(height: AppSpacing.section),
+                    LoginLoginButton(
+                      isLoading: loginState.isLoading,
+                      onPressed: login,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.section),
+          const LoginOrDivider(),
+          const SizedBox(height: AppSpacing.md),
+          LoginSocialLoginRow(enabled: !loginState.isLoading),
+          const SizedBox(height: AppSpacing.md),
+          LoginOtpLoginButton(enabled: !loginState.isLoading),
+          const SizedBox(height: AppSpacing.section),
+        ],
+      );
+}

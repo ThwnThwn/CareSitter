@@ -1,12 +1,15 @@
-import 'package:flutter/foundation.dart';
+import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_form.dart';
+import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_app_bar.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
+import '../controllers/profile_edit_controller.dart';
+import '../widgets/profile_avatar_picker.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -22,7 +25,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late TextEditingController _emailCtrl;
   late TextEditingController _dobCtrl;
   String _gender = 'UNSPECIFIED';
-  bool _isSaving = false;
   XFile? _pendingAvatarFile; // ảnh mới chưa upload
   late final String _initialFormState;
 
@@ -92,7 +94,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       firstDate: DateTime(1940),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _dobCtrl.text =
             '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
@@ -101,118 +103,47 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _pickAvatar() async {
-    if (ref.read(avatarUploadingProvider)) return;
+    if (ref.read(avatarUploadingProvider) ||
+        ref.read(profileEditControllerProvider).busy) {
+      return;
+    }
     try {
-      final picker = ImagePicker();
-      final image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-      if (image == null || !mounted) return;
-
-      // Web: skip cropper (Cropper.js CDN thường chưa load kịp hoặc bị chặn)
-      // Mobile: crop bình thường
-      if (kIsWeb) {
+      final image = await ProfileAvatarPicker.pick(isActive: () => mounted);
+      if (mounted &&
+          image != null &&
+          !ref.read(profileEditControllerProvider).busy) {
         setState(() => _pendingAvatarFile = image);
-      } else {
-        try {
-          final cropped = await ImageCropper().cropImage(
-            sourcePath: image.path,
-            compressQuality: 85,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-            uiSettings: [
-              AndroidUiSettings(
-                toolbarTitle: 'Chỉnh ảnh đại diện',
-                toolbarColor: AppColors.primary,
-                toolbarWidgetColor: Colors.white,
-                lockAspectRatio: true,
-              ),
-              IOSUiSettings(
-                title: 'Chỉnh ảnh đại diện',
-                doneButtonTitle: 'Xong',
-                cancelButtonTitle: 'Hủy',
-                aspectRatioLockEnabled: true,
-              ),
-            ],
-          );
-          if (cropped == null || !mounted) return;
-          setState(() => _pendingAvatarFile = XFile(cropped.path));
-        } catch (cropError) {
-          // Fallback: nếu cropper lỗi, dùng ảnh gốc từ picker
-          debugPrint(
-              '[_pickAvatar] Cropper failed, using original: $cropError');
-          if (!mounted) return;
-          setState(() => _pendingAvatarFile = image);
-        }
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('⚠️ Lỗi chọn ảnh: $e')),
-      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
+      }
     }
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_isSaving) return;
-    setState(() => _isSaving = true);
-
-    try {
-      // Bước 1: Upload avatar trước (nếu có ảnh mới)
-      if (_pendingAvatarFile != null) {
-        final uploaded =
-            await ref.read(profileStoreProvider.notifier).uploadAvatar(
-                  await _pendingAvatarFile!.readAsBytes(),
-                  _pendingAvatarFile!.name,
-                );
-        if (!uploaded && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('⚠️ Upload ảnh thất bại. Thông tin khác vẫn được lưu.'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
-        }
-        setState(() => _pendingAvatarFile = null);
-      }
-
-      // Bước 2: Cập nhật thông tin profile — chỉ update sau khi API thành công
-      final success =
-          await ref.read(profileStoreProvider.notifier).updateProfile(
-                name: _nameCtrl.text.trim(),
-                displayName: _displayNameCtrl.text.trim(),
-                email: _emailCtrl.text.trim(),
-                dob: _dobCtrl.text.trim(),
-                gender: _gender,
-              );
-
-      if (!mounted) return;
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Đã cập nhật thông tin cá nhân!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-        popOrGo(context, fallbackRoute: '/settings');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Cập nhật thất bại. Vui lòng thử lại.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        // Không pop — để user thử lại. State vẫn là giá trị cũ từ server.
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+    final result = await ref.read(profileEditControllerProvider.notifier).save(
+        name: _nameCtrl.text,
+        displayName: _displayNameCtrl.text,
+        email: _emailCtrl.text,
+        dob: _dobCtrl.text,
+        gender: _gender,
+        avatar: _pendingAvatarFile);
+    if (!mounted || result.ignored) return;
+    if (result.avatarUploaded) setState(() => _pendingAvatarFile = null);
+    if (result.message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result.message!),
+          backgroundColor: result.saved ? AppColors.warning : AppColors.error));
+      return;
+    }
+    if (result.saved) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('✅ Đã cập nhật thông tin cá nhân!'),
+          backgroundColor: AppColors.primary));
+      popOrGo(context, fallbackRoute: '/settings');
     }
   }
 
@@ -226,180 +157,41 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       fallbackRoute: '/settings',
       builder: (context, requestExit) => Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Thông tin cá nhân'),
-          leading: AppBackButton(
-            fallbackRoute: '/settings',
-            onPressed: requestExit,
-          ),
-          actions: [
-            TextButton(
-              onPressed: (_isSaving || isUploadingAvatar) ? null : _saveProfile,
-              child: const Text(
-                'Lưu',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // ── Avatar ───────────────────────────────────────────────────
-              Center(
-                child: Stack(
-                  children: [
-                    _AvatarWidget(
-                      avatarUrl: _pendingAvatarFile != null
-                          ? null // preview local file bên dưới
-                          : profile.avatarUrl,
-                      localFile: _pendingAvatarFile,
-                      initials: _buildInitials(_nameCtrl.text),
-                      isUploading: isUploadingAvatar,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: (isUploadingAvatar || _isSaving)
-                            ? null
-                            : _pickAvatar,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── Tài khoản & Liên hệ ──────────────────────────────────────
-              _buildSectionHeader('Tài khoản & Liên hệ'),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Họ và tên *',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                onChanged: (_) => setState(() {}), // cập nhật initials realtime
-                validator: (v) => (v == null || v.trim().length < 2)
-                    ? 'Vui lòng nhập họ tên hợp lệ (ít nhất 2 ký tự)'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _displayNameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Tên hiển thị',
-                  helperText: 'Để trống → dùng họ tên',
-                  prefixIcon: Icon(Icons.badge_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Số điện thoại — readonly (identity/login)
-              TextFormField(
-                initialValue: profile.phone,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Số điện thoại (Cố định)',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                  suffixIcon: Icon(Icons.lock_outline, size: 18),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _emailCtrl,
-                readOnly: true,
-                onTap: () => context.push('/settings/recovery-email'),
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  helperText: 'Chạm để xác minh hoặc đổi email an toàn.',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                validator: (v) {
-                  if (v != null && v.isNotEmpty && !v.contains('@')) {
-                    return 'Email không hợp lệ';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // ── Thông tin cá nhân ─────────────────────────────────────────
-              _buildSectionHeader('Thông tin cá nhân'),
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _dobCtrl,
-                      readOnly: true,
-                      onTap: _selectDate,
-                      decoration: const InputDecoration(
-                        labelText: 'Ngày sinh',
-                        prefixIcon: Icon(Icons.cake_outlined),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _gender,
-                      decoration: const InputDecoration(
-                        labelText: 'Giới tính',
-                        prefixIcon: Icon(Icons.people_outline),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'MALE', child: Text('Nam')),
-                        DropdownMenuItem(value: 'FEMALE', child: Text('Nữ')),
-                        DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
-                        DropdownMenuItem(
-                            value: 'UNSPECIFIED', child: Text('Không rõ')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => _gender = v);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              ElevatedButton(
-                onPressed:
-                    (_isSaving || isUploadingAvatar) ? null : _saveProfile,
-                child: (_isSaving || isUploadingAvatar)
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5))
-                    : const Text('Lưu thay đổi'),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+        appBar: ProfileEditAppBar(
+            requestExit: requestExit,
+            ref: ref,
+            isUploadingAvatar: isUploadingAvatar,
+            saveProfile: _saveProfile),
+        body: ProfileEditForm(
+            formKey: _formKey,
+            pendingAvatarFile: _pendingAvatarFile,
+            profile: profile,
+            buildInitials: _buildInitials,
+            nameCtrl: _nameCtrl,
+            isUploadingAvatar: isUploadingAvatar,
+            ref: ref,
+            pickAvatar: _pickAvatar,
+            buildSectionHeader: _buildSectionHeader,
+            displayNameCtrl: _displayNameCtrl,
+            emailCtrl: _emailCtrl,
+            dobCtrl: _dobCtrl,
+            selectDate: _selectDate,
+            gender: _gender,
+            saveProfile: _saveProfile,
+            callbackAction1: (_) => setState(() {}),
+            callbackAction2: (v) => (v == null || v.trim().length < 2)
+                ? 'Vui lòng nhập họ tên hợp lệ (ít nhất 2 ký tự)'
+                : null,
+            callbackAction3: () => context.push('/settings/recovery-email'),
+            callbackAction4: (v) {
+              if (v != null && v.isNotEmpty && !v.contains('@')) {
+                return 'Email không hợp lệ';
+              }
+              return null;
+            },
+            callbackAction5: (v) {
+              if (v != null) setState(() => _gender = v);
+            }),
       ),
     );
   }
@@ -414,93 +206,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     return Text(
       title,
       style: const TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+          fontSize: AppFontSizes.s14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary),
     );
   }
 }
 
 // ── Avatar Widget ────────────────────────────────────────────────────────────
-
-class _AvatarWidget extends StatefulWidget {
-  final String? avatarUrl;
-  final XFile? localFile;
-  final String initials;
-  final bool isUploading;
-
-  const _AvatarWidget({
-    this.avatarUrl,
-    this.localFile,
-    required this.initials,
-    required this.isUploading,
-  });
-
-  @override
-  State<_AvatarWidget> createState() => _AvatarWidgetState();
-}
-
-class _AvatarWidgetState extends State<_AvatarWidget> {
-  Uint8List? _localBytes;
-
-  @override
-  void didUpdateWidget(covariant _AvatarWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.localFile != oldWidget.localFile) {
-      _loadLocalBytes();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLocalBytes();
-  }
-
-  Future<void> _loadLocalBytes() async {
-    if (widget.localFile == null) {
-      if (_localBytes != null) setState(() => _localBytes = null);
-      return;
-    }
-    final bytes = await widget.localFile!.readAsBytes();
-    if (mounted) setState(() => _localBytes = bytes);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ImageProvider? image;
-    if (_localBytes != null) {
-      image = MemoryImage(_localBytes!);
-    } else if (widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty) {
-      image = NetworkImage(widget.avatarUrl!);
-    }
-
-    return Container(
-      width: 90,
-      height: 90,
-      decoration: BoxDecoration(
-        gradient: image == null ? AppColors.primaryGradient : null,
-        shape: BoxShape.circle,
-        boxShadow: AppShadows.elevated,
-        image: image != null
-            ? DecorationImage(image: image, fit: BoxFit.cover)
-            : null,
-        color: image != null ? AppColors.surfaceVariant : null,
-      ),
-      child: widget.isUploading
-          ? const Center(
-              child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 2.5))
-          : image == null
-              ? Center(
-                  child: Text(
-                    widget.initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                )
-              : null,
-    );
-  }
-}

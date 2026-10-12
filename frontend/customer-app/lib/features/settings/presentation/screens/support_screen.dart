@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/features/settings/presentation/widgets/support_panel.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -22,46 +24,17 @@ class SupportScreen extends StatelessWidget {
         leading: const AppBackButton(fallbackRoute: '/settings'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.headset_mic, size: 48, color: Colors.white),
-                SizedBox(height: 16),
-                Text(
-                  'CareSitter luôn lắng nghe',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Chúng tôi hỗ trợ 24/7 để giải quyết mọi thắc mắc của bạn.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+          const SupportPanel(),
+          const SizedBox(height: AppSpacing.lg),
           const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
+            padding: EdgeInsets.only(
+                left: AppSpacing.xs, bottom: AppSpacing.compact),
             child: Text(
               'Các kênh hỗ trợ',
               style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSizes.s16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary),
             ),
@@ -73,7 +46,7 @@ class SupportScreen extends StatelessWidget {
             actionText: 'Gọi ngay',
             onTap: () => _launchUrl('tel:18006789'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.compact),
           _buildContactCard(
             icon: Icons.chat_bubble_outline,
             title: 'Chat trực tuyến',
@@ -87,7 +60,7 @@ class SupportScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.compact),
           _buildContactCard(
             icon: Icons.email_outlined,
             title: 'Email hỗ trợ',
@@ -95,7 +68,7 @@ class SupportScreen extends StatelessWidget {
             actionText: 'Gửi Email',
             onTap: () => _launchUrl('mailto:support@caresitter.vn'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.compact),
           _buildContactCard(
             icon: Icons.facebook,
             title: 'Fanpage CareSitter',
@@ -117,25 +90,25 @@ class SupportScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.compact),
               decoration: BoxDecoration(
                 color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(icon, color: AppColors.primary),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,12 +116,13 @@ class SupportScreen extends StatelessWidget {
                   Text(title,
                       style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: AppFontSizes.s15,
                           color: AppColors.textPrimary)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(subtitle,
                       style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary)),
+                          fontSize: AppFontSizes.s13,
+                          color: AppColors.textSecondary)),
                 ],
               ),
             ),
@@ -157,7 +131,7 @@ class SupportScreen extends StatelessWidget {
               style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13),
+                  fontSize: AppFontSizes.s13),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:caregiver_app/core/api/api_cancellation.dart';
+import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
@@ -62,7 +63,8 @@ class _Profiles implements ProfileRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-class _Shifts implements ShiftRepository {
+class _Shifts extends ShiftRepository {
+  _Shifts() : super(_UnusedShiftClient());
   final loads = <Completer<List<Map<String, dynamic>>>>[];
   final accepted = Completer<Map<String, dynamic>>();
   int accepts = 0;
@@ -84,6 +86,11 @@ class _Shifts implements ShiftRepository {
   Future<List<Map<String, dynamic>>> getOpenOffers(
           {int page = 1, int pageSize = 20}) async =>
       [];
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _UnusedShiftClient implements DioClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }

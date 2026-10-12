@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
+import '../models/recovery_email_model.dart';
 
 final recoveryRepositoryProvider = Provider<RecoveryRepository>(
   (ref) => RecoveryRepository(ref.read(dioClientProvider)),
@@ -55,6 +56,8 @@ class RecoveryRepository {
 
   Future<Map<String, dynamic>> profile() async =>
       (await client.get<Map<String, dynamic>>('/profile')).data!;
+  Future<RecoveryEmailModel> emailProfile() async =>
+      RecoveryEmailModel.fromJson(await profile());
   Future<RecoveryChallenge> requestEmail(String email, String? password) async {
     final response = await client
         .post<Map<String, dynamic>>('/profile/recovery-email/request', data: {
@@ -70,9 +73,13 @@ class RecoveryRepository {
               '/profile/recovery-email/confirm',
               data: {'challengeId': challengeId, 'code': code}))
           .data!;
+  Future<RecoveryEmailModel> confirmEmailProfile(
+          String id, String code) async =>
+      RecoveryEmailModel.fromJson(await confirmEmail(id, code));
 }
 
 String recoveryError(Object error) {
+  if (error is AppApiException) return error.message;
   if (error is DioException) {
     if (error.error is AppApiException) {
       return (error.error as AppApiException).message;

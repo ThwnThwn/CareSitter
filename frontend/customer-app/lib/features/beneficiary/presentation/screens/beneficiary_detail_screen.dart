@@ -1,12 +1,14 @@
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_detail_body.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_detail_header.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_care_level_summary.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_avatar_image.dart';
-import 'package:caresitter_customer/features/nutrition/data/nutrition_repository.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_entry_controller.dart';
 
 class BeneficiaryDetailScreen extends ConsumerWidget {
   final String id;
@@ -34,118 +36,34 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 220,
-            backgroundColor: AppColors.primary,
-            leading: const AppBackButton(
-              fallbackRoute: '/beneficiaries',
-              color: Colors.white,
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                onPressed: () =>
-                    context.push('/beneficiaries/${b.id}/edit').then((_) {
-                  if (context.mounted) (context as Element).markNeedsBuild();
-                }),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: AppColors.heroGradient,
-                ),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 48),
-                      (() {
-                        final hasAvatar =
-                            b.avatarPath != null && b.avatarPath!.isNotEmpty;
-                        return CircleAvatar(
-                          radius: 46,
-                          backgroundColor: Colors.white.withValues(alpha: 0.22),
-                          backgroundImage: hasAvatar
-                              ? beneficiaryAvatarImageProvider(b.avatarPath!)
-                              : null,
-                          child: hasAvatar
-                              ? null
-                              : Text(b.avatarInitial,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800)),
-                        );
-                      })(),
-                      const SizedBox(height: 8),
-                      Text(b.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 4),
-                      Text('${b.ageLabel} · ${b.relation}',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 13)),
-                    ]),
-              ),
-            ),
-          ),
+          BeneficiaryDetailHeader(b: b),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
                   if (ref.watch(nutritionEntryProvider).value == true)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: ListTile(
-                        leading: const Icon(Icons.restaurant_menu, color: AppColors.primary),
+                        leading: const Icon(Icons.restaurant_menu,
+                            color: AppColors.primary),
                         title: const Text('Gợi ý thực đơn'),
-                        subtitle: const Text('Kiểm tra thông tin sức khỏe và chọn món'),
+                        subtitle: const Text(
+                            'Kiểm tra thông tin sức khỏe và chọn món'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => context.push('/beneficiaries/${b.id}/nutrition'),
+                        onTap: () =>
+                            context.push('/beneficiaries/${b.id}/nutrition'),
                       ),
                     ),
                   // Mức chăm sóc
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: careLevelColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: careLevelColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.volunteer_activism_outlined,
-                            color: careLevelColor, size: 22),
-                        const SizedBox(width: 10),
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Mức độ chăm sóc',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary)),
-                              Text(b.careLevelLabel,
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: careLevelColor)),
-                            ]),
-                        const Spacer(),
-                        Icon(Icons.circle, color: careLevelColor, size: 12),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  BeneficiaryCareLevelSummary(
+                      careLevelColor: careLevelColor, b: b),
+                  const SizedBox(height: AppSpacing.compact),
                   _buildCard('📋 Nhu cầu hỗ trợ / Lưu ý', b.conditionLabel),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.compact),
                   _buildCard('📝 Ghi chú', b.notes),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -155,172 +73,13 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                       label: Text('Đặt lịch cho ${b.name}'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
 
                   // ── Liên hệ khẩn cấp (FR-CUS-04) ──────────────
                   if (b.emergencyContacts.isNotEmpty) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: AppColors.error.withValues(alpha: 0.25)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: AppColors.errorLight,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.emergency_outlined,
-                                    size: 18, color: AppColors.error),
-                              ),
-                              const SizedBox(width: 10),
-                              const Text(
-                                'Liên hệ khẩn cấp',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.errorLight,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${b.emergencyContacts.length} người',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.error,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          ...b.emergencyContacts.asMap().entries.map((entry) {
-                            final i = entry.key;
-                            final c = entry.value;
-                            return Column(
-                              children: [
-                                if (i > 0)
-                                  const Divider(
-                                      height: 16, color: AppColors.divider),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.primaryContainer,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          c.name.isNotEmpty
-                                              ? c.name[0].toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            c.name,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            c.relationship,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        final uri =
-                                            Uri(scheme: 'tel', path: c.phone);
-                                        if (await canLaunchUrl(uri)) {
-                                          await launchUrl(uri);
-                                        } else {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'Gọi đến ${c.phone}')),
-                                            );
-                                          }
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 7),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryContainer,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.phone_outlined,
-                                                size: 14,
-                                                color: AppColors.primary),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              c.phone,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
+                    BeneficiaryDetailBody(b: b),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
             ),
@@ -333,10 +92,10 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
   Widget _buildCard(String title, String content) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -344,13 +103,15 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
         children: [
           Text(title,
               style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSizes.s13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary)),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.tight),
           Text(content,
               style: const TextStyle(
-                  fontSize: 14, color: AppColors.textSecondary, height: 1.5)),
+                  fontSize: AppFontSizes.s14,
+                  color: AppColors.textSecondary,
+                  height: 1.5)),
         ],
       ),
     );

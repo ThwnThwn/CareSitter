@@ -5,6 +5,15 @@ import 'package:caresitter_customer/features/auth/domain/google_identity_gateway
 
 class AuthErrorMapper {
   const AuthErrorMapper._();
+  static String registration(Object error) {
+    final api = _apiException(error);
+    if (api?.statusCode == 409) {
+      return 'Email hoặc số điện thoại đã được đăng ký';
+    }
+    if (api?.isTransportFailure == true) return 'Không có kết nối internet';
+    if (api != null && api.message.trim().isNotEmpty) return api.message;
+    return 'Đăng ký thất bại, vui lòng thử lại';
+  }
 
   static String login(Object error) {
     final apiError = _apiException(error);

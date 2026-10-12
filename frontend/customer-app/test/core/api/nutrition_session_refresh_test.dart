@@ -52,7 +52,7 @@ void main() {
   test('late old refresh neither updates nor logs out a new account', () async {
     server.hold = Completer<void>();
     final checked =
-        expectLater(clients[1].get('/data'), throwsA(isA<DioException>()));
+        expectLater(clients[1].get('/data'), throwsA(isA<AppApiException>()));
     await server.started.future;
     auth.switchAccount();
     server.hold!.complete();
@@ -67,8 +67,8 @@ void main() {
       () async {
     await expectLater(
         clients[1].get('/conflict'),
-        throwsA(isA<DioException>()
-            .having((e) => e.response?.statusCode, 'status', 409)));
+        throwsA(
+            isA<AppApiException>().having((e) => e.statusCode, 'status', 409)));
     expect(auth.updates, 1);
     expect(auth.logouts, 0);
     expect(container.read(authStateProvider).value!.isAuthenticated, isTrue);
