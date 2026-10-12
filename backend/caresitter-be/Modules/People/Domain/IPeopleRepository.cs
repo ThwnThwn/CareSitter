@@ -10,6 +10,8 @@ public sealed record CaregiverProfileCreationResult(CaregiverProfile Profile, bo
 public interface IPeopleRepository
 {
     Task<IPeopleTransaction> BeginUserScopeAsync(Guid userId, CancellationToken ct = default);
+    Task LockSelfBeneficiaryAsync(Guid customerId, CancellationToken ct = default);
+    Task<Beneficiary?> GetSelfBeneficiaryAsync(Guid customerId, CancellationToken ct = default);
 
     Task<Beneficiary?> GetBeneficiaryAsync(Guid id, Guid customerId, CancellationToken ct = default);
     void AddBeneficiary(Beneficiary beneficiary);

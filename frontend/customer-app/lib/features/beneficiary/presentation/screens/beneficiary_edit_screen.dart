@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_birth_date_field.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,10 +38,11 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
 
   // Thông tin cơ bản
   final _nameCtrl = TextEditingController();
-  final _ageCtrl = TextEditingController();
+  final _birthDateCtrl = TextEditingController();
   String? _selectedAddressId;
   AddressModel? _selectedAddress;
-  String _gender = 'Nam';
+  String? _gender;
+  bool _isSelf = false;
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
   String? _avatarPath;
@@ -57,11 +59,12 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   final List<_ECEntry> _contacts = [_ECEntry(), _ECEntry()];
 
   bool _isSaving = false;
-  late final String _initialFormState;
+  bool _profileFound = false;
+  String _initialFormState = '';
 
   String get _formState => [
         _nameCtrl.text,
-        _ageCtrl.text,
+        _birthDateCtrl.text,
         _selectedAddressId ?? '',
         _gender,
         _relation,
@@ -87,7 +90,12 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     'Con',
     'Khác'
   ];
-  static const _genders = ['Nam', 'Nữ', 'Khác'];
+  static const _genders = {
+    'MALE': 'Nam',
+    'FEMALE': 'Nữ',
+    'OTHER': 'Khác',
+    'UNSPECIFIED': 'Chưa xác định',
+  };
   static const _careLevels = ['Nhẹ', 'Trung bình', 'Nặng'];
   static const _contactRelations = [
     'Con trai',
@@ -104,17 +112,39 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data from provider
-    final beneficiaries = ref.read(beneficiaryStoreProvider);
-    final b = beneficiaries.firstWhere(
-      (e) => e.id == widget.id,
-      orElse: () => beneficiaries.first,
-    );
+    _loadProfile(ref.read(beneficiaryStoreProvider));
+    ref.listenManual(beneficiaryStoreProvider, (_, profiles) {
+      if (!_profileFound && profiles.any((b) => b.id == widget.id)) {
+        setState(() => _loadProfile(profiles));
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant BeneficiaryEditScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) {
+      _loadProfile(ref.read(beneficiaryStoreProvider));
+    }
+  }
+
+  void _loadProfile(List<BeneficiaryModel> beneficiaries) {
+    final b = beneficiaries.where((e) => e.id == widget.id).firstOrNull;
+    _profileFound = b != null;
+    if (b == null) {
+      _initialFormState = _formState;
+      return;
+    }
+    _selectedAddress = null;
+    _avatarFile = null;
+    _conditionCtrl.clear();
+    _conditions.clear();
     _nameCtrl.text = b.name;
-    _ageCtrl.text = b.age.toString();
+    _birthDateCtrl.text = BeneficiaryBirthDateField.format(b.dateOfBirth);
+    _gender = b.gender;
     _selectedAddressId = b.defaultAddressId;
+    _isSelf = b.isSelf;
     _relation = b.relation;
-    if (_relations.contains(_relation) == false) _relation = 'Khác';
     _careLevel = b.careLevel;
     _avatarPath = b.avatarPath;
 
@@ -123,14 +153,12 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     }
     _notesCtrl.text = b.notes;
 
+    for (final contact in _contacts) {
+      contact.dispose();
+    }
+    _contacts.clear();
     // Load emergency contacts
     if (b.emergencyContacts.isNotEmpty) {
-      // Clear defaults
-      for (final e in _contacts) {
-        e.dispose();
-      }
-      _contacts.clear();
-
       for (final ec in b.emergencyContacts) {
         final entry = _ECEntry();
         entry.nameCtrl.text = ec.name;
@@ -138,10 +166,9 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
         entry.relationship = ec.relationship;
         _contacts.add(entry);
       }
-      // Ensure at least 2 entries
-      while (_contacts.length < 2) {
-        _contacts.add(_ECEntry());
-      }
+    }
+    while (_contacts.length < 2) {
+      _contacts.add(_ECEntry());
     }
     _initialFormState = _formState;
   }
@@ -149,7 +176,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _ageCtrl.dispose();
+    _birthDateCtrl.dispose();
     _conditionCtrl.dispose();
     _notesCtrl.dispose();
     for (final e in _contacts) {
@@ -175,7 +202,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
         maxHeight: 500,
         imageQuality: 85,
       );
-      if (image != null) {
+      if (image != null && mounted) {
         setState(() {
           _avatarFile = image;
           _avatarPath = image.path;
@@ -242,6 +269,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (_contacts.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -254,7 +282,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final selectedAddress = _selectedAddress ?? await _resolveSelectedAddress();
-    if (!mounted) return;
+    if (!mounted || _isSaving) return;
     if (selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -283,7 +311,8 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
       await ref.read(beneficiaryStoreProvider.notifier).update(
             widget.id,
             name: _nameCtrl.text.trim(),
-            age: int.tryParse(_ageCtrl.text) ?? 70,
+            dateOfBirth: BeneficiaryBirthDateField.parse(_birthDateCtrl.text),
+            gender: _gender,
             relation: _relation,
             condition: _conditions.join(', '),
             careLevel: _careLevel,
@@ -325,6 +354,16 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileExists =
+        ref.watch(beneficiaryStoreProvider).any((b) => b.id == widget.id);
+    if (!_profileFound || !profileExists) {
+      return Scaffold(
+        appBar: AppBar(
+            title: const Text('Chỉnh sửa hồ sơ'),
+            leading: const AppBackButton(fallbackRoute: '/beneficiaries')),
+        body: const Center(child: Text('Không tìm thấy hồ sơ người thân.')),
+      );
+    }
     return DiscardChangesGuard(
       hasChanges: () => _formState != _initialFormState,
       fallbackRoute: '/beneficiaries/${widget.id}',
@@ -426,60 +465,31 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Tuổi + Giới tính
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Tuổi *'),
-                        TextFormField(
-                          controller: _ageCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(3),
-                          ],
-                          decoration: const InputDecoration(hintText: 'VD: 75'),
-                          validator: (v) {
-                            if (v?.trim().isEmpty ?? true) return 'Nhập tuổi';
-                            final age = int.tryParse(v!.trim());
-                            if (age == null || age < 0 || age > 120) {
-                              return 'Tuổi không hợp lệ';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Giới tính'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _gender,
-                          decoration: const InputDecoration(),
-                          items: _genders
-                              .map((g) =>
-                                  DropdownMenuItem(value: g, child: Text(g)))
-                              .toList(),
-                          onChanged: (v) => setState(() => _gender = v!),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              BeneficiaryBirthDateField(controller: _birthDateCtrl),
+              const SizedBox(height: 16),
+              _buildLabel('Giới tính'),
+              DropdownButtonFormField<String>(
+                initialValue: _gender,
+                isExpanded: true,
+                decoration: const InputDecoration(hintText: 'Chưa cập nhật'),
+                items: _genders.entries
+                    .map((entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ))
+                    .toList(),
+                onChanged: (value) => setState(() => _gender = value),
               ),
               const SizedBox(height: 16),
 
               _buildLabel('Quan hệ với bạn'),
-              _buildDropdown(
-                  _relations, _relation, (v) => setState(() => _relation = v!)),
+              if (_isSelf)
+                const Text('Bản thân')
+              else
+                _buildDropdown([
+                  if (!_relations.contains(_relation)) _relation,
+                  ..._relations
+                ], _relation, (v) => setState(() => _relation = v!)),
               const SizedBox(height: 16),
 
               _buildLabel('Địa chỉ chăm sóc *'),

@@ -53,9 +53,9 @@ public sealed class BeneficiariesController : ControllerBase
             beneficiary => Created($"/api/v1/beneficiaries/{beneficiary.Id}", beneficiary));
     }
 
-    /// <summary>Cập nhật thông tin hồ sơ người thân. Chỉ owner mới sửa được.</summary>
+    /// <summary>Cập nhật hồ sơ của owner. Trường tùy chọn bị bỏ qua được giữ nguyên; null tường minh sẽ xóa.</summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] BeneficiaryUpsertRequest request, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] BeneficiaryUpdateRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(ToUpdateCommand(id, request), ct);
         return result.ToActionResult(this);
@@ -78,11 +78,11 @@ public sealed class BeneficiariesController : ControllerBase
             request.Medications);
 
     private static UpdateBeneficiaryCommand ToUpdateCommand(
-        Guid id, BeneficiaryUpsertRequest request) =>
+        Guid id, BeneficiaryUpdateRequest request) =>
         new(id, request.FullName, request.DateOfBirth, request.Gender,
             request.RelationshipToCustomer, request.Phone, request.DefaultAddressId,
             request.MobilityNote, request.GeneralNote, request.HealthHistory,
             request.Allergies, request.ChronicConditions, request.CareInstructions,
             request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
-            request.Medications);
+            request.Medications, request.ProvidedFields);
 }

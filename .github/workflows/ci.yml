@@ -15,6 +15,39 @@ permissions:
   contents: read
 
 jobs:
+  nutrition:
+    name: Nutrition service and PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      CARESITTER_TEST_ADMIN_CONNECTION: Host=127.0.0.1;Port=5432;Database=postgres;Username=postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Test independent Nutrition solution
+        run: dotnet test backend/services/nutrition/CareSitter.Nutrition.sln --nologo --logger "trx;LogFileName=nutrition.trx" --results-directory backend/artifacts/nutrition
+      - name: Build independent runtime image
+        run: docker build -t caresitter-nutrition:ci backend/services/nutrition
+      - name: Preserve Nutrition test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nutrition-tests-${{ github.run_id }}
+          path: backend/artifacts/nutrition/*.trx
+          retention-days: 14
+          if-no-files-found: warn
+
   backend:
     name: Phase 7 backend baseline
     runs-on: ubuntu-latest

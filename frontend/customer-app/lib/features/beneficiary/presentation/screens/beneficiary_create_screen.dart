@@ -1,4 +1,6 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_birth_date_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,9 +39,9 @@ class _BeneficiaryCreateScreenState
 
   // Thông tin cơ bản
   final _nameCtrl = TextEditingController();
-  final _ageCtrl = TextEditingController();
+  final _birthDateCtrl = TextEditingController();
   AddressModel? _selectedAddress;
-  String _gender = 'Nam';
+  String? _gender;
   String _relation = 'Bố';
   String _careLevel = 'Nhẹ';
   String? _avatarPath;
@@ -59,12 +61,12 @@ class _BeneficiaryCreateScreenState
 
   bool get _hasUnsavedChanges =>
       _nameCtrl.text.trim().isNotEmpty ||
-      _ageCtrl.text.trim().isNotEmpty ||
+      _birthDateCtrl.text.trim().isNotEmpty ||
       _selectedAddress != null ||
       _conditionCtrl.text.trim().isNotEmpty ||
       _conditions.isNotEmpty ||
       _notesCtrl.text.trim().isNotEmpty ||
-      _gender != 'Nam' ||
+      _gender != null ||
       _relation != 'Bố' ||
       _careLevel != 'Nhẹ' ||
       _avatarPath != null ||
@@ -85,7 +87,7 @@ class _BeneficiaryCreateScreenState
         maxHeight: 500,
         imageQuality: 85,
       );
-      if (image != null) {
+      if (image != null && mounted) {
         setState(() {
           _avatarFile = image;
           _avatarPath = image.path;
@@ -109,7 +111,12 @@ class _BeneficiaryCreateScreenState
     'Con',
     'Khác'
   ];
-  static const _genders = ['Nam', 'Nữ', 'Khác'];
+  static const _genders = {
+    'MALE': 'Nam',
+    'FEMALE': 'Nữ',
+    'OTHER': 'Khác',
+    'UNSPECIFIED': 'Chưa xác định',
+  };
   static const _careLevels = ['Nhẹ', 'Trung bình', 'Nặng'];
   static const _contactRelations = [
     'Con trai',
@@ -126,7 +133,7 @@ class _BeneficiaryCreateScreenState
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _ageCtrl.dispose();
+    _birthDateCtrl.dispose();
     _conditionCtrl.dispose();
     _notesCtrl.dispose();
     for (final e in _contacts) {
@@ -185,6 +192,7 @@ class _BeneficiaryCreateScreenState
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (_contacts.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -220,9 +228,10 @@ class _BeneficiaryCreateScreenState
     setState(() => _isSaving = true);
 
     try {
-      await ref.read(beneficiaryStoreProvider.notifier).add(
+      final created = await ref.read(beneficiaryStoreProvider.notifier).add(
             name: _nameCtrl.text,
-            age: int.parse(_ageCtrl.text),
+            dateOfBirth: BeneficiaryBirthDateField.parse(_birthDateCtrl.text),
+            gender: _gender,
             relation: _relation,
             condition: _conditions.join(', '),
             careLevel: _careLevel,
@@ -248,7 +257,11 @@ class _BeneficiaryCreateScreenState
           backgroundColor: AppColors.success,
         ),
       );
-      popOrGo(context, fallbackRoute: '/beneficiaries');
+      if (context.canPop()) {
+        context.pop(created.id);
+      } else {
+        context.go('/beneficiaries');
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -364,54 +377,20 @@ class _BeneficiaryCreateScreenState
               ),
               const SizedBox(height: 16),
 
-              // Tuổi + Giới tính
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Tuổi *'),
-                        TextFormField(
-                          controller: _ageCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(3),
-                          ],
-                          decoration: const InputDecoration(hintText: 'VD: 75'),
-                          validator: (v) {
-                            if (v?.trim().isEmpty ?? true) return 'Nhập tuổi';
-                            final age = int.tryParse(v!.trim());
-                            if (age == null || age < 0 || age > 120) {
-                              return 'Tuổi không hợp lệ';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Giới tính'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _gender,
-                          decoration: const InputDecoration(),
-                          items: _genders
-                              .map((g) =>
-                                  DropdownMenuItem(value: g, child: Text(g)))
-                              .toList(),
-                          onChanged: (v) => setState(() => _gender = v!),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              BeneficiaryBirthDateField(controller: _birthDateCtrl),
+              const SizedBox(height: 16),
+              _buildLabel('Giới tính'),
+              DropdownButtonFormField<String>(
+                initialValue: _gender,
+                isExpanded: true,
+                decoration: const InputDecoration(hintText: 'Chưa cập nhật'),
+                items: _genders.entries
+                    .map((entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ))
+                    .toList(),
+                onChanged: (value) => setState(() => _gender = value),
               ),
               const SizedBox(height: 16),
 

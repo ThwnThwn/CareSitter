@@ -6,6 +6,7 @@ import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_avatar_image.dart';
+import 'package:caresitter_customer/features/nutrition/data/nutrition_repository.dart';
 
 class BeneficiaryDetailScreen extends ConsumerWidget {
   final String id;
@@ -14,8 +15,15 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final beneficiaries = ref.watch(beneficiaryStoreProvider);
-    final b = beneficiaries.firstWhere((x) => x.id == id,
-        orElse: () => beneficiaries.first);
+    final b = beneficiaries.where((x) => x.id == id).firstOrNull;
+    if (b == null) {
+      return Scaffold(
+        appBar: AppBar(
+            title: const Text('Hồ sơ người thân'),
+            leading: const AppBackButton(fallbackRoute: '/beneficiaries')),
+        body: const Center(child: Text('Không tìm thấy hồ sơ người thân.')),
+      );
+    }
     final careLevelColor = b.careLevel == 'Nặng'
         ? AppColors.error
         : b.careLevel == 'Trung bình'
@@ -37,9 +45,10 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                onPressed: () => context
-                    .push('/beneficiaries/${b.id}/edit')
-                    .then((_) => (context as Element).markNeedsBuild()),
+                onPressed: () =>
+                    context.push('/beneficiaries/${b.id}/edit').then((_) {
+                  if (context.mounted) (context as Element).markNeedsBuild();
+                }),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -76,7 +85,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                               fontSize: 18,
                               fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
-                      Text('${b.age} tuổi · ${b.relation}',
+                      Text('${b.ageLabel} · ${b.relation}',
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 13)),
@@ -89,6 +98,17 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  if (ref.watch(nutritionEntryProvider).value == true)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ListTile(
+                        leading: const Icon(Icons.restaurant_menu, color: AppColors.primary),
+                        title: const Text('Gợi ý thực đơn'),
+                        subtitle: const Text('Kiểm tra thông tin sức khỏe và chọn món'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/beneficiaries/${b.id}/nutrition'),
+                      ),
+                    ),
                   // Mức chăm sóc
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -110,7 +130,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                                   style: TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textSecondary)),
-                              Text(b.careLevel,
+                              Text(b.careLevelLabel,
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
@@ -122,7 +142,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildCard('📋 Nhu cầu hỗ trợ / Lưu ý', b.condition),
+                  _buildCard('📋 Nhu cầu hỗ trợ / Lưu ý', b.conditionLabel),
                   const SizedBox(height: 12),
                   _buildCard('📝 Ghi chú', b.notes),
                   const SizedBox(height: 16),

@@ -19,6 +19,11 @@ public sealed class Beneficiary : AggregateRoot
     }
 
     public Guid CustomerId { get; private set; }
+    public bool IsSelf { get; private set; }
+    public long HealthProfileRevision { get; private set; } = 1;
+    public string FoodAllergyStatus { get; private set; } = "unknown";
+    public DateTimeOffset? FoodAllergyConfirmedAt { get; private set; }
+    public Guid? FoodAllergyConfirmedBy { get; private set; }
     public string FullName { get; private set; } = null!;
     public DateOnly? DateOfBirth { get; private set; }
 
@@ -69,6 +74,9 @@ public sealed class Beneficiary : AggregateRoot
         if (string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length > 255)
             return Error.Validation("beneficiary.full_name", "Họ tên không hợp lệ.");
 
+        if (IsSelf && relationship?.Trim() != "Bản thân")
+            return Error.Validation("beneficiary.self_relationship", "Không thể đổi quan hệ của hồ sơ bản thân.");
+
         var normalizedCareLevel = string.IsNullOrWhiteSpace(careLevel) ? null : careLevel.Trim();
         if (normalizedCareLevel is not null &&
             normalizedCareLevel is not ("Nhẹ" or "Trung bình" or "Nặng"))
@@ -99,5 +107,43 @@ public sealed class Beneficiary : AggregateRoot
         return Result.Success();
     }
 
-    public void Delete(DateTimeOffset deletedAt) => DeletedAt = deletedAt;
+    public Result MarkAsSelf()
+    {
+        if (DeletedAt is not null)
+            return Error.Conflict("beneficiary.self_archived", "Hồ sơ đã ngừng hoạt động.");
+        IsSelf = true;
+        RelationshipToCustomer = "Bản thân";
+        return Result.Success();
+    }
+
+    public Result UpdateHealth(long expectedRevision, string? generalNote, string? careInstructions,
+        string? healthHistory, string? allergies, string? chronicConditions, string? medications,
+        string allergyStatus, Guid actorId, DateTimeOffset now, bool confirmAllergy = false)
+    {
+        if (HealthProfileRevision != expectedRevision)
+            return Error.Conflict("nutrition.profile_changed", "Thông tin sức khỏe đã thay đổi. Vui lòng kiểm tra lại.");
+        if (allergyStatus is not ("unknown" or "reported_present" or "reported_none"))
+            return Error.Validation("nutrition.allergy_status", "Trạng thái dị ứng không hợp lệ.");
+        GeneralNote = generalNote;
+        CareInstructions = careInstructions;
+        HealthHistory = healthHistory;
+        Allergies = allergies;
+        ChronicConditions = chronicConditions;
+        Medications = medications;
+        FoodAllergyStatus = allergyStatus;
+        if (allergyStatus == "unknown" || confirmAllergy)
+        {
+            FoodAllergyConfirmedAt = allergyStatus == "unknown" ? null : now;
+            FoodAllergyConfirmedBy = allergyStatus == "unknown" ? null : actorId;
+        }
+        return Result.Success();
+    }
+
+    public Result Delete(DateTimeOffset deletedAt)
+    {
+        if (IsSelf)
+            return Error.Conflict("beneficiary.self_managed", "Vui lòng sửa thông tin chăm sóc của tôi thay vì xóa hồ sơ.");
+        DeletedAt = deletedAt;
+        return Result.Success();
+    }
 }

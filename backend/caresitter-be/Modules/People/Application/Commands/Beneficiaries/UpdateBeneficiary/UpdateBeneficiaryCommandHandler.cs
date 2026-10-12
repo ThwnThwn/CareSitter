@@ -39,13 +39,32 @@ internal sealed class UpdateBeneficiaryCommandHandler(
         return PeopleResponseMapper.ToResponse(entity);
     }
 
-    private static Result ApplyRequest(Beneficiary entity, UpdateBeneficiaryCommand request) =>
-        entity.Update(request.FullName, request.DateOfBirth, NormalizeGender(request.Gender),
-            request.RelationshipToCustomer, request.Phone, request.DefaultAddressId,
-            request.MobilityNote, request.GeneralNote, request.HealthHistory?.GetRawText(),
-            request.Allergies?.GetRawText(), request.ChronicConditions?.GetRawText(),
-            request.CareInstructions, request.CareLevel, request.AvatarUrl,
-            request.EmergencyContacts?.GetRawText(), request.Medications?.GetRawText());
+    private static Result ApplyRequest(Beneficiary entity, UpdateBeneficiaryCommand request)
+    {
+        // Merge với entity vừa đọc trong scope của owner, không lấy dữ liệu sức khỏe từ bản sao cũ của app.
+        T Field<T>(string name, T incoming, T stored) =>
+            request.ProvidedFields is null || request.ProvidedFields.Contains(name) ? incoming : stored;
+
+        return entity.Update(request.FullName,
+            Field(nameof(request.DateOfBirth), request.DateOfBirth, entity.DateOfBirth),
+            Field(nameof(request.Gender), NormalizeGender(request.Gender), entity.Gender),
+            Field(nameof(request.RelationshipToCustomer), request.RelationshipToCustomer, entity.RelationshipToCustomer),
+            Field(nameof(request.Phone), request.Phone, entity.Phone), request.DefaultAddressId,
+            Field(nameof(request.MobilityNote), request.MobilityNote, entity.MobilityNote),
+            Field(nameof(request.GeneralNote), request.GeneralNote, entity.GeneralNote),
+            Field(nameof(request.HealthHistory), JsonText(request.HealthHistory), entity.HealthHistory),
+            Field(nameof(request.Allergies), JsonText(request.Allergies), entity.Allergies),
+            Field(nameof(request.ChronicConditions), JsonText(request.ChronicConditions), entity.ChronicConditions),
+            Field(nameof(request.CareInstructions), request.CareInstructions, entity.CareInstructions),
+            Field(nameof(request.CareLevel), request.CareLevel, entity.CareLevel),
+            Field(nameof(request.AvatarUrl), request.AvatarUrl, entity.AvatarUrl),
+            Field(nameof(request.EmergencyContacts), JsonText(request.EmergencyContacts), entity.EmergencyContacts),
+            Field(nameof(request.Medications), JsonText(request.Medications), entity.Medications));
+    }
+
+    private static string? JsonText(System.Text.Json.JsonElement? value) =>
+        value is null || value.Value.ValueKind == System.Text.Json.JsonValueKind.Null
+            ? null : value.Value.GetRawText();
 
     private static string? NormalizeGender(string? value)
     {

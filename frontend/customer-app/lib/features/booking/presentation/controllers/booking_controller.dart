@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/notifications/in_app_notification_events.dart';
@@ -17,6 +18,15 @@ export 'package:caresitter_customer/features/booking/data/models/booking_model.d
 final bookingStoreProvider =
     NotifierProvider<BookingStore, List<BookingModel>>(BookingStore.new);
 
+class BookingCreatedException implements Exception {
+  final BookingModel booking;
+  const BookingCreatedException(this.booking);
+}
+
+class BookingOutcomeUnknown implements Exception {
+  const BookingOutcomeUnknown();
+}
+
 /// BookingStore — quản lý state danh sách booking của customer.
 /// Luôn dùng backend API thật.
 class BookingStore extends Notifier<List<BookingModel>> {
@@ -24,6 +34,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   // ── Sync engine state ───────────────────────────────────────────────────
   int _lastCursor = 0;
+  int _sessionVersion = 0;
   bool _isSyncing = false;
   bool _syncPending = false;
 
@@ -41,6 +52,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
     _announcedRealtimeEvents.clear();
 
     ref.listen(authStateProvider, (prev, next) {
+      if (prev?.value?.userId != next.value?.userId) _sessionVersion++;
       final isAuth = next.value?.isAuthenticated ?? false;
       if (isAuth &&
           prev?.value?.isAuthenticated == true &&
@@ -214,14 +226,42 @@ class BookingStore extends Notifier<List<BookingModel>> {
   // ── Lifecycle actions (gọi trực tiếp API, chờ response) ──────────────────
 
   Future<BookingModel> createBooking(BookingDraft draft) async {
-    var created = await _repo.createBooking(draft);
-    if (!draft.isSystemMatched && draft.caregiverId != null) {
-      created = await _repo.selectCaregiver(
-        created.id,
-        caregiverId: draft.caregiverId!,
-      );
+    final sessionVersion = _sessionVersion;
+    final userId = ref.read(authStateProvider).value?.userId;
+    if (userId == null) throw StateError('Vui lòng đăng nhập lại.');
+    BookingModel created;
+    try {
+      created = await _repo.createBooking(draft);
+      if (created.id.isEmpty) throw const BookingOutcomeUnknown();
+    } on DioException catch (e) {
+      if (e.response == null || (e.response!.statusCode ?? 500) >= 500) {
+        throw const BookingOutcomeUnknown();
+      }
+      rethrow;
+    } catch (_) {
+      // Response đã về nhưng không đọc được ID cũng là kết quả chưa xác định.
+      throw const BookingOutcomeUnknown();
     }
-    state = _sortByRecentActivity([created, ...state]);
+    if (_sessionVersion != sessionVersion ||
+        ref.read(authStateProvider).value?.userId != userId) {
+      throw StateError('Phiên đặt lịch đã thay đổi.');
+    }
+    // Giữ ID ngay sau POST: chọn caregiver lỗi vẫn xử lý trên booking đã có.
+    state = _sortByRecentActivity(
+        [created, ...state.where((b) => b.id != created.id)]);
+    if (!draft.isSystemMatched && draft.caregiverId != null) {
+      try {
+        created = await _repo.selectCaregiver(created.id,
+            caregiverId: draft.caregiverId!);
+      } catch (_) {
+        throw BookingCreatedException(created);
+      }
+    }
+    if (_sessionVersion != sessionVersion ||
+        ref.read(authStateProvider).value?.userId != userId) {
+      throw StateError('Phiên đặt lịch đã thay đổi.');
+    }
+    _applyUpdate(created);
     return created;
   }
 

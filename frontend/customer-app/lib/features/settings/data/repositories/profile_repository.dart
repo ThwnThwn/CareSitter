@@ -15,6 +15,13 @@ class ProfileRepository {
 
   const ProfileRepository(this._dio);
 
+  /// Đọc mới để điền draft; không thay trường null bằng cache của tài khoản cũ.
+  Future<Map<String, dynamic>> getFreshProfile() async {
+    final response = await _dio.get<Map<String, dynamic>>('/profile');
+    return response.data ??
+        (throw StateError('Không tải được thông tin tài khoản.'));
+  }
+
   Future<UserProfile?> getProfile(UserProfile current) async {
     final response = await _dio.get<Map<String, dynamic>>('/profile');
     final data = response.data;

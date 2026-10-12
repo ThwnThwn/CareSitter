@@ -13,14 +13,24 @@ export 'package:caresitter_customer/core/error/app_exception.dart';
 const String _baseUrl = kBaseUrl;
 
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
+final authRefreshClientProvider = Provider<Dio>((ref) {
+  final client = Dio(BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 30)));
+  ref.onDispose(() => client.close(force: true));
+  return client;
+});
+final _authInterceptorProvider =
+    Provider<_AuthInterceptor>(_AuthInterceptor.new);
 
 class DioClient {
   late final Dio _dio;
   final Ref _ref;
 
-  DioClient(this._ref) {
+  DioClient(this._ref, {String? baseUrl, HttpClientAdapter? adapter}) {
     _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: baseUrl ?? _baseUrl,
       connectTimeout: const Duration(seconds: 10),
       sendTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
@@ -32,7 +42,8 @@ class DioClient {
         'Accept-Language': 'vi',
       },
     ));
-    _dio.interceptors.add(_AuthInterceptor(_ref));
+    if (adapter != null) _dio.httpClientAdapter = adapter;
+    _dio.interceptors.add(_ref.read(_authInterceptorProvider));
     _dio.interceptors.add(_ErrorInterceptor());
   }
 
@@ -48,34 +59,44 @@ class DioClient {
   Future<Response<T>> patch<T>(String path, {dynamic data}) =>
       _dio.patch(path, data: data);
 
+  Future<Response<T>> getCancelable<T>(String path,
+          {Map<String, dynamic>? query, required CancelToken cancelToken}) =>
+      _dio.get(path, queryParameters: query, cancelToken: cancelToken);
+  Future<Response<T>> postCancelable<T>(String path,
+          {dynamic data, required CancelToken cancelToken}) =>
+      _dio.post(path, data: data, cancelToken: cancelToken);
+  Future<Response<T>> patchCancelable<T>(String path,
+          {dynamic data, required CancelToken cancelToken}) =>
+      _dio.patch(path, data: data, cancelToken: cancelToken);
+
   Future<Response<T>> delete<T>(String path) => _dio.delete(path);
 
   Future<Response<T>> postForm<T>(String path, FormData data) =>
       _dio.post(path, data: data);
 }
 
-/// Giữ thông tin một request đang chờ token refresh
-class _PendingRequest {
-  final RequestOptions options;
-  final Completer<Response<dynamic>> _completer = Completer();
-
-  _PendingRequest(this.options);
-
-  Future<Response<dynamic>> get future => _completer.future;
-  void complete(Response<dynamic> response) => _completer.complete(response);
-  void completeError(Object error) => _completer.completeError(error);
-}
-
 class _AuthInterceptor extends Interceptor {
   final Ref _ref;
-  bool _isRefreshing = false;
-  final List<_PendingRequest> _pendingRequests = [];
-
-  _AuthInterceptor(this._ref);
+  Future<String?>? _refreshing;
+  int _epoch = 0, _refreshEpoch = -1;
+  bool _active = true;
+  _AuthInterceptor(this._ref) {
+    _ref.onDispose(() => _active = false);
+    _ref.listen(authStateProvider, (previous, next) {
+      if (previous?.valueOrNull?.userId != next.valueOrNull?.userId ||
+          previous?.valueOrNull?.isAuthenticated !=
+              next.valueOrNull?.isAuthenticated) {
+        _epoch++;
+      }
+    });
+  }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = _ref.read(authStateProvider).value?.accessToken;
+    final token = _ref.read(authStateProvider).valueOrNull?.accessToken;
+    options.extra['authSessionEpoch'] = _epoch;
+    options.extra['authSessionGeneration'] =
+        _ref.read(authStateProvider.notifier).sessionGeneration;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -88,73 +109,82 @@ class _AuthInterceptor extends Interceptor {
     final path = err.requestOptions.path;
     final isAuthEndpoint =
         path.endsWith('/auth/refresh') || path.endsWith('/auth/logout');
+    if (!_active) return handler.next(err);
 
-    if (err.response?.statusCode == 401 && !isAuthEndpoint) {
-      final authNotifier = _ref.read(authStateProvider.notifier);
-      final refreshToken = authNotifier.refreshToken;
-
-      if (refreshToken == null) {
-        await authNotifier.logout();
-        return handler.next(err);
-      }
-
-      // Nếu đang refresh, xếp request này vào hàng chờ
-      if (_isRefreshing) {
-        final pending = _PendingRequest(err.requestOptions);
-        _pendingRequests.add(pending);
-        try {
-          final response = await pending.future;
-          handler.resolve(response);
-        } catch (_) {
-          handler.next(err);
+    final notifier = _ref.read(authStateProvider.notifier);
+    final epoch = err.requestOptions.extra['authSessionEpoch'];
+    final generation = err.requestOptions.extra['authSessionGeneration'];
+    bool current() =>
+        _active &&
+        epoch == _epoch &&
+        generation == notifier.sessionGeneration &&
+        _ref.read(authStateProvider).valueOrNull?.isAuthenticated == true &&
+        err.requestOptions.cancelToken?.isCancelled != true;
+    if (err.response?.statusCode != 401 || isAuthEndpoint || !current()) {
+      return handler.next(err);
+    }
+    try {
+      var token = notifier.accessToken;
+      // Một client khác có thể đã refresh trước khi response 401 này về.
+      if (token == null ||
+          err.requestOptions.headers['Authorization'] == 'Bearer $token') {
+        final activeEpoch = _epoch;
+        if (_refreshing == null || _refreshEpoch != activeEpoch) {
+          _refreshEpoch = activeEpoch;
+          final operation =
+              _refreshAsync(activeEpoch, notifier.sessionGeneration);
+          _refreshing = operation;
+          operation.then((_) {
+            if (identical(_refreshing, operation)) _refreshing = null;
+          });
         }
-        return;
+        token = await _refreshing;
       }
-
-      _isRefreshing = true;
-      try {
-        final dio = Dio(BaseOptions(baseUrl: _baseUrl));
-        // Chỉ cần refreshToken; backend tra session DB, không cần accessToken.
-        final resp = await dio
-            .post('/auth/refresh', data: {'refreshToken': refreshToken});
-        final newAccess = resp.data['accessToken'] as String;
-        final newRefresh = resp.data['refreshToken'] as String;
-
-        await authNotifier.updateTokens(
-          accessToken: newAccess,
-          refreshToken: newRefresh,
-        );
-
-        // Retry original request
-        err.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-        final retried = await dio.fetch(err.requestOptions);
-
-        // Retry toàn bộ pending requests
-        for (final pending in _pendingRequests) {
-          try {
-            pending.options.headers['Authorization'] = 'Bearer $newAccess';
-            final retriedPending = await dio.fetch(pending.options);
-            pending.complete(retriedPending);
-          } catch (e) {
-            pending.completeError(e);
-          }
-        }
-        _pendingRequests.clear();
-
-        handler.resolve(retried);
-      } catch (_) {
-        // Refresh thất bại → reject toàn bộ pending, logout
-        for (final pending in _pendingRequests) {
-          pending.completeError(err);
-        }
-        _pendingRequests.clear();
-        await authNotifier.logout();
-        handler.next(err);
-      } finally {
-        _isRefreshing = false;
-      }
-    } else {
+      if (!current() || token == null) return handler.next(err);
+      err.requestOptions.headers['Authorization'] = 'Bearer $token';
+      final retried =
+          await _ref.read(authRefreshClientProvider).fetch(err.requestOptions);
+      if (!current()) return handler.next(err);
+      handler.resolve(retried);
+    } on DioException catch (retryError) {
+      // Lỗi nghiệp vụ/mạng của request retry không phải lỗi refresh phiên.
+      handler.next(retryError);
+    } catch (_) {
       handler.next(err);
+    }
+  }
+
+  Future<String?> _refreshAsync(int epoch, int generation) async {
+    final notifier = _ref.read(authStateProvider.notifier);
+    final refresh = notifier.refreshToken;
+    bool current() =>
+        _active &&
+        epoch == _epoch &&
+        generation == notifier.sessionGeneration &&
+        notifier.refreshToken == refresh;
+    try {
+      if (refresh == null) throw StateError('Missing refresh token');
+      final response = await _ref
+          .read(authRefreshClientProvider)
+          .post('/auth/refresh', data: {'refreshToken': refresh});
+      if (!current()) return null;
+      final access = response.data['accessToken'] as String;
+      final nextRefresh = response.data['refreshToken'] as String;
+      if (access.isEmpty || nextRefresh.isEmpty) {
+        throw StateError('Invalid refresh response');
+      }
+      await notifier.updateTokens(
+          accessToken: access, refreshToken: nextRefresh);
+      return epoch == _epoch && generation == notifier.sessionGeneration
+          ? access
+          : null;
+    } catch (_) {
+      if (current()) {
+        try {
+          await notifier.logout();
+        } catch (_) {/* Preserve the original 401. */}
+      }
+      return null;
     }
   }
 }
@@ -175,7 +205,7 @@ class _ErrorInterceptor extends Interceptor {
       error: AppApiException(
         message: message,
         statusCode: err.response?.statusCode,
-        code: data is Map ? data['code']?.toString() : null,
+        code: data is Map ? (data['code'] ?? data['title'])?.toString() : null,
         details: data is Map ? Map<String, dynamic>.from(data) : null,
       ),
     ));

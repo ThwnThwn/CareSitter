@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
-import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
 class BeneficiaryListScreen extends ConsumerWidget {
   const BeneficiaryListScreen({super.key});
@@ -22,7 +21,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Người thân',
+              'Hồ sơ chăm sóc',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 18,
@@ -66,19 +65,28 @@ class BeneficiaryListScreen extends ConsumerWidget {
       ),
       body: beneficiaries.isEmpty
           ? _buildEmptyState(context)
-          : ListView.separated(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
+          : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: beneficiaries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) => FadeSlideStaggered(
-                index: index,
-                child:
-                    _buildBeneficiaryCard(beneficiaries[index], context),
-              ),
-            ),
+              children: [
+                  if (beneficiaries.any((b) => b.isSelf)) ...[
+                    const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Thông tin chăm sóc của tôi',
+                            style: TextStyle(fontWeight: FontWeight.w700))),
+                    _buildBeneficiaryCard(
+                        beneficiaries.firstWhere((b) => b.isSelf), context),
+                  ],
+                  const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('Người thân',
+                          style: TextStyle(fontWeight: FontWeight.w700))),
+                  if (!beneficiaries.any((b) => !b.isSelf))
+                    const Text('Chưa có hồ sơ người thân.'),
+                  for (final b in beneficiaries.where((b) => !b.isSelf))
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _buildBeneficiaryCard(b, context)),
+                ]),
     );
   }
 
@@ -130,8 +138,8 @@ class BeneficiaryListScreen extends ConsumerWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -209,7 +217,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${b.relation} • ${b.age} tuổi',
+                      '${b.relation} • ${b.ageLabel}',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
@@ -224,7 +232,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        b.careLevel,
+                        b.careLevelLabel,
                         style: TextStyle(
                           color: careColor,
                           fontSize: 10,
