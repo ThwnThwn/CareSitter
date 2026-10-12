@@ -1,11 +1,8 @@
 "use client";
+import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import { Heart, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-interface HeaderProps {
-  onOpenBooking: () => void;
-}
 
 const navItems = [
   { label: "Điểm khác biệt", href: "#features" },
@@ -14,7 +11,8 @@ const navItems = [
   { label: "Câu chuyện", href: "#testimonials" },
 ];
 
-export default function Header({ onOpenBooking }: HeaderProps) {
+export default function Header() {
+  const onOpenBooking = useConsultation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
@@ -78,8 +76,8 @@ export default function Header({ onOpenBooking }: HeaderProps) {
         </nav>
 
         <div className="header-actions">
-          <button className="button button--compact" onClick={onOpenBooking}>
-            Đặt ca chăm sóc
+          <button className="button button--compact" onClick={() => onOpenBooking()}>
+            Đăng ký tư vấn
           </button>
           <button
             className="menu-toggle"
@@ -119,7 +117,7 @@ export default function Header({ onOpenBooking }: HeaderProps) {
               onOpenBooking();
             }}
           >
-            Bắt đầu đặt ca
+            Đăng ký tư vấn
           </button>
         </nav>
       </div>

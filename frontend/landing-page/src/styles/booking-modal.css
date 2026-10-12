@@ -1,0 +1,203 @@
+/* Booking modal */
+.modal-backdrop {
+  align-items: center;
+  background: color-mix(in oklch, var(--green-dark) 78%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1.25rem;
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+.booking-modal {
+  background: var(--paper);
+  border-radius: var(--radius);
+  max-height: calc(100vh - 2.5rem);
+  max-width: 590px;
+  overflow: auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  position: relative;
+  width: 100%;
+}
+
+.modal-close {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  position: absolute;
+  right: 1.2rem;
+  top: 1.2rem;
+  width: 42px;
+}
+
+.booking-modal__header {
+  padding-right: 3rem;
+}
+
+.booking-modal__header > span {
+  align-items: center;
+  color: var(--green);
+  display: flex;
+  font-size: 0.7rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.booking-modal h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin: 0.8rem 0 0.65rem;
+}
+
+.booking-modal__header p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.booking-modal__header p strong {
+  color: var(--ink);
+}
+
+.booking-form {
+  display: grid;
+  gap: 1.2rem;
+  margin-top: 2rem;
+}
+
+.booking-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.booking-form legend,
+.booking-form label {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.service-options {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0.65rem;
+}
+
+.service-option {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  min-height: 64px;
+  padding: 0.65rem;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.service-option:hover {
+  border-color: var(--green);
+}
+
+.service-option--selected {
+  background: color-mix(in oklch, var(--green) 10%, var(--paper));
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.booking-form__row {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.booking-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.booking-form input,
+.booking-form select {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  min-height: 48px;
+  padding: 0.65rem 0.8rem;
+}
+
+.price-estimate {
+  background: var(--paper-deep);
+  border-radius: 10px;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: 1fr auto;
+  padding: 1.1rem;
+}
+
+.price-estimate span {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.price-estimate strong {
+  color: var(--green);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.price-estimate small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  grid-column: 1 / -1;
+}
+
+.booking-success {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 0 1rem;
+  text-align: center;
+}
+
+.booking-success > span {
+  align-items: center;
+  background: var(--lime);
+  border-radius: 50%;
+  color: var(--green-dark);
+  display: flex;
+  height: 64px;
+  justify-content: center;
+  width: 64px;
+}
+
+.booking-success p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0 0 1.5rem;
+  max-width: 48ch;
+}
+
+@keyframes hero-rise-in {
+  from {
+    transform: translate3d(0, var(--hero-distance), 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}

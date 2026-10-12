@@ -1,4 +1,5 @@
 "use client";
+import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
 import { ArrowDownRight, ArrowUpRight, ShieldCheck } from "lucide-react";
@@ -6,11 +7,8 @@ import { useEffect, useRef } from "react";
 import { useHeroCollageMotion } from "./useHeroCollageMotion";
 import CareAssistant from "./CareAssistant";
 
-interface HeroSectionProps {
-  onOpenBooking: (caregiver?: string, service?: string) => void;
-}
-
-export default function HeroSection({ onOpenBooking }: HeroSectionProps) {
+export default function HeroSection() {
+  const onOpenBooking = useConsultation();
   const heroRef = useRef<HTMLElement>(null);
   useHeroCollageMotion(heroRef);
 

@@ -1,0 +1,173 @@
+/* Caregivers */
+.caregivers-section {
+  background: var(--paper);
+  padding: clamp(6rem, 10vw, 10rem) 0;
+}
+
+.caregiver-showcase {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1.06fr) minmax(380px, 0.94fr);
+}
+
+.caregiver-featured {
+  background: var(--green-dark);
+  border-radius: var(--radius);
+  color: var(--white);
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+}
+
+.caregiver-featured figure {
+  margin: 0;
+  min-height: 500px;
+  overflow: hidden;
+  position: relative;
+}
+
+.caregiver-featured figure img,
+.caregiver-row figure img {
+  object-fit: cover;
+}
+
+.caregiver-featured figure > span {
+  align-items: center;
+  background: var(--lime);
+  border-radius: 999px;
+  bottom: 1rem;
+  color: var(--green-dark);
+  display: flex;
+  font-size: 0.7rem;
+  font-weight: 700;
+  gap: 0.4rem;
+  left: 1rem;
+  padding: 0.45rem 0.65rem;
+  position: absolute;
+}
+
+.caregiver-featured__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 4vw, 3.5rem);
+}
+
+.caregiver-role {
+  color: var(--green);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.caregiver-featured .caregiver-role {
+  color: var(--lime);
+}
+
+.caregiver-featured h3,
+.caregiver-row h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.caregiver-featured h3 {
+  font-size: clamp(2.3rem, 4vw, 4rem);
+  margin: 0.5rem 0 1rem;
+}
+
+.caregiver-featured__body > p {
+  color: color-mix(in oklch, var(--white) 75%, transparent);
+  line-height: 1.7;
+  margin: 0 0 1.5rem;
+}
+
+.caregiver-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  gap: 1rem;
+}
+
+.caregiver-meta > span,
+.caregiver-meta button {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.caregiver-featured .caregiver-meta {
+  border-bottom: 1px solid var(--line-light);
+  color: var(--lime);
+  margin-bottom: 1.7rem;
+  padding-bottom: 1.4rem;
+}
+
+.caregiver-featured .inline-link {
+  align-self: flex-start;
+  color: var(--white);
+}
+
+.caregiver-list {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.caregiver-row {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 160px 1fr;
+  overflow: hidden;
+}
+
+.caregiver-row figure {
+  margin: 0;
+  min-height: 220px;
+  overflow: hidden;
+  position: relative;
+}
+
+.caregiver-row > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.4rem 1.4rem 1.4rem 0;
+}
+
+.caregiver-row h3 {
+  font-size: 1.7rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.caregiver-row p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.caregiver-row .caregiver-meta {
+  border-top: 1px solid var(--line);
+  justify-content: space-between;
+  padding-top: 0.9rem;
+}
+
+.caregiver-row .caregiver-meta > span {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.caregiver-row button {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0;
+}
