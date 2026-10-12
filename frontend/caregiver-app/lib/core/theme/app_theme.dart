@@ -1,106 +1,21 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
+import 'package:caregiver_app/core/theme/app_radius.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-class AppColors {
-  // ── Brand tokens shared with customer-app, admin-web, and landing-page ──
-  static const Color primary = Color(0xFF006B5B);
-  static const Color primaryLight = Color(0xFF00806D);
-  static const Color primaryDark = Color(0xFF004F43);
-  static const Color accent = Color(0xFF00C896);
-  static const Color primaryContainer = Color(0xFFE6F4F1);
-  static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color onPrimaryContainer = primary;
+// Re-export tokens để các file đang import app_theme.dart không phải sửa.
+// Phase E sẽ gỡ dần các export này khi import được chuyển trực tiếp.
+export 'package:caregiver_app/core/theme/app_colors.dart';
+export 'package:caregiver_app/core/theme/app_spacing.dart';
+export 'package:caregiver_app/core/theme/app_radius.dart';
+export 'package:caregiver_app/core/theme/app_shadows.dart';
 
-  // ── Secondary / Warm Coral Companion ──
-  static const Color secondary = Color(0xFFFF6B35);
-  static const Color secondaryLight = Color(0xFFFFC4AE);
-  static const Color secondaryContainer = Color(0xFFFFF0E8);
-  static const Color secondaryStrong = Color(0xFFA43F16);
-  static const Color onSecondary = Color(0xFF0D1117);
+import 'package:caregiver_app/core/theme/app_colors.dart';
+import 'package:caregiver_app/core/theme/app_text_theme.dart';
+import 'package:caregiver_app/core/theme/app_component_themes.dart';
 
-  // ── Tertiary (compatible with caregiver components) ──
-  static const Color tertiary = secondary;
-  static const Color tertiaryContainer = secondaryContainer;
-
-  // ── Surfaces ──
-  static const Color background = Color(0xFFF5F3EE);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = primaryContainer;
-  static const Color surfaceContainer = Color(0xFFFAF8F5);
-  static const Color surfaceContainerLow = Color(0xFFFFFFFF);
-  static const Color surfaceContainerHigh = Color(0xFFEDE8E1);
-  static const Color cardBackground = surface;
-  static const Color darkSurface = Color(0xFF0D1117);
-
-  // ── Text ──
-  static const Color textPrimary = Color(0xFF0D1117);
-  static const Color textSecondary = Color(0xFF536471);
-  static const Color textHint = textSecondary;
-  static const Color textOnDark = onPrimary;
-
-  // ── Auth Specific tokens ──
-  static const Color authBackground = background;
-  static const Color authTextPrimary = textPrimary;
-  static const Color authTextSecondary = textSecondary;
-  static const Color authTextHint = textHint;
-  static const Color authFieldBorder = border;
-  static const Color authErrorSurface = Color(0xFFFEF2F2);
-  static const Color authErrorBorder = Color(0xFFFCA5A5);
-
-  // ── Semantic & State Colors ──
-  static const Color success = primary;
-  static const Color successLight = primaryContainer;
-  static const Color warning = secondaryStrong;
-  static const Color warningLight = secondaryContainer;
-  static const Color error = Color(0xFFDC2626);
-  static const Color errorLight = Color(0xFFFEE2E2);
-  static const Color info = Color(0xFF0284C7);
-  static const Color infoLight = Color(0xFFE0F2FE);
-
-  // ── Shift / Booking Status Colors (Stitch Semantic aligned with Customer app) ──
-  static const Color statusPending = warning;
-  static const Color statusPendingBg = warningLight;
-  static const Color statusConfirmed = success;
-  static const Color statusConfirmedBg = successLight;
-  static const Color statusInProgress = primary;
-  static const Color statusInProgressBg = primaryContainer;
-  static const Color statusCompleted = success;
-  static const Color statusCompletedBg = successLight;
-  static const Color statusCancelled = textSecondary;
-  static const Color statusCancelledBg = Color(0xFFEDE8E1);
-  static const Color statusCrisis = error;
-  static const Color statusCrisisBg = errorLight;
-  static const Color statusDisputed = warning;
-
-  // ── Border / Divider ──
-  static const Color border = Color(0xFFE2DDD5);
-  static const Color borderFocus = primary;
-  static const Color divider = border;
-  static const Color shadow = Color(0x140D1117);
-  static const Color scrim = Color(0x800D1117);
-
-  // ── Gradient (Shared teal family) ──
-  static const LinearGradient primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primary, primaryLight],
-  );
-
-  static const LinearGradient heroGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryDark, primary, primaryLight],
-  );
-
-  static const LinearGradient cardGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryContainer, background],
-  );
-}
-
+/// Theme chính của caregiver-app.
+/// Tính 1 lần & cache — tránh dựng lại toàn bộ ThemeData mỗi lần rebuild.
 class AppTheme {
-  /// Tính 1 lần & cache - tránh dựng lại toàn bộ ThemeData mỗi lần MaterialApp rebuild.
   static final ThemeData lightTheme = _buildLightTheme();
 
   static ThemeData _buildLightTheme() {
@@ -140,17 +55,17 @@ class AppTheme {
 
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: _buildTextTheme(),
-      appBarTheme: _buildAppBarTheme(),
-      elevatedButtonTheme: _buildElevatedButtonTheme(),
-      outlinedButtonTheme: _buildOutlinedButtonTheme(),
-      textButtonTheme: _buildTextButtonTheme(),
-      inputDecorationTheme: _buildInputDecorationTheme(),
-      cardTheme: _buildCardTheme(),
-      chipTheme: _buildChipTheme(),
-      bottomNavigationBarTheme: _buildBottomNavTheme(),
-      navigationBarTheme: _buildNavigationBarTheme(),
-      tabBarTheme: _buildTabBarTheme(),
+      textTheme: AppTextTheme.build(),
+      appBarTheme: AppComponentThemes.appBar(),
+      elevatedButtonTheme: AppComponentThemes.elevatedButton(),
+      outlinedButtonTheme: AppComponentThemes.outlinedButton(),
+      textButtonTheme: AppComponentThemes.textButton(),
+      inputDecorationTheme: AppComponentThemes.input(),
+      cardTheme: AppComponentThemes.card(),
+      chipTheme: AppComponentThemes.chip(),
+      bottomNavigationBarTheme: AppComponentThemes.bottomNav(),
+      navigationBarTheme: AppComponentThemes.navigationBar(),
+      tabBarTheme: AppComponentThemes.tabBar(),
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 1,
@@ -158,355 +73,42 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
-        contentTextStyle: _textStyle(14, Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentTextStyle: const TextStyle(
+            fontSize: AppFontSizes.s14, color: Colors.white, height: 1.4),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         behavior: SnackBarBehavior.floating,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.cardBackground,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle:
-            _textStyle(18, AppColors.textPrimary, weight: FontWeight.w700),
-        contentTextStyle: _textStyle(14, AppColors.textSecondary),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl)),
+        titleTextStyle: const TextStyle(
+            fontSize: AppFontSizes.s18,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            height: 1.4),
+        contentTextStyle: const TextStyle(
+            fontSize: AppFontSizes.s14,
+            color: AppColors.textSecondary,
+            height: 1.4),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.cardBackground,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
       ),
     );
   }
-
-  // ── Text Theme (Be Vietnam Pro via google_fonts) ──
-  static TextTheme _buildTextTheme() {
-    return GoogleFonts.beVietnamProTextTheme(
-      TextTheme(
-        // display-lg: 32/700, -0.02em
-        displayLarge: _textStyle(32, AppColors.textPrimary,
-            weight: FontWeight.w700, letterSpacing: -0.02 * 32),
-        displayMedium: _textStyle(28, AppColors.textPrimary,
-            weight: FontWeight.w700, letterSpacing: -0.02 * 28),
-        displaySmall: _textStyle(24, AppColors.textPrimary,
-            weight: FontWeight.w700, letterSpacing: -0.01 * 24),
-        // headline-lg: 24/600, -0.01em
-        headlineLarge: _textStyle(24, AppColors.textPrimary,
-            weight: FontWeight.w600, letterSpacing: -0.01 * 24),
-        // headline-md: 20/600
-        headlineMedium:
-            _textStyle(20, AppColors.textPrimary, weight: FontWeight.w600),
-        // headline-sm: 18/600
-        headlineSmall:
-            _textStyle(18, AppColors.textPrimary, weight: FontWeight.w600),
-        // title-lg: 18/600
-        titleLarge:
-            _textStyle(18, AppColors.textPrimary, weight: FontWeight.w600),
-        // body-lg: 16/400
-        titleMedium:
-            _textStyle(16, AppColors.textPrimary, weight: FontWeight.w600),
-        titleSmall:
-            _textStyle(14, AppColors.textPrimary, weight: FontWeight.w600),
-        bodyLarge: _textStyle(16, AppColors.textPrimary),
-        // body-md: 14/400
-        bodyMedium: _textStyle(14, AppColors.textPrimary),
-        // body-sm: 12/400
-        bodySmall: _textStyle(12, AppColors.textSecondary),
-        // label-lg: 15/600, 0.01em
-        labelLarge: _textStyle(15, AppColors.textPrimary,
-            weight: FontWeight.w600, letterSpacing: 0.01 * 15),
-        // label-md: 13/500
-        labelMedium:
-            _textStyle(13, AppColors.textSecondary, weight: FontWeight.w500),
-        // label-sm: 11/600, 0.02em
-        labelSmall: _textStyle(11, AppColors.textHint,
-            weight: FontWeight.w600, letterSpacing: 0.02 * 11),
-      ),
-    );
-  }
-
-  static TextStyle _textStyle(
-    double size,
-    Color color, {
-    FontWeight weight = FontWeight.w400,
-    double? height,
-    double? letterSpacing,
-  }) {
-    return TextStyle(
-      fontSize: size,
-      color: color,
-      fontWeight: weight,
-      height: height ?? 1.4,
-      letterSpacing: letterSpacing,
-    );
-  }
-
-  // ── AppBar ──
-  static AppBarTheme _buildAppBarTheme() {
-    return AppBarTheme(
-      backgroundColor: AppColors.cardBackground,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: AppColors.shadow,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      titleTextStyle: GoogleFonts.beVietnamPro(
-        fontSize: 18,
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.w600,
-      ),
-      iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
-    );
-  }
-
-  // ── Buttons ──
-  static ElevatedButtonThemeData _buildElevatedButtonTheme() {
-    return ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: AppColors.border,
-        disabledForegroundColor: AppColors.textHint,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        minimumSize: const Size(double.infinity, 52),
-        textStyle: GoogleFonts.beVietnamPro(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  static OutlinedButtonThemeData _buildOutlinedButtonTheme() {
-    return OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        side: const BorderSide(color: AppColors.primary, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        minimumSize: const Size(double.infinity, 52),
-        textStyle: GoogleFonts.beVietnamPro(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  static TextButtonThemeData _buildTextButtonTheme() {
-    return TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        textStyle: GoogleFonts.beVietnamPro(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  // ── Input ──
-  static InputDecorationTheme _buildInputDecorationTheme() {
-    return InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surfaceVariant,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border, width: 1),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.error, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      hintStyle: _textStyle(14, AppColors.textHint),
-      labelStyle: _textStyle(14, AppColors.textSecondary),
-      floatingLabelStyle:
-          _textStyle(12, AppColors.primary, weight: FontWeight.w500),
-      prefixIconColor: AppColors.textSecondary,
-      suffixIconColor: AppColors.textSecondary,
-      errorStyle: _textStyle(12, AppColors.error),
-    );
-  }
-
-  // ── Card ──
-  static CardThemeData _buildCardTheme() {
-    return CardThemeData(
-      color: AppColors.cardBackground,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border, width: 1),
-      ),
-      margin: EdgeInsets.zero,
-    );
-  }
-
-  // ── Chip ──
-  static ChipThemeData _buildChipTheme() {
-    return ChipThemeData(
-      backgroundColor: AppColors.primaryContainer,
-      selectedColor: AppColors.primaryContainer,
-      labelStyle: GoogleFonts.beVietnamPro(
-        fontSize: 12,
-        color: AppColors.onPrimaryContainer,
-        fontWeight: FontWeight.w500,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide.none,
-      ),
-      side: BorderSide.none,
-    );
-  }
-
-  // ── Bottom Nav ──
-  static BottomNavigationBarThemeData _buildBottomNavTheme() {
-    return BottomNavigationBarThemeData(
-      backgroundColor: AppColors.cardBackground,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.textHint,
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-      selectedLabelStyle: GoogleFonts.beVietnamPro(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: AppColors.primary,
-      ),
-      unselectedLabelStyle: GoogleFonts.beVietnamPro(
-        fontSize: 11,
-        color: AppColors.textHint,
-      ),
-    );
-  }
-
-  static NavigationBarThemeData _buildNavigationBarTheme() {
-    return NavigationBarThemeData(
-      backgroundColor: AppColors.cardBackground,
-      indicatorColor: AppColors.primaryContainer,
-      surfaceTintColor: Colors.transparent,
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return GoogleFonts.beVietnamPro(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
-          );
-        }
-        return GoogleFonts.beVietnamPro(
-          fontSize: 11,
-          color: AppColors.textHint,
-        );
-      }),
-      iconTheme: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: AppColors.primary, size: 24);
-        }
-        return const IconThemeData(color: AppColors.textHint, size: 24);
-      }),
-    );
-  }
-
-  // ── Tab Bar ──
-  static TabBarThemeData _buildTabBarTheme() {
-    return TabBarThemeData(
-      labelColor: AppColors.primary,
-      unselectedLabelColor: AppColors.textSecondary,
-      labelStyle: GoogleFonts.beVietnamPro(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.primary,
-      ),
-      unselectedLabelStyle: GoogleFonts.beVietnamPro(
-        fontSize: 14,
-        color: AppColors.textSecondary,
-      ),
-      indicator: const UnderlineTabIndicator(
-        borderSide: BorderSide(color: AppColors.primary, width: 3),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
-      ),
-      indicatorSize: TabBarIndicatorSize.tab,
-      dividerColor: AppColors.divider,
-    );
-  }
-}
-
-// ── Spacing / Radius Constants ──
-class AppSpacing {
-  static const double xxs = 4;
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 16;
-  static const double lg = 24;
-  static const double xl = 32;
-  static const double xxl = 48;
-}
-
-class AppRadius {
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 20;
-  static const double xxl = 24;
-  static const double full = 100;
-}
-
-class AppShadows {
-  /// Level 1: Resting cards
-  static List<BoxShadow> get card => [
-        const BoxShadow(
-          color: AppColors.shadow,
-          blurRadius: 16,
-          offset: Offset(0, 4),
-        ),
-        const BoxShadow(
-          color: Color(0x08000000),
-          blurRadius: 6,
-          offset: Offset(0, 1),
-        ),
-      ];
-
-  /// Level 2: Interactive floating items - elevated
-  static List<BoxShadow> get elevated => [
-        const BoxShadow(
-          color: Color(0x250D1117),
-          blurRadius: 24,
-          offset: Offset(0, 8),
-        ),
-      ];
-
-  /// Level 3: Bottom bar - upward shadow
-  static List<BoxShadow> get bottomBar => [
-        const BoxShadow(
-          color: AppColors.shadow,
-          blurRadius: 16,
-          offset: Offset(0, -4),
-        ),
-      ];
 }

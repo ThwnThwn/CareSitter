@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -32,11 +33,11 @@ class KpiItem extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.beVietnamPro(
-            fontSize: 12,
+            fontSize: AppFontSizes.s12,
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         valueWidget ??
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -46,7 +47,8 @@ class KpiItem extends StatelessWidget {
                 Text(
                   value ?? '',
                   style: GoogleFonts.beVietnamPro(
-                    fontSize: unit != null ? 24 : 18,
+                    fontSize:
+                        unit != null ? AppFontSizes.s24 : AppFontSizes.s18,
                     fontWeight: FontWeight.w700,
                     color: unit != null
                         ? AppColors.primary
@@ -54,11 +56,11 @@ class KpiItem extends StatelessWidget {
                   ),
                 ),
                 if (unit != null) ...[
-                  const SizedBox(width: 2),
+                  const SizedBox(width: AppSpacing.micro),
                   Text(
                     unit!,
                     style: GoogleFonts.beVietnamPro(
-                      fontSize: 11,
+                      fontSize: AppFontSizes.s11,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondary,
                     ),
@@ -66,18 +68,19 @@ class KpiItem extends StatelessWidget {
                 ],
               ],
             ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         if (badge != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.tight, vertical: AppSpacing.micro),
             decoration: BoxDecoration(
               color: AppColors.primaryContainer,
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Text(
               badge!,
               style: GoogleFonts.beVietnamPro(
-                fontSize: 10,
+                fontSize: AppFontSizes.s10,
                 fontWeight: FontWeight.w600,
                 color: AppColors.primary,
               ),

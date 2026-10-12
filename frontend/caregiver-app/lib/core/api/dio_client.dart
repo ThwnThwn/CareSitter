@@ -14,7 +14,7 @@ class DioClient {
   late final Dio _dio;
   final Ref _ref;
 
-  DioClient(this._ref) {
+  DioClient(this._ref, {HttpClientAdapter? adapter}) {
     _dio = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -27,28 +27,59 @@ class DioClient {
         'Accept-Language': 'vi',
       },
     ));
+    if (adapter != null) _dio.httpClientAdapter = adapter;
     _dio.interceptors.add(_AuthInterceptor(_ref));
     _dio.interceptors.add(_ErrorInterceptor());
   }
 
   Future<Response<T>> get<T>(String path,
           {Map<String, dynamic>? query, CancelToken? cancelToken}) =>
-      _dio.get(path, queryParameters: query, cancelToken: cancelToken);
+      _request(() =>
+          _dio.get<T>(path, queryParameters: query, cancelToken: cancelToken));
 
   Future<Response<T>> post<T>(String path,
           {dynamic data, CancelToken? cancelToken}) =>
-      _dio.post(path, data: data, cancelToken: cancelToken);
+      _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
 
   Future<Response<T>> put<T>(String path, {dynamic data}) =>
-      _dio.put(path, data: data);
+      _request(() => _dio.put<T>(path, data: data));
 
   Future<Response<T>> patch<T>(String path, {dynamic data}) =>
-      _dio.patch(path, data: data);
+      _request(() => _dio.patch<T>(path, data: data));
 
-  Future<Response<T>> delete<T>(String path) => _dio.delete(path);
+  Future<Response<T>> delete<T>(String path) =>
+      _request(() => _dio.delete<T>(path));
 
-  Future<Response<T>> postForm<T>(String path, FormData data) =>
-      _dio.post(path, data: data);
+  Future<Response<T>> postForm<T>(String path, FormData data,
+          {CancelToken? cancelToken}) =>
+      _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
+  Future<Response<T>> _request<T>(Future<Response<T>> Function() action) async {
+    try {
+      return await action();
+    } on DioException catch (error) {
+      final wrapped = error.error;
+      final data = error.response?.data;
+      throw AppApiException(
+        message: wrapped is AppApiException
+            ? wrapped.message
+            : 'Chưa kết nối được máy chủ. Vui lòng thử lại.',
+        statusCode: error.response?.statusCode,
+        code: wrapped is AppApiException
+            ? wrapped.code
+            : data is Map
+                ? (data['code'] ?? data['title'])?.toString()
+                : null,
+        details: wrapped is AppApiException
+            ? wrapped.details
+            : data is Map
+                ? Map<String, dynamic>.from(data)
+                : null,
+        isCancelled: error.type == DioExceptionType.cancel,
+        retryAfterSeconds:
+            int.tryParse(error.response?.headers.value('retry-after') ?? ''),
+      );
+    }
+  }
 }
 
 /// Giữ thông tin một request đang chờ token refresh
@@ -169,7 +200,15 @@ class _ErrorInterceptor extends Interceptor {
       response: err.response,
       type: err.type,
       error: AppApiException(
-          message: message, statusCode: err.response?.statusCode),
+          message: message,
+          statusCode: err.response?.statusCode,
+          code: err.response?.data is Map
+              ? (err.response?.data['code'] ?? err.response?.data['title'])
+                  ?.toString()
+              : null,
+          details: err.response?.data is Map
+              ? Map<String, dynamic>.from(err.response?.data)
+              : null),
     ));
   }
 

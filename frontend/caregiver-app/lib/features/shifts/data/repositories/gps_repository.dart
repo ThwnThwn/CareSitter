@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:caregiver_app/core/api/api_constants.dart';
 
@@ -13,19 +13,19 @@ class GpsRepository {
   const GpsRepository(this._dio);
 
   Future<Map<String, dynamic>> openSession(String bookingId, String sourceId,
-      {CancelToken? cancelToken}) async {
+      {ApiCancellation? cancelToken}) async {
     final response = await _dio.post<Map<String, dynamic>>(
         '${ApiPaths.postGps(bookingId)}/session',
         data: {'sourceInstanceId': sourceId},
-        cancelToken: cancelToken);
+        cancelToken: cancelToken?.transportToken);
     return response.data ?? {};
   }
 
   Future<String> bookingStatus(String bookingId,
-      {CancelToken? cancelToken}) async {
+      {ApiCancellation? cancelToken}) async {
     final response = await _dio.get<Map<String, dynamic>>(
         ApiPaths.booking(bookingId),
-        cancelToken: cancelToken);
+        cancelToken: cancelToken?.transportToken);
     return response.data?['status']?.toString() ?? '';
   }
 
@@ -38,11 +38,11 @@ class GpsRepository {
     double? accuracyMeters,
     double? speed,
     double? heading,
-    CancelToken? cancelToken,
+    ApiCancellation? cancelToken,
   }) async {
     await _dio.post<void>(
       ApiPaths.postGps(bookingId),
-      cancelToken: cancelToken,
+      cancelToken: cancelToken?.transportToken,
       data: {
         'sessionId': sessionId,
         'capturedAt': capturedAt.toUtc().toIso8601String(),

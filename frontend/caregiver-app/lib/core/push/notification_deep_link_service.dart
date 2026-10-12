@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
-import 'package:caregiver_app/core/router/app_router.dart';
+import 'package:caregiver_app/app/router/app_router.dart';
 
 final notificationMessengerKey = GlobalKey<ScaffoldMessengerState>();
 

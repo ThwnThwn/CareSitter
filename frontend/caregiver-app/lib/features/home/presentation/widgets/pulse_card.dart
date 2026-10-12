@@ -42,7 +42,7 @@ class PulseCardState extends State<PulseCard>
         return Container(
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.primary, width: 2),
             boxShadow: [
               BoxShadow(
@@ -54,7 +54,7 @@ class PulseCardState extends State<PulseCard>
               ...AppShadows.elevated,
             ],
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: child,
         );
       },

@@ -1,12 +1,11 @@
+import 'package:caregiver_app/features/auth/presentation/widgets/registration_content.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/registration_password_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:caregiver_app/core/error/failure.dart';
-import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/register_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -40,6 +39,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    if (_submitting) return;
     FocusScope.of(context).unfocus();
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
@@ -102,138 +102,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Đăng ký Caregiver'),
-        leading: const AppBackButton(fallbackRoute: '/auth/phone'),
-      ),
-      body: SafeArea(
-        top: false,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-            children: [
-              const Icon(Icons.medical_services_rounded,
-                  color: AppColors.primary, size: 44),
-              const SizedBox(height: 12),
-              const Text(
-                'Tham gia đội ngũ chăm sóc',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Tạo tài khoản trước, sau đó hoàn thiện hồ sơ và giấy tờ KYC.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, height: 1.4),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.name],
-                validator: _requiredName,
-                decoration: const InputDecoration(
-                  labelText: 'Họ và tên',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.email],
-                validator: _validEmail,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
-                ],
-                validator: _validPhone,
-                decoration: const InputDecoration(
-                  labelText: 'Số điện thoại',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _passwordField(
-                controller: _passwordController,
-                label: 'Mật khẩu',
-                hidden: _hidePassword,
-                validator: _validPassword,
-                onToggle: () => setState(() => _hidePassword = !_hidePassword),
-              ),
-              const SizedBox(height: 16),
-              _passwordField(
-                controller: _confirmController,
-                label: 'Xác nhận mật khẩu',
-                hidden: _hideConfirmation,
-                validator: (value) => value != _passwordController.text
-                    ? 'Mật khẩu xác nhận không khớp'
-                    : null,
-                onToggle: () =>
-                    setState(() => _hideConfirmation = !_hideConfirmation),
-                onSubmitted: (_) => _register(),
-              ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _agreed,
-                onChanged: _submitting
-                    ? null
-                    : (value) => setState(() => _agreed = value ?? false),
-                title: const Text(
-                  'Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật.',
-                  style: TextStyle(fontSize: 13, height: 1.35),
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 4),
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: AppColors.error, height: 1.4),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
-              AppButton(
-                label: 'Tạo tài khoản Caregiver',
-                icon: Icons.person_add_alt_1_rounded,
-                isLoading: _submitting,
-                onPressed: _submitting ? null : _register,
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: _submitting ? null : () => context.go('/auth/phone'),
-                child: const Text('Đã có tài khoản? Đăng nhập'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return RegistrationContent(
+        formKey: _formKey,
+        nameController: _nameController,
+        requiredName: _requiredName,
+        emailController: _emailController,
+        validEmail: _validEmail,
+        phoneController: _phoneController,
+        validPhone: _validPhone,
+        passwordField: _passwordField,
+        passwordController: _passwordController,
+        hidePassword: _hidePassword,
+        validPassword: _validPassword,
+        confirmController: _confirmController,
+        hideConfirmation: _hideConfirmation,
+        agreed: _agreed,
+        submitting: _submitting,
+        error: _error,
+        register: _register,
+        callbackAction2: () => setState(() => _hidePassword = !_hidePassword),
+        callbackAction3: (value) => value != _passwordController.text
+            ? 'Mật khẩu xác nhận không khớp'
+            : null,
+        callbackAction7: () =>
+            setState(() => _hideConfirmation = !_hideConfirmation),
+        callbackAction8: (_) => _register(),
+        callbackAction9: (value) => setState(() => _agreed = value ?? false));
   }
 
   Widget _passwordField({
@@ -243,26 +137,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     required String? Function(String?) validator,
     required VoidCallback onToggle,
     ValueChanged<String>? onSubmitted,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: hidden,
-      textInputAction:
-          onSubmitted == null ? TextInputAction.next : TextInputAction.done,
-      autofillHints: const [AutofillHints.newPassword],
-      validator: validator,
-      onFieldSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.lock_outline_rounded),
-        suffixIcon: IconButton(
-          tooltip: hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-          onPressed: onToggle,
-          icon: Icon(hidden
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined),
-        ),
-      ),
-    );
-  }
+  }) =>
+      RegistrationPasswordField(
+          controller: controller,
+          hidden: hidden,
+          onSubmitted: onSubmitted,
+          validator: validator,
+          label: label,
+          onToggle: onToggle);
 }

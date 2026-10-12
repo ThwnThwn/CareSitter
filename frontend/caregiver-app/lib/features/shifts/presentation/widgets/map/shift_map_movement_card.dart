@@ -1,3 +1,6 @@
+import 'package:caregiver_app/features/shifts/presentation/widgets/map/shift_map_distance_summary.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/map/shift_map_location_status.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/map/shift_map_address.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -60,63 +63,14 @@ class ShiftMapMovementCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.directions_car_rounded,
-                color: AppColors.primary,
-                size: 24,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              const Expanded(
-                child: Text(
-                  'Thông tin di chuyển',
-                  style: TextStyle(
-                    fontSize: AppFontSizes.s16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (distanceLabel != null)
-                Flexible(
-                  child: Text(
-                    distanceLabel!,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: AppFontSizes.s12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ShiftMapDistanceSummary(distanceLabel: distanceLabel),
           switch (status) {
             LocationLoading() => const Padding(
                 padding: EdgeInsets.only(top: AppSpacing.control),
                 child: LinearProgressIndicator(),
               ),
-            LocationFailed(:final message) => Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: const TextStyle(
-                          fontSize: AppFontSizes.s12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: onRetryLocation,
-                      child: const Text('Thử lại'),
-                    ),
-                  ],
-                ),
-              ),
+            LocationFailed(:final message) => ShiftMapLocationStatus(
+                message: message, onRetryLocation: onRetryLocation),
             LocationReady() => const SizedBox.shrink(),
           },
           const SizedBox(height: AppSpacing.md),
@@ -129,16 +83,7 @@ class ShiftMapMovementCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            address,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: AppFontSizes.s13,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
+          ShiftMapAddress(address: address),
           const SizedBox(height: AppSpacing.section),
           AppButton(
             label: 'Mở Google Maps',

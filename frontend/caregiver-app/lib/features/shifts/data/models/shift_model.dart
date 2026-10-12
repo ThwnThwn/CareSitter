@@ -1,9 +1,9 @@
-import 'care_task_model.dart';
-import 'shift_status.dart';
+import 'package:caregiver_app/features/shifts/data/models/care_task_model.dart';
+import 'package:caregiver_app/features/shifts/data/models/shift_status.dart';
 
-export 'care_task_model.dart';
-export 'shift_beneficiary_model.dart';
-export 'shift_status.dart';
+export 'package:caregiver_app/features/shifts/data/models/care_task_model.dart';
+export 'package:caregiver_app/features/shifts/data/models/shift_beneficiary_model.dart';
+export 'package:caregiver_app/features/shifts/data/models/shift_status.dart';
 
 class ShiftModel {
   final String id;

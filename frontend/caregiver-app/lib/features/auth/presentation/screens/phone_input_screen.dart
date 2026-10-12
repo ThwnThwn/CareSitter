@@ -1,8 +1,9 @@
+import 'package:caregiver_app/features/auth/presentation/widgets/login_form.dart';
+import 'package:caregiver_app/features/auth/presentation/widgets/login_hero.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
@@ -59,7 +60,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   }
 
   Future<void> _loginWithPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading || !_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
       final identifier = _identifierController.text.trim();
@@ -83,7 +84,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   }
 
   Future<void> _requestOtp() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading || !_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
       final email = _identifierController.text.trim().toLowerCase();
@@ -112,275 +113,29 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
           child: Column(
             children: [
               // ── Hero Header ──────────────────────
-              Container(
-                width: double.infinity,
-                height: 240,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.heroGradient,
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -40,
-                      top: -40,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.06),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: -30,
-                      bottom: 20,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 48, 28, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.medical_services_rounded,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'CareSitter • Caregiver',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Ứng dụng dành cho Người Chăm Sóc & Điều Dưỡng',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const LoginHero(),
 
               // ── Form ────────────────────────────
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Form(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Đăng nhập tài khoản',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _usePassword
-                            ? 'Nhập email hoặc số điện thoại và mật khẩu'
-                            : 'Nhập email để nhận mã OTP',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Toggle Mật khẩu / OTP
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _usePassword = true),
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: _usePassword
-                                        ? AppColors.primary
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Mật khẩu',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: _usePassword
-                                          ? Colors.white
-                                          : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _usePassword = false),
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: !_usePassword
-                                        ? AppColors.primary
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Mã OTP',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: !_usePassword
-                                          ? Colors.white
-                                          : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Email / Phone field
-                      TextFormField(
-                        controller: _identifierController,
-                        keyboardType: _usePassword
-                            ? TextInputType.emailAddress
-                            : TextInputType.emailAddress,
-                        validator: _validateIdentifier,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: _usePassword
-                              ? 'Email hoặc Số điện thoại'
-                              : 'Email',
-                          hintText: _usePassword
-                              ? 'bichngoc@example.com hoặc 0912333444'
-                              : 'bichngoc@example.com',
-                          prefixIcon: Icon(
-                            _usePassword
-                                ? Icons.person_outline
-                                : Icons.email_outlined,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password field (nếu _usePassword)
-                      if (_usePassword) ...[
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          validator: _validatePassword,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Mật khẩu',
-                            hintText: '••••••••',
-                            prefixIcon: const Icon(
-                              Icons.lock_outline,
-                              color: AppColors.primary,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
-                              ),
-                              onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
-                            ),
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _isLoading ? null : () => context.push('/auth/forgot-password'),
-                            child: const Text('Quên mật khẩu?'),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // Submit button
-                      AppButton(
-                        label: _usePassword ? 'Đăng nhập' : 'Gửi mã OTP',
-                        onPressed:
-                            _usePassword ? _loginWithPassword : _requestOtp,
-                        isLoading: _isLoading,
-                        icon: _usePassword
-                            ? Icons.login_rounded
-                            : Icons.send_rounded,
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Bạn chưa có tài khoản?',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                          TextButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => context.push('/auth/register'),
-                            child: const Text('Đăng ký Caregiver'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: LoginForm(
+                      usePassword: _usePassword,
+                      identifierController: _identifierController,
+                      validateIdentifier: _validateIdentifier,
+                      passwordController: _passwordController,
+                      obscurePassword: _obscurePassword,
+                      validatePassword: _validatePassword,
+                      isLoading: _isLoading,
+                      loginWithPassword: _loginWithPassword,
+                      requestOtp: _requestOtp,
+                      callbackAction3: () =>
+                          setState(() => _usePassword = true),
+                      callbackAction4: () =>
+                          setState(() => _usePassword = false),
+                      callbackAction5: () =>
+                          setState(() => _obscurePassword = !_obscurePassword)),
                 ),
               ),
             ],

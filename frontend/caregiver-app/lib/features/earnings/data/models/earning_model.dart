@@ -43,15 +43,3 @@ class EarningsState {
     );
   }
 }
-
-String formatCurrency(double amount) {
-  final value = amount.round().toString();
-  final buffer = StringBuffer();
-  for (var index = 0; index < value.length; index++) {
-    if (index > 0 && (value.length - index) % 3 == 0) {
-      buffer.write(',');
-    }
-    buffer.write(value[index]);
-  }
-  return buffer.toString();
-}

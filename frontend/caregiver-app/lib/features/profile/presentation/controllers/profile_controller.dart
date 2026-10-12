@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,35 +10,32 @@ import 'package:caregiver_app/features/profile/data/repositories/profile_reposit
 
 final profileProvider =
     StateNotifierProvider<ProfileController, CaregiverProfileModel>((ref) {
+  ref.watch(authStateProvider.select(
+      (session) => (session.value?.userId, session.value?.isAuthenticated)));
   return ProfileController(ref);
 });
 
 /// True khi đang upload avatar — block double-tap.
-final caregiverAvatarUploadingProvider = StateProvider<bool>((_) => false);
+final caregiverAvatarUploadingProvider = StateProvider<bool>((ref) {
+  ref.watch(authStateProvider.select(
+      (session) => (session.value?.userId, session.value?.isAuthenticated)));
+  return false;
+});
 
 class ProfileController extends StateNotifier<CaregiverProfileModel> {
   final Ref _ref;
+  int _refreshGeneration = 0;
+  ApiCancellation? _kycCancellation;
 
   ProfileController(this._ref) : super(CaregiverProfileModel.empty()) {
-    _ref.listen(authStateProvider, (previous, next) {
-      final isAuthenticated = next.value?.isAuthenticated ?? false;
-      if (isAuthenticated &&
-          previous?.value?.isAuthenticated == true &&
-          previous?.value?.userId == next.value?.userId) {
-        return;
-      }
-      if (isAuthenticated) {
-        refresh();
-      } else {
-        state = CaregiverProfileModel.empty();
-      }
-    });
     refresh();
   }
 
   ProfileRepository get _repository => _ref.read(profileRepositoryProvider);
 
   Future<void> refresh() async {
+    if (!mounted) return;
+    final generation = ++_refreshGeneration;
     final auth = _ref.read(authStateProvider).value;
     if (!(auth?.isAuthenticated ?? false)) {
       state = CaregiverProfileModel.empty();
@@ -44,9 +43,11 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
     }
 
     try {
-      state = await _repository.getOrCreateProfile(
+      final profile = await _repository.getOrCreateProfile(
         fallbackName: auth?.phone,
       );
+      if (!mounted || generation != _refreshGeneration) return;
+      state = profile;
     } catch (error) {
       // ignore: avoid_print
       print('[ProfileController] Lỗi tải hồ sơ caregiver: $error');
@@ -63,6 +64,7 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
     String? gender,
     String? dateOfBirth,
   }) async {
+    if (!mounted) return false;
     try {
       await _repository.updateProfile(
         fullName: fullName,
@@ -74,8 +76,9 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
         gender: gender,
         dateOfBirth: dateOfBirth,
       );
+      if (!mounted) return false;
       await refresh();
-      return true;
+      return mounted;
     } catch (error) {
       // ignore: avoid_print
       print('[ProfileController] Lỗi cập nhật hồ sơ: $error');
@@ -84,10 +87,12 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
   }
 
   Future<void> toggleAvailability() async {
+    if (!mounted) return;
     try {
       await _repository.updateAvailability(
         state.isOnline ? 'OFFLINE' : 'ONLINE',
       );
+      if (!mounted) return;
       await refresh();
     } catch (error) {
       // ignore: avoid_print
@@ -96,17 +101,21 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
   }
 
   Future<bool> uploadAvatar(File imageFile) async {
+    if (!mounted) return false;
     if (_ref.read(caregiverAvatarUploadingProvider)) return false;
     _ref.read(caregiverAvatarUploadingProvider.notifier).state = true;
 
     try {
       final success = await _repository.uploadAvatar(imageFile);
+      if (!mounted) return false;
       if (success) await refresh();
-      return success;
+      return mounted && success;
     } catch (_) {
       return false;
     } finally {
-      _ref.read(caregiverAvatarUploadingProvider.notifier).state = false;
+      if (mounted) {
+        _ref.read(caregiverAvatarUploadingProvider.notifier).state = false;
+      }
     }
   }
 
@@ -116,12 +125,30 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
     required File cccdBack,
     List<File> certificates = const [],
   }) async {
-    await _repository.submitKyc(
-      cccdNumber: cccdNumber,
-      cccdFront: cccdFront,
-      cccdBack: cccdBack,
-      certificates: certificates,
-    );
-    await refresh();
+    if (!mounted) return;
+    if (_kycCancellation != null) {
+      throw const AppApiException(
+          message: 'Hồ sơ đang được gửi. Vui lòng chờ.');
+    }
+    final cancellation = _kycCancellation = ApiCancellation();
+    try {
+      await _repository.submitKyc(
+        cccdNumber: cccdNumber,
+        cccdFront: cccdFront,
+        cccdBack: cccdBack,
+        certificates: List<File>.of(certificates),
+        cancellation: cancellation,
+      );
+      if (!mounted) return;
+      await refresh();
+    } finally {
+      if (mounted) _kycCancellation = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _kycCancellation?.cancel();
+    super.dispose();
   }
 }

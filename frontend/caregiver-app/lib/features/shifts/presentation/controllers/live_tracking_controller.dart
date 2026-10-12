@@ -1,13 +1,14 @@
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:dio/dio.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/shifts/data/repositories/gps_repository.dart';
-import 'tracking_location_source.dart';
+import 'package:caregiver_app/features/shifts/data/repositories/tracking_location_source.dart';
 
 final liveTrackingProvider =
     StateNotifierProvider<LiveTrackingController, LiveTrackingState>((ref) {
@@ -51,7 +52,7 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState>
   final bool _observeLifecycle;
   StreamSubscription<Position>? _subscription;
   Timer? _timer;
-  CancelToken? _cancel;
+  ApiCancellation? _cancel;
   Position? _latest;
   DateTime? _lastCaptured;
   DateTime _nextSend = DateTime.fromMillisecondsSinceEpoch(0);
@@ -70,7 +71,7 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState>
     final generation = _generation;
     await cancelled;
     if (!_current(generation)) return;
-    _cancel = CancelToken();
+    _cancel = ApiCancellation();
     _busy = true;
     state = LiveTrackingState(
         bookingId: bookingId, message: 'Đang kiểm tra quyền chia sẻ vị trí…');
@@ -180,11 +181,10 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState>
           bookingId: id,
           sending: true,
           message: 'Đang chia sẻ vị trí cho ca này khi bạn mở ứng dụng.');
-    } on DioException catch (error) {
+    } on AppApiException catch (error) {
       if (!_current(generation)) return;
-      final code = error.response?.statusCode;
-      final body = error.response?.data;
-      final title = body is Map ? body['title']?.toString() : null;
+      final code = error.statusCode;
+      final title = error.code;
       if (code == 409 && title == 'booking.gps.invalid_session') {
         _session = null;
         _nextSend = _now().add(const Duration(seconds: 5));
@@ -196,8 +196,7 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState>
         await _halt(_errorMessage(error));
       } else {
         _failures = min(_failures + 1, 5);
-        final retryAfter =
-            int.tryParse(error.response?.headers.value('retry-after') ?? '');
+        final retryAfter = error.retryAfterSeconds;
         _nextSend = _now().add(Duration(
             seconds: retryAfter ?? ((1 << _failures) + Random().nextInt(4))));
         state = LiveTrackingState(
@@ -223,11 +222,11 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState>
       mounted && generation == _generation && _foreground;
 
   String _errorMessage(Object error) {
-    if (error is DioException && error.response?.statusCode == 410) {
+    if (error is AppApiException && error.statusCode == 410) {
       return 'Chia sẻ vị trí hiện chưa được bật. Gia đình vẫn xem được trạng thái ca.';
     }
-    if (error is DioException && error.response?.data is Map) {
-      final body = error.response!.data as Map;
+    if (error is AppApiException && error.details is Map) {
+      final body = error.details! as Map;
       return body['detail']?.toString() ??
           'Phiên chia sẻ đã dừng. Hãy tải lại ca.';
     }

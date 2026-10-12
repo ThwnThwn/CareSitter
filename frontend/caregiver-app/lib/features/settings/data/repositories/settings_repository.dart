@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -28,7 +29,8 @@ class SettingsRepository {
         .toList(growable: false);
   }
 
-  Future<String> uploadSupportAttachment(XFile file) async {
+  Future<String> uploadSupportAttachment(XFile file,
+      {ApiCancellation? cancellation}) async {
     final response = await _dio.postForm<Map<String, dynamic>>(
       '/media/upload',
       FormData.fromMap({
@@ -38,6 +40,7 @@ class SettingsRepository {
         ),
         'folder': 'support',
       }),
+      cancelToken: cancellation?.transportToken,
     );
     final url = response.data?['url']?.toString().trim();
     if (url == null || url.isEmpty) {
@@ -52,6 +55,7 @@ class SettingsRepository {
     required String title,
     required String description,
     required List<String> attachmentUrls,
+    ApiCancellation? cancellation,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/support/tickets',
@@ -62,6 +66,7 @@ class SettingsRepository {
         'description': description.trim(),
         'attachmentUrls': attachmentUrls,
       },
+      cancelToken: cancellation?.transportToken,
     );
     return response.data?['id']?.toString();
   }

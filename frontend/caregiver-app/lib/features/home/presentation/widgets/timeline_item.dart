@@ -1,3 +1,8 @@
+import 'package:caregiver_app/features/home/presentation/widgets/timeline_directions_action.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/timeline_shift_status.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/timeline_connector.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/timeline_address.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -39,58 +44,19 @@ class TimelineItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Timeline line + node
-            SizedBox(
-              width: 28,
-              child: Column(
-                children: [
-                  // Top line
-                  if (!isFirst)
-                    Container(
-                      width: 2,
-                      height: 8,
-                      color: AppColors.border,
-                    ),
-                  // Node
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: isActive ? AppColors.primary : AppColors.border,
-                      shape: BoxShape.circle,
-                      border: isActive
-                          ? null
-                          : Border.all(color: AppColors.textHint, width: 1),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isActive ? Colors.white : AppColors.textHint,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Bottom line
-                  if (!isLast)
-                    Expanded(
-                      child: Container(width: 2, color: AppColors.border),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
+            TimelineConnector(
+                isFirst: isFirst, isActive: isActive, isLast: isLast),
+            const SizedBox(width: AppSpacing.compact),
             // Card content
             Expanded(
               child: Container(
-                margin: EdgeInsets.only(bottom: isLast ? 0 : 16),
-                padding: const EdgeInsets.all(12),
+                margin: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.compact),
                 decoration: BoxDecoration(
                   color: isActive
                       ? AppColors.primaryContainer.withValues(alpha: 0.3)
                       : AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: isActive
                         ? AppColors.primary.withValues(alpha: 0.4)
@@ -100,132 +66,28 @@ class TimelineItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.schedule_rounded,
-                                color: isActive
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
-                                size: 15),
-                            const SizedBox(width: 4),
-                            Text(
-                              time,
-                              style: GoogleFonts.beVietnamPro(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isActive
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: statusBg,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            statusLabel,
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
+                    TimelineShiftStatus(
+                        isActive: isActive,
+                        time: time,
+                        statusBg: statusBg,
+                        statusLabel: statusLabel,
+                        statusColor: statusColor),
+                    const SizedBox(height: AppSpacing.tight),
                     Text(
                       title,
                       style: GoogleFonts.beVietnamPro(
-                        fontSize: 15,
+                        fontSize: AppFontSizes.s15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.home_rounded,
-                            color: AppColors.textHint, size: 15),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            address,
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    TimelineAddress(address: address),
                     if (isActive) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppSpacing.control),
                       const Divider(color: AppColors.border, height: 1),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: RichText(
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
-                                style: GoogleFonts.beVietnamPro(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                                children: [
-                                  const TextSpan(text: 'Bắt đầu sau: '),
-                                  TextSpan(
-                                    text: '25 phút',
-                                    style: GoogleFonts.beVietnamPro(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.navigation_rounded,
-                                    color: Colors.white, size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Chỉ đường',
-                                  style: GoogleFonts.beVietnamPro(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const TimelineDirectionsAction(),
                     ],
                   ],
                 ),

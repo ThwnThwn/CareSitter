@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,8 +26,8 @@ class ProfileRepository {
         ApiPaths.myCaregiverProfile,
       );
       return CaregiverProfileModel.fromJson(response.data ?? const {});
-    } on DioException catch (error) {
-      if (error.response?.statusCode != 404) rethrow;
+    } on AppApiException catch (error) {
+      if (error.statusCode != 404) rethrow;
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.myCaregiverProfile,
         data: {'fullName': fallbackName},
@@ -80,7 +81,8 @@ class ProfileRepository {
     return response.statusCode == 200;
   }
 
-  Future<String> uploadKycImage(File imageFile, String documentType) async {
+  Future<String> uploadKycImage(File imageFile, String documentType,
+      {ApiCancellation? cancellation}) async {
     final extension = _fileName(imageFile).split('.').last.toLowerCase();
     final mime = switch (extension) {
       'jpg' || 'jpeg' => 'image/jpeg',
@@ -100,6 +102,7 @@ class ProfileRepository {
         'folder': 'kyc',
         'documentType': documentType,
       }),
+      cancelToken: cancellation?.transportToken,
     );
     final mediaId = response.data?['mediaId']?.toString().trim();
     if (mediaId == null ||
@@ -118,12 +121,16 @@ class ProfileRepository {
     required File cccdFront,
     required File cccdBack,
     List<File> certificates = const [],
+    ApiCancellation? cancellation,
   }) async {
-    final frontId = await uploadKycImage(cccdFront, 'CCCD_FRONT');
-    final backId = await uploadKycImage(cccdBack, 'CCCD_BACK');
+    final frontId = await uploadKycImage(cccdFront, 'CCCD_FRONT',
+        cancellation: cancellation);
+    final backId =
+        await uploadKycImage(cccdBack, 'CCCD_BACK', cancellation: cancellation);
     final certificateIds = <String>[];
     for (final certificate in certificates) {
-      certificateIds.add(await uploadKycImage(certificate, 'OTHER'));
+      certificateIds.add(await uploadKycImage(certificate, 'OTHER',
+          cancellation: cancellation));
     }
     await _dio.post<Map<String, dynamic>>(
       '/caregivers/me/kyc',
@@ -133,6 +140,7 @@ class ProfileRepository {
         'cccdBackMediaId': backId,
         'certificateMediaIds': certificateIds,
       },
+      cancelToken: cancellation?.transportToken,
     );
   }
 

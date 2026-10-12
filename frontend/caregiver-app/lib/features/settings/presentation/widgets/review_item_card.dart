@@ -1,3 +1,6 @@
+import 'package:caregiver_app/features/settings/presentation/widgets/review_rating_date.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/review_author_service.dart';
+import 'package:caregiver_app/features/settings/presentation/widgets/review_author_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -26,66 +29,10 @@ class ReviewItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.primaryContainer,
-                child: Text(
-                  review.reviewerInitial,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppFontSizes.s13,
-                  ),
-                ),
-              ),
+              ReviewAuthorAvatar(review: review),
               const SizedBox(width: AppSpacing.compact),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.reviewerName,
-                      style: const TextStyle(
-                        fontSize: AppFontSizes.s14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.micro),
-                    Text(
-                      review.shiftService,
-                      style: const TextStyle(
-                        fontSize: AppFontSizes.s11,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    children: List.generate(5, (idx) {
-                      return Icon(
-                        idx < review.rating
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: AppColors.secondary,
-                        size: 14,
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    review.date,
-                    style: const TextStyle(
-                      fontSize: AppFontSizes.s11,
-                      color: AppColors.textHint,
-                    ),
-                  ),
-                ],
-              ),
+              ReviewAuthorService(review: review),
+              ReviewRatingDate(review: review),
             ],
           ),
           const SizedBox(height: AppSpacing.compact),

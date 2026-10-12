@@ -1,23 +1,23 @@
+import 'package:caregiver_app/features/home/presentation/controllers/home_selectors.dart';
+import 'package:caregiver_app/features/home/presentation/controllers/offer_action_controller.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_sticky_header.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_kpi_cards.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_offer_card.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_today_timeline.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_earnings_chart.dart';
+import 'package:caregiver_app/features/home/presentation/widgets/home_safety_disclaimer.dart';
+import 'package:caregiver_app/core/utils/currency_formatter.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/theme/shift_status_style.dart';
-import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
-import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 import 'package:caregiver_app/features/earnings/presentation/controllers/earnings_controller.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
-import 'package:caregiver_app/features/home/presentation/controllers/notifications_controller.dart';
-import 'package:caregiver_app/features/home/presentation/widgets/kpi_item.dart';
-import 'package:caregiver_app/features/home/presentation/widgets/pulse_card.dart';
-import 'package:caregiver_app/features/home/presentation/widgets/status_toggle_pill.dart';
-import 'package:caregiver_app/features/home/presentation/widgets/timeline_item.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -27,58 +27,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  Timer? _countdownTimer;
-  String? _processingOfferId;
-
-  @override
-  void initState() {
-    super.initState();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final shifts = ref.watch(shiftsProvider);
+    final processingOfferId = ref.watch(offerActionControllerProvider);
+    final selected = ref.watch(homeShiftsProvider);
+    final todayShifts = selected.today;
+    final pendingShifts = selected.offers;
+    final scheduledOrActiveShifts = selected.scheduled;
     final earnings = ref.watch(earningsProvider);
     final profile = ref.watch(profileProvider);
-
-    // Lọc ca hôm nay theo ngày thật
-    final now = DateTime.now();
-    final todayShifts = shifts.where((s) {
-      final isActiveStatus = s.status == 'confirmed' ||
-          s.status == 'assigned' ||
-          s.status == 'in_progress' ||
-          s.status == 'caregiver_en_route';
-      if (!isActiveStatus) return false;
-      // Ưu tiên scheduledStart, fallback tất cả nếu không có ngày
-      final start = s.scheduledStart;
-      if (start == null) return true;
-      return start.year == now.year &&
-          start.month == now.month &&
-          start.day == now.day;
-    }).toList();
-    final pendingShifts = shifts.where(_isOfferStatus).toList()
-      ..sort((a, b) {
-        final startOrder = (a.scheduledStart ?? DateTime.utc(9999))
-            .compareTo(b.scheduledStart ?? DateTime.utc(9999));
-        if (startOrder != 0) return startOrder;
-        return (a.offerExpiresAt ?? DateTime.utc(9999))
-            .compareTo(b.offerExpiresAt ?? DateTime.utc(9999));
-      });
-    final scheduledOrActiveShifts = shifts
-        .where((shift) =>
-            shift.status == 'confirmed' ||
-            shift.status == 'caregiver_en_route' ||
-            shift.status == 'in_progress')
-        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -86,7 +43,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         slivers: [
           _buildStickyHeader(context, ref),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.s100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildKpiCards(
@@ -95,26 +53,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   rating: profile.rating,
                   totalReviews: profile.totalReviews,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 if (pendingShifts.isNotEmpty) ...[
                   _buildNewBookingRequest(
                     context,
                     ref,
                     pendingShifts.first,
                     pendingCount: pendingShifts.length,
+                    processingOfferId: processingOfferId,
                     scheduledOrActiveShifts: scheduledOrActiveShifts,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 _buildTodayTimeline(context, todayShifts),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 _buildEarningsChart(
                   context: context,
                   last7Days: earnings.last7Days,
                   completedShifts: earnings.completedShifts,
                   monthTotal: earnings.monthTotal,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 _buildSafetyDisclaimer(),
               ]),
             ),
@@ -125,143 +84,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ── Sticky Header ──────────────────────────────────────
-  Widget _buildStickyHeader(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authStateProvider).value;
-    final profile = ref.watch(profileProvider);
-    final displayName =
-        profile.name.trim().isNotEmpty && profile.name != 'Caregiver'
-            ? profile.name.trim()
-            : (auth?.phone?.trim().isNotEmpty ?? false)
-                ? auth!.phone!.trim()
-                : 'Caregiver';
-    final greetingName = _shortName(displayName);
-    final initials = _initials(displayName);
-
-    return SliverAppBar(
-      pinned: true,
-      floating: false,
-      backgroundColor: AppColors.cardBackground,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      shadowColor: AppColors.shadow,
-      toolbarHeight: 68,
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          // Avatar + online dot
-          Stack(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary, width: 2),
-                ),
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.primaryContainer,
-                  child: Text(
-                    initials,
-                    style: GoogleFonts.beVietnamPro(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border:
-                        Border.all(color: AppColors.cardBackground, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          // Name + status toggle
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Chào, $greetingName!',
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.verified_rounded,
-                        color: AppColors.secondary, size: 17),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                StatusTogglePill(profile.isAvailable),
-              ],
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        // Notification bell với badge động
-        Builder(builder: (context) {
-          final notifications = ref.watch(notificationsProvider);
-          final unread = notifications.where((n) => !n.isRead).length;
-          return Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined,
-                    color: AppColors.textPrimary),
-                onPressed: () => context.push('/notifications'),
-              ),
-              if (unread > 0)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.cardBackground, width: 1.5),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        }),
-        const SizedBox(width: 4),
-      ],
-    );
-  }
-
-  bool _isOfferStatus(ShiftModel shift) {
-    final expiresAt = shift.offerExpiresAt;
-    return shift.offerId != null &&
-        expiresAt != null &&
-        expiresAt.isAfter(DateTime.now()) &&
-        (shift.status == 'pending' || shift.status == 'open');
-  }
+  Widget _buildStickyHeader(BuildContext context, WidgetRef ref) =>
+      HomeStickyHeader(ref: ref, shortName: _shortName, initials: _initials);
 
   String _shortName(String displayName) {
     final parts =
@@ -289,479 +113,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required double monthTotal,
     required double rating,
     required int totalReviews,
-  }) {
-    // Format thu nhập tháng: 4.800.000 → "4.800k"
-    final monthTotalK = monthTotal / 1000;
-    final monthLabel = monthTotal <= 0
-        ? '-'
-        : monthTotalK >= 1000
-            ? '${(monthTotalK / 1000).toStringAsFixed(1)}M'
-            : '${monthTotalK.round()}k';
-    final ratingLabel = rating <= 0 ? '-' : rating.toStringAsFixed(1);
-    final reviewLabel = totalReviews == 0 ? 'Chưa có' : '($totalReviews ca)';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.card,
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Ca hôm nay
-            Expanded(
-              child: KpiItem(
-                label: 'Ca hôm nay',
-                value: '$todayCount',
-                unit: 'ca',
-                badge: todayCount > 0 ? 'Đúng tiến độ' : null,
-                badgeColor: AppColors.primary,
-              ),
-            ),
-            const VerticalDivider(
-                color: AppColors.border, width: 1, thickness: 1),
-            // Thu nhập tháng này
-            Expanded(
-              child: KpiItem(
-                label: 'Thu nhập T${DateTime.now().month}',
-                value: monthLabel,
-              ),
-            ),
-            const VerticalDivider(
-                color: AppColors.border, width: 1, thickness: 1),
-            // Đánh giá từ profile DB
-            Expanded(
-              child: KpiItem(
-                label: 'Đánh giá',
-                valueWidget: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (rating > 0) ...[
-                      const Icon(Icons.star_rounded,
-                          color: AppColors.secondary, size: 18),
-                      const SizedBox(width: 4),
-                    ],
-                    Text(
-                      ratingLabel,
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: Text(
-                  reviewLabel,
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  }) =>
+      HomeKpiCards(
+          monthTotal: monthTotal,
+          rating: rating,
+          totalReviews: totalReviews,
+          todayCount: todayCount);
 
   // ── New Booking Request Card (Pulse) ───────────────────
   Widget _buildNewBookingRequest(
-      BuildContext context, WidgetRef ref, ShiftModel booking,
-      {required int pendingCount,
-      required List<ShiftModel> scheduledOrActiveShifts}) {
-    final note = booking.customerNote?.trim();
-    final remaining = booking.offerExpiresAt?.difference(DateTime.now());
-    final isExpired = remaining != null && remaining <= Duration.zero;
-    final isProcessing = _processingOfferId == booking.id;
-    final countdownLabel = _countdownLabel(remaining);
-    final turnaroundWarning =
-        _turnaroundWarning(booking, scheduledOrActiveShifts);
-
-    return PulseCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Keep the informational InkWell separate from the action row below.
-          // This prevents Reject/Accept taps from opening the booking detail.
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => context.push('/shifts/${booking.id}'),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header: notification + countdown
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: const BoxDecoration(
-                            color: AppColors.surfaceContainerHigh,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.notifications_active_rounded,
-                              color: AppColors.primary, size: 16),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Có lịch mới cần xác nhận!',
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.errorLight,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.schedule_rounded,
-                                  color: AppColors.error, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                isExpired
-                                    ? 'Đang cập nhật'
-                                    : countdownLabel ?? 'Đang chờ',
-                                style: GoogleFonts.beVietnamPro(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.error,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (pendingCount > 1)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: () => context.go('/shifts'),
-                          icon: const Icon(Icons.format_list_bulleted_rounded,
-                              size: 16),
-                          label: Text('+${pendingCount - 1} lịch khác'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            minimumSize: const Size(44, 40),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            textStyle: GoogleFonts.beVietnamPro(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                    const Divider(color: AppColors.border, height: 1),
-                    const SizedBox(height: 12),
-
-                    // Service + Duration
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryContainer,
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: Text(
-                              booking.serviceName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.beVietnamPro(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '· ${booking.duration} (${booking.time})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Recipient & Location
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color:
-                            AppColors.primaryContainer.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.surfaceContainerHigh,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.elderly_rounded,
-                                      color: AppColors.textSecondary, size: 20),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        booking.beneficiaryName,
-                                        style: GoogleFonts.beVietnamPro(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.location_on_rounded,
-                                              color: AppColors.primary,
-                                              size: 14),
-                                          const SizedBox(width: 2),
-                                          Expanded(
-                                            child: Text(
-                                              _offerLocationLabel(booking),
-                                              style: GoogleFonts.beVietnamPro(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Thu nhập',
-                                style: GoogleFonts.beVietnamPro(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              Text(
-                                '${_formatPrice(booking.caregiverEarning > 0 ? booking.caregiverEarning : booking.totalPrice)}đ',
-                                style: GoogleFonts.beVietnamPro(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    if (turnaroundWarning != null) ...[
-                      Semantics(
-                        liveRegion: true,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.warningLight,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.warning_amber_rounded,
-                                  color: AppColors.warning, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  turnaroundWarning,
-                                  style: GoogleFonts.beVietnamPro(
-                                    fontSize: 12,
-                                    height: 1.35,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Note
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        note == null || note.isEmpty
-                            ? 'Chưa có ghi chú'
-                            : '"$note"',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Buttons: Reject + Accept
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: isExpired || isProcessing
-                        ? null
-                        : () async {
-                            final reason = await _selectDeclineReason(context);
-                            if (reason == null || !context.mounted) return;
-                            await _runOfferAction(
-                              context,
-                              booking.id,
-                              successMessage:
-                                  'Đã từ chối ca. Hệ thống sẽ tìm người phù hợp khác.',
-                              action: () => ref
-                                  .read(shiftsProvider.notifier)
-                                  .declineBooking(booking.id, reason: reason),
-                            );
-                          },
-                    icon: isProcessing
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.close_rounded, size: 18),
-                    label: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        'Từ chối',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side:
-                          const BorderSide(color: AppColors.error, width: 1.5),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: isExpired || isProcessing
-                        ? null
-                        : () => _runOfferAction(
-                              context,
-                              booking.id,
-                              successMessage:
-                                  'Đã nhận ca. Ca nằm trong lịch sắp tới.',
-                              action: () => ref
-                                  .read(shiftsProvider.notifier)
-                                  .acceptBooking(booking.id),
-                            ),
-                    icon: isProcessing
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_rounded, size: 18),
-                    label: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        'Nhận ca ngay',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+          BuildContext context, WidgetRef ref, ShiftModel booking,
+          {required int pendingCount,
+          required String? processingOfferId,
+          required List<ShiftModel> scheduledOrActiveShifts}) =>
+      HomeOfferCard(
+          booking: booking,
+          processingOfferId: processingOfferId,
+          countdownLabel: _countdownLabel,
+          turnaroundWarning: turnaroundWarning,
+          scheduledOrActiveShifts: scheduledOrActiveShifts,
+          pendingCount: pendingCount,
+          offerLocationLabel: _offerLocationLabel,
+          formatPrice: _formatPrice,
+          selectDeclineReason: _selectDeclineReason,
+          runOfferAction: _runOfferAction,
+          ref: ref);
 
   String? _countdownLabel(Duration? remaining) {
     if (remaining == null) return null;
@@ -771,55 +147,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return 'Còn ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  String? _turnaroundWarning(
-    ShiftModel offer,
-    List<ShiftModel> scheduledOrActiveShifts,
-  ) {
-    final offerStart = offer.scheduledStart;
-    final offerEnd = offer.scheduledEnd;
-    if (offerStart == null || offerEnd == null) return null;
-
-    for (final shift in scheduledOrActiveShifts) {
-      final start = shift.scheduledStart;
-      final end = shift.scheduledEnd;
-      if (start == null || end == null) continue;
-      final gapBefore = offerStart.difference(end);
-      final gapAfter = start.difference(offerEnd);
-      final nearestGap = gapBefore >= Duration.zero ? gapBefore : gapAfter;
-      if (nearestGap >= Duration.zero &&
-          nearestGap <= const Duration(minutes: 30)) {
-        return 'Ca này cách ca “${shift.serviceName}” chưa đến 30 phút. Hãy kiểm tra thời gian di chuyển trước khi nhận.';
-      }
-    }
-    return null;
-  }
-
   Future<void> _runOfferAction(
     BuildContext context,
     String bookingId, {
     required String successMessage,
     required Future<void> Function() action,
   }) async {
-    setState(() => _processingOfferId = bookingId);
-    try {
-      await action();
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(successMessage), backgroundColor: AppColors.success),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _processingOfferId = null);
-    }
+    final result = await ref
+        .read(offerActionControllerProvider.notifier)
+        .run(bookingId, action);
+    if (!context.mounted || result == OfferActionResult.ignored) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(result == OfferActionResult.success
+          ? successMessage
+          : 'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.'),
+      backgroundColor: result == OfferActionResult.success
+          ? AppColors.success
+          : AppColors.error,
+    ));
   }
 
   Future<String?> _selectDeclineReason(BuildContext context) {
@@ -834,7 +179,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       showDragHandle: true,
       useSafeArea: true,
       builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, 0, AppSpacing.md, AppSpacing.section),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -842,26 +188,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               'Lý do từ chối ca',
               style: GoogleFonts.beVietnamPro(
-                fontSize: 18,
+                fontSize: AppFontSizes.s18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               'Thông tin này giúp hệ thống ghép ca phù hợp hơn cho bạn.',
               style: GoogleFonts.beVietnamPro(
-                fontSize: 13,
+                fontSize: AppFontSizes.s13,
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.compact),
             for (final reason in reasons)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 minVerticalPadding: 4,
-                title:
-                    Text(reason, style: GoogleFonts.beVietnamPro(fontSize: 15)),
+                title: Text(reason,
+                    style:
+                        GoogleFonts.beVietnamPro(fontSize: AppFontSizes.s15)),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(sheetContext).pop(reason),
               ),
@@ -872,93 +219,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ── Today Timeline ─────────────────────────────────────
-  Widget _buildTodayTimeline(BuildContext context, List<ShiftModel> shifts) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.card,
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header — ngày được tính động
-          Row(
-            children: [
-              const Icon(Icons.calendar_today_rounded,
-                  color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Lịch ca hôm nay',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _todayLabel(),
-                style: GoogleFonts.beVietnamPro(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          if (shifts.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  children: [
-                    const Icon(Icons.event_available_rounded,
-                        color: AppColors.textHint, size: 40),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Hôm nay bạn rảnh!',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...List.generate(shifts.length, (i) {
-              final shift = shifts[i];
-              final isFirst = i == 0;
-              final isLast = i == shifts.length - 1;
-              final statusStyle = ShiftStatusStyle.of(shift.status);
-
-              return TimelineItem(
-                isFirst: isFirst,
-                isLast: isLast,
-                isActive: shift.status == 'in_progress' ||
-                    shift.status == 'caregiver_en_route',
-                time: shift.time,
-                title: '${shift.serviceName} - ${shift.beneficiaryName}',
-                address: shift.address,
-                statusLabel: statusStyle.label,
-                statusColor: statusStyle.color,
-                statusBg: statusStyle.backgroundColor,
-                onTap: () => context.push('/shifts/${shift.id}'),
-              );
-            }),
-        ],
-      ),
-    );
-  }
+  Widget _buildTodayTimeline(BuildContext context, List<ShiftModel> shifts) =>
+      HomeTodayTimeline(todayLabel: _todayLabel, shifts: shifts);
 
   // ── Helpers ────────────────────────────────────────────
   /// Nhãn ngày hôm nay động: "Thứ Hai, 09/09"
@@ -985,275 +247,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required List<double> last7Days,
     required int completedShifts,
     required double monthTotal,
-  }) {
-    // last7Days từ earningsProvider — đơn vị: VND
-    // Chuyển sang nghìn đồng cho chart label
-    final earningsData = last7Days.map((v) => v / 1000).toList();
-    final total = last7Days.fold(0.0, (a, b) => a + b);
-
-    // Label: 7 ngày gần nhất, ngày cuối = hôm nay
-    final now = DateTime.now();
-    final labels = List.generate(7, (i) {
-      final d = now.subtract(Duration(days: 6 - i));
-      if (i == 6) return 'Nay';
-      const short = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-      return short[d.weekday - 1];
-    });
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.card,
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Thu nhập 7 ngày qua',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                        children: [
-                          const TextSpan(text: 'Tổng tích luỹ: '),
-                          TextSpan(
-                            text: '${_formatPrice(total)}đ',
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () => context.push('/earnings'),
-                child: Row(
-                  children: [
-                    Text(
-                      'Chi tiết',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: AppColors.primary, size: 14),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Bar chart
-          SizedBox(
-            height: 120,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: earningsData.isEmpty || earningsData.every((v) => v == 0)
-                    ? 100 // placeholder khi chưa có data
-                    : (earningsData.reduce((a, b) => a > b ? a : b) * 1.25)
-                        .ceilToDouble(),
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, gIdx, rod, rIdx) {
-                      return BarTooltipItem(
-                        '${earningsData[group.x.toInt()].toInt()}k',
-                        GoogleFonts.beVietnamPro(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        final isToday = idx == labels.length - 1;
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            labels[idx],
-                            style: GoogleFonts.beVietnamPro(
-                              fontSize: 11,
-                              fontWeight:
-                                  isToday ? FontWeight.w700 : FontWeight.w500,
-                              color: isToday
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                gridData: const FlGridData(show: false),
-                borderData: FlBorderData(show: false),
-                barGroups: List.generate(earningsData.length, (i) {
-                  final isToday = i == earningsData.length - 1;
-                  return BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: earningsData[i],
-                        color: isToday
-                            ? AppColors.primary
-                            : AppColors.surfaceContainerHigh,
-                        width: 24,
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(6)),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Builder(builder: (context) {
-                  // Tính trung bình từ ca đã hoàn thành
-                  final avgLabel = completedShifts > 0
-                      ? 'TB/ca: ${_formatPrice(monthTotal / completedShifts)}đ'
-                      : 'Chưa có ca hoàn thành';
-                  return Text(
-                    avgLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.beVietnamPro(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Đã trả vào Ví CareSitter',
-                style: GoogleFonts.beVietnamPro(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  }) =>
+      HomeEarningsChart(
+          last7Days: last7Days,
+          formatPrice: _formatPrice,
+          completedShifts: completedShifts,
+          monthTotal: monthTotal);
 
   // ── Non-Medical Safety Disclaimer ──────────────────────
-  Widget _buildSafetyDisclaimer() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.tertiaryContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.tertiary, width: 1.5),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.health_and_safety_rounded,
-              color: AppColors.tertiary, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Cam kết an toàn & phi y tế',
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.beVietnamPro(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                    children: [
-                      const TextSpan(
-                          text:
-                              'Lưu ý: Luôn tuân thủ quy tắc hỗ trợ phi y tế. Tuyệt đối không can thiệp nghiệp vụ y khoa. '),
-                      TextSpan(
-                        text: 'Gọi ngay 115',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.error,
-                        ),
-                      ),
-                      const TextSpan(
-                          text: ' khi xảy ra sự cố sức khỏe đột xuất.'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildSafetyDisclaimer() => const HomeSafetyDisclaimer();
 
-  String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}tr';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}.000';
-    }
-    return price.toStringAsFixed(0);
-  }
+  String _formatPrice(double price) =>
+      formatVnd(price, compact: true, suffix: '', round: true);
 
   String _offerLocationLabel(ShiftModel booking) {
     final address = booking.address.trim();

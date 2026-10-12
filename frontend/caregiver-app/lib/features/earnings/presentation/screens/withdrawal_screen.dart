@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_use_balance_action.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,31 +41,9 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     final amountStr = _amountController.text.trim();
     final amount = double.tryParse(amountStr) ?? 0;
 
-    if (amount < 100000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Số tiền rút tối thiểu là 100,000 đ'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    if (amount > balance) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Số dư khả dụng không đủ'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
-    final success = await ref.read(earningsProvider.notifier).withdraw(
+    final result = await ref.read(earningsProvider.notifier).withdraw(
           amount,
           _bankNameController.text.trim(),
           _accountNumberController.text.trim(),
@@ -74,7 +53,8 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (result == WithdrawalResult.ignored) return;
+    if (result == WithdrawalResult.submitted) {
       showWithdrawalSuccessDialog(
         context,
         amount: amount,
@@ -83,8 +63,18 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Rút tiền thất bại, vui lòng thử lại'),
+        SnackBar(
+          content: Text(switch (result) {
+            WithdrawalResult.belowMinimum =>
+              'Số tiền rút tối thiểu là 100,000 đ',
+            WithdrawalResult.insufficientBalance => 'Số dư khả dụng không đủ',
+            WithdrawalResult.unknown =>
+              'Chưa xác định được kết quả rút tiền. Giữ nguyên thông tin và thử lại để kiểm tra.',
+            WithdrawalResult.changedPayload =>
+              'Đang có yêu cầu rút tiền chưa rõ kết quả. Giữ nguyên thông tin của yêu cầu đó để thử lại.',
+            _ =>
+              'Yêu cầu rút tiền chưa được chấp nhận. Vui lòng kiểm tra lại thông tin.',
+          }),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -123,53 +113,21 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.compact),
-              TextFormField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  fontSize: AppFontSizes.s24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return 'Vui lòng nhập số tiền';
-                  }
-                  if (double.tryParse(val) == null) {
-                    return 'Số tiền không hợp lệ';
-                  }
-                  return null;
-                },
-                decoration: InputDecoration(
-                  prefixText: 'đ ',
-                  prefixStyle: const TextStyle(
-                    fontSize: AppFontSizes.s20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  hintText: '0',
-                  suffixIcon: TextButton(
-                    onPressed: () {
-                      _amountController.text =
-                          earnings.balance.toInt().toString();
-                    },
-                    child: const Text(
-                      'Rút hết',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.section,
-                    vertical: AppSpacing.md,
-                  ),
-                ),
-              ),
+              WithdrawalUseBalanceAction(
+                  amountController: _amountController,
+                  callbackAction1: (val) {
+                    if (val == null || val.isEmpty) {
+                      return 'Vui lòng nhập số tiền';
+                    }
+                    if (double.tryParse(val) == null) {
+                      return 'Số tiền không hợp lệ';
+                    }
+                    return null;
+                  },
+                  callbackAction2: () {
+                    _amountController.text =
+                        earnings.balance.toInt().toString();
+                  }),
               const SizedBox(height: AppSpacing.lg),
 
               // ── Bank Account Inputs ──

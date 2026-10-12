@@ -1,19 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
-import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/auth/data/models/auth_user_model.dart';
 
 const _requiredRole = 'CAREGIVER';
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.read(dioClientProvider), ref),
+  (ref) => AuthRepository(ref.read(dioClientProvider)),
 );
 
 class AuthRepository {
   final DioClient _dio;
-  final Ref _ref;
 
-  AuthRepository(this._dio, this._ref);
+  AuthRepository(this._dio);
 
   /// Tạo tài khoản dành riêng cho ứng dụng Caregiver.
   Future<void> register({
@@ -53,7 +51,6 @@ class AuthRepository {
       resp.data ?? {},
       fallbackDisplayName: identifier,
     );
-    await _saveAuthData(user);
     return user;
   }
 
@@ -85,60 +82,17 @@ class AuthRepository {
       resp.data ?? {},
       fallbackDisplayName: identifier,
     );
-    await _saveAuthData(user);
     return user;
   }
 
-  /// Đăng xuất → POST /auth/logout để revoke refresh session trong PostgreSQL.
-  Future<void> logout() async {
-    final authNotifier = _ref.read(authStateProvider.notifier);
-    var refreshToken = authNotifier.refreshToken;
-    try {
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        try {
-          final refreshResp = await _dio.post<Map<String, dynamic>>(
-            '/auth/refresh',
-            data: {'refreshToken': refreshToken},
-          );
-          final data = refreshResp.data ?? {};
-          final newAccess = data['accessToken'] as String? ?? '';
-          final newRefresh = data['refreshToken'] as String? ?? '';
-          if (newAccess.isNotEmpty && newRefresh.isNotEmpty) {
-            await authNotifier.updateTokens(
-              accessToken: newAccess,
-              refreshToken: newRefresh,
-            );
-            refreshToken = newRefresh;
-          }
-        } catch (_) {
-          // Refresh token đã invalid/expired thì chỉ cần xóa local session.
-        }
-      }
-
-      await _dio.post<dynamic>(
-        '/auth/logout',
-        data: refreshToken != null ? {'refreshToken': refreshToken} : null,
-      );
-    } catch (_) {
-      // Vẫn xóa token local dù server lỗi
-    } finally {
-      await authNotifier.logout();
-    }
+  Future<AuthUserModel> refresh(String refreshToken) async {
+    final response = await _dio.post<Map<String, dynamic>>('/auth/refresh',
+        data: {'refreshToken': refreshToken});
+    return AuthUserModel.fromJson(response.data ?? {}, fallbackDisplayName: '');
   }
 
-  Future<void> _saveAuthData(AuthUserModel user) async {
-    if (!user.hasRole(_requiredRole)) {
-      throw Exception(
-        'Tài khoản này không có quyền đăng nhập ứng dụng Caregiver.',
-      );
-    }
-
-    await _ref.read(authStateProvider.notifier).login(
-          accessToken: user.accessToken,
-          refreshToken: user.refreshToken,
-          userId: user.userId,
-          phone: user.displayName,
-          roles: user.roles,
-        );
+  Future<void> logout({String? refreshToken}) async {
+    await _dio.post<dynamic>('/auth/logout',
+        data: refreshToken == null ? null : {'refreshToken': refreshToken});
   }
 }

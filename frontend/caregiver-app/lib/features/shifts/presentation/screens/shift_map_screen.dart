@@ -1,5 +1,6 @@
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_route_map.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_route_overlay.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/maps/map_tile_config.dart';
 import 'package:caregiver_app/core/maps/map_tile_attribution.dart';
@@ -154,69 +155,19 @@ class _ShiftMapScreenState extends ConsumerState<ShiftMapScreen> {
           Expanded(
             child: Stack(
               children: [
-                FlutterMap(
-                  options: MapOptions(
-                    initialCenter: center,
-                    initialZoom: current == null ? 15 : 13.5,
-                  ),
-                  children: [
-                    TileLayer(
-                      tileProvider: ref.watch(mapTileProviderProvider),
-                      urlTemplate: tiles.urlTemplate,
-                      subdomains: tiles.subdomains,
-                      retinaMode: tiles.usesCarto,
-                      maxNativeZoom: tiles.maxNativeZoom,
-                      userAgentPackageName: 'com.caresitter.caregiver',
-                    ),
-                    if (current != null)
-                      PolylineLayer(polylines: [
-                        Polyline(
-                          points: [current, destination],
-                          color: AppColors.primary,
-                          strokeWidth: 4,
-                        ),
-                      ]),
-                    MarkerLayer(markers: [
-                      if (current != null)
-                        Marker(
-                          point: current,
-                          width: 44,
-                          height: 44,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.primary, width: 2),
-                              boxShadow: AppShadows.card,
-                            ),
-                            child: const Icon(Icons.navigation_rounded,
-                                color: AppColors.primary, size: 22),
-                          ),
-                        ),
-                      Marker(
-                        point: destination,
-                        width: 48,
-                        height: 48,
-                        child: const Icon(Icons.location_on_rounded,
-                            color: AppColors.error, size: 40),
-                      ),
-                    ]),
-                  ],
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: ShiftMapMovementCard(
-                    beneficiaryName: widget.beneficiaryName,
-                    address: widget.address,
-                    distanceLabel: distance,
-                    status: _locationStatus,
-                    onRetryLocation: _loadCurrentPosition,
-                    onOpenGoogleMaps: _openGoogleMaps,
-                  ),
-                ),
+                ShiftRouteMap(
+                    center: center,
+                    current: current,
+                    ref: ref,
+                    tiles: tiles,
+                    destination: destination),
+                ShiftRouteOverlay(
+                    distance: distance,
+                    locationStatus: _locationStatus,
+                    loadCurrentPosition: _loadCurrentPosition,
+                    openGoogleMaps: _openGoogleMaps,
+                    routeBeneficiaryName: widget.beneficiaryName,
+                    routeAddress: widget.address),
               ],
             ),
           ),

@@ -1,3 +1,5 @@
+import 'package:caregiver_app/features/shifts/data/models/shift_mapper.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,28 +19,11 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   StreamSubscription<BookingStatusChange>? _signalRSub;
   StreamSubscription<BookingOfferChange>? _offerSignalRSub;
   StreamSubscription<void>? _reconnectSignalRSub;
+  StreamSubscription<Map<String, dynamic>>? _taskSignalRSub;
+  int _refreshGeneration = 0;
+  final Set<String> _pendingLifecycleIds = {};
 
   ShiftListController(this._ref) : super([]) {
-    _ref.listen(authStateProvider, (prev, next) {
-      final isAuth = next.value?.isAuthenticated ?? false;
-      // Refresh tokens do not change which user's data needs loading.
-      if (isAuth &&
-          prev?.value?.isAuthenticated == true &&
-          prev?.value?.userId == next.value?.userId) {
-        return;
-      }
-      if (isAuth) {
-        refresh();
-        _startRefreshPolling();
-        _subscribeSignalR();
-      } else {
-        state = [];
-        _stopRefreshPolling();
-        _signalRSub?.cancel();
-        _offerSignalRSub?.cancel();
-        _reconnectSignalRSub?.cancel();
-      }
-    });
     _init();
   }
 
@@ -46,6 +31,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   Future<void> _subscribeSignalR() async {
     final signalR = _ref.read(careSignalRProvider);
     await signalR.connect();
+    if (!mounted) return;
     _signalRSub?.cancel();
     _signalRSub = signalR.statusStream.listen((_) {
       // Bất kỳ booking nào đổi trạng thái → refresh list
@@ -63,12 +49,14 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       // Reload tasks cho ca đang in_progress
       for (final shift in state) {
         if (shift.status == 'in_progress') {
-          loadTasks(shift.id);
+          unawaited(loadTasks(shift.id).catchError((_) {}));
         }
       }
     });
     // Subscribe CareTaskUpdated — patch task realtime
-    signalR.onTaskUpdated.listen((event) {
+    _taskSignalRSub?.cancel();
+    _taskSignalRSub = signalR.onTaskUpdated.listen((event) {
+      if (!mounted) return;
       final bookingId = event['bookingId']?.toString();
       final taskJson = event['task'];
       if (bookingId == null || taskJson == null) return;
@@ -82,8 +70,10 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   ShiftRepository get _shiftRepo => _ref.read(shiftRepositoryProvider);
 
   void _init() {
+    if (_ref.read(authStateProvider).value?.isAuthenticated != true) return;
     refresh();
     _startRefreshPolling();
+    _subscribeSignalR();
   }
 
   void _startRefreshPolling() {
@@ -100,6 +90,8 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
 
   /// Tải danh sách ca từ backend
   Future<void> refresh() async {
+    if (!mounted) return;
+    final generation = ++_refreshGeneration;
     final isAuth = _ref.read(authStateProvider).value?.isAuthenticated ?? false;
     if (!isAuth) {
       state = [];
@@ -113,6 +105,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
         _shiftRepo.getOpenOffers(pageSize: 20),
       ]);
       if (!mounted ||
+          generation != _refreshGeneration ||
           _ref.read(authStateProvider).value?.isAuthenticated != true ||
           _ref.read(authStateProvider).value?.userId != userId) {
         return;
@@ -133,7 +126,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
 
       if (merged.isNotEmpty) {
         state = merged.values.map((item) {
-          final mapped = _mapFromApi(item);
+          final mapped = mapShiftFromApi(item);
           return mapped.copyWith(tasks: previousTasks[mapped.id]);
         }).toList();
       } else {
@@ -141,15 +134,41 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
         state = [];
       }
     } catch (e) {
+      if (!mounted) return;
       // ignore: avoid_print
       print('[ShiftListController] Lỗi tải ca trực: $e');
     }
   }
 
+  Future<void> _runLifecycle(String id, Future<void> Function() action) async {
+    if (!mounted) return;
+    if (!_pendingLifecycleIds.add(id)) {
+      throw const AppApiException(message: 'Ca đang được xử lý. Vui lòng chờ.');
+    }
+    try {
+      await action();
+    } finally {
+      _pendingLifecycleIds.remove(id);
+    }
+  }
+
+  Future<void> acceptBooking(String id) =>
+      _runLifecycle(id, () => _performAcceptBooking(id));
+  Future<void> declineBooking(String id, {String? reason}) =>
+      _runLifecycle(id, () => _performDeclineBooking(id, reason: reason));
+  Future<void> startEnRoute(String bookingId) =>
+      _runLifecycle(bookingId, () => _performStartEnRoute(bookingId));
+  Future<void> checkIn(String bookingId) =>
+      _runLifecycle(bookingId, () => _performCheckIn(bookingId));
+  Future<void> checkOut(String bookingId) =>
+      _runLifecycle(bookingId, () => _performCheckOut(bookingId));
+  Future<void> completeShift(String bookingId) =>
+      _runLifecycle(bookingId, () => _performCompleteShift(bookingId));
+
   // ── Lifecycle actions ─────────────────────────────────────────────────────
 
   /// Caregiver chấp nhận ca
-  Future<void> acceptBooking(String id) async {
+  Future<void> _performAcceptBooking(String id) async {
     try {
       await _shiftRepo.acceptBooking(id);
       await refresh();
@@ -165,7 +184,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   /// Caregiver từ chối ca
-  Future<void> declineBooking(String id, {String? reason}) async {
+  Future<void> _performDeclineBooking(String id, {String? reason}) async {
     try {
       await _shiftRepo.declineBooking(id, reason: reason);
     } catch (e) {
@@ -178,7 +197,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   /// Bắt đầu di chuyển đến nhà khách
-  Future<void> startEnRoute(String bookingId) async {
+  Future<void> _performStartEnRoute(String bookingId) async {
     try {
       await _shiftRepo.startEnRoute(bookingId);
     } catch (e) {
@@ -186,17 +205,19 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       print('[ShiftListController] startEnRoute error: $e');
       rethrow;
     }
+    if (!mounted) return;
     _updateStatus(bookingId, to: 'caregiver_en_route');
     await _ref.read(liveTrackingProvider.notifier).start(bookingId);
   }
 
   /// GPS check-in tại địa điểm → status: in_progress.
   /// The server is the final authority for the 50m geofence.
-  Future<void> checkIn(String bookingId) async {
+  Future<void> _performCheckIn(String bookingId) async {
     DateTime? actualStart;
     try {
       actualStart =
           await _ref.read(shiftCheckinControllerProvider).checkIn(bookingId);
+      if (!mounted) return;
       _ref
           .read(liveTrackingProvider.notifier)
           .reconcileStatus(bookingId, 'in_progress');
@@ -205,6 +226,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       print('[ShiftListController] checkIn error: $e');
       rethrow;
     }
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -222,7 +244,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   /// Yêu cầu kết thúc ca → booking status chuyển sang checkout_pending_review
-  Future<void> checkOut(String bookingId) async {
+  Future<void> _performCheckOut(String bookingId) async {
     try {
       await _shiftRepo.requestCheckout(bookingId);
     } catch (e) {
@@ -230,6 +252,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       print('[ShiftListController] checkOut error: $e');
       rethrow;
     }
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -244,7 +267,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   /// Hoàn tất ca
-  Future<void> completeShift(String bookingId) async {
+  Future<void> _performCompleteShift(String bookingId) async {
     try {
       await _shiftRepo.completeBooking(bookingId);
     } catch (e) {
@@ -252,6 +275,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
       print('[ShiftListController] completeShift error: $e');
       return;
     }
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -297,6 +321,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   Future<Map<String, dynamic>> uploadTaskPhoto(
       String bookingId, String taskId, XFile image) async {
     final raw = await _shiftRepo.uploadTaskPhoto(bookingId, taskId, image);
+    if (!mounted) return raw;
     final task = state
         .firstWhere((booking) => booking.id == bookingId)
         .tasks
@@ -339,6 +364,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   void _replaceTasks(String bookingId, List<CareTaskModel> tasks) {
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId) b.copyWith(tasks: tasks) else b,
@@ -346,6 +372,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   void _replaceTask(String bookingId, CareTaskModel task) {
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -360,6 +387,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
 
   /// Upsert: nếu task đã có thì replace, nếu chưa có (ad-hoc mới) thì append.
   void _upsertTask(String bookingId, CareTaskModel task) {
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == bookingId)
@@ -382,6 +410,7 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _updateStatus(String id, {required String to}) {
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id == id) b.copyWith(status: to) else b,
@@ -389,186 +418,28 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   }
 
   void _removeShift(String id) {
+    if (!mounted) return;
     state = [
       for (final b in state)
         if (b.id != id) b,
     ];
   }
 
-  ShiftModel _mapFromApi(Map<String, dynamic> json) {
-    final id = json['id']?.toString() ?? '';
-    final rawStatus = json['status']?.toString().toLowerCase() ?? 'pending';
-
-    String mappedStatus = rawStatus;
-    if (rawStatus == 'payment_confirmed' || rawStatus == 'confirmed') {
-      mappedStatus = 'pending';
-    } else if (rawStatus == 'caregiver_accepted' || rawStatus == 'assigned') {
-      mappedStatus = 'confirmed';
-    } else if (rawStatus == 'caregiver_en_route' || rawStatus == 'en_route') {
-      mappedStatus = 'caregiver_en_route';
-    } else if (rawStatus == 'in_progress') {
-      mappedStatus = 'in_progress';
-    } else if (rawStatus == 'checkout_pending_review') {
-      mappedStatus = 'checkout_pending_review';
-    } else if (rawStatus == 'completed') {
-      mappedStatus = 'completed';
-    } else if (rawStatus == 'cancelled') {
-      mappedStatus = 'cancelled';
-    } else if (rawStatus == 'pending_payment' || rawStatus == 'draft') {
-      mappedStatus = rawStatus;
-    }
-
-    final escrow = (json['escrowAmount'] as num?)?.toDouble() ?? 0.0;
-    final fee = (json['platformFeeAmount'] as num?)?.toDouble() ?? 0.0;
-    // Dùng số tiền backend chốt; fallback chỉ để tương thích API cũ.
-    final earning = (json['caregiverEarningAmount'] as num?)?.toDouble() ??
-        (escrow > 0 ? (escrow - fee) : 0.0);
-
-    DateTime? start;
-    if (json['scheduledStart'] != null) {
-      start = DateTime.tryParse(json['scheduledStart'].toString())?.toLocal();
-    }
-    DateTime? end;
-    if (json['scheduledEnd'] != null) {
-      end = DateTime.tryParse(json['scheduledEnd'].toString())?.toLocal();
-    }
-
-    String dateStr = 'Hôm nay';
-    String timeStr = '08:00 - 12:00';
-    String durationStr = '4 giờ';
-    if (start != null) {
-      dateStr =
-          '${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')}/${start.year}';
-      if (end != null) {
-        timeStr =
-            '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-        final diffHours = end.difference(start).inHours;
-        durationStr = '$diffHours giờ';
-      }
-    }
-
-    DateTime? checkoutRequestedAt;
-    if (json['checkoutPendingReviewAt'] != null) {
-      checkoutRequestedAt =
-          DateTime.tryParse(json['checkoutPendingReviewAt'].toString())
-              ?.toLocal();
-    } else if (json['actualEnd'] != null) {
-      checkoutRequestedAt =
-          DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
-    }
-
-    DateTime? completedAt;
-    if (json['updatedAt'] != null && mappedStatus == 'completed') {
-      completedAt = DateTime.tryParse(json['updatedAt'].toString())?.toLocal();
-    }
-
-    final int? beneficiaryAge = (json['beneficiaryAge'] as num?)?.toInt();
-    final String? beneficiaryRelationship =
-        json['beneficiaryRelationship']?.toString();
-    final String? beneficiaryCondition =
-        json['beneficiaryCondition']?.toString();
-    final String? beneficiaryNotes =
-        json['beneficiaryNotes']?.toString() ?? json['note']?.toString();
-
-    DateTime? actualStart;
-    if (json['actualStart'] != null) {
-      actualStart =
-          DateTime.tryParse(json['actualStart'].toString())?.toLocal();
-    }
-
-    return ShiftModel(
-      id: id,
-      beneficiaryId: json['beneficiaryId']?.toString(),
-      beneficiaryName: _displayText(
-        json['beneficiaryName'],
-        fallback: _shortIdLabel('Người thân', json['beneficiaryId']),
-      ),
-      caregiverId: json['caregiverId']?.toString(),
-      caregiverName: _displayText(json['caregiverName'], fallback: 'Caregiver'),
-      caregiverAvatar:
-          _initials(_displayText(json['caregiverName'], fallback: 'CG')),
-      serviceId: json['serviceTypeId']?.toString(),
-      serviceName: _displayText(
-        json['serviceName'],
-        fallback: 'Dịch vụ chưa cập nhật',
-      ),
-      serviceDescription: _nullableDisplayText(json['serviceDescription']),
-      date: dateStr,
-      time: timeStr,
-      duration: durationStr,
-      scheduledStart: start,
-      scheduledEnd: end,
-      status: mappedStatus,
-      totalPrice: escrow,
-      caregiverEarning: earning,
-      address: _displayText(
-        json['addressText'],
-        fallback: 'Địa chỉ khách hàng đã đăng ký',
-      ),
-      addressLatitude: (json['addressLatitude'] as num?)?.toDouble(),
-      addressLongitude: (json['addressLongitude'] as num?)?.toDouble(),
-      customerNote: _displayText(json['note'], fallback: ''),
-      offerId: json['offerId']?.toString(),
-      offerExpiresAt: json['offerExpiresAt'] == null
-          ? null
-          : DateTime.tryParse(json['offerExpiresAt'].toString())?.toLocal(),
-      offerRank: (json['offerRank'] as num?)?.toInt(),
-      isSystemMatched: json['caregiverId'] != null,
-      actualStart: actualStart,
-      checkoutRequestedAt: checkoutRequestedAt,
-      completedAt: completedAt,
-      beneficiaryAge: beneficiaryAge,
-      beneficiaryRelationship: beneficiaryRelationship,
-      beneficiaryCondition: beneficiaryCondition,
-      beneficiaryNotes: beneficiaryNotes,
-      tasks: const [],
-      allowAdHocTasks: json['allowAdHocTasks'] as bool? ?? false,
-      needsReview: json['needsReview'] as bool? ?? false,
-    );
-  }
-
-  String _displayText(Object? value, {required String fallback}) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? fallback : text;
-  }
-
-  String? _nullableDisplayText(Object? value) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
-  }
-
-  String _shortIdLabel(String label, Object? rawId) {
-    final id = rawId?.toString();
-    if (id == null || id.isEmpty) return label;
-    final shortId = id.length > 8 ? id.substring(0, 8) : id;
-    return '$label (ID: $shortId)';
-  }
-
-  String _initials(String name) {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return 'CG';
-    if (parts.length == 1) {
-      final take = parts.first.length < 2 ? parts.first.length : 2;
-      return parts.first.substring(0, take).toUpperCase();
-    }
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-  }
-
   @override
   void dispose() {
+    _refreshGeneration++;
     _stopRefreshPolling();
     _signalRSub?.cancel();
     _offerSignalRSub?.cancel();
     _reconnectSignalRSub?.cancel();
+    _taskSignalRSub?.cancel();
     super.dispose();
   }
 }
 
 final shiftsProvider =
     StateNotifierProvider<ShiftListController, List<ShiftModel>>((ref) {
+  ref.watch(authStateProvider.select(
+      (session) => (session.value?.userId, session.value?.isAuthenticated)));
   return ShiftListController(ref);
 });

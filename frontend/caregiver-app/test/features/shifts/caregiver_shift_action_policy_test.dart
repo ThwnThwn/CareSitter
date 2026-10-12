@@ -34,7 +34,8 @@ void main() {
     expect(withoutEvidence.canUploadEvidence, isTrue);
     expect(withoutEvidence.canComplete, isFalse);
     expect(withEvidence.canComplete, isTrue);
-    expect(withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
+    expect(
+        withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
   });
 
   test('checkout request is enabled only during an active shift', () {

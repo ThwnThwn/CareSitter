@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:caregiver_app/features/auth/data/repositories/auth_repository.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/auth_session_controller.dart';
 
 final loginControllerProvider = Provider<LoginController>((ref) {
-  return LoginController(ref.read(authRepositoryProvider));
+  return LoginController(ref.read(authSessionControllerProvider));
 });
 
 class LoginController {
-  final AuthRepository _repository;
+  final AuthSessionController _repository;
 
   const LoginController(this._repository);
 
