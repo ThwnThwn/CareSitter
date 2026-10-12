@@ -1,10 +1,13 @@
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
-import 'package:caregiver_app/features/earnings/data/models/earning_model.dart';
 import 'package:caregiver_app/features/earnings/presentation/controllers/earnings_controller.dart';
+import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_balance_card.dart';
+import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_bank_form.dart';
+import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_success_dialog.dart';
 
 class WithdrawalScreen extends ConsumerStatefulWidget {
   const WithdrawalScreen({super.key});
@@ -31,6 +34,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   }
 
   Future<void> _submitWithdrawal(double balance) async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     final amountStr = _amountController.text.trim();
@@ -71,7 +75,12 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      _showSuccessDialog(amount);
+      showWithdrawalSuccessDialog(
+        context,
+        amount: amount,
+        bankName: _bankNameController.text.trim(),
+        onDismiss: () => Navigator.pop(context),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -81,53 +90,6 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
         ),
       );
     }
-  }
-
-  void _showSuccessDialog(double amount) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 16),
-            const Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.success,
-              size: 72,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Rút tiền thành công!',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Đã tạo yêu cầu rút ${formatCurrency(amount)} đ đến tài khoản ${_bankNameController.text.trim()} của bạn.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 14, color: AppColors.textSecondary, height: 1.4),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                label: 'Quay lại ví',
-                onPressed: () {
-                  Navigator.pop(ctx); // Close dialog
-                  Navigator.pop(context); // Go back to earnings screen
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -141,32 +103,34 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
         leading: const AppBackButton(fallbackRoute: '/earnings'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Balance Display Card ──
-              _buildBalanceCard(earnings.balance),
-              const SizedBox(height: 24),
+              WithdrawalBalanceCard(balance: earnings.balance),
+              const SizedBox(height: AppSpacing.lg),
 
               // ── Amount Input ──
               const Text(
                 'Nhập số tiền cần rút',
                 style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary),
+                  fontSize: AppFontSizes.s15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.compact),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary),
+                  fontSize: AppFontSizes.s24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
                 validator: (val) {
                   if (val == null || val.isEmpty) {
                     return 'Vui lòng nhập số tiền';
@@ -179,76 +143,42 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                 decoration: InputDecoration(
                   prefixText: 'đ ',
                   prefixStyle: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                    fontSize: AppFontSizes.s20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                   hintText: '0',
                   suffixIcon: TextButton(
                     onPressed: () {
                       _amountController.text =
                           earnings.balance.toInt().toString();
                     },
-                    child: const Text('Rút hết',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary)),
+                    child: const Text(
+                      'Rút hết',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.section,
+                    vertical: AppSpacing.md,
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
 
               // ── Bank Account Inputs ──
-              const Text(
-                'Tài khoản nhận tiền',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary),
+              WithdrawalBankForm(
+                bankNameController: _bankNameController,
+                accountHolderController: _accountHolderController,
+                accountNumberController: _accountNumberController,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _bankNameController,
-                textInputAction: TextInputAction.next,
-                validator: (val) => val == null || val.trim().isEmpty
-                    ? 'Vui lòng nhập tên ngân hàng'
-                    : null,
-                decoration: InputDecoration(
-                  labelText: 'Ngân hàng',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _accountHolderController,
-                textInputAction: TextInputAction.next,
-                validator: (val) => val == null || val.trim().isEmpty
-                    ? 'Vui lòng nhập tên chủ tài khoản'
-                    : null,
-                decoration: InputDecoration(
-                  labelText: 'Tên chủ tài khoản',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _accountNumberController,
-                keyboardType: TextInputType.number,
-                validator: (val) => val == null || val.trim().isEmpty
-                    ? 'Vui lòng nhập số tài khoản'
-                    : null,
-                decoration: InputDecoration(
-                  labelText: 'Số tài khoản',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
 
               // ── Submit Button ──
               AppButton(
@@ -261,39 +191,6 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(double balance) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Số dư khả dụng',
-            style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${formatCurrency(balance)} đ',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5),
-          ),
-        ],
       ),
     );
   }
