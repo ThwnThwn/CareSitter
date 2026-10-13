@@ -12,13 +12,7 @@ import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 class _FontManifest implements AssetManifest {
   @override
   List<String> listAssets() => [
-        for (final variant in [
-          'Regular',
-          'Medium',
-          'SemiBold',
-          'Bold',
-          'Italic'
-        ])
+        for (final variant in ['Regular', 'Medium', 'SemiBold', 'Bold', 'Italic'])
           'test-fonts/BeVietnamPro-$variant.ttf',
       ];
   @override
@@ -58,8 +52,7 @@ void main() {
   });
 
   for (final width in [320.0, 390.0]) {
-    testWidgets(
-        'offer details and actions fit width $width without conflating taps',
+    testWidgets('offer details and actions fit width $width without conflating taps',
         (tester) async {
       await tester.binding.setSurfaceSize(Size(width, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -68,8 +61,7 @@ void main() {
           home: Scaffold(
         body: MediaQuery(
             data: MediaQueryData(
-                size: Size(width, 900),
-                textScaler: const TextScaler.linear(1.4)),
+                size: Size(width, 900), textScaler: const TextScaler.linear(1.4)),
             child: SingleChildScrollView(
               child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -79,25 +71,18 @@ void main() {
                         countdownLabel: 'Còn 01:00',
                         pendingCount: 1,
                         booking: shift,
-                        offerLocationLabel: (_) => 'TP. Hồ Chí Minh',
-                        formatPrice: (_) => '240.000',
                         turnaroundWarning: null,
-                        note: null,
-                        callbackAction2: () {
+                        onOpen: () {
                           opened++;
                         },
-                        callbackAction3: () {}),
+                        onOpenQueue: () {}),
                     HomeOfferActions(
                         isExpired: false,
                         isProcessing: false,
-                        booking: shift,
-                        runOfferAction: (context, id,
-                                {required action, required successMessage}) =>
-                            action(),
-                        callbackAction2: () async {
+                        onDecline: () async {
                           declined++;
                         },
-                        callbackAction3: () async {
+                        onAccept: () async {
                           accepted++;
                         }),
                   ])),
@@ -129,23 +114,17 @@ void main() {
               body: HomeOfferActions(
         isExpired: flags.$1,
         isProcessing: flags.$2,
-        booking: shift,
-        runOfferAction: (context, id,
-                {required action, required successMessage}) =>
-            action(),
-        callbackAction2: () async {
+        onDecline: () async {
           fail('Decline should be disabled');
         },
-        callbackAction3: () async {
+        onAccept: () async {
           fail('Accept should be disabled');
         },
       ))));
       await tester.pump();
-      expect(
-          tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+      expect(tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
           isNull);
-      expect(
-          tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
+      expect(tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
           isNull);
     }
     await tester.pumpWidget(const SizedBox.shrink());

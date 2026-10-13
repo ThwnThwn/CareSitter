@@ -5,15 +5,15 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeOfferQueueLink extends StatelessWidget {
   const HomeOfferQueueLink(
-      {super.key, required this.pendingCount, required this.callbackAction1});
+      {super.key, required this.pendingCount, required this.onOpenQueue});
   final int pendingCount;
-  final void Function() callbackAction1;
+  final VoidCallback onOpenQueue;
 
   @override
   Widget build(BuildContext context) => Align(
         alignment: Alignment.centerRight,
         child: TextButton.icon(
-          onPressed: callbackAction1,
+          onPressed: onOpenQueue,
           icon: const Icon(Icons.format_list_bulleted_rounded, size: 16),
           label: Text('+${pendingCount - 1} lịch khác'),
           style: TextButton.styleFrom(

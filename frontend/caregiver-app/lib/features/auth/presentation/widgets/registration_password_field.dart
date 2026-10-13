@@ -1,39 +1,45 @@
 import 'package:flutter/material.dart';
 
-class RegistrationPasswordField extends StatelessWidget {
+class RegistrationPasswordField extends StatefulWidget {
   const RegistrationPasswordField(
       {super.key,
       required this.controller,
-      required this.hidden,
-      required this.onSubmitted,
+      this.enabled = true,
+      this.onSubmitted,
       required this.validator,
-      required this.label,
-      required this.onToggle});
+      required this.label});
   final TextEditingController controller;
-  final bool hidden;
+  final bool enabled;
   final void Function(String)? onSubmitted;
   final String? Function(String?) validator;
   final String label;
-  final void Function() onToggle;
+  @override
+  State<RegistrationPasswordField> createState() =>
+      _RegistrationPasswordFieldState();
+}
+
+class _RegistrationPasswordFieldState extends State<RegistrationPasswordField> {
+  bool _hidden = true;
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
-      obscureText: hidden,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      obscureText: _hidden,
       textInputAction:
-          onSubmitted == null ? TextInputAction.next : TextInputAction.done,
+          widget.onSubmitted == null ? TextInputAction.next : TextInputAction.done,
       autofillHints: const [AutofillHints.newPassword],
-      validator: validator,
-      onFieldSubmitted: onSubmitted,
+      validator: widget.validator,
+      onFieldSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: widget.label,
         prefixIcon: const Icon(Icons.lock_outline_rounded),
         suffixIcon: IconButton(
-          tooltip: hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-          onPressed: onToggle,
-          icon: Icon(hidden
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined),
+          tooltip: _hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+          onPressed:
+              widget.enabled ? () => setState(() => _hidden = !_hidden) : null,
+          icon: Icon(
+              _hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined),
         ),
       ),
     );

@@ -5,14 +5,8 @@ import 'home_offer_recipient_location.dart';
 import 'home_offer_earning.dart';
 
 class HomeOfferRecipientSummary extends StatelessWidget {
-  const HomeOfferRecipientSummary(
-      {super.key,
-      required this.booking,
-      required this.offerLocationLabel,
-      required this.formatPrice});
+  const HomeOfferRecipientSummary({super.key, required this.booking});
   final ShiftModel booking;
-  final String Function(ShiftModel) offerLocationLabel;
-  final String Function(double) formatPrice;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -22,19 +16,15 @@ class HomeOfferRecipientSummary extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: LayoutBuilder(builder: (context, constraints) {
-          final recipient = HomeOfferRecipientLocation(
-              booking: booking, offerLocationLabel: offerLocationLabel);
-          final earning =
-              HomeOfferEarning(formatPrice: formatPrice, booking: booking);
+          final recipient = HomeOfferRecipientLocation(booking: booking);
+          final earning = HomeOfferEarning(booking: booking);
           if (constraints.maxWidth < 280 ||
               MediaQuery.textScalerOf(context).scale(14) > 18.2) {
-            return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  recipient,
-                  const SizedBox(height: AppSpacing.sm),
-                  Align(alignment: Alignment.centerRight, child: earning),
-                ]);
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              recipient,
+              const SizedBox(height: AppSpacing.sm),
+              Align(alignment: Alignment.centerRight, child: earning),
+            ]);
           }
           return Row(children: [Expanded(child: recipient), earning]);
         }),

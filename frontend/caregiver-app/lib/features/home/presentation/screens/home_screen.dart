@@ -129,23 +129,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       HomeOfferCard(
           booking: booking,
           processingOfferId: processingOfferId,
-          countdownLabel: _countdownLabel,
-          turnaroundWarning: turnaroundWarning,
-          scheduledOrActiveShifts: scheduledOrActiveShifts,
+          turnaroundWarning: turnaroundWarning(booking, scheduledOrActiveShifts),
           pendingCount: pendingCount,
-          offerLocationLabel: _offerLocationLabel,
-          formatPrice: _formatPrice,
           selectDeclineReason: _selectDeclineReason,
-          runOfferAction: _runOfferAction,
-          ref: ref);
-
-  String? _countdownLabel(Duration? remaining) {
-    if (remaining == null) return null;
-    if (remaining <= Duration.zero) return null;
-    final minutes = remaining.inMinutes;
-    final seconds = remaining.inSeconds.remainder(60);
-    return 'Còn ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
+          runOfferAction: _runOfferAction);
 
   Future<void> _runOfferAction(
     BuildContext context,
@@ -161,9 +148,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       content: Text(result == OfferActionResult.success
           ? successMessage
           : 'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.'),
-      backgroundColor: result == OfferActionResult.success
-          ? AppColors.success
-          : AppColors.error,
+      backgroundColor:
+          result == OfferActionResult.success ? AppColors.success : AppColors.error,
     ));
   }
 
@@ -207,8 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 contentPadding: EdgeInsets.zero,
                 minVerticalPadding: 4,
                 title: Text(reason,
-                    style:
-                        GoogleFonts.beVietnamPro(fontSize: AppFontSizes.s15)),
+                    style: GoogleFonts.beVietnamPro(fontSize: AppFontSizes.s15)),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(sheetContext).pop(reason),
               ),
@@ -259,18 +244,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _formatPrice(double price) =>
       formatVnd(price, compact: true, suffix: '', round: true);
-
-  String _offerLocationLabel(ShiftModel booking) {
-    final address = booking.address.trim();
-    if (address.isEmpty || address == 'Địa chỉ khách hàng đã đăng ký') {
-      return 'Địa chỉ theo booking';
-    }
-    final parts = address
-        .split(',')
-        .map((part) => part.trim())
-        .where((part) => part.isNotEmpty)
-        .toList(growable: false);
-    if (parts.length >= 2) return parts.take(2).join(', ');
-    return address;
-  }
 }

@@ -9,17 +9,17 @@ class HomeOfferDeclineAction extends StatelessWidget {
       {super.key,
       required this.isExpired,
       required this.isProcessing,
-      required this.callbackAction1});
+      required this.onDecline});
   final bool isExpired;
   final bool isProcessing;
-  final Future<void> Function() callbackAction1;
+  final Future<void> Function() onDecline;
 
   @override
   Widget build(BuildContext context) => Expanded(
         child: SizedBox(
           height: 48,
           child: OutlinedButton.icon(
-            onPressed: isExpired || isProcessing ? null : callbackAction1,
+            onPressed: isExpired || isProcessing ? null : onDecline,
             icon: isProcessing
                 ? const SizedBox(
                     width: 18,

@@ -6,17 +6,17 @@ class RegistrationTermsChoice extends StatelessWidget {
       {super.key,
       required this.agreed,
       required this.submitting,
-      required this.callbackAction1});
+      required this.onChanged});
   final bool agreed;
   final bool submitting;
-  final void Function(bool?) callbackAction1;
+  final void Function(bool?) onChanged;
 
   @override
   Widget build(BuildContext context) => CheckboxListTile(
         contentPadding: EdgeInsets.zero,
         controlAffinity: ListTileControlAffinity.leading,
         value: agreed,
-        onChanged: submitting ? null : callbackAction1,
+        onChanged: submitting ? null : onChanged,
         title: const Text(
           'Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật.',
           style: TextStyle(fontSize: AppFontSizes.s13, height: 1.35),
