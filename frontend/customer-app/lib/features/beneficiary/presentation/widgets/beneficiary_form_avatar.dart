@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_avatar_image.dart';
 
-class BeneficiaryCreateAvatar extends StatelessWidget {
-  const BeneficiaryCreateAvatar(
-      {super.key, required this.avatarPath, required this.pickImage});
+class BeneficiaryFormAvatar extends StatelessWidget {
+  const BeneficiaryFormAvatar(
+      {super.key,
+      required this.avatarPath,
+      required this.pickImage,
+      this.editing = false});
   final String? avatarPath;
   final Future<void> Function() pickImage;
+  final bool editing;
   @override
   Widget build(BuildContext context) => Center(
         child: Stack(
@@ -18,8 +22,7 @@ class BeneficiaryCreateAvatar extends StatelessWidget {
                 color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    width: 2.5),
+                    color: AppColors.primary.withValues(alpha: 0.3), width: 2.5),
                 image: avatarPath != null && avatarPath!.isNotEmpty
                     ? DecorationImage(
                         image: beneficiaryAvatarImageProvider(avatarPath!),
@@ -29,8 +32,8 @@ class BeneficiaryCreateAvatar extends StatelessWidget {
               ),
               child: avatarPath != null && avatarPath!.isNotEmpty
                   ? null
-                  : const Center(
-                      child: Icon(Icons.person_add_outlined,
+                  : Center(
+                      child: Icon(editing ? Icons.person : Icons.person_add_outlined,
                           size: 40, color: AppColors.primary),
                     ),
             ),
@@ -45,8 +48,7 @@ class BeneficiaryCreateAvatar extends StatelessWidget {
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.camera_alt,
-                      color: Colors.white, size: 14),
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
                 ),
               ),
             ),

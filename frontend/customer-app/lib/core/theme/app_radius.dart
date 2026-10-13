@@ -1,5 +1,3 @@
-
-
 class AppRadius {
   static const double sm = 8;
   static const double md = 12;
@@ -9,6 +7,8 @@ class AppRadius {
   static const double xxl = 24;
   static const double full = 100;
   static const double xs = 4;
+  static const double checkbox = 5;
+  static const double card = 18;
   static const double tight = 6;
   static const double compact = 10;
 }

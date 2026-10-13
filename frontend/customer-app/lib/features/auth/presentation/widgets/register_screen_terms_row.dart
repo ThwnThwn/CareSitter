@@ -22,7 +22,7 @@ class RegisterScreenTermsRow extends StatelessWidget {
               onChanged: (v) => onChanged(v ?? false),
               activeColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5)),
+                  borderRadius: BorderRadius.circular(AppRadius.checkbox)),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),

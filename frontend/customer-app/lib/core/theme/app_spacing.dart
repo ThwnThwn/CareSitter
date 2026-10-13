@@ -1,5 +1,3 @@
-
-
 class AppSpacing {
   static const double xs = 4;
   static const double sm = 8;
@@ -18,4 +16,5 @@ class AppSpacing {
   static const double section = 20;
   static const double wide = 28;
   static const double hero = 64;
+  static const double formBottom = 40;
 }

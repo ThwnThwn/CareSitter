@@ -3,20 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
+import 'booking_card.dart';
+import 'booking_list_screen_empty_state.dart';
 
-class BookingListScreenBookingList extends StatelessWidget {
-  const BookingListScreenBookingList(
-      {super.key,
-      required this.ref,
-      required this.statuses,
-      required this.buildEmptyState,
-      required this.buildBookingCard});
-  final WidgetRef ref;
+class BookingList extends ConsumerWidget {
+  const BookingList({super.key, required this.statuses});
   final List<String> statuses;
-  final Widget Function() buildEmptyState;
-  final Widget Function(BookingModel) buildBookingCard;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(bookingStoreProvider);
     final now = DateTime.now();
     final filtered = bookings
@@ -36,7 +30,7 @@ class BookingListScreenBookingList extends StatelessWidget {
                   constraints: BoxConstraints(
                     minHeight: constraints.maxHeight - 144,
                   ),
-                  child: buildEmptyState(),
+                  child: const BookingListScreenEmptyState(),
                 ),
               ),
             )
@@ -51,7 +45,7 @@ class BookingListScreenBookingList extends StatelessWidget {
               itemBuilder: (context, index) => FadeSlideStaggered(
                 key: ValueKey(filtered[index].id),
                 index: index,
-                child: buildBookingCard(filtered[index]),
+                child: BookingCard(booking: filtered[index]),
               ),
             ),
     );

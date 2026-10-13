@@ -8,13 +8,14 @@ class RegisterScreenLoginLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         const Text(
           'Đã có tài khoản?',
-          style: TextStyle(
-              color: AppColors.textSecondary, fontSize: AppFontSizes.s14),
+          style:
+              TextStyle(color: AppColors.textSecondary, fontSize: AppFontSizes.s14),
         ),
         TextButton(
           onPressed: () => context.pop(),

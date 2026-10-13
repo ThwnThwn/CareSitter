@@ -2,47 +2,57 @@ import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
-class RegisterScreenPasswordField extends StatelessWidget {
+class RegisterScreenPasswordField extends StatefulWidget {
   const RegisterScreenPasswordField(
       {super.key,
       required this.controller,
-      required this.obscure,
       required this.validator,
-      required this.textInputAction,
-      required this.onSubmitted,
-      required this.label,
-      required this.onToggle});
+      this.enabled = true,
+      this.textInputAction = TextInputAction.next,
+      this.onSubmitted,
+      required this.label});
   final TextEditingController controller;
-  final bool obscure;
+  final bool enabled;
   final String? Function(String?)? validator;
   final TextInputAction? textInputAction;
   final void Function(String)? onSubmitted;
   final String label;
-  final void Function() onToggle;
+  @override
+  State<RegisterScreenPasswordField> createState() =>
+      _RegisterScreenPasswordFieldState();
+}
+
+class _RegisterScreenPasswordFieldState extends State<RegisterScreenPasswordField> {
+  bool _obscure = true;
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
-      obscureText: obscure,
-      validator: validator,
-      textInputAction: textInputAction,
-      onFieldSubmitted: onSubmitted,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      obscureText: _obscure,
+      validator: widget.validator,
+      textInputAction: widget.textInputAction,
+      onFieldSubmitted: widget.onSubmitted,
       style: const TextStyle(
           fontSize: AppFontSizes.s15,
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w500),
       decoration: InputDecoration(
-        labelText: label,
+        labelText: widget.label,
         hintText: '••••••••',
         prefixIcon: const Icon(Icons.lock_outline_rounded,
             color: AppColors.primary, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
-            obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
             color: AppColors.textHint,
             size: 20,
           ),
-          onPressed: onToggle,
+          tooltip: _obscure
+              ? 'Hiện ${widget.label.toLowerCase()}'
+              : 'Ẩn ${widget.label.toLowerCase()}',
+          onPressed:
+              widget.enabled ? () => setState(() => _obscure = !_obscure) : null,
         ),
         filled: true,
         fillColor: Colors.white,

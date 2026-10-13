@@ -1,14 +1,10 @@
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_screen_booking_list.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_screen_empty_state.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_screen_booking_card.dart';
+import '../widgets/booking_list.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_top_padding_unread_count_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_sliver_tab_bar_delegate.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
 
 class BookingListScreen extends ConsumerStatefulWidget {
@@ -67,8 +63,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
         ],
         body: TabBarView(
           controller: _tabController,
-          children: [
-            _buildBookingList([
+          children: const [
+            BookingList(statuses: [
               'draft',
               'pending',
               'pending_payment',
@@ -81,30 +77,19 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
               'checkout_pending_review',
               'crisis',
             ]),
-            _buildBookingList(['completed']),
-            _buildBookingList(
-                ['cancelled', 'matching_failed', 'disputed', 'refunded']),
+            BookingList(statuses: ['completed']),
+            BookingList(
+                statuses: ['cancelled', 'matching_failed', 'disputed', 'refunded']),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBookingList(List<String> statuses) =>
-      BookingListScreenBookingList(
-          ref: ref,
-          statuses: statuses,
-          buildEmptyState: _buildEmptyState,
-          buildBookingCard: _buildBookingCard);
-
-  Widget _buildEmptyState() => const BookingListScreenEmptyState();
-
-  Widget _buildBookingCard(BookingModel booking) =>
-      BookingListScreenBookingCard(
-          booking: booking, formatCurrencyFull: _formatCurrencyFull);
-
-  String _formatCurrencyFull(double amount) {
-    return formatVnd(amount);
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
 

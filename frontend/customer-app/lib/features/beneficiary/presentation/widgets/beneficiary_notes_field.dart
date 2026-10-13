@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class BeneficiaryCreateNotesField extends StatelessWidget {
-  const BeneficiaryCreateNotesField({super.key, required this.notesCtrl});
+class BeneficiaryNotesField extends StatelessWidget {
+  const BeneficiaryNotesField({super.key, required this.notesCtrl});
   final TextEditingController notesCtrl;
 
   @override
