@@ -2,13 +2,12 @@ import '../widgets/booking_detail_app_bar.dart';
 import '../widgets/booking_status_actions.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_content_inner.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_row.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_extend_shift_sheet_selected_hours_format_currency_content_body.dart';
+import '../widgets/booking_extension_unavailable_dialog.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_missing_state.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_more_options_ctx_status_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_booking_fields.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_cancel_button.dart';
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/payment_checkout_sheet.dart';
 import '../../data/models/payment_intent_model.dart';
@@ -68,7 +67,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               confirmCancel: _confirmCancel),
           onPay: () => _handleConfirmPayment(context, ref, booking),
           onTrack: () => context.push('/bookings/${booking.id}/tracking'),
-          onExtend: () => _showExtendShiftSheet(context, booking),
+          onExtend: () => showDialog<void>(
+            context: context,
+            builder: (_) => const BookingExtensionUnavailableDialog(),
+          ),
           onComplete: () => _showCompleteShiftDialog(context, ref, booking),
           onDispute: () => context.push('/bookings/${booking.id}/dispute'),
           onReview: () => context.push('/bookings/${booking.id}/review'),
@@ -174,43 +176,6 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       if (intent.id.isNotEmpty) 'intentId': intent.id,
       'result': 'pending',
     }).toString());
-  }
-
-  String _formatCurrency(double amount) {
-    return formatVnd(amount, suffix: '');
-  }
-
-  void _showExtendShiftSheet(BuildContext context, BookingModel booking) {
-    int selectedHours = 1;
-    final bookedHours =
-        booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
-    final effectiveHourlyRate =
-        bookedHours > 0 ? booking.totalPrice / bookedHours : 0.0;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 20, 20, 32 + MediaQuery.of(ctx).viewInsets.bottom),
-          child:
-              BookingDetailShowExtendShiftSheetSelectedHoursFormatCurrencyContentBody(
-                  selectedHours: selectedHours,
-                  formatCurrency: _formatCurrency,
-                  effectiveHourlyRate: effectiveHourlyRate,
-                  callbackAction1: () {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  }),
-        ),
-      ),
-    );
   }
 
   void _showMoreOptions(
