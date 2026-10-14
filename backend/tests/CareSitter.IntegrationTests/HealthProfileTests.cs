@@ -3,6 +3,7 @@ using CareSitter.Contracts.Nutrition;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.People;
 using CareSitter.Modules.People.Controllers;
+using CareSitter.Modules.People.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -36,6 +37,7 @@ public sealed class HealthProfileTests : IAsyncLifetime
         var services=new ServiceCollection();services.AddLogging();
         services.AddSingleton(_dataSource);
         new PeopleModule().RegisterServices(services,new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>{{"ConnectionStrings:CareSitter",_db.ConnectionString}}).Build());
+        services.UseFixtureProvider<PeopleDbContext>();
         services.AddSingleton<ICurrentUser>(new Actor(owner??_owner,role));return services.BuildServiceProvider();
     }
     private async Task<BeneficiaryHealthSnapshot> ReadAsync()
