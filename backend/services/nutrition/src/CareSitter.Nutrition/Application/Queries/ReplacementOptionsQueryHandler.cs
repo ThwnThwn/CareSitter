@@ -34,7 +34,7 @@ internal sealed class ReplacementOptionsQueryHandler(IPeopleHealthClient people,
             var recipes = await session.RecipesAsync(ct);
             var rules = await session.RulesAsync(ct);
             if (meal.CatalogRevision != revision || analyzed.CatalogRevision != revision ||
-                !NutritionCommandHandler.ContentCurrent(meal, recipes, rules)) return NutritionAccessRules.ContentChanged();
+                !NutritionCatalogConsistency.ContentCurrent(meal, recipes, rules)) return NutritionAccessRules.ContentChanged();
             var health = HealthSnapshotNormalizer.Normalize(source, await session.ConceptsAsync(ct));
             if (NutritionEligibilityPolicy.Evaluate(source, health, analyzed.Facts, rules, true).State != "eligible")
                 return Error.Conflict("nutrition.not_eligible", "Cần kiểm tra lại thông tin sức khỏe.");

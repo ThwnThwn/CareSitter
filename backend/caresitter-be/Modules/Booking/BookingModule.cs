@@ -83,6 +83,10 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();
         services.AddScoped<IMatchingService, MatchingService>();
         services.AddScoped<IBookingJobsService, BookingJobsService>();
+        services.AddScoped<IBookingCheckoutStore, BookingCheckoutStore>();
+        services.AddScoped<BookingCheckoutJobs>();
+        services.AddScoped<IBookingSettlementStore, BookingSettlementStore>();
+        services.AddScoped<IBookingJobNotifier, BookingJobNotifier>();
         services.AddScoped<IAdminBookingReader, AdminBookingReader>();
         services.AddScoped<IPromotionBookingLookup, PromotionBookingLookup>();
     }

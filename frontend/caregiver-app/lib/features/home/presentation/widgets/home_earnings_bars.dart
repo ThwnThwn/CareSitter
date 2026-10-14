@@ -1,18 +1,15 @@
 import 'package:caregiver_app/features/home/presentation/widgets/home_earnings_day_label.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsBars extends StatelessWidget {
   const HomeEarningsBars(
-      {super.key,
-      required this.earningsData,
-      required this.labels,
-      required this.callbackAction2});
+      {super.key, required this.earningsData, required this.labels});
   final List<double> earningsData;
   final List<String> labels;
-  final BarTooltipItem Function(BarChartGroupData, int, BarChartRodData, int)
-      callbackAction2;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -26,7 +23,7 @@ class HomeEarningsBars extends StatelessWidget {
                     .ceilToDouble(),
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
-                getTooltipItem: callbackAction2,
+                getTooltipItem: _tooltipFor,
               ),
             ),
             titlesData: FlTitlesData(
@@ -73,4 +70,12 @@ class HomeEarningsBars extends StatelessWidget {
           ),
         ),
       );
+  BarTooltipItem _tooltipFor(BarChartGroupData group, int groupIndex,
+          BarChartRodData rod, int rodIndex) =>
+      BarTooltipItem(
+          '${earningsData[group.x].toInt()}k',
+          GoogleFonts.beVietnamPro(
+              fontSize: AppFontSizes.s11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary));
 }

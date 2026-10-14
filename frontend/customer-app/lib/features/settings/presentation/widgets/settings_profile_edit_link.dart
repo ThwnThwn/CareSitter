@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class SettingsProfileEditLink extends StatelessWidget {
-  const SettingsProfileEditLink({super.key, required this.callbackAction2});
-  final void Function() callbackAction2;
+  const SettingsProfileEditLink({super.key, required this.onEditProfile});
+  final VoidCallback onEditProfile;
 
   @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
         child: OutlinedButton(
-          onPressed: callbackAction2,
+          onPressed: onEditProfile,
           style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),

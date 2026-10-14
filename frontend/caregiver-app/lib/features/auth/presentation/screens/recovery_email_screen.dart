@@ -85,22 +85,12 @@ class _RecoveryEmailScreenState extends ConsumerState<RecoveryEmailScreen> {
         hidden: _hidden,
         code: _code,
         request: _request,
-        ref: ref,
         confirm: _confirm,
-        callbackAction4: (_) => setState(() {
+        onEmailChanged: (_) => setState(() {
               ref
                   .read(recoveryEmailControllerProvider.notifier)
                   .dismissMessage();
             }),
-        callbackAction5: (value) => value != null &&
-                RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim())
-            ? null
-            : 'Vui lòng nhập email hợp lệ.',
-        callbackAction6: () => setState(() => _hidden = !_hidden),
-        callbackAction9: (value) => value == null || value.isEmpty
-            ? 'Nhập mật khẩu hiện tại để đổi email.'
-            : null,
-        callbackAction10: (value) =>
-            value?.length == 6 ? null : 'Nhập đủ 6 chữ số.');
+        onTogglePassword: () => setState(() => _hidden = !_hidden));
   }
 }

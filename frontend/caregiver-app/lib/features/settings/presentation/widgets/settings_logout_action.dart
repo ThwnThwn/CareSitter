@@ -3,8 +3,8 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
 
 class SettingsLogoutAction extends StatelessWidget {
-  const SettingsLogoutAction({super.key, required this.callbackAction1});
-  final Future<void> Function() callbackAction1;
+  const SettingsLogoutAction({super.key, required this.onLogout});
+  final Future<void> Function() onLogout;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -14,7 +14,7 @@ class SettingsLogoutAction extends StatelessWidget {
           icon: Icons.logout_rounded,
           backgroundColor: AppColors.errorLight,
           foregroundColor: AppColors.error,
-          onPressed: callbackAction1,
+          onPressed: onLogout,
         ),
       );
 }

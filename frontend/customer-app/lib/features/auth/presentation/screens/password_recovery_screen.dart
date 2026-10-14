@@ -1,5 +1,6 @@
-import 'package:caresitter_customer/features/auth/presentation/widgets/password_recovery_content.dart';
-import 'dart:convert';
+import 'package:caresitter_customer/features/auth/presentation/widgets/password_recovery_form.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import '../widgets/password_recovery_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,53 +68,25 @@ class _PasswordRecoveryScreenState
     }
   }
 
-  String? _validatePassword(String? value) {
-    if (value == null ||
-        value.length < 8 ||
-        value.toLowerCase() == value ||
-        !RegExp(r'[0-9]').hasMatch(value)) {
-      return 'Cần ít nhất 8 ký tự, một chữ hoa và một chữ số.';
-    }
-    if (utf8.encode(value).length > 72) {
-      return 'Mật khẩu quá dài (tối đa 72 byte).';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final flow = ref.watch(passwordRecoveryControllerProvider);
-    final title = [
-      'Quên mật khẩu',
-      'Xác minh email',
-      'Đặt mật khẩu mới',
-      'Đã đổi mật khẩu'
-    ][flow.step];
-    return PasswordRecoveryContent(
-        flow: flow,
-        form: _form,
-        title: title,
-        email: _email,
-        code: _code,
-        request: _request,
-        password: _password,
-        hidden: _hidden,
-        validatePassword: _validatePassword,
-        confirmation: _confirmation,
-        submit: _submit,
-        startOver: _startOver,
-        callbackAction1: (_) => _submit(),
-        callbackAction2: (value) => value != null &&
-                RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim())
-            ? null
-            : 'Vui lòng nhập email hợp lệ.',
-        callbackAction3: (_) => _submit(),
-        callbackAction4: (value) =>
-            value?.length == 6 ? null : 'Nhập đủ 6 chữ số.',
-        callbackAction5: () => setState(() => _hidden = !_hidden),
-        callbackAction6: (value) =>
-            value == _password.text ? null : 'Mật khẩu xác nhận chưa khớp.',
-        callbackAction7: (_) => _submit(),
-        callbackAction8: () => context.go('/auth/login'));
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: PasswordRecoveryAppBar(flow: flow),
+      body: PasswordRecoveryForm(
+          form: _form,
+          flow: flow,
+          email: _email,
+          code: _code,
+          password: _password,
+          confirmation: _confirmation,
+          hidden: _hidden,
+          onRequest: _request,
+          onSubmit: _submit,
+          onStartOver: _startOver,
+          onTogglePassword: () => setState(() => _hidden = !_hidden),
+          onSignIn: () => context.go('/auth/login')),
+    );
   }
 }

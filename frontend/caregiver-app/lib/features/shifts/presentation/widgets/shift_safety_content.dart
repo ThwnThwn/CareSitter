@@ -1,22 +1,19 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'shift_safety_item.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class ShiftSafetyContent extends StatelessWidget {
   const ShiftSafetyContent(
-      {super.key,
-      required this.safetyExpanded,
-      required this.safetyItem,
-      required this.callbackAction1});
+      {super.key, required this.safetyExpanded, required this.onToggle});
   final bool safetyExpanded;
-  final Widget Function(String) safetyItem;
-  final void Function() callbackAction1;
+  final void Function() onToggle;
 
   @override
   Widget build(BuildContext context) => Column(
         children: [
           InkWell(
-            onTap: callbackAction1,
+            onTap: onToggle,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -49,23 +46,27 @@ class ShiftSafetyContent extends StatelessWidget {
             ),
           ),
           if (safetyExpanded)
-            Padding(
-              padding: const EdgeInsets.only(
+            const Padding(
+              padding: EdgeInsets.only(
                   left: AppSpacing.md,
                   right: AppSpacing.md,
                   bottom: AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Divider(height: 1, color: AppColors.border),
-                  const SizedBox(height: AppSpacing.compact),
-                  safetyItem(
-                      'Không tự ý cho khách dùng thuốc ngoài danh sách được giao'),
-                  safetyItem(
-                      'Không di chuyển khách ra ngoài khu vực đã được phê duyệt'),
-                  safetyItem(
-                      'Báo cáo ngay nếu phát hiện triệu chứng bất thường'),
-                  safetyItem('Tuân thủ quy trình check-in / check-out GPS'),
+                  Divider(height: 1, color: AppColors.border),
+                  SizedBox(height: AppSpacing.compact),
+                  ShiftSafetyItem(
+                      text:
+                          'Không tự ý cho khách dùng thuốc ngoài danh sách được giao'),
+                  ShiftSafetyItem(
+                      text:
+                          'Không di chuyển khách ra ngoài khu vực đã được phê duyệt'),
+                  ShiftSafetyItem(
+                      text:
+                          'Báo cáo ngay nếu phát hiện triệu chứng bất thường'),
+                  ShiftSafetyItem(
+                      text: 'Tuân thủ quy trình check-in / check-out GPS'),
                 ],
               ),
             ),

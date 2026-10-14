@@ -24,7 +24,9 @@ class HomeOfferActions extends StatelessWidget {
               onDecline: onDecline),
           const SizedBox(width: AppSpacing.compact),
           HomeOfferAcceptAction(
-              isExpired: isExpired, isProcessing: isProcessing, onAccept: onAccept),
+              isExpired: isExpired,
+              isProcessing: isProcessing,
+              onAccept: onAccept),
         ],
       );
 }

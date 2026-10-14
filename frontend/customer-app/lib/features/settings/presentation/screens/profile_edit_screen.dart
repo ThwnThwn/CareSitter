@@ -1,6 +1,5 @@
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_form.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_app_bar.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,6 +150,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileStoreProvider);
     final isUploadingAvatar = ref.watch(avatarUploadingProvider);
+    final isSaving =
+        ref.watch(profileEditControllerProvider.select((state) => state.busy));
 
     return DiscardChangesGuard(
       hasChanges: () => _formState != _initialFormState,
@@ -159,58 +160,28 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         backgroundColor: AppColors.background,
         appBar: ProfileEditAppBar(
             requestExit: requestExit,
-            ref: ref,
-            isUploadingAvatar: isUploadingAvatar,
-            saveProfile: _saveProfile),
+            busy: isSaving || isUploadingAvatar,
+            onSave: _saveProfile),
         body: ProfileEditForm(
             formKey: _formKey,
             pendingAvatarFile: _pendingAvatarFile,
             profile: profile,
-            buildInitials: _buildInitials,
             nameCtrl: _nameCtrl,
             isUploadingAvatar: isUploadingAvatar,
-            ref: ref,
-            pickAvatar: _pickAvatar,
-            buildSectionHeader: _buildSectionHeader,
+            isSaving: isSaving,
+            onPickAvatar: _pickAvatar,
             displayNameCtrl: _displayNameCtrl,
             emailCtrl: _emailCtrl,
             dobCtrl: _dobCtrl,
-            selectDate: _selectDate,
+            onSelectDate: _selectDate,
             gender: _gender,
-            saveProfile: _saveProfile,
-            callbackAction1: (_) => setState(() {}),
-            callbackAction2: (v) => (v == null || v.trim().length < 2)
-                ? 'Vui lòng nhập họ tên hợp lệ (ít nhất 2 ký tự)'
-                : null,
-            callbackAction3: () => context.push('/settings/recovery-email'),
-            callbackAction4: (v) {
-              if (v != null && v.isNotEmpty && !v.contains('@')) {
-                return 'Email không hợp lệ';
-              }
-              return null;
-            },
-            callbackAction5: (v) {
+            onSave: _saveProfile,
+            onNameChanged: (_) => setState(() {}),
+            onEditRecoveryEmail: () => context.push('/settings/recovery-email'),
+            onGenderChanged: (v) {
               if (v != null) setState(() => _gender = v);
             }),
       ),
     );
   }
-
-  String _buildInitials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final initials = parts.map((p) => p[0].toUpperCase()).take(3).join();
-    return initials.isNotEmpty ? initials : 'U';
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-          fontSize: AppFontSizes.s14,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary),
-    );
-  }
 }
-
-// ── Avatar Widget ────────────────────────────────────────────────────────────

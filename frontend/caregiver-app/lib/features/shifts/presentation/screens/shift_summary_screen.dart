@@ -2,7 +2,6 @@ import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_report_action.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_status_icon.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_status_label.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_summary_summary_row.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +64,6 @@ class ShiftSummaryScreen extends StatelessWidget {
 
               // Summary Stats Card
               ShiftSummaryDetails(
-                  buildSummaryRow: _buildSummaryRow,
                   beneficiaryName: beneficiaryName,
                   duration: duration,
                   completedTasks: completedTasks,
@@ -107,18 +105,4 @@ class ShiftSummaryScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildSummaryRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    Color? valueColor,
-    bool isBold = false,
-  }) =>
-      ShiftSummarySummaryRow(
-          icon: icon,
-          label: label,
-          value: value,
-          isBold: isBold,
-          valueColor: valueColor);
 }

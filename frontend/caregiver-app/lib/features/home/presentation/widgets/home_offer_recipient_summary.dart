@@ -20,11 +20,13 @@ class HomeOfferRecipientSummary extends StatelessWidget {
           final earning = HomeOfferEarning(booking: booking);
           if (constraints.maxWidth < 280 ||
               MediaQuery.textScalerOf(context).scale(14) > 18.2) {
-            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              recipient,
-              const SizedBox(height: AppSpacing.sm),
-              Align(alignment: Alignment.centerRight, child: earning),
-            ]);
+            return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  recipient,
+                  const SizedBox(height: AppSpacing.sm),
+                  Align(alignment: Alignment.centerRight, child: earning),
+                ]);
           }
           return Row(children: [Expanded(child: recipient), earning]);
         }),

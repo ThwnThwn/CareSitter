@@ -1,3 +1,6 @@
+import '../models/schedule_date_labels.dart';
+import 'schedule_month_grid.dart';
+import 'schedule_week_strip.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -5,18 +8,14 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 class ScheduleDateSelector extends StatelessWidget {
   const ScheduleDateSelector(
       {super.key,
-      required this.getMonthName,
       required this.isMonthView,
       required this.selectedDate,
       required this.weekStart,
-      required this.buildMonthGrid,
-      required this.buildWeekStrip});
-  final String Function(int) getMonthName;
+      required this.onSelectDate});
   final bool isMonthView;
   final DateTime selectedDate;
   final DateTime weekStart;
-  final Widget Function() buildMonthGrid;
-  final Widget Function() buildWeekStrip;
+  final ValueChanged<DateTime> onSelectDate;
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
@@ -33,7 +32,7 @@ class ScheduleDateSelector extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    '${getMonthName(isMonthView ? selectedDate.month : weekStart.month)} ${isMonthView ? selectedDate.year : weekStart.year}',
+                    '${scheduleMonthName(isMonthView ? selectedDate.month : weekStart.month)} ${isMonthView ? selectedDate.year : weekStart.year}',
                     style: const TextStyle(
                       fontSize: AppFontSizes.s13,
                       fontWeight: FontWeight.w600,
@@ -45,7 +44,13 @@ class ScheduleDateSelector extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.compact),
             // ── Week strip or Month grid ──
-            isMonthView ? buildMonthGrid() : buildWeekStrip(),
+            isMonthView
+                ? ScheduleMonthGrid(
+                    selectedDate: selectedDate, onSelectDate: onSelectDate)
+                : ScheduleWeekStrip(
+                    weekStart: weekStart,
+                    selectedDate: selectedDate,
+                    onSelectDate: onSelectDate),
           ],
         ),
       ),

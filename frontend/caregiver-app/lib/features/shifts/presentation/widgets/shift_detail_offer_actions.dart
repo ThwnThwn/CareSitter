@@ -7,13 +7,11 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 
-class ShiftDetailOfferActions extends StatelessWidget {
-  const ShiftDetailOfferActions(
-      {super.key, required this.ref, required this.bookingId});
-  final WidgetRef ref;
+class ShiftDetailOfferActions extends ConsumerWidget {
+  const ShiftDetailOfferActions({super.key, required this.bookingId});
   final String bookingId;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         ShiftDeclineButton(callbackAction1: () async {
@@ -35,7 +33,7 @@ class ShiftDetailOfferActions extends StatelessWidget {
               ],
             ),
           );
-          if (confirmed != true) return;
+          if (confirmed != true || !context.mounted) return;
           try {
             await ref.read(shiftsProvider.notifier).declineBooking(bookingId);
             if (context.mounted) {

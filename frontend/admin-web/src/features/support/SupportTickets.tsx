@@ -1,10 +1,9 @@
+import { SupportDrawer } from './SupportDrawer';
 import { useState } from 'react';
-import { ExternalLink, RefreshCw, UserCheck } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { optionLabel, useAdminMetadata } from '../../adminMetadata';
-import { api, qs } from '../../api';
+import { qs } from '../../api';
 import {
-  DetailList,
-  Drawer,
   EmptyState,
   ErrorBanner,
   LoadingTable,
@@ -167,122 +166,5 @@ export function SupportTickets() {
         />
       )}
     </>
-  );
-}
-
-function SupportDrawer({
-  ticket,
-  onClose,
-  onChanged,
-}: {
-  ticket: SupportTicket;
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const { filters, statusDefinitions, transitions } = useAdminMetadata();
-  const [status, setStatus] = useState(ticket.status);
-  const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
-  async function assign() {
-    if (busy) return;
-    setBusy('assign');
-    setError('');
-    try {
-      await api(`/api/v1/support/tickets/${ticket.id}/assign`, { method: 'PUT' });
-      onChanged();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể nhận xử lý ticket.');
-    } finally {
-      setBusy('');
-    }
-  }
-  async function updateStatus() {
-    if (busy || status === ticket.status) return;
-    setBusy('status');
-    setError('');
-    try {
-      await api(`/api/v1/support/tickets/${ticket.id}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status }),
-      });
-      onChanged();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể cập nhật trạng thái ticket.');
-    } finally {
-      setBusy('');
-    }
-  }
-  const nextStatuses = [ticket.status, ...(transitions.support[ticket.status] || [])];
-  return (
-    <Drawer
-      title={ticket.title}
-      subtitle={`${optionLabel(filters.ticketTypes.options, ticket.type)} · ${shortId(ticket.id)}`}
-      busy={!!busy}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            className="secondary"
-            disabled={!!busy || !!ticket.assignedAdminId}
-            onClick={() => void assign()}
-          >
-            <UserCheck size={17} />{' '}
-            {ticket.assignedAdminId
-              ? 'Đã phân công'
-              : busy === 'assign'
-                ? 'Đang nhận…'
-                : 'Nhận xử lý'}
-          </button>
-          <button
-            className="primary"
-            disabled={!!busy || status === ticket.status}
-            onClick={() => void updateStatus()}
-          >
-            {busy === 'status' ? 'Đang lưu…' : 'Lưu trạng thái'}
-          </button>
-        </>
-      }
-    >
-      <div className="drawer-status">
-        <StatusChip value={ticket.status} />
-        <StatusChip value={ticket.priority} />
-        <span>{formatDate(ticket.createdAt)}</span>
-      </div>
-      {error && <ErrorBanner message={error} />}
-      <DetailList
-        items={[
-          { label: 'Người gửi', value: ticket.userId },
-          { label: 'Booking', value: ticket.bookingId },
-          { label: 'Admin phụ trách', value: ticket.assignedAdminId || 'Chưa phân công' },
-        ]}
-      />
-      <section className="prose-block">
-        <h3>Nội dung yêu cầu</h3>
-        <p>{ticket.description}</p>
-      </section>
-      {ticket.attachmentUrls?.length > 0 && (
-        <section>
-          <h3 className="subheading">Tệp đính kèm</h3>
-          <div className="attachment-list">
-            {ticket.attachmentUrls.map((url, index) => (
-              <a href={url} target="_blank" rel="noreferrer" key={url}>
-                Tệp đính kèm {index + 1}
-                <ExternalLink size={14} />
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-      <label>
-        Trạng thái tiếp theo
-        <select disabled={!!busy} value={status} onChange={(e) => setStatus(e.target.value)}>
-          {nextStatuses.map((value) => (
-            <option value={value} key={value}>
-              {statusDefinitions[value]?.label || value}
-            </option>
-          ))}
-        </select>
-      </label>
-    </Drawer>
   );
 }

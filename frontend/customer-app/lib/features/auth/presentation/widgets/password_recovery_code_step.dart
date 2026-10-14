@@ -9,14 +9,12 @@ class PasswordRecoveryCodeStep extends StatelessWidget {
       required this.flow,
       required this.email,
       required this.code,
-      required this.callbackAction3,
-      required this.callbackAction4,
+      required this.onSubmit,
       required this.request});
   final PasswordRecoveryState flow;
   final TextEditingController email;
   final TextEditingController code;
-  final void Function(String) callbackAction3;
-  final String? Function(String?) callbackAction4;
+  final Future<void> Function() onSubmit;
   final Future<void> Function({bool resend}) request;
 
   @override
@@ -30,10 +28,10 @@ class PasswordRecoveryCodeStep extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: AppSpacing.lg),
             PasswordRecoveryCodeField(
-                code: code,
-                flow: flow,
-                action1: callbackAction3,
-                action2: callbackAction4),
+              code: code,
+              flow: flow,
+              onSubmit: onSubmit,
+            ),
             Text(
                 flow.expired
                     ? 'Mã đã hết hạn. Hãy gửi lại mã.'

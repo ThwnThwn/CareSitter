@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:flutter/services.dart';
 
 class RecoveryEmailCodeField extends StatelessWidget {
@@ -20,5 +21,5 @@ class RecoveryEmailCodeField extends StatelessWidget {
       autofillHints: const [AutofillHints.oneTimeCode],
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       decoration: const InputDecoration(labelText: 'Mã gồm 6 chữ số'),
-      validator: (value) => value?.length == 6 ? null : 'Nhập đủ 6 chữ số.');
+      validator: RecoveryInputRules.code);
 }

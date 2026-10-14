@@ -6,19 +6,13 @@ class ScheduleHeader extends StatelessWidget {
   const ScheduleHeader(
       {super.key,
       required this.pickDate,
-      required this.getMonthName,
       required this.selectedDate,
       required this.isMonthView,
-      required this.getFullDayOfWeekName,
-      required this.buildNavButton,
       required this.previousPeriod,
       required this.nextPeriod});
   final Future<void> Function() pickDate;
-  final String Function(int) getMonthName;
   final DateTime selectedDate;
   final bool isMonthView;
-  final String Function(int) getFullDayOfWeekName;
-  final Widget Function(IconData, void Function()) buildNavButton;
   final void Function() previousPeriod;
   final void Function() nextPeriod;
   @override
@@ -42,16 +36,20 @@ class ScheduleHeader extends StatelessWidget {
           // Left — Month name + Day of week + Big day number
           SchedulePeriodLabel(
               pickDate: pickDate,
-              getMonthName: getMonthName,
               selectedDate: selectedDate,
-              isMonthView: isMonthView,
-              getFullDayOfWeekName: getFullDayOfWeekName),
+              isMonthView: isMonthView),
           // Right — Navigation arrows (week / month aware)
           Row(
             children: [
-              buildNavButton(Icons.chevron_left, previousPeriod),
+              _PeriodButton(
+                  icon: Icons.chevron_left,
+                  label: 'Kỳ trước',
+                  onTap: previousPeriod),
               const SizedBox(width: AppSpacing.xs),
-              buildNavButton(Icons.chevron_right, nextPeriod),
+              _PeriodButton(
+                  icon: Icons.chevron_right,
+                  label: 'Kỳ sau',
+                  onTap: nextPeriod),
             ],
           ),
           const SizedBox(width: AppSpacing.xs),
@@ -66,4 +64,30 @@ class ScheduleHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PeriodButton extends StatelessWidget {
+  const _PeriodButton(
+      {required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(icon, size: 20, color: AppColors.textSecondary),
+          ),
+        ),
+      );
 }

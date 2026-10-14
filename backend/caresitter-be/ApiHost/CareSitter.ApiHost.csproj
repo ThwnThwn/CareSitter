@@ -11,6 +11,9 @@
   <ItemGroup>
     <ProjectReference Include="../Shared/CareSitter.Messaging.Kafka/CareSitter.Messaging.Kafka.csproj" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.33.4" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.84.0" PrivateAssets="all" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.20" />
     <PackageReference Include="Hangfire.Core" Version="1.8.20" />
     <PackageReference Include="Hangfire.InMemory" Version="1.0.0" />
@@ -39,6 +42,10 @@
   <ItemGroup>
     <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
     <InternalsVisibleTo Include="CareSitter.Modules.Routing.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="../../services/nutrition/protos/nutrition.proto" GrpcServices="Client" Link="Protos/nutrition.proto" />
   </ItemGroup>
 
 </Project>

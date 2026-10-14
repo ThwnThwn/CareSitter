@@ -158,7 +158,6 @@ class _ShiftMapScreenState extends ConsumerState<ShiftMapScreen> {
                 ShiftRouteMap(
                     center: center,
                     current: current,
-                    ref: ref,
                     tiles: tiles,
                     destination: destination),
                 ShiftRouteOverlay(

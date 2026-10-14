@@ -1,13 +1,11 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
 
 class SavedAddressesScreenErrorState extends StatelessWidget {
   const SavedAddressesScreenErrorState(
-      {super.key, required this.ref, required this.addNewAddress});
-  final WidgetRef ref;
+      {super.key, required this.onRetry, required this.addNewAddress});
+  final VoidCallback onRetry;
   final Future<void> Function() addNewAddress;
   @override
   Widget build(BuildContext context) {
@@ -34,7 +32,7 @@ class SavedAddressesScreenErrorState extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => ref.invalidate(addressStoreProvider),
+                onPressed: onRetry,
                 child: const Text('Thử lại'),
               ),
             ],

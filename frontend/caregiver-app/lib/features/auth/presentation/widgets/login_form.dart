@@ -14,28 +14,22 @@ class LoginForm extends StatelessWidget {
       {super.key,
       required this.usePassword,
       required this.identifierController,
-      required this.validateIdentifier,
       required this.passwordController,
       required this.obscurePassword,
-      required this.validatePassword,
       required this.isLoading,
       required this.loginWithPassword,
       required this.requestOtp,
-      required this.callbackAction3,
-      required this.callbackAction4,
-      required this.callbackAction5});
+      required this.onMethodChanged,
+      required this.onTogglePassword});
   final bool usePassword;
   final TextEditingController identifierController;
-  final String? Function(String?) validateIdentifier;
   final TextEditingController passwordController;
   final bool obscurePassword;
-  final String? Function(String?) validatePassword;
   final bool isLoading;
   final Future<void> Function() loginWithPassword;
   final Future<void> Function() requestOtp;
-  final void Function() callbackAction3;
-  final void Function() callbackAction4;
-  final void Function() callbackAction5;
+  final ValueChanged<bool> onMethodChanged;
+  final void Function() onTogglePassword;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -61,17 +55,14 @@ class LoginForm extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.compact),
             ),
             child: LoginMethodToggle(
-                usePassword: usePassword,
-                callbackAction1: callbackAction3,
-                callbackAction2: callbackAction4),
+                usePassword: usePassword, onChanged: onMethodChanged),
           ),
           const SizedBox(height: AppSpacing.section),
 
           // Email / Phone field
           LoginIdentifierField(
               identifierController: identifierController,
-              usePassword: usePassword,
-              validateIdentifier: validateIdentifier),
+              usePassword: usePassword),
           const SizedBox(height: AppSpacing.md),
 
           // Password field (nếu usePassword)
@@ -79,8 +70,7 @@ class LoginForm extends StatelessWidget {
             LoginPasswordField(
                 passwordController: passwordController,
                 obscurePassword: obscurePassword,
-                validatePassword: validatePassword,
-                callbackAction1: callbackAction5),
+                onTogglePassword: onTogglePassword),
             LoginRecoveryLink(isLoading: isLoading),
             const SizedBox(height: AppSpacing.section),
           ],

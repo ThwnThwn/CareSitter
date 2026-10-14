@@ -4,7 +4,6 @@ import 'package:caregiver_app/features/auth/presentation/widgets/recovery_email/
 import 'package:caregiver_app/features/auth/presentation/widgets/recovery_email_submit_button.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/recovery_email_controller.dart';
 
 class RecoveryEmailForm extends StatelessWidget {
@@ -16,14 +15,10 @@ class RecoveryEmailForm extends StatelessWidget {
       required this.changing,
       required this.password,
       required this.hidden,
-      required this.callbackAction4,
-      required this.callbackAction5,
-      required this.callbackAction6,
-      required this.callbackAction9,
+      required this.onEmailChanged,
+      required this.onTogglePassword,
       required this.code,
       required this.request,
-      required this.ref,
-      required this.callbackAction10,
       required this.confirm});
   final GlobalKey<FormState> form;
   final RecoveryEmailState flow;
@@ -31,14 +26,10 @@ class RecoveryEmailForm extends StatelessWidget {
   final bool changing;
   final TextEditingController password;
   final bool hidden;
-  final void Function(String) callbackAction4;
-  final String? Function(String?) callbackAction5;
-  final void Function() callbackAction6;
-  final String? Function(String?) callbackAction9;
+  final void Function(String) onEmailChanged;
+  final void Function() onTogglePassword;
   final TextEditingController code;
   final Future<void> Function({bool resend}) request;
-  final WidgetRef ref;
-  final String? Function(String?) callbackAction10;
   final Future<void> Function() confirm;
 
   @override
@@ -49,23 +40,21 @@ class RecoveryEmailForm extends StatelessWidget {
             email: flow.currentEmail!, verified: flow.verified),
         if (flow.challengeId == null)
           RecoveryEmailInputFields(
-              email: email,
-              flow: flow,
-              changing: changing,
-              password: password,
-              hidden: hidden,
-              callbackAction1: callbackAction4,
-              callbackAction2: callbackAction5,
-              callbackAction7: callbackAction6,
-              callbackAction8: callbackAction9)
+            email: email,
+            flow: flow,
+            changing: changing,
+            password: password,
+            hidden: hidden,
+            onEmailChanged: onEmailChanged,
+            onTogglePassword: onTogglePassword,
+          )
         else
           RecoveryEmailCodeStep(
-              email: email,
-              code: code,
-              flow: flow,
-              request: request,
-              ref: ref,
-              callbackAction3: callbackAction10),
+            email: email,
+            code: code,
+            flow: flow,
+            request: request,
+          ),
         if (flow.error != null) ...[
           const SizedBox(height: AppSpacing.md),
           Semantics(

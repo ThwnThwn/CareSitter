@@ -47,8 +47,35 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         { kill.Parameters.AddWithValue("name", _name); await kill.ExecuteNonQueryAsync(); }
         await using (var drop = new NpgsqlCommand($"DROP DATABASE \"{_name}\"; DROP ROLE \"{_role}\";", connection)) await drop.ExecuteNonQueryAsync();
     }
-    private NutritionCommandHandler Handler(Guid? owner = null, string role = "CUSTOMER") => new(_people, _store, new Actor(owner ?? _owner, role), new Features());
-    private NutritionCommand Request(string op = "assess", Guid? id = null, Guid? assessment = null) => new(op, _people.Source.BeneficiaryId, _people.Source.Revision, Guid.NewGuid(), id, assessment);
+    private CommandDispatcher Handler(Guid? owner = null, string role = "CUSTOMER") =>
+        new(new NutritionWriteScope(_people, _store, new Actor(owner ?? _owner, role), new Features()));
+    private NutritionWriteCommand Request(string op = "assess", Guid? id = null, Guid? assessment = null)
+    {
+        var beneficiary = _people.Source.BeneficiaryId;
+        var input = new NutritionWriteInput(_people.Source.Revision, Guid.NewGuid(), assessment);
+        return op switch
+        {
+            "assess" => new AssessNutritionCommand(beneficiary, input),
+            "confirm" => new ConfirmNutritionCommand(beneficiary, id ?? Guid.Empty, input),
+            "recommend" => new RecommendMealsCommand(beneficiary, input),
+            "replace" => new ReplaceMealCommand(beneficiary, id ?? Guid.Empty, input),
+            "save" => new SaveMealPlanCommand(beneficiary, id ?? Guid.Empty, input),
+            _ => throw new ArgumentException("Unknown test operation.")
+        };
+    }
+    private sealed class CommandDispatcher(NutritionWriteScope scope)
+    {
+        public Task<Primitives.Result<ResourceResponse>> Handle(NutritionWriteCommand command, CancellationToken ct) =>
+            command switch
+            {
+                AssessNutritionCommand assess => new AssessNutritionCommandHandler(scope).Handle(assess, ct),
+                ConfirmNutritionCommand confirm => new ConfirmNutritionCommandHandler(scope).Handle(confirm, ct),
+                RecommendMealsCommand recommend => new RecommendMealsCommandHandler(scope, new()).Handle(recommend, ct),
+                ReplaceMealCommand replace => new ReplaceMealCommandHandler(scope, new()).Handle(replace, ct),
+                SaveMealPlanCommand save => new SaveMealPlanCommandHandler(scope, new()).Handle(save, ct),
+                _ => throw new ArgumentException("Unknown test command.")
+            };
+    }
     private async Task<Guid> AssessAsync()
     {
         var result = await Handler().Handle(Request(), default); Assert.True(result.IsSuccess); return result.Value.Id;
@@ -68,11 +95,29 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         Assert.All(results, r => Assert.True(r.IsSuccess)); Assert.Single(results.Select(r => r.Value.Id).Distinct());
         var conflict = await Handler().Handle(request with { BeneficiaryId = Guid.NewGuid() }, default);
         Assert.True(conflict.IsFailure);
-        var sameKeyDifferentPayload = await Handler().Handle(request with { PlannedDate = new DateOnly(2027, 1, 1) }, default);
+        var sameKeyDifferentPayload = await Handler().Handle(request with { Input = request.Input with { PlannedDate = new DateOnly(2027, 1, 1) } }, default);
         Assert.Equal("nutrition.idempotency_conflict", sameKeyDifferentPayload.Error.Code);
         await using var connection = await _dataSource.OpenConnectionAsync();
         await using (var command = new NpgsqlCommand("SELECT count(*)::int FROM nutrition.assessments", connection)) Assert.Equal(0, await command.ExecuteScalarAsync());
         await using (var command = new NpgsqlCommand("SELECT to_regclass('people.beneficiaries') IS NULL", connection)) Assert.Equal(true, await command.ExecuteScalarAsync());
+    }
+    [PostgresFact]
+    public async Task Readiness_requires_full_schema_restricted_role_and_owner_policies()
+    {
+        Assert.True(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
+        await using var admin = NpgsqlDataSource.Create(_database);
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(admin, default));
+        await SqlAsync($"REVOKE USAGE ON SCHEMA nutrition FROM \"{_role}\"");
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
+        await SqlAsync($"GRANT USAGE ON SCHEMA nutrition TO \"{_role}\"; GRANT INSERT ON nutrition.recipe_versions TO \"{_role}\"");
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
+        await SqlAsync($"REVOKE INSERT ON nutrition.recipe_versions FROM \"{_role}\"; DELETE FROM nutrition.catalog_state");
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
+        await SqlAsync("INSERT INTO nutrition.catalog_state VALUES(1,1)");
+        await SqlAsync("ALTER TABLE nutrition.meal_plans DISABLE ROW LEVEL SECURITY");
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
+        await SqlAsync("ALTER TABLE nutrition.meal_plans ENABLE ROW LEVEL SECURITY; ALTER TABLE nutrition.preferences RENAME COLUMN payload TO missing_payload");
+        Assert.False(await NutritionDatabaseReadiness.CheckAsync(_dataSource, default));
     }
     [PostgresFact]
     public async Task Structured_flow_confirms_and_returns_no_content_without_demo()
@@ -189,7 +234,7 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
             AllergyStatus = "reported_present",
             Allergies = JsonSerializer.SerializeToElement(new[] { "Tôm" }),
             ChronicConditions = JsonSerializer.SerializeToElement(new[] { "A" }),
-            HealthHistory = JsonSerializer.SerializeToElement(new { nutrition = new { schemaVersion = 1, conditionsStatus = "reported_present" } })
+            HealthHistory = EligibilityTests.History(conditionsStatus: "reported_present")
         };
         var id = await AssessAsync(); await ProcessAsync(); await Handler().Handle(Request("confirm", id), default);
         var recommended = await Handler().Handle(Request("recommend", assessment: id), default); Assert.Equal("suggested", recommended.Value.Status);
@@ -197,9 +242,11 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
             .Handle(new(_people.Source.BeneficiaryId, recommended.Value.Id, "lunch"), default);
         Assert.True(options.IsSuccess); Assert.NotEmpty(options.Value);
         Assert.DoesNotContain(options.Value, r => r.VersionId == unsafeSalt.VersionId || r.VersionId == unsafeAllergy.VersionId);
-        var rejected = await Handler().Handle(Request("replace", recommended.Value.Id) with { RecipeVersionId = unsafeSalt.VersionId, MealType = "lunch" }, default);
+        var rejected = await Handler().Handle(((ReplaceMealCommand)Request("replace", recommended.Value.Id)) with
+        { Input = new(_people.Source.Revision, Guid.NewGuid(), RecipeVersionId: unsafeSalt.VersionId, MealType: "lunch") }, default);
         Assert.Equal("nutrition.constraint", rejected.Error.Code);
-        var chosen = options.Value[0]; var replaced = await Handler().Handle(Request("replace", recommended.Value.Id) with { RecipeVersionId = chosen.VersionId, MealType = "lunch" }, default);
+        var chosen = options.Value[0]; var replaced = await Handler().Handle(((ReplaceMealCommand)Request("replace", recommended.Value.Id)) with
+        { Input = new(_people.Source.Revision, Guid.NewGuid(), RecipeVersionId: chosen.VersionId, MealType: "lunch") }, default);
         Assert.Equal("suggested", replaced.Value.Status); Assert.NotEqual(recommended.Value.Id, replaced.Value.Id);
         _people.Deleted = true;
         var history = await new NutritionResourceQueryHandler(_people, _store, new Actor(_owner, "CUSTOMER"), new Features()).Handle(new ListMealPlansQuery(_people.Source.BeneficiaryId), default);

@@ -41,9 +41,11 @@
 !*.env.example
 secrets.json
 appsettings.*.Local.json
+appsettings.*.Local.json.tmp
 *firebase-adminsdk*.json
 firebase-service-account*.json
 deploy/secrets/
+deploy/backups/
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 **/macos/Runner/GoogleService-Info.plist

@@ -6,7 +6,8 @@ class HomeOfferDisplayModel {
   static String? countdownLabel(Duration? remaining) {
     if (remaining == null || remaining <= Duration.zero) return null;
     final minutes = remaining.inMinutes.toString().padLeft(2, '0');
-    final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
     return 'Còn $minutes:$seconds';
   }
 

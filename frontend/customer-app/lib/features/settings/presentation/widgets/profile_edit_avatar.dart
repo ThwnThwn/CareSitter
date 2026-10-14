@@ -2,25 +2,22 @@ import 'package:caresitter_customer/features/settings/presentation/widgets/profi
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 
 class ProfileEditAvatar extends StatelessWidget {
   const ProfileEditAvatar(
       {super.key,
       required this.pendingAvatarFile,
-      required this.profile,
-      required this.buildInitials,
-      required this.nameCtrl,
+      required this.avatarUrl,
+      required this.name,
       required this.isUploadingAvatar,
       required this.isSaving,
-      required this.pickAvatar});
+      required this.onPickAvatar});
   final XFile? pendingAvatarFile;
-  final UserProfile profile;
-  final String Function(String) buildInitials;
-  final TextEditingController nameCtrl;
+  final String? avatarUrl;
+  final String name;
   final bool isUploadingAvatar;
   final bool isSaving;
-  final Future<void> Function() pickAvatar;
+  final VoidCallback onPickAvatar;
   @override
   Widget build(BuildContext context) => Center(
         child: Stack(
@@ -28,16 +25,16 @@ class ProfileEditAvatar extends StatelessWidget {
             ProfileEditAvatarWidget(
               avatarUrl: pendingAvatarFile != null
                   ? null // preview local file bên dưới
-                  : profile.avatarUrl,
+                  : avatarUrl,
               localFile: pendingAvatarFile,
-              initials: buildInitials(nameCtrl.text),
+              initials: _initials(name),
               isUploading: isUploadingAvatar,
             ),
             Positioned(
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: (isUploadingAvatar || isSaving) ? null : pickAvatar,
+                onTap: (isUploadingAvatar || isSaving) ? null : onPickAvatar,
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: const BoxDecoration(
@@ -52,4 +49,9 @@ class ProfileEditAvatar extends StatelessWidget {
           ],
         ),
       );
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final initials = parts.map((p) => p[0].toUpperCase()).take(3).join();
+    return initials.isNotEmpty ? initials : 'U';
+  }
 }

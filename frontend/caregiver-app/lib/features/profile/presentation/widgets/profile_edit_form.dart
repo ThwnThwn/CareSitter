@@ -28,7 +28,7 @@ class ProfileEditForm extends StatelessWidget {
       required this.skillInputController,
       required this.addSkill,
       required this.removeSkill,
-      required this.callbackAction1});
+      required this.onGenderChanged});
   final GlobalKey<FormState> formKey;
   final CaregiverProfileModel profile;
   final bool isUploadingAvatar;
@@ -45,7 +45,7 @@ class ProfileEditForm extends StatelessWidget {
   final TextEditingController skillInputController;
   final void Function() addSkill;
   final void Function(String) removeSkill;
-  final void Function(String) callbackAction1;
+  final ValueChanged<String> onGenderChanged;
 
   @override
   Widget build(BuildContext context) => Form(
@@ -77,7 +77,7 @@ class ProfileEditForm extends StatelessWidget {
             ProfileGenderDobRow(
               gender: gender,
               dobController: dobController,
-              onGenderChanged: callbackAction1,
+              onGenderChanged: onGenderChanged,
               onTapDob: selectDateOfBirth,
             ),
             const SizedBox(height: AppSpacing.lg),

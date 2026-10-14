@@ -1,60 +1,66 @@
-import 'package:caresitter_customer/features/auth/presentation/widgets/recovery_email_body.dart';
-import 'package:caresitter_customer/features/auth/presentation/widgets/recovery_email_app_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/auth/presentation/controllers/recovery_email_controller.dart';
+import '../controllers/recovery_email_controller.dart';
+import 'recovery_email_app_bar.dart';
+import 'recovery_email_form.dart';
 
 class RecoveryEmailContent extends StatelessWidget {
   const RecoveryEmailContent(
       {super.key,
       required this.flow,
-      required this.load,
+      required this.onReload,
       required this.form,
       required this.email,
       required this.changing,
       required this.password,
       required this.hidden,
       required this.code,
-      required this.request,
-      required this.ref,
-      required this.confirm,
-      required this.callbackAction1,
-      required this.callbackAction2,
-      required this.callbackAction3});
+      required this.onRequest,
+      required this.onConfirm,
+      required this.onEmailChanged,
+      required this.onTogglePassword});
   final RecoveryEmailState flow;
-  final Future<void> Function() load;
   final GlobalKey<FormState> form;
-  final TextEditingController email;
-  final bool changing;
-  final TextEditingController password;
-  final bool hidden;
-  final TextEditingController code;
-  final Future<void> Function({bool resend}) request;
-  final WidgetRef ref;
-  final Future<void> Function() confirm;
-  final void Function(String) callbackAction1;
-  final void Function() callbackAction2;
-  final String? Function(String?) callbackAction3;
+  final TextEditingController email, password, code;
+  final bool changing, hidden;
+  final VoidCallback onReload, onTogglePassword;
+  final Future<void> Function() onConfirm;
+  final Future<void> Function({bool resend}) onRequest;
+  final ValueChanged<String> onEmailChanged;
 
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: AppColors.background,
         appBar: RecoveryEmailAppBar(flow: flow),
-        body: RecoveryEmailBody(
-            flow: flow,
-            load: load,
-            form: form,
-            email: email,
-            callbackAction1: callbackAction1,
-            changing: changing,
-            password: password,
-            hidden: hidden,
-            callbackAction2: callbackAction2,
-            callbackAction3: callbackAction3,
-            code: code,
-            request: request,
-            ref: ref,
-            confirm: confirm),
+        body: SafeArea(
+            child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: flow.loading
+                    ? const LinearProgressIndicator()
+                    : flow.currentEmail == null
+                        ? Column(children: [
+                            Text(flow.error ?? 'Chưa tải được email.'),
+                            TextButton(
+                                onPressed: onReload,
+                                child: const Text('Tải lại')),
+                          ])
+                        : RecoveryEmailForm(
+                            form: form,
+                            flow: flow,
+                            email: email,
+                            changing: changing,
+                            password: password,
+                            hidden: hidden,
+                            code: code,
+                            onRequest: onRequest,
+                            onConfirm: onConfirm,
+                            onEmailChanged: onEmailChanged,
+                            onTogglePassword: onTogglePassword),
+              )),
+        )),
       );
 }

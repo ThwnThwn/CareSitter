@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { AlertCircle, Inbox, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
+// Utility functions sống trong utils/format.ts — re-export ở đây để backward-compatible
+export { formatMoney, formatDate, shortId } from '../utils/format';
 
 export function StatusChip({ value }: { value?: string }) {
   const { statusDefinitions } = useAdminMetadata();
@@ -82,7 +84,11 @@ export function Drawer({ title, subtitle, onClose, children, footer, busy = fals
       else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first.focus(); }
     };
-    const keepFocus = (event: FocusEvent) => { if (event.target instanceof Node && !dialog.current?.contains(event.target)) dialog.current?.focus(); };
+    const keepFocus = (event: FocusEvent) => {
+      // Giới hạn trong document.body — tránh conflict với portal/popup third-party.
+      if (!(event.target instanceof Node) || !document.body.contains(event.target)) return;
+      if (!dialog.current?.contains(event.target)) dialog.current?.focus();
+    };
     document.addEventListener('keydown', onKey);
     document.addEventListener('focusin', keepFocus);
     document.body.classList.add('drawer-open');
@@ -128,16 +134,3 @@ export function Tabs({ value, onChange, items }: {
 export function SectionTitle({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return <div className="section-title"><div><h2>{title}</h2>{description && <p>{description}</p>}</div>{action}</div>;
 }
-
-export function formatMoney(value?: number) {
-  return new Intl.NumberFormat('vi-VN').format(value || 0) + ' đ';
-}
-
-export function formatDate(value?: string, withTime = true) {
-  if (!value || !Number.isFinite(Date.parse(value))) return '—';
-  return new Intl.DateTimeFormat('vi-VN', withTime
-    ? { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }
-    : { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
-}
-
-export function shortId(value?: string) { return value ? `#${value.slice(0, 8).toUpperCase()}` : '—'; }

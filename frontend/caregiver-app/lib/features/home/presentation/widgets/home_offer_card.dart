@@ -67,8 +67,9 @@ class HomeOfferCard extends ConsumerWidget {
               },
               onAccept: () => runOfferAction(context, booking.id,
                   successMessage: 'Đã nhận ca. Ca nằm trong lịch sắp tới.',
-                  action: () =>
-                      ref.read(shiftsProvider.notifier).acceptBooking(booking.id))),
+                  action: () => ref
+                      .read(shiftsProvider.notifier)
+                      .acceptBooking(booking.id))),
         ],
       ),
     );

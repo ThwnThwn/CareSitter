@@ -132,7 +132,7 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         {
             await using var db = CreatePaymentsDbContext();
             var service = new WalletService(
-                db,
+                new WalletLedgerStore(db),
                 new DisputeLookupStub(),
                 new PeopleLookupStub(caregiver.ProfileId, caregiver.UserId));
             return await service.SettleAsync(

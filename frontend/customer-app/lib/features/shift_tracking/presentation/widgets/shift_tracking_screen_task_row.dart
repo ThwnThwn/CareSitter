@@ -4,14 +4,8 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class ShiftTrackingScreenTaskRow extends StatelessWidget {
-  const ShiftTrackingScreenTaskRow(
-      {super.key,
-      required this.task,
-      required this.iconForTask,
-      required this.showPhotoPreviewDialog});
+  const ShiftTrackingScreenTaskRow({super.key, required this.task});
   final CareTaskModel task;
-  final IconData Function(String) iconForTask;
-  final void Function(BuildContext, String) showPhotoPreviewDialog;
   @override
   Widget build(BuildContext context) {
     final isDone = task.isCompleted;
@@ -36,12 +30,8 @@ class ShiftTrackingScreenTaskRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: borderColor, width: 0.8),
       ),
-      child: ShiftTaskRowContent(
-          isDone: isDone,
-          isSkipped: isSkipped,
-          iconForTask: iconForTask,
-          task: task,
-          showPhotoPreviewDialog: showPhotoPreviewDialog),
+      child:
+          ShiftTaskRowContent(isDone: isDone, isSkipped: isSkipped, task: task),
     );
   }
 }

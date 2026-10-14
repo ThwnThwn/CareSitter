@@ -1,5 +1,6 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import '../../domain/login_input_rules.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class LoginPasswordField extends StatelessWidget {
@@ -7,18 +8,16 @@ class LoginPasswordField extends StatelessWidget {
       {super.key,
       required this.passwordController,
       required this.obscurePassword,
-      required this.validatePassword,
-      required this.callbackAction1});
+      required this.onTogglePassword});
   final TextEditingController passwordController;
   final bool obscurePassword;
-  final String? Function(String?) validatePassword;
-  final void Function() callbackAction1;
+  final void Function() onTogglePassword;
 
   @override
   Widget build(BuildContext context) => TextFormField(
         controller: passwordController,
         obscureText: obscurePassword,
-        validator: validatePassword,
+        validator: LoginInputRules.password,
         style: const TextStyle(
           fontSize: AppFontSizes.s15,
           fontWeight: FontWeight.w500,
@@ -38,7 +37,7 @@ class LoginPasswordField extends StatelessWidget {
                   : Icons.visibility_outlined,
               color: AppColors.textSecondary,
             ),
-            onPressed: callbackAction1,
+            onPressed: onTogglePassword,
           ),
         ),
       );

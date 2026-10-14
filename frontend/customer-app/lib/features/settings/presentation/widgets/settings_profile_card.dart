@@ -9,11 +9,9 @@ class SettingsProfileCard extends StatelessWidget {
       {super.key,
       required this.profile,
       required this.bookingCount,
-      required this.formatCurrency,
       required this.totalSpent});
   final UserProfile profile;
   final int bookingCount;
-  final String Function(double) formatCurrency;
   final double totalSpent;
   @override
   Widget build(BuildContext context) {
@@ -38,10 +36,8 @@ class SettingsProfileCard extends StatelessWidget {
           profile: profile,
           initials: initials,
           bookingCount: bookingCount,
-          formatCurrency: formatCurrency,
           totalSpent: totalSpent,
-          callbackAction1: () => context.push('/settings/profile/edit'),
-          callbackAction2: () => context.push('/settings/profile/edit')),
+          onEditProfile: () => context.push('/settings/profile/edit')),
     );
   }
 }

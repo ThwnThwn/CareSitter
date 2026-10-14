@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package caresitter.nutrition.v1;
+option csharp_namespace = "CareSitter.Nutrition.Grpc.V1";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// Identity comes from the validated bearer token, never from a request owner ID.
+service NutritionRpc {
+  rpc GetCapabilities(google.protobuf.Empty) returns (CapabilitiesResponse);
+  rpc Execute(CommandRequest) returns (ResourceResult);
+  rpc GetResource(ResourceRequest) returns (ResourceResult);
+  rpc ListMealPlans(BeneficiaryRequest) returns (ResourceListResult);
+  rpc GetReplacementOptions(ReplacementOptionsRequest) returns (RecipeListResult);
+}
+
+enum CommandOperation {
+  COMMAND_OPERATION_UNSPECIFIED = 0;
+  COMMAND_OPERATION_ASSESS = 1;
+  COMMAND_OPERATION_CONFIRM = 2;
+  COMMAND_OPERATION_RECOMMEND = 3;
+  COMMAND_OPERATION_REPLACE = 4;
+  COMMAND_OPERATION_SAVE = 5;
+}
+
+enum ResourceKind {
+  RESOURCE_KIND_UNSPECIFIED = 0;
+  RESOURCE_KIND_ASSESSMENT = 1;
+  RESOURCE_KIND_RECOMMENDATION = 2;
+  RESOURCE_KIND_PLAN = 3;
+}
+
+enum FailureKind {
+  FAILURE_KIND_UNSPECIFIED = 0;
+  FAILURE_KIND_VALIDATION = 1;
+  FAILURE_KIND_NOT_FOUND = 2;
+  FAILURE_KIND_CONFLICT = 3;
+  FAILURE_KIND_FORBIDDEN = 4;
+  FAILURE_KIND_UNAVAILABLE = 5;
+  FAILURE_KIND_UNAUTHORIZED = 6;
+  FAILURE_KIND_RATE_LIMITED = 7;
+}
+
+message CapabilitiesResponse {
+  bool enabled = 1;
+  bool assessments_enabled = 2;
+  bool recommendations_enabled = 3;
+}
+
+message CommandRequest {
+  CommandOperation operation = 1;
+  string beneficiary_id = 2;
+  int64 expected_health_revision = 3;
+  string idempotency_key = 4;
+  optional string resource_id = 5;
+  optional string assessment_id = 6;
+  // ISO 8601 date, yyyy-MM-dd; no timezone conversion.
+  optional string planned_date = 7;
+  optional string recipe_version_id = 8;
+  optional string meal_type = 9;
+}
+
+message ResourceRequest {
+  ResourceKind kind = 1;
+  string beneficiary_id = 2;
+  string resource_id = 3;
+}
+
+message BeneficiaryRequest { string beneficiary_id = 1; }
+message ReplacementOptionsRequest {
+  string beneficiary_id = 1;
+  string recommendation_id = 2;
+  string meal_type = 3;
+}
+
+message Resource {
+  string id = 1;
+  string beneficiary_id = 2;
+  int64 health_revision = 3;
+  string status = 4;
+  // Existing versioned assessment/meal payload, including exact decimal values.
+  string data_json = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message Failure {
+  string code = 1;
+  string message = 2;
+  FailureKind kind = 3;
+}
+
+message ResourceResult {
+  oneof outcome { Resource resource = 1; Failure failure = 2; }
+}
+message ResourceList { repeated Resource resources = 1; }
+message ResourceListResult {
+  oneof outcome { ResourceList items = 1; Failure failure = 2; }
+}
+message RecipeOption { string data_json = 1; }
+message RecipeList { repeated RecipeOption recipes = 1; }
+message RecipeListResult {
+  oneof outcome { RecipeList items = 1; Failure failure = 2; }
+}

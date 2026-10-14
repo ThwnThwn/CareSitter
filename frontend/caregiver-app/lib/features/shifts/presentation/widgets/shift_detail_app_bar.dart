@@ -4,8 +4,7 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 
 class ShiftDetailAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const ShiftDetailAppBar({super.key, required this.callbackAction1});
-  final void Function() callbackAction1;
+  const ShiftDetailAppBar({super.key});
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
   @override
@@ -23,12 +22,5 @@ class ShiftDetailAppBar extends StatelessWidget implements PreferredSizeWidget {
               color: AppColors.textPrimary),
         ),
         leading: const AppBackButton(fallbackRoute: '/shifts'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded,
-                color: AppColors.textSecondary),
-            onPressed: callbackAction1,
-          ),
-        ],
       );
 }

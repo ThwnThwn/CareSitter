@@ -41,9 +41,11 @@ class SettingsRepository {
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
+    ApiCancellation? cancellation,
   }) async {
-    final response = await _dio.put<Map<String, dynamic>>(
+    final response = await _dio.putCancelable<Map<String, dynamic>>(
       '/profile/password',
+      cancelToken: (cancellation ?? ApiCancellation()).transportToken,
       data: {
         'CurrentPassword': currentPassword,
         'NewPassword': newPassword,

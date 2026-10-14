@@ -4,22 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/recovery_email_controller.dart';
 
-class RecoveryEmailCodeStep extends StatelessWidget {
+class RecoveryEmailCodeStep extends ConsumerWidget {
   const RecoveryEmailCodeStep(
       {super.key,
       required this.email,
       required this.code,
       required this.flow,
-      required this.request,
-      required this.ref});
+      required this.request});
   final TextEditingController email;
   final TextEditingController code;
   final RecoveryEmailState flow;
   final Future<void> Function({bool resend}) request;
-  final WidgetRef ref;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context, WidgetRef ref) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

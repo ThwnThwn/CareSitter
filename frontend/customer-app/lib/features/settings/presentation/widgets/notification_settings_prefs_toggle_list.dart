@@ -18,13 +18,15 @@ class NotificationSettingsPrefsToggleList extends StatelessWidget {
             title: 'Cập nhật booking',
             subtitle: 'Xác nhận, thay đổi, hủy lịch chăm sóc',
             value: prefs.bookingUpdates,
-            onChanged: (value) => onChanged(prefs.copyWith(bookingUpdates: value))),
+            onChanged: (value) =>
+                onChanged(prefs.copyWith(bookingUpdates: value))),
         _PreferenceTile(
             icon: Icons.payments_outlined,
             title: 'Thông báo thanh toán',
             subtitle: 'Biên lai, hoàn tiền, hóa đơn',
             value: prefs.paymentUpdates,
-            onChanged: (value) => onChanged(prefs.copyWith(paymentUpdates: value))),
+            onChanged: (value) =>
+                onChanged(prefs.copyWith(paymentUpdates: value))),
         _PreferenceTile(
             icon: Icons.directions_walk_outlined,
             title: 'Caregiver đang đến',
@@ -46,7 +48,8 @@ class NotificationSettingsPrefsToggleList extends StatelessWidget {
             title: 'Tin nhắn',
             subtitle: 'Tin nhắn từ caregiver trong lịch',
             value: prefs.chatMessage,
-            onChanged: (value) => onChanged(prefs.copyWith(chatMessage: value))),
+            onChanged: (value) =>
+                onChanged(prefs.copyWith(chatMessage: value))),
         _PreferenceTile(
             icon: Icons.local_offer_outlined,
             title: 'Ưu đãi & Khuyến mãi',
@@ -93,7 +96,9 @@ class _PreferenceTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-                color: value ? AppColors.primaryContainer : AppColors.surfaceVariant,
+                color: value
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppRadius.compact)),
             child: Icon(icon,
                 size: 20,

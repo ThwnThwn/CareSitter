@@ -1,42 +1,29 @@
-import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_map_attribution.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:caresitter_customer/core/maps/map_tile_config.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'live_map_status_banner.dart';
+import 'live_map_action_button.dart';
 
 class LiveMapViewport extends StatelessWidget {
   const LiveMapViewport(
       {super.key,
+      required this.map,
       required this.availability,
       required this.useGoogle,
-      required this.googleMap,
-      required this.fallbackMap,
-      required this.routeLocationLabel,
       required this.tiles,
-      required this.mapButton,
+      required this.locationLabel,
       required this.follow,
-      required this.routeCaregiverPosition,
-      required this.resumeFollow,
-      required this.action1});
+      required this.hasPosition,
+      required this.onResumeFollow,
+      required this.onFitBoth});
+  final Widget map;
   final AsyncValue<bool> availability;
-  final bool useGoogle;
-  final Widget Function() googleMap;
-  final Widget Function() fallbackMap;
-  final String routeLocationLabel;
+  final bool useGoogle, follow, hasPosition;
   final MapTileConfig tiles;
-  final Widget Function(
-      {bool active,
-      required IconData icon,
-      required Key key,
-      void Function()? onPressed,
-      required String tooltip}) mapButton;
-  final bool follow;
-  final LatLng? routeCaregiverPosition;
-  final void Function() resumeFollow;
-  final void Function() action1;
+  final String locationLabel;
+  final VoidCallback onResumeFollow, onFitBoth;
 
   @override
   Widget build(BuildContext context) => Expanded(
@@ -46,59 +33,35 @@ class LiveMapViewport extends StatelessWidget {
                 ? const ColoredBox(
                     color: AppColors.primaryContainer,
                     child: Center(child: CircularProgressIndicator()))
-                : useGoogle
-                    ? googleMap()
-                    : fallbackMap()),
+                : map),
         Positioned(
-          top: 12,
-          left: 12,
-          right: 68,
-          child: PointerInterceptor(
-              child: DecoratedBox(
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.compact),
-                border: Border.all(color: AppColors.border)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.control, vertical: AppSpacing.sm),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(routeLocationLabel,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: AppFontSizes.s12,
-                            fontWeight: FontWeight.w600)),
-                    if (!useGoogle)
-                      LiveMapAttribution(
-                          availability: availability, tiles: tiles),
-                  ]),
-            ),
-          )),
-        ),
+            top: 12,
+            left: 12,
+            right: 68,
+            child: LiveMapStatusBanner(
+                availability: availability,
+                useGoogle: useGoogle,
+                tiles: tiles,
+                locationLabel: locationLabel)),
         Positioned(
             top: 12,
             right: 12,
             child: PointerInterceptor(
                 child: Column(children: [
-              mapButton(
+              LiveMapActionButton(
                   key: const Key('tracking-follow'),
                   tooltip: follow
                       ? 'Đang bám theo chăm sóc viên'
                       : 'Theo dõi chăm sóc viên',
                   icon: Icons.my_location,
-                  active: follow && routeCaregiverPosition != null,
-                  onPressed:
-                      routeCaregiverPosition == null ? null : resumeFollow),
+                  active: follow && hasPosition,
+                  onPressed: hasPosition ? onResumeFollow : null),
               const SizedBox(height: AppSpacing.sm),
-              mapButton(
+              LiveMapActionButton(
                   key: const Key('tracking-fit-both'),
                   tooltip: 'Xem cả hai điểm',
                   icon: Icons.zoom_out_map,
-                  onPressed: action1),
+                  onPressed: onFitBoth),
             ]))),
       ]));
 }

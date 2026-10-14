@@ -76,6 +76,36 @@ public sealed class HealthProfileTests : IAsyncLifetime
         Assert.Equal(before.Revision+1,(await ReadAsync()).Revision);
     }
     [PostgresFact]
+    public async Task Structured_patch_round_trips_through_people_snapshot_and_advances_revision()
+    {
+        await SqlAsync("""UPDATE people.beneficiaries SET health_history='{"nutrition":{"schemaVersion":1,"swallowingStatus":"difficulty"},"legacy":{"note":"keep"}}',medications='[{"name":"Fixture","is_active":false}]' WHERE id=@id""");
+        var before = await ReadAsync();
+        var response = Assert.IsType<OkObjectResult>(await PatchAsync(before.Revision, new {
+            nutritionProfile = new { medicationsStatus = "reported_none", feedingRoute = "oral", fluidRestriction = "none", electrolyteRestriction = "none" }
+        }));
+        var saved = Assert.IsType<BeneficiaryHealthSnapshot>(response.Value);
+        var snapshot = await ReadAsync();
+        Assert.Equal(before.Revision + 1, saved.Revision); Assert.Equal(saved.Revision, snapshot.Revision);
+        var nutrition = snapshot.HealthHistory!.Value.GetProperty("nutrition");
+        Assert.Equal("difficulty", nutrition.GetProperty("swallowingStatus").GetString());
+        Assert.Equal("oral", nutrition.GetProperty("feedingRoute").GetString());
+        Assert.Equal("keep", snapshot.HealthHistory.Value.GetProperty("legacy").GetProperty("note").GetString());
+        Assert.Equal(before.Medications!.Value.GetRawText(), snapshot.Medications!.Value.GetRawText());
+    }
+    [PostgresFact]
+    public async Task Invalid_profile_patch_is_atomic_and_legacy_medication_update_invalidates_revision()
+    {
+        await SqlAsync("""UPDATE people.beneficiaries SET medications='[{"name":"Fixture","is_active":true}]' WHERE id=@id""");
+        var before = await ReadAsync();
+        var invalid = Assert.IsType<BadRequestObjectResult>(await PatchAsync(before.Revision, new {
+            generalNote = "must not persist", nutritionProfile = new { medicationsStatus = "reported_none" }
+        }));
+        Assert.Equal("nutrition.medication_conflict", Assert.IsType<ProblemDetails>(invalid.Value).Title);
+        var unchanged = await ReadAsync(); Assert.Equal(before.Revision, unchanged.Revision); Assert.Equal(before.GeneralNote, unchanged.GeneralNote);
+        await SqlAsync("""UPDATE people.beneficiaries SET medications='[{"name":"Fixture","is_active":false}]' WHERE id=@id""");
+        Assert.Equal(before.Revision + 1, (await ReadAsync()).Revision);
+    }
+    [PostgresFact]
     public async Task Snapshot_reads_exact_owner_and_excludes_deleted_profile()
     {
         await using var s=Services();var reader=s.GetRequiredService<IBeneficiaryHealthSnapshotReader>();

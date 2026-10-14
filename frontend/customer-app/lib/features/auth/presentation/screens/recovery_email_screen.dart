@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/auth/presentation/widgets/recovery_email_content.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/recovery_email_controller.dart';
@@ -21,6 +22,20 @@ class _RecoveryEmailScreenState extends ConsumerState<RecoveryEmailScreen> {
   @override
   void initState() {
     super.initState();
+    final auth = ref.read(authStateProvider.notifier);
+    ref.listenManual(
+        authStateProvider.select((session) => (
+              session.valueOrNull?.userId,
+              session.valueOrNull?.isAuthenticated,
+              auth.sessionGeneration,
+            )), (previous, next) {
+      if (previous == next) return;
+      _emailSeeded = false;
+      _email.clear();
+      _password.clear();
+      _code.clear();
+      _hidden = true;
+    });
     ref.listenManual(recoveryEmailControllerProvider, (_, flow) {
       if (!_emailSeeded && !flow.loading && flow.currentEmail != null) {
         _email.text = flow.currentEmail!;
@@ -65,24 +80,20 @@ class _RecoveryEmailScreenState extends ConsumerState<RecoveryEmailScreen> {
         _email.text.trim().toLowerCase() != flow.currentEmail;
     return RecoveryEmailContent(
         flow: flow,
-        load: _load,
+        onReload: _load,
         form: _form,
         email: _email,
         changing: changing,
         password: _password,
         hidden: _hidden,
         code: _code,
-        request: _request,
-        ref: ref,
-        confirm: _confirm,
-        callbackAction1: (_) => setState(() {
+        onRequest: _request,
+        onConfirm: _confirm,
+        onEmailChanged: (_) => setState(() {
               ref
                   .read(recoveryEmailControllerProvider.notifier)
                   .dismissMessage();
             }),
-        callbackAction2: () => setState(() => _hidden = !_hidden),
-        callbackAction3: (value) => value == null || value.isEmpty
-            ? 'Nhập mật khẩu hiện tại để đổi email.'
-            : null);
+        onTogglePassword: () => setState(() => _hidden = !_hidden));
   }
 }

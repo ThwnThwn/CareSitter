@@ -1,2 +1,5 @@
 # Keep the Bash topic initializer executable on Linux after Windows checkouts.
 kafka-init.sh text eol=lf
+nutrition/*.sh text eol=lf
+nutrition/*.service text eol=lf
+nutrition/*.timer text eol=lf

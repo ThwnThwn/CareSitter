@@ -8,33 +8,33 @@ class LiveCaregiverGoogleMap extends StatelessWidget {
       required this.homeIcon,
       required this.position,
       required this.caregiverIcon,
-      required this.routeDestination,
-      required this.routeHeading,
-      required this.routeStale,
-      required this.routeLocationLabel,
-      required this.action1,
-      required this.action2});
+      required this.destination,
+      required this.heading,
+      required this.stale,
+      required this.locationLabel,
+      required this.onInteraction,
+      required this.onCreated});
   final google.BitmapDescriptor? homeIcon;
   final LatLng? position;
   final google.BitmapDescriptor? caregiverIcon;
-  final LatLng routeDestination;
-  final double? routeHeading;
-  final bool routeStale;
-  final String routeLocationLabel;
-  final void Function(PointerDownEvent) action1;
-  final void Function(google.GoogleMapController) action2;
+  final LatLng destination;
+  final double? heading;
+  final bool stale;
+  final String locationLabel;
+  final void Function(PointerDownEvent) onInteraction;
+  final void Function(google.GoogleMapController) onCreated;
   @override
   Widget build(BuildContext context) => Listener(
         // Camera tự animate cũng phát onCameraMoveStarted. Chỉ thao tác của người
         // dùng mới tắt follow, tránh camera tự tắt follow sau mỗi mẫu GPS.
-        onPointerDown: action1,
+        onPointerDown: onInteraction,
         child: google.GoogleMap(
           key: const Key('google-live-caregiver-map'),
           initialCameraPosition: google.CameraPosition(
-              target: google.LatLng(
-                  routeDestination.latitude, routeDestination.longitude),
+              target:
+                  google.LatLng(destination.latitude, destination.longitude),
               zoom: 15),
-          onMapCreated: action2,
+          onMapCreated: onCreated,
           mapToolbarEnabled: false,
           myLocationButtonEnabled: false,
           myLocationEnabled: false,
@@ -46,8 +46,8 @@ class LiveCaregiverGoogleMap extends StatelessWidget {
           markers: {
             google.Marker(
                 markerId: const google.MarkerId('destination'),
-                position: google.LatLng(
-                    routeDestination.latitude, routeDestination.longitude),
+                position:
+                    google.LatLng(destination.latitude, destination.longitude),
                 icon: homeIcon ??
                     google.BitmapDescriptor.defaultMarkerWithHue(
                         google.BitmapDescriptor.hueCyan),
@@ -63,10 +63,10 @@ class LiveCaregiverGoogleMap extends StatelessWidget {
                           google.BitmapDescriptor.hueGreen),
                   anchor: const Offset(.5, .5),
                   flat: true,
-                  rotation: routeHeading ?? 0,
-                  alpha: routeStale ? .5 : 1,
+                  rotation: heading ?? 0,
+                  alpha: stale ? .5 : 1,
                   infoWindow: google.InfoWindow(
-                      title: 'Chăm sóc viên', snippet: routeLocationLabel)),
+                      title: 'Chăm sóc viên', snippet: locationLabel)),
           },
         ),
       );

@@ -12,22 +12,22 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
 {
     [HttpPost("nutrition-assessments")]
     public async Task<IActionResult> Assess(Guid beneficiaryId, NutritionWriteRequest request, CancellationToken ct) =>
-        Present(await mediator.Send(Command("assess", beneficiaryId, request), ct), queued: true);
+        Present(await mediator.Send(new AssessNutritionCommand(beneficiaryId, Input(request)), ct), queued: true);
     [HttpGet("nutrition-assessments/{id:guid}")]
     public async Task<IActionResult> Assessment(Guid beneficiaryId, Guid id, CancellationToken ct) =>
         Present(await mediator.Send(new NutritionResourceQuery("assessment", beneficiaryId, id), ct));
     [HttpPost("nutrition-assessments/{id:guid}/confirm")]
     public async Task<IActionResult> Confirm(Guid beneficiaryId, Guid id, NutritionWriteRequest request, CancellationToken ct) =>
-        Present(await mediator.Send(Command("confirm", beneficiaryId, request, id), ct));
+        Present(await mediator.Send(new ConfirmNutritionCommand(beneficiaryId, id, Input(request)), ct));
     [HttpPost("meal-recommendations")]
     public async Task<IActionResult> Recommend(Guid beneficiaryId, NutritionWriteRequest request, CancellationToken ct) =>
-        Present(await mediator.Send(Command("recommend", beneficiaryId, request), ct));
+        Present(await mediator.Send(new RecommendMealsCommand(beneficiaryId, Input(request)), ct));
     [HttpGet("meal-recommendations/{id:guid}")]
     public async Task<IActionResult> Recommendation(Guid beneficiaryId, Guid id, CancellationToken ct) =>
         Present(await mediator.Send(new NutritionResourceQuery("recommendation", beneficiaryId, id), ct));
     [HttpPost("meal-recommendations/{id:guid}/replacements")]
     public async Task<IActionResult> Replace(Guid beneficiaryId, Guid id, NutritionWriteRequest request, CancellationToken ct) =>
-        Present(await mediator.Send(Command("replace", beneficiaryId, request, id), ct));
+        Present(await mediator.Send(new ReplaceMealCommand(beneficiaryId, id, Input(request)), ct));
     [HttpGet("meal-recommendations/{id:guid}/replacement-options")]
     public async Task<IActionResult> ReplacementOptions(Guid beneficiaryId, Guid id, [FromQuery] string mealType, CancellationToken ct)
     {
@@ -36,7 +36,7 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
     }
     [HttpPost("meal-plans")]
     public async Task<IActionResult> Save(Guid beneficiaryId, NutritionWriteRequest request, CancellationToken ct) =>
-        Present(await mediator.Send(Command("save", beneficiaryId, request, request.RecommendationId), ct));
+        Present(await mediator.Send(new SaveMealPlanCommand(beneficiaryId, request.RecommendationId ?? Guid.Empty, Input(request)), ct));
     [HttpGet("meal-plans/{id:guid}")]
     public async Task<IActionResult> Plan(Guid beneficiaryId, Guid id, CancellationToken ct) =>
         Present(await mediator.Send(new NutritionResourceQuery("plan", beneficiaryId, id), ct));
@@ -46,8 +46,8 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new ListMealPlansQuery(beneficiaryId), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
-    private static NutritionCommand Command(string op, Guid beneficiary, NutritionWriteRequest r, Guid? id = null) =>
-        new(op, beneficiary, r.ExpectedHealthRevision, r.IdempotencyKey, id, r.AssessmentId, r.PlannedDate, r.RecipeVersionId, r.MealType);
+    private static NutritionWriteInput Input(NutritionWriteRequest r) =>
+        new(r.ExpectedHealthRevision, r.IdempotencyKey, r.AssessmentId, r.PlannedDate, r.RecipeVersionId, r.MealType);
     private IActionResult Present(Result<ResourceResponse> result, bool queued = false) => result.IsFailure ? Failure(result.Error) :
         queued ? Accepted($"/api/v1/beneficiaries/{result.Value.BeneficiaryId}/nutrition-assessments/{result.Value.Id}", result.Value) : Ok(result.Value);
     private IActionResult Failure(Error error) => StatusCode(error.Type switch

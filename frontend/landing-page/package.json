@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/features/consultation/*.test.ts"
+    "test": "node --experimental-strip-types --test src/features/consultation/*.test.ts src/features/care-assistant/*.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",

@@ -9,7 +9,11 @@ public sealed class EligibilityTests
 {
     internal static BeneficiaryHealthSnapshot Healthy(long revision = 1) => new(Guid.NewGuid(), revision, null,
         "reported_none", DateTimeOffset.UtcNow, null, null, null, null,
-        JsonSerializer.SerializeToElement(new { nutrition = new { schemaVersion = 1, conditionsStatus = "reported_none" } }), null, null, null);
+        History(), null, null, null);
+
+    internal static JsonElement History(string conditionsStatus = "reported_none", string medicationsStatus = "reported_none") =>
+        JsonSerializer.SerializeToElement(new { nutrition = new { schemaVersion = 1, conditionsStatus, medicationsStatus,
+            feedingRoute = "oral", swallowingStatus = "normal", fluidRestriction = "none", electrolyteRestriction = "none" } });
 
     [Fact]
     public void Structured_input_needs_no_text_and_confirmation_is_not_eligibility()
@@ -18,6 +22,34 @@ public sealed class EligibilityTests
         Assert.Empty(health.TextSources);
         Assert.Equal("awaiting_confirmation", NutritionEligibilityPolicy.Evaluate(source, health, [], [], false).State);
         Assert.Equal("eligible", NutritionEligibilityPolicy.Evaluate(source, health, [], [], true).State);
+    }
+
+    [Fact]
+    public void Missing_medication_and_eating_information_is_not_assumed_normal()
+    {
+        var source = Healthy() with { HealthHistory = JsonSerializer.SerializeToElement(new { nutrition = new { schemaVersion = 1, conditionsStatus = "reported_none" } }) };
+        var health = HealthSnapshotNormalizer.Normalize(source, []);
+        var decision = NutritionEligibilityPolicy.Evaluate(source, health, [], [], true);
+        Assert.Equal("needs_information", decision.State);
+        Assert.Contains("healthHistory/nutrition/medicationsStatus", decision.MissingFields);
+        Assert.Contains("healthHistory/nutrition/swallowingStatus", decision.MissingFields);
+        Assert.DoesNotContain("generalNote", decision.MissingFields);
+    }
+
+    [Theory]
+    [InlineData("[{\"name\":\"Fixture\",\"is_active\":true}]", "reported_present", "needs_professional_guidance")]
+    [InlineData("[{\"name\":\"Fixture\",\"is_active\":false}]", "reported_none", "eligible")]
+    [InlineData("[{\"name\":\"Fixture\"}]", "reported_present", "needs_information")]
+    [InlineData("[{\"name\":\"Fixture\",\"is_active\":\"false\"}]", "reported_none", "needs_information")]
+    [InlineData("[{\"name\":\"Fixture\",\"is_active\":true}]", "reported_none", "needs_information")]
+    [InlineData("[]", "reported_present", "needs_information")]
+    public void Medication_status_and_legacy_data_cannot_bypass_review(string medications, string status, string expected)
+    {
+        var source = Healthy() with { HealthHistory = History(medicationsStatus: status), Medications = JsonSerializer.Deserialize<JsonElement>(medications) };
+        var health = HealthSnapshotNormalizer.Normalize(source, []);
+        var decision = NutritionEligibilityPolicy.Evaluate(source, health, [], [], true);
+        Assert.Equal(expected, decision.State);
+        Assert.Empty(health.TextSources);
     }
     [Theory]
     [InlineData("null")]

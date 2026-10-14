@@ -28,13 +28,22 @@ using CareSitter.Contracts.Services.Routing;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Features;
 using CareSitter.Messaging.Kafka;
+using CareSitter.ApiHost.Nutrition;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
 // TraversePath() tim .env tu thu muc hien tai len cac thu muc cha (repo root).
 // ASP.NET map "ConnectionStrings__CareSitter" -> "ConnectionStrings:CareSitter".
-DotNetEnv.Env.TraversePath().Load();
+var apiEnvironmentFile = Environment.GetEnvironmentVariable("CARESITTER_ENV_FILE");
+if (string.IsNullOrWhiteSpace(apiEnvironmentFile)) DotNetEnv.Env.NoClobber().TraversePath().Load();
+else if (File.Exists(apiEnvironmentFile)) DotNetEnv.Env.NoClobber().Load(apiEnvironmentFile);
+else throw new InvalidOperationException("Configured CARESITTER_ENV_FILE does not exist.");
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddOptions<NutritionGatewayOptions>().Bind(builder.Configuration.GetSection("NutritionGateway"))
+    .Validate(options => options.IsValid(builder.Environment.IsDevelopment()),
+        "NutritionGateway requires an internal gRPC endpoint, service credential and a bounded timeout.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<INutritionGateway, NutritionGrpcGateway>();
 // Network contracts remain independent of the existing in-process MediatR events.
 builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
 {

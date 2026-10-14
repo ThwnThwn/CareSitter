@@ -1,25 +1,42 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'shift_detail_map_preview.dart';
+import 'shift_detail_map_unavailable.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
 class ShiftDetailLocationCard extends StatelessWidget {
-  const ShiftDetailLocationCard(
-      {super.key,
-      required this.destinationFor,
-      required this.booking,
-      required this.buildMapUnavailablePreview,
-      required this.buildMapPreview,
-      required this.openMap});
-  final LatLng? Function(ShiftModel) destinationFor;
+  const ShiftDetailLocationCard({super.key, required this.booking});
   final ShiftModel booking;
-  final Widget Function() buildMapUnavailablePreview;
-  final Widget Function(BuildContext, ShiftModel, LatLng) buildMapPreview;
-  final void Function(BuildContext, ShiftModel) openMap;
+
+  LatLng? get destination {
+    final latitude = booking.addressLatitude;
+    final longitude = booking.addressLongitude;
+    if (latitude == null ||
+        longitude == null ||
+        !latitude.isFinite ||
+        !longitude.isFinite ||
+        latitude.abs() > 90 ||
+        longitude.abs() > 180) {
+      return null;
+    }
+    return LatLng(latitude, longitude);
+  }
+
+  void _openMap(BuildContext context, ShiftModel booking) {
+    context.push('/shifts/${booking.id}/map', extra: {
+      'beneficiaryName': booking.beneficiaryName,
+      'address': booking.address,
+      'addressLatitude': booking.addressLatitude,
+      'addressLongitude': booking.addressLongitude,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final destination = destinationFor(booking);
+    final target = destination;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -33,9 +50,10 @@ class ShiftDetailLocationCard extends StatelessWidget {
             borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppRadius.s15),
                 topRight: Radius.circular(AppRadius.s15)),
-            child: destination == null
-                ? buildMapUnavailablePreview()
-                : buildMapPreview(context, booking, destination),
+            child: target == null
+                ? const ShiftDetailMapUnavailable()
+                : ShiftDetailMapPreview(
+                    destination: target, booking: booking, openMap: _openMap),
           ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.inset),
@@ -59,7 +77,7 @@ class ShiftDetailLocationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.control),
                 GestureDetector(
-                  onTap: () => openMap(context, booking),
+                  onTap: () => _openMap(context, booking),
                   child: const Row(
                     children: [
                       Icon(Icons.directions_rounded,

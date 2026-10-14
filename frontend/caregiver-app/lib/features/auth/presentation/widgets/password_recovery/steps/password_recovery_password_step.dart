@@ -10,19 +10,15 @@ class PasswordRecoveryPasswordStep extends StatelessWidget {
       required this.password,
       required this.flow,
       required this.hidden,
-      required this.validatePassword,
       required this.confirmation,
-      required this.callbackAction3,
-      required this.callbackAction4,
-      required this.callbackAction5});
+      required this.onTogglePassword,
+      required this.onSubmit});
   final TextEditingController password;
   final PasswordRecoveryState flow;
   final bool hidden;
-  final String? Function(String?) validatePassword;
   final TextEditingController confirmation;
-  final void Function() callbackAction3;
-  final String? Function(String?) callbackAction4;
-  final void Function(String) callbackAction5;
+  final void Function() onTogglePassword;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -36,14 +32,13 @@ class PasswordRecoveryPasswordStep extends StatelessWidget {
                 password: password,
                 flow: flow,
                 hidden: hidden,
-                validatePassword: validatePassword,
-                callbackAction1: callbackAction3),
+                onTogglePassword: onTogglePassword),
             const SizedBox(height: AppSpacing.md),
             PasswordRecoveryConfirmationField(
                 confirmation: confirmation,
+                password: password,
                 flow: flow,
                 hidden: hidden,
-                callbackAction1: callbackAction4,
-                callbackAction2: callbackAction5),
+                onSubmit: onSubmit),
           ]);
 }

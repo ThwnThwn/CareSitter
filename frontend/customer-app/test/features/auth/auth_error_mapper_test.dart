@@ -1,7 +1,7 @@
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/features/auth/data/mappers/auth_error_mapper.dart';
 import 'package:caresitter_customer/features/auth/domain/google_identity_gateway.dart';
-import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
+import 'package:caresitter_customer/features/auth/domain/auth_validators.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 

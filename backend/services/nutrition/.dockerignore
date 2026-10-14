@@ -4,3 +4,6 @@ tests
 .env
 .env.*
 *.log
+*.local.json
+**/*.local.json
+**/appsettings.*.Local.json

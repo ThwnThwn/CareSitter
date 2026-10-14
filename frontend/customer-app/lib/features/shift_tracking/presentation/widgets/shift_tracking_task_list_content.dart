@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_skipped_badge.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'shift_tracking_screen_task_row.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -10,13 +11,11 @@ class ShiftTrackingTaskListContent extends StatelessWidget {
       required this.skippedCount,
       required this.allDone,
       required this.doneCount,
-      required this.bk,
-      required this.buildTaskRow});
+      required this.bk});
   final int skippedCount;
   final bool allDone;
   final int doneCount;
   final BookingModel bk;
-  final Widget Function(CareTaskModel, BookingModel, BuildContext) buildTaskRow;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -81,7 +80,7 @@ class ShiftTrackingTaskListContent extends StatelessWidget {
               ),
             )
           else
-            ...bk.tasks.map((task) => buildTaskRow(task, bk, context)),
+            ...bk.tasks.map((task) => ShiftTrackingScreenTaskRow(task: task)),
         ],
       );
 }

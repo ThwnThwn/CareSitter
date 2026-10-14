@@ -56,7 +56,8 @@ class HomeOfferDetails extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
 
                 if (turnaroundWarning != null) ...[
-                  HomeOfferTurnaroundWarning(turnaroundWarning: turnaroundWarning!),
+                  HomeOfferTurnaroundWarning(
+                      turnaroundWarning: turnaroundWarning!),
                   const SizedBox(height: AppSpacing.compact),
                 ],
 

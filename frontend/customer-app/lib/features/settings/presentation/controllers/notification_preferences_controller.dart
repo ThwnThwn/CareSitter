@@ -77,8 +77,8 @@ class NotificationPrefsNotifier
       }
     } catch (_) {
       if (_active && revision == _revision) {
-        state =
-            AsyncData(NotificationPreferencesState(preferences, saveError: true));
+        state = AsyncData(
+            NotificationPreferencesState(preferences, saveError: true));
       }
     } finally {
       _saving = false;

@@ -32,7 +32,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               content: const Text('Chưa lưu được thay đổi. Vui lòng thử lại.'),
               actions: [
                 TextButton(
-                    onPressed: controller.retrySave, child: const Text('Lưu lại')),
+                    onPressed: controller.retrySave,
+                    child: const Text('Lưu lại')),
               ],
             ),
           Expanded(

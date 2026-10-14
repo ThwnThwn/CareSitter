@@ -5,11 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/auth_session_controller.dart';
 
-class SettingsLogoutButton extends StatelessWidget {
-  const SettingsLogoutButton({super.key, required this.ref});
-  final WidgetRef ref;
+class SettingsLogoutButton extends ConsumerWidget {
+  const SettingsLogoutButton({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(

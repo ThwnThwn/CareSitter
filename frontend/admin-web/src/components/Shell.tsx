@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { ErrorBoundary } from './ErrorBoundary';
 import {
   CalendarCheck, ClipboardList, HandCoins, Headphones,
   LayoutDashboard, LogOut, Package, ShieldCheck, TicketPercent, UsersRound,
@@ -18,8 +19,9 @@ const pageIcons: Record<PageKey, typeof LayoutDashboard> = {
   users: UsersRound,
 };
 
-export function Shell({ page, onNavigate, onLogout, children }: {
-  page: PageKey; onNavigate: (page: PageKey) => void; onLogout: () => void; children: ReactNode;
+export function Shell({ page, onNavigate, onLogout, children, pageLabel }: {
+  page: PageKey; onNavigate: (page: PageKey) => void; onLogout: () => void;
+  children: ReactNode; pageLabel?: string;
 }) {
   const { currentUser, navigation } = useAdminMetadata();
   const initials = currentUser.displayName.split(/\s+/).filter(Boolean).slice(-2)
@@ -40,6 +42,8 @@ export function Shell({ page, onNavigate, onLogout, children }: {
       </div>
       <button className="nav-item logout" onClick={onLogout}><LogOut size={19} /><span>Đăng xuất</span></button>
     </aside>
-    <main className="workspace" id="main-content" tabIndex={-1}>{children}</main>
+    <main className="workspace" id="main-content" tabIndex={-1}>
+      <ErrorBoundary pageName={pageLabel}>{children}</ErrorBoundary>
+    </main>
   </div>;
 }
