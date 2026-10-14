@@ -63,7 +63,7 @@ class ShiftCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   ShiftCardOfferActions(
                       onViewOffer: onViewOffer,
-                      callbackAction1: () async {
+                      onDecline: () async {
                         try {
                           await onDecline!();
                         } catch (error) {

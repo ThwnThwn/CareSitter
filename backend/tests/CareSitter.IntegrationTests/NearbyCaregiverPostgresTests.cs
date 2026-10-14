@@ -1,5 +1,6 @@
 using CareSitter.Modules.People;
 using CareSitter.Modules.People.Application;
+using CareSitter.Modules.People.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -18,6 +19,7 @@ public sealed class NearbyCaregiverPostgresTests : IAsyncLifetime
         { ["ConnectionStrings:CareSitter"] = database.ConnectionString }).Build();
         var services = new ServiceCollection();
         new PeopleModule().RegisterServices(services, configuration);
+        services.UseFixtureProvider<PeopleDbContext>();
         services.AddLogging();
         return services.BuildServiceProvider();
     }

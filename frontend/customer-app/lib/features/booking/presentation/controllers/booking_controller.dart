@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -48,8 +49,7 @@ class BookingStore extends Notifier<List<BookingModel>> {
     return (auth?.userId, auth?.isAuthenticated ?? false);
   }
 
-  BookingActionController get _actions =>
-      BookingActionController(_repo, _store);
+  BookingActionController get _actions => BookingActionController(_repo, _store);
   BookingTasksController get _tasks => BookingTasksController(_repo, _store);
   BookingReviewController get _reviews =>
       BookingReviewController(ref.read(reviewRepositoryProvider), _store);
@@ -79,8 +79,8 @@ class BookingStore extends Notifier<List<BookingModel>> {
 
   @override
   List<BookingModel> build() {
-    ref.watch(authStateProvider.select((auth) =>
-        (auth.valueOrNull?.userId, auth.valueOrNull?.isAuthenticated)));
+    ref.watch(authStateProvider.select(
+        (auth) => (auth.valueOrNull?.userId, auth.valueOrNull?.isAuthenticated)));
     _cache?.close();
     _realtime?.dispose();
     _cache = null;
@@ -126,15 +126,13 @@ class BookingStore extends Notifier<List<BookingModel>> {
   Future<GpsTrackModel?> getLatestGps(String id) => _repo.getLatestGps(id);
   Future<BookingListResponse> getBookings({int page = 1, int pageSize = 50}) =>
       _repo.getBookings(page: page, pageSize: pageSize);
-  Future<List<PaymentProviderModel>> getPaymentProviders() =>
-      _payment.providers();
+  Future<List<PaymentProviderModel>> getPaymentProviders() => _payment.providers();
   Future<PaymentIntentModel> createPaymentIntent(String id, String provider) =>
       _payment.create(id, provider);
   Future<PaymentIntentModel> getPaymentIntent(String id) => _payment.get(id);
   Future<PaymentIntentModel> createVnPayPayment(String id) =>
       createPaymentIntent(id, 'VNPAY');
-  Future<BookingModel> createBooking(BookingDraft draft) =>
-      _actions.create(draft);
+  Future<BookingModel> createBooking(BookingDraft draft) => _actions.create(draft);
   Future<void> caregiverEnRoute(String id) => _actions.enRoute(id);
   Future<void> caregiverCheckIn(String id,
           {required double latitude, required double longitude}) =>

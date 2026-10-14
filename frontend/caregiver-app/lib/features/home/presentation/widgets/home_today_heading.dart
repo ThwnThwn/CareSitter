@@ -1,11 +1,11 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caregiver_app/core/utils/date_formatter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeTodayHeading extends StatelessWidget {
-  const HomeTodayHeading({super.key, required this.todayLabel});
-  final String Function() todayLabel;
+  const HomeTodayHeading({super.key});
 
   @override
   Widget build(BuildContext context) => Row(
@@ -26,7 +26,7 @@ class HomeTodayHeading extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
-            todayLabel(),
+            _todayLabel(),
             style: GoogleFonts.beVietnamPro(
               fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w600,
@@ -35,4 +35,17 @@ class HomeTodayHeading extends StatelessWidget {
           ),
         ],
       );
+  String _todayLabel() {
+    const weekdays = [
+      'Thứ Hai',
+      'Thứ Ba',
+      'Thứ Tư',
+      'Thứ Năm',
+      'Thứ Sáu',
+      'Thứ Bảy',
+      'Chủ Nhật'
+    ];
+    final now = DateTime.now();
+    return '${weekdays[now.weekday - 1]}, ${formatDate(now, padded: true, includeYear: false)}';
+  }
 }

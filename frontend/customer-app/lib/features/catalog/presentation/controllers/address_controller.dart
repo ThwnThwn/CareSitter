@@ -1,4 +1,6 @@
+export '../models/address_display_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/auth/auth_session_scope.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/catalog/data/repositories/address_repository.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
@@ -12,22 +14,23 @@ final addressStoreProvider =
 /// AddressStore — lay va cache danh sach dia chi cua customer tu API.
 class AddressStore extends AsyncNotifier<List<AddressModel>> {
   AddressRepository get _repo => ref.read(addressRepositoryProvider);
+  late AuthSessionScope _session;
 
   @override
   Future<List<AddressModel>> build() async {
-    // Auto-reload khi trang thai auth thay doi
-    ref.listen(authStateProvider, (prev, next) {
-      final isAuth = next.value?.isAuthenticated ?? false;
-      if (isAuth) {
-        ref.invalidateSelf();
-      } else {
-        state = const AsyncData([]);
+    _session = AuthSessionScope.watch(ref);
+    final session = _session;
+    ref.listen(authStateProvider, (_, next) {
+      if (!session.isCurrent) {
+        // AsyncNotifier normally retains previous data during reload. Never
+        // expose that previous account's addresses while the next GET runs.
+        state = next.valueOrNull?.isAuthenticated == true
+            ? const AsyncLoading()
+            : const AsyncData([]);
       }
     });
-
-    final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
-    if (!isAuth) return [];
-    return _repo.getAddresses();
+    if (!_session.isCurrent) return [];
+    return _repo.getAddresses(cancellation: _session.cancellation);
   }
 
   Future<List<PlaceSuggestionModel>> autocompletePlaces(
@@ -46,27 +49,35 @@ class AddressStore extends AsyncNotifier<List<AddressModel>> {
     String? label,
     String? note,
   }) async {
+    final session = _session..requireCurrent();
     final created = await _repo.createAddress(
       placeId: placeId,
       sessionToken: sessionToken,
       label: label,
       note: note,
+      cancellation: session.cancellation,
     );
+    session.requireCurrent();
     final current = state.valueOrNull ?? const <AddressModel>[];
     state = AsyncData([created, ...current]);
     return created;
   }
 
   Future<void> deleteAddress(String id) async {
-    await _repo.deleteAddress(id);
+    final session = _session..requireCurrent();
+    await _repo.deleteAddress(id, cancellation: session.cancellation);
+    session.requireCurrent();
     final current = state.valueOrNull ?? const <AddressModel>[];
     state = AsyncData(current.where((address) => address.id != id).toList());
   }
 
   /// Đặt địa chỉ làm mặc định — gọi PUT /profile/default-address/{id}.
   Future<void> setDefaultAddress(String id) async {
-    await _repo.setDefaultAddress(id);
+    final session = _session..requireCurrent();
+    await _repo.setDefaultAddress(id, cancellation: session.cancellation);
+    session.requireCurrent();
     // Refresh profile để cập nhật defaultAddressId
     await ref.read(profileStoreProvider.notifier).fetchProfile();
+    session.requireCurrent();
   }
 }

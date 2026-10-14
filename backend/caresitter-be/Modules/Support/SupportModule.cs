@@ -9,6 +9,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using FluentValidation;
+using CareSitter.Modules.Support.Application.Consultations;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Builder;
+using System.Threading.RateLimiting;
 using CareSitter.Messaging.Persistence;
 using CareSitter.Modules.Support.Application.Ports;
 
@@ -28,6 +32,15 @@ public sealed class SupportModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SupportModule>());
         services.AddValidatorsFromAssemblyContaining<SupportModule>();
         services.AddScoped<ISupportRepository, SupportRepository>();
+        services.AddScoped<IConsultationRequestStore, ConsultationRequestStore>();
+        services.AddRateLimiter(options => options.AddPolicy("consultation-request", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 20, Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0, AutoReplenishment = true
+                })));
         services.AddScoped<ISupportReadStore, SupportReadStore>();
         services.AddScoped<IUserNotificationService, UserNotificationService>();
         services.AddScoped<INotificationDeliveryStore, NotificationDeliveryStore>();

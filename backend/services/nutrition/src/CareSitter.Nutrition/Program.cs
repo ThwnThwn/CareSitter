@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Contracts;
 using CareSitter.Nutrition.Infrastructure;
+using CareSitter.Nutrition.Controllers.Grpc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,15 @@ if (!Uri.TryCreate(peopleUrl, UriKind.Absolute, out var peopleUri) || serviceKey
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 32768);
+var gatewayKey = builder.Configuration["Gateway:ServiceKey"] ?? "";
+if (gatewayKey.Length > 0 && gatewayKey.Length is not (>= 32 and <= 256))
+    throw new InvalidOperationException("Gateway:ServiceKey must contain 32..256 characters.");
+builder.Services.AddGrpc(o =>
+{
+    o.MaxReceiveMessageSize = 32768;
+    o.MaxSendMessageSize = 1024 * 1024;
+    o.Interceptors.Add<NutritionRpcInterceptor>();
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o =>
 {
     o.TokenValidationParameters = new TokenValidationParameters
@@ -66,7 +76,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         {
             if (context.HttpContext.Items.ContainsKey("nutrition.identity_unavailable"))
             {
-                context.HandleResponse(); context.Response.StatusCode = 503;
+                context.HandleResponse();
+                if (context.Request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    NutritionGatewayAuthenticationMiddleware.GrpcFailure(context.HttpContext, "14", "nutrition.identity_unavailable");
+                    return;
+                }
+                context.Response.StatusCode = 503;
                 await context.Response.WriteAsJsonAsync(new ProblemDetails
                 {
                     Title = "nutrition.identity_unavailable",
@@ -84,17 +100,21 @@ builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration
 builder.Services.AddScoped<INutritionStore, NutritionStore>();
 builder.Services.AddScoped<IHealthDescriptionParser, UnconfiguredHealthParser>();
 builder.Services.AddScoped<AssessmentProcessor>();
+builder.Services.AddScoped<NutritionWriteScope>();
+builder.Services.AddScoped<MealPreparationService>();
 builder.Services.AddHttpClient<IPeopleHealthClient, PeopleHealthClient>(client =>
 {
     client.BaseAddress = new Uri(peopleUrl.TrimEnd('/') + '/');
     client.DefaultRequestHeaders.Add("X-Nutrition-Service-Key", serviceKey);
     client.Timeout = TimeSpan.FromSeconds(5);
-});
+}).ConfigurePrimaryHttpMessageHandler(() =>
+    InternalCertificateTrust.CreateHandler(builder.Configuration["People:TrustedRootCertificatePath"]));
 builder.Services.AddHttpClient<IIdentitySessionClient, IdentitySessionClient>(client =>
 {
     client.BaseAddress = new Uri(peopleUrl.TrimEnd('/') + '/');
     client.Timeout = TimeSpan.FromSeconds(5);
-});
+}).ConfigurePrimaryHttpMessageHandler(() =>
+    InternalCertificateTrust.CreateHandler(builder.Configuration["People:TrustedRootCertificatePath"]));
 builder.Services.AddHostedService<NutritionWorker>();
 builder.Services.AddMediatR(c => c.RegisterServicesFromAssemblyContaining<AssessmentProcessor>());
 builder.Services.AddControllers(); builder.Services.AddExceptionHandler<NutritionExceptionHandler>();
@@ -104,17 +124,24 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => { if (origins.Length > 0) 
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
+    o.OnRejected = (context, _) =>
+    {
+        if (context.HttpContext.Request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true)
+            NutritionGatewayAuthenticationMiddleware.GrpcFailure(context.HttpContext, "8", "nutrition.rate_limited");
+        return ValueTask.CompletedTask;
+    };
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
-var app = builder.Build(); app.UseExceptionHandler(); app.UseCors(); app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter();
+var app = builder.Build(); app.UseExceptionHandler(); app.UseCors();
+app.UseMiddleware<NutritionGatewayAuthenticationMiddleware>();
+app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter();
 app.MapGet("/health/live", () => Results.Ok(new { status = "up" })).AllowAnonymous();
 app.MapGet("/health/ready", async (NpgsqlDataSource db, CancellationToken ct) =>
 {
-    await using var connection = await db.OpenConnectionAsync(ct);
-    await using var command = new NpgsqlCommand("SELECT to_regclass('nutrition.assessments') IS NOT NULL", connection);
-    return (bool)(await command.ExecuteScalarAsync(ct))! ? Results.Ok(new { status = "ready" }) : Results.StatusCode(503);
+    return await NutritionDatabaseReadiness.CheckAsync(db, ct)
+        ? Results.Ok(new { status = "ready" }) : Results.StatusCode(503);
 }).AllowAnonymous();
-app.MapControllers(); app.Run();
+app.MapControllers(); app.MapGrpcService<NutritionRpcService>(); app.Run();
 public partial class Program;

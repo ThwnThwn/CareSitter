@@ -30,18 +30,6 @@ class AddressModel {
     this.note,
   });
 
-  String get displayLabel {
-    if (label != null && label!.isNotEmpty) return label!;
-    final parts = [district, city].where((s) => s != null && s.isNotEmpty);
-    if (parts.isNotEmpty) return parts.join(', ');
-    return fullAddress;
-  }
-
-  String get shortAddress {
-    if (fullAddress.length <= 42) return fullAddress;
-    return '${fullAddress.substring(0, 40)}...';
-  }
-
   factory AddressModel.fromJson(Map<String, dynamic> json) => AddressModel(
         id: (json['id'] ?? json['Id'])?.toString() ?? '',
         fullAddress:

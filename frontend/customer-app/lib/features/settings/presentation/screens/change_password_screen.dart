@@ -1,5 +1,4 @@
-import 'package:caresitter_customer/features/settings/presentation/widgets/change_password_form_key_old_pass_ctrl_form.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import '../widgets/change_password_form.dart';
 import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,11 +21,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _newPassCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
 
-  bool _obscureOld = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
-  bool _isSaving = false;
-
   bool get _hasUnsavedChanges =>
       _oldPassCtrl.text.isNotEmpty ||
       _newPassCtrl.text.isNotEmpty ||
@@ -42,17 +36,20 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSaving = true);
+    final controller = ref.read(passwordControllerProvider.notifier);
+    if (ref.read(passwordControllerProvider)) return;
+    final auth = ref.read(authStateProvider.notifier);
+    final generation = auth.sessionGeneration;
 
     String? errorMsg;
     try {
-      final changed = await ref.read(passwordControllerProvider).changePassword(
-            currentPassword: _oldPassCtrl.text,
-            newPassword: _newPassCtrl.text,
-          );
+      final changed = await controller.changePassword(
+        currentPassword: _oldPassCtrl.text,
+        newPassword: _newPassCtrl.text,
+      );
       if (changed) {
         // Đổi thành công → logout → về login
-        if (!mounted) return;
+        if (!mounted || !controller.isCurrent) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Đổi mật khẩu thành công! Vui lòng đăng nhập lại.'),
@@ -61,7 +58,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           ),
         );
         await Future.delayed(const Duration(seconds: 1));
-        await ref.read(authStateProvider.notifier).logout();
+        if (!mounted ||
+            !controller.isCurrent ||
+            auth.sessionGeneration != generation) {
+          return;
+        }
+        await auth.logout();
         return;
       }
     } on AppApiException catch (e) {
@@ -69,11 +71,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       errorMsg = apiError.message;
     } catch (_) {
       errorMsg = 'Không thể đổi mật khẩu. Vui lòng thử lại.';
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
 
-    if (errorMsg != null && mounted) {
+    if (errorMsg != null && mounted && controller.isCurrent) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMsg),
@@ -97,81 +97,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             onPressed: requestExit,
           ),
         ),
-        body: ChangePasswordFormKeyOldPassCtrlForm(
+        body: ChangePasswordForm(
             formKey: _formKey,
-            buildLabel: _buildLabel,
-            buildPasswordField: _buildPasswordField,
             oldPassCtrl: _oldPassCtrl,
-            obscureOld: _obscureOld,
             newPassCtrl: _newPassCtrl,
-            obscureNew: _obscureNew,
             confirmPassCtrl: _confirmPassCtrl,
-            obscureConfirm: _obscureConfirm,
-            isSaving: _isSaving,
-            submit: _submit,
-            callbackAction1: () => setState(() => _obscureOld = !_obscureOld),
-            callbackAction2: (v) =>
-                (v == null || v.isEmpty) ? 'Vui lòng nhập mật khẩu cũ' : null,
-            callbackAction3: () => setState(() => _obscureNew = !_obscureNew),
-            callbackAction4: (v) {
-              if (v == null || v.isEmpty) {
-                return 'Vui lòng nhập mật khẩu mới';
-              }
-              if (v.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự';
-              return null;
-            },
-            callbackAction5: () =>
-                setState(() => _obscureConfirm = !_obscureConfirm),
-            callbackAction6: (v) {
-              if (v == null || v.isEmpty) {
-                return 'Vui lòng xác nhận mật khẩu';
-              }
-              if (v != _newPassCtrl.text) {
-                return 'Mật khẩu xác nhận không khớp';
-              }
-              return null;
-            }),
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: AppFontSizes.s14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String hint,
-    required bool obscure,
-    required VoidCallback onToggle,
-    required String? Function(String?) validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscure,
-      validator: validator,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: const Icon(Icons.lock_outline, size: 20),
-        suffixIcon: IconButton(
-          icon: Icon(
-              obscure
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              size: 20),
-          onPressed: onToggle,
-          color: AppColors.textSecondary,
-        ),
+            isSaving: ref.watch(passwordControllerProvider),
+            onSubmit: _submit),
       ),
     );
   }

@@ -3,21 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class LoginMethodToggle extends StatelessWidget {
-  const LoginMethodToggle(
-      {super.key,
-      required this.usePassword,
-      required this.callbackAction1,
-      required this.callbackAction2});
+  const LoginMethodToggle({
+    super.key,
+    required this.usePassword,
+    required this.onChanged,
+  });
   final bool usePassword;
-  final void Function() callbackAction1;
-  final void Function() callbackAction2;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: callbackAction1,
+              onTap: () => onChanged(true),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(vertical: AppSpacing.control),
@@ -39,7 +38,7 @@ class LoginMethodToggle extends StatelessWidget {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: callbackAction2,
+              onTap: () => onChanged(false),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(vertical: AppSpacing.control),

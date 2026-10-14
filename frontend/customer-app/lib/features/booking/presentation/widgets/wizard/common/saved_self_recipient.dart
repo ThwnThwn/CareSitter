@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
-import '../../../controllers/booking_wizard_state.dart';
 import '../../../controllers/self_recipient_controller.dart';
 
 class SavedSelfRecipient extends ConsumerWidget {
   const SavedSelfRecipient(
-      {super.key, required this.args, required this.selected});
-  final BookingWizardArgs args;
+      {super.key, required this.selected});
   final SelfRecipient selected;
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final profile = selected.profile;

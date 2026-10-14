@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/core/theme/app_spacing.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -45,8 +46,7 @@ class ShiftTaskRow extends ConsumerWidget {
     return Card(
         child: Padding(
             padding: const EdgeInsets.all(AppSpacing.inset),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Icon(task.isCompleted
                     ? Icons.check_circle
@@ -74,8 +74,7 @@ class ShiftTaskRow extends ConsumerWidget {
                           ? null
                           : () async {
                               final result = await ref
-                                  .read(
-                                      shiftActiveProvider(booking.id).notifier)
+                                  .read(shiftActiveProvider(booking.id).notifier)
                                   .completeTask(task.id);
                               if (context.mounted) {
                                 showShiftActionResult(context, result);

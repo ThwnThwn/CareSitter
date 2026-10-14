@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_shift_time_location.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_shift_recipient_status.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
@@ -5,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/theme/shift_status_style.dart';
-import 'package:caregiver_app/features/schedule/data/models/schedule_slot_model.dart';
 
 class ScheduleShiftCard extends StatelessWidget {
   const ScheduleShiftCard({super.key, required this.shift});

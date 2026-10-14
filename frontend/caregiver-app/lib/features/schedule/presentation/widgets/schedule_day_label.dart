@@ -9,12 +9,12 @@ class ScheduleDayLabel extends StatelessWidget {
       required this.compact,
       required this.isSelected,
       required this.dayName,
-      required this.hasSlots});
+      required this.hasShifts});
   final DateTime date;
   final bool compact;
   final bool isSelected;
   final String dayName;
-  final bool hasSlots;
+  final bool hasShifts;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -41,8 +41,8 @@ class ScheduleDayLabel extends StatelessWidget {
               ),
             ),
           ],
-          // Dot indicator for days with availability
-          if (hasSlots && !isSelected) ...[
+          // Dot indicator for days with booked shifts
+          if (hasShifts && !isSelected) ...[
             SizedBox(height: compact ? 2 : 4),
             Container(
               width: 4,

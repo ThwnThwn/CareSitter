@@ -7,30 +7,27 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/login_or_
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_social_login_row.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_otp_login_button.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
-import 'package:caresitter_customer/features/auth/presentation/validators/auth_validators.dart';
+import 'package:caresitter_customer/features/auth/domain/auth_validators.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
 
 class LoginAuthFields extends StatelessWidget {
   const LoginAuthFields(
       {super.key,
       required this.loginState,
-      required this.heroInputTheme,
       required this.formKey,
       required this.emailCtrl,
       required this.passCtrl,
       required this.obscurePass,
-      required this.callbackAction1,
       required this.togglePassword,
       required this.login});
   final LoginState loginState;
-  final InputDecorationTheme Function() heroInputTheme;
   final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final bool obscurePass;
-  final void Function(String) callbackAction1;
   final void Function() togglePassword;
   final Future<void> Function() login;
 
@@ -46,7 +43,7 @@ class LoginAuthFields extends StatelessWidget {
           ],
           Theme(
             data: Theme.of(context).copyWith(
-              inputDecorationTheme: heroInputTheme(),
+              inputDecorationTheme: _heroInputTheme(),
             ),
             child: AutofillGroup(
               child: Form(
@@ -76,7 +73,7 @@ class LoginAuthFields extends StatelessWidget {
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.password],
                       enabled: !loginState.isLoading,
-                      onFieldSubmitted: callbackAction1,
+                      onFieldSubmitted: (_) => login(),
                       suffixIcon: IconButton(
                         tooltip: obscurePass ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                         icon: Icon(
@@ -110,4 +107,52 @@ class LoginAuthFields extends StatelessWidget {
           const SizedBox(height: AppSpacing.section),
         ],
       );
+  static InputDecorationTheme _heroInputTheme() {
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.inset),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: BorderSide(
+          color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: BorderSide(
+          color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide:
+            const BorderSide(color: LoginHeroTokens.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+      ),
+      hintStyle: const TextStyle(
+          fontSize: AppFontSizes.s14, color: AppColors.textHint),
+      labelStyle: const TextStyle(
+        fontSize: AppFontSizes.s14,
+        color: LoginHeroTokens.onSurfaceVariant,
+      ),
+      floatingLabelStyle: const TextStyle(
+        fontSize: AppFontSizes.s12,
+        color: LoginHeroTokens.primary,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixIconColor: LoginHeroTokens.outline,
+      suffixIconColor: LoginHeroTokens.outline,
+      errorStyle:
+          const TextStyle(fontSize: AppFontSizes.s12, color: AppColors.error),
+    );
+  }
 }

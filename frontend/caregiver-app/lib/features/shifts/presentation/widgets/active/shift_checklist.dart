@@ -1,3 +1,4 @@
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,8 +22,7 @@ class ShiftChecklist extends ConsumerWidget {
       ]),
       if (!booking.canWorkChecklist)
         const Text('Checklist sẽ mở sau khi bạn check-in.'),
-      if (summary.skipped > 0)
-        Text('${summary.skipped} việc không thực hiện được'),
+      if (summary.skipped > 0) Text('${summary.skipped} việc không thực hiện được'),
       const SizedBox(height: AppSpacing.compact),
       if (booking.tasks.isEmpty)
         const Text('Không có checklist công việc đặc biệt.'),

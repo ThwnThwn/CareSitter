@@ -1,0 +1,107 @@
+/* Download CTA */
+.download-section {
+  background: var(--paper);
+  padding: 0 0 clamp(5rem, 9vw, 8rem);
+}
+
+.download-panel {
+  background: var(--green);
+  border-radius: var(--radius);
+  color: var(--white);
+  display: grid;
+  gap: clamp(3rem, 7vw, 7rem);
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.65fr);
+  overflow: hidden;
+  padding: clamp(2.5rem, 6vw, 5.5rem);
+  position: relative;
+}
+
+.download-panel::after {
+  border: 1px solid color-mix(in oklch, var(--lime) 38%, transparent);
+  border-radius: 50%;
+  content: "";
+  height: 420px;
+  position: absolute;
+  right: -180px;
+  top: -210px;
+  width: 420px;
+}
+
+.download-panel__copy {
+  position: relative;
+  z-index: 1;
+}
+
+.download-panel__copy > p:not(.section-label) {
+  color: color-mix(in oklch, var(--white) 82%, transparent);
+  font-size: 1rem;
+  line-height: 1.75;
+  margin: 1.7rem 0 0;
+  max-width: 60ch;
+}
+
+.download-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.download-card {
+  align-self: center;
+  background: var(--green-dark);
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.download-card > span {
+  color: var(--lime);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-top: auto;
+  text-transform: uppercase;
+}
+
+.download-card > strong {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.24;
+  margin-top: 0.65rem;
+}
+
+.download-card__stores {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 1.4rem;
+}
+
+.download-card__stores a {
+  border: 1px solid var(--line-light);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.7rem 0.8rem;
+}
+
+.download-card__stores small {
+  color: color-mix(in oklch, var(--white) 66%, transparent);
+  font-size: 0.58rem;
+  font-weight: 500;
+}
+
+.download-card > p {
+  color: color-mix(in oklch, var(--white) 65%, transparent);
+  font-size: 0.65rem;
+  margin: 0.9rem 0 0;
+}

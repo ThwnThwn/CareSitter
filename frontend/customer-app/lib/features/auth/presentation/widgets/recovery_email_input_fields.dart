@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/auth/presentation/widgets/recovery_email_field.dart';
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/recovery_email_controller.dart';
 
@@ -8,20 +9,18 @@ class RecoveryEmailInputFields extends StatelessWidget {
       {super.key,
       required this.email,
       required this.flow,
-      required this.callbackAction1,
+      required this.onEmailChanged,
       required this.changing,
       required this.password,
       required this.hidden,
-      required this.callbackAction2,
-      required this.callbackAction3});
+      required this.onTogglePassword});
   final TextEditingController email;
   final RecoveryEmailState flow;
-  final void Function(String) callbackAction1;
+  final void Function(String) onEmailChanged;
   final bool changing;
   final TextEditingController password;
   final bool hidden;
-  final void Function() callbackAction2;
-  final String? Function(String?) callbackAction3;
+  final void Function() onTogglePassword;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -32,7 +31,7 @@ class RecoveryEmailInputFields extends StatelessWidget {
                 email: email,
                 busy: flow.busy,
                 hasPassword: flow.hasPassword,
-                action1: callbackAction1),
+                onEmailChanged: onEmailChanged),
             if (changing) ...[
               const SizedBox(height: AppSpacing.md),
               TextFormField(
@@ -43,11 +42,11 @@ class RecoveryEmailInputFields extends StatelessWidget {
                       labelText: 'Mật khẩu hiện tại',
                       suffixIcon: IconButton(
                           tooltip: hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-                          onPressed: callbackAction2,
+                          onPressed: onTogglePassword,
                           icon: Icon(hidden
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined))),
-                  validator: callbackAction3),
+                  validator: RecoveryInputRules.currentPassword),
               const SizedBox(height: AppSpacing.compact),
               const Text(
                   'Email chỉ thay đổi sau khi nhập đúng mã gửi tới email mới. Sau đó mọi phiên sẽ bị thu hồi và bạn cần đăng nhập lại.'),

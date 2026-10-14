@@ -1,0 +1,10 @@
+[Unit]
+Description=Encrypted CareSitter Nutrition database backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/caresitter
+UMask=0077
+ExecStart=/bin/sh /opt/caresitter/deploy/nutrition/compose.sh --profile nutrition-ops run --rm --no-deps nutrition-backup

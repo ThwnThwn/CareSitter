@@ -3,13 +3,9 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class ScheduleHourMarker extends StatelessWidget {
   const ScheduleHourMarker(
-      {super.key,
-      required this.isCurrentHour,
-      required this.isShiftHour,
-      required this.isAvailable});
+      {super.key, required this.isCurrentHour, required this.isShiftHour});
   final bool isCurrentHour;
   final bool isShiftHour;
-  final bool isAvailable;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -27,9 +23,7 @@ class ScheduleHourMarker extends StatelessWidget {
                     ? AppColors.primary
                     : isShiftHour
                         ? AppColors.statusConfirmed
-                        : isAvailable
-                            ? AppColors.primary.withValues(alpha: 0.3)
-                            : AppColors.border,
+                        : AppColors.border,
                 border: isCurrentHour
                     ? Border.all(
                         color: AppColors.primary.withValues(alpha: 0.3),
@@ -45,9 +39,7 @@ class ScheduleHourMarker extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isShiftHour
                         ? AppColors.statusConfirmed
-                        : isAvailable
-                            ? AppColors.primary.withValues(alpha: 0.2)
-                            : AppColors.border.withValues(alpha: 0.5),
+                        : AppColors.border.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppRadius.s2),
                   ),
                 ),

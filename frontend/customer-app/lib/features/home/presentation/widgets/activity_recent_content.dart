@@ -1,26 +1,22 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'activity_section_heading.dart';
+import 'activity_recent_row.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
 class ActivityRecentContent extends StatelessWidget {
-  const ActivityRecentContent(
-      {super.key,
-      required this.buildSectionHeader,
-      required this.recent,
-      required this.buildRecentRow});
-  final Widget Function(String) buildSectionHeader;
+  const ActivityRecentContent({super.key, required this.recent});
   final List<BookingModel> recent;
-  final Widget Function(BookingModel, BuildContext) buildRecentRow;
   @override
   Widget build(BuildContext context) => FadeSlideStaggered(
         index: 1,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            buildSectionHeader('Gần đây'),
+            const ActivitySectionHeading(title: 'Gần đây'),
             const SizedBox(height: AppSpacing.control),
             Container(
               decoration: BoxDecoration(
@@ -41,7 +37,7 @@ class ActivityRecentContent extends StatelessWidget {
                   return Column(
                     key: ValueKey('recent_${b.id}'),
                     children: [
-                      buildRecentRow(b, context),
+                      ActivityRecentRow(booking: b),
                       if (!isLast)
                         const Divider(
                             height: 1,

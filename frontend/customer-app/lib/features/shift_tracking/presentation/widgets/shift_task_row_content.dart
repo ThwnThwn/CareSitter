@@ -10,33 +10,23 @@ class ShiftTaskRowContent extends StatelessWidget {
       {super.key,
       required this.isDone,
       required this.isSkipped,
-      required this.iconForTask,
-      required this.task,
-      required this.showPhotoPreviewDialog});
+      required this.task});
   final bool isDone;
   final bool isSkipped;
-  final IconData Function(String) iconForTask;
   final CareTaskModel task;
-  final void Function(BuildContext, String) showPhotoPreviewDialog;
 
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShiftTaskIdentity(
-              isDone: isDone,
-              isSkipped: isSkipped,
-              iconForTask: iconForTask,
-              task: task),
+          ShiftTaskIdentity(isDone: isDone, isSkipped: isSkipped, task: task),
           // Skip reason banner
           if (isSkipped &&
               task.skipReason != null &&
               task.skipReason!.isNotEmpty)
             ShiftTaskSkipReason(task: task),
           // Photos gallery
-          if (task.photoUrls.isNotEmpty)
-            ShiftTaskPhotos(
-                task: task, showPhotoPreviewDialog: showPhotoPreviewDialog),
+          if (task.photoUrls.isNotEmpty) ShiftTaskPhotos(task: task),
           // Completion timestamp
           if (isDone && task.completedAt != null)
             ShiftTaskCompletionTime(task: task),

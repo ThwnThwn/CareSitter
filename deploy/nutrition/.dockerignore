@@ -1,0 +1,8 @@
+*.ps1
+*.service
+*.timer
+*.env
+*.pfx
+*.key
+ca-key.pem
+age-identity

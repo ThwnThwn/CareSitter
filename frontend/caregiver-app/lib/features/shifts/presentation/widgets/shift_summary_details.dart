@@ -1,3 +1,4 @@
+import 'shift_summary_summary_row.dart';
 import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -5,19 +6,12 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 class ShiftSummaryDetails extends StatelessWidget {
   const ShiftSummaryDetails(
       {super.key,
-      required this.buildSummaryRow,
       required this.beneficiaryName,
       required this.duration,
       required this.completedTasks,
       required this.totalTasks,
       required this.checkoutPendingReview,
       required this.caregiverEarning});
-  final Widget Function(
-      {required IconData icon,
-      bool isBold,
-      required String label,
-      required String value,
-      Color? valueColor}) buildSummaryRow;
   final String beneficiaryName;
   final String duration;
   final int completedTasks;
@@ -36,26 +30,26 @@ class ShiftSummaryDetails extends StatelessWidget {
         ),
         child: Column(
           children: [
-            buildSummaryRow(
+            ShiftSummarySummaryRow(
               icon: Icons.person_outline_rounded,
               label: 'Người được chăm sóc',
               value: beneficiaryName,
             ),
             const Divider(height: 24),
-            buildSummaryRow(
+            ShiftSummarySummaryRow(
               icon: Icons.timer_outlined,
               label: 'Thời gian chăm sóc',
               value: duration,
             ),
             const Divider(height: 24),
-            buildSummaryRow(
+            ShiftSummarySummaryRow(
               icon: Icons.task_alt_rounded,
               label: 'Công việc hoàn thành',
               value: '$completedTasks/$totalTasks việc',
               valueColor: AppColors.success,
             ),
             const Divider(height: 24),
-            buildSummaryRow(
+            ShiftSummarySummaryRow(
               icon: Icons.monetization_on_outlined,
               label: checkoutPendingReview
                   ? 'Thu nhập dự kiến'

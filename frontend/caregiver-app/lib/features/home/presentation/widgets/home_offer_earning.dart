@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
+import 'package:caregiver_app/core/utils/currency_formatter.dart';
 
 class HomeOfferEarning extends StatelessWidget {
-  const HomeOfferEarning(
-      {super.key, required this.formatPrice, required this.booking});
-  final String Function(double) formatPrice;
+  const HomeOfferEarning({super.key, required this.booking});
   final ShiftModel booking;
 
   @override
@@ -22,7 +21,12 @@ class HomeOfferEarning extends StatelessWidget {
             ),
           ),
           Text(
-            '${formatPrice(booking.caregiverEarning > 0 ? booking.caregiverEarning : booking.totalPrice)}đ',
+            formatVnd(
+                booking.caregiverEarning > 0
+                    ? booking.caregiverEarning
+                    : booking.totalPrice,
+                compact: true,
+                round: true),
             style: GoogleFonts.beVietnamPro(
               fontSize: AppFontSizes.s18,
               fontWeight: FontWeight.w700,

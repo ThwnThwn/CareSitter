@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,13 +6,9 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsHeading extends StatelessWidget {
   const HomeEarningsHeading(
-      {super.key,
-      required this.formatPrice,
-      required this.total,
-      required this.callbackAction1});
-  final String Function(double) formatPrice;
+      {super.key, required this.total, required this.onOpenDetails});
   final double total;
-  final void Function() callbackAction1;
+  final void Function() onOpenDetails;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -39,7 +36,7 @@ class HomeEarningsHeading extends StatelessWidget {
                     children: [
                       const TextSpan(text: 'Tổng tích luỹ: '),
                       TextSpan(
-                        text: '${formatPrice(total)}đ',
+                        text: formatVnd(total, compact: true, round: true),
                         style: GoogleFonts.beVietnamPro(
                           fontSize: AppFontSizes.s12,
                           fontWeight: FontWeight.w600,
@@ -53,7 +50,7 @@ class HomeEarningsHeading extends StatelessWidget {
             ),
           ),
           GestureDetector(
-            onTap: callbackAction1,
+            onTap: onOpenDetails,
             child: Row(
               children: [
                 Text(

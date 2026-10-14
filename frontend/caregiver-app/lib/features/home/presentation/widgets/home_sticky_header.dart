@@ -3,22 +3,14 @@ import 'package:caregiver_app/features/home/presentation/widgets/home_greeting.d
 import 'package:caregiver_app/features/home/presentation/widgets/home_notification_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 
-class HomeStickyHeader extends StatelessWidget {
-  const HomeStickyHeader(
-      {super.key,
-      required this.ref,
-      required this.shortName,
-      required this.initials});
-  final WidgetRef ref;
-  final String Function(String) shortName;
-  final String Function(String) initials;
+class HomeStickyHeader extends ConsumerWidget {
+  const HomeStickyHeader({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authStateProvider).value;
     final profile = ref.watch(profileProvider);
     final displayName =
@@ -27,8 +19,8 @@ class HomeStickyHeader extends StatelessWidget {
             : (auth?.phone?.trim().isNotEmpty ?? false)
                 ? auth!.phone!.trim()
                 : 'Caregiver';
-    final greetingName = shortName(displayName);
-    final initials = this.initials(displayName);
+    final greetingName = _shortName(displayName);
+    final initials = _initials(displayName);
 
     return SliverAppBar(
       pinned: true,
@@ -49,14 +41,31 @@ class HomeStickyHeader extends StatelessWidget {
           HomeGreeting(greetingName: greetingName, profile: profile),
         ],
       ),
-      actions: [
+      actions: const [
         // Notification bell với badge động
-        HomeNotificationButton(
-            ref: ref,
-            callbackAction1: (n) => !n.isRead,
-            callbackAction2: () => context.push('/notifications')),
-        const SizedBox(width: AppSpacing.xs),
+        HomeNotificationButton(),
+        SizedBox(width: AppSpacing.xs),
       ],
     );
+  }
+
+  String _shortName(String displayName) {
+    final parts =
+        displayName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    return parts.isEmpty ? 'Caregiver' : parts.last;
+  }
+
+  String _initials(String displayName) {
+    final parts = displayName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) return 'CG';
+    if (parts.length == 1) {
+      return parts.first.characters.first.toUpperCase();
+    }
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
   }
 }

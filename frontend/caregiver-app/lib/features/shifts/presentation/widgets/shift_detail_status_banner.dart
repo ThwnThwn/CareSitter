@@ -1,23 +1,15 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import '../models/shift_detail_status.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
 class ShiftDetailStatusBanner extends StatelessWidget {
-  const ShiftDetailStatusBanner(
-      {super.key, required this.getStatusInfo, required this.booking});
-  final ({
-    Color bgColor,
-    Color color,
-    IconData icon,
-    String label,
-    String subtitle
-  })
-      Function(String) getStatusInfo;
+  const ShiftDetailStatusBanner({super.key, required this.booking});
   final ShiftModel booking;
   @override
   Widget build(BuildContext context) {
-    final info = getStatusInfo(booking.status);
+    final info = shiftDetailStatusInfo(booking.status);
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.compact, vertical: AppSpacing.control),

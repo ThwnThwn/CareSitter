@@ -429,7 +429,10 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         services.AddSingleton<IDisputeLookupService, Disputes>();
         services.AddSingleton<IUserNotificationService, Notifications>();
         await using var provider = services.BuildServiceProvider();
-        var jobs = new BookingJobsService(provider, NullLogger<BookingJobsService>.Instance);
+        await using var scope = provider.CreateAsyncScope();
+        var checkoutStore = ActivatorUtilities.CreateInstance<BookingCheckoutStore>(scope.ServiceProvider);
+        var notifier = ActivatorUtilities.CreateInstance<BookingJobNotifier>(scope.ServiceProvider);
+        var jobs = new BookingCheckoutJobs(checkoutStore, notifier);
         if (requestCheckout) await jobs.AutoRequestCheckoutExpiredShiftsAsync();
         else await jobs.AutoConfirmPendingCheckoutsAsync();
     }

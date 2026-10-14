@@ -17,7 +17,7 @@ class SelfRecipientStep extends ConsumerWidget {
               onPressed: () => ref.read(selfRecipientProvider.notifier).load(),
               child: const Text('Thử lại')),
           data: (selected) => selected.kind != SelfRecipientKind.draft
-              ? SavedSelfRecipient(args: args, selected: selected)
+              ? SavedSelfRecipient(selected: selected)
               : Column(children: [
                   SelfRecipientForm(
                       initial: selected.profile,

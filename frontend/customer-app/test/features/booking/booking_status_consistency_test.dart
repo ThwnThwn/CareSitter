@@ -18,13 +18,13 @@ void main() {
   });
 
   const scenarios = [
-    _Scenario('confirmed', 'Chờ ghép CSV',
-        caregiverId: null, expectWaiting: true),
+    _Scenario('confirmed', 'Chờ ghép CSV', caregiverId: null, expectWaiting: true),
     _Scenario('confirmed', 'Đã xác nhận'),
     _Scenario('caregiver_accepted', 'Đã nhận ca', caregiverId: null),
     _Scenario('pending_payment', 'Chờ thanh toán'),
     _Scenario('draft', 'Bản nháp'),
     _Scenario('in_progress', 'Đã nhận ca'),
+    _Scenario('in_progress', 'Đang diễn ra', checkedIn: true),
     _Scenario('disputed', 'Đang xử lý', tab: 'Đã hủy'),
     _Scenario('refunded', 'Đã hoàn tiền', tab: 'Đã hủy'),
     _Scenario('completed', 'Hoàn thành', tab: 'Hoàn tất'),
@@ -113,6 +113,17 @@ void main() {
       }
       expect(tester.takeException(), isNull);
 
+      if (scenario.checkedIn) {
+        final extend = find.text('Gia hạn ca chăm sóc');
+        await tester.ensureVisible(extend);
+        await tester.tap(extend);
+        await tester.pumpAndSettle();
+        expect(find.text('Chưa thể gia hạn trên ứng dụng'), findsOneWidget);
+        expect(find.textContaining('đã được gửi đến caregiver'), findsNothing);
+        await tester.tap(find.text('Đã hiểu'));
+        await tester.pumpAndSettle();
+      }
+
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
@@ -137,6 +148,7 @@ class _Scenario {
   final String? caregiverId;
   final String tab;
   final bool expectWaiting;
+  final bool checkedIn;
 
   const _Scenario(
     this.status,
@@ -144,6 +156,7 @@ class _Scenario {
     this.caregiverId = 'caregiver-1',
     this.tab = 'Sắp tới',
     this.expectWaiting = false,
+    this.checkedIn = false,
   });
 }
 
@@ -167,6 +180,9 @@ class _Bookings extends BookingStore {
           serviceTypeId: 'service-1',
           scheduledStart: DateTime(2030, 11, 1, 8),
           scheduledEnd: DateTime(2030, 11, 1, 12),
+          actualStart: scenario.checkedIn
+              ? DateTime.now().subtract(const Duration(minutes: 10))
+              : null,
           status: scenario.status,
           escrowAmount: 300000,
           platformFeeAmount: 0,

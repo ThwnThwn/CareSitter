@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/shift_tracking/presentation/widgets
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_task_notes.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import '../models/care_task_icon.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -11,11 +12,9 @@ class ShiftTaskIdentity extends StatelessWidget {
       {super.key,
       required this.isDone,
       required this.isSkipped,
-      required this.iconForTask,
       required this.task});
   final bool isDone;
   final bool isSkipped;
-  final IconData Function(String) iconForTask;
   final CareTaskModel task;
 
   @override
@@ -50,7 +49,7 @@ class ShiftTaskIdentity extends StatelessWidget {
                     ? const Icon(Icons.remove_rounded,
                         size: 16, color: Colors.white)
                     : Icon(
-                        iconForTask(task.title),
+                        iconForCareTask(task.title),
                         size: 14,
                         color: AppColors.textHint,
                       ),

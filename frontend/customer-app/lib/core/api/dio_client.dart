@@ -21,8 +21,7 @@ final authRefreshClientProvider = Provider<Dio>((ref) {
   ref.onDispose(() => client.close(force: true));
   return client;
 });
-final _authInterceptorProvider =
-    Provider<_AuthInterceptor>(_AuthInterceptor.new);
+final _authInterceptorProvider = Provider<_AuthInterceptor>(_AuthInterceptor.new);
 
 class DioClient {
   late final Dio _dio;
@@ -67,17 +66,22 @@ class DioClient {
 
   Future<Response<T>> getCancelable<T>(String path,
           {Map<String, dynamic>? query, required CancelToken cancelToken}) =>
-      _request(() =>
-          _dio.get<T>(path, queryParameters: query, cancelToken: cancelToken));
+      _request(
+          () => _dio.get<T>(path, queryParameters: query, cancelToken: cancelToken));
   Future<Response<T>> postCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
       _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
   Future<Response<T>> patchCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
       _request(() => _dio.patch<T>(path, data: data, cancelToken: cancelToken));
+  Future<Response<T>> putCancelable<T>(String path,
+          {dynamic data, required CancelToken cancelToken}) =>
+      _request(() => _dio.put<T>(path, data: data, cancelToken: cancelToken));
+  Future<Response<T>> deleteCancelable<T>(String path,
+          {required CancelToken cancelToken}) =>
+      _request(() => _dio.delete<T>(path, cancelToken: cancelToken));
 
-  Future<Response<T>> delete<T>(String path) =>
-      _request(() => _dio.delete<T>(path));
+  Future<Response<T>> delete<T>(String path) => _request(() => _dio.delete<T>(path));
 
   Future<Response<T>> postForm<T>(String path, FormData data) =>
       _request(() => _dio.post<T>(path, data: data));
@@ -139,8 +143,7 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  Future<void> onError(
-      DioException err, ErrorInterceptorHandler handler) async {
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
     final path = err.requestOptions.path;
     final isAuthEndpoint =
         path.endsWith('/auth/refresh') || path.endsWith('/auth/logout');
@@ -166,8 +169,7 @@ class _AuthInterceptor extends Interceptor {
         final activeEpoch = _epoch;
         if (_refreshing == null || _refreshEpoch != activeEpoch) {
           _refreshEpoch = activeEpoch;
-          final operation =
-              _refreshAsync(activeEpoch, notifier.sessionGeneration);
+          final operation = _refreshAsync(activeEpoch, notifier.sessionGeneration);
           _refreshing = operation;
           operation.then((_) {
             if (identical(_refreshing, operation)) _refreshing = null;
@@ -208,8 +210,7 @@ class _AuthInterceptor extends Interceptor {
       if (access.isEmpty || nextRefresh.isEmpty) {
         throw StateError('Invalid refresh response');
       }
-      await notifier.updateTokens(
-          accessToken: access, refreshToken: nextRefresh);
+      await notifier.updateTokens(accessToken: access, refreshToken: nextRefresh);
       return epoch == _epoch && generation == notifier.sessionGeneration
           ? access
           : null;

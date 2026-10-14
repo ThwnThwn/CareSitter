@@ -1,9 +1,14 @@
+import '../../../testing/dart_dependency_graph.dart';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 void main() {
+  test('resolved dependencies have no cycles or inverted boundaries', () {
+    final violations = dependencyViolations('caresitter_customer');
+    expect(violations, isEmpty, reason: violations.join('\n'));
+  });
   test('core, data and presentation respect their dependency boundaries', () {
     final violations = <String>[];
     for (final file in Directory('lib')

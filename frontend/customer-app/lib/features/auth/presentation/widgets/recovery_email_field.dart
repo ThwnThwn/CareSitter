@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 
 class RecoveryEmailField extends StatelessWidget {
   const RecoveryEmailField(
@@ -6,22 +7,19 @@ class RecoveryEmailField extends StatelessWidget {
       required this.email,
       required this.busy,
       required this.hasPassword,
-      required this.action1});
+      required this.onEmailChanged});
   final TextEditingController email;
   final bool busy;
   final bool hasPassword;
-  final void Function(String) action1;
+  final void Function(String) onEmailChanged;
   @override
   Widget build(BuildContext context) => TextFormField(
       key: const ValueKey('profile-recovery-email'),
       controller: email,
       enabled: !busy,
       readOnly: !hasPassword,
-      onChanged: action1,
+      onChanged: onEmailChanged,
       keyboardType: TextInputType.emailAddress,
       decoration: const InputDecoration(labelText: 'Email cần xác minh'),
-      validator: (value) => value != null &&
-              RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim())
-          ? null
-          : 'Vui lòng nhập email hợp lệ.');
+      validator: RecoveryInputRules.email);
 }

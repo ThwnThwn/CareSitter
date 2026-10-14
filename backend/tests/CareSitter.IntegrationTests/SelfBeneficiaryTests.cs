@@ -5,6 +5,7 @@ using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Application.Commands.SelfBeneficiary;
 using CareSitter.Modules.People.Controllers;
 using CareSitter.Modules.People.Domain;
+using CareSitter.Modules.People.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -75,6 +76,7 @@ public sealed class SelfBeneficiaryTests : IAsyncLifetime
         services.AddSingleton(_dataSource);
         new PeopleModule().RegisterServices(services, new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:CareSitter"] = _connection }).Build());
+        services.UseFixtureProvider<PeopleDbContext>();
         services.AddSingleton<ICurrentUser>(new Actor(owner, role));
         services.AddSingleton<ICatalogLookupService>(new Catalog(_owner, _address, verified));
         return services.BuildServiceProvider();

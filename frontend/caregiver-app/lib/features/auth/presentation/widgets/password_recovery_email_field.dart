@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/password_recovery_controller.dart';
 
 class PasswordRecoveryEmailField extends StatelessWidget {
-  const PasswordRecoveryEmailField(
-      {super.key,
-      required this.email,
-      required this.flow,
-      required this.callbackAction1,
-      required this.callbackAction2});
+  const PasswordRecoveryEmailField({
+    super.key,
+    required this.email,
+    required this.flow,
+    required this.onSubmit,
+  });
   final TextEditingController email;
   final PasswordRecoveryState flow;
-  final void Function(String) callbackAction1;
-  final String? Function(String?) callbackAction2;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -21,8 +21,8 @@ class PasswordRecoveryEmailField extends StatelessWidget {
       keyboardType: TextInputType.emailAddress,
       autofillHints: const [AutofillHints.email],
       textInputAction: TextInputAction.done,
-      onFieldSubmitted: callbackAction1,
+      onFieldSubmitted: (_) => onSubmit(),
       decoration: const InputDecoration(
           labelText: 'Email khôi phục', prefixIcon: Icon(Icons.email_outlined)),
-      validator: callbackAction2);
+      validator: RecoveryInputRules.email);
 }

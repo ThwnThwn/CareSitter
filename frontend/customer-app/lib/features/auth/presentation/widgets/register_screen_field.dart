@@ -7,14 +7,15 @@ class RegisterScreenField extends StatelessWidget {
   const RegisterScreenField(
       {super.key,
       required this.controller,
-      required this.keyboardType,
-      required this.inputFormatters,
-      required this.validator,
-      required this.textInputAction,
-      required this.textCapitalization,
+      this.keyboardType,
+      this.inputFormatters,
+      this.validator,
+      this.textInputAction = TextInputAction.next,
+      this.textCapitalization = TextCapitalization.none,
       required this.label,
       required this.hint,
-      required this.prefixWidget,
+      this.prefixWidget,
+      this.enabled = true,
       required this.icon});
   final TextEditingController controller;
   final TextInputType? keyboardType;
@@ -26,10 +27,12 @@ class RegisterScreenField extends StatelessWidget {
   final String hint;
   final Widget? prefixWidget;
   final IconData icon;
+  final bool enabled;
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      enabled: enabled,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       validator: validator,
@@ -44,8 +47,7 @@ class RegisterScreenField extends StatelessWidget {
         hintText: hint,
         prefixIcon: prefixWidget != null
             ? Padding(
-                padding:
-                    const EdgeInsets.only(left: AppSpacing.inset, right: 0),
+                padding: const EdgeInsets.only(left: AppSpacing.inset, right: 0),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

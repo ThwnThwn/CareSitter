@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,12 +6,8 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsSummary extends StatelessWidget {
   const HomeEarningsSummary(
-      {super.key,
-      required this.completedShifts,
-      required this.formatPrice,
-      required this.monthTotal});
+      {super.key, required this.completedShifts, required this.monthTotal});
   final int completedShifts;
-  final String Function(double) formatPrice;
   final double monthTotal;
 
   @override
@@ -21,7 +18,7 @@ class HomeEarningsSummary extends StatelessWidget {
             child: Builder(builder: (context) {
               // Tính trung bình từ ca đã hoàn thành
               final avgLabel = completedShifts > 0
-                  ? 'TB/ca: ${formatPrice(monthTotal / completedShifts)}đ'
+                  ? 'TB/ca: ${formatVnd(monthTotal / completedShifts, compact: true, round: true)}'
                   : 'Chưa có ca hoàn thành';
               return Text(
                 avgLabel,

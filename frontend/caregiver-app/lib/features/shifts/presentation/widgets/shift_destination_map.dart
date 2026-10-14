@@ -5,18 +5,14 @@ import 'package:caregiver_app/core/maps/map_tile_config.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
-class ShiftDestinationMap extends StatelessWidget {
+class ShiftDestinationMap extends ConsumerWidget {
   const ShiftDestinationMap(
-      {super.key,
-      required this.destination,
-      required this.ref,
-      required this.tiles});
+      {super.key, required this.destination, required this.tiles});
   final LatLng destination;
-  final WidgetRef ref;
   final MapTileConfig tiles;
 
   @override
-  Widget build(BuildContext context) => FlutterMap(
+  Widget build(BuildContext context, WidgetRef ref) => FlutterMap(
         options: MapOptions(
           initialCenter: destination,
           initialZoom: 16,

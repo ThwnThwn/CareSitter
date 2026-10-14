@@ -15,22 +15,15 @@ class HomeOfferDetails extends StatelessWidget {
       required this.countdownLabel,
       required this.pendingCount,
       required this.booking,
-      required this.offerLocationLabel,
-      required this.formatPrice,
       required this.turnaroundWarning,
-      required this.note,
-      required this.callbackAction2,
-      required this.callbackAction3});
+      required this.onOpen,
+      required this.onOpenQueue});
   final bool isExpired;
   final String? countdownLabel;
   final int pendingCount;
   final ShiftModel booking;
-  final String Function(ShiftModel) offerLocationLabel;
-  final String Function(double) formatPrice;
   final String? turnaroundWarning;
-  final String? note;
-  final void Function() callbackAction2;
-  final void Function() callbackAction3;
+  final VoidCallback onOpen, onOpenQueue;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -38,7 +31,7 @@ class HomeOfferDetails extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: callbackAction2,
+          onTap: onOpen,
           child: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: Column(
@@ -49,8 +42,7 @@ class HomeOfferDetails extends StatelessWidget {
                     isExpired: isExpired, countdownLabel: countdownLabel),
                 if (pendingCount > 1)
                   HomeOfferQueueLink(
-                      pendingCount: pendingCount,
-                      callbackAction1: callbackAction3),
+                      pendingCount: pendingCount, onOpenQueue: onOpenQueue),
                 const SizedBox(height: AppSpacing.compact),
                 const Divider(color: AppColors.border, height: 1),
                 const SizedBox(height: AppSpacing.compact),
@@ -60,10 +52,7 @@ class HomeOfferDetails extends StatelessWidget {
                 const SizedBox(height: AppSpacing.compact),
 
                 // Recipient & Location
-                HomeOfferRecipientSummary(
-                    booking: booking,
-                    offerLocationLabel: offerLocationLabel,
-                    formatPrice: formatPrice),
+                HomeOfferRecipientSummary(booking: booking),
                 const SizedBox(height: AppSpacing.sm),
 
                 if (turnaroundWarning != null) ...[
@@ -73,7 +62,7 @@ class HomeOfferDetails extends StatelessWidget {
                 ],
 
                 // Note
-                HomeOfferNote(note: note),
+                HomeOfferNote(note: booking.customerNote?.trim()),
                 const SizedBox(height: AppSpacing.md),
               ],
             ),

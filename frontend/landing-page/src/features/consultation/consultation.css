@@ -1,0 +1,54 @@
+.consultation-dialog {
+  border: 0;
+  color: var(--ink);
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  width: min(590px, calc(100vw - 2rem));
+}
+.consultation-dialog::backdrop {
+  background: color-mix(in oklch, var(--green-dark) 78%, transparent);
+}
+.consultation-dialog :focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.consultation-dialog fieldset { min-width: 0; }
+.consultation-dialog legend { margin-bottom: 0.65rem; }
+.consultation-dialog .booking-form__row { margin-block: 0.9rem; }
+.consultation-dialog input, .consultation-dialog select, .consultation-dialog textarea {
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+}
+.consultation-dialog textarea {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  resize: vertical;
+}
+.consultation-dialog textarea::placeholder { color: var(--muted); }
+.consultation-dialog .consultation-consent {
+  flex-direction: row;
+  align-items: flex-start;
+  margin-top: 1rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.consultation-consent input {
+  flex: 0 0 20px;
+  min-height: 20px;
+  margin-top: 0.15rem;
+  accent-color: var(--green);
+}
+.consultation-help, .consultation-error {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+.consultation-help { color: var(--muted); }
+.consultation-error { color: #992525; }
+.consultation-reference { overflow-wrap: anywhere; font-size: 0.8rem; }
+.consultation-dialog button:disabled { opacity: 0.65; cursor: wait; }

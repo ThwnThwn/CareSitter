@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
+import '../models/home_offer_display_model.dart';
 
 class HomeOfferRecipientLocation extends StatelessWidget {
-  const HomeOfferRecipientLocation(
-      {super.key, required this.booking, required this.offerLocationLabel});
+  const HomeOfferRecipientLocation({super.key, required this.booking});
   final ShiftModel booking;
-  final String Function(ShiftModel) offerLocationLabel;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -45,7 +44,7 @@ class HomeOfferRecipientLocation extends StatelessWidget {
                     const SizedBox(width: AppSpacing.micro),
                     Expanded(
                       child: Text(
-                        offerLocationLabel(booking),
+                        HomeOfferDisplayModel.locationLabel(booking),
                         style: GoogleFonts.beVietnamPro(
                           fontSize: AppFontSizes.s12,
                           color: AppColors.textSecondary,

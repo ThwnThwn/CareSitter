@@ -38,28 +38,12 @@ ShiftModel mapShiftFromApi(Map<String, dynamic> json) {
     end = DateTime.tryParse(json['scheduledEnd'].toString())?.toLocal();
   }
 
-  String dateStr = 'Chưa có ngày';
-  String timeStr = 'Chưa có giờ';
-  String durationStr = 'Chưa có thời lượng';
-  if (start != null) {
-    dateStr =
-        '${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')}/${start.year}';
-    if (end != null) {
-      timeStr =
-          '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-      final diffHours = end.difference(start).inHours;
-      durationStr = '$diffHours giờ';
-    }
-  }
-
   DateTime? checkoutRequestedAt;
   if (json['checkoutPendingReviewAt'] != null) {
     checkoutRequestedAt =
-        DateTime.tryParse(json['checkoutPendingReviewAt'].toString())
-            ?.toLocal();
+        DateTime.tryParse(json['checkoutPendingReviewAt'].toString())?.toLocal();
   } else if (json['actualEnd'] != null) {
-    checkoutRequestedAt =
-        DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
+    checkoutRequestedAt = DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
   }
 
   DateTime? completedAt;
@@ -88,17 +72,13 @@ ShiftModel mapShiftFromApi(Map<String, dynamic> json) {
     ),
     caregiverId: json['caregiverId']?.toString(),
     caregiverName: _displayText(json['caregiverName'], fallback: 'Caregiver'),
-    caregiverAvatar:
-        _initials(_displayText(json['caregiverName'], fallback: 'CG')),
+    caregiverAvatar: _initials(_displayText(json['caregiverName'], fallback: 'CG')),
     serviceId: json['serviceTypeId']?.toString(),
     serviceName: _displayText(
       json['serviceName'],
       fallback: 'Dịch vụ chưa cập nhật',
     ),
     serviceDescription: _nullableDisplayText(json['serviceDescription']),
-    date: dateStr,
-    time: timeStr,
-    duration: durationStr,
     scheduledStart: start,
     scheduledEnd: end,
     status: mappedStatus,
@@ -148,11 +128,8 @@ String _shortIdLabel(String label, Object? rawId) {
 }
 
 String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
+  final parts =
+      name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
   if (parts.isEmpty) return 'CG';
   if (parts.length == 1) {
     final take = parts.first.length < 2 ? parts.first.length : 2;

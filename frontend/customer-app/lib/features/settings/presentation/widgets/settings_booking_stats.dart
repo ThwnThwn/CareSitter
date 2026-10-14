@@ -1,15 +1,12 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class SettingsBookingStats extends StatelessWidget {
   const SettingsBookingStats(
-      {super.key,
-      required this.bookingCount,
-      required this.formatCurrency,
-      required this.totalSpent});
+      {super.key, required this.bookingCount, required this.totalSpent});
   final int bookingCount;
-  final String Function(double) formatCurrency;
   final double totalSpent;
 
   @override
@@ -23,7 +20,7 @@ class SettingsBookingStats extends StatelessWidget {
         const Text('  -  ',
             style: TextStyle(
                 color: AppColors.textHint, fontWeight: FontWeight.w700)),
-        Text(formatCurrency(totalSpent),
+        Text(formatVnd(totalSpent, suffix: 'đ đã chi'),
             style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: AppFontSizes.s13,

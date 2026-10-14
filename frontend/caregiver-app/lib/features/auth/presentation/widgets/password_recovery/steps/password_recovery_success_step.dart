@@ -2,8 +2,8 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class PasswordRecoverySuccessStep extends StatelessWidget {
-  const PasswordRecoverySuccessStep({super.key, required this.callbackAction3});
-  final void Function() callbackAction3;
+  const PasswordRecoverySuccessStep({super.key, required this.onSignIn});
+  final void Function() onSignIn;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -17,6 +17,6 @@ class PasswordRecoverySuccessStep extends StatelessWidget {
                 'Mật khẩu đã được thay đổi và mọi phiên đăng nhập cũ đã bị thu hồi. Hãy đăng nhập bằng mật khẩu mới.'),
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
-                onPressed: callbackAction3, child: const Text('Về đăng nhập')),
+                onPressed: onSignIn, child: const Text('Về đăng nhập')),
           ]);
 }

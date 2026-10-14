@@ -1,0 +1,170 @@
+services:
+  api:
+    environment:
+      Kestrel__Endpoints__Http__Url: http://0.0.0.0:8080
+      Kestrel__Endpoints__Internal__Url: https://0.0.0.0:8443
+      Kestrel__Endpoints__Internal__Protocols: Http1
+      Kestrel__Endpoints__Internal__Certificate__Path: /run/secrets/api_tls
+      NutritionGateway__Enabled: "true"
+      NutritionGateway__GrpcUrl: https://nutrition:8443/
+      NutritionGateway__TrustedRootCertificatePath: /run/secrets/internal_ca
+      NutritionGateway__TimeoutSeconds: "15"
+    entrypoint: [sh, /nutrition-entrypoint.sh, api]
+    volumes:
+      - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro
+    secrets: [nutrition_gateway_key, nutrition_people_key, internal_ca, api_tls, tls_password]
+    networks: [edge, data, nutrition-data]
+    depends_on:
+      nutrition:
+        condition: service_healthy
+
+  nutrition-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nutrition
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/nutrition_db_admin
+    secrets: [nutrition_db_admin]
+    volumes: [nutrition_pgdata:/var/lib/postgresql/data]
+    networks: [nutrition-data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d nutrition"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  nutrition-migrate:
+    image: postgres:16
+    profiles: [nutrition-migrate]
+    restart: "no"
+    environment:
+      PGHOST: nutrition-db
+      PGDATABASE: nutrition
+      PGUSER: postgres
+      PGPASSWORD_FILE: /run/secrets/nutrition_db_admin
+      NUTRITION_APP_PASSWORD_FILE: /run/secrets/nutrition_db_app
+      NUTRITION_SQL_DIRECTORY: /nutrition-sql
+    secrets: [nutrition_db_admin, nutrition_db_app]
+    volumes:
+      - ../backend/init-db/nutrition-service:/nutrition-sql:ro
+      - ./nutrition/migrate.sh:/migrate-nutrition.sh:ro
+      - ./nutrition/common.sh:/common.sh:ro
+    entrypoint: [sh, /migrate-nutrition.sh]
+    depends_on:
+      nutrition-db:
+        condition: service_healthy
+    networks: [nutrition-data]
+
+  nutrition:
+    build:
+      context: ../backend/services/nutrition
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:?Set APP_ENVIRONMENT}
+      Kestrel__Endpoints__Http__Url: http://127.0.0.1:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: https://0.0.0.0:8443
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      Kestrel__Endpoints__Grpc__Certificate__Path: /run/secrets/nutrition_tls
+      Jwt__SecretKey: ${Jwt__SecretKey:?Set Identity JWT key}
+      Jwt__Issuer: ${Jwt__Issuer:?Set Identity JWT issuer}
+      Jwt__Audience: ${Jwt__Audience:?Set Identity JWT audience}
+      People__BaseUrl: https://api:8443/
+      People__TrustedRootCertificatePath: /run/secrets/internal_ca
+      Nutrition__Enabled: ${NUTRITION_ENABLED:-false}
+      Nutrition__AssessmentsEnabled: ${NUTRITION_ASSESSMENTS_ENABLED:-false}
+      Nutrition__RecommendationsEnabled: ${NUTRITION_RECOMMENDATIONS_ENABLED:-false}
+    entrypoint: [sh, /nutrition-entrypoint.sh, nutrition]
+    volumes:
+      - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro
+    secrets: [nutrition_db_app, nutrition_gateway_key, nutrition_people_key, internal_ca, nutrition_tls, tls_password]
+    networks: [nutrition-data]
+    depends_on:
+      nutrition-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --show-error, http://127.0.0.1:8080/health/ready]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+
+  nutrition-backup:
+    build:
+      context: ./nutrition
+      dockerfile: Dockerfile.ops
+    profiles: [nutrition-ops]
+    restart: "no"
+    environment: &nutrition-ops-env
+      PGHOST: nutrition-db
+      PGDATABASE: nutrition
+      PGUSER: postgres
+      PGPASSWORD_FILE: /run/secrets/nutrition_db_admin
+      BACKUP_DIRECTORY: /backups/nutrition
+      BACKUP_RECIPIENT_FILE: /run/secrets/backup_recipient
+    secrets: [nutrition_db_admin, backup_recipient]
+    volumes: &nutrition-ops-volumes
+      - ./backups:/backups
+    networks: [nutrition-data]
+    entrypoint: [sh, /ops/backup.sh]
+
+  nutrition-restore-check:
+    build:
+      context: ./nutrition
+      dockerfile: Dockerfile.ops
+    profiles: [nutrition-ops]
+    restart: "no"
+    environment:
+      <<: *nutrition-ops-env
+      BACKUP_IDENTITY_FILE: /run/secrets/backup_identity
+    secrets: [nutrition_db_admin, backup_identity]
+    volumes: *nutrition-ops-volumes
+    networks: [nutrition-data]
+    entrypoint: [sh, /ops/restore-check.sh]
+
+  nutrition-smoke:
+    build:
+      context: ./nutrition
+      dockerfile: Dockerfile.ops
+    profiles: [nutrition-smoke]
+    restart: "no"
+    environment:
+      PUBLIC_API_URL: ${Public__ApiBaseUrl:?Set public API HTTPS URL}
+      SMOKE_OWNER_ID: ${NUTRITION_SMOKE_OWNER_ID:-}
+      SMOKE_BENEFICIARY_ID: ${NUTRITION_SMOKE_BENEFICIARY_ID:-}
+    secrets: [nutrition_gateway_key, nutrition_people_key, internal_ca, smoke_customer_token]
+    networks: [edge, nutrition-data]
+    entrypoint: [sh, /ops/smoke.sh]
+
+secrets:
+  nutrition_db_admin:
+    file: ./secrets/nutrition/db-admin-password
+  nutrition_db_app:
+    file: ./secrets/nutrition/db-app-password
+  nutrition_gateway_key:
+    file: ./secrets/nutrition/gateway-key
+  nutrition_people_key:
+    file: ./secrets/nutrition/people-key
+  tls_password:
+    file: ./secrets/nutrition/tls-password
+  internal_ca:
+    file: ./secrets/nutrition/ca.pem
+  api_tls:
+    file: ./secrets/nutrition/api.pfx
+  nutrition_tls:
+    file: ./secrets/nutrition/nutrition.pfx
+  backup_recipient:
+    file: ./secrets/nutrition/backup-recipient
+  backup_identity:
+    file: ./secrets/nutrition-recovery/age-identity
+  smoke_customer_token:
+    file: ${NUTRITION_SMOKE_TOKEN_FILE:-./secrets/nutrition/customer-token}
+
+networks:
+  nutrition-data:
+    internal: true
+
+volumes:
+  nutrition_pgdata:

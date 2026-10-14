@@ -3,37 +3,23 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
 class HomeOfferAcceptAction extends StatelessWidget {
   const HomeOfferAcceptAction(
       {super.key,
       required this.isExpired,
       required this.isProcessing,
-      required this.runOfferAction,
-      required this.booking,
-      required this.callbackAction1});
+      required this.onAccept});
   final bool isExpired;
   final bool isProcessing;
-  final Future<void> Function(BuildContext, String,
-      {required Future<void> Function() action,
-      required String successMessage}) runOfferAction;
-  final ShiftModel booking;
-  final Future<void> Function() callbackAction1;
+  final Future<void> Function() onAccept;
 
   @override
   Widget build(BuildContext context) => Expanded(
         child: SizedBox(
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: isExpired || isProcessing
-                ? null
-                : () => runOfferAction(
-                      context,
-                      booking.id,
-                      successMessage: 'Đã nhận ca. Ca nằm trong lịch sắp tới.',
-                      action: callbackAction1,
-                    ),
+            onPressed: isExpired || isProcessing ? null : onAccept,
             icon: isProcessing
                 ? const SizedBox(
                     width: 18,

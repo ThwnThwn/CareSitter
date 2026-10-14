@@ -1,14 +1,10 @@
 "use client";
+import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import { ArrowUpRight, Smartphone } from "lucide-react";
 
-interface DownloadCTASectionProps {
-  onOpenBooking: () => void;
-}
-
-export default function DownloadCTASection({
-  onOpenBooking,
-}: DownloadCTASectionProps) {
+export default function DownloadCTASection() {
+  const onOpenBooking = useConsultation();
   return (
     <section className="download-section" id="download">
       <div className="shell">
@@ -23,8 +19,8 @@ export default function DownloadCTASection({
               xem được lựa chọn và mức phí trước khi xác nhận.
             </p>
             <div className="download-panel__actions">
-              <button className="button button--light" onClick={onOpenBooking}>
-                Đặt ca đầu tiên
+              <button className="button button--light" onClick={() => onOpenBooking()}>
+                Tư vấn ca đầu tiên
                 <ArrowUpRight size={18} aria-hidden="true" />
               </button>
               <a className="button button--ghost-light" href="#caregivers">

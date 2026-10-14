@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/utils/date_formatter.dart';
 import 'package:caregiver_app/features/home/data/models/notification_model.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class NotificationBody extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.tight),
           Text(
-            notif.time,
+            formatRelativeTime(notif.createdAt),
             style: const TextStyle(
               fontSize: AppFontSizes.s11,
               color: AppColors.textHint,

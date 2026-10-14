@@ -1,23 +1,16 @@
-import '../widgets/booking_payment_row.dart';
+import '../widgets/booking_detail_app_bar.dart';
+import '../widgets/booking_status_actions.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_content_inner.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_row.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_extend_shift_sheet_selected_hours_format_currency_content_body.dart';
+import '../widgets/booking_extension_unavailable_dialog.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_missing_state.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_more_options_ctx_status_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_booking_fields.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_info_card.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_detail_row.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_status_banner.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_cancel_button.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_progress_tracker.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_caregiver_hero_card.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_caregiver_initials.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_screen_waiting_caregiver_card.dart';
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/payment_checkout_sheet.dart';
-import '../../data/repositories/booking_repository.dart';
+import '../../data/models/payment_intent_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -33,8 +26,7 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
   const BookingDetailScreen({super.key, required this.id});
 
   @override
-  ConsumerState<BookingDetailScreen> createState() =>
-      _BookingDetailScreenState();
+  ConsumerState<BookingDetailScreen> createState() => _BookingDetailScreenState();
 }
 
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
@@ -43,69 +35,50 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final matches =
-        ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
+    final matches = ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
     if (matches.isEmpty) {
       return const BookingDetailMissingState();
     }
     final booking = matches.first;
     final now = DateTime.now();
     final status = booking.presentationStatusAt(now);
-    final statusConfig =
-        BookingStatusPresentation.forBooking(booking, now: now);
+    final statusConfig = BookingStatusPresentation.forBooking(booking, now: now);
     final isWaitingCaregiver = statusConfig.isWaitingCaregiver;
 
-    return BookingDetailContent(
-        statusConfig: statusConfig,
-        isCancelling: _isCancelling,
-        cancelDialogOpen: _cancelDialogOpen,
-        showMoreOptions: _showMoreOptions,
-        ref: ref,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: BookingDetailAppBar(
+          statusConfig: statusConfig,
+          onMoreOptions: _isCancelling || _cancelDialogOpen
+              ? null
+              : () => _showMoreOptions(context, ref, booking)),
+      body: BookingDetailContent(
         booking: booking,
-        buildProgressTracker: _buildProgressTracker,
-        isWaitingCaregiver: isWaitingCaregiver,
-        buildWaitingCaregiverCard: _buildWaitingCaregiverCard,
-        buildCaregiverHeroCard: _buildCaregiverHeroCard,
-        buildInfoCard: _buildInfoCard,
-        buildDetailRow: _buildDetailRow,
-        buildPaymentRow: _buildPaymentRow,
-        formatCurrency: _formatCurrency,
-        status: status,
-        buildStatusBanner: _buildStatusBanner,
-        buildCancelButton: _buildCancelButton,
-        action1: () => ref.read(bookingStoreProvider.notifier).refresh(),
-        action2: () => _handleConfirmPayment(context, ref, booking),
-        action3: () => context.push('/bookings/${booking.id}/tracking'),
-        action4: () => context.push('/bookings/${booking.id}/tracking'),
-        action5: () => _showExtendShiftSheet(context, booking),
-        action6: () => _showCompleteShiftDialog(context, ref, booking),
-        action7: () => context.push('/bookings/${booking.id}/dispute'),
-        action8: () => context.push('/bookings/${booking.id}/review'),
-        action9: () => context.push('/booking/new'));
+        statusConfig: statusConfig,
+        onRefresh: () => ref.read(bookingStoreProvider.notifier).refresh(),
+        actions: BookingStatusActions(
+          booking: booking,
+          status: status,
+          isWaitingCaregiver: isWaitingCaregiver,
+          cancelButton: BookingDetailScreenCancelButton(
+              booking: booking,
+              isCancelling: _isCancelling,
+              cancelDialogOpen: _cancelDialogOpen,
+              confirmCancel: _confirmCancel),
+          onPay: () => _handleConfirmPayment(context, ref, booking),
+          onTrack: () => context.push('/bookings/${booking.id}/tracking'),
+          onExtend: () => showDialog<void>(
+            context: context,
+            builder: (_) => const BookingExtensionUnavailableDialog(),
+          ),
+          onComplete: () => _showCompleteShiftDialog(context, ref, booking),
+          onDispute: () => context.push('/bookings/${booking.id}/dispute'),
+          onReview: () => context.push('/bookings/${booking.id}/review'),
+          onRebook: () => context.push('/booking/new'),
+        ),
+      ),
+    );
   }
-
-  Widget _buildInfoCard({required String title, required Widget child}) =>
-      BookingDetailScreenInfoCard(title: title, child: child);
-
-  Widget _buildDetailRow(IconData icon, String label, String value) =>
-      BookingDetailScreenDetailRow(icon: icon, label: label, value: value);
-
-  Widget _buildPaymentRow(String label, double amount) =>
-      BookingPaymentRow(label: label, amount: amount);
-
-  Widget _buildStatusBanner(String message) =>
-      BookingDetailScreenStatusBanner(message: message);
-
-  Widget _buildCancelButton(
-    BuildContext context,
-    WidgetRef ref,
-    BookingModel booking,
-  ) =>
-      BookingDetailScreenCancelButton(
-          isCancelling: _isCancelling,
-          cancelDialogOpen: _cancelDialogOpen,
-          confirmCancel: _confirmCancel,
-          booking: booking);
 
   Future<void> _confirmCancel(BookingModel booking) async {
     if (_isCancelling || _cancelDialogOpen) return;
@@ -145,24 +118,6 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
   }
 
-  Widget _buildProgressTracker(
-    BuildContext context,
-    BookingStatusPresentation statusConfig,
-    BookingModel booking,
-  ) =>
-      BookingDetailScreenProgressTracker(
-          statusConfig: statusConfig, booking: booking);
-
-  Widget _buildCaregiverHeroCard(BuildContext context, BookingModel booking) =>
-      BookingDetailScreenCaregiverHeroCard(
-          booking: booking, buildCaregiverInitials: _buildCaregiverInitials);
-
-  Widget _buildCaregiverInitials(BookingModel booking) =>
-      BookingDetailScreenCaregiverInitials(booking: booking);
-
-  Widget _buildWaitingCaregiverCard(BuildContext context) =>
-      const BookingDetailScreenWaitingCaregiverCard();
-
   void _showCompleteShiftDialog(
     BuildContext context,
     WidgetRef ref,
@@ -174,13 +129,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.xl)),
         title: const BookingDetailShowCompleteShiftDialogRow(),
-        content:
-            BookingDetailShowCompleteShiftDialogBookingFields(booking: booking),
+        content: BookingDetailShowCompleteShiftDialogBookingFields(booking: booking),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child: const Text('Chưa',
-                style: TextStyle(color: AppColors.textSecondary)),
+            child:
+                const Text('Chưa', style: TextStyle(color: AppColors.textSecondary)),
           ),
           BookingDetailShowCompleteShiftDialogContentInner(
               callbackAction1: () async {
@@ -191,8 +145,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   .read(bookingStoreProvider.notifier)
                   .confirmCompleted(booking.id);
               if (!context.mounted) return;
-              AppToast.success(
-                  context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
+              AppToast.success(context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
             } catch (_) {
               if (!context.mounted) return;
               AppToast.error(
@@ -225,43 +178,6 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }).toString());
   }
 
-  String _formatCurrency(double amount) {
-    return formatVnd(amount, suffix: '');
-  }
-
-  void _showExtendShiftSheet(BuildContext context, BookingModel booking) {
-    int selectedHours = 1;
-    final bookedHours =
-        booking.scheduledEnd.difference(booking.scheduledStart).inMinutes / 60;
-    final effectiveHourlyRate =
-        bookedHours > 0 ? booking.totalPrice / bookedHours : 0.0;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 20, 20, 32 + MediaQuery.of(ctx).viewInsets.bottom),
-          child:
-              BookingDetailShowExtendShiftSheetSelectedHoursFormatCurrencyContentBody(
-                  selectedHours: selectedHours,
-                  formatCurrency: _formatCurrency,
-                  effectiveHourlyRate: effectiveHourlyRate,
-                  callbackAction1: () {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '✅ Yêu cầu gia hạn $selectedHours giờ đã được gửi đến caregiver.'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  }),
-        ),
-      ),
-    );
-  }
-
   void _showMoreOptions(
     BuildContext context,
     WidgetRef ref,
@@ -274,10 +190,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => BookingDetailShowMoreOptionsCtxStatusContent(
-          ctx: ctx,
-          status: status,
-          confirmCancel: _confirmCancel,
-          booking: booking),
+          ctx: ctx, status: status, confirmCancel: _confirmCancel, booking: booking),
     );
   }
 }

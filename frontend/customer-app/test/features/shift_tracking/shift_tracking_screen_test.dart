@@ -1,12 +1,51 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/screens/shift_tracking_screen.dart';
+import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_extension_sheet.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+      'extension estimates hours and opens support without a fake success',
+      (tester) async {
+    final router = GoRouter(routes: [
+      GoRoute(
+          path: '/',
+          builder: (context, _) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () => showShiftExtensionSheet(
+                      context, _booking(status: 'in_progress')),
+                  child: const Text('Gia hạn'),
+                ),
+              )),
+      GoRoute(
+          path: '/settings/support',
+          builder: (_, __) => const Scaffold(
+                body: Text('Hỗ trợ ca chăm sóc'),
+              )),
+    ]);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+        MaterialApp.router(routerConfig: router, theme: AppTheme.lightTheme));
+    await tester.tap(find.text('Gia hạn'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 giờ'), findsOneWidget);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pump();
+    }
+    expect(find.text('4 giờ'), findsOneWidget);
+    await tester.tap(find.text('Liên hệ hỗ trợ'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hỗ trợ ca chăm sóc'), findsOneWidget);
+    expect(find.textContaining('Đã gửi yêu cầu gia hạn'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('renders an en-route booking without layout or null errors',
       (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;

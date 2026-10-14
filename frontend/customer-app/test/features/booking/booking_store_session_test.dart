@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,8 +9,7 @@ import 'package:caresitter_customer/features/booking/data/repositories/booking_r
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 void main() {
-  test(
-      'real booking store resets cache and payment keys when the account changes',
+  test('real booking store resets cache and payment keys when the account changes',
       () async {
     final repository = _Repository();
     final container = ProviderContainer(overrides: [

@@ -4,20 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/password_recovery_controller.dart';
 
 class PasswordRecoveryCodeStep extends StatelessWidget {
-  const PasswordRecoveryCodeStep(
-      {super.key,
-      required this.flow,
-      required this.email,
-      required this.code,
-      required this.request,
-      required this.callbackAction3,
-      required this.callbackAction4});
+  const PasswordRecoveryCodeStep({
+    super.key,
+    required this.flow,
+    required this.email,
+    required this.code,
+    required this.request,
+    required this.onSubmit,
+  });
   final PasswordRecoveryState flow;
   final TextEditingController email;
   final TextEditingController code;
   final Future<void> Function({bool resend}) request;
-  final void Function(String) callbackAction3;
-  final String? Function(String?) callbackAction4;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -30,10 +29,10 @@ class PasswordRecoveryCodeStep extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: AppSpacing.lg),
             PasswordRecoveryCodeField(
-                code: code,
-                flow: flow,
-                callbackAction1: callbackAction3,
-                callbackAction2: callbackAction4),
+              code: code,
+              flow: flow,
+              onSubmit: onSubmit,
+            ),
             Text(
                 flow.expired
                     ? 'Mã đã hết hạn. Hãy gửi lại mã.'

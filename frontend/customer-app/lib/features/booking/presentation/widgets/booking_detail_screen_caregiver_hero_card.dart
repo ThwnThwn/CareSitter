@@ -4,10 +4,8 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
-  const BookingDetailScreenCaregiverHeroCard(
-      {super.key, required this.booking, required this.buildCaregiverInitials});
+  const BookingDetailScreenCaregiverHeroCard({super.key, required this.booking});
   final BookingModel booking;
-  final Widget Function(BookingModel) buildCaregiverInitials;
   @override
   Widget build(BuildContext context) {
     final caregiverName = booking.caregiverName ?? 'Chăm sóc viên';
@@ -33,7 +31,6 @@ class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
       ),
       child: BookingCaregiverContent(
           avatarUrl: avatarUrl,
-          buildCaregiverInitials: buildCaregiverInitials,
           booking: booking,
           caregiverName: caregiverName,
           callbackAction1: () {

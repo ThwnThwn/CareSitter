@@ -9,8 +9,8 @@ class RegisterScreenRegisterButton extends StatelessWidget {
   final Future<void> Function() register;
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
       child: ElevatedButton(
         onPressed: isLoading ? null : register,
         style: ElevatedButton.styleFrom(
@@ -27,14 +27,15 @@ class RegisterScreenRegisterButton extends StatelessWidget {
             ? const SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: Colors.white),
+                child:
+                    CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
               )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            : const Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.sm,
                 children: [
                   Icon(Icons.person_add_rounded, size: 20),
-                  SizedBox(width: AppSpacing.sm),
                   Text(
                     'Tạo tài khoản',
                     style: TextStyle(

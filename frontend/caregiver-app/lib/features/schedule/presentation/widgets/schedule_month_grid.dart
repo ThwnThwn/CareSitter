@@ -1,13 +1,13 @@
+import 'schedule_day_cell.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class ScheduleMonthGrid extends StatelessWidget {
   const ScheduleMonthGrid(
-      {super.key, required this.selectedDate, required this.buildDayCell});
+      {super.key, required this.selectedDate, required this.onSelectDate});
   final DateTime selectedDate;
-  final Widget Function(DateTime, {double chipWidth, bool compact})
-      buildDayCell;
+  final ValueChanged<DateTime> onSelectDate;
   @override
   Widget build(BuildContext context) {
     final year = selectedDate.year;
@@ -61,8 +61,12 @@ class ScheduleMonthGrid extends StatelessWidget {
               }
               final day = index - startOffset + 1;
               final date = DateTime(year, month, day);
-              return buildDayCell(date,
-                  chipWidth: double.infinity, compact: true);
+              return ScheduleDayCell(
+                  date: date,
+                  selectedDate: selectedDate,
+                  chipWidth: double.infinity,
+                  compact: true,
+                  onSelectDate: onSelectDate);
             },
           ),
         ],

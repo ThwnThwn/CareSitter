@@ -216,7 +216,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             skillInputController: _skillInputController,
             addSkill: _addSkill,
             removeSkill: _removeSkill,
-            callbackAction1: (v) => setState(() => _gender = v)),
+            onGenderChanged: (v) => setState(() => _gender = v)),
       ),
     );
   }

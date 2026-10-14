@@ -1,18 +1,18 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/password_recovery_controller.dart';
 
 class PasswordRecoveryCodeField extends StatelessWidget {
-  const PasswordRecoveryCodeField(
-      {super.key,
-      required this.code,
-      required this.flow,
-      required this.callbackAction1,
-      required this.callbackAction2});
+  const PasswordRecoveryCodeField({
+    super.key,
+    required this.code,
+    required this.flow,
+    required this.onSubmit,
+  });
   final TextEditingController code;
   final PasswordRecoveryState flow;
-  final void Function(String) callbackAction1;
-  final String? Function(String?) callbackAction2;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -24,6 +24,6 @@ class PasswordRecoveryCodeField extends StatelessWidget {
       maxLength: 6,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       decoration: const InputDecoration(labelText: 'Mã gồm 6 chữ số'),
-      onFieldSubmitted: callbackAction1,
-      validator: callbackAction2);
+      onFieldSubmitted: (_) => onSubmit(),
+      validator: RecoveryInputRules.code);
 }

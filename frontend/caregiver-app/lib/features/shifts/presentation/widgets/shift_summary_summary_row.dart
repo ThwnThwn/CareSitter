@@ -8,8 +8,8 @@ class ShiftSummarySummaryRow extends StatelessWidget {
       required this.icon,
       required this.label,
       required this.value,
-      required this.isBold,
-      required this.valueColor});
+      this.isBold = false,
+      this.valueColor});
   final IconData icon;
   final String label;
   final String value;

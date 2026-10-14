@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/password_recovery_controller.dart';
 
 class PasswordRecoveryConfirmationField extends StatelessWidget {
   const PasswordRecoveryConfirmationField(
       {super.key,
       required this.confirmation,
+      required this.password,
       required this.flow,
       required this.hidden,
-      required this.callbackAction1,
-      required this.callbackAction2});
+      required this.onSubmit});
   final TextEditingController confirmation;
+  final TextEditingController password;
   final PasswordRecoveryState flow;
   final bool hidden;
-  final String? Function(String?) callbackAction1;
-  final void Function(String) callbackAction2;
+  final Future<void> Function() onSubmit;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -24,6 +25,7 @@ class PasswordRecoveryConfirmationField extends StatelessWidget {
       textInputAction: TextInputAction.done,
       autofillHints: const [AutofillHints.newPassword],
       decoration: const InputDecoration(labelText: 'Xác nhận mật khẩu mới'),
-      validator: callbackAction1,
-      onFieldSubmitted: callbackAction2);
+      validator: (value) =>
+          RecoveryInputRules.confirmation(value, password.text),
+      onFieldSubmitted: (_) => onSubmit());
 }

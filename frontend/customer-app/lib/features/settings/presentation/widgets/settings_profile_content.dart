@@ -13,18 +13,14 @@ class SettingsProfileContent extends StatelessWidget {
       required this.profile,
       required this.initials,
       required this.bookingCount,
-      required this.formatCurrency,
       required this.totalSpent,
-      required this.callbackAction1,
-      required this.callbackAction2});
+      required this.onEditProfile});
   final bool hasAvatar;
   final UserProfile profile;
   final String initials;
   final int bookingCount;
-  final String Function(double) formatCurrency;
   final double totalSpent;
-  final void Function() callbackAction1;
-  final void Function() callbackAction2;
+  final VoidCallback onEditProfile;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -33,7 +29,7 @@ class SettingsProfileContent extends StatelessWidget {
               hasAvatar: hasAvatar,
               profile: profile,
               initials: initials,
-              callbackAction1: callbackAction1),
+              onEditProfile: onEditProfile),
           const SizedBox(height: AppSpacing.compact),
           Text(profile.name.isNotEmpty ? profile.name : 'Người dùng',
               style: const TextStyle(
@@ -51,11 +47,9 @@ class SettingsProfileContent extends StatelessWidget {
               textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.compact),
           SettingsBookingStats(
-              bookingCount: bookingCount,
-              formatCurrency: formatCurrency,
-              totalSpent: totalSpent),
+              bookingCount: bookingCount, totalSpent: totalSpent),
           const SizedBox(height: AppSpacing.md),
-          SettingsProfileEditLink(callbackAction2: callbackAction2),
+          SettingsProfileEditLink(onEditProfile: onEditProfile),
         ],
       );
 }

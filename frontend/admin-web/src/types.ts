@@ -297,3 +297,16 @@ export type AdminUser = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ConsultationRequest = {
+  id: string;
+  contactName: string;
+  phone: string;
+  serviceCategory: string;
+  preferredDate: string;
+  hours: number;
+  caregiverPreference?: string | null;
+  note?: string | null;
+  consentAt: string;
+  createdAt: string;
+};

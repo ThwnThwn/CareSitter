@@ -1,12 +1,9 @@
 "use client";
+import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
 import { ArrowUpRight, BadgeCheck, Star } from "lucide-react";
 import MotionWords from "./MotionWords";
-
-interface CaregiversSectionProps {
-  onOpenBooking: (caregiver?: string, service?: string) => void;
-}
 
 const caregivers = [
   {
@@ -25,9 +22,8 @@ const caregivers = [
   },
 ];
 
-export default function CaregiversSection({
-  onOpenBooking,
-}: CaregiversSectionProps) {
+export default function CaregiversSection() {
+  const onOpenBooking = useConsultation();
   return (
     <section className="caregivers-section" id="caregivers">
       <div className="shell">

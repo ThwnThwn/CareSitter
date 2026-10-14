@@ -15,7 +15,7 @@ public sealed class WalletServiceTests
         var caregiverUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
         var service = new WalletService(
-            db,
+            new WalletLedgerStore(db),
             new DisputeLookupStub(false),
             new PeopleLookupStub(caregiverProfileId, caregiverUserId));
 
@@ -40,7 +40,7 @@ public sealed class WalletServiceTests
     {
         await using var db = CreateDbContext();
         var service = new WalletService(
-            db,
+            new WalletLedgerStore(db),
             new DisputeLookupStub(false),
             new PeopleLookupStub(Guid.NewGuid(), null));
 
@@ -57,7 +57,7 @@ public sealed class WalletServiceTests
     {
         var bookingId = Guid.NewGuid();
         await using var db = CreateDbContext();
-        var service = new WalletService(db, new DisputeLookupStub(false),
+        var service = new WalletService(new WalletLedgerStore(db), new DisputeLookupStub(false),
             new PeopleLookupStub(Guid.NewGuid(), null));
 
         var first = await service.RecordPromotionSubsidyAsync(bookingId, 100_000);

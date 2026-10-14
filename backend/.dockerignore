@@ -8,6 +8,8 @@ artifacts/
 .env*
 **/.env*
 **/appsettings.*.Local.json
+**/appsettings.*.Local.json.tmp
+**/*.local.json
 **/*firebase-adminsdk*.json
 **/firebase-service-account*.json
 **/secrets.json

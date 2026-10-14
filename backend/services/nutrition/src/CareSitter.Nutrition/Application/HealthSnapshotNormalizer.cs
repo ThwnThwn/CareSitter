@@ -25,6 +25,10 @@ public static class HealthSnapshotNormalizer
                 if (item.ValueKind == JsonValueKind.String) label = item.GetString();
                 else if (item.ValueKind == JsonValueKind.Object)
                 {
+                    if (item.EnumerateObject().Any(p => p.Name is not ("label" or "code" or "assertion" or "temporality")) ||
+                        item.EnumerateObject().Select(p => p.Name).Distinct().Count() != item.EnumerateObject().Count() ||
+                        item.EnumerateObject().Any(p => p.Value.ValueKind != JsonValueKind.String))
+                    { unresolved.Add(pointer); continue; }
                     if (item.TryGetProperty("label", out var l) && l.ValueKind == JsonValueKind.String) label = l.GetString();
                     if (item.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String) code = c.GetString();
                     if (item.TryGetProperty("assertion", out var a) && a.ValueKind == JsonValueKind.String) assertion = a.GetString()!;
@@ -44,7 +48,9 @@ public static class HealthSnapshotNormalizer
         {
             if (!nutrition.TryGetProperty("schemaVersion", out var version) || version.GetRawText() != "1")
                 unresolved.Add("healthHistory/nutrition/schemaVersion");
-            var known = new HashSet<string> { "schemaVersion", "conditionsStatus", "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction", "guidance", "symptoms" };
+            if (nutrition.EnumerateObject().Select(p => p.Name).Distinct().Count() != nutrition.EnumerateObject().Count())
+                unresolved.Add("healthHistory/nutrition");
+            var known = new HashSet<string> { "schemaVersion", "conditionsStatus", "medicationsStatus", "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction", "guidance", "symptoms" };
             foreach (var prop in nutrition.EnumerateObject())
             {
                 if (!known.Contains(prop.Name)) { unresolved.Add("healthHistory/nutrition/" + prop.Name); continue; }
@@ -53,7 +59,7 @@ public static class HealthSnapshotNormalizer
                 var v = prop.Value.GetString()!; evidence[prop.Name] = v;
                 var valid = prop.Name switch
                 {
-                    "conditionsStatus" => v is "reported_none" or "reported_present",
+                    "conditionsStatus" or "medicationsStatus" => v is "reported_none" or "reported_present",
                     "feedingRoute" => v is "oral" or "tube",
                     "swallowingStatus" => v is "normal" or "difficulty",
                     "fluidRestriction" or "electrolyteRestriction" => v is "none" or "present",
@@ -68,8 +74,28 @@ public static class HealthSnapshotNormalizer
             if (history.EnumerateObject().Any(p => p.Name != "nutrition")) unresolved.Add("healthHistory/legacy");
         }
         else if (source.HealthHistory is { ValueKind: not JsonValueKind.Null }) unresolved.Add("healthHistory");
-        if (source.Medications is { ValueKind: not JsonValueKind.Null } medications &&
-            (medications.ValueKind != JsonValueKind.Array || medications.GetArrayLength() > 0)) unresolved.Add("medications");
+        if (source.Medications is { ValueKind: not JsonValueKind.Null } medications)
+        {
+            if (medications.ValueKind != JsonValueKind.Array || medications.GetArrayLength() > 40) unresolved.Add("medications");
+            else
+            {
+                var index = 0;
+                foreach (var medication in medications.EnumerateArray())
+                {
+                    var pointer = $"medications/{index++}";
+                    if (medication.ValueKind != JsonValueKind.Object ||
+                        medication.EnumerateObject().Select(p => p.Name).Distinct().Count() != medication.EnumerateObject().Count() ||
+                        medication.EnumerateObject().Any(p => p.Name is not ("name" or "dosage" or "schedule" or "instruction" or "start_date" or "end_date" or "is_active")) ||
+                        !medication.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String ||
+                        string.IsNullOrWhiteSpace(name.GetString()) || name.GetString()!.Length > 200 ||
+                        medication.EnumerateObject().Any(p => p.Name != "is_active" && p.Value.ValueKind is not (JsonValueKind.String or JsonValueKind.Null)))
+                    { unresolved.Add(pointer); continue; }
+                    if (!medication.TryGetProperty("is_active", out var active) || active.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    { unresolved.Add(pointer + "/is_active"); continue; }
+                    if (active.GetBoolean()) evidence["activeMedications"] = "present";
+                }
+            }
+        }
         return new(facts.ToArray(), unresolved.ToArray(), text, evidence, special.ToArray(), declared);
     }
 

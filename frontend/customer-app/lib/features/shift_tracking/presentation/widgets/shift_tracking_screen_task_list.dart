@@ -4,10 +4,8 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class ShiftTrackingScreenTaskList extends StatelessWidget {
-  const ShiftTrackingScreenTaskList(
-      {super.key, required this.bk, required this.buildTaskRow});
+  const ShiftTrackingScreenTaskList({super.key, required this.bk});
   final BookingModel bk;
-  final Widget Function(CareTaskModel, BookingModel, BuildContext) buildTaskRow;
   @override
   Widget build(BuildContext context) {
     final doneCount = bk.tasks.where((t) => t.isCompleted).length;
@@ -32,8 +30,7 @@ class ShiftTrackingScreenTaskList extends StatelessWidget {
           skippedCount: skippedCount,
           allDone: allDone,
           doneCount: doneCount,
-          bk: bk,
-          buildTaskRow: buildTaskRow),
+          bk: bk),
     );
   }
 }

@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
+import 'package:caregiver_app/core/widgets/app_messenger.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 /// Toast nổi dùng cho các thao tác quan trọng; mỗi lần hiển thị thay thế toast trước đó.
@@ -31,8 +31,7 @@ final class AppToast {
   }
 
   static ScaffoldMessengerState? _messengerFor(BuildContext context) =>
-      notificationMessengerKey.currentState ??
-      ScaffoldMessenger.maybeOf(context);
+      appMessengerKey.currentState ?? ScaffoldMessenger.maybeOf(context);
 
   static void _show(BuildContext context,
       {required String message,
@@ -56,7 +55,7 @@ final class AppToast {
         ),
     };
     dismiss(context);
-    final overlayContext = notificationMessengerKey.currentContext ?? context;
+    final overlayContext = appMessengerKey.currentContext ?? context;
     final overlay = Overlay.maybeOf(overlayContext, rootOverlay: true);
     if (overlay == null) return;
 
@@ -72,9 +71,8 @@ final class AppToast {
           child: Semantics(
             liveRegion: true,
             child: TweenAnimationBuilder<double>(
-              duration: reducedMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 220),
+              duration:
+                  reducedMotion ? Duration.zero : const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               tween: Tween(begin: 0, end: 1),
               builder: (context, value, child) => Opacity(

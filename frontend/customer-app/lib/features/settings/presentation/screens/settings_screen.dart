@@ -1,62 +1,60 @@
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_top_padding_profile_layout.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_flat_header.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_profile_card.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_beneficiaries_section.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_section.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/settings_logout_button.dart';
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import '../controllers/profile_controller.dart';
+import '../widgets/settings_flat_header.dart';
+import '../widgets/settings_profile_card.dart';
+import '../widgets/settings_beneficiaries_section.dart';
+import '../widgets/settings_account_section.dart';
+import '../widgets/settings_security_section.dart';
+import '../widgets/settings_support_section.dart';
+import '../widgets/settings_logout_button.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final topPadding = MediaQuery.of(context).padding.top;
     final profile = ref.watch(profileStoreProvider);
     final bookings = ref.watch(bookingStoreProvider);
     final totalSpent = bookings
         .where((b) => b.status == 'completed')
         .fold(0.0, (sum, b) => sum + b.totalPrice);
-
-    return SettingsTopPaddingProfileLayout(
-        buildFlatHeader: _buildFlatHeader,
-        ref: ref,
-        topPadding: topPadding,
-        buildProfileCard: _buildProfileCard,
-        profile: profile,
-        bookings: bookings,
-        totalSpent: totalSpent,
-        buildBeneficiariesSection: _buildBeneficiariesSection,
-        buildSection: _buildSection,
-        buildLogoutButton: _buildLogoutButton);
-  }
-
-  Widget _buildFlatHeader(
-          BuildContext context, WidgetRef ref, double topPadding) =>
-      SettingsFlatHeader(topPadding: topPadding);
-
-  Widget _buildProfileCard(BuildContext context, WidgetRef ref,
-          UserProfile profile, int bookingCount, double totalSpent) =>
-      SettingsProfileCard(
-          profile: profile,
-          bookingCount: bookingCount,
-          formatCurrency: _formatCurrency,
-          totalSpent: totalSpent);
-
-  Widget _buildBeneficiariesSection(BuildContext context, WidgetRef ref) =>
-      const SettingsBeneficiariesSection();
-
-  Widget _buildSection(String title, List<Widget> items) =>
-      SettingsSection(title: title, items: items);
-
-  Widget _buildLogoutButton(BuildContext context, WidgetRef ref) =>
-      SettingsLogoutButton(ref: ref);
-
-  String _formatCurrency(double amount) {
-    return formatVnd(amount, suffix: 'đ đã chi');
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(slivers: [
+        SliverToBoxAdapter(
+          child:
+              SettingsFlatHeader(topPadding: MediaQuery.paddingOf(context).top),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
+          sliver: SliverList.list(children: [
+            FadeSlideStaggered(
+                index: 0,
+                child: SettingsProfileCard(
+                    profile: profile,
+                    bookingCount: bookings.length,
+                    totalSpent: totalSpent)),
+            const SizedBox(height: AppSpacing.section),
+            const FadeSlideStaggered(
+                index: 1, child: SettingsBeneficiariesSection()),
+            const SizedBox(height: AppSpacing.section),
+            const SettingsAccountSection(),
+            const SizedBox(height: AppSpacing.md),
+            const FadeSlideStaggered(
+                index: 3, child: SettingsSecuritySection()),
+            const SizedBox(height: AppSpacing.md),
+            const FadeSlideStaggered(index: 4, child: SettingsSupportSection()),
+            const SizedBox(height: AppSpacing.lg),
+            const FadeSlideStaggered(index: 5, child: SettingsLogoutButton()),
+            const SizedBox(height: AppSpacing.xl),
+          ]),
+        ),
+      ]),
+    );
   }
 }

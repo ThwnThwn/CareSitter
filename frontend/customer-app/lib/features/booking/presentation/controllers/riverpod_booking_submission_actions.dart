@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../beneficiary/presentation/controllers/beneficiary_controller.dart';
 import 'booking_controller.dart';
@@ -12,8 +13,7 @@ class RiverpodBookingSubmissionActions implements BookingSubmissionActions {
           String addressId) =>
       ref.read(selfRecipientProvider.notifier).resolve(addressId);
   @override
-  bool get selfComplete =>
-      ref.read(selfRecipientProvider).requireValue.isComplete;
+  bool get selfComplete => ref.read(selfRecipientProvider).requireValue.isComplete;
   @override
   void publishSelf(BeneficiaryModel profile) {
     ref.invalidate(bookingRecipientsProvider);

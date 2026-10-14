@@ -35,16 +35,6 @@ class CareTaskModel {
   bool get isResolved => isCompleted || isSkipped;
   bool get isAdHoc => source == 'CAREGIVER_AD_HOC';
 
-  /// Task đang ở trạng thái terminal (không thể tick/skip lại)
-  bool get isTerminal => isCompleted || isSkipped;
-
-  /// Evidence can only be attached while the task is still actionable.
-  bool get canUploadEvidence => !isTerminal;
-
-  /// Photo-required tasks cannot be completed before evidence exists.
-  bool get canComplete =>
-      !isTerminal && (!requiresPhoto || photoUrls.isNotEmpty);
-
   factory CareTaskModel.fromApi(Map<String, dynamic> json) {
     final status = json['status']?.toString().toUpperCase() ?? 'PENDING';
     return CareTaskModel(

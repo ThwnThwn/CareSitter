@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'shift_tracking_show_photo_preview_dialog_url_decoration.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class ShiftTaskPhotos extends StatelessWidget {
-  const ShiftTaskPhotos(
-      {super.key, required this.task, required this.showPhotoPreviewDialog});
+  const ShiftTaskPhotos({super.key, required this.task});
   final CareTaskModel task;
-  final void Function(BuildContext, String) showPhotoPreviewDialog;
+  void _showPhotoPreview(BuildContext context, String url) {
+    showDialog(
+        context: context,
+        builder: (dialogContext) => Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.all(AppSpacing.md),
+              child: ShiftTrackingShowPhotoPreviewDialogUrlDecoration(
+                  url: url, action1: () => Navigator.of(dialogContext).pop()),
+            ));
+  }
 
   @override
   Widget build(BuildContext context) => Column(
@@ -20,7 +29,7 @@ class ShiftTaskPhotos extends StatelessWidget {
                 runSpacing: 8,
                 children: task.photoUrls.map((url) {
                   return GestureDetector(
-                    onTap: () => showPhotoPreviewDialog(context, url),
+                    onTap: () => _showPhotoPreview(context, url),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: Image.network(

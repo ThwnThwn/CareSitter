@@ -5,22 +5,20 @@ import 'package:caregiver_app/core/maps/map_tile_config.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
-class ShiftRouteMap extends StatelessWidget {
+class ShiftRouteMap extends ConsumerWidget {
   const ShiftRouteMap(
       {super.key,
       required this.center,
       required this.current,
-      required this.ref,
       required this.tiles,
       required this.destination});
   final LatLng center;
   final LatLng? current;
-  final WidgetRef ref;
   final MapTileConfig tiles;
   final LatLng destination;
 
   @override
-  Widget build(BuildContext context) => FlutterMap(
+  Widget build(BuildContext context, WidgetRef ref) => FlutterMap(
         options: MapOptions(
           initialCenter: center,
           initialZoom: current == null ? 15 : 13.5,

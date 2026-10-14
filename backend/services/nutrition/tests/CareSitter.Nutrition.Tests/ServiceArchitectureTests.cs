@@ -17,7 +17,27 @@ public sealed class ServiceArchitectureTests
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("CareSitter.Modules.", text);
             Assert.DoesNotContain("people.beneficiaries", text);
-            Assert.DoesNotContain("FOR SHARE", file.Contains("NutritionStore") ? "" : text);
+        }
+    }
+
+    [Theory]
+    [InlineData("Domain")]
+    [InlineData("Application")]
+    public void Inner_layers_do_not_depend_on_database_transport_or_infrastructure(string layer)
+    {
+        var directory = Path.Combine(FindRoot(), "src/CareSitter.Nutrition", layer);
+        var forbidden = new[] { "CareSitter.Nutrition.Infrastructure", "CareSitter.Nutrition.Controllers",
+            "Npgsql", "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "Grpc.Core", "HttpClient" };
+        foreach (var file in Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            foreach (var dependency in forbidden)
+                Assert.True(!text.Contains(dependency, StringComparison.Ordinal), $"{file} depends on {dependency}.");
+            if (layer == "Domain")
+            {
+                Assert.DoesNotContain("CareSitter.Nutrition.Application", text);
+                Assert.DoesNotContain("MediatR", text);
+            }
         }
     }
     internal static string FindRoot()

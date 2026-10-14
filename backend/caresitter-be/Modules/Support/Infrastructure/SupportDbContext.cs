@@ -24,6 +24,7 @@ public sealed class SupportDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new ConsultationRequestConfiguration());
         modelBuilder.ApplyKafkaOutbox(SchemaName);
         modelBuilder.Entity<NotificationDelivery>(b =>
         {

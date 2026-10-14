@@ -9,8 +9,12 @@ enum RecoveryEmailResult { confirmed, signIn, ignored }
 
 final recoveryEmailControllerProvider = StateNotifierProvider.autoDispose<
     RecoveryEmailController, RecoveryEmailState>((ref) {
-  ref.watch(authStateProvider
-      .select((s) => (s.valueOrNull?.userId, s.valueOrNull?.isAuthenticated)));
+  final auth = ref.read(authStateProvider.notifier);
+  ref.watch(authStateProvider.select((s) => (
+        s.valueOrNull?.userId,
+        s.valueOrNull?.isAuthenticated,
+        auth.sessionGeneration,
+      )));
   final controller = RecoveryEmailController(
       ref.read(recoveryControllerProvider),
       logout: () => ref.read(authStateProvider.notifier).logout());

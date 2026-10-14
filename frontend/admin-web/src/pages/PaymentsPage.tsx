@@ -1,8 +1,10 @@
+import { ReconciliationDrawer } from '../features/payments/ReconciliationDrawer';
+import { PayoutDrawer } from '../features/payments/PayoutDrawer';
 import { useMemo, useState } from 'react';
-import { BadgeCheck, Ban, RefreshCw, Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
-import { api, qs } from '../api';
-import { DetailList, Drawer, EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, Tabs, formatDate, formatMoney, shortId } from '../components/Common';
+import { qs } from '../api';
+import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, Tabs, formatDate, formatMoney, shortId } from '../components/Common';
 import { PaymentReview, Payout } from '../types';
 import { usePagedResource, useResource } from '../useResource';
 
@@ -39,34 +41,6 @@ function ReconciliationQueue() {
   </section>;
 }
 
-function ReconciliationDrawer({ item, onClose, onChanged }: { item: PaymentReview; onClose: () => void; onChanged: () => void }) {
-  const [reason, setReason] = useState('');
-  const [transactionId, setTransactionId] = useState(item.providerTransactionId || '');
-  const [busy, setBusy] = useState<'confirm' | 'reject' | ''>('');
-  const [error, setError] = useState('');
-  async function resolve(succeeded: boolean) {
-    if (busy || item.canResolve === false) return;
-    if (reason.trim().length < 5) return setError('Ghi chú đối chiếu cần ít nhất 5 ký tự.');
-    if (succeeded && !transactionId.trim()) return setError('Nhập mã giao dịch từ cổng thanh toán khi xác nhận thanh toán.');
-    if (!window.confirm(`${succeeded ? 'Xác nhận đã nhận' : 'Từ chối'} ${formatMoney(item.amount)} cho booking ${shortId(item.bookingId)}?\n${succeeded ? 'Mã giao dịch: ' + transactionId.trim() : 'Booking sẽ bị hủy và slot caregiver được trả lại.'}`)) return;
-    setBusy(succeeded ? 'confirm' : 'reject'); setError('');
-    try {
-      await api(`/api/v1/admin/payment-reconciliation/${item.intentId}/resolve`, { method: 'POST', body: JSON.stringify({ succeeded, reason: reason.trim(), providerTransactionId: transactionId.trim() || null }) });
-      onChanged();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể chốt giao dịch.'); }
-    finally { setBusy(''); }
-  }
-  return <Drawer title={item.canResolve === false ? 'Chi tiết đối soát' : 'Chốt giao dịch'} subtitle="Đối soát thủ công" busy={!!busy} onClose={onClose} footer={item.canResolve !== false && <><button className="danger" disabled={!!busy} onClick={() => void resolve(false)}><Ban size={17} /> {busy === 'reject' ? 'Đang hủy…' : 'Từ chối thanh toán'}</button><button className="primary" disabled={!!busy} onClick={() => void resolve(true)}><BadgeCheck size={17} /> {busy === 'confirm' ? 'Đang xác nhận…' : 'Xác nhận đã thanh toán'}</button></>}>
-    {item.canResolve === false
-      ? <div className="warning-box"><strong>Cần xử lý khoản tiền với ngân hàng</strong><p>Booking hoặc giao dịch đã đóng, hoặc có tiền chuyển thêm. Hãy đối chiếu sao kê và xử lý hoàn tiền theo quy trình vận hành; không xác nhận lại lịch hẹn.</p></div>
-      : <div className="warning-box"><strong>Quyết định ảnh hưởng trực tiếp đến booking</strong><p>Xác nhận sẽ kích hoạt booking và ghi nhận khoản thanh toán; từ chối sẽ hủy booking và trả slot caregiver.</p></div>}
-    {error && <ErrorBanner message={error} />}
-    <DetailList items={[{ label: 'Booking', value: item.bookingId }, { label: 'Cổng thanh toán', value: item.provider || 'VNPAY' }, { label: 'Trạng thái giao dịch', value: item.intentStatus }, { label: 'Mã đơn thanh toán', value: item.providerOrderRef }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Lần query', value: item.reconciliationAttempts }, { label: 'Lỗi gần nhất', value: item.lastReconciliationError || item.manualReviewReason }]} />
-    <label>Mã giao dịch thanh toán<input disabled={item.canResolve === false} value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="Nhập từ merchant portal" /></label>
-    <label>Ghi chú đối chiếu<textarea disabled={item.canResolve === false} value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder="Ví dụ: Đã đối chiếu merchant portal lúc 15:42" /></label>
-  </Drawer>;
-}
-
 function PayoutQueue() {
   const { filters } = useAdminMetadata();
   const [status, setStatus] = useState(filters.payouts.defaultValue);
@@ -83,28 +57,4 @@ function PayoutQueue() {
     {!loading && !error && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     {selected && <PayoutDrawer key={selected.id} item={selected} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />}
   </section>;
-}
-
-function PayoutDrawer({ item, onClose, onChanged }: { item: Payout; onClose: () => void; onChanged: () => void }) {
-  const { constraints, reviewableStatuses } = useAdminMetadata();
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState<'approve' | 'reject' | ''>('');
-  const [error, setError] = useState('');
-  const reviewable = reviewableStatuses.payouts.includes(item.status);
-  async function decide(approved: boolean) {
-    if (busy) return;
-    if (!approved && reason.trim().length < constraints.rejectionReasonMinLength) return setError(`Nhập lý do từ chối tối thiểu ${constraints.rejectionReasonMinLength} ký tự.`);
-    if (approved && !window.confirm(`Duyệt yêu cầu ${formatMoney(item.amount)} cho ${item.accountHolderName}? Hệ thống ghi sổ rút tiền nhưng chưa tự chuyển khoản ngân hàng.`)) return;
-    setBusy(approved ? 'approve' : 'reject'); setError('');
-    try { await api(`/api/v1/payments/payouts/${item.id}/${approved ? 'approve' : 'reject'}`, { method: 'POST', body: approved ? undefined : JSON.stringify({ reason: reason.trim() }) }); onChanged(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể xử lý yêu cầu rút tiền.'); }
-    finally { setBusy(''); }
-  }
-  return <Drawer title={formatMoney(item.amount)} subtitle="Yêu cầu rút tiền" busy={!!busy} onClose={onClose}
-    footer={reviewable && <><button className="danger" disabled={!!busy} onClick={() => void decide(false)}>Từ chối yêu cầu</button><button className="primary" disabled={!!busy} onClick={() => void decide(true)}>Duyệt yêu cầu</button></>}>
-    <div className="drawer-status"><StatusChip value={item.status} /><span>{formatDate(item.requestedAt)}</span></div>{error && <ErrorBanner message={error} />}
-    {reviewable && <div className="warning-box"><strong>Duyệt yêu cầu chưa phải xác nhận đã chuyển khoản</strong><p>Thao tác hiện tại ghi sổ rút tiền. Việc chuyển khoản ngân hàng cần thực hiện và đối chiếu theo quy trình vận hành.</p></div>}
-    <DetailList items={[{ label: 'Người thụ hưởng', value: item.accountHolderName }, { label: 'Ngân hàng', value: item.bankName }, { label: 'Số tài khoản', value: <span className="mono copy-value">{item.accountNumber}</span> }, { label: 'Caregiver', value: item.caregiverId }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Lý do từ chối', value: item.rejectReason }]} />
-    {reviewable && <label>Lý do từ chối<textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Nêu rõ thông tin cần caregiver cập nhật" /></label>}
-  </Drawer>;
 }

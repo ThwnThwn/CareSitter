@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
@@ -22,8 +23,7 @@ void main() {
         current: () => true,
         read: () => items,
         write: (next) => items = next);
-    sync = BookingSyncController(repository, cache,
-        refreshNotifications: () async {
+    sync = BookingSyncController(repository, cache, refreshNotifications: () async {
       notifications++;
     }, announceAccepted: (_, __) {});
   });
@@ -48,8 +48,7 @@ void main() {
     expect(repository.loads, hasLength(1));
     expect(repository.syncs, isEmpty);
   });
-  test('delta arriving after session close cannot patch cache or notify',
-      () async {
+  test('delta arriving after session close cannot patch cache or notify', () async {
     final pending = sync.requestSync();
     cache.close();
     repository.syncs.single.complete(_delta('old-account'));
@@ -65,19 +64,16 @@ void main() {
   });
   test('a late cancellation cannot report success after the session closes',
       () async {
-    final pending =
-        BookingActionController(repository, cache).cancel('booking');
+    final pending = BookingActionController(repository, cache).cancel('booking');
     final expectation = expectLater(pending, throwsStateError);
     cache.close();
-    repository.canceled
-        .complete(_booking('booking').copyWith(status: 'cancelled'));
+    repository.canceled.complete(_booking('booking').copyWith(status: 'cancelled'));
     await expectation;
     expect(items, isEmpty);
   });
   test('a closed session cannot send a cancellation request', () async {
     cache.close();
-    await expectLater(
-        BookingActionController(repository, cache).cancel('booking'),
+    await expectLater(BookingActionController(repository, cache).cancel('booking'),
         throwsStateError);
     expect(repository.cancelCalls, 0);
   });

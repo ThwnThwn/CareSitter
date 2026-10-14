@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily encrypted CareSitter Nutrition backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Ho_Chi_Minh
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

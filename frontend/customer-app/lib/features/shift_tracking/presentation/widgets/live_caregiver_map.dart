@@ -1,4 +1,5 @@
-import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map_layout.dart';
+import 'live_map_viewport.dart';
+import 'live_map_address_label.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_google_map.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_fallback_map.dart';
 export 'package:caresitter_customer/features/shift_tracking/presentation/widgets/live_caregiver_map_presentation_helpers.dart';
@@ -204,6 +205,24 @@ class _LiveCaregiverMapState extends ConsumerState<LiveCaregiverMap>
     super.dispose();
   }
 
+  void _onGoogleCreated(google.GoogleMapController controller) {
+    if (!mounted) return;
+    _google = controller;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fitBoth();
+    });
+  }
+
+  void _onFallbackReady() {
+    _osmReady = true;
+    _fitBoth();
+  }
+
+  void _showBoth() {
+    _pauseFollow();
+    _fitBoth();
+  }
+
   @override
   Widget build(BuildContext context) {
     final availability = ref.watch(googleMapsReadyProvider);
@@ -214,85 +233,40 @@ class _LiveCaregiverMapState extends ConsumerState<LiveCaregiverMap>
     } else {
       _google = null;
     }
-    return LiveCaregiverMapLayout(
-        availability: availability,
-        useGoogle: useGoogle,
-        googleMap: _googleMap,
-        fallbackMap: _fallbackMap,
-        tiles: tiles,
-        mapButton: _mapButton,
-        follow: _follow,
-        resumeFollow: _resumeFollow,
-        routeLocationLabel: widget.locationLabel,
-        routeCaregiverPosition: widget.caregiverPosition,
-        routeAddressLabel: widget.addressLabel,
-        action1: () {
-          _pauseFollow();
-          _fitBoth();
-        });
+    final map = useGoogle
+        ? LiveCaregiverGoogleMap(
+            homeIcon: _homeIcon,
+            position: _position,
+            caregiverIcon: _caregiverIcon,
+            destination: widget.destination,
+            heading: widget.heading,
+            stale: widget.stale,
+            locationLabel: widget.locationLabel,
+            onInteraction: (_) => _pauseFollow(),
+            onCreated: _onGoogleCreated)
+        : LiveCaregiverFallbackMap(
+            mapController: _osm,
+            tiles: tiles,
+            position: _position,
+            destination: widget.destination,
+            stale: widget.stale,
+            heading: widget.heading,
+            onReady: _onFallbackReady,
+            onPositionChanged: (_, hasGesture) {
+              if (hasGesture) _pauseFollow();
+            });
+    return Column(children: [
+      LiveMapViewport(
+          map: map,
+          availability: availability,
+          useGoogle: useGoogle,
+          tiles: tiles,
+          locationLabel: widget.locationLabel,
+          follow: _follow,
+          hasPosition: widget.caregiverPosition != null,
+          onResumeFollow: _resumeFollow,
+          onFitBoth: _showBoth),
+      LiveMapAddressLabel(routeAddressLabel: widget.addressLabel),
+    ]);
   }
-
-  Widget _googleMap() => LiveCaregiverGoogleMap(
-      homeIcon: _homeIcon,
-      position: _position,
-      caregiverIcon: _caregiverIcon,
-      routeDestination: widget.destination,
-      routeHeading: widget.heading,
-      routeStale: widget.stale,
-      routeLocationLabel: widget.locationLabel,
-      action1: (_) => _pauseFollow(),
-      action2: (controller) {
-        if (!mounted) return;
-        _google = controller;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _fitBoth();
-        });
-      });
-
-  Widget _fallbackMap() {
-    final tiles = ref.watch(mapTileConfigProvider);
-    return LiveCaregiverFallbackMap(
-        mapController: _osm,
-        ref: ref,
-        tiles: tiles,
-        pin: _pin,
-        position: _position,
-        routeDestination: widget.destination,
-        routeStale: widget.stale,
-        routeHeading: widget.heading,
-        action1: () {
-          _osmReady = true;
-          _fitBoth();
-        },
-        action2: (_, hasGesture) {
-          if (hasGesture) _pauseFollow();
-        });
-  }
-
-  Widget _pin(IconData icon) => DecoratedBox(
-      decoration: BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3)),
-      child: Icon(icon, color: Colors.white, size: 22));
-
-  Widget _mapButton(
-          {required Key key,
-          required String tooltip,
-          required IconData icon,
-          VoidCallback? onPressed,
-          bool active = false}) =>
-      Material(
-        color: active ? AppColors.primaryContainer : Colors.white,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.compact),
-            side: const BorderSide(color: AppColors.border)),
-        child: IconButton(
-            key: key,
-            tooltip: tooltip,
-            onPressed: onPressed,
-            color: AppColors.primary,
-            icon: Icon(icon, size: 21),
-            constraints: const BoxConstraints(minWidth: 44, minHeight: 44)),
-      );
 }

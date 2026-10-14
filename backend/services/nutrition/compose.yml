@@ -18,11 +18,16 @@ services:
       retries: 10
   nutrition:
     build: .
-    ports: ["127.0.0.1:5035:8080"]
+    ports: ["127.0.0.1:5035:8080", "127.0.0.1:5036:8081"]
     depends_on:
       nutrition-db: {condition: service_healthy}
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Http__Url: http://0.0.0.0:8080
+      Kestrel__Endpoints__Http__Protocols: Http1
+      Kestrel__Endpoints__Grpc__Url: http://0.0.0.0:8081
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      Gateway__ServiceKey: ${NUTRITION_GATEWAY_SERVICE_KEY:?Set gateway credential}
       ConnectionStrings__Nutrition: Host=nutrition-db;Database=nutrition;Username=nutrition_app;Password=${NUTRITION_DB_APP_PASSWORD:?Set runtime DB password}
       Jwt__SecretKey: ${NUTRITION_JWT_SECRET:?Use JWT validation key of Identity}
       Jwt__Issuer: ${NUTRITION_JWT_ISSUER:?Set issuer}

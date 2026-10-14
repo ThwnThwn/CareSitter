@@ -1,14 +1,11 @@
+import '../../domain/settings_input_rules.dart';
 import 'package:flutter/material.dart';
 
 class ProfileEditNameField extends StatelessWidget {
   const ProfileEditNameField(
-      {super.key,
-      required this.nameCtrl,
-      required this.callbackAction1,
-      required this.callbackAction2});
+      {super.key, required this.nameCtrl, required this.onNameChanged});
   final TextEditingController nameCtrl;
-  final void Function(String) callbackAction1;
-  final String? Function(String?) callbackAction2;
+  final void Function(String) onNameChanged;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -17,7 +14,7 @@ class ProfileEditNameField extends StatelessWidget {
           labelText: 'Họ và tên *',
           prefixIcon: Icon(Icons.person_outline),
         ),
-        onChanged: callbackAction1, // cập nhật initials realtime
-        validator: callbackAction2,
+        onChanged: onNameChanged, // cập nhật initials realtime
+        validator: SettingsInputRules.profileName,
       );
 }

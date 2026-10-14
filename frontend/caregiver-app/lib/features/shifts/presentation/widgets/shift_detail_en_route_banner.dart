@@ -11,13 +11,11 @@ import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 
-class ShiftDetailEnRouteBanner extends StatelessWidget {
-  const ShiftDetailEnRouteBanner(
-      {super.key, required this.ref, required this.booking});
-  final WidgetRef ref;
+class ShiftDetailEnRouteBanner extends ConsumerWidget {
+  const ShiftDetailEnRouteBanner({super.key, required this.booking});
   final ShiftModel booking;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tracking = ref.watch(liveTrackingProvider);
     final isThisBooking = tracking.bookingId == booking.id;
     return Container(

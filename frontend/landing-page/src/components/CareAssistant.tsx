@@ -2,13 +2,7 @@
 
 import { ArrowUpRight, Bot, LoaderCircle, Sparkles, X } from "lucide-react";
 import { FormEvent, useState } from "react";
-
-interface Recommendation {
-  serviceCategory: string;
-  hours: number;
-  summary: string;
-  nextStep: string;
-}
+import { useCareAssistant } from "@/features/care-assistant/useCareAssistant";
 
 interface CareAssistantProps {
   onOpenBooking: (caregiver?: string, service?: string) => void;
@@ -22,36 +16,14 @@ const examples = [
 export default function CareAssistant({ onOpenBooking }: CareAssistantProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { recommendation, error, loading, submit: requestSuggestion, cancel } = useCareAssistant();
+  const close = () => { cancel(); setOpen(false); };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (message.trim().length < 8 || loading) return;
 
-    setLoading(true);
-    setError("");
-    setRecommendation(null);
-    try {
-      const response = await fetch("/api/care-assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim() }),
-      });
-      const data = (await response.json()) as {
-        recommendation?: Recommendation;
-        error?: string;
-      };
-      if (!response.ok || !data.recommendation) {
-        throw new Error(data.error || "Không thể nhận gợi ý lúc này.");
-      }
-      setRecommendation(data.recommendation);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Không thể nhận gợi ý lúc này.");
-    } finally {
-      setLoading(false);
-    }
+    await requestSuggestion(message);
   };
 
   return (
@@ -66,7 +38,7 @@ export default function CareAssistant({ onOpenBooking }: CareAssistantProps) {
       </button>
 
       {open ? (
-        <div className="ai-assistant-backdrop" onMouseDown={() => setOpen(false)}>
+        <div className="ai-assistant-backdrop" onMouseDown={close}>
           <section
             aria-labelledby="care-assistant-title"
             aria-modal="true"
@@ -77,7 +49,7 @@ export default function CareAssistant({ onOpenBooking }: CareAssistantProps) {
             <button
               aria-label="Đóng trợ lý AI"
               className="ai-assistant__close"
-              onClick={() => setOpen(false)}
+              onClick={close}
               type="button"
             >
               <X size={18} aria-hidden="true" />

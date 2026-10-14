@@ -1,13 +1,10 @@
-import '../widgets/beneficiary_field_label.dart';
 import 'package:caresitter_customer/core/widgets/gallery_image_picker.dart';
 import '../widgets/beneficiary_form_fields.dart';
-import '../models/beneficiary_form_options.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_edit_form.dart';
+
+import '../widgets/beneficiary_profile_form.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_edit_missing_state.dart';
 import '../controllers/beneficiary_form_controller.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_edit_screen_section_header.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_edit_screen_tag_input.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_edit_contact_card_index_select_family_contact_panel.dart';
+
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_contact_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/widgets/birth_date_field.dart';
@@ -16,8 +13,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
-import 'package:caresitter_customer/features/beneficiary/presentation/controllers/family_contact_controller.dart';
-import 'package:caresitter_customer/core/widgets/family_contact_picker.dart';
 
 // Helper: entry cho 1 liên hệ khẩn cấp
 
@@ -51,7 +46,6 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
   XFile? _avatarFile;
 
   // Thông tin cần biết (tag-based)
-  TextEditingController get _conditionCtrl => _fields.condition;
 
   // Ghi chú
   TextEditingController get _notesCtrl => _fields.notes;
@@ -70,8 +64,7 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     _bindController();
     _loadProfile(ref.read(beneficiaryStoreProvider));
     ref.listenManual(beneficiaryStoreProvider, (_, profiles) {
-      if (_loadedProfileId != widget.id &&
-          profiles.any((b) => b.id == widget.id)) {
+      if (_loadedProfileId != widget.id && profiles.any((b) => b.id == widget.id)) {
         setState(() => _loadProfile(profiles));
       }
     });
@@ -105,14 +98,6 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     super.dispose();
   }
 
-  void _addTag(TextEditingController ctrl, List<String> list) {
-    final val = ctrl.text.trim();
-    if (val.isNotEmpty && !list.contains(val)) {
-      _formController.addCondition(val);
-      ctrl.clear();
-    }
-  }
-
   Future<void> _pickImage() async {
     try {
       final image = await GalleryImagePicker.pick();
@@ -124,53 +109,9 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
       }
-    }
-  }
-
-  Future<void> _selectFamilyContact(BeneficiaryContactEntry entry) async {
-    final contact = await pickFamilyContact(context, ref,
-        provider: familyContactsProvider,
-        name: (c) => c.fullName,
-        phone: (c) => c.phoneNumber);
-    if (contact == null || !mounted) return;
-    setState(() {
-      entry.nameCtrl.text = contact.fullName;
-      entry.phoneCtrl.text = contact.phoneNumber;
-    });
-  }
-
-  Future<void> _saveToFamilyContacts(BeneficiaryContactEntry entry) async {
-    final name = entry.nameCtrl.text.trim();
-    final phone = entry.phoneCtrl.text.trim();
-    if (name.isEmpty || !RegExp(r'^0[3-9]\d{8}$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Nhập họ tên và số điện thoại hợp lệ trước khi lưu.'),
-            backgroundColor: AppColors.error),
-      );
-      return;
-    }
-    try {
-      await ref.read(familyContactsProvider.notifier).add(
-            fullName: name,
-            phoneNumber: phone,
-          );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Đã lưu vào danh bạ gia đình.'),
-            backgroundColor: AppColors.success),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Không lưu được liên hệ. Số này có thể đã tồn tại.'),
-            backgroundColor: AppColors.error),
-      );
     }
   }
 
@@ -191,8 +132,8 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     );
     if (!mounted) return;
     if (result is BeneficiaryFormMessage) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.message), backgroundColor: AppColors.error));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message), backgroundColor: AppColors.error));
     } else if (result is BeneficiaryFormSaved) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Đã cập nhật hồ sơ người thân.'),
@@ -209,85 +150,14 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     if (!_formController.value.profileFound || !profileExists) {
       return const BeneficiaryEditMissingState();
     }
-    return BeneficiaryEditForm(
-        formController: _formController,
-        save: _save,
-        formKey: _formKey,
-        pickImage: _pickImage,
-        buildSectionHeader: _buildSectionHeader,
-        buildLabel: _buildLabel,
-        nameCtrl: _nameCtrl,
-        birthDateCtrl: _birthDateCtrl,
-        genders: BeneficiaryFormOptions.genders,
-        buildDropdown: _buildDropdown,
-        relations: BeneficiaryFormOptions.relations,
-        careLevels: BeneficiaryFormOptions.careLevels,
-        buildTagInput: _buildTagInput,
-        conditionCtrl: _conditionCtrl,
-        notesCtrl: _notesCtrl,
-        contacts: _contacts,
-        buildContactCard: _buildContactCard,
-        routeId: widget.id,
-        action1: () => _formState != _initialFormState,
-        action2: (v) =>
-            (v?.trim().isEmpty ?? true) ? 'Vui lòng nhập tên' : null,
-        action3: (value) => setState(() => _formController.gender = value),
-        action4: (v) => setState(() => _formController.relation = v!),
-        action5: (address) => setState(() {
-              _formController.addressId = address.id;
-            }),
-        action6: (value) => setState(() => _formController.careLevel = value),
-        action7: () =>
-            setState(() => _contacts.add(BeneficiaryContactEntry())));
-  }
-
-  // ── Widgets phụ ──────────────────────────────────────────────
-
-  Widget _buildSectionHeader(String title) =>
-      BeneficiaryEditScreenSectionHeader(title: title);
-
-  Widget _buildLabel(String text) => BeneficiaryFieldLabel(text: text);
-
-  Widget _buildDropdown(
-      List<String> items, String value, void Function(String?) onChanged) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(),
-      items:
-          items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
-      onChanged: onChanged,
+    return BeneficiaryProfileForm(
+      profileId: widget.id,
+      fields: _fields,
+      formKey: _formKey,
+      onPickAvatar: _pickImage,
+      onSave: _save,
+      hasChanges: () => _formState != _initialFormState,
     );
   }
 
-  Widget _buildTagInput({
-    required String label,
-    required String hint,
-    required TextEditingController ctrl,
-    required List<String> tags,
-    required Color tagColor,
-  }) =>
-      BeneficiaryEditScreenTagInput(
-          removeTag: _formController.removeCondition,
-          buildLabel: _buildLabel,
-          label: label,
-          ctrl: ctrl,
-          hint: hint,
-          addTag: _addTag,
-          tags: tags,
-          setState: setState,
-          tagColor: tagColor);
-
-  Widget _buildContactCard(int index, BeneficiaryContactEntry entry) {
-    final canRemove = _contacts.length > 2;
-    return BeneficiaryEditContactCardIndexSelectFamilyContactPanel(
-        index: index,
-        selectFamilyContact: _selectFamilyContact,
-        entry: entry,
-        canRemove: canRemove,
-        setState: setState,
-        contacts: _contacts,
-        saveToFamilyContacts: _saveToFamilyContacts,
-        contactRelations: BeneficiaryFormOptions.contactRelations,
-        action1: (v) => setState(() => entry.relationship = v!));
-  }
 }

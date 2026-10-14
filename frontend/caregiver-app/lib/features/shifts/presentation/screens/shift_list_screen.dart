@@ -1,4 +1,4 @@
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_list_list.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/shift_list_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,10 +31,8 @@ class ShiftListScreen extends ConsumerWidget {
           onRefresh: () => ref.read(shiftsProvider.notifier).refresh(),
           child: TabBarView(
             children: [
-              _buildList(
-                context,
-                ref,
-                shifts.where((shift) => const {
+              ShiftListContent(
+                filtered: shifts.where((shift) => const {
                       ShiftStatus.confirmed,
                       ShiftStatus.assigned,
                       ShiftStatus.caregiverEnRoute,
@@ -45,10 +43,8 @@ class ShiftListScreen extends ConsumerWidget {
                 emptyMessage: 'Các ca bạn đã nhận sẽ xuất hiện ở đây.',
                 storageKey: 'upcoming-shifts',
               ),
-              _buildList(
-                context,
-                ref,
-                shifts.where((shift) => const {
+              ShiftListContent(
+                filtered: shifts.where((shift) => const {
                       ShiftStatus.pending,
                       ShiftStatus.open,
                       ShiftStatus.checkoutPendingReview,
@@ -59,10 +55,8 @@ class ShiftListScreen extends ConsumerWidget {
                     'Lời mời nhận ca và ca chờ khách xác nhận hoàn tất sẽ hiển thị tại đây.',
                 storageKey: 'pending-shifts',
               ),
-              _buildList(
-                context,
-                ref,
-                shifts.where(
+              ShiftListContent(
+                filtered: shifts.where(
                   (shift) => shift.statusType == ShiftStatus.completed,
                 ),
                 emptyIcon: Icons.history_rounded,
@@ -76,21 +70,4 @@ class ShiftListScreen extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildList(
-    BuildContext context,
-    WidgetRef ref,
-    Iterable<ShiftModel> filtered, {
-    required IconData emptyIcon,
-    required String emptyTitle,
-    required String emptyMessage,
-    required String storageKey,
-  }) =>
-      ShiftListList(
-          filtered: filtered,
-          emptyIcon: emptyIcon,
-          emptyTitle: emptyTitle,
-          emptyMessage: emptyMessage,
-          storageKey: storageKey,
-          ref: ref);
 }

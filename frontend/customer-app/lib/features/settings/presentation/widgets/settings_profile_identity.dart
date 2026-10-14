@@ -9,11 +9,11 @@ class SettingsProfileIdentity extends StatelessWidget {
       required this.hasAvatar,
       required this.profile,
       required this.initials,
-      required this.callbackAction1});
+      required this.onEditProfile});
   final bool hasAvatar;
   final UserProfile profile;
   final String initials;
-  final void Function() callbackAction1;
+  final VoidCallback onEditProfile;
 
   @override
   Widget build(BuildContext context) => Stack(children: [
@@ -35,7 +35,7 @@ class SettingsProfileIdentity extends StatelessWidget {
           right: 0,
           bottom: 0,
           child: GestureDetector(
-            onTap: callbackAction1,
+            onTap: onEditProfile,
             child: Container(
                 width: 28,
                 height: 28,

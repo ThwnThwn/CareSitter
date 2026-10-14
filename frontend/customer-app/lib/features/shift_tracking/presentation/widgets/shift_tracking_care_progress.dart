@@ -1,51 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'shift_tracking_screen_needs_review_banner.dart';
+import 'shift_tracking_screen_progress_strip.dart';
+import 'shift_tracking_screen_task_list.dart';
+import 'shift_tracking_screen_family_note.dart';
 
 class ShiftTrackingCareProgress extends StatelessWidget {
-  const ShiftTrackingCareProgress(
-      {super.key,
-      required this.bk,
-      required this.buildNeedsReviewBanner,
-      required this.buildProgressStrip,
-      required this.doneCount,
-      required this.totalCount,
-      required this.progressPct,
-      required this.skippedCount,
-      required this.buildTaskList,
-      required this.ref,
-      required this.buildFamilyNote});
+  const ShiftTrackingCareProgress({super.key, required this.bk});
   final BookingModel bk;
-  final Widget Function(BuildContext, BookingModel) buildNeedsReviewBanner;
-  final Widget Function(BookingModel, int, int, double, {int skippedCount})
-      buildProgressStrip;
-  final int doneCount;
-  final int totalCount;
-  final double progressPct;
-  final int skippedCount;
-  final Widget Function(BuildContext, WidgetRef, BookingModel) buildTaskList;
-  final WidgetRef ref;
-  final Widget Function(String) buildFamilyNote;
 
   @override
-  Widget build(BuildContext context) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (bk.needsReview ||
-                bk.tasks.any((t) => t.isRequired && t.isSkipped)) ...[
-              buildNeedsReviewBanner(context, bk),
-              const SizedBox(height: AppSpacing.inset),
-            ],
-            buildProgressStrip(bk, doneCount, totalCount, progressPct,
-                skippedCount: skippedCount),
-            const SizedBox(height: AppSpacing.inset),
-            buildTaskList(context, ref, bk),
-            const SizedBox(height: AppSpacing.inset),
-            if (bk.beneficiaryNotes?.trim().isNotEmpty == true) ...[
-              buildFamilyNote(bk.beneficiaryNotes!.trim()),
-              const SizedBox(height: AppSpacing.inset),
-            ],
-          ]);
+  Widget build(BuildContext context) {
+    final done = bk.tasks.where((task) => task.isCompleted).length;
+    final skipped = bk.tasks.where((task) => task.isSkipped).length;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (bk.needsReview ||
+            bk.tasks.any((task) => task.isRequired && task.isSkipped)) ...[
+          ShiftTrackingScreenNeedsReviewBanner(bk: bk),
+          const SizedBox(height: AppSpacing.inset),
+        ],
+        ShiftTrackingScreenProgressStrip(
+            bk: bk,
+            done: done,
+            total: bk.tasks.length,
+            skippedCount: skipped,
+            pct: bk.tasks.isEmpty ? 0 : done / bk.tasks.length),
+        const SizedBox(height: AppSpacing.inset),
+        ShiftTrackingScreenTaskList(bk: bk),
+        const SizedBox(height: AppSpacing.inset),
+        if (bk.beneficiaryNotes?.trim().isNotEmpty == true) ...[
+          ShiftTrackingScreenFamilyNote(note: bk.beneficiaryNotes!.trim()),
+          const SizedBox(height: AppSpacing.inset),
+        ],
+      ],
+    );
+  }
 }

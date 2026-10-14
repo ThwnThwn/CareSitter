@@ -1,8 +1,8 @@
+import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
-import 'package:caregiver_app/features/schedule/data/models/schedule_slot_model.dart';
 
 class ScheduleShiftRecipientStatus extends StatelessWidget {
   const ScheduleShiftRecipientStatus(

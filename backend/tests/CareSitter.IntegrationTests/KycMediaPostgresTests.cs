@@ -30,6 +30,8 @@ public sealed class KycMediaPostgresTests : IAsyncLifetime
         var services = new ServiceCollection();
         new CatalogModule().RegisterServices(services, configuration);
         new PeopleModule().RegisterServices(services, configuration);
+        services.UseFixtureProvider<CatalogDbContext>();
+        services.UseFixtureProvider<PeopleDbContext>();
         services.AddSingleton<ICurrentUser>(actor);
         services.AddSingleton<IEncryptionService, Encryption>();
         services.AddSingleton<IAuditLogger, KycMediaSecurityTests.Audit>();

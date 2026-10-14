@@ -1,3 +1,6 @@
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+import 'booking_payment_row.dart';
+import 'booking_detail_screen_info_card.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -5,26 +8,18 @@ import 'package:caresitter_customer/features/booking/presentation/controllers/bo
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
 class BookingPaymentSummary extends StatelessWidget {
-  const BookingPaymentSummary(
-      {super.key,
-      required this.buildInfoCard,
-      required this.buildPaymentRow,
-      required this.booking,
-      required this.formatCurrency});
-  final Widget Function({required Widget child, required String title})
-      buildInfoCard;
-  final Widget Function(String, double) buildPaymentRow;
+  const BookingPaymentSummary({super.key, required this.booking});
   final BookingModel booking;
-  final String Function(double) formatCurrency;
   @override
   Widget build(BuildContext context) => FadeSlideStaggered(
         index: 3,
-        child: buildInfoCard(
+        child: BookingDetailScreenInfoCard(
           title: 'Thanh toán',
           child: Column(
             children: [
-              buildPaymentRow(
-                  'Dịch vụ (${booking.duration})', booking.totalPrice),
+              BookingPaymentRow(
+                  label: 'Dịch vụ (${booking.duration})',
+                  amount: booking.totalPrice),
               const Divider(height: 16, color: AppColors.divider),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -35,7 +30,7 @@ class BookingPaymentSummary extends StatelessWidget {
                           fontSize: AppFontSizes.s15,
                           fontWeight: FontWeight.w700)),
                   Text(
-                    '${formatCurrency(booking.totalPrice)}đ',
+                    '${formatVnd(booking.totalPrice, suffix: '')}đ',
                     style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: AppFontSizes.s18,

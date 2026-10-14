@@ -10,7 +10,6 @@ class KpiItem extends StatelessWidget {
   final String? value;
   final String? unit;
   final String? badge;
-  final Color? badgeColor;
   final Widget? trailing;
   final Widget? valueWidget;
 
@@ -20,7 +19,6 @@ class KpiItem extends StatelessWidget {
     this.value,
     this.unit,
     this.badge,
-    this.badgeColor,
     this.trailing,
     this.valueWidget,
   });

@@ -1,3 +1,4 @@
+import 'booking_detail_screen_caregiver_initials.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -7,11 +8,9 @@ class BookingCaregiverIdentity extends StatelessWidget {
   const BookingCaregiverIdentity(
       {super.key,
       required this.avatarUrl,
-      required this.buildCaregiverInitials,
       required this.booking,
       required this.caregiverName});
   final String? avatarUrl;
-  final Widget Function(BookingModel) buildCaregiverInitials;
   final BookingModel booking;
   final String caregiverName;
 
@@ -32,9 +31,9 @@ class BookingCaregiverIdentity extends StatelessWidget {
                         height: 60,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
-                            buildCaregiverInitials(booking),
+                            BookingDetailScreenCaregiverInitials(booking: booking),
                       )
-                    : buildCaregiverInitials(booking),
+                    : BookingDetailScreenCaregiverInitials(booking: booking),
               ),
             ],
           ),

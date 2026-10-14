@@ -1,3 +1,4 @@
+import '../models/schedule_date_labels.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -6,15 +7,11 @@ class SchedulePeriodLabel extends StatelessWidget {
   const SchedulePeriodLabel(
       {super.key,
       required this.pickDate,
-      required this.getMonthName,
       required this.selectedDate,
-      required this.isMonthView,
-      required this.getFullDayOfWeekName});
+      required this.isMonthView});
   final Future<void> Function() pickDate;
-  final String Function(int) getMonthName;
   final DateTime selectedDate;
   final bool isMonthView;
-  final String Function(int) getFullDayOfWeekName;
 
   @override
   Widget build(BuildContext context) => Expanded(
@@ -27,7 +24,7 @@ class SchedulePeriodLabel extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    getMonthName(selectedDate.month),
+                    scheduleMonthName(selectedDate.month),
                     style: const TextStyle(
                       fontSize: AppFontSizes.s14,
                       fontWeight: FontWeight.w600,
@@ -48,7 +45,7 @@ class SchedulePeriodLabel extends StatelessWidget {
                   if (!isMonthView)
                     Flexible(
                       child: Text(
-                        getFullDayOfWeekName(selectedDate.weekday),
+                        scheduleFullDayName(selectedDate.weekday),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

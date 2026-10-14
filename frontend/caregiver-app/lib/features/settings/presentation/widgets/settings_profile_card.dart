@@ -6,10 +6,8 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/profile/data/models/caregiver_profile_model.dart';
 
 class SettingsProfileCard extends StatelessWidget {
-  const SettingsProfileCard(
-      {super.key, required this.profile, required this.shortIdLabel});
+  const SettingsProfileCard({super.key, required this.profile});
   final CaregiverProfileModel profile;
-  final String Function(String) shortIdLabel;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -57,7 +55,7 @@ class SettingsProfileCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   profile.locationText == 'Chưa cập nhật'
-                      ? shortIdLabel(profile.id)
+                      ? _shortIdLabel(profile.id)
                       : profile.locationText,
                   style: const TextStyle(
                     fontSize: AppFontSizes.s14,
@@ -74,5 +72,10 @@ class SettingsProfileCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _shortIdLabel(String id) {
+    if (id.isEmpty) return 'Chưa có hồ sơ caregiver';
+    return 'ID hồ sơ: ${id.length > 8 ? id.substring(0, 8) : id}';
   }
 }

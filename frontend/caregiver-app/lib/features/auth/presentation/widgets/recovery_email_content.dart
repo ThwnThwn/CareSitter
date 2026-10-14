@@ -2,7 +2,6 @@ import 'package:caregiver_app/features/auth/presentation/widgets/recovery_email_
 import 'package:caregiver_app/features/auth/presentation/widgets/recovery_email_app_bar.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/recovery_email_controller.dart';
 
 class RecoveryEmailContent extends StatelessWidget {
@@ -17,13 +16,9 @@ class RecoveryEmailContent extends StatelessWidget {
       required this.hidden,
       required this.code,
       required this.request,
-      required this.ref,
       required this.confirm,
-      required this.callbackAction4,
-      required this.callbackAction5,
-      required this.callbackAction6,
-      required this.callbackAction9,
-      required this.callbackAction10});
+      required this.onEmailChanged,
+      required this.onTogglePassword});
   final RecoveryEmailState flow;
   final Future<void> Function() load;
   final GlobalKey<FormState> form;
@@ -33,13 +28,9 @@ class RecoveryEmailContent extends StatelessWidget {
   final bool hidden;
   final TextEditingController code;
   final Future<void> Function({bool resend}) request;
-  final WidgetRef ref;
   final Future<void> Function() confirm;
-  final void Function(String) callbackAction4;
-  final String? Function(String?) callbackAction5;
-  final void Function() callbackAction6;
-  final String? Function(String?) callbackAction9;
-  final String? Function(String?) callbackAction10;
+  final void Function(String) onEmailChanged;
+  final void Function() onTogglePassword;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -68,14 +59,10 @@ class RecoveryEmailContent extends StatelessWidget {
                                   changing: changing,
                                   password: password,
                                   hidden: hidden,
-                                  callbackAction4: callbackAction4,
-                                  callbackAction5: callbackAction5,
-                                  callbackAction6: callbackAction6,
-                                  callbackAction9: callbackAction9,
+                                  onEmailChanged: onEmailChanged,
+                                  onTogglePassword: onTogglePassword,
                                   code: code,
                                   request: request,
-                                  ref: ref,
-                                  callbackAction10: callbackAction10,
                                   confirm: confirm),
                     )))),
       );

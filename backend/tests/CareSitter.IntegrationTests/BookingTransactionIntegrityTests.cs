@@ -207,7 +207,7 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
             .Options);
 
     private WalletService CreateWalletService(PaymentsDbContext db, SeedRecord seed) => new(
-        db,
+        new WalletLedgerStore(db),
         new PostgresDisputeLookupStub(_database.ConnectionString),
         new PeopleLookupStub(seed.CaregiverProfileId, seed.CaregiverUserId));
 

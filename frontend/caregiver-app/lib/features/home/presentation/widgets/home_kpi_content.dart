@@ -29,7 +29,6 @@ class HomeKpiContent extends StatelessWidget {
                 value: '$todayCount',
                 unit: 'ca',
                 badge: todayCount > 0 ? 'Đúng tiến độ' : null,
-                badgeColor: AppColors.primary,
               ),
             ),
             const VerticalDivider(

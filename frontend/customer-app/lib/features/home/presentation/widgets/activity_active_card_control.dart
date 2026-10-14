@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class ActivityActiveCardControl extends StatelessWidget {
-  const ActivityActiveCardControl({super.key, required this.callbackAction1});
-  final void Function() callbackAction1;
+  const ActivityActiveCardControl({super.key, required this.onTrackBooking});
+  final void Function() onTrackBooking;
 
   @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: callbackAction1,
+          onPressed: onTrackBooking,
           icon: const Icon(Icons.location_on_rounded, size: 18),
           label: const Text('Theo dõi ca chăm sóc'),
           style: ElevatedButton.styleFrom(

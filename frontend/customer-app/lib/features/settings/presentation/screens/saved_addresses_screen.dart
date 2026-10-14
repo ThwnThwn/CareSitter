@@ -1,8 +1,5 @@
-import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_screen_address_list.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_screen_address_card.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_screen_address_header.dart';
+import '../widgets/saved_address_list.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_screen_error_state.dart';
-import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_screen_empty_state.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_address_form_dialog.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_address_form_data.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +37,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       context: context,
       builder: (_) => const SavedAddressesAddressFormDialog(),
     );
-    if (data == null) return;
+    if (data == null || !mounted) return;
 
     try {
       final created = await ref.read(addressStoreProvider.notifier).addAddress(
@@ -145,42 +142,22 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       ),
       body: addressesAsync.when(
         loading: _buildLoadingState,
-        error: (_, __) => _buildErrorState(),
-        data: (addresses) => _buildAddressList(addresses, defaultAddressId),
+        error: (_, __) => SavedAddressesScreenErrorState(
+            onRetry: () => ref.invalidate(addressStoreProvider),
+            addNewAddress: _addNewAddress),
+        data: (addresses) => SavedAddressList(
+            selectionMode: widget.selectionMode,
+            addresses: addresses,
+            defaultAddressId: defaultAddressId,
+            selectedAddressId: widget.selectedAddressId,
+            deletingAddressId: _deletingAddressId,
+            isDeleting: _isDeleting,
+            onAddAddress: _addNewAddress,
+            onSetDefault: _setAsDefault,
+            onDelete: _deleteAddress),
       ),
     );
   }
-
-  Widget _buildAddressList(
-          List<AddressModel> addresses, String? defaultAddressId) =>
-      SavedAddressesScreenAddressList(
-          selectionMode: widget.selectionMode,
-          addresses: addresses,
-          buildEmptyState: _buildEmptyState,
-          buildAddressCard: _buildAddressCard,
-          defaultAddressId: defaultAddressId,
-          addNewAddress: _addNewAddress);
-
-  Widget _buildAddressCard(AddressModel address, String? defaultAddressId) =>
-      SavedAddressesScreenAddressCard(
-          defaultAddressId: defaultAddressId,
-          address: address,
-          selectionMode: widget.selectionMode,
-          selectedAddressId: widget.selectedAddressId,
-          iconFor: _iconFor,
-          buildAddressHeader: _buildAddressHeader,
-          setAsDefault: _setAsDefault,
-          isDeleting: _isDeleting,
-          deletingAddressId: _deletingAddressId,
-          deleteAddress: _deleteAddress);
-
-  Widget _buildAddressHeader(
-    AddressModel address,
-    bool isSelected, {
-    required bool isDefault,
-  }) =>
-      SavedAddressesScreenAddressHeader(
-          address: address, isSelected: isSelected, isDefault: isDefault);
 
   Widget _buildLoadingState() {
     return ListView.builder(
@@ -196,24 +173,5 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildErrorState() =>
-      SavedAddressesScreenErrorState(ref: ref, addNewAddress: _addNewAddress);
-
-  Widget _buildEmptyState() => const SavedAddressesScreenEmptyState();
-
-  IconData _iconFor(AddressModel address) {
-    final label = address.displayLabel.toLowerCase();
-    if (label.contains('nhà') || label.contains('nha')) {
-      return Icons.home_outlined;
-    }
-    if (label.contains('văn phòng') ||
-        label.contains('van phong') ||
-        label.contains('công ty') ||
-        label.contains('cong ty')) {
-      return Icons.work_outline;
-    }
-    return Icons.location_on_outlined;
   }
 }

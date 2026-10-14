@@ -1,0 +1,211 @@
+/* Hero */
+.hero {
+  --hero-duration: 1200ms;
+  --hero-distance: 150px;
+  background: var(--paper);
+  overflow: hidden;
+  padding: clamp(4.5rem, 8vw, 7rem) 0 clamp(4rem, 7vw, 6rem);
+}
+
+.hero__grid {
+  align-items: center;
+  display: grid;
+  gap: clamp(3rem, 5vw, 6rem);
+  grid-template-columns: minmax(0, 1.04fr) minmax(400px, 0.96fr);
+}
+
+.hero__copy {
+  max-width: 690px;
+}
+
+.hero__copy[data-hero-entered] > * {
+  animation: hero-rise-in var(--hero-duration) var(--hero-delay, 0ms) cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.hero__kicker { --hero-delay: 200ms; }
+.hero__copy h1 { --hero-delay: 400ms; --hero-distance: 170px; }
+.hero__lead { --hero-delay: 600ms; }
+.hero__actions { --hero-delay: 800ms; }
+.hero__proof { --hero-delay: 1000ms; }
+
+.hero__kicker {
+  align-items: center;
+  border: 1px solid color-mix(in oklch, var(--green) 25%, transparent);
+  border-radius: 999px;
+  color: var(--green-dark);
+  display: inline-flex;
+  font-size: 0.74rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  margin-bottom: 2rem;
+  padding: 0.48rem 0.78rem;
+}
+
+.display--hero em {
+  color: var(--green);
+  margin-top: 0.12em;
+}
+
+.hero__lead {
+  color: var(--muted);
+  font-size: clamp(1.03rem, 1.4vw, 1.22rem);
+  line-height: 1.75;
+  margin: 2rem 0 0;
+  max-width: 61ch;
+  text-wrap: pretty;
+}
+
+.hero__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2.2rem;
+}
+
+.hero__proof {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  max-width: 560px;
+  padding-top: 1.25rem;
+}
+
+.avatar-stack {
+  display: flex;
+  padding-left: 0.7rem;
+}
+
+.avatar-stack img {
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  height: 42px;
+  margin-left: -0.7rem;
+  object-fit: cover;
+  width: 42px;
+}
+
+.hero__proof > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero__proof strong {
+  font-size: 0.85rem;
+}
+
+.hero__proof span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 0.18rem;
+}
+
+.hero-collage {
+  height: 650px;
+  position: relative;
+}
+
+/* Independent translate keeps pointer depth separate from Anime.js entrances. */
+.hero-collage > * {
+  translate: calc(var(--hero-pointer-x, 0px) * var(--hero-depth, 1))
+    calc(var(--hero-pointer-y, 0px) * var(--hero-depth, 1));
+  transition: translate 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-collage__main { --hero-depth: 0.35; }
+.hero-collage__portrait { --hero-depth: 0.8; }
+.hero-collage__seal { --hero-depth: 1; }
+.hero-collage__caption { --hero-depth: 1.2; }
+
+.hero-collage figure {
+  margin: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.hero-collage figure img {
+  object-fit: cover;
+}
+
+.hero-collage__main {
+  border-radius: var(--radius);
+  height: 82%;
+  left: 0;
+  top: 8%;
+  width: 78%;
+}
+
+.hero-collage__main::after {
+  background: linear-gradient(180deg, transparent 55%, rgba(10, 52, 40, 0.38));
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.hero-collage__portrait {
+  border: 6px solid var(--paper);
+  border-radius: 50%;
+  height: 176px;
+  right: 0;
+  top: 0;
+  width: 176px;
+}
+
+.hero-collage__caption,
+.hero-collage__seal {
+  border-radius: var(--radius);
+  position: absolute;
+}
+
+.hero-collage__caption {
+  background: var(--green-dark);
+  bottom: 3%;
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  padding: 1.2rem 1.35rem;
+  right: 0;
+  width: min(290px, 58%);
+}
+
+.hero-collage__caption span {
+  color: var(--lime);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero-collage__caption strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  margin: 0.45rem 0 0.15rem;
+}
+
+.hero-collage__caption small {
+  color: color-mix(in oklch, var(--white) 74%, transparent);
+}
+
+.hero-collage__seal {
+  align-items: center;
+  background: var(--lime);
+  color: var(--green-dark);
+  display: flex;
+  gap: 0.75rem;
+  left: -1.5rem;
+  padding: 0.85rem 1rem;
+  top: 17%;
+}
+
+.hero-collage__seal span {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.68rem;
+}
+
+.hero-collage__seal strong {
+  font-size: 0.82rem;
+}

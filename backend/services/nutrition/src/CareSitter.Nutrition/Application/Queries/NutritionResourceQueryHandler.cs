@@ -24,7 +24,7 @@ internal sealed class NutritionResourceQueryHandler(IPeopleHealthClient access, 
             if (request.Kind is "recommendation" or "plan" && result.Status != "stale")
             {
                 var meal = NutritionJson.Read<MealPayload>(value.Payload);
-                if (meal.CatalogRevision != catalogRevision || (meal.Meals.Length > 0 && !NutritionCommandHandler.ContentCurrent(meal, await session.RecipesAsync(ct), await session.RulesAsync(ct))))
+                if (meal.CatalogRevision != catalogRevision || (meal.Meals.Length > 0 && !NutritionCatalogConsistency.ContentCurrent(meal, await session.RecipesAsync(ct), await session.RulesAsync(ct))))
                     result = result with { Status = "stale" };
             }
             return result;
@@ -55,5 +55,5 @@ internal sealed class NutritionResourceQueryHandler(IPeopleHealthClient access, 
             : response;
     }
     private static bool ContentCurrent(Domain.NutritionResource resource, IReadOnlyList<Domain.Recipe> recipes, IReadOnlyList<Domain.DietaryRule> rules) =>
-        NutritionCommandHandler.ContentCurrent(NutritionJson.Read<MealPayload>(resource.Payload), recipes, rules);
+        NutritionCatalogConsistency.ContentCurrent(NutritionJson.Read<MealPayload>(resource.Payload), recipes, rules);
 }

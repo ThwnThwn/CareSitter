@@ -7,11 +7,11 @@ class ProfileEditBirthDateGender extends StatelessWidget {
       required this.dobCtrl,
       required this.selectDate,
       required this.gender,
-      required this.callbackAction5});
+      required this.onGenderChanged});
   final TextEditingController dobCtrl;
-  final Future<void> Function() selectDate;
+  final VoidCallback selectDate;
   final String gender;
-  final void Function(String?) callbackAction5;
+  final void Function(String?) onGenderChanged;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -41,7 +41,7 @@ class ProfileEditBirthDateGender extends StatelessWidget {
                 DropdownMenuItem(value: 'OTHER', child: Text('Khác')),
                 DropdownMenuItem(value: 'UNSPECIFIED', child: Text('Không rõ')),
               ],
-              onChanged: callbackAction5,
+              onChanged: onGenderChanged,
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/recovery_input_rules.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/password_recovery_controller.dart';
 
 class PasswordRecoveryPasswordField extends StatelessWidget {
@@ -7,13 +8,11 @@ class PasswordRecoveryPasswordField extends StatelessWidget {
       required this.password,
       required this.flow,
       required this.hidden,
-      required this.validatePassword,
-      required this.callbackAction1});
+      required this.onTogglePassword});
   final TextEditingController password;
   final PasswordRecoveryState flow;
   final bool hidden;
-  final String? Function(String?) validatePassword;
-  final void Function() callbackAction1;
+  final void Function() onTogglePassword;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -22,12 +21,12 @@ class PasswordRecoveryPasswordField extends StatelessWidget {
       enabled: !flow.busy,
       obscureText: hidden,
       autofillHints: const [AutofillHints.newPassword],
-      validator: validatePassword,
+      validator: RecoveryInputRules.password,
       decoration: InputDecoration(
           labelText: 'Mật khẩu mới',
           suffixIcon: IconButton(
               tooltip: hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-              onPressed: callbackAction1,
+              onPressed: onTogglePassword,
               icon: Icon(hidden
                   ? Icons.visibility_outlined
                   : Icons.visibility_off_outlined))));

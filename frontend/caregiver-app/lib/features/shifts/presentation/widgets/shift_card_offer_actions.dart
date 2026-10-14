@@ -3,16 +3,16 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class ShiftCardOfferActions extends StatelessWidget {
   const ShiftCardOfferActions(
-      {super.key, required this.onViewOffer, required this.callbackAction1});
+      {super.key, required this.onViewOffer, required this.onDecline});
   final void Function()? onViewOffer;
-  final Future<void> Function() callbackAction1;
+  final Future<void> Function() onDecline;
 
   @override
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: callbackAction1,
+              onPressed: onDecline,
               child: const Text('Từ chối'),
             ),
           ),

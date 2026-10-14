@@ -53,6 +53,7 @@ public sealed class PaymentsModule : IModule
             PayoutValidationBehavior<RejectPayoutCommand, PayoutResponse>>();
         services.AddScoped<PayoutMapper>();
         services.AddScoped<IPayoutStore, PayoutStore>();
+        services.AddScoped<IWalletLedgerStore, WalletLedgerStore>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddOptions<VNPayOptions>()
             .Bind(configuration.GetSection(VNPayOptions.SectionName))

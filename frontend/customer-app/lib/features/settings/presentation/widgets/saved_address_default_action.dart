@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class SavedAddressDefaultAction extends StatelessWidget {
-  const SavedAddressDefaultAction({super.key, required this.callbackAction1});
-  final void Function() callbackAction1;
+  const SavedAddressDefaultAction({super.key, required this.onSetDefault});
+  final void Function() onSetDefault;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -13,7 +13,7 @@ class SavedAddressDefaultAction extends StatelessWidget {
           children: [
             const SizedBox(height: AppSpacing.sm),
             InkWell(
-              onTap: callbackAction1,
+              onTap: onSetDefault,
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

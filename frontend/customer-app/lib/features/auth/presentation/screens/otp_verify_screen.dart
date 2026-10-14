@@ -1,9 +1,7 @@
 import 'package:caresitter_customer/features/auth/presentation/widgets/otp_verification_content.dart';
 import '../controllers/otp_controller.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -25,7 +23,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNodes[0].requestFocus();
+      if (mounted) _focusNodes[0].requestFocus();
     });
   }
 
@@ -40,10 +38,22 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(OtpVerifyScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.email == widget.email) return;
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNodes[0].requestFocus();
+    });
+  }
+
   Future<void> _resendOtp() async {
-    final sent =
-        await ref.read(otpControllerProvider(widget.email).notifier).resend();
-    if (mounted && sent) {
+    final email = widget.email;
+    final sent = await ref.read(otpControllerProvider(email).notifier).resend();
+    if (mounted && widget.email == email && sent) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
           backgroundColor: AppColors.primary));
@@ -64,18 +74,20 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   }
 
   Future<void> _verify() async {
-    final success = await ref
-        .read(otpControllerProvider(widget.email).notifier)
-        .submit(_otp);
+    final email = widget.email;
+    final success =
+        await ref.read(otpControllerProvider(email).notifier).submit(_otp);
     if (!mounted ||
+        widget.email != email ||
         success ||
-        ref.read(otpControllerProvider(widget.email)).error == null) {
+        ref.read(otpControllerProvider(email)).error == null) {
       return;
     }
     for (final controller in _controllers) {
       controller.clear();
     }
     _focusNodes[0].requestFocus();
+    setState(() {});
   }
 
   @override
@@ -91,61 +103,14 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         ),
       ),
       body: OtpVerificationContent(
-          ref: ref,
-          buildOtpBox: _buildOtpBox,
+          flow: ref.watch(otpControllerProvider(widget.email)),
+          controllers: _controllers,
+          focusNodes: _focusNodes,
+          onDigitChanged: _onDigitChanged,
           otp: _otp,
-          verify: _verify,
-          resendOtp: _resendOtp,
-          routeEmail: widget.email),
-    );
-  }
-
-  Widget _buildOtpBox(int index) {
-    final isFocused = _focusNodes[index].hasFocus;
-    final hasValue = _controllers[index].text.isNotEmpty;
-    return SizedBox(
-      width: 46,
-      height: 54,
-      child: TextField(
-        controller: _controllers[index],
-        focusNode: _focusNodes[index],
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        style: const TextStyle(
-          fontSize: AppFontSizes.s20,
-          fontWeight: FontWeight.w800,
-          color: AppColors.primary,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor:
-              isFocused ? AppColors.primaryContainer : AppColors.cardBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: BorderSide(
-              color: hasValue ? AppColors.primary : AppColors.border,
-              width: isFocused ? 2 : 1.5,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: BorderSide(
-              color: hasValue ? AppColors.primary : AppColors.border,
-              width: 1.5,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: AppSpacing.compact),
-        ),
-        onChanged: (value) => _onDigitChanged(index, value),
-      ),
+          onVerify: _verify,
+          onResend: _resendOtp,
+          email: widget.email),
     );
   }
 }

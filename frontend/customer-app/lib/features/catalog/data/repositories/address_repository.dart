@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
+import 'package:caresitter_customer/core/api/api_cancellation.dart';
 import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/features/catalog/data/models/address_model.dart';
 
@@ -17,8 +18,9 @@ class AddressRepository {
   const AddressRepository(this._dio);
 
   /// Lay toan bo dia chi da luu cua user hien tai.
-  Future<List<AddressModel>> getAddresses() async {
-    final resp = await _dio.get<List<dynamic>>(ApiPaths.addresses);
+  Future<List<AddressModel>> getAddresses({ApiCancellation? cancellation}) async {
+    final resp = await _dio.getCancelable<List<dynamic>>(ApiPaths.addresses,
+        cancelToken: (cancellation ?? ApiCancellation()).transportToken);
     final data = resp.data ?? [];
     return data
         .whereType<Map<String, dynamic>>()
@@ -31,9 +33,11 @@ class AddressRepository {
     String? sessionToken,
     String? label,
     String? note,
+    ApiCancellation? cancellation,
   }) async {
-    final resp = await _dio.post<Map<String, dynamic>>(
+    final resp = await _dio.postCancelable<Map<String, dynamic>>(
       ApiPaths.addresses,
+      cancelToken: (cancellation ?? ApiCancellation()).transportToken,
       data: {
         'PlaceId': placeId,
         if (sessionToken != null && sessionToken.trim().isNotEmpty)
@@ -75,11 +79,13 @@ class AddressRepository {
     return VerifiedPlaceDetailsModel.fromJson(resp.data ?? const {});
   }
 
-  Future<void> deleteAddress(String id) async {
-    await _dio.delete<void>(ApiPaths.addressById(id));
+  Future<void> deleteAddress(String id, {ApiCancellation? cancellation}) async {
+    await _dio.deleteCancelable<void>(ApiPaths.addressById(id),
+        cancelToken: (cancellation ?? ApiCancellation()).transportToken);
   }
 
-  Future<void> setDefaultAddress(String id) async {
-    await _dio.put<void>('/profile/default-address/$id');
+  Future<void> setDefaultAddress(String id, {ApiCancellation? cancellation}) async {
+    await _dio.putCancelable<void>('/profile/default-address/$id',
+        cancelToken: (cancellation ?? ApiCancellation()).transportToken);
   }
 }
