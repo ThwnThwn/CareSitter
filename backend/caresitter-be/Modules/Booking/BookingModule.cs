@@ -63,6 +63,7 @@ public sealed class BookingModule : IModule
         // Hub resolve IBookingMembershipChecker (Shared interface) → implementation nằm ở đây.
         // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
         services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
+        services.AddScoped<IBookingPartyAccess, BookingMembershipReader>();
         services.AddScoped<IReviewBookingLookup, ReviewBookingLookup>();
         services.AddScoped<IDisputeBookingWorkflow, DisputeBookingWorkflow>();
 

@@ -13,8 +13,10 @@ using CareSitter.Modules.Support.Application.Consultations;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using System.Threading.RateLimiting;
+using System.Security.Claims;
 using CareSitter.Messaging.Persistence;
 using CareSitter.Modules.Support.Application.Ports;
+using CareSitter.Modules.Support.Application.Chat;
 
 namespace CareSitter.Modules.Support;
 
@@ -41,8 +43,23 @@ public sealed class SupportModule : IModule
                     PermitLimit = 20, Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0, AutoReplenishment = true
                 })));
+        var chatLimit = Math.Clamp(configuration.GetValue("SupportChat:RateLimitPerMinute", 30), 1, 300);
+        services.AddRateLimiter(options => options.AddPolicy("support-chat-write", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? context.User.FindFirst("sub")?.Value
+                    ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = chatLimit, Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0, AutoReplenishment = true
+                })));
         services.AddScoped<ISupportReadStore, SupportReadStore>();
         services.AddScoped<IUserNotificationService, UserNotificationService>();
+        services.AddScoped<ISupportChatService, SupportChatService>();
+        services.AddSingleton<SupportChatMetrics>();
+        services.AddScoped<IChatTicketGuard, ChatTicketGuard>();
+        services.AddScoped<ISupportChatMembership, SupportChatMembership>();
         services.AddScoped<INotificationDeliveryStore, NotificationDeliveryStore>();
         services.AddModuleOutbox<SupportDbContext>(configuration, SupportDbContext.SchemaName,
             string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));

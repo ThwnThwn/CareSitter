@@ -26,6 +26,7 @@ import 'package:caregiver_app/features/settings/presentation/screens/document_up
 import 'package:caregiver_app/features/settings/presentation/screens/reviews_screen.dart';
 import 'package:caregiver_app/features/settings/presentation/screens/faq_screen.dart';
 import 'package:caregiver_app/features/settings/presentation/screens/support_screen.dart';
+import 'package:caregiver_app/features/support_chat/presentation/support_chat_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_customer_report_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -350,6 +351,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/support',
         pageBuilder: (ctx, state) =>
             _detailPage(pageKey: state.pageKey, child: const SupportScreen()),
+      ),
+      GoRoute(
+        path: '/settings/support/chat',
+        pageBuilder: (ctx, state) =>
+            _detailPage(pageKey: state.pageKey, child: const SupportChatScreen()),
       ),
     ],
   );

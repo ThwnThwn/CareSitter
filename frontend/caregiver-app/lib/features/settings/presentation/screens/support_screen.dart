@@ -5,7 +5,7 @@ import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 
@@ -28,21 +28,6 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     _titleController.dispose();
     _descController.dispose();
     super.dispose();
-  }
-
-  Future<void> _callHotline() async {
-    final url = Uri.parse('tel:19001234');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
-  }
-
-  Future<void> _sendEmail() async {
-    final url =
-        Uri.parse('mailto:support@caresitter.com?subject=Support%20Caregiver');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
   }
 
   Future<void> _pickAttachments() async {
@@ -93,22 +78,12 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hotline Card
             _buildContactCard(
-              title: 'Tổng đài hỗ trợ 24/7',
-              subtitle: '1900 1234 (1,000 đ/phút)',
-              icon: Icons.phone_in_talk_rounded,
+              title: 'Chat hỗ trợ',
+              subtitle: 'Gửi tin nhắn và theo dõi phản hồi trong ứng dụng',
+              icon: Icons.chat_bubble_outline_rounded,
               color: AppColors.primary,
-              onTap: _callHotline,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Email Card
-            _buildContactCard(
-              title: 'Gửi email hỗ trợ',
-              subtitle: 'support@caresitter.com',
-              icon: Icons.mail_outline_rounded,
-              color: AppColors.info,
-              onTap: _sendEmail,
+              onTap: () => context.push('/settings/support/chat'),
             ),
             const SizedBox(height: AppSpacing.xl),
 

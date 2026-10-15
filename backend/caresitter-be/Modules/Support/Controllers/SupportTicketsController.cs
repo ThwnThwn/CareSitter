@@ -59,16 +59,18 @@ public sealed class SupportTicketsController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateTicketStatusRequest req, CancellationToken ct)
     {
-        var result = await _mediator.Send(new UpdateSupportTicketStatusCommand(id, req.Status), ct);
+        var result = await _mediator.Send(new UpdateSupportTicketStatusCommand(id, req.Status,
+            req.ExpectedVersion, req.Reason), ct);
         return result.ToActionResult(this);
     }
 
     /// <summary>Admin nhan xu ly ticket (assign admin va chuyen IN_PROGRESS).</summary>
     [HttpPut("{id:guid}/assign")]
     [Authorize(Roles = "ADMIN")]
-    public async Task<IActionResult> Assign(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Assign(Guid id,
+        [FromHeader(Name = "X-Expected-Version")] long? expectedVersion, CancellationToken ct)
     {
-        var result = await _mediator.Send(new AssignSupportTicketCommand(id), ct);
+        var result = await _mediator.Send(new AssignSupportTicketCommand(id, expectedVersion), ct);
         return result.ToActionResult(this);
     }
 

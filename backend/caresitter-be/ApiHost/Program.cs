@@ -39,6 +39,11 @@ else if (File.Exists(apiEnvironmentFile)) DotNetEnv.Env.NoClobber().Load(apiEnvi
 else throw new InvalidOperationException("Configured CARESITTER_ENV_FILE does not exist.");
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Configuration.GetValue<bool>("SupportChat:PushEnabled") &&
+    (!builder.Configuration.GetValue<bool>("KAFKA_ENABLED") ||
+     !builder.Configuration.GetValue<bool>("KAFKA_FLOW_NOTIFICATIONS_ENABLED")))
+    throw new InvalidOperationException(
+        "SupportChat push requires Kafka and notification flow to be enabled.");
 builder.Services.AddOptions<NutritionGatewayOptions>().Bind(builder.Configuration.GetSection("NutritionGateway"))
     .Validate(options => options.IsValid(builder.Environment.IsDevelopment()),
         "NutritionGateway requires an internal gRPC endpoint, service credential and a bounded timeout.")
@@ -268,6 +273,17 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) =>
     {
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api/v1/support/conversations"))
+        {
+            context.HttpContext.Response.Headers.RetryAfter = "60";
+            context.HttpContext.Response.ContentType = "application/problem+json";
+            await context.HttpContext.Response.WriteAsJsonAsync(new
+            {
+                title = "support.chat.rate_limited",
+                detail = "Bạn thao tác quá nhanh. Vui lòng thử lại sau."
+            }, ct);
+            return;
+        }
         if (context.HttpContext.Request.Path.Value?.Contains("/gps", StringComparison.Ordinal) == true)
         {
             context.HttpContext.Response.Headers.RetryAfter = "60";
@@ -495,6 +511,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 
 // --- SignalR Hub ---
 app.MapHub<CareTrackingHub>("/hubs/care-tracking", options => options.CloseOnAuthenticationExpiration = true);
+app.MapHub<SupportChatHub>("/hubs/support-chat", options => options.CloseOnAuthenticationExpiration = true);
 
 // --- Hangfire Dashboard ---
 // Dev: localhost-only (không cần JWT).

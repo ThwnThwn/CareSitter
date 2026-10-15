@@ -26,7 +26,7 @@ class SupportPanel extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Chúng tôi hỗ trợ 24/7 để giải quyết mọi thắc mắc của bạn.',
+              'Gửi yêu cầu và theo dõi phản hồi ngay trong ứng dụng.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white70,

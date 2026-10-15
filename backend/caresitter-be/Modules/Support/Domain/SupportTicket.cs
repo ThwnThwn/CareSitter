@@ -47,6 +47,9 @@ public sealed class SupportTicket : AggregateRoot
     public string? AttachmentUrls { get; private set; }
 
     public Guid? AssignedAdminId { get; private set; }
+    public long Version { get; private set; } = 1;
+
+    public void AdvanceVersion() => Version++;
 
     public static Result<SupportTicket> Create(
         Guid userId,
