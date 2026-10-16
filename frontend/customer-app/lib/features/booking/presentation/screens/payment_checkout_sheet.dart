@@ -82,6 +82,7 @@ class _PaymentCheckoutSheetState extends ConsumerState<PaymentCheckoutSheet> {
                 providers: providers,
                 selected: flow.selected,
                 busy: flow.busy,
+                onRetry: () => ref.invalidate(paymentProvidersProvider),
                 onSelected: (provider) => ref
                     .read(paymentCheckoutControllerProvider(widget.booking.id)
                         .notifier)

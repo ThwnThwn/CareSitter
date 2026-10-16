@@ -10,8 +10,10 @@ namespace CareSitter.Modules.Booking.Infrastructure;
 /// </summary>
 public sealed class BookingMembershipReader(
     BookingDbContext db,
-    IPeopleLookupService people) : IBookingMembershipChecker
+    IPeopleLookupService people) : IBookingMembershipChecker, IBookingPartyAccess
 {
+    public Task<bool> IsPartyAsync(Guid bookingId, Guid userId, CancellationToken ct = default) =>
+        IsPartyToBookingAsync(bookingId, userId, ct);
     public async Task<bool> IsPartyToBookingAsync(
         Guid bookingId, Guid userId, CancellationToken ct = default)
     {

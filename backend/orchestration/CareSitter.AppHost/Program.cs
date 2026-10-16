@@ -39,6 +39,12 @@ var postgres = builder.AddPostgres("nutrition-db", password: adminPassword)
     .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/02-runtime-role.sql"), "/runtime-role.sql", isReadOnly: true)
     .WithBindMount(Path.Combine(repository, "backend/services/nutrition/scripts/02-runtime-role.sh"),
         "/docker-entrypoint-initdb.d/02-runtime-role.sh", isReadOnly: true)
+    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/03-catalog-governance.sql"),
+        "/docker-entrypoint-initdb.d/03-catalog-governance.sql", isReadOnly: true)
+    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/04-catalog-nutrient-constraints.sql"),
+        "/docker-entrypoint-initdb.d/04-catalog-nutrient-constraints.sql", isReadOnly: true)
+    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/05-recipe-source-citations.sql"),
+        "/docker-entrypoint-initdb.d/05-recipe-source-citations.sql", isReadOnly: true)
     .WithDataVolume(builder.Configuration["AppHost:NutritionDataVolume"] ?? "caresitter-apphost-nutrition");
 var nutritionDatabase = postgres.AddDatabase("nutrition-store", databaseName: "nutrition");
 
@@ -71,10 +77,25 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("Nutrition__Enabled", builder.Configuration.GetValue("Nutrition:Enabled", false).ToString())
     .WithEnvironment("Nutrition__AssessmentsEnabled", builder.Configuration.GetValue("Nutrition:AssessmentsEnabled", false).ToString())
     .WithEnvironment("Nutrition__RecommendationsEnabled", builder.Configuration.GetValue("Nutrition:RecommendationsEnabled", false).ToString())
+    .WithEnvironment("HealthParser__Enabled", builder.Configuration.GetValue("HealthParser:Enabled", false).ToString())
+    .WithEnvironment("HealthParser__Provider", builder.Configuration["HealthParser:Provider"] ?? "OpenAI")
+    .WithEnvironment("HealthParser__Model", builder.Configuration["HealthParser:Model"] ?? "gpt-6-luna")
+    .WithEnvironment("HealthParser__BaseUrl", builder.Configuration["HealthParser:BaseUrl"] ?? "https://api.openai.com/v1/")
+    .WithEnvironment("HealthParser__DataProcessingApproved", builder.Configuration.GetValue("HealthParser:DataProcessingApproved", false).ToString())
+    .WithEnvironment("HealthParser__TimeoutSeconds", builder.Configuration.GetValue("HealthParser:TimeoutSeconds", 25).ToString())
+    .WithEnvironment("HealthParser__MaxOutputTokens", builder.Configuration.GetValue("HealthParser:MaxOutputTokens", 2048).ToString())
+    .WithEnvironment("HealthParser__MaxAttempts", builder.Configuration.GetValue("HealthParser:MaxAttempts", 2).ToString())
+    .WithEnvironment("HealthParser__MaxConcurrency", builder.Configuration.GetValue("HealthParser:MaxConcurrency", 4).ToString())
+    .WithEnvironment("HealthParser__DailyBudget", builder.Configuration.GetValue("HealthParser:DailyBudget", 1000).ToString())
+    .WithEnvironment("HealthParser__MaxInputCharacters", builder.Configuration.GetValue("HealthParser:MaxInputCharacters", 12000).ToString())
+    .WithEnvironment("HealthParser__MaxResponseBytes", builder.Configuration.GetValue("HealthParser:MaxResponseBytes", 262144).ToString())
     .WithEnvironment("Kestrel__Endpoints__Http__Protocols", "Http1")
     .WithEnvironment("Kestrel__Endpoints__Grpc__Protocols", "Http2")
     .WithHttpHealthCheck("/health/ready", endpointName: "http")
     .WaitFor(nutritionDatabase);
+
+if (builder.Configuration.GetValue<bool>("HealthParser:Enabled"))
+    nutrition.WithEnvironment("HealthParser__ApiKey", Secret("nutrition-health-parser-api-key", Required("HealthParser:ApiKey")));
 
 nutrition.WithEnvironment("Kestrel__Endpoints__Http__Url", nutrition.GetEndpoint("http"));
 nutrition.WithEnvironment("Kestrel__Endpoints__Grpc__Url", nutrition.GetEndpoint("grpc"));

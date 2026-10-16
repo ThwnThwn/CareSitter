@@ -10,17 +10,24 @@ class PaymentProviderChoices extends StatelessWidget {
       required this.providers,
       required this.selected,
       required this.busy,
-      required this.onSelected});
+      required this.onSelected,
+      required this.onRetry});
   final AsyncValue<List<PaymentProviderModel>> providers;
   final String? selected;
   final bool busy;
   final ValueChanged<PaymentProviderModel> onSelected;
+  final VoidCallback onRetry;
   @override
   Widget build(BuildContext context) => providers.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) =>
-            const Text('Không tải được cách thanh toán. Vui lòng thử lại.'),
-        data: (items) => Column(children: [
+        loading: () => const Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Center(child: CircularProgressIndicator())),
+        error: (_, __) => Column(children: [
+          const Text('Chưa tải được phương thức thanh toán.'),
+          TextButton(onPressed: onRetry, child: const Text('Tải lại')),
+        ]),
+        data: (items) =>
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           for (final provider in items)
             PaymentCheckoutSheetSelectedProviderInset(
                 provider: provider,

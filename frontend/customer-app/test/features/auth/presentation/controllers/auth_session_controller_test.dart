@@ -62,16 +62,20 @@ void main() {
   const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   late ProviderContainer container;
   late _Repository repository;
+  late Map<String, String> storageValues;
   setUp(() async {
-    final values = <String, String>{};
+    storageValues = <String, String>{};
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(storage, (call) async {
       final args = call.arguments as Map? ?? {};
-      if (call.method == 'read') return values[args['key']];
+      if (call.method == 'read') return storageValues[args['key']];
       if (call.method == 'write') {
-        values[args['key'] as String] = args['value'] as String;
+        storageValues[args['key'] as String] = args['value'] as String;
       }
-      if (call.method == 'deleteAll') values.clear();
+      if (call.method == 'delete') {
+        storageValues.remove(args['key'] as String);
+      }
+      if (call.method == 'deleteAll') storageValues.clear();
       return null;
     });
     repository = _Repository();
@@ -94,6 +98,28 @@ void main() {
             email: 'test@example.com', password: 'test-password'));
     expect(container.read(authStateProvider).value!.userId, 'owner');
     expect(container.read(profileStoreProvider).name, 'An');
+    expect(storageValues['access_token'], 'test-access');
+  });
+  test('login without remember keeps auth only in the current process',
+      () async {
+    await container.read(authSessionControllerProvider).login(
+          const LoginRequest(
+              email: 'test@example.com', password: 'test-password'),
+          rememberSession: false,
+        );
+
+    expect(container.read(authStateProvider).value!.isAuthenticated, isTrue);
+    expect(container.read(authStateProvider.notifier).refreshToken,
+        'test-refresh');
+    expect(storageValues, isEmpty);
+
+    await container.read(authStateProvider.notifier).updateTokens(
+          accessToken: 'rotated-access',
+          refreshToken: 'rotated-refresh',
+        );
+    expect(storageValues, isEmpty);
+    expect(container.read(authStateProvider.notifier).refreshToken,
+        'rotated-refresh');
   });
   test('a late login cannot overwrite a newer owner', () async {
     repository.pending = Completer<AuthResponse>();

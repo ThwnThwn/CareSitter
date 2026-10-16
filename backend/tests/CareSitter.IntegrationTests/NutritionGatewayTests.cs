@@ -107,6 +107,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Authenticate(); var response = await _http.GetAsync(path);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(); Assert.True(body.GetProperty("enabled").GetBoolean());
+        Assert.False(body.GetProperty("freeTextParserReady").GetBoolean());
         Assert.Equal(_http.DefaultRequestHeaders.Authorization!.ToString(), _stub.Authorization);
         Assert.Equal(_gateway, _stub.GatewayKey);
         Assert.InRange(_stub.Deadline - DateTime.UtcNow, TimeSpan.Zero, TimeSpan.FromSeconds(3));

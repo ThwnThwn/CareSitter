@@ -46,6 +46,7 @@ message CapabilitiesResponse {
   bool enabled = 1;
   bool assessments_enabled = 2;
   bool recommendations_enabled = 3;
+  bool free_text_parser_ready = 4;
 }
 
 message CommandRequest {

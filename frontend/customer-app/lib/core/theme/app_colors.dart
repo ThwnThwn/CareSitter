@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class AppColors {
   // Palette cũ được gom về đây để giữ nguyên màu khi refactor.
   static const Color legacyError = Color(0xFFE74C3C);
@@ -87,6 +86,7 @@ class AppColors {
   static const Color statusDisputed = warning;
 
   static const Color border = Color(0xFFE2DDD5);
+  static const Color outline = border;
   static const Color borderFocus = primary;
   static const Color divider = border;
   static const Color shadow = Color(0x140D1117);
@@ -94,6 +94,7 @@ class AppColors {
 
   // Existing gradient components use the shared teal family. The bright mint
   // accent is reserved for decoration, not backgrounds behind white text.
+
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

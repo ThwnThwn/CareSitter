@@ -143,6 +143,14 @@ public sealed class PayOSServiceTests
         Assert.False(PayOSOptions.IsValid(new PayOSOptions { Enabled = true }));
         var config = Config(); config.ReturnUrl = "http://localhost/return";
         Assert.False(PayOSOptions.IsValid(config));
+        config = Config(); config.CustomerWebUrl = "http://localhost:55709";
+        Assert.True(PayOSOptions.IsValid(config));
+        config.CustomerWebUrl = "http://attacker.example";
+        Assert.False(PayOSOptions.IsValid(config));
+        config.CustomerWebUrl = "http://localhost.attacker.example";
+        Assert.False(PayOSOptions.IsValid(config));
+        config.CustomerWebUrl = "http://user@localhost:55709";
+        Assert.False(PayOSOptions.IsValid(config));
     }
 
     private static PaymentIntent Intent()

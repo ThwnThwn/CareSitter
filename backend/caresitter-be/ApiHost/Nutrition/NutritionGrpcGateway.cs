@@ -34,9 +34,11 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
     }
 
     public Task<NutritionGatewayResponse> CapabilitiesAsync(CancellationToken ct) => !_options.Enabled
-        ? Task.FromResult(new NutritionGatewayResponse(200, new { enabled = false, assessmentsEnabled = false, recommendationsEnabled = false }))
+        ? Task.FromResult(new NutritionGatewayResponse(200, new { enabled = false, assessmentsEnabled = false,
+            recommendationsEnabled = false, freeTextParserReady = false }))
         : CallAsync((headers, deadline) => _client!.GetCapabilitiesAsync(new Empty(), headers, deadline, ct),
-            value => new(200, new { value.Enabled, value.AssessmentsEnabled, value.RecommendationsEnabled }), ct);
+            value => new(200, new { value.Enabled, value.AssessmentsEnabled, value.RecommendationsEnabled,
+                value.FreeTextParserReady }), ct);
 
     public Task<NutritionGatewayResponse> ExecuteAsync(CommandRequest request, CancellationToken ct) =>
         CallAsync((headers, deadline) => _client!.ExecuteAsync(request, headers, deadline, ct),

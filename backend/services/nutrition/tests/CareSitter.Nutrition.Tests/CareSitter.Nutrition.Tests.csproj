@@ -7,5 +7,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/CareSitter.Nutrition/CareSitter.Nutrition.csproj" />
+    <ProjectReference Include="../../tools/CareSitter.Nutrition.ParserEval/CareSitter.Nutrition.ParserEval.csproj" />
   </ItemGroup>
 </Project>

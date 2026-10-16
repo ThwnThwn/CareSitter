@@ -30,7 +30,7 @@ try {
     if ($config.services.nutrition.networks.edge) { throw 'Nutrition must not join the public proxy network.' }
     if ($config.services.api.depends_on.nutrition.condition -ne 'service_healthy') { throw 'Gateway starts before Nutrition readiness.' }
     if ($config.services.nutrition.environment.People__BaseUrl -ne 'https://api:8443/' -or $config.services.api.environment.NutritionGateway__GrpcUrl -ne 'https://nutrition:8443/') { throw 'Internal endpoints must use HTTPS.' }
-    foreach ($flag in @('Nutrition__Enabled','Nutrition__AssessmentsEnabled','Nutrition__RecommendationsEnabled')) {
+    foreach ($flag in @('Nutrition__Enabled','Nutrition__AssessmentsEnabled','Nutrition__RecommendationsEnabled','HealthParser__Enabled')) {
         if ($config.services.nutrition.environment.$flag -ne 'false') { throw 'The infrastructure package must default to disabled business features.' }
     }
     if (!$config.services.'nutrition-db'.volumes.Where({$_.source -eq 'nutrition_pgdata'})) { throw 'Nutrition DB does not use its dedicated volume.' }

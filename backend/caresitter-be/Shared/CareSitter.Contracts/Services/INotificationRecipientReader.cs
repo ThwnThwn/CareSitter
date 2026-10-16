@@ -8,4 +8,5 @@ public interface INotificationRecipientReader
 }
 
 /// <summary>Private service-to-service recipient data; this snapshot must never enter Kafka.</summary>
-public sealed record NotificationRecipient(string? Email, string[] PushTokens);
+public sealed record NotificationRecipient(string? Email, string[] PushTokens,
+    bool SupportChatPushEnabled = true);

@@ -8,6 +8,7 @@ using CareSitter.Nutrition.Controllers.Grpc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
@@ -98,7 +99,22 @@ builder.Services.AddSingleton<INutritionFeatures, NutritionFeatures>();
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Nutrition")
     ?? throw new InvalidOperationException("ConnectionStrings:Nutrition is required.")));
 builder.Services.AddScoped<INutritionStore, NutritionStore>();
-builder.Services.AddScoped<IHealthDescriptionParser, UnconfiguredHealthParser>();
+builder.Services.AddSingleton<IValidateOptions<HealthParserOptions>, HealthParserOptionsValidator>();
+builder.Services.AddOptions<HealthParserOptions>()
+    .Bind(builder.Configuration.GetSection(HealthParserOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<HealthParserRuntimeGuard>();
+builder.Services.AddScoped<UnconfiguredHealthParser>();
+builder.Services.AddHttpClient<OpenAiHealthDescriptionParser>((services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<HealthParserOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + '/');
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
+builder.Services.AddScoped<IHealthDescriptionParser>(services =>
+    services.GetRequiredService<IOptions<HealthParserOptions>>().Value.Enabled
+        ? services.GetRequiredService<OpenAiHealthDescriptionParser>()
+        : services.GetRequiredService<UnconfiguredHealthParser>());
 builder.Services.AddScoped<AssessmentProcessor>();
 builder.Services.AddScoped<NutritionWriteScope>();
 builder.Services.AddScoped<MealPreparationService>();

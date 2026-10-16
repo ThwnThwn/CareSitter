@@ -11,6 +11,9 @@ $dataPath = Join-Path $stateRoot 'data'
 $configPath = Join-Path $serviceRoot 'nutrition-db.local.json'
 $schemaPath = Join-Path $backendRoot 'init-db/nutrition-service/01-nutrition-workflow.sql'
 $rolePath = Join-Path $backendRoot 'init-db/nutrition-service/02-runtime-role.sql'
+$catalogPath = Join-Path $backendRoot 'init-db/nutrition-service/03-catalog-governance.sql'
+$constraintPath = Join-Path $backendRoot 'init-db/nutrition-service/04-catalog-nutrient-constraints.sql'
+$citationPath = Join-Path $backendRoot 'init-db/nutrition-service/05-recipe-source-citations.sql'
 foreach ($program in @('initdb.exe', 'pg_ctl.exe', 'psql.exe')) {
     if (!(Test-Path -LiteralPath (Join-Path $PostgresBin $program))) { throw "Missing PostgreSQL tool: $program" }
 }
@@ -77,9 +80,19 @@ try {
             "\set app_password '$($config.AppPassword)'`n$roleSql" | & $psql @arguments -d nutrition
             if ($LASTEXITCODE -ne 0) { throw 'Runtime role initialization failed.' }
         }
+        $catalogExists = & $psql @arguments -d nutrition -Atc "SELECT count(*) FROM pg_tables WHERE schemaname='nutrition' AND tablename='catalog_packages'"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog governance schema.' }
+        if ($catalogExists.Trim() -eq '0') {
+            & $psql @arguments -d nutrition -f $catalogPath
+            if ($LASTEXITCODE -ne 0) { throw 'Catalog governance migration failed.' }
+        }
+        & $psql @arguments -d nutrition -f $constraintPath
+        if ($LASTEXITCODE -ne 0) { throw 'Catalog nutrient constraint migration failed.' }
+        & $psql @arguments -d nutrition -f $citationPath
+        if ($LASTEXITCODE -ne 0) { throw 'Recipe source citation migration failed.' }
         $env:PGPASSWORD = $config.AppPassword
         $verify = & $psql -X -h 127.0.0.1 -p $Port -U nutrition_app -d nutrition -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='nutrition'"
-        if ($LASTEXITCODE -ne 0 -or $verify.Trim() -ne '9') { throw 'Nutrition schema or runtime access is incomplete. No existing data was reset.' }
+        if ($LASTEXITCODE -ne 0 -or $verify.Trim() -ne '10') { throw 'Nutrition schema or runtime access is incomplete. No existing data was reset.' }
         Write-Host "Nutrition PostgreSQL is running at 127.0.0.1:$Port (database nutrition, runtime nutrition_app)."
         Write-Host "Local configuration: $configPath"
         Write-Host 'The existing CareSitter database was not modified. Full schema and permission checks run at /health/ready.'

@@ -30,6 +30,7 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IAccessSessionValidator, AccessSessionValidator>();
         services.AddScoped<IAuditLogger, IdentityAuditLogger>();
         services.AddScoped<IUserProfileReader, UserProfileReader>();
+        services.AddScoped<IActiveAdminLookup, ActiveAdminLookup>();
         services.AddScoped<IIdentityStore, IdentityStore>();
         services.AddScoped<IIdentityDeviceStore, IdentityDeviceStore>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();

@@ -9,7 +9,7 @@ class SettingsFlatHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: AppColors.surface,
       padding: EdgeInsets.only(
           top: topPadding + 16,
           left: AppSpacing.section,

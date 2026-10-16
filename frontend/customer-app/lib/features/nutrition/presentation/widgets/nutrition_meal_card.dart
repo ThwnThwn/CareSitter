@@ -2,6 +2,8 @@ import '../../data/models/nutrition_meal_model.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
+import 'nutrition_meal_sources.dart';
+
 class NutritionMealCard extends StatelessWidget {
   const NutritionMealCard(
       {super.key,
@@ -35,7 +37,8 @@ class NutritionMealCard extends StatelessWidget {
               'Điều cần lưu ý: dùng đúng công thức và khẩu phần đã kiểm tra.'),
           Text('Cách chế biến: ${meal.preparationSteps.join('; ')}'),
           ..._nutrients(meal.nutrients),
-          Text('Nguồn: ${meal.sources.join('; ')}'),
+          NutritionMealSources(
+              sourceIds: meal.sources, sources: meal.sourceDetails),
           if (canReplace)
             OutlinedButton(
                 onPressed: loading ? null : onReplace,

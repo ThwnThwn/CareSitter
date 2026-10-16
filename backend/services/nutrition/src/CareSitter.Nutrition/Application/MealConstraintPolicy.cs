@@ -16,9 +16,11 @@ public static class MealConstraintPolicy
     public static bool Matches(IReadOnlyList<Recipe> meals, IReadOnlyList<HealthFact> facts, IReadOnlyList<DietaryRule> rules)
     {
         if (meals.Count != 3 || meals.Select(m => m.MealType).Distinct().Count() != 3 || meals.Any(m => !ValidRecipe(m))) return false;
-        var allergies = facts.Where(f => f.Kind == "food_allergy" && f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code).ToHashSet();
+        var allergies = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "food_allergy" &&
+            f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code).ToHashSet();
         if (meals.Any(m => m.Allergens.Any(allergies.Contains))) return false;
-        var conditions = facts.Where(f => f.Kind == "condition" && f.Assertion == "present" && f.Temporality == "current").Select(f => f.Code).ToHashSet();
+        var conditions = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "condition" &&
+            f.Assertion == "present" && f.Temporality == "current").Select(f => f.Code).ToHashSet();
         foreach (var rule in rules.Where(r => conditions.Contains(r.ConditionCode)))
         {
             if (!NutritionEligibilityPolicy.ValidRule(rule)) return false;
@@ -27,6 +29,17 @@ public static class MealConstraintPolicy
             {
                 if (meals.Any(m => !m.Nutrients.TryGetValue(max.Key, out var v) || v is null || v < 0)) return false;
                 if (meals.Sum(m => m.Nutrients[max.Key]!.Value) > max.Value) return false;
+            }
+            foreach (var constraint in rule.NutrientConstraints ?? [])
+            {
+                var constrainedMeals = constraint.Scope == "daily"
+                    ? meals
+                    : meals.Where(meal => meal.MealType == constraint.MealType).ToArray();
+                if (constrainedMeals.Count == 0 ||
+                    constrainedMeals.Any(meal => !meal.Nutrients.TryGetValue(constraint.NutrientKey, out var value) || value is null || value < 0)) return false;
+                var actual = constrainedMeals.Sum(meal => meal.Nutrients[constraint.NutrientKey]!.Value);
+                if (constraint.Minimum is { } minimum && actual < minimum) return false;
+                if (constraint.Maximum is { } maximum && actual > maximum) return false;
             }
         }
         return true;

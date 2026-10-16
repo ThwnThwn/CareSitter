@@ -51,6 +51,9 @@ internal static class DeploymentConfiguration
         RequireHttpsUrl(configuration["Payments:VNPay:PaymentUrl"], "Payments:VNPay:PaymentUrl");
         RequireHttpsUrl(configuration["Payments:VNPay:QueryUrl"], "Payments:VNPay:QueryUrl");
         RequireHttpsUrl(configuration["Payments:VNPay:CustomerWebUrl"], "Payments:VNPay:CustomerWebUrl");
+        if (configuration.GetValue<bool>("Payments:PayOS:Enabled") &&
+            !string.IsNullOrWhiteSpace(configuration["Payments:PayOS:CustomerWebUrl"]))
+            RequireHttpsUrl(configuration["Payments:PayOS:CustomerWebUrl"], "Payments:PayOS:CustomerWebUrl");
     }
 
     private static Uri RequireHttpsUrl(string? value, string key)

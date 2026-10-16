@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using CareSitter.Nutrition.Application;
+using CareSitter.Nutrition.Application.Catalog;
 using CareSitter.Nutrition.Contracts;
 using CareSitter.Nutrition.Domain;
 using CareSitter.Nutrition.Infrastructure;
@@ -12,7 +13,11 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
 {
     private readonly string _name = "caresitter_nutrition_" + Guid.NewGuid().ToString("N");
     private readonly string _role = "nutrition_test_" + Guid.NewGuid().ToString("N");
+    private readonly string _importerRole = "nutrition_importer_test_" + Guid.NewGuid().ToString("N");
+    private readonly string _reviewerRole = "nutrition_reviewer_test_" + Guid.NewGuid().ToString("N");
+    private readonly string _publisherRole = "nutrition_publisher_test_" + Guid.NewGuid().ToString("N");
     private string _admin = "", _database = ""; private NpgsqlDataSource _dataSource = null!;
+    private string _importerConnection = "", _reviewerConnection = "", _publisherConnection = "";
     private readonly Guid _owner = Guid.NewGuid(); private People _people = null!;
     private NutritionStore _store = null!;
     public async Task InitializeAsync()
@@ -27,15 +32,33 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         await using var db = new NpgsqlConnection(_database); await db.OpenAsync();
         var schemaPath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/01-nutrition-workflow.sql"));
         await using (var schema = new NpgsqlCommand(await File.ReadAllTextAsync(schemaPath), db)) await schema.ExecuteNonQueryAsync();
+        var catalogPath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/03-catalog-governance.sql"));
+        await using (var catalog = new NpgsqlCommand(await File.ReadAllTextAsync(catalogPath), db)) await catalog.ExecuteNonQueryAsync();
+        var constraintPath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/04-catalog-nutrient-constraints.sql"));
+        await using (var constraints = new NpgsqlCommand(await File.ReadAllTextAsync(constraintPath), db)) await constraints.ExecuteNonQueryAsync();
+        var citationPath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/05-recipe-source-citations.sql"));
+        await using (var citations = new NpgsqlCommand(await File.ReadAllTextAsync(citationPath), db)) await citations.ExecuteNonQueryAsync();
         var password = Guid.NewGuid().ToString("N");
+        var importerPassword = Guid.NewGuid().ToString("N");
+        var reviewerPassword = Guid.NewGuid().ToString("N");
+        var publisherPassword = Guid.NewGuid().ToString("N");
         await using (var role = new NpgsqlCommand($"""
             CREATE ROLE "{_role}" LOGIN PASSWORD '{password}';
+            CREATE ROLE "{_importerRole}" LOGIN PASSWORD '{importerPassword}';
+            CREATE ROLE "{_reviewerRole}" LOGIN PASSWORD '{reviewerPassword}';
+            CREATE ROLE "{_publisherRole}" LOGIN PASSWORD '{publisherPassword}';
+            GRANT nutrition_catalog_importer TO "{_importerRole}";
+            GRANT nutrition_catalog_reviewer TO "{_reviewerRole}";
+            GRANT nutrition_catalog_publisher TO "{_publisherRole}";
             GRANT USAGE ON SCHEMA nutrition TO "{_role}";
             GRANT SELECT,INSERT,UPDATE,DELETE ON nutrition.assessments,nutrition.assessment_jobs,nutrition.recommendations,nutrition.meal_plans,nutrition.preferences TO "{_role}";
-            GRANT SELECT ON nutrition.concepts,nutrition.rule_versions,nutrition.recipe_versions TO "{_role}";
+            GRANT SELECT ON nutrition.concepts,nutrition.rule_versions,nutrition.recipe_versions,nutrition.recipe_source_citations TO "{_role}";
             GRANT SELECT,UPDATE(id) ON nutrition.catalog_state TO "{_role}";
             """, db)) await role.ExecuteNonQueryAsync();
         _dataSource = NpgsqlDataSource.Create(new NpgsqlConnectionStringBuilder(_database) { Username = _role, Password = password }.ConnectionString);
+        _importerConnection = new NpgsqlConnectionStringBuilder(_database) { Username = _importerRole, Password = importerPassword }.ConnectionString;
+        _reviewerConnection = new NpgsqlConnectionStringBuilder(_database) { Username = _reviewerRole, Password = reviewerPassword }.ConnectionString;
+        _publisherConnection = new NpgsqlConnectionStringBuilder(_database) { Username = _publisherRole, Password = publisherPassword }.ConnectionString;
         _store = new NutritionStore(_dataSource); _people = new People(_owner, EligibilityTests.Healthy());
     }
     public async Task DisposeAsync()
@@ -45,7 +68,7 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         await using var connection = new NpgsqlConnection(_admin); await connection.OpenAsync();
         await using (var kill = new NpgsqlCommand("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=@name AND pid<>pg_backend_pid()", connection))
         { kill.Parameters.AddWithValue("name", _name); await kill.ExecuteNonQueryAsync(); }
-        await using (var drop = new NpgsqlCommand($"DROP DATABASE \"{_name}\"; DROP ROLE \"{_role}\";", connection)) await drop.ExecuteNonQueryAsync();
+        await using (var drop = new NpgsqlCommand($"DROP DATABASE \"{_name}\"; DROP ROLE \"{_role}\"; DROP ROLE \"{_importerRole}\"; DROP ROLE \"{_reviewerRole}\"; DROP ROLE \"{_publisherRole}\";", connection)) await drop.ExecuteNonQueryAsync();
     }
     private CommandDispatcher Handler(Guid? owner = null, string role = "CUSTOMER") =>
         new(new NutritionWriteScope(_people, _store, new Actor(owner ?? _owner, role), new Features()));
@@ -80,10 +103,10 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
     {
         var result = await Handler().Handle(Request(), default); Assert.True(result.IsSuccess); return result.Value.Id;
     }
-    private async Task ProcessAsync()
+    private async Task ProcessAsync(IHealthDescriptionParser? parser = null)
     {
         var job = await _store.ClaimAsync(default); Assert.NotNull(job);
-        await new AssessmentProcessor(_people, _store, new UnconfiguredHealthParser()).ProcessAsync(job.Value, default);
+        await new AssessmentProcessor(_people, _store, parser ?? new UnconfiguredHealthParser()).ProcessAsync(job.Value, default);
     }
     private Task<Primitives.Result<ResourceResponse>> ReadAsync(string kind, Guid id) =>
         new NutritionResourceQueryHandler(_people, _store, new Actor(_owner, "CUSTOMER"), new Features()).Handle(new NutritionResourceQuery(kind, _people.Source.BeneficiaryId, id), default);
@@ -129,6 +152,25 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         Assert.Equal(0, meal.Value.Data.GetProperty("meals").GetArrayLength());
     }
     [PostgresFact]
+    public async Task Missing_information_exposes_bounded_questions_through_the_resource_payload()
+    {
+        _people.Source = _people.Source with
+        {
+            AllergyStatus = "unknown",
+            AllergyConfirmedAt = null
+        };
+
+        var id = await AssessAsync();
+        await ProcessAsync();
+        var analyzed = await ReadAsync("assessment", id);
+
+        Assert.Equal("needs_information", analyzed.Value.Status);
+        var questions = analyzed.Value.Data.GetProperty("decision").GetProperty("questions").EnumerateArray().ToArray();
+        Assert.InRange(questions.Length, 1, 3);
+        Assert.Equal("food-allergy-status.v1", questions[0].GetProperty("id").GetString());
+        Assert.Equal("foodAllergyStatus", questions[0].GetProperty("sourceField").GetString());
+    }
+    [PostgresFact]
     public async Task Quota_is_atomic_and_idempotent_retry_is_not_charged_twice()
     {
         var request = Request();
@@ -148,6 +190,46 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         _people.Source = _people.Source with { Revision = 3 };
         Assert.Equal("stale", (await ReadAsync("assessment", id)).Value.Status);
         Assert.Equal("nutrition.profile_changed", (await Handler().Handle(Request("confirm", id), default)).Error.Code);
+    }
+    [PostgresFact]
+    public async Task GraphRag_context_is_versioned_validated_and_recorded_with_parser_result()
+    {
+        await using (var db = new NpgsqlConnection(_database))
+        {
+            await db.OpenAsync();
+            await using var concept = new NpgsqlCommand("INSERT INTO nutrition.concepts VALUES('HYPERTENSION','condition','[\"tăng huyết áp\"]'::jsonb,1)", db);
+            await concept.ExecuteNonQueryAsync();
+        }
+        _people.Source = _people.Source with { GeneralNote = "Beni tăng huyết áp.", Revision = 2 };
+        var parser = new CapturingParser();
+
+        var id = await AssessAsync();
+        await ProcessAsync(parser);
+        var assessment = await ReadAsync("assessment", id);
+
+        Assert.NotNull(parser.Request);
+        Assert.Equal(parser.Request.DictionaryRevision, parser.Request.Graph.Revision);
+        Assert.Contains(parser.Request.Graph.Nodes, node => node.Id == "concept:condition:HYPERTENSION");
+        Assert.Equal("fixture-parser.v1", assessment.Value.Data.GetProperty("parserPromptVersion").GetString());
+        Assert.Equal(HealthKnowledgeGraphRetriever.Strategy,
+            assessment.Value.Data.GetProperty("parserRetrievalStrategy").GetString());
+        Assert.Equal(parser.Request.Graph.Revision, assessment.Value.Data.GetProperty("parserGraphRevision").GetInt64());
+    }
+    [PostgresFact]
+    public async Task Catalog_change_during_parser_call_marks_assessment_stale()
+    {
+        _people.Source = _people.Source with { GeneralNote = "Ghi chú cần phân tích.", Revision = 2 };
+        var parser = new CatalogMutatingParser(() => SqlAsync(
+            "UPDATE nutrition.catalog_state SET revision=revision+1 WHERE id=1"));
+
+        var id = await AssessAsync();
+        await ProcessAsync(parser);
+        var assessment = await ReadAsync("assessment", id);
+
+        Assert.Equal("stale", assessment.Value.Status);
+        Assert.Equal("nutrition.content_changed", assessment.Value.Data.GetProperty("errorCode").GetString());
+        Assert.Contains("catalog_changed", assessment.Value.Data.GetProperty("decision")
+            .GetProperty("reasonCodes").EnumerateArray().Select(item => item.GetString()));
     }
     [PostgresFact]
     public async Task Lost_owner_or_deleted_profile_releases_no_snapshot_and_rejects_wrong_role()
@@ -204,6 +286,227 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         Assert.Equal("stale", (await Handler().Handle(recommendationRequest, default)).Value.Status);
         Assert.Equal("stale", (await ReadAsync("plan", saved.Value.Id)).Value.Status);
         Assert.Equal("nutrition.content_changed", (await Handler().Handle(Request("save", recommendation.Value.Id), default)).Error.Code);
+    }
+    [PostgresFact]
+    public async Task Catalog_roles_enforce_import_review_publish_retire_and_runtime_can_recommend()
+    {
+        var bundle = CatalogBundleTests.Bundle();
+        var packageId = Guid.NewGuid();
+        var invalidBundle = bundle with { SupportedScopes = [bundle.SupportedScopes[0] with { BlockedSpecialNeeds = [] }] };
+        var boundary = await Assert.ThrowsAsync<PostgresException>(() => CatalogFunctionAsync(_importerConnection,
+            "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+            {
+                command.Parameters.AddWithValue("id", Guid.NewGuid());
+                command.Parameters.AddWithValue("key", invalidBundle.PackageKey);
+                command.Parameters.AddWithValue("payload", NutritionJson.Write(invalidBundle));
+            }));
+        Assert.Equal("22023", boundary.SqlState);
+        await using (var importer = new NpgsqlConnection(_importerConnection))
+        {
+            await importer.OpenAsync();
+            await using var forbidden = new NpgsqlCommand("INSERT INTO nutrition.recipe_versions(id,recipe_id,version,status,payload) VALUES(gen_random_uuid(),gen_random_uuid(),1,'draft','{}')", importer);
+            var permission = await Assert.ThrowsAsync<PostgresException>(() => forbidden.ExecuteNonQueryAsync());
+            Assert.Equal("42501", permission.SqlState);
+        }
+        var imported = await CatalogFunctionAsync(_importerConnection, "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId);
+            command.Parameters.AddWithValue("key", bundle.PackageKey);
+            command.Parameters.AddWithValue("payload", NutritionJson.Write(bundle));
+        });
+        var digest = imported.GetProperty("digest").GetString()!;
+        Assert.Equal("draft", imported.GetProperty("status").GetString());
+
+        var digestMismatch = await Assert.ThrowsAsync<PostgresException>(() => CatalogFunctionAsync(_reviewerConnection,
+            "SELECT nutrition.review_catalog_bundle(@id,@digest)", command =>
+            {
+                command.Parameters.AddWithValue("id", packageId); command.Parameters.AddWithValue("digest", new string('0', 64));
+            }));
+        Assert.Equal("40001", digestMismatch.SqlState);
+
+        var reviewed = await CatalogFunctionAsync(_reviewerConnection, "SELECT nutrition.review_catalog_bundle(@id,@digest)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId); command.Parameters.AddWithValue("digest", digest);
+        });
+        Assert.Equal("reviewed", reviewed.GetProperty("status").GetString());
+
+        var published = await CatalogFunctionAsync(_publisherConnection, "SELECT nutrition.publish_catalog_bundle(@id,@digest)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId); command.Parameters.AddWithValue("digest", digest);
+        });
+        Assert.Equal("published", published.GetProperty("status").GetString());
+        await using (var runtime = await _dataSource.OpenConnectionAsync())
+        {
+            await using var count = new NpgsqlCommand("SELECT count(*)::int FROM nutrition.recipe_versions WHERE status='published'", runtime);
+            Assert.Equal(3, await count.ExecuteScalarAsync());
+            await using var sourceCount = new NpgsqlCommand("SELECT count(*)::int FROM nutrition.recipe_source_citations", runtime);
+            Assert.Equal(3, await sourceCount.ExecuteScalarAsync());
+            await using var writeSource = new NpgsqlCommand("DELETE FROM nutrition.recipe_source_citations", runtime);
+            var sourcePermission = await Assert.ThrowsAsync<PostgresException>(() => writeSource.ExecuteNonQueryAsync());
+            Assert.Equal("42501", sourcePermission.SqlState);
+            await using var forbidden = new NpgsqlCommand("SELECT nutrition.publish_catalog_bundle(@id,@digest)", runtime);
+            forbidden.Parameters.AddWithValue("id", packageId); forbidden.Parameters.AddWithValue("digest", digest);
+            var permission = await Assert.ThrowsAsync<PostgresException>(() => forbidden.ExecuteScalarAsync());
+            Assert.Equal("42501", permission.SqlState);
+        }
+
+        var assessment = await AssessAsync(); await ProcessAsync(); await Handler().Handle(Request("confirm", assessment), default);
+        var recommendation = await Handler().Handle(Request("recommend", assessment: assessment), default);
+        Assert.Equal("suggested", recommendation.Value.Status);
+        Assert.Equal(3, recommendation.Value.Data.GetProperty("meals").GetArrayLength());
+        var source = recommendation.Value.Data.GetProperty("meals")[0].GetProperty("sourceDetails")[0];
+        Assert.Equal("Dinh dưỡng lâm sàng", source.GetProperty("title").GetString());
+        Assert.Equal("Viện Dinh dưỡng", source.GetProperty("organization").GetString());
+        Assert.False(source.TryGetProperty("fileSha256", out _));
+
+        await using (var db = new NpgsqlConnection(_database))
+        {
+            await db.OpenAsync();
+            await using var audit = new NpgsqlCommand("SELECT string_agg(actor||':'||action,',' ORDER BY id) FROM nutrition.catalog_audit WHERE package_id=@id", db);
+            audit.Parameters.AddWithValue("id", packageId);
+            Assert.Equal($"{_importerRole}:imported,{_reviewerRole}:reviewed,{_publisherRole}:published", await audit.ExecuteScalarAsync());
+            await using var immutable = new NpgsqlCommand("UPDATE nutrition.recipe_versions SET payload='{}' WHERE status='published'", db);
+            var rejected = await Assert.ThrowsAsync<PostgresException>(() => immutable.ExecuteNonQueryAsync());
+            Assert.Equal("55000", rejected.SqlState);
+        }
+
+        var retired = await CatalogFunctionAsync(_publisherConnection, "SELECT nutrition.retire_catalog_bundle(@id,@reason)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId); command.Parameters.AddWithValue("reason", "Fixture completed");
+        });
+        Assert.Equal("retired", retired.GetProperty("status").GetString());
+        await using var final = await _dataSource.OpenConnectionAsync();
+        await using var remaining = new NpgsqlCommand("SELECT count(*)::int FROM nutrition.recipe_versions WHERE status='published'", final);
+        Assert.Equal(0, await remaining.ExecuteScalarAsync());
+    }
+    [PostgresFact]
+    public async Task Catalog_v2_constraint_ranges_are_checked_at_database_boundary()
+    {
+        var source = CatalogBundleTests.Bundle();
+        var rule = source.Rules[0];
+        var valid = source with
+        {
+            SchemaVersion = 2,
+            PackageKey = "adult-constraint-v2",
+            Rules = [rule with
+            {
+                Payload = rule.Payload with
+                {
+                    NutrientConstraints = [new("sodium_mg", "daily", null, 20, 100)]
+                }
+            }]
+        };
+        var imported = await CatalogFunctionAsync(_importerConnection,
+            "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+            {
+                command.Parameters.AddWithValue("id", Guid.NewGuid());
+                command.Parameters.AddWithValue("key", valid.PackageKey);
+                command.Parameters.AddWithValue("payload", NutritionJson.Write(valid));
+            });
+        Assert.Equal("draft", imported.GetProperty("status").GetString());
+
+        var invalidRule = valid.Rules[0] with
+        {
+            Payload = valid.Rules[0].Payload with
+            {
+                NutrientConstraints = [new("sodium_mg", "daily", null, 101, 100)]
+            }
+        };
+        var invalid = valid with { PackageKey = "adult-invalid-constraint-v2", Rules = [invalidRule] };
+        var rejected = await Assert.ThrowsAsync<PostgresException>(() => CatalogFunctionAsync(_importerConnection,
+            "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+            {
+                command.Parameters.AddWithValue("id", Guid.NewGuid());
+                command.Parameters.AddWithValue("key", invalid.PackageKey);
+                command.Parameters.AddWithValue("payload", NutritionJson.Write(invalid));
+            }));
+        Assert.Equal("22023", rejected.SqlState);
+
+        var missingNutrientRule = valid.Rules[0] with
+        {
+            Payload = valid.Rules[0].Payload with
+            {
+                NutrientConstraints = [new("calcium_mg", "daily", null, 1, null)]
+            }
+        };
+        var missingNutrient = valid with { PackageKey = "adult-missing-nutrient-v2", Rules = [missingNutrientRule] };
+        var missingRejected = await Assert.ThrowsAsync<PostgresException>(() => CatalogFunctionAsync(_importerConnection,
+            "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+            {
+                command.Parameters.AddWithValue("id", Guid.NewGuid());
+                command.Parameters.AddWithValue("key", missingNutrient.PackageKey);
+                command.Parameters.AddWithValue("payload", NutritionJson.Write(missingNutrient));
+            }));
+        Assert.Equal("22023", missingRejected.SqlState);
+    }
+    [PostgresFact]
+    public async Task P2_technical_bundle_runs_end_to_end_only_in_disposable_test_database()
+    {
+        var path = Path.Combine(ServiceArchitectureTests.FindRoot(), "catalog", "drafts", "adult-hypertension-p2.bundle.json");
+        var bundle = NutritionJson.Read<CatalogBundle>(await File.ReadAllTextAsync(path));
+        Assert.True(CatalogBundleValidator.Validate(bundle).IsValid);
+        var packageId = Guid.NewGuid();
+        var imported = await CatalogFunctionAsync(_importerConnection, "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId);
+            command.Parameters.AddWithValue("key", bundle.PackageKey);
+            command.Parameters.AddWithValue("payload", NutritionJson.Write(bundle));
+        });
+        var digest = imported.GetProperty("digest").GetString()!;
+        await CatalogFunctionAsync(_reviewerConnection, "SELECT nutrition.review_catalog_bundle(@id,@digest)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId);
+            command.Parameters.AddWithValue("digest", digest);
+        });
+        await CatalogFunctionAsync(_publisherConnection, "SELECT nutrition.publish_catalog_bundle(@id,@digest)", command =>
+        {
+            command.Parameters.AddWithValue("id", packageId);
+            command.Parameters.AddWithValue("digest", digest);
+        });
+
+        _people.Source = _people.Source with
+        {
+            ChronicConditions = JsonSerializer.SerializeToElement(new[] { "Tăng huyết áp" }),
+            HealthHistory = EligibilityTests.History(conditionsStatus: "reported_present")
+        };
+        var assessment = await AssessAsync();
+        await ProcessAsync();
+        await Handler().Handle(Request("confirm", assessment), default);
+        var recommendation = await Handler().Handle(Request("recommend", assessment: assessment), default);
+
+        Assert.Equal("suggested", recommendation.Value.Status);
+        var meals = recommendation.Value.Data.GetProperty("meals").EnumerateArray().ToArray();
+        Assert.Equal(3, meals.Length);
+        Assert.True(meals.Sum(meal => meal.GetProperty("nutrients").GetProperty("sodium_mg").GetDecimal()) <= 2000);
+        Assert.All(meals, meal => Assert.Equal(2, meal.GetProperty("sourceDetails").GetArrayLength()));
+        Assert.Single(recommendation.Value.Data.GetProperty("appliedRules").EnumerateArray());
+        var replacements = await new ReplacementOptionsQueryHandler(_people, _store, new Actor(_owner, "CUSTOMER"), new Features())
+            .Handle(new(_people.Source.BeneficiaryId, recommendation.Value.Id, "lunch"), default);
+        Assert.Equal(3, replacements.Value.Count);
+    }
+    [PostgresFact]
+    public async Task Concurrent_catalog_imports_receive_distinct_monotonic_versions()
+    {
+        var bundle = CatalogBundleTests.Bundle();
+        async Task<JsonElement> ImportAsync() => await CatalogFunctionAsync(_importerConnection,
+            "SELECT nutrition.import_catalog_bundle(@id,@key,@payload::jsonb)", command =>
+            {
+                command.Parameters.AddWithValue("id", Guid.NewGuid());
+                command.Parameters.AddWithValue("key", bundle.PackageKey);
+                command.Parameters.AddWithValue("payload", NutritionJson.Write(bundle));
+            });
+        var imported = await Task.WhenAll(ImportAsync(), ImportAsync());
+        Assert.Equal([1, 2], imported.Select(x => x.GetProperty("version").GetInt32()).Order().ToArray());
+        await using var db = new NpgsqlConnection(_database); await db.OpenAsync();
+        await using var command = new NpgsqlCommand("SELECT count(*)::int FROM nutrition.catalog_packages WHERE package_key=@key", db);
+        command.Parameters.AddWithValue("key", bundle.PackageKey);
+        Assert.Equal(2, await command.ExecuteScalarAsync());
+    }
+    private static async Task<JsonElement> CatalogFunctionAsync(string connectionString, string sql, Action<NpgsqlCommand> configure)
+    {
+        await using var connection = new NpgsqlConnection(connectionString); await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection); configure(command);
+        return JsonDocument.Parse((string)(await command.ExecuteScalarAsync())!).RootElement.Clone();
     }
     private async Task SqlAsync(string sql)
     { await using var db = new NpgsqlConnection(_database); await db.OpenAsync(); await using var c = new NpgsqlCommand(sql, db); await c.ExecuteNonQueryAsync(); }
@@ -266,6 +569,33 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
     { public Guid? UserId => owner; public IReadOnlyList<string> Roles => [role]; }
     private sealed class Features : INutritionFeatures
     { public bool Enabled => true; public bool AssessmentsEnabled => true; public bool RecommendationsEnabled => true; }
+    private sealed class CapturingParser : IHealthDescriptionParser
+    {
+        public bool IsReady => true;
+        public string PromptVersion => "fixture-parser.v1";
+        public HealthParseRequest? Request { get; private set; }
+
+        public Task<HealthParseResult> ParseAsync(HealthParseRequest request, CancellationToken ct)
+        {
+            Request = request;
+            var source = request.Sources["generalNote"];
+            var start = source.IndexOf("tăng huyết áp", StringComparison.Ordinal);
+            return Task.FromResult(new HealthParseResult(request.SchemaVersion, request.DictionaryRevision,
+                [new("condition", "HYPERTENSION", "Tăng huyết áp", "present", "current", "generalNote",
+                    "tăng huyết áp", "beneficiary", start, start + "tăng huyết áp".Length)], [], []));
+        }
+    }
+    private sealed class CatalogMutatingParser(Func<Task> mutate) : IHealthDescriptionParser
+    {
+        public bool IsReady => true;
+        public string PromptVersion => "catalog-mutating-fixture.v1";
+
+        public async Task<HealthParseResult> ParseAsync(HealthParseRequest request, CancellationToken ct)
+        {
+            await mutate();
+            return new(request.SchemaVersion, request.DictionaryRevision, [], [], ["generalNote"]);
+        }
+    }
 }
 
 internal sealed class PostgresFactAttribute : FactAttribute

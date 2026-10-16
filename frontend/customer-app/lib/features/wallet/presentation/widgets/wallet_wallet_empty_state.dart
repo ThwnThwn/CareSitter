@@ -11,7 +11,7 @@ class WalletWalletEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border.all(color: AppColors.border),
       ),

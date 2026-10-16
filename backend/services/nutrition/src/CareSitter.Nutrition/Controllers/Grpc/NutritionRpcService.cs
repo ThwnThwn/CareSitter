@@ -18,7 +18,8 @@ public sealed class NutritionRpcService(IMediator mediator) : NutritionRpc.Nutri
         return new CapabilitiesResponse
         {
             Enabled = value.Enabled, AssessmentsEnabled = value.AssessmentsEnabled,
-            RecommendationsEnabled = value.RecommendationsEnabled
+            RecommendationsEnabled = value.RecommendationsEnabled,
+            FreeTextParserReady = value.FreeTextParserReady
         };
     }
 

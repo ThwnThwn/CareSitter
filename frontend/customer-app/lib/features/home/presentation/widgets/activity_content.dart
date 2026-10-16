@@ -8,7 +8,7 @@ class ActivityContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SliverAppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         pinned: true,
         title: const Text(

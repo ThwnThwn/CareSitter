@@ -14,7 +14,7 @@ class ActivityActiveCardControl extends StatelessWidget {
           icon: const Icon(Icons.location_on_rounded, size: 18),
           label: const Text('Theo dõi ca chăm sóc'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             foregroundColor: AppColors.primary,
             elevation: 0,
             shape: RoundedRectangleBorder(

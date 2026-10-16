@@ -12,7 +12,7 @@ class SettingsBeneficiaryListLink extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.inset),
           decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.control),
               border: Border.all(color: AppColors.border)),
           child: Row(children: [

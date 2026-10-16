@@ -21,6 +21,8 @@ class LoginAuthFields extends StatelessWidget {
       required this.emailCtrl,
       required this.passCtrl,
       required this.obscurePass,
+      required this.rememberLogin,
+      required this.onRememberLoginChanged,
       required this.togglePassword,
       required this.login});
   final LoginState loginState;
@@ -28,6 +30,8 @@ class LoginAuthFields extends StatelessWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final bool obscurePass;
+  final bool rememberLogin;
+  final ValueChanged<bool> onRememberLoginChanged;
   final void Function() togglePassword;
   final Future<void> Function() login;
 
@@ -41,63 +45,7 @@ class LoginAuthFields extends StatelessWidget {
             AuthErrorBanner(message: message),
             const SizedBox(height: AppSpacing.md),
           ],
-          Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: _heroInputTheme(),
-            ),
-            child: AutofillGroup(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    LoginHeroInputField(
-                      controller: emailCtrl,
-                      label: 'Email hoặc Số điện thoại',
-                      hint: 'nhapten@email.com',
-                      icon: Icons.mail_outline_rounded,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: AuthValidators.loginEmail,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.email],
-                      enabled: !loginState.isLoading,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    LoginHeroInputField(
-                      controller: passCtrl,
-                      label: 'Mật khẩu',
-                      hint: 'Nhập mật khẩu của bạn',
-                      icon: Icons.lock_outline_rounded,
-                      obscureText: obscurePass,
-                      validator: AuthValidators.loginPassword,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const [AutofillHints.password],
-                      enabled: !loginState.isLoading,
-                      onFieldSubmitted: (_) => login(),
-                      suffixIcon: IconButton(
-                        tooltip: obscurePass ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-                        icon: Icon(
-                          obscurePass
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 20,
-                          color: LoginHeroTokens.outline,
-                        ),
-                        onPressed: loginState.isLoading ? null : togglePassword,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    LoginAuxRow(isLoading: loginState.isLoading),
-                    const SizedBox(height: AppSpacing.section),
-                    LoginLoginButton(
-                      isLoading: loginState.isLoading,
-                      onPressed: login,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _credentialForm(context),
           const SizedBox(height: AppSpacing.section),
           const LoginOrDivider(),
           const SizedBox(height: AppSpacing.md),
@@ -107,6 +55,70 @@ class LoginAuthFields extends StatelessWidget {
           const SizedBox(height: AppSpacing.section),
         ],
       );
+
+  Widget _credentialForm(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(inputDecorationTheme: _heroInputTheme()),
+      child: AutofillGroup(
+        child: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LoginHeroInputField(
+                controller: emailCtrl,
+                label: 'Email hoặc Số điện thoại',
+                hint: 'nhapten@email.com',
+                icon: Icons.mail_outline_rounded,
+                keyboardType: TextInputType.text,
+                validator: AuthValidators.loginEmail,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.username],
+                enabled: !loginState.isLoading,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              LoginHeroInputField(
+                controller: passCtrl,
+                label: 'Mật khẩu',
+                hint: 'Nhập mật khẩu của bạn',
+                icon: Icons.lock_outline_rounded,
+                obscureText: obscurePass,
+                validator: AuthValidators.loginPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                enabled: !loginState.isLoading,
+                onFieldSubmitted: (_) => login(),
+                suffixIcon: IconButton(
+                  tooltip: obscurePass ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+                  icon: Icon(
+                    obscurePass
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 20,
+                    color: LoginHeroTokens.outline,
+                  ),
+                  onPressed: loginState.isLoading ? null : togglePassword,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              LoginAuxRow(
+                isLoading: loginState.isLoading,
+                rememberLogin: rememberLogin,
+                onRememberLoginChanged: onRememberLoginChanged,
+              ),
+              const SizedBox(height: AppSpacing.section),
+              LoginLoginButton(
+                isLoading: loginState.isLoading,
+                onPressed: login,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   static InputDecorationTheme _heroInputTheme() {
     return InputDecorationTheme(
       filled: true,

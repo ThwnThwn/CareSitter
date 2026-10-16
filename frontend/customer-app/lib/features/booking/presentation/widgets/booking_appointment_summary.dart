@@ -1,7 +1,7 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'booking_detail_screen_detail_row.dart';
 import 'booking_detail_screen_info_card.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 

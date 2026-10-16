@@ -1,6 +1,6 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class BookingListBookingCardBookingRowInner extends StatelessWidget {

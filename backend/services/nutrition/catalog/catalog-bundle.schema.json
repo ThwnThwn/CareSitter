@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://caresitter.vn/schemas/nutrition/catalog-bundle.v1.json",
+  "title": "CareSitter Nutrition catalog bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "packageKey", "supportedScopes", "citations", "concepts", "recipes", "rules"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "packageKey": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "supportedScopes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/scope" } },
+    "citations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/citation" } },
+    "concepts": { "type": "array", "items": { "$ref": "#/$defs/concept" } },
+    "recipes": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/recipeVersion" } },
+    "rules": { "type": "array", "items": { "$ref": "#/$defs/ruleVersion" } }
+  },
+  "$defs": {
+    "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+    "uuid": { "type": "string", "format": "uuid", "not": { "const": "00000000-0000-0000-0000-000000000000" } },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "population", "conditionCodes", "medicationPolicy", "blockedSpecialNeeds"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "population": { "const": "adult" },
+        "conditionCodes": { "type": "array", "items": { "$ref": "#/$defs/code" }, "uniqueItems": true },
+        "medicationPolicy": { "const": "reported_none_only" },
+        "blockedSpecialNeeds": {
+          "type": "array", "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "KIDNEY_DISEASE" } }, { "contains": { "const": "DYSPHAGIA" } },
+            { "contains": { "const": "TUBE_FEEDING" } }, { "contains": { "const": "FLUID_RESTRICTION" } },
+            { "contains": { "const": "ELECTROLYTE_RESTRICTION" } }
+          ],
+          "items": { "$ref": "#/$defs/code" }
+        }
+      }
+    },
+    "citation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "organization", "year", "edition", "chapter", "printedPages", "pdfPages", "locator", "reference", "verifiedOn", "fileSha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/code" }, "title": { "type": "string", "minLength": 1 },
+        "organization": { "type": "string", "minLength": 1 }, "year": { "type": "integer", "minimum": 1900, "maximum": 2100 },
+        "edition": { "type": ["string", "null"] }, "chapter": { "type": ["string", "null"] },
+        "printedPages": { "type": ["string", "null"] }, "pdfPages": { "type": ["string", "null"] },
+        "locator": { "type": "string", "minLength": 1 }, "reference": { "type": "string", "minLength": 1 },
+        "verifiedOn": { "type": "string", "format": "date" },
+        "fileSha256": { "type": ["string", "null"], "pattern": "^[A-Fa-f0-9]{64}$" }
+      }
+    },
+    "concept": {
+      "type": "object", "additionalProperties": false, "required": ["code", "kind", "aliases", "version"],
+      "properties": {
+        "code": { "$ref": "#/$defs/code" }, "kind": { "enum": ["condition", "food_allergy", "ingredient"] },
+        "aliases": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "version": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ingredient": {
+      "type": "object", "additionalProperties": false, "required": ["code", "name", "amount", "unit", "basis"],
+      "properties": {
+        "code": { "$ref": "#/$defs/code" }, "name": { "type": "string", "minLength": 1 },
+        "amount": { "type": "number", "exclusiveMinimum": 0 }, "unit": { "type": "string", "minLength": 1 },
+        "basis": { "type": "string", "minLength": 1 }
+      }
+    },
+    "recipe": {
+      "type": "object", "additionalProperties": false,
+      "required": ["versionId", "name", "mealType", "servings", "ingredients", "allergens", "nutrients", "preparationSteps", "sources", "allergenDataComplete"],
+      "properties": {
+        "versionId": { "$ref": "#/$defs/uuid" }, "name": { "type": "string", "minLength": 1 },
+        "mealType": { "enum": ["breakfast", "lunch", "dinner"] }, "servings": { "type": "number", "exclusiveMinimum": 0 },
+        "ingredients": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ingredient" } },
+        "allergens": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/code" } },
+        "nutrients": { "type": "object", "minProperties": 1, "additionalProperties": { "type": ["number", "null"], "minimum": 0 } },
+        "preparationSteps": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "sources": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/code" } },
+        "allergenDataComplete": { "const": true }
+      }
+    },
+    "recipeVersion": {
+      "type": "object", "additionalProperties": false, "required": ["recipeId", "version", "payload"],
+      "properties": { "recipeId": { "$ref": "#/$defs/uuid" }, "version": { "type": "integer", "minimum": 1 }, "payload": { "$ref": "#/$defs/recipe" } }
+    },
+    "prerequisite": {
+      "type": "object", "additionalProperties": false,
+      "required": ["field", "operator", "values", "evidenceSource", "unit", "maxAgeDays"],
+      "properties": {
+        "field": { "enum": ["conditionsStatus", "medicationsStatus", "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction"] },
+        "operator": { "enum": ["known", "equals", "one_of"] }, "values": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "evidenceSource": { "const": "health_profile" }, "unit": { "type": "null" }, "maxAgeDays": { "type": "null" }
+      },
+      "allOf": [
+        { "if": { "properties": { "operator": { "const": "known" } } }, "then": { "properties": { "values": { "maxItems": 0 } } } },
+        { "if": { "properties": { "operator": { "enum": ["equals", "one_of"] } } }, "then": { "properties": { "values": { "minItems": 1 } } } },
+        { "if": { "properties": { "operator": { "const": "equals" } } }, "then": { "properties": { "values": { "maxItems": 1 } } } }
+      ]
+    },
+    "rule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["versionId", "conditionCode", "prerequisites", "excludedIngredients", "dailyMaximums", "sources"],
+      "properties": {
+        "versionId": { "$ref": "#/$defs/uuid" }, "conditionCode": { "$ref": "#/$defs/code" },
+        "prerequisites": { "type": "array", "items": { "$ref": "#/$defs/prerequisite" } },
+        "excludedIngredients": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/code" } },
+        "dailyMaximums": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "sources": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/code" } }
+      }
+    },
+    "ruleVersion": {
+      "type": "object", "additionalProperties": false, "required": ["ruleId", "version", "payload"],
+      "properties": { "ruleId": { "$ref": "#/$defs/uuid" }, "version": { "type": "integer", "minimum": 1 }, "payload": { "$ref": "#/$defs/rule" } }
+    }
+  }
+}

@@ -21,8 +21,34 @@ internal sealed class NutritionCatalogReader(NpgsqlConnection connection, Npgsql
         await using var c = Command("SELECT revision FROM nutrition.catalog_state WHERE id=1 FOR SHARE");
         return (long)(await c.ExecuteScalarAsync(ct))!;
     }
-    public async Task<IReadOnlyList<Recipe>> RecipesAsync(CancellationToken ct) =>
-        await CatalogAsync<Recipe>("nutrition.recipe_versions", (value, id) => value with { VersionId = id }, ct);
+    public async Task<IReadOnlyList<Recipe>> RecipesAsync(CancellationToken ct)
+    {
+        await using var c = Command("""
+            SELECT recipe.id,recipe.payload::text,
+              coalesce(jsonb_agg(jsonb_build_object(
+                'id',source.source_id,'title',source.title,'organization',source.organization,'year',source.year,
+                'edition',source.edition,'chapter',source.chapter,'printedPages',source.printed_pages,
+                'pdfPages',source.pdf_pages,'locator',source.locator,'reference',source.reference,
+                'verifiedOn',to_char(source.verified_on,'YYYY-MM-DD')) ORDER BY source.source_id)
+                FILTER (WHERE source.source_id IS NOT NULL),'[]'::jsonb)::text
+            FROM nutrition.recipe_versions recipe
+            LEFT JOIN nutrition.recipe_source_citations source ON source.recipe_version_id=recipe.id
+            WHERE recipe.status='published'
+            GROUP BY recipe.id,recipe.payload
+            ORDER BY recipe.id LIMIT 1000
+            """);
+        await using var r = await c.ExecuteReaderAsync(ct); var values = new List<Recipe>();
+        while (await r.ReadAsync(ct))
+        {
+            try
+            {
+                var recipe = NutritionJson.Read<Recipe>(r.GetString(1));
+                values.Add(recipe with { VersionId = r.GetGuid(0), SourceDetails = NutritionJson.Read<RecipeSource[]>(r.GetString(2)) });
+            }
+            catch (JsonException) { /* Nội dung hoặc metadata nguồn sai schema không được đưa vào gợi ý. */ }
+        }
+        return values;
+    }
     public async Task<IReadOnlyList<DietaryRule>> RulesAsync(CancellationToken ct) =>
         await CatalogAsync<DietaryRule>("nutrition.rule_versions", (value, id) => value with { VersionId = id }, ct);
     private async Task<IReadOnlyList<T>> CatalogAsync<T>(string table, Func<T, Guid, T> version, CancellationToken ct)

@@ -1,5 +1,5 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class BookingListActionIconButton extends StatelessWidget {
   final IconData icon;
@@ -17,7 +17,7 @@ class BookingListActionIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.border),
-          color: Colors.white,
+          color: AppColors.background,
         ),
         child: Icon(icon, color: AppColors.primary, size: 18),
       ),

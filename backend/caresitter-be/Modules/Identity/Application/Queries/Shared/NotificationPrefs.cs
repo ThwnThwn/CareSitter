@@ -9,6 +9,7 @@ public sealed class NotificationPrefs
     public bool CaregiverArriving { get; set; } = true;
     public bool ScheduleReminder { get; set; } = true;
     public bool ChatMessage { get; set; } = true;
+    public bool SupportChatMessage { get; set; } = true;
     public bool Promotion { get; set; }
 
     public static NotificationPrefs Parse(string? json)

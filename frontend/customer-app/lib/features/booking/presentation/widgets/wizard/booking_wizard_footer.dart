@@ -18,7 +18,12 @@ class BookingWizardFooter extends ConsumerWidget {
     return Container(
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.md, AppSpacing.compact, AppSpacing.md, AppSpacing.wide),
-        color: AppColors.cardBackground,
+        decoration: BoxDecoration(color: AppColors.cardBackground, boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4))
+        ]),
         child: Row(children: [
           if (flow.step > 0) ...[
             IconButton(
@@ -26,7 +31,12 @@ class BookingWizardFooter extends ConsumerWidget {
                 onPressed: enabled
                     ? ref.read(bookingWizardProvider(args).notifier).previous
                     : null,
-                icon: const Icon(Icons.arrow_back_ios_new, size: 20)),
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                style: IconButton.styleFrom(
+                    backgroundColor: AppColors.surfaceVariant,
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.compact)))),
             const SizedBox(width: AppSpacing.compact)
           ],
           Expanded(

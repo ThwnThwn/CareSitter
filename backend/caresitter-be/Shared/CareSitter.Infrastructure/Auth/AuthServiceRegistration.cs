@@ -57,6 +57,18 @@ public static class AuthServiceRegistration
 
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    // Browser WebSocket cannot set Authorization headers. Accept
+                    // SignalR's query token only on the two authenticated hub paths.
+                    var path = context.HttpContext.Request.Path;
+                    if ((path.StartsWithSegments("/hubs/support-chat") ||
+                         path.StartsWithSegments("/hubs/care-tracking")) &&
+                        context.Request.Query.TryGetValue("access_token", out var token) &&
+                        !string.IsNullOrWhiteSpace(token))
+                        context.Token = token;
+                    return Task.CompletedTask;
+                },
                 OnTokenValidated = async context =>
                 {
                     var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;

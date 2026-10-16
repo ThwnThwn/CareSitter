@@ -33,6 +33,7 @@ import 'package:caresitter_customer/features/settings/presentation/screens/saved
 import 'package:caresitter_customer/features/settings/presentation/screens/change_password_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/faq_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/support_screen.dart';
+import 'package:caresitter_customer/features/support_chat/presentation/support_chat_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -125,14 +126,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     refreshListenable: refreshSignal,
-    redirect: (context, state) {
-      final isLoggedIn =
-          ref.read(authStateProvider).value?.isAuthenticated ?? false;
-      return authRouteRedirect(
-        location: state.matchedLocation,
-        isAuthenticated: isLoggedIn,
-      );
-    },
+    redirect: (context, state) => authSessionRouteRedirect(
+      location: state.uri.toString(),
+      isAuthenticated: ref
+          .read(authStateProvider.future)
+          .then((session) => session.isAuthenticated),
+    ),
     routes: [
       GoRoute(
           path: '/auth/forgot-password',
@@ -409,6 +408,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const SupportScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings/support/chat',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const SupportChatScreen(),
         ),
       ),
       GoRoute(

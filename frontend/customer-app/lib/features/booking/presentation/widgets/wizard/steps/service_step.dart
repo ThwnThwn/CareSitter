@@ -15,14 +15,24 @@ class ServiceStep extends ConsumerWidget {
     final selected =
         ref.watch(bookingWizardProvider(args).select((s) => s.serviceId));
     return ref.watch(serviceStoreProvider).when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+            child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xl),
+                child: CircularProgressIndicator())),
         error: (_, __) => TextButton(
             onPressed: () => ref.invalidate(serviceStoreProvider),
             child: const Text('Thử lại')),
         data: (items) =>
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Chọn dịch vụ chăm sóc',
-                  style: Theme.of(context).textTheme.titleMedium),
+              const Text('Chọn dịch vụ cần đặt',
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: AppSpacing.xs),
+              const Text('Chọn loại dịch vụ chăm sóc phù hợp',
+                  style:
+                      TextStyle(color: AppColors.textSecondary, fontSize: 13)),
               const SizedBox(height: AppSpacing.md),
               if (items.isEmpty) const Text('Chưa có dịch vụ khả dụng.'),
               for (final item in items)
@@ -32,19 +42,35 @@ class ServiceStep extends ConsumerWidget {
                         .read(bookingWizardProvider(args).notifier)
                         .selectService(item.id),
                     child: Row(children: [
-                      Text(item.icon),
+                      Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)),
+                          alignment: Alignment.center,
+                          child: Text(item.icon,
+                              style: const TextStyle(fontSize: 22))),
                       const SizedBox(width: AppSpacing.compact),
                       Expanded(
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                             Text(item.name,
-                                style: Theme.of(context).textTheme.titleSmall),
-                            if (item.description != null)
-                              Text(item.description!),
-                            Text('${formatVnd(item.pricePerHour)} / giờ'),
+                                style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                            Text(formatVnd(item.pricePerHour, suffix: 'đ/giờ'),
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
                           ])),
-                      if (selected == item.id) const Icon(Icons.check_circle)
+                      if (selected == item.id)
+                        const Icon(Icons.check_circle,
+                            color: AppColors.primary, size: 22)
                     ])),
             ]));
   }

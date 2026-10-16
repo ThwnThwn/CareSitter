@@ -17,7 +17,7 @@ class WalletTransactionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border.all(color: AppColors.border),
       ),

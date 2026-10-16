@@ -52,12 +52,14 @@ class NutritionResult extends StatelessWidget {
           : 'Phân tích chưa thành công. Thông tin đã nhập vẫn được giữ.'));
     }
     widgets.add(const SizedBox(height: AppSpacing.compact));
-    if (state == 'awaiting_confirmation') {
+    if (state == 'awaiting_confirmation' && decision.allows('confirm')) {
       widgets.add(FilledButton(
           onPressed: flow.loading ? null : c.confirm,
           child: const Text('Thông tin đúng, tiếp tục')));
     }
-    if (state == 'eligible' && flow.recommendationsEnabled) {
+    if (state == 'eligible' &&
+        flow.recommendationsEnabled &&
+        decision.allows('recommend')) {
       widgets.add(FilledButton(
           onPressed: flow.loading ? null : c.recommend,
           child: const Text('Xem gợi ý thực đơn')));
@@ -67,7 +69,7 @@ class NutritionResult extends StatelessWidget {
           onPressed: flow.loading ? null : c.load,
           child: const Text('Kiểm tra lại hồ sơ')));
     }
-    if (state == 'failed' && data.retryable) {
+    if (state == 'failed' && data.retryable && decision.allows('retry')) {
       widgets.add(OutlinedButton(
           onPressed: flow.loading ? null : () => c.assess(retryFailed: true),
           child: const Text('Thử phân tích lại')));
@@ -77,11 +79,13 @@ class NutritionResult extends StatelessWidget {
         widgets.add(NutritionMealCard(
             meal: meal,
             loading: flow.loading,
-            canReplace: state == 'suggested' && status != 'saved',
+            canReplace: state == 'suggested' &&
+                status != 'saved' &&
+                decision.allows('replace'),
             onReplace: () => onReplace(meal.mealType)));
       }
     }
-    if (state == 'suggested' && status != 'saved') {
+    if (state == 'suggested' && status != 'saved' && decision.allows('save')) {
       widgets.add(FilledButton(
           onPressed: flow.loading ? null : c.save,
           child: const Text('Lưu thực đơn')));

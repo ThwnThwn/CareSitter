@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -21,6 +22,8 @@ BookingModel booking([String status = 'pending_payment']) =>
 class FakePayments extends BookingRepository {
   FakePayments(super.client);
   bool enabled = true;
+  bool failProvidersOnce = false;
+  int providerLoads = 0;
   int creates = 0;
   final keys = <String?>[];
   String? usedProvider;
@@ -28,18 +31,26 @@ class FakePayments extends BookingRepository {
   BookingModel current = booking();
   String intentStatus = 'PENDING';
   @override
-  Future<List<PaymentProviderModel>> getPaymentProviders() async => [
-        PaymentProviderModel(
-            code: 'PAYOS',
-            name: 'payOS',
-            description: 'Chuyển khoản VietQR',
-            enabled: enabled),
-        const PaymentProviderModel(
-            code: 'VNPAY',
-            name: 'VNPAY',
-            description: 'Ngân hàng, ví hoặc thẻ',
-            enabled: true),
-      ];
+  Future<List<PaymentProviderModel>> getPaymentProviders() async {
+    providerLoads++;
+    if (failProvidersOnce) {
+      failProvidersOnce = false;
+      throw StateError('Temporary provider failure');
+    }
+    return [
+      PaymentProviderModel(
+          code: 'PAYOS',
+          name: 'payOS',
+          description: 'Chuyển khoản VietQR',
+          enabled: enabled),
+      const PaymentProviderModel(
+          code: 'VNPAY',
+          name: 'VNPAY',
+          description: 'Ngân hàng, ví hoặc thẻ',
+          enabled: true),
+    ];
+  }
+
   @override
   Future<PaymentIntentModel> createPaymentIntent(
       String bookingId, String provider,
@@ -102,6 +113,7 @@ void main() {
           bookingStoreProvider.overrideWith(QuietBookingStore.new),
         ],
         child: MaterialApp(
+            theme: AppTheme.lightTheme,
             home: MediaQuery(
                 data: MediaQueryData(
                     size: size, textScaler: TextScaler.linear(scale)),
@@ -121,6 +133,29 @@ void main() {
     expect(tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
         isNull);
     expect(repository.creates, 0);
+  });
+
+  testWidgets('provider loading failure offers a working retry',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.binding.setSurfaceSize(null);
+    });
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          bookingRepositoryProvider.overrideWith((ref) => repository =
+              FakePayments(DioClient(ref))..failProvidersOnce = true),
+          bookingStoreProvider.overrideWith(QuietBookingStore.new),
+        ],
+        child: MaterialApp(
+            home: Scaffold(body: PaymentCheckoutSheet(booking: booking())))));
+    await tester.pumpAndSettle();
+    expect(find.text('Chưa tải được phương thức thanh toán.'), findsOneWidget);
+    await tester.tap(find.text('Tải lại'));
+    await tester.pumpAndSettle();
+    expect(find.text('payOS'), findsOneWidget);
+    expect(repository.providerLoads, 2);
   });
 
   testWidgets(

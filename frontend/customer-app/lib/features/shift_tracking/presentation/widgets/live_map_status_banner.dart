@@ -21,7 +21,7 @@ class LiveMapStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) => PointerInterceptor(
           child: DecoratedBox(
         decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.compact),
             border: Border.all(color: AppColors.border)),
         child: Padding(

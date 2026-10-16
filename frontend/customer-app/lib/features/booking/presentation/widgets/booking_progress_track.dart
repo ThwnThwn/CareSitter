@@ -1,5 +1,5 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class BookingProgressTrack extends StatelessWidget {
   const BookingProgressTrack({super.key});

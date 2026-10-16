@@ -55,10 +55,20 @@ void main() {
   });
 
   group('AuthValidators', () {
-    test('keeps the existing login validation rules', () {
-      expect(AuthValidators.loginEmail(''), 'Vui lòng nhập email');
-      expect(AuthValidators.loginEmail('invalid'), 'Email không hợp lệ');
+    test('accepts email and Vietnamese phone login identifiers', () {
+      expect(
+        AuthValidators.loginEmail(''),
+        'Vui lòng nhập email hoặc số điện thoại',
+      );
+      expect(
+        AuthValidators.loginEmail('invalid'),
+        'Email hoặc số điện thoại không hợp lệ',
+      );
       expect(AuthValidators.loginEmail('user@example.com'), isNull);
+      expect(AuthValidators.loginEmail('0901234567'), isNull);
+      expect(AuthValidators.loginEmail('+84901234567'), isNull);
+      expect(AuthValidators.loginEmail('+84 (90) 123-4567'), isNull);
+      expect(AuthValidators.loginEmail('090123456'), isNotNull);
 
       expect(AuthValidators.loginPassword(''), 'Vui lòng nhập mật khẩu');
       expect(

@@ -13,6 +13,8 @@ class LoginScreenAuthContent extends StatelessWidget {
       required this.emailCtrl,
       required this.passCtrl,
       required this.obscurePass,
+      required this.rememberLogin,
+      required this.onRememberLoginChanged,
       required this.login,
       required this.togglePassword});
   final LoginState loginState;
@@ -20,6 +22,8 @@ class LoginScreenAuthContent extends StatelessWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passCtrl;
   final bool obscurePass;
+  final bool rememberLogin;
+  final ValueChanged<bool> onRememberLoginChanged;
   final Future<void> Function() login;
   final VoidCallback togglePassword;
   @override
@@ -37,6 +41,8 @@ class LoginScreenAuthContent extends StatelessWidget {
                 emailCtrl: emailCtrl,
                 passCtrl: passCtrl,
                 obscurePass: obscurePass,
+                rememberLogin: rememberLogin,
+                onRememberLoginChanged: onRememberLoginChanged,
                 togglePassword: togglePassword,
                 login: login)),
         LoginRegisterFooter(enabled: !loginState.isLoading),

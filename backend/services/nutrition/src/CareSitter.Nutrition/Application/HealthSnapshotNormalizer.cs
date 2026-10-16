@@ -99,16 +99,4 @@ public static class HealthSnapshotNormalizer
         return new(facts.ToArray(), unresolved.ToArray(), text, evidence, special.ToArray(), declared);
     }
 
-    public static bool ValidateParserFacts(IReadOnlyList<HealthFact> facts, IReadOnlyDictionary<string, string> sources,
-        IReadOnlyList<NutritionConcept> concepts) => facts.Count is > 0 and <= 40 && facts.All(f =>
-        f is not null && f.Kind is "condition" or "symptom" or "food_allergy" or "dietary_instruction" or "eating_ability" &&
-        f.Assertion is "present" or "absent" or "uncertain" && f.Temporality is "current" or "past" or "unknown" &&
-        f.Subject == "beneficiary" && !string.IsNullOrWhiteSpace(f.Label) &&
-        !string.IsNullOrWhiteSpace(f.Code) && !string.IsNullOrWhiteSpace(f.SourceKey) &&
-        f.Quote is { Length: > 0 and <= 4000 } && sources.TryGetValue(f.SourceKey, out var source) &&
-        source.IndexOf(f.Quote, StringComparison.Ordinal) >= 0 &&
-        source.IndexOf(f.Quote, StringComparison.Ordinal) == source.LastIndexOf(f.Quote, StringComparison.Ordinal) &&
-        concepts.Any(c => c.Kind == f.Kind && c.Code == f.Code &&
-            (f.Quote.Contains(c.Code, StringComparison.OrdinalIgnoreCase) ||
-             c.Aliases.Any(a => !string.IsNullOrWhiteSpace(a) && f.Quote.Contains(a, StringComparison.OrdinalIgnoreCase)))));
 }

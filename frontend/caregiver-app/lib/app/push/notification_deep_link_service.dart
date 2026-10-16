@@ -40,6 +40,7 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     if (supplied != null) return supplied;
     if (bookingId == null) {
       if (type == 'PAYMENT' || type == 'PAYOUT') return '/earnings';
+      if (type == 'SUPPORT_CHAT') return '/settings/support/chat';
       if (type == 'SUPPORT') return '/settings/support';
       return type.isEmpty ? null : '/notifications';
     }
@@ -156,6 +157,7 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
       RegExp(r'^/shifts/[A-Za-z0-9-]+/(active|map|summary)$'),
       RegExp(r'^/earnings$'),
       RegExp(r'^/settings/support$'),
+      RegExp(r'^/settings/support/chat$'),
       RegExp(r'^/notifications$'),
     ];
     return patterns.any((pattern) => pattern.hasMatch(route!)) ? route : null;

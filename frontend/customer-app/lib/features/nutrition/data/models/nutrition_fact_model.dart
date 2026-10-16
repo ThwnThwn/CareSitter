@@ -4,6 +4,8 @@ class NutritionFactModel {
   final Map<String, dynamic> _json;
   String get label => _json['label']?.toString() ?? '';
   String get sourceKey => _json['sourceKey']?.toString() ?? '';
+  String get quote => _json['quote']?.toString() ?? '';
+  String get subject => _json['subject']?.toString() ?? '';
   String get assertion => _json['assertion']?.toString() ?? '';
   String get temporality => _json['temporality']?.toString() ?? '';
   Map<String, dynamic> toJson() => Map.of(_json);

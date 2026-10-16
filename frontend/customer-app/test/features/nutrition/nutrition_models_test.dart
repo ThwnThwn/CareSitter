@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_decision_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/recipe_option_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/meal_plan_summary_model.dart';
@@ -16,6 +17,17 @@ void main() {
         'decision': {
           'state': 'suggested',
           'missingFields': ['foodAllergyStatus'],
+          'allowedActions': ['replace', 'save'],
+          'questions': [
+            {
+              'id': 'food-allergy-status.v1',
+              'sourceField': 'foodAllergyStatus',
+              'inputType': 'single_choice',
+              'options': ['reported_none', 'reported_present', 'unknown'],
+              'required': true,
+              'purpose': 'confirm_food_allergy_status'
+            }
+          ],
           'extraDecision': 7
         },
         'meals': [
@@ -31,6 +43,19 @@ void main() {
                 'basis': 'cooked'
               }
             ],
+            'sources': ['NIN_CLINICAL_NUTRITION_2019'],
+            'sourceDetails': [
+              {
+                'id': 'NIN_CLINICAL_NUTRITION_2019',
+                'title': 'Dinh dưỡng lâm sàng',
+                'organization': 'Viện Dinh dưỡng',
+                'year': 2019,
+                'locator': 'Nguyên tắc tính khẩu phần',
+                'reference': 'book/dinh-duong-lam-sang.pdf',
+                'verifiedOn': '2026-10-16',
+                'futureSourceField': true
+              }
+            ],
             'extraMeal': true
           }
         ],
@@ -39,10 +64,35 @@ void main() {
     });
     expect(resource.result.decision.state, 'suggested');
     expect(resource.result.decision.missingFields, ['foodAllergyStatus']);
+    expect(resource.result.decision.allows('save'), isTrue);
+    expect(resource.result.decision.allows('retry'), isFalse);
+    expect(
+        resource.result.decision.questions.single.id, 'food-allergy-status.v1');
+    expect(resource.result.decision.questions.single.options,
+        ['reported_none', 'reported_present', 'unknown']);
     expect(resource.result.meals.single.ingredients.single.amount, 20);
+    expect(resource.result.meals.single.sourceDetails.single.title,
+        'Dinh dưỡng lâm sàng');
+    expect(resource.result.meals.single.sourceDetails.single.year, 2019);
+    expect(resource.result.meals.single.sourceDetails.single.verifiedOn,
+        DateTime(2026, 10, 16));
+    expect(
+        resource.result.meals.single.sourceDetails.single
+            .toJson()['futureSourceField'],
+        isTrue);
     expect(resource.result.meals.single.toJson()['extraMeal'], isTrue);
     expect(resource.result.toJson()['unknownResult'], {'keep': true});
     expect(resource.toJson()['futureField'], 'kept');
+  });
+
+  test('legacy decisions without allowed actions retain state-based controls',
+      () {
+    final legacy = NutritionDecisionModel.fromJson({'state': 'eligible'});
+    final explicitlyBlocked = NutritionDecisionModel.fromJson(
+        {'state': 'eligible', 'allowedActions': <String>[]});
+
+    expect(legacy.allows('recommend'), isTrue);
+    expect(explicitlyBlocked.allows('recommend'), isFalse);
   });
   test(
       'options and saved plans expose their IDs without flattening nested data',

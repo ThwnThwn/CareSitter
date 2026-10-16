@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "packageKey": "adult-technical-fixture",
+  "supportedScopes": [
+    {
+      "code": "adult-structured-v1",
+      "population": "adult",
+      "conditionCodes": [],
+      "medicationPolicy": "reported_none_only",
+      "blockedSpecialNeeds": [
+        "KIDNEY_DISEASE",
+        "DYSPHAGIA",
+        "TUBE_FEEDING",
+        "FLUID_RESTRICTION",
+        "ELECTROLYTE_RESTRICTION"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "VIEN_DINH_DUONG_2019",
+      "title": "Dinh dưỡng lâm sàng",
+      "organization": "Viện Dinh dưỡng",
+      "year": 2019,
+      "edition": "2019",
+      "chapter": "Technical fixture",
+      "printedPages": null,
+      "pdfPages": null,
+      "locator": "Fixture kiểm thử schema; không chứa ngưỡng điều trị.",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "verifiedOn": "2026-10-15",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737"
+    }
+  ],
+  "concepts": [
+    { "code": "RICE", "kind": "ingredient", "aliases": ["Gạo"], "version": 1 }
+  ],
+  "recipes": [
+    {
+      "recipeId": "10000000-0000-0000-0000-000000000001",
+      "version": 1,
+      "payload": {
+        "versionId": "20000000-0000-0000-0000-000000000001",
+        "name": "Fixture breakfast",
+        "mealType": "breakfast",
+        "servings": 1,
+        "ingredients": [{ "code": "RICE", "name": "Gạo", "amount": 100, "unit": "g", "basis": "raw" }],
+        "allergens": [],
+        "nutrients": { "sodium_mg": 10 },
+        "preparationSteps": ["Nấu chín hoàn toàn."],
+        "sources": ["VIEN_DINH_DUONG_2019"],
+        "allergenDataComplete": true
+      }
+    },
+    {
+      "recipeId": "10000000-0000-0000-0000-000000000002",
+      "version": 1,
+      "payload": {
+        "versionId": "20000000-0000-0000-0000-000000000002",
+        "name": "Fixture lunch",
+        "mealType": "lunch",
+        "servings": 1,
+        "ingredients": [{ "code": "RICE", "name": "Gạo", "amount": 100, "unit": "g", "basis": "raw" }],
+        "allergens": [],
+        "nutrients": { "sodium_mg": 10 },
+        "preparationSteps": ["Nấu chín hoàn toàn."],
+        "sources": ["VIEN_DINH_DUONG_2019"],
+        "allergenDataComplete": true
+      }
+    },
+    {
+      "recipeId": "10000000-0000-0000-0000-000000000003",
+      "version": 1,
+      "payload": {
+        "versionId": "20000000-0000-0000-0000-000000000003",
+        "name": "Fixture dinner",
+        "mealType": "dinner",
+        "servings": 1,
+        "ingredients": [{ "code": "RICE", "name": "Gạo", "amount": 100, "unit": "g", "basis": "raw" }],
+        "allergens": [],
+        "nutrients": { "sodium_mg": 10 },
+        "preparationSteps": ["Nấu chín hoàn toàn."],
+        "sources": ["VIEN_DINH_DUONG_2019"],
+        "allergenDataComplete": true
+      }
+    }
+  ],
+  "rules": []
+}

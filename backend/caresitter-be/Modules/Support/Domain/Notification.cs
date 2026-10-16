@@ -38,6 +38,9 @@ public sealed class Notification : Entity
     public string? Data { get; private set; }
 
     public DateTimeOffset? ReadAt { get; private set; }
+    public Guid? ChatMessageId { get; private set; }
+
+    public void LinkChatMessage(Guid messageId) => ChatMessageId = messageId;
 
     public static Result<Notification> Create(
         Guid userId,
