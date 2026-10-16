@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:caresitter_customer/core/utils/phone_formatter.dart';
 import 'package:caresitter_customer/features/auth/data/services/google_sign_in_gateway.dart';
 import 'package:caresitter_customer/features/auth/data/models/auth_models.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/auth_session_controller.dart';
@@ -51,16 +52,21 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
   Future<bool> login({
     required String email,
     required String password,
+    bool rememberSession = true,
   }) async {
     if (state.isLoading) return false;
 
     state = const LoginState(isLoading: true);
     try {
+      final identifier = email.trim();
+      final normalizedIdentifier =
+          identifier.contains('@') ? identifier : normalizePhone(identifier);
       await ref.read(authSessionControllerProvider).login(
             LoginRequest(
-              email: email.trim(),
+              email: normalizedIdentifier,
               password: password,
             ),
+            rememberSession: rememberSession,
           );
       if (_disposed) return false;
       state = const LoginState();

@@ -35,7 +35,7 @@ pg_restore --exit-on-error --single-transaction --no-owner --dbname="$scratch_da
 cat > "$work_dir/assert.sql" <<'SQL'
 DO $check$
 BEGIN
- IF (SELECT count(*) FROM information_schema.tables WHERE table_schema='nutrition' AND table_type='BASE TABLE') <> 9 THEN
+ IF (SELECT count(*) FROM information_schema.tables WHERE table_schema='nutrition' AND table_type='BASE TABLE') <> 10 THEN
   RAISE EXCEPTION 'Nutrition table count mismatch';
  END IF;
  IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -50,10 +50,12 @@ BEGIN
   RAISE EXCEPTION 'Restricted runtime role is unavailable';
  END IF;
  IF has_table_privilege('nutrition_app','nutrition.recipe_versions','INSERT') OR
+    has_table_privilege('nutrition_app','nutrition.recipe_source_citations','DELETE') OR
+    NOT has_table_privilege('nutrition_app','nutrition.recipe_source_citations','SELECT') OR
     NOT has_table_privilege('nutrition_app','nutrition.assessments','SELECT,INSERT,UPDATE,DELETE') THEN
   RAISE EXCEPTION 'Restored runtime ACL mismatch';
  END IF;
- IF (SELECT count(*) FROM public.nutrition_schema_migrations) < 2 THEN
+ IF (SELECT count(*) FROM public.nutrition_schema_migrations) < 5 THEN
   RAISE EXCEPTION 'Restored migration ledger is incomplete';
  END IF;
 END $check$;

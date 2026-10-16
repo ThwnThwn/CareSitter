@@ -17,7 +17,7 @@ class CaregiverListTopPaddingHasLocationPanel extends StatelessWidget {
   final int unreadCount;
   @override
   Widget build(BuildContext context) => Container(
-        color: Colors.white,
+        color: AppColors.surface,
         padding: EdgeInsets.only(
           top: topPadding + 16,
           left: AppSpacing.section,

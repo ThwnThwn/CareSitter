@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "packageKey": "p4-api-smoke",
+  "supportedScopes": [
+    {
+      "code": "adult-structured-smoke-v1",
+      "population": "adult",
+      "conditionCodes": [],
+      "medicationPolicy": "reported_none_only",
+      "blockedSpecialNeeds": [
+        "KIDNEY_DISEASE",
+        "DYSPHAGIA",
+        "TUBE_FEEDING",
+        "FLUID_RESTRICTION",
+        "ELECTROLYTE_RESTRICTION"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "CARESITTER_QA_P4_2026",
+      "title": "Nguồn tổng hợp kiểm thử P4",
+      "organization": "CareSitter QA",
+      "year": 2026,
+      "edition": "1",
+      "chapter": "API smoke fixture",
+      "printedPages": "Không áp dụng",
+      "pdfPages": "Không áp dụng",
+      "locator": "Dữ liệu tổng hợp chỉ dùng để kiểm tra đường truyền metadata nguồn; không phải hướng dẫn dinh dưỡng.",
+      "reference": "synthetic:nutrition-p4-api-smoke",
+      "verifiedOn": "2026-10-16",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "concepts": [
+    {
+      "code": "QA_RICE",
+      "kind": "ingredient",
+      "aliases": ["Nguyên liệu tinh bột tổng hợp"],
+      "version": 1
+    },
+    {
+      "code": "QA_VEGETABLE",
+      "kind": "ingredient",
+      "aliases": ["Rau tổng hợp"],
+      "version": 1
+    },
+    {
+      "code": "QA_TOFU",
+      "kind": "ingredient",
+      "aliases": ["Đạm thực vật tổng hợp"],
+      "version": 1
+    }
+  ],
+  "recipes": [
+    {
+      "recipeId": "40000000-0000-4000-8000-000000000001",
+      "version": 1,
+      "payload": {
+        "versionId": "41000000-0000-4000-8000-000000000001",
+        "name": "Bữa sáng tổng hợp P4",
+        "mealType": "breakfast",
+        "servings": 1,
+        "ingredients": [
+          { "code": "QA_RICE", "name": "Tinh bột tổng hợp", "amount": 100, "unit": "g", "basis": "cooked" }
+        ],
+        "allergens": [],
+        "nutrients": { "energy_kcal": 200, "protein_g": 5, "sodium_mg": 10 },
+        "preparationSteps": ["Chuẩn bị fixture tổng hợp; không dùng làm công thức thực tế."],
+        "sources": ["CARESITTER_QA_P4_2026"],
+        "allergenDataComplete": true
+      }
+    },
+    {
+      "recipeId": "40000000-0000-4000-8000-000000000002",
+      "version": 1,
+      "payload": {
+        "versionId": "41000000-0000-4000-8000-000000000002",
+        "name": "Bữa trưa tổng hợp P4",
+        "mealType": "lunch",
+        "servings": 1,
+        "ingredients": [
+          { "code": "QA_VEGETABLE", "name": "Rau tổng hợp", "amount": 150, "unit": "g", "basis": "cooked" }
+        ],
+        "allergens": [],
+        "nutrients": { "energy_kcal": 300, "protein_g": 10, "sodium_mg": 15 },
+        "preparationSteps": ["Chuẩn bị fixture tổng hợp; không dùng làm công thức thực tế."],
+        "sources": ["CARESITTER_QA_P4_2026"],
+        "allergenDataComplete": true
+      }
+    },
+    {
+      "recipeId": "40000000-0000-4000-8000-000000000003",
+      "version": 1,
+      "payload": {
+        "versionId": "41000000-0000-4000-8000-000000000003",
+        "name": "Bữa trưa thay thế tổng hợp P4",
+        "mealType": "lunch",
+        "servings": 1,
+        "ingredients": [
+          { "code": "QA_TOFU", "name": "Đạm thực vật tổng hợp", "amount": 120, "unit": "g", "basis": "cooked" }
+        ],
+        "allergens": [],
+        "nutrients": { "energy_kcal": 280, "protein_g": 12, "sodium_mg": 12 },
+        "preparationSteps": ["Chuẩn bị fixture tổng hợp; không dùng làm công thức thực tế."],
+        "sources": ["CARESITTER_QA_P4_2026"],
+        "allergenDataComplete": true
+      }
+    },
+    {
+      "recipeId": "40000000-0000-4000-8000-000000000004",
+      "version": 1,
+      "payload": {
+        "versionId": "41000000-0000-4000-8000-000000000004",
+        "name": "Bữa tối tổng hợp P4",
+        "mealType": "dinner",
+        "servings": 1,
+        "ingredients": [
+          { "code": "QA_RICE", "name": "Tinh bột tổng hợp", "amount": 90, "unit": "g", "basis": "cooked" },
+          { "code": "QA_VEGETABLE", "name": "Rau tổng hợp", "amount": 100, "unit": "g", "basis": "cooked" }
+        ],
+        "allergens": [],
+        "nutrients": { "energy_kcal": 250, "protein_g": 8, "sodium_mg": 11 },
+        "preparationSteps": ["Chuẩn bị fixture tổng hợp; không dùng làm công thức thực tế."],
+        "sources": ["CARESITTER_QA_P4_2026"],
+        "allergenDataComplete": true
+      }
+    }
+  ],
+  "rules": []
+}

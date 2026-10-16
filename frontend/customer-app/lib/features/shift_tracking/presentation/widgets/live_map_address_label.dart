@@ -8,7 +8,7 @@ class LiveMapAddressLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        color: Colors.white,
+        color: AppColors.surface,
         padding: const EdgeInsets.all(AppSpacing.compact),
         child: Row(children: [
           const Icon(Icons.location_on_outlined,

@@ -98,7 +98,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
 
               // ── Search + chips ──
               Container(
-                color: Colors.white,
+                color: AppColors.surface,
                 padding: const EdgeInsets.fromLTRB(AppSpacing.md,
                     AppSpacing.compact, AppSpacing.md, AppSpacing.inset),
                 child: CaregiverListSearchCtrlSearchQueryFields(

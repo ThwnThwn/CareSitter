@@ -1,5 +1,5 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 
 class BookingListSliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
@@ -14,7 +14,7 @@ class BookingListSliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
+      color: AppColors.background,
       child: Column(
         children: [
           _tabBar,

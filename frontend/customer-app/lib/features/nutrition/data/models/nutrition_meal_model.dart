@@ -1,5 +1,6 @@
 import 'meal_ingredient_model.dart';
 import 'nutrition_json.dart';
+import 'nutrition_source_model.dart';
 
 class NutritionMealModel {
   NutritionMealModel.fromJson(Map<String, dynamic> json)
@@ -17,6 +18,10 @@ class NutritionMealModel {
   List<String> get preparationSteps =>
       nutritionJsonStrings(_json['preparationSteps']);
   List<String> get sources => nutritionJsonStrings(_json['sources']);
+  List<NutritionSourceModel> get sourceDetails =>
+      nutritionJsonObjects(_json['sourceDetails'])
+          .map(NutritionSourceModel.fromJson)
+          .toList();
   Map<String, dynamic>? get nutrients =>
       _json['nutrients'] is Map ? nutritionJsonMap(_json['nutrients']) : null;
   Map<String, dynamic> toJson() => Map.of(_json);

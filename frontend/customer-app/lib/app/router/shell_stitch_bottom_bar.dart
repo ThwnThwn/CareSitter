@@ -27,7 +27,7 @@ class ShellStitchBottomBar extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(24),
           ),

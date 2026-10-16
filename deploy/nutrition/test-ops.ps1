@@ -69,13 +69,16 @@ try {
     $env:NUTRITION_SQL_DIRECTORY = (Join-Path $repository 'backend/init-db/nutrition-service').Replace('\','/')
     Run-Shell 'deploy/nutrition/migrate.sh'
     Run-Shell 'deploy/nutrition/migrate.sh'
-    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '2') { throw 'Migration replay did not preserve its ledger.' }
+    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '5') { throw 'Migration replay did not preserve its ledger.' }
     Write-Output 'PASS: initial migration and replay.'
 
     $sqlFixture = Join-Path $state 'sql'
     New-Item -ItemType Directory -Path $sqlFixture | Out-Null
     Copy-Item -LiteralPath (Join-Path $env:NUTRITION_SQL_DIRECTORY '01-nutrition-workflow.sql') -Destination $sqlFixture
     Copy-Item -LiteralPath (Join-Path $env:NUTRITION_SQL_DIRECTORY '02-runtime-role.sql') -Destination $sqlFixture
+    Copy-Item -LiteralPath (Join-Path $env:NUTRITION_SQL_DIRECTORY '03-catalog-governance.sql') -Destination $sqlFixture
+    Copy-Item -LiteralPath (Join-Path $env:NUTRITION_SQL_DIRECTORY '04-catalog-nutrient-constraints.sql') -Destination $sqlFixture
+    Copy-Item -LiteralPath (Join-Path $env:NUTRITION_SQL_DIRECTORY '05-recipe-source-citations.sql') -Destination $sqlFixture
     $env:NUTRITION_SQL_DIRECTORY = $sqlFixture.Replace('\','/')
     foreach ($file in Get-ChildItem -LiteralPath $sqlFixture -Filter '*.sql') {
         [IO.File]::WriteAllText($file.FullName, [IO.File]::ReadAllText($file.FullName).Replace("`r`n","`n"))
@@ -87,21 +90,21 @@ try {
     Run-Shell 'deploy/nutrition/migrate.sh' @() $true
     Copy-Item -LiteralPath (Join-Path $repository 'backend/init-db/nutrition-service/01-nutrition-workflow.sql') -Destination $changed -Force
     Write-Output 'PASS: changed applied migration rejected.'
-    $failing = Join-Path $sqlFixture '03-transaction-test.sql'
+    $failing = Join-Path $sqlFixture '06-transaction-test.sql'
     [IO.File]::WriteAllText($failing, "CREATE TABLE nutrition.rollback_probe(id integer); SELECT 1/0;`n")
     Run-Shell 'deploy/nutrition/migrate.sh' @() $true
     if ((Query "SELECT to_regclass('nutrition.rollback_probe') IS NULL") -ne 't') { throw 'Failed migration left a partially created table.' }
-    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '2') { throw 'Failed migration was recorded as applied.' }
+    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '5') { throw 'Failed migration was recorded as applied.' }
     Remove-Item -LiteralPath $failing
     Write-Output 'PASS: failed migration and its ledger insertion roll back together.'
-    $race = Join-Path $sqlFixture '03-concurrent-test.sql'
+    $race = Join-Path $sqlFixture '06-concurrent-test.sql'
     [IO.File]::WriteAllText($race, "SELECT pg_sleep(1); CREATE TABLE public.concurrent_probe(id integer);`n")
     $script = 'deploy/nutrition/migrate.sh'
     $processes = 1..2 | ForEach-Object {
         Start-Process -FilePath $Bash -ArgumentList @('--noprofile','--norc',$script) -WorkingDirectory $repository -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $state "race-$_.log") -RedirectStandardError (Join-Path $state "race-$_.error.log")
     }
     foreach ($process in $processes) { if (!$process.WaitForExit(30000) -or $process.ExitCode -ne 0) { throw 'Concurrent migration failed.' } }
-    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '3') { throw 'Concurrent migration ledger mismatch.' }
+    if ((Query 'SELECT count(*) FROM public.nutrition_schema_migrations') -ne '6') { throw 'Concurrent migration ledger mismatch.' }
     Write-Output 'PASS: concurrent migration runners serialize and replay safely.'
 
     $owner = [Guid]::NewGuid().ToString(); $beneficiary = [Guid]::NewGuid().ToString()

@@ -17,6 +17,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   final Set<Future<void> Function()> _logoutCleanups = {};
   int _sessionGeneration = 0;
   int? _loggingOutGeneration;
+  bool _rememberSession = false;
   Future<void> _storageWrites = Future<void>.value();
   int get sessionGeneration => _sessionGeneration;
   Future<void> _persist(Future<void> Function() action) {
@@ -37,6 +38,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final userId = await _storage.read(key: _kUserId);
     final phone = await _storage.read(key: _kPhone);
     if (token != null && userId != null) {
+      _rememberSession = true;
       return AuthState(
         accessToken: token,
         refreshToken: refresh,
@@ -45,6 +47,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         isAuthenticated: true,
       );
     }
+    _rememberSession = false;
     return const AuthState.initial();
   }
 
@@ -53,14 +56,20 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String refreshToken,
     required String userId,
     required String phone,
+    bool rememberSession = true,
   }) async {
     final generation = ++_sessionGeneration;
     await _persist(() async {
       if (generation != _sessionGeneration) return;
-      await _storage.write(key: _kAccessToken, value: accessToken);
-      await _storage.write(key: _kRefreshToken, value: refreshToken);
-      await _storage.write(key: _kUserId, value: userId);
-      await _storage.write(key: _kPhone, value: phone);
+      _rememberSession = rememberSession;
+      if (rememberSession) {
+        await _storage.write(key: _kAccessToken, value: accessToken);
+        await _storage.write(key: _kRefreshToken, value: refreshToken);
+        await _storage.write(key: _kUserId, value: userId);
+        await _storage.write(key: _kPhone, value: phone);
+      } else {
+        await _clearPersistedSession();
+      }
       if (generation == _sessionGeneration) {
         state = AsyncData(AuthState(
             accessToken: accessToken,
@@ -84,8 +93,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           state.value?.refreshToken != previous!.refreshToken) {
         return;
       }
-      await _storage.write(key: _kAccessToken, value: accessToken);
-      await _storage.write(key: _kRefreshToken, value: refreshToken);
+      if (_rememberSession) {
+        await _storage.write(key: _kAccessToken, value: accessToken);
+        await _storage.write(key: _kRefreshToken, value: refreshToken);
+      }
       if (generation == _sessionGeneration) {
         state = AsyncData(previous.copyWith(
             accessToken: accessToken, refreshToken: refreshToken));
@@ -107,7 +118,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
       await _persist(() async {
         if (generation != _sessionGeneration) return;
-        await _storage.deleteAll();
+        await _clearPersistedSession();
+        _rememberSession = false;
         if (generation == _sessionGeneration) {
           state = const AsyncData(AuthState.initial());
         }
@@ -115,6 +127,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     } finally {
       if (_loggingOutGeneration == generation) _loggingOutGeneration = null;
     }
+  }
+
+  Future<void> _clearPersistedSession() async {
+    await _storage.delete(key: _kAccessToken);
+    await _storage.delete(key: _kRefreshToken);
+    await _storage.delete(key: _kUserId);
+    await _storage.delete(key: _kPhone);
   }
 
   void registerLogoutCleanup(Future<void> Function() cleanup) {

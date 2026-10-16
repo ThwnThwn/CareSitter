@@ -14,9 +14,16 @@ class AuthSessionController {
   final Ref ref;
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
-  Future<AuthResponse> login(LoginRequest request) async {
+  Future<AuthResponse> login(
+    LoginRequest request, {
+    bool rememberSession = true,
+  }) async {
     final generation = ref.read(authStateProvider.notifier).sessionGeneration;
-    return _accept(await _repository.login(request), generation);
+    return _accept(
+      await _repository.login(request),
+      generation,
+      rememberSession: rememberSession,
+    );
   }
 
   Future<AuthResponse> loginWithOtp(String email, String otp) async {
@@ -39,7 +46,11 @@ class AuthSessionController {
   Future<void> sendOtp(String email) => _repository.sendOtp(email);
   Future<void> requestOtp(String email) => sendOtp(email);
 
-  Future<AuthResponse> _accept(AuthResponse response, int generation) async {
+  Future<AuthResponse> _accept(
+    AuthResponse response,
+    int generation, {
+    bool rememberSession = true,
+  }) async {
     final auth = ref.read(authStateProvider.notifier);
     if (auth.sessionGeneration != generation) {
       throw StateError('Phiên đăng nhập đã thay đổi.');
@@ -48,7 +59,8 @@ class AuthSessionController {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         userId: response.userId,
-        phone: response.displayName ?? response.userId);
+        phone: response.displayName ?? response.userId,
+        rememberSession: rememberSession);
     if (auth.sessionGeneration != generation + 1 ||
         ref.read(authStateProvider).valueOrNull?.userId != response.userId) {
       throw StateError('Phiên đăng nhập đã thay đổi.');

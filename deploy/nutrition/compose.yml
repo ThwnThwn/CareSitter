@@ -76,6 +76,19 @@ services:
       Nutrition__Enabled: ${NUTRITION_ENABLED:-false}
       Nutrition__AssessmentsEnabled: ${NUTRITION_ASSESSMENTS_ENABLED:-false}
       Nutrition__RecommendationsEnabled: ${NUTRITION_RECOMMENDATIONS_ENABLED:-false}
+      HealthParser__Enabled: ${NUTRITION_HEALTH_PARSER_ENABLED:-false}
+      HealthParser__Provider: ${NUTRITION_HEALTH_PARSER_PROVIDER:-OpenAI}
+      HealthParser__Model: ${NUTRITION_HEALTH_PARSER_MODEL:-gpt-6-luna}
+      HealthParser__BaseUrl: ${NUTRITION_HEALTH_PARSER_BASE_URL:-https://api.openai.com/v1/}
+      HealthParser__ApiKey: ${NUTRITION_HEALTH_PARSER_API_KEY:-}
+      HealthParser__DataProcessingApproved: ${NUTRITION_HEALTH_PARSER_DATA_PROCESSING_APPROVED:-false}
+      HealthParser__TimeoutSeconds: ${NUTRITION_HEALTH_PARSER_TIMEOUT_SECONDS:-25}
+      HealthParser__MaxOutputTokens: ${NUTRITION_HEALTH_PARSER_MAX_OUTPUT_TOKENS:-2048}
+      HealthParser__MaxAttempts: ${NUTRITION_HEALTH_PARSER_MAX_ATTEMPTS:-2}
+      HealthParser__MaxConcurrency: ${NUTRITION_HEALTH_PARSER_MAX_CONCURRENCY:-4}
+      HealthParser__DailyBudget: ${NUTRITION_HEALTH_PARSER_DAILY_BUDGET:-1000}
+      HealthParser__MaxInputCharacters: ${NUTRITION_HEALTH_PARSER_MAX_INPUT_CHARACTERS:-12000}
+      HealthParser__MaxResponseBytes: ${NUTRITION_HEALTH_PARSER_MAX_RESPONSE_BYTES:-262144}
     entrypoint: [sh, /nutrition-entrypoint.sh, nutrition]
     volumes:
       - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro

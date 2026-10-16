@@ -4,37 +4,37 @@ import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_tokens.dart';
 
-class LoginAuxRow extends StatefulWidget {
-  const LoginAuxRow({super.key, required this.isLoading});
+class LoginAuxRow extends StatelessWidget {
+  const LoginAuxRow({
+    super.key,
+    required this.isLoading,
+    required this.rememberLogin,
+    required this.onRememberLoginChanged,
+  });
 
   final bool isLoading;
-
-  @override
-  State<LoginAuxRow> createState() => _AuxRowState();
-}
-
-class _AuxRowState extends State<LoginAuxRow> {
-  bool _remember = true;
+  final bool rememberLogin;
+  final ValueChanged<bool> onRememberLoginChanged;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: widget.isLoading
-                ? null
-                : () => setState(() => _remember = !_remember),
+          child: InkWell(
+            onTap:
+                isLoading ? null : () => onRememberLoginChanged(!rememberLogin),
             child: Row(
               children: [
                 SizedBox(
                   width: 18,
                   height: 18,
                   child: Checkbox(
-                    value: _remember,
-                    onChanged: widget.isLoading
+                    value: rememberLogin,
+                    onChanged: isLoading
                         ? null
-                        : (v) => setState(() => _remember = v ?? true),
+                        : (value) => onRememberLoginChanged(value ?? false),
                     activeColor: LoginHeroTokens.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -66,9 +66,8 @@ class _AuxRowState extends State<LoginAuxRow> {
         const SizedBox(width: AppSpacing.sm),
         Flexible(
           child: TextButton(
-            onPressed: widget.isLoading
-                ? null
-                : () => context.push('/auth/forgot-password'),
+            onPressed:
+                isLoading ? null : () => context.push('/auth/forgot-password'),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xs, vertical: AppSpacing.micro),

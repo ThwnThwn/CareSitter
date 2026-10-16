@@ -30,6 +30,13 @@ public sealed class DeploymentConfigurationTests
 
         DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false);
 
+        values["Payments:PayOS:Enabled"] = "true";
+        values["Payments:PayOS:CustomerWebUrl"] = "http://localhost:55709";
+        Assert.Throws<InvalidOperationException>(() =>
+            DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false));
+        values["Payments:PayOS:CustomerWebUrl"] = "https://customer.example.com";
+        DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false);
+
         values["Cors:AllowedOrigins:0"] = "http://admin.example.com";
         Assert.Throws<InvalidOperationException>(() =>
             DeploymentConfiguration.ValidatePublicEndpoints(Configuration(values), isDevelopment: false));

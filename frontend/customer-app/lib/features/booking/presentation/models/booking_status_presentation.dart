@@ -1,7 +1,7 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'booking_display_model.dart';
 import 'package:flutter/material.dart';
 
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
 
 /// Nhãn, màu và tiến trình dùng chung cho danh sách và chi tiết lịch hẹn.
@@ -54,8 +54,8 @@ class BookingStatusPresentation {
       case 'assigned':
         return const BookingStatusPresentation(
           label: 'Đã nhận ca',
-          color: AppColors.legacyInfo,
-          backgroundColor: AppColors.legacyInfoLight,
+          color: AppColors.info,
+          backgroundColor: AppColors.infoLight,
           currentStep: 1,
         );
       case 'checkout_pending_review':
@@ -83,14 +83,14 @@ class BookingStatusPresentation {
       case 'pending_payment':
         return const BookingStatusPresentation(
           label: 'Chờ thanh toán',
-          color: AppColors.secondary,
+          color: AppColors.warning,
           backgroundColor: AppColors.warningLight,
           currentStep: 0,
         );
       case 'payment_reconciliation_pending':
         return const BookingStatusPresentation(
           label: 'Đang đối soát',
-          color: AppColors.blueDark,
+          color: AppColors.info,
           backgroundColor: AppColors.infoLight,
           currentStep: 0,
         );
@@ -118,15 +118,15 @@ class BookingStatusPresentation {
       case 'cancelled':
         return const BookingStatusPresentation(
           label: 'Đã huỷ',
-          color: AppColors.legacyError,
-          backgroundColor: AppColors.legacyErrorLight,
+          color: AppColors.error,
+          backgroundColor: AppColors.errorLight,
           currentStep: -1,
         );
       case 'refunded':
         return const BookingStatusPresentation(
           label: 'Đã hoàn tiền',
-          color: AppColors.legacyError,
-          backgroundColor: AppColors.legacyErrorLight,
+          color: AppColors.error,
+          backgroundColor: AppColors.errorLight,
           currentStep: -1,
         );
       case 'crisis':

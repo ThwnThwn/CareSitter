@@ -44,5 +44,5 @@ curl_check 200 'Internal Nutrition gRPC over TLS/HTTP2' --http2 --cacert /run/se
 tr -d '\r' < "$work_dir/grpc.headers" > "$work_dir/grpc.clean"
 grep -Eq '^HTTP/2 200' "$work_dir/grpc.clean" && grep -Eiq '^grpc-status: 0$' "$work_dir/grpc.clean" || fail 'gRPC did not complete successfully over HTTP/2.'
 curl_check 200 'Public REST to Nutrition gRPC' --header "@$work_dir/customer.headers" "$public_url/api/v1/nutrition/capabilities"
-jq -e 'has("enabled") and has("assessmentsEnabled") and has("recommendationsEnabled")' "$work_dir/response" >/dev/null || fail 'Public Nutrition capabilities contract is incomplete.'
+jq -e 'has("enabled") and has("assessmentsEnabled") and has("recommendationsEnabled") and has("freeTextParserReady")' "$work_dir/response" >/dev/null || fail 'Public Nutrition capabilities contract is incomplete.'
 echo 'Nutrition connectivity smoke checks passed. Feature availability still depends on its flags and reviewed catalog.'

@@ -20,7 +20,7 @@ class ActivityRecentContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.control),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 boxShadow: [
                   BoxShadow(

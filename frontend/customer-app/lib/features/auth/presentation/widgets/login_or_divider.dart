@@ -17,7 +17,6 @@ class LoginOrDivider extends StatelessWidget {
           ),
         ),
         const Flexible(
-          flex: 3,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             child: Text(

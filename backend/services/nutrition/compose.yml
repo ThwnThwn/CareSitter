@@ -11,6 +11,9 @@ services:
       - ../../init-db/nutrition-service/01-nutrition-workflow.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ../../init-db/nutrition-service/02-runtime-role.sql:/runtime-role.sql:ro
       - ./scripts/02-runtime-role.sh:/docker-entrypoint-initdb.d/02-runtime-role.sh:ro
+      - ../../init-db/nutrition-service/03-catalog-governance.sql:/docker-entrypoint-initdb.d/03-catalog-governance.sql:ro
+      - ../../init-db/nutrition-service/04-catalog-nutrient-constraints.sql:/docker-entrypoint-initdb.d/04-catalog-nutrient-constraints.sql:ro
+      - ../../init-db/nutrition-service/05-recipe-source-citations.sql:/docker-entrypoint-initdb.d/05-recipe-source-citations.sql:ro
     healthcheck:
       test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d nutrition"]
       interval: 5s
@@ -37,6 +40,19 @@ services:
       Nutrition__Enabled: ${NUTRITION_ENABLED:-false}
       Nutrition__AssessmentsEnabled: ${NUTRITION_ASSESSMENTS_ENABLED:-false}
       Nutrition__RecommendationsEnabled: ${NUTRITION_RECOMMENDATIONS_ENABLED:-false}
+      HealthParser__Enabled: ${NUTRITION_HEALTH_PARSER_ENABLED:-false}
+      HealthParser__Provider: ${NUTRITION_HEALTH_PARSER_PROVIDER:-OpenAI}
+      HealthParser__Model: ${NUTRITION_HEALTH_PARSER_MODEL:-gpt-6-luna}
+      HealthParser__BaseUrl: ${NUTRITION_HEALTH_PARSER_BASE_URL:-https://api.openai.com/v1/}
+      HealthParser__ApiKey: ${NUTRITION_HEALTH_PARSER_API_KEY:-}
+      HealthParser__DataProcessingApproved: ${NUTRITION_HEALTH_PARSER_DATA_PROCESSING_APPROVED:-false}
+      HealthParser__TimeoutSeconds: ${NUTRITION_HEALTH_PARSER_TIMEOUT_SECONDS:-25}
+      HealthParser__MaxOutputTokens: ${NUTRITION_HEALTH_PARSER_MAX_OUTPUT_TOKENS:-2048}
+      HealthParser__MaxAttempts: ${NUTRITION_HEALTH_PARSER_MAX_ATTEMPTS:-2}
+      HealthParser__MaxConcurrency: ${NUTRITION_HEALTH_PARSER_MAX_CONCURRENCY:-4}
+      HealthParser__DailyBudget: ${NUTRITION_HEALTH_PARSER_DAILY_BUDGET:-1000}
+      HealthParser__MaxInputCharacters: ${NUTRITION_HEALTH_PARSER_MAX_INPUT_CHARACTERS:-12000}
+      HealthParser__MaxResponseBytes: ${NUTRITION_HEALTH_PARSER_MAX_RESPONSE_BYTES:-262144}
       Cors__AllowedOrigins__0: ${NUTRITION_CUSTOMER_ORIGIN:-http://localhost:3000}
 volumes:
   nutrition-data:

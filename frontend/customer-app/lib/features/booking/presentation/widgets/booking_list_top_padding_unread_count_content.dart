@@ -11,7 +11,7 @@ class BookingListTopPaddingUnreadCountContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SliverToBoxAdapter(
         child: Container(
-          color: Colors.white,
+          color: AppColors.background,
           padding: EdgeInsets.only(
             top: topPadding + 16,
             left: AppSpacing.section,
@@ -54,7 +54,7 @@ class BookingListTopPaddingUnreadCountContent extends StatelessWidget {
                         top: 6,
                         child: CircleAvatar(
                           radius: 4,
-                          backgroundColor: AppColors.legacyError,
+                          backgroundColor: AppColors.error,
                         ),
                       ),
                   ],

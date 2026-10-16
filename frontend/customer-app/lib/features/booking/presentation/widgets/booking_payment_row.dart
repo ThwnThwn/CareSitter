@@ -1,5 +1,5 @@
+import 'package:caresitter_customer/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 

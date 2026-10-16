@@ -1,5 +1,7 @@
 import '../../data/models/nutrition_decision_model.dart';
 import '../../data/models/nutrition_result_model.dart';
+import '../models/nutrition_question_copy.dart';
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class NutritionFacts extends StatelessWidget {
@@ -22,8 +24,23 @@ class NutritionFacts extends StatelessWidget {
           'Làm rõ triệu chứng hoặc thông tin chưa chắc chắn'
     };
     final widgets = <Widget>[];
-    for (final field in decision.missingFields) {
-      widgets.add(Text('• ${fields[field] ?? _fieldLabel(field.toString())}'));
+    if (decision.questions.isNotEmpty) {
+      widgets.add(Text('Điểm cần làm rõ',
+          style: Theme.of(context).textTheme.titleMedium));
+      widgets.add(const SizedBox(height: AppSpacing.sm));
+      for (final question in decision.questions) {
+        widgets.add(ListTile(
+            contentPadding: EdgeInsets.zero,
+            minVerticalPadding: AppSpacing.sm,
+            leading: const Icon(Icons.help_outline, color: AppColors.primary),
+            title: Text(NutritionQuestionCopy.title(question)),
+            subtitle: Text(NutritionQuestionCopy.hint(question))));
+      }
+    } else {
+      for (final field in decision.missingFields) {
+        widgets
+            .add(Text('• ${fields[field] ?? _fieldLabel(field.toString())}'));
+      }
     }
     if (decision.conflicts.isNotEmpty) {
       widgets.add(const Text(
@@ -33,13 +50,20 @@ class NutritionFacts extends StatelessWidget {
       widgets.add(const Text(
           'Hồ sơ cần thêm hướng dẫn chuyên biệt hoặc đang ngoài phạm vi nội dung được hỗ trợ. Không tự đổi sang ăn mềm hay đặt giới hạn dinh dưỡng.'));
     }
+    if (data.facts.isNotEmpty && state != 'stale') {
+      widgets.add(Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.md),
+          child: Text('Thông tin gia đình cung cấp',
+              style: Theme.of(context).textTheme.titleMedium)));
+    }
     for (final fact in data.facts) {
       if (state != 'stale') {
         widgets.add(ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(fact.label),
             subtitle: Text(
-                '${_fieldLabel(fact.sourceKey)} · ${_assertion(fact.assertion)} · ${_temporality(fact.temporality)}')));
+                '${_subject(fact.subject)} · ${_assertion(fact.assertion)} · ${_temporality(fact.temporality)}\n'
+                '${_fieldLabel(fact.sourceKey)}${fact.quote.isEmpty ? '' : ' · “${fact.quote}”'}')));
       }
     }
     return Column(
@@ -84,4 +108,11 @@ class NutritionFacts extends StatelessWidget {
         'unknown': 'Chưa rõ thời điểm'
       }[value] ??
       'Chưa rõ thời điểm';
+  String _subject(Object? value) =>
+      {
+        'beneficiary': 'Người được hỗ trợ',
+        'other': 'Người khác',
+        'unknown': 'Chưa rõ người được nhắc tới'
+      }[value] ??
+      'Chưa rõ người được nhắc tới';
 }

@@ -48,7 +48,7 @@ class CatalogScreenBanner extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.inset, vertical: AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   child: const Row(

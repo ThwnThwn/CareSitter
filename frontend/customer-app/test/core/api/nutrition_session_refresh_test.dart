@@ -93,6 +93,7 @@ void main() {
           }
           values[args['key'] as String] = args['value'] as String;
         }
+        if (call.method == 'delete') values.remove(args['key'] as String);
         if (call.method == 'deleteAll') values.clear();
         return null;
       });

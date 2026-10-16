@@ -126,14 +126,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/home',
     refreshListenable: refreshSignal,
-    redirect: (context, state) {
-      final isLoggedIn =
-          ref.read(authStateProvider).value?.isAuthenticated ?? false;
-      return authRouteRedirect(
-        location: state.matchedLocation,
-        isAuthenticated: isLoggedIn,
-      );
-    },
+    redirect: (context, state) => authSessionRouteRedirect(
+      location: state.uri.toString(),
+      isAuthenticated: ref
+          .read(authStateProvider.future)
+          .then((session) => session.isAuthenticated),
+    ),
     routes: [
       GoRoute(
           path: '/auth/forgot-password',

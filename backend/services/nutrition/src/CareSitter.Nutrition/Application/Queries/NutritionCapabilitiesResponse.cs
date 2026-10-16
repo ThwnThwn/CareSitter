@@ -1,3 +1,4 @@
 namespace CareSitter.Nutrition.Application;
 
-public sealed record NutritionCapabilitiesResponse(bool Enabled, bool AssessmentsEnabled, bool RecommendationsEnabled);
+public sealed record NutritionCapabilitiesResponse(bool Enabled, bool AssessmentsEnabled, bool RecommendationsEnabled,
+    bool FreeTextParserReady);

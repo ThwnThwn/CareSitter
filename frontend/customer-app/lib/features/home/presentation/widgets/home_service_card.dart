@@ -42,7 +42,7 @@ class HomeServiceCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 shape: BoxShape.circle,
               ),
               child: Center(

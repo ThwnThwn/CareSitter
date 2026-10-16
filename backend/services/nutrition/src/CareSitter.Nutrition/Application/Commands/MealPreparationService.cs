@@ -33,7 +33,7 @@ internal sealed class MealPreparationService
         var health = HealthSnapshotNormalizer.Normalize(snapshot, await session.ConceptsAsync(ct));
         var eligibility = NutritionEligibilityPolicy.Evaluate(snapshot, health, analyzed.Facts, rules, true);
         var date = previous?.PlannedDate ?? input.PlannedDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
-        var activeRules = rules.Where(r => analyzed.Facts.Any(f => f.Kind == "condition" && f.Assertion == "present"
+        var activeRules = rules.Where(r => analyzed.Facts.Any(f => f.Subject == "beneficiary" && f.Kind == "condition" && f.Assertion == "present"
             && f.Temporality == "current" && f.Code == r.ConditionCode)).Select(r => r.VersionId).Order().ToArray();
         if (eligibility.State == "eligible" && previous is not null &&
             (previous.CatalogRevision != revision || !NutritionCatalogConsistency.ContentCurrent(previous, recipes, rules)

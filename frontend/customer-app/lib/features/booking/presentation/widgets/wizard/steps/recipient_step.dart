@@ -7,6 +7,7 @@ import '../../../controllers/booking_wizard_controller.dart';
 import '../../../controllers/booking_wizard_state.dart';
 import '../../../controllers/self_recipient_controller.dart';
 import 'self_recipient_step.dart';
+import 'recipient_card.dart';
 
 class RecipientStep extends ConsumerWidget {
   const RecipientStep({super.key, required this.args});
@@ -61,38 +62,64 @@ class RecipientStep extends ConsumerWidget {
       if (choice.$1)
         SelfRecipientStep(args: args)
       else
-        ref.watch(bookingRecipientsProvider).when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => TextButton(
-                onPressed: () => ref.invalidate(bookingRecipientsProvider),
-                child: const Text('Thử lại')),
-            data: (items) => Column(children: [
-                  if (items.where((b) => !b.isSelf).isEmpty)
-                    const Text(
-                        'Chưa có hồ sơ người thân. Bạn có thể thêm ngay tại đây.'),
-                  RadioGroup<String>(
-                      groupValue: choice.$2,
-                      onChanged: (id) {
-                        final profile =
-                            items.where((b) => b.id == id).firstOrNull;
-                        if (profile != null) {
-                          ref
-                              .read(bookingWizardProvider(args).notifier)
-                              .selectRecipient(profile);
-                        }
-                      },
-                      child: Column(children: [
-                        for (final b in items.where((b) => !b.isSelf))
-                          RadioListTile<String>(
-                              value: b.id,
-                              title: Text(b.name),
-                              subtitle: Text('${b.ageLabel} • ${b.relation}'))
-                      ])),
-                  OutlinedButton.icon(
-                      icon: const Icon(Icons.person_add_outlined),
-                      label: const Text('Thêm người thân mới'),
-                      onPressed: () => _add(context, ref)),
-                ])),
+        _relativeRecipients(context, ref, choice.$2),
     ]);
+  }
+
+  Widget _relativeRecipients(
+      BuildContext context, WidgetRef ref, String? selectedId) {
+    return ref.watch(bookingRecipientsProvider).when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => TextButton(
+            onPressed: () => ref.invalidate(bookingRecipientsProvider),
+            child: const Text('Thử lại')),
+        data: (items) {
+          final relatives = items.where((b) => !b.isSelf).toList();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (relatives.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Text(
+                    'Chưa có hồ sơ người thân. Bạn có thể thêm ngay tại đây.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ),
+              ...relatives.map(
+                (beneficiary) => RecipientCard(
+                  beneficiary: beneficiary,
+                  isSelected: selectedId == beneficiary.id,
+                  onTap: () => ref
+                      .read(bookingWizardProvider(args).notifier)
+                      .selectRecipient(beneficiary),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  label: const Text('Thêm người thân mới'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side:
+                        const BorderSide(color: AppColors.primary, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.control),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  onPressed: () => _add(context, ref),
+                ),
+              ),
+            ],
+          );
+        });
   }
 }

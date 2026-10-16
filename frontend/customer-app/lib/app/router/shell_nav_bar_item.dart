@@ -58,7 +58,7 @@ class ShellNavBarItem extends StatelessWidget {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE74C3C),
+                        color: AppColors.error,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 1.5),
                       ),
