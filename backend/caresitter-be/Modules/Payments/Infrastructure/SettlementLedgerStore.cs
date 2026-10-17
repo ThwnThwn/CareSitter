@@ -1,14 +1,22 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace CareSitter.Modules.Payments.Infrastructure;
 
-internal sealed class SettlementLedgerStore(PaymentsDbContext db, WalletLedgerWriter writer)
+internal sealed class SettlementLedgerStore(
+    PaymentsDbContext db,
+    WalletLedgerWriter writer,
+    IDisputeLookupService disputes)
 {
     public async Task<Result> SettleAsync(Guid bookingId, Guid caregiverUserId,
         long caregiverAmount, long platformFeeAmount, CancellationToken ct)
     {
+        if (await disputes.HasOpenDisputeAsync(bookingId, ct))
+            return Error.Conflict("payments.dispute_open",
+                "Booking đang có tranh chấp, không thể giải ngân escrow.");
+
         if (db.Database.IsRelational())
             return await SettleRelationalAsync(
                 bookingId, caregiverUserId, caregiverAmount, platformFeeAmount, ct);
@@ -72,6 +80,16 @@ internal sealed class SettlementLedgerStore(PaymentsDbContext db, WalletLedgerWr
             // Payments owns its concurrency boundary. An advisory transaction lock
             // serializes ledger mutations without locking a Booking-owned row.
             await writer.AcquirePaymentLockAsync(bookingId, ct);
+
+            // Re-check while holding the same per-booking lock used when opening
+            // a dispute. This closes the gap between the application check and
+            // the immutable ledger write.
+            if (await disputes.HasOpenDisputeAsync(bookingId, ct))
+            {
+                await tx.RollbackAsync(ct);
+                return Error.Conflict("payments.dispute_open",
+                    "Booking đang có tranh chấp, không thể giải ngân escrow.");
+            }
 
             var settled = await db.LedgerEntries.AsNoTracking().AnyAsync(x =>
                 x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct);

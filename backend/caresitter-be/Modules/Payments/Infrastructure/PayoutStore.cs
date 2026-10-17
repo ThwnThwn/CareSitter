@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CareSitter.Modules.Payments.Application.Payouts;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.SharedKernel.Results;
@@ -63,21 +64,6 @@ internal sealed class PayoutStore(PaymentsDbContext db) : IPayoutStore
 
         var approved = payout.Approve(adminId);
         if (approved.IsFailure) return approved.Error;
-        var ledger = LedgerEntry.Create("PAYOUT", $"wallet:caregiver:{payout.CaregiverId}",
-            "bank:external", payout.Amount,
-            metadata: $"{{\"payout_request_id\":\"{payout.Id}\"}}",
-            payoutRequestId: payout.Id);
-        if (ledger.IsFailure) return ledger.Error;
-        var posted = ledger.Value.MarkPosted();
-        if (posted.IsFailure) return posted.Error;
-        db.LedgerEntries.Add(ledger.Value);
-
-        var released = await db.Database.ExecuteSqlInterpolatedAsync($$"""
-            UPDATE payments.wallet_accounts
-            SET pending_balance = pending_balance - {{payout.Amount}}, updated_at = now()
-            WHERE id = {{payout.WalletAccountId}} AND pending_balance >= {{payout.Amount}}
-            """, ct);
-        if (released == 0) return PayoutErrors.InvalidBalance();
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return payout;
@@ -105,6 +91,128 @@ internal sealed class PayoutStore(PaymentsDbContext db) : IPayoutStore
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return payout;
+    }
+
+    public async Task<PayoutRequest?> ClaimNextProviderWorkAsync(
+        DateTimeOffset now,
+        DateTimeOffset nextCheckAt,
+        CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var candidates = await db.PayoutRequests.FromSqlInterpolated($$"""
+            SELECT *
+            FROM payments.payout_requests
+            WHERE provider = 'PAYOS'
+              AND bank_bin IS NOT NULL
+              AND (
+                status = 'APPROVED'
+                OR (status = 'PROCESSING' AND
+                    (next_provider_check_at IS NULL OR next_provider_check_at <= {{now}}))
+              )
+            ORDER BY requested_at, id
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+            """).ToListAsync(ct);
+        var payout = candidates.SingleOrDefault();
+        if (payout is null)
+        {
+            await tx.CommitAsync(ct);
+            return null;
+        }
+
+        var claimed = payout.BeginProviderAttempt(now, nextCheckAt);
+        if (claimed.IsFailure)
+        {
+            await tx.RollbackAsync(ct);
+            return null;
+        }
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        db.Entry(payout).State = EntityState.Detached;
+        return payout;
+    }
+
+    public async Task<Result> ApplyProviderResultAsync(
+        Guid payoutId,
+        PayoutProviderResult result,
+        DateTimeOffset now,
+        DateTimeOffset nextCheckAt,
+        CancellationToken ct = default)
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var payout = await db.PayoutRequests.FromSqlInterpolated(
+                $"SELECT * FROM payments.payout_requests WHERE id = {payoutId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (payout is null) return PayoutErrors.NotFound();
+        if (payout.Status is "PAID" or "FAILED")
+        {
+            await tx.CommitAsync(ct);
+            return Result.Success();
+        }
+        if (payout.Status != "PROCESSING")
+            return Error.Conflict("payout.status", $"Payout đang ở trạng thái {payout.Status}.");
+
+        var next = result.Outcome is PayoutProviderOutcome.Processing or PayoutProviderOutcome.Unknown
+            ? nextCheckAt
+            : (DateTimeOffset?)null;
+        var recorded = payout.RecordProviderProgress(
+            result.ProviderPayoutId,
+            result.ProviderState,
+            result.ProviderTransactionId,
+            result.ErrorCode,
+            now,
+            next);
+        if (recorded.IsFailure) return recorded.Error;
+
+        if (result.Outcome == PayoutProviderOutcome.Succeeded)
+        {
+            var marked = payout.MarkPaid(now);
+            if (marked.IsFailure) return marked.Error;
+
+            var metadata = JsonSerializer.Serialize(new
+            {
+                payout_request_id = payout.Id,
+                provider = payout.Provider,
+                provider_payout_id = payout.ProviderPayoutId,
+                provider_transaction_id = payout.ProviderTransactionId
+            });
+            var ledger = LedgerEntry.Create(
+                "PAYOUT",
+                $"wallet:caregiver:{payout.CaregiverId}",
+                "bank:payos",
+                payout.Amount,
+                metadata: metadata,
+                payoutRequestId: payout.Id);
+            if (ledger.IsFailure) return ledger.Error;
+            var posted = ledger.Value.MarkPosted();
+            if (posted.IsFailure) return posted.Error;
+            db.LedgerEntries.Add(ledger.Value);
+
+            var released = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+                UPDATE payments.wallet_accounts
+                SET pending_balance = pending_balance - {{payout.Amount}}, updated_at = now()
+                WHERE id = {{payout.WalletAccountId}} AND pending_balance >= {{payout.Amount}}
+                """, ct);
+            if (released == 0) return PayoutErrors.InvalidBalance();
+        }
+        else if (result.Outcome == PayoutProviderOutcome.Failed)
+        {
+            var marked = payout.MarkFailed(now);
+            if (marked.IsFailure) return marked.Error;
+            var restored = await db.Database.ExecuteSqlInterpolatedAsync($$"""
+                UPDATE payments.wallet_accounts
+                SET available_balance = available_balance + {{payout.Amount}},
+                    pending_balance = pending_balance - {{payout.Amount}},
+                    updated_at = now()
+                WHERE id = {{payout.WalletAccountId}} AND pending_balance >= {{payout.Amount}}
+                """, ct);
+            if (restored == 0) return PayoutErrors.InvalidBalance();
+        }
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return Result.Success();
     }
 
     public async Task<PayoutPage> ListForCaregiverAsync(

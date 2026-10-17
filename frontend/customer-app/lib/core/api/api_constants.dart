@@ -77,4 +77,5 @@ class ApiPaths {
       '/reviews/caregiver/$caregiverId';
   static const disputes = '/disputes';
   static String dispute(String id) => '/disputes/$id';
+  static const refunds = '/refunds';
 }

@@ -53,6 +53,10 @@ public sealed class PaymentsModule : IModule
             PayoutValidationBehavior<RejectPayoutCommand, PayoutResponse>>();
         services.AddScoped<PayoutMapper>();
         services.AddScoped<IPayoutStore, PayoutStore>();
+        services.AddScoped<IPayoutProcessor, PayoutProcessor>();
+        services.AddScoped<IRefundStore, RefundStore>();
+        services.AddScoped<IOriginalPaymentRefundCoordinator, OriginalPaymentRefundCoordinator>();
+        services.AddScoped<IRefundProcessor, RefundProcessor>();
         services.AddScoped<IWalletLedgerStore, WalletLedgerStore>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddOptions<VNPayOptions>()
@@ -74,6 +78,8 @@ public sealed class PaymentsModule : IModule
             .Bind(configuration.GetSection(VNPayRefundOptions.SectionName))
             .Validate(options => !options.Enabled || VNPayRefundGateway.IsValidEndpoint(options.ApiUrl),
                 "Enabled VNPAY refunds require an explicit HTTPS API endpoint.")
+            .Validate(VNPayRefundOptions.HasValidWorkerSettings,
+                "Payments:VNPayRefund worker/IP settings are invalid.")
             .ValidateOnStart();
         // No redirect or retry handler: a second POST can move money a second time.
         services.AddHttpClient<IVNPayRefundGateway, VNPayRefundGateway>(client =>
@@ -86,6 +92,19 @@ public sealed class PaymentsModule : IModule
         services.AddHttpClient<IPayOSService, PayOSService>(client => client.Timeout = TimeSpan.FromSeconds(10))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddScoped<IPayOSPaymentPortal, PayOSPaymentPortal>();
+        services.AddOptions<PayOSPayoutOptions>()
+            .Bind(configuration.GetSection(PayOSPayoutOptions.SectionName))
+            .Validate(PayOSPayoutOptions.IsValid,
+                "payOS Payout bật cần đủ bộ ClientId, ApiKey, ChecksumKey riêng và polling hợp lệ.")
+            .ValidateOnStart();
+        // The official SDK signs requests, validates signed responses and retries create
+        // with the same provider idempotency key.
+        services.AddHttpClient<IPayoutProvider, PayOSPayoutProvider>(client =>
+                client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                AllowAutoRedirect = false
+            });
         services.AddScoped<IPaymentStatusGateway, PaymentStatusGateway>();
         services.AddModuleOutbox<PaymentsDbContext>(configuration, PaymentsDbContext.SchemaName,
             string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));
@@ -97,6 +116,8 @@ public sealed class PaymentsModule : IModule
         services.AddScoped<IPaymentOutboxDispatcher, PaymentOutboxDispatcher>();
         services.AddScoped<IAdminPaymentsReader, AdminPaymentsReader>();
         services.AddHostedService<PaymentOutboxWorker>();
+        services.AddHostedService<PayoutWorker>();
+        services.AddHostedService<RefundWorker>();
 
         // Đăng ký Controllers nằm trong assembly của Payments module
         services.AddControllers()

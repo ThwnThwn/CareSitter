@@ -12,11 +12,15 @@ internal sealed class WalletLedgerWriter(PaymentsDbContext db)
 
     internal Task<bool> HasDisputeResolutionMarkerAsync(
         Guid bookingId, string decision, CancellationToken ct) =>
-        decision == "CAREGIVER_WINS"
-            ? db.LedgerEntries.AsNoTracking().AnyAsync(x =>
-                x.BookingId == bookingId && x.TransactionType == "CAREGIVER_EARNING", ct)
-            : db.LedgerEntries.AsNoTracking().AnyAsync(x =>
-                x.BookingId == bookingId && x.TransactionType == "REFUND", ct);
+        db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+            x.BookingId == bookingId &&
+            x.TransactionType == "DISPUTE_RESOLUTION", ct);
+
+    internal Task<bool> HasSettlementAsync(Guid bookingId, CancellationToken ct) =>
+        db.LedgerEntries.AsNoTracking().AnyAsync(x =>
+            x.BookingId == bookingId &&
+            (x.TransactionType == "CAREGIVER_EARNING" ||
+             x.TransactionType == "DISPUTE_RESOLUTION"), ct);
 
     internal async Task<WalletAccount> GetOrCreateWalletAsync(
         Guid userId, string accountType, CancellationToken ct)

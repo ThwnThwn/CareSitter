@@ -9,6 +9,7 @@ import 'package:caregiver_app/features/earnings/presentation/controllers/earning
 import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_balance_card.dart';
 import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_bank_form.dart';
 import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_success_dialog.dart';
+import 'package:caregiver_app/features/earnings/domain/supported_bank.dart';
 
 class WithdrawalScreen extends ConsumerStatefulWidget {
   const WithdrawalScreen({super.key});
@@ -19,16 +20,15 @@ class WithdrawalScreen extends ConsumerStatefulWidget {
 
 class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   final _amountController = TextEditingController();
-  final _bankNameController = TextEditingController();
   final _accountHolderController = TextEditingController();
   final _accountNumberController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  SupportedBank? _selectedBank;
 
   @override
   void dispose() {
     _amountController.dispose();
-    _bankNameController.dispose();
     _accountHolderController.dispose();
     _accountNumberController.dispose();
     super.dispose();
@@ -40,13 +40,15 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
 
     final amountStr = _amountController.text.trim();
     final amount = double.tryParse(amountStr) ?? 0;
+    final bank = _selectedBank!;
 
     setState(() => _isLoading = true);
 
     final result = await ref.read(earningsProvider.notifier).withdraw(
           amount,
-          _bankNameController.text.trim(),
-          _accountNumberController.text.trim(),
+          bankName: bank.name,
+          bankBin: bank.bin,
+          accountNumber: _accountNumberController.text.trim(),
           accountHolderName: _accountHolderController.text.trim(),
         );
 
@@ -58,7 +60,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
       showWithdrawalSuccessDialog(
         context,
         amount: amount,
-        bankName: _bankNameController.text.trim(),
+        bankName: bank.name,
         onDismiss: () => Navigator.pop(context),
       );
     } else {
@@ -132,7 +134,8 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
 
               // ── Bank Account Inputs ──
               WithdrawalBankForm(
-                bankNameController: _bankNameController,
+                selectedBank: _selectedBank,
+                onBankChanged: (bank) => setState(() => _selectedBank = bank),
                 accountHolderController: _accountHolderController,
                 accountNumberController: _accountNumberController,
               ),

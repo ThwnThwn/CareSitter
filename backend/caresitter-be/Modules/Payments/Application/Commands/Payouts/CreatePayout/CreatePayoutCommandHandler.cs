@@ -35,6 +35,7 @@ internal sealed class CreatePayoutCommandHandler(
             idempotencyKey,
             request.Amount,
             request.BankName,
+            request.BankBin,
             request.AccountHolderName,
             encryption.Encrypt(request.AccountNumber.Trim()));
         if (payout.IsFailure)

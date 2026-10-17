@@ -85,7 +85,9 @@ internal sealed class PostgresRaceTestDatabase : IAsyncDisposable
     private async Task ApplySchemaAsync()
     {
         var migrationDirectory = FindMigrationDirectory();
-        var files = Directory.GetFiles(migrationDirectory, "*.sql")
+        var moduleDirectory = Path.Combine(migrationDirectory, "modules");
+        var files = Directory.GetFiles(
+                moduleDirectory, "*.sql", SearchOption.AllDirectories)
             .OrderBy(Path.GetFileName, StringComparer.Ordinal)
             .ToArray();
 

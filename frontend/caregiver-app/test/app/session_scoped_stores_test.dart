@@ -139,6 +139,7 @@ class _Wallet implements EarningsRepository {
   Future<void> requestWithdrawal(
       {required double amount,
       required String bankName,
+      required String bankBin,
       required String accountHolderName,
       required String accountNumber,
       required String idempotencyKey}) {
@@ -254,23 +255,35 @@ void main() {
     wallet.loads.first.complete(50);
     await flush();
     expect(container.read(earningsProvider).balance, 1000000);
-    final first =
-        controller.withdraw(100000, 'Bank', '123', accountHolderName: 'Name');
+    final first = controller.withdraw(100000,
+        bankName: 'Bank',
+        bankBin: '970436',
+        accountNumber: '1234',
+        accountHolderName: 'Name');
     expect(
-        await controller.withdraw(100000, 'Bank', '123',
+        await controller.withdraw(100000,
+            bankName: 'Bank',
+            bankBin: '970436',
+            accountNumber: '1234',
             accountHolderName: 'Name'),
         WithdrawalResult.ignored);
     expect(wallet.withdrawals, 1);
     wallet.withdrawal.completeError(StateError('transport failure'));
     expect(await first, WithdrawalResult.unknown);
     expect(
-        await controller.withdraw(200000, 'Bank', '123',
+        await controller.withdraw(200000,
+            bankName: 'Bank',
+            bankBin: '970436',
+            accountNumber: '1234',
             accountHolderName: 'Name'),
         WithdrawalResult.changedPayload);
     expect(wallet.withdrawals, 1,
         reason: 'An unknown payout cannot be replaced with another payload.');
     expect(
-        await controller.withdraw(100000, 'Bank', '123',
+        await controller.withdraw(100000,
+            bankName: 'Bank',
+            bankBin: '970436',
+            accountNumber: '1234',
             accountHolderName: 'Name'),
         WithdrawalResult.unknown);
     expect(wallet.withdrawals, 2);

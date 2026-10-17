@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="payOS" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="CareSitter.Modules.Payments.UnitTests" />
     <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
     <InternalsVisibleTo Include="CareSitter.Messaging.Tests" />

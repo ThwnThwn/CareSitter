@@ -21,6 +21,7 @@ class EarningsRepository {
   Future<void> requestWithdrawal({
     required double amount,
     required String bankName,
+    required String bankBin,
     required String accountHolderName,
     required String accountNumber,
     required String idempotencyKey,
@@ -30,6 +31,7 @@ class EarningsRepository {
       data: {
         'amount': amount.round(),
         'bankName': bankName,
+        'bankBin': bankBin,
         'accountHolderName': accountHolderName,
         'accountNumber': accountNumber,
         'idempotencyKey': idempotencyKey,

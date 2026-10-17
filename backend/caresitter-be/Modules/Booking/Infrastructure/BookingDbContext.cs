@@ -72,6 +72,7 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.CancelledByUserId).HasColumnName("cancelled_by_user_id");
             b.Property(x => x.CancelledByRole).HasColumnName("cancelled_by_role");
             b.Property(x => x.CancelReason).HasColumnName("cancel_reason");
+            b.Property(x => x.RefundAmount).HasColumnName("refund_amount");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.Property(x => x.SyncVersion)

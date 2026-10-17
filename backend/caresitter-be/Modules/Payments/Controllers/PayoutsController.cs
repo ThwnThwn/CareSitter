@@ -35,6 +35,7 @@ public sealed class PayoutsController : ControllerBase
         var result = await _mediator.Send(new CreatePayoutCommand(
             request.Amount,
             request.BankName,
+            request.BankBin,
             request.AccountHolderName,
             request.AccountNumber,
             request.IdempotencyKey,

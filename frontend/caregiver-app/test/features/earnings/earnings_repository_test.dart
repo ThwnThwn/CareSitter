@@ -27,6 +27,7 @@ void main() {
       await repository.requestWithdrawal(
           amount: 123456,
           bankName: 'Test Bank',
+          bankBin: '970436',
           accountHolderName: 'Test User',
           accountNumber: '000000',
           idempotencyKey: 'same-operation');
@@ -34,6 +35,7 @@ void main() {
     expect(http.payloads.first, {
       'amount': 123456,
       'bankName': 'Test Bank',
+      'bankBin': '970436',
       'accountHolderName': 'Test User',
       'accountNumber': '000000',
       'idempotencyKey': 'same-operation',

@@ -33,7 +33,7 @@ public sealed class GetAdminMetadataQueryHandler(
         var payoutStatuses = new[]
         {
             Option("PENDING", "Chờ duyệt", "warning"),
-            Option("APPROVED", "Đã duyệt", "success"),
+            Option("APPROVED", "Đã duyệt, chờ payOS", "info"),
             Option("REJECTED", "Đã từ chối", "danger"),
             Option("PROCESSING", "Đang chuyển", "info"),
             Option("PAID", "Đã trả", "success"),

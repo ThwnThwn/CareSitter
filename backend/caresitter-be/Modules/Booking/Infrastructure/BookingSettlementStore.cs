@@ -26,13 +26,34 @@ internal sealed class BookingSettlementStore(BookingDbContext db,
         }
     }
 
+    public async IAsyncEnumerable<BookingEntity> BookingsAwaitingRefundAsync(
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var ids = await db.Bookings.AsNoTracking()
+            .Where(x => (x.Status == BookingStatus.Cancelled ||
+                         x.Status == BookingStatus.Disputed) && x.RefundAmount > 0)
+            .OrderBy(x => x.UpdatedAt)
+            .Select(x => x.Id)
+            .Take(100)
+            .ToListAsync(ct);
+        foreach (var id in ids)
+        {
+            var booking = await db.Bookings.AsNoTracking().SingleOrDefaultAsync(x =>
+                x.Id == id && (x.Status == BookingStatus.Cancelled ||
+                               x.Status == BookingStatus.Disputed) &&
+                x.RefundAmount > 0, ct);
+            if (booking is not null) yield return booking;
+        }
+    }
+
     public async Task<BookingEntity?> MarkRefundedAsync(Guid bookingId, CancellationToken ct = default)
     {
         // Payments must commit before this lock: its ledger FK can otherwise deadlock with Booking.
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var booking = await db.Bookings.FromSqlInterpolated(
             $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync(ct);
-        if (booking is null || booking.Status != BookingStatus.MatchingFailed)
+        if (booking is null || booking.Status is not (BookingStatus.MatchingFailed or
+            BookingStatus.Cancelled or BookingStatus.Disputed))
         {
             await tx.CommitAsync(ct);
             return null;
@@ -44,7 +65,7 @@ internal sealed class BookingSettlementStore(BookingDbContext db,
             await tx.RollbackAsync(ct);
             return null;
         }
-        sync.WriteSyncEvent(booking, "REFUNDED_NO_CAREGIVER");
+        sync.WriteSyncEvent(booking, "REFUND_CONFIRMED_BY_PROVIDER");
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return booking;

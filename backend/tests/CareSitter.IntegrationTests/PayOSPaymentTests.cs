@@ -110,7 +110,7 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
     }
 
     [PostgresFact]
-    public async Task Invalid_signature_wrong_recipient_and_unknown_probe_cannot_credit_a_booking()
+    public async Task Invalid_signature_and_unknown_probe_cannot_credit_a_booking()
     {
         var booking = await CreateBookingAsync();
         var intent = await CreateIntentAsync(booking);
@@ -118,11 +118,29 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         var forged = JsonDocument.Parse(payload.GetRawText().Replace("100000", "999999")).RootElement;
         await using var scope = Scope();
         Assert.Equal(400, (await scope.PayOS.ProcessWebhookAsync(forged)).StatusCode);
-        Assert.Equal(400, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "wrong-recipient", accountNumber: "other-account"))).StatusCode);
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "registration-probe", orderCode: 1))).StatusCode);
         Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
         Assert.Empty(await scope.Payments.PaymentWebhooks.ToListAsync());
         Assert.Equal("PENDING", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
+    }
+
+    [PostgresFact]
+    public async Task Signed_callback_accepts_sender_account_that_differs_from_merchant_account()
+    {
+        var booking = await CreateBookingAsync();
+        var intent = await CreateIntentAsync(booking);
+        _bank.Paid = intent.Amount;
+        await using var scope = Scope();
+
+        // payOS callback accountNumber identifies the sender, not the merchant
+        // receiving account returned by create-link. It may legitimately differ.
+        var outcome = await scope.PayOS.ProcessWebhookAsync(
+            _bank.Webhook(intent, "different-sender", accountNumber: "other-account"));
+
+        Assert.Equal(200, outcome.StatusCode);
+        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.PaymentWebhooks.ToListAsync());
+        Assert.Equal("SUCCEEDED", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
     }
 
     [PostgresFact]

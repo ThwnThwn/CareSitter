@@ -16,11 +16,28 @@ public interface IWalletService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Hoàn toàn bộ escrow của booking vào Ví CareSitter của khách.
-    /// Idempotent theo bookingId: chạy lại không thể ghi có hai lần.
+    /// Bảo đảm có một yêu cầu hoàn toàn bộ số tiền thực thu về phương thức
+    /// thanh toán gốc. Lặp lại theo booking không tạo thêm giao dịch refund.
     /// </summary>
-    Task<Result> RefundToCustomerWalletAsync(Guid bookingId, Guid customerId,
+    Task<Result<OriginalPaymentRefundOutcome>> RequestOriginalPaymentRefundAsync(
+        Guid bookingId,
+        Guid customerId,
+        string reason,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Bảo đảm hoàn đúng số tiền đã phán quyết về phương thức thanh toán gốc.
+    /// Số tiền không được vượt quá payment intent đã thu thành công.
+    /// </summary>
+    Task<Result<OriginalPaymentRefundOutcome>> RequestOriginalPaymentRefundAsync(
+        Guid bookingId,
+        Guid customerId,
+        long amount,
+        string reason,
+        CancellationToken ct = default);
+
+    /// <summary>Cho biết settlement đã được ghi bất biến cho booking.</summary>
+    Task<bool> HasSettlementAsync(Guid bookingId, CancellationToken ct = default);
 
     /// <summary>
     /// Applies the final distribution selected by an admin for a dispute.
@@ -28,9 +45,10 @@ public interface IWalletService
     /// </summary>
     Task<Result> ResolveDisputeAsync(
         Guid bookingId,
-        Guid customerId,
         Guid caregiverId,
         long escrowAmount,
+        long customerPayableAmount,
+        long promotionSubsidyAmount,
         long platformFeeAmount,
         string decision,
         long? refundAmount,

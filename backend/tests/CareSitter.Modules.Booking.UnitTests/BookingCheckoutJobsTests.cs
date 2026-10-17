@@ -1,4 +1,5 @@
 using CareSitter.Modules.Booking.Application;
+using CareSitter.Contracts.Services;
 using BookingEntity = CareSitter.Modules.Booking.Domain.Booking;
 
 namespace CareSitter.Modules.Booking.UnitTests;
@@ -62,7 +63,8 @@ public sealed class BookingCheckoutJobsTests
         public Task LateCheckinAsync(BookingEntity booking, CancellationToken ct = default) => Notify();
         public Task CheckoutRequestedAsync(BookingJobChange change, CancellationToken ct = default) => Notify();
         public Task AutoConfirmedAsync(BookingJobChange change, CancellationToken ct = default) => Notify();
-        public Task RefundedAsync(BookingEntity booking, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task RefundedAsync(BookingEntity booking, OriginalPaymentRefundOutcome outcome,
+            CancellationToken ct = default) => throw new NotSupportedException();
         private Task Notify() { trace.Add($"notify:{++_count}"); return Task.CompletedTask; }
     }
 }

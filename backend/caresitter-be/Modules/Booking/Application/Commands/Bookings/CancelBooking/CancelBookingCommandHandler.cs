@@ -22,18 +22,16 @@ internal sealed class CancelBookingCommandHandler(
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
         var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
-        var result = booking.Cancel(userId, "CUSTOMER", request.Reason, clock.UtcNow);
+        var cancelledAt = clock.UtcNow;
+        var policy = BookingCancellationPolicy.Evaluate(booking, cancelledAt);
+        if (policy.IsFailure) return policy.Error;
+        var result = booking.Cancel(userId, "CUSTOMER", request.Reason, cancelledAt);
         if (result.IsFailure) return result.Error;
-        if (oldStatus == "in_progress")
+        if (policy.Value.RefundAmount > 0)
         {
-            var pendingTasks = await bookings.GetPendingCareTasksAsync(request.BookingId, ct);
-            foreach (var task in pendingTasks)
-            {
-                task.SkipBySystem("Booking bị hủy giữa ca");
-                bookings.AddTimelineEvent(CareTimelineEvent.Create(
-                    request.BookingId, booking.CaregiverId, "TASK_SKIPPED", $"Bỏ qua do hủy ca: {task.Name}",
-                    "Booking bị hủy giữa ca", taskId: task.Id, source: "SYSTEM"));
-            }
+            var scheduledRefund = booking.ScheduleOriginalPaymentRefund(
+                policy.Value.RefundAmount);
+            if (scheduledRefund.IsFailure) return scheduledRefund.Error;
         }
         var slotHolds = await bookings.GetActiveSlotHoldsAsync(booking.Id, ct);
         foreach (var slotHold in slotHolds)

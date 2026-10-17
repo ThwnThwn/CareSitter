@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/features/earnings/domain/supported_bank.dart';
 
 /// Cụm form nhập thông tin tài khoản ngân hàng nhận tiền.
 class WithdrawalBankForm extends StatelessWidget {
-  final TextEditingController bankNameController;
+  final SupportedBank? selectedBank;
+  final ValueChanged<SupportedBank?> onBankChanged;
   final TextEditingController accountHolderController;
   final TextEditingController accountNumberController;
 
   const WithdrawalBankForm({
     super.key,
-    required this.bankNameController,
+    required this.selectedBank,
+    required this.onBankChanged,
     required this.accountHolderController,
     required this.accountNumberController,
   });
@@ -29,18 +32,22 @@ class WithdrawalBankForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.compact),
-        TextFormField(
-          controller: bankNameController,
-          textInputAction: TextInputAction.next,
-          validator: (val) => val == null || val.trim().isEmpty
-              ? 'Vui lòng nhập tên ngân hàng'
-              : null,
-          decoration: InputDecoration(
+        DropdownButtonFormField<SupportedBank>(
+          initialValue: selectedBank,
+          isExpanded: true,
+          menuMaxHeight: 360,
+          decoration: const InputDecoration(
             labelText: 'Ngân hàng',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
+            hintText: 'Chọn ngân hàng nhận tiền',
           ),
+          items: supportedPayoutBanks
+              .map((bank) => DropdownMenuItem(
+                    value: bank,
+                    child: Text(bank.label, overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(growable: false),
+          onChanged: onBankChanged,
+          validator: (bank) => bank == null ? 'Vui lòng chọn ngân hàng' : null,
         ),
         const SizedBox(height: AppSpacing.compact),
         TextFormField(
@@ -49,25 +56,27 @@ class WithdrawalBankForm extends StatelessWidget {
           validator: (val) => val == null || val.trim().isEmpty
               ? 'Vui lòng nhập tên chủ tài khoản'
               : null,
-          decoration: InputDecoration(
+          textCapitalization: TextCapitalization.characters,
+          decoration: const InputDecoration(
             labelText: 'Tên chủ tài khoản',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
+            hintText: 'Đúng như trên tài khoản ngân hàng',
           ),
         ),
         const SizedBox(height: AppSpacing.compact),
         TextFormField(
           controller: accountNumberController,
           keyboardType: TextInputType.number,
-          validator: (val) => val == null || val.trim().isEmpty
-              ? 'Vui lòng nhập số tài khoản'
-              : null,
-          decoration: InputDecoration(
+          validator: (val) {
+            final value = val?.trim() ?? '';
+            if (value.isEmpty) return 'Vui lòng nhập số tài khoản';
+            if (!RegExp(r'^\d{4,50}$').hasMatch(value)) {
+              return 'Số tài khoản chỉ gồm chữ số';
+            }
+            return null;
+          },
+          decoration: const InputDecoration(
             labelText: 'Số tài khoản',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
+            hintText: 'Không nhập số thẻ',
           ),
         ),
       ],

@@ -6,6 +6,7 @@ namespace CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
 public sealed record CreatePayoutCommand(
     long Amount,
     string BankName,
+    string BankBin,
     string AccountHolderName,
     string AccountNumber,
     string? BodyIdempotencyKey,

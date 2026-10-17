@@ -17,12 +17,21 @@ internal sealed class PayoutMapper(IEncryptionService encryption)
             payout.WalletAccountId,
             payout.Amount,
             payout.BankName,
+            payout.BankBin,
             payout.AccountHolderName,
             payout.Status,
             revealAccountNumber ? accountNumber : MaskAccountNumber(accountNumber),
             payout.RequestedAt,
             payout.ReviewedAt,
-            payout.RejectReason);
+            payout.RejectReason,
+            payout.Provider,
+            payout.ProviderReferenceId,
+            payout.ProviderPayoutId,
+            payout.ProviderState,
+            payout.ProviderTransactionId,
+            payout.ProviderErrorCode,
+            payout.ProviderAttemptCount,
+            payout.CompletedAt);
     }
 
     private string ReadAccountNumber(string storedValue)

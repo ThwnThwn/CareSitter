@@ -6,30 +6,18 @@ namespace CareSitter.Modules.Payments.Infrastructure;
 
 internal sealed class DisputeLedgerStore(PaymentsDbContext db, WalletLedgerWriter writer)
 {
-    public async Task<Result> ResolveAsync(Guid bookingId, Guid customerId, Guid caregiverUserId,
+    public async Task<Result> ResolveAsync(Guid bookingId, Guid caregiverUserId,
         DisputeAllocation allocation, CancellationToken ct)
     {
-        var (normalizedDecision, refund, fee, penalty, caregiverAmount) = allocation;
+        var (normalizedDecision, _, promotionReversal, fee, penalty, caregiverAmount) = allocation;
         if (db.Database.IsRelational())
             return await ResolveDisputeRelationalAsync(
-                bookingId, customerId, caregiverUserId,
-                normalizedDecision, refund, fee, penalty, caregiverAmount, ct);
+                bookingId, caregiverUserId,
+                normalizedDecision, promotionReversal, fee, penalty, caregiverAmount, ct);
 
         var alreadyResolved = await writer.HasDisputeResolutionMarkerAsync(
             bookingId, normalizedDecision, ct);
         if (alreadyResolved) return Result.Success();
-
-        if (refund > 0)
-        {
-            var customerWallet = await writer.GetOrCreateWalletAsync(customerId, "CUSTOMER", ct);
-            var credited = customerWallet.AddAvailable(refund);
-            if (credited.IsFailure) return credited.Error;
-            var entry = WalletLedgerWriter.CreatePostedEntry("REFUND", "escrow:platform",
-                $"wallet:customer:{customerId}", refund, bookingId,
-                $"{{\"decision\":\"{normalizedDecision}\"}}");
-            if (entry.IsFailure) return entry.Error;
-            db.LedgerEntries.Add(entry.Value);
-        }
 
         if (caregiverAmount > 0)
         {
@@ -61,16 +49,30 @@ internal sealed class DisputeLedgerStore(PaymentsDbContext db, WalletLedgerWrite
             db.LedgerEntries.Add(entry.Value);
         }
 
+        if (promotionReversal > 0)
+        {
+            var entry = WalletLedgerWriter.CreatePostedEntry("PROMOTION_REVERSAL",
+                "escrow:platform", "revenue:platform", promotionReversal, bookingId,
+                $"{{\"decision\":\"{normalizedDecision}\"}}");
+            if (entry.IsFailure) return entry.Error;
+            db.LedgerEntries.Add(entry.Value);
+        }
+
+        var marker = WalletLedgerWriter.CreatePostedEntry("DISPUTE_RESOLUTION",
+            "escrow:platform", "escrow:platform", 0, bookingId,
+            $"{{\"decision\":\"{normalizedDecision}\"}}");
+        if (marker.IsFailure) return marker.Error;
+        db.LedgerEntries.Add(marker.Value);
+
         await db.SaveChangesAsync(ct);
         return Result.Success();
     }
 
     private async Task<Result> ResolveDisputeRelationalAsync(
         Guid bookingId,
-        Guid customerId,
         Guid caregiverUserId,
         string decision,
-        long refund,
+        long promotionReversal,
         long fee,
         long penalty,
         long caregiverAmount,
@@ -84,21 +86,6 @@ internal sealed class DisputeLedgerStore(PaymentsDbContext db, WalletLedgerWrite
             {
                 await tx.CommitAsync(ct);
                 return Result.Success();
-            }
-
-            if (refund > 0)
-            {
-                await writer.EnsureWalletAsync(customerId, "CUSTOMER", ct);
-                await db.Database.ExecuteSqlInterpolatedAsync($$"""
-                    UPDATE payments.wallet_accounts
-                    SET available_balance = available_balance + {{refund}}, updated_at = now()
-                    WHERE user_id = {{customerId}} AND account_type = 'CUSTOMER'
-                    """, ct);
-                var entry = WalletLedgerWriter.CreatePostedEntry("REFUND", "escrow:platform",
-                    $"wallet:customer:{customerId}", refund, bookingId,
-                    $"{{\"decision\":\"{decision}\"}}");
-                if (entry.IsFailure) return entry.Error;
-                db.LedgerEntries.Add(entry.Value);
             }
 
             if (caregiverAmount > 0)
@@ -133,6 +120,21 @@ internal sealed class DisputeLedgerStore(PaymentsDbContext db, WalletLedgerWrite
                 if (entry.IsFailure) return entry.Error;
                 db.LedgerEntries.Add(entry.Value);
             }
+
+            if (promotionReversal > 0)
+            {
+                var entry = WalletLedgerWriter.CreatePostedEntry("PROMOTION_REVERSAL",
+                    "escrow:platform", "revenue:platform", promotionReversal, bookingId,
+                    $"{{\"decision\":\"{decision}\"}}");
+                if (entry.IsFailure) return entry.Error;
+                db.LedgerEntries.Add(entry.Value);
+            }
+
+            var marker = WalletLedgerWriter.CreatePostedEntry("DISPUTE_RESOLUTION",
+                "escrow:platform", "escrow:platform", 0, bookingId,
+                $"{{\"decision\":\"{decision}\"}}");
+            if (marker.IsFailure) return marker.Error;
+            db.LedgerEntries.Add(marker.Value);
 
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

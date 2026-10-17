@@ -9,6 +9,7 @@ namespace CareSitter.Modules.Payments.Controllers;
 public sealed record CreatePayoutRequest(
     long Amount,
     string BankName,
+    string BankBin,
     string AccountHolderName,
     string AccountNumber,
     string? IdempotencyKey = null);

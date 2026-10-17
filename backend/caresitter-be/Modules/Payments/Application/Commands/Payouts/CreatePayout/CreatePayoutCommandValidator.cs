@@ -14,15 +14,28 @@ public sealed class CreatePayoutCommandValidator
         RuleFor(x => x.BankName)
             .Must(value => !string.IsNullOrWhiteSpace(value))
             .WithErrorCode("payout.bank_name")
-            .WithMessage("bank_name không được rỗng.");
+            .WithMessage("bank_name không được rỗng.")
+            .MaximumLength(255)
+            .WithErrorCode("payout.bank_name")
+            .WithMessage("bank_name tối đa 255 ký tự.");
+        RuleFor(x => x.BankBin)
+            .Matches("^[0-9]{6}$")
+            .WithErrorCode("payout.bank_bin")
+            .WithMessage("bank_bin phải gồm đúng 6 chữ số.");
         RuleFor(x => x.AccountHolderName)
             .Must(value => !string.IsNullOrWhiteSpace(value))
             .WithErrorCode("payout.account_holder_name")
-            .WithMessage("account_holder_name không được rỗng.");
+            .WithMessage("account_holder_name không được rỗng.")
+            .MaximumLength(255)
+            .WithErrorCode("payout.account_holder_name")
+            .WithMessage("account_holder_name tối đa 255 ký tự.");
         RuleFor(x => x.AccountNumber)
             .Must(value => !string.IsNullOrWhiteSpace(value))
             .WithErrorCode("payout.account_number")
-            .WithMessage("account_number không được rỗng.");
+            .WithMessage("account_number không được rỗng.")
+            .Matches("^[0-9]{4,50}$")
+            .WithErrorCode("payout.account_number")
+            .WithMessage("account_number phải gồm 4-50 chữ số.");
         RuleFor(x => x).Custom((command, context) =>
         {
             var key = command.ResolveIdempotencyKey();

@@ -10,6 +10,7 @@ using CareSitter.Modules.Payments.Application.Payouts;
 using CareSitter.Modules.Payments.Application.Payouts.ApprovePayout;
 using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
 using CareSitter.Modules.Payments.Application.Payouts.RejectPayout;
+using CareSitter.Modules.Payments.Application.Refunds;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -109,8 +110,8 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         if (status == "APPROVED")
         {
             Assert.Equal(100_000, available);
-            Assert.Equal(0, pending);
-            Assert.Equal(1, ledgerCount);
+            Assert.Equal(100_000, pending);
+            Assert.Equal(0, ledgerCount);
         }
         else
         {
@@ -119,6 +120,104 @@ public sealed class PaymentRaceTests : IAsyncLifetime
             Assert.Equal(0, pending);
             Assert.Equal(0, ledgerCount);
         }
+    }
+
+    [PostgresFact]
+    public async Task ProviderSuccess_ReleasesPendingAndPostsPayoutExactlyOnce()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 200_000);
+        var created = await CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N"));
+        Assert.True(created.IsSuccess, created.Error.Message);
+        var payout = created.Value.Payout;
+        var adminId = await GetAdminUserIdAsync();
+        var approved = await ReviewPayoutAsync(adminId, payout.Id, approve: true);
+        Assert.True(approved.IsSuccess, approved.Error.Message);
+
+        await using (var db = CreatePaymentsDbContext())
+        {
+            var store = new PayoutStore(db);
+            var claimed = await store.ClaimNextProviderWorkAsync(
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddSeconds(15));
+            Assert.NotNull(claimed);
+            Assert.Equal(payout.Id, claimed.Id);
+
+            var providerResult = new PayoutProviderResult(
+                PayoutProviderOutcome.Succeeded,
+                "COMPLETED:SUCCEEDED",
+                "payos-payout-1",
+                "bank-reference-1");
+            Assert.True((await store.ApplyProviderResultAsync(
+                payout.Id, providerResult, DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.AddSeconds(15))).IsSuccess);
+            Assert.True((await store.ApplyProviderResultAsync(
+                payout.Id, providerResult, DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.AddSeconds(15))).IsSuccess);
+        }
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT payout.status, wallet.available_balance, wallet.pending_balance,
+                   (SELECT count(*) FROM payments.ledger_entries ledger
+                    WHERE ledger.payout_request_id = payout.id),
+                   payout.provider_payout_id
+            FROM payments.payout_requests payout
+            JOIN payments.wallet_accounts wallet ON wallet.id = payout.wallet_account_id
+            WHERE payout.id = @id
+            """, connection);
+        command.Parameters.AddWithValue("id", payout.Id);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("PAID", reader.GetString(0));
+        Assert.Equal(100_000, reader.GetInt64(1));
+        Assert.Equal(0, reader.GetInt64(2));
+        Assert.Equal(1, reader.GetInt64(3));
+        Assert.Equal("payos-payout-1", reader.GetString(4));
+    }
+
+    [PostgresFact]
+    public async Task ProviderFailure_RestoresAvailableBalanceWithoutLedger()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 200_000);
+        var created = await CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N"));
+        Assert.True(created.IsSuccess, created.Error.Message);
+        var payout = created.Value.Payout;
+        var approved = await ReviewPayoutAsync(
+            await GetAdminUserIdAsync(), payout.Id, approve: true);
+        Assert.True(approved.IsSuccess, approved.Error.Message);
+
+        await using (var db = CreatePaymentsDbContext())
+        {
+            var store = new PayoutStore(db);
+            Assert.NotNull(await store.ClaimNextProviderWorkAsync(
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddSeconds(15)));
+            var failed = new PayoutProviderResult(
+                PayoutProviderOutcome.Failed,
+                "REJECTED:FAILED",
+                "payos-payout-rejected",
+                ErrorCode: "DESTINATION_INVALID");
+            Assert.True((await store.ApplyProviderResultAsync(
+                payout.Id, failed, DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.AddSeconds(15))).IsSuccess);
+        }
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT payout.status, wallet.available_balance, wallet.pending_balance,
+                   (SELECT count(*) FROM payments.ledger_entries ledger
+                    WHERE ledger.payout_request_id = payout.id)
+            FROM payments.payout_requests payout
+            JOIN payments.wallet_accounts wallet ON wallet.id = payout.wallet_account_id
+            WHERE payout.id = @id
+            """, connection);
+        command.Parameters.AddWithValue("id", payout.Id);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("FAILED", reader.GetString(0));
+        Assert.Equal(200_000, reader.GetInt64(1));
+        Assert.Equal(0, reader.GetInt64(2));
+        Assert.Equal(0, reader.GetInt64(3));
     }
 
     [PostgresFact]
@@ -132,9 +231,10 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         {
             await using var db = CreatePaymentsDbContext();
             var service = new WalletService(
-                new WalletLedgerStore(db),
+                new WalletLedgerStore(db, new DisputeLookupStub()),
                 new DisputeLookupStub(),
-                new PeopleLookupStub(caregiver.ProfileId, caregiver.UserId));
+                new PeopleLookupStub(caregiver.ProfileId, caregiver.UserId),
+                new RefundCoordinatorStub());
             return await service.SettleAsync(
                 booking.BookingId, caregiver.ProfileId, 100_000, 15_000);
         }
@@ -304,6 +404,7 @@ public sealed class PaymentRaceTests : IAsyncLifetime
         return await handler.Handle(new CreatePayoutCommand(
             100_000,
             "VCB",
+            "970436",
             "NGUYEN VAN A",
             "0123456789",
             idempotencyKey,
@@ -492,6 +593,18 @@ public sealed class PaymentRaceTests : IAsyncLifetime
     {
         public Task<bool> HasOpenDisputeAsync(Guid bookingId, CancellationToken ct = default) =>
             Task.FromResult(false);
+    }
+
+    private sealed class RefundCoordinatorStub : IOriginalPaymentRefundCoordinator
+    {
+        public Task<CareSitter.SharedKernel.Results.Result<OriginalPaymentRefundOutcome>> EnsureRefundAsync(
+            Guid bookingId,
+            Guid customerId,
+            long? amount,
+            string reason,
+            CancellationToken ct = default) =>
+            Task.FromResult<CareSitter.SharedKernel.Results.Result<OriginalPaymentRefundOutcome>>(
+                new OriginalPaymentRefundOutcome(OriginalPaymentRefundState.Pending));
     }
 
     private sealed class PeopleLookupStub(Guid profileId, Guid userId) : IPeopleLookupService

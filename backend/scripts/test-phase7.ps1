@@ -363,8 +363,12 @@ function Test-LegacyUpgrade {
     New-Item -ItemType Directory -Force -Path $legacyDirectory | Out-Null
     $temporaryDirectories.Add($legacyDirectory)
 
-    $allMigrations = Get-ChildItem -LiteralPath $migrationDirectory -File |
-        Where-Object { $_.Name -match '^(?<number>\d{2})-.*\.sql$' } |
+    $moduleMigrationDirectory = Join-Path $migrationDirectory 'modules'
+    $allMigrations = Get-ChildItem -LiteralPath $moduleMigrationDirectory -File -Recurse |
+        Where-Object {
+            $_.Name -match '^(?<number>\d{2})-.*\.sql$' -and
+            $_.Name -ne '00-init.sql'
+        } |
         Sort-Object Name
     foreach ($migration in $allMigrations) {
         if ([int]$migration.Name.Substring(0, 2) -le 25) {

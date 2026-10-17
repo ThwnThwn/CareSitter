@@ -20,6 +20,7 @@ class EarningsController extends StateNotifier<EarningsState> {
   ({
     double amount,
     String bank,
+    String bankBin,
     String holder,
     String account,
     String key
@@ -120,9 +121,10 @@ class EarningsController extends StateNotifier<EarningsState> {
   }
 
   Future<WithdrawalResult> withdraw(
-    double amount,
-    String bankName,
-    String accountNumber, {
+    double amount, {
+    required String bankName,
+    required String bankBin,
+    required String accountNumber,
     required String accountHolderName,
   }) async {
     if (!mounted || _withdrawing) {
@@ -132,6 +134,7 @@ class EarningsController extends StateNotifier<EarningsState> {
     if (pending != null &&
         (pending.amount != amount ||
             pending.bank != bankName ||
+            pending.bankBin != bankBin ||
             pending.holder != accountHolderName ||
             pending.account != accountNumber)) {
       return WithdrawalResult.changedPayload;
@@ -151,6 +154,7 @@ class EarningsController extends StateNotifier<EarningsState> {
     _pendingWithdrawal = (
       amount: amount,
       bank: bankName,
+      bankBin: bankBin,
       holder: accountHolderName,
       account: accountNumber,
       key: key
@@ -160,6 +164,7 @@ class EarningsController extends StateNotifier<EarningsState> {
       await _repository.requestWithdrawal(
         amount: amount,
         bankName: bankName,
+        bankBin: bankBin,
         accountHolderName: accountHolderName,
         accountNumber: accountNumber,
         idempotencyKey: key,

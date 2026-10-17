@@ -85,6 +85,7 @@ public sealed class Booking : AggregateRoot
     public Guid? CancelledByUserId { get; private set; }
     public string? CancelledByRole { get; private set; }
     public string? CancelReason { get; private set; }
+    public long? RefundAmount { get; private set; }
 
     public static Result<Booking> Create(
         Guid customerId,
@@ -282,6 +283,30 @@ public sealed class Booking : AggregateRoot
         CancelledByUserId = userId;
         CancelledByRole = role;
         CancelReason = reason?.Trim();
+        return Result.Success();
+    }
+
+    public Result ScheduleOriginalPaymentRefund(long amount)
+    {
+        if (Status != BookingStatus.Cancelled || CancelledAt is null)
+            return Error.Conflict("booking.refund_policy",
+                "Chỉ booking đã hủy mới được lên lịch hoàn tiền.");
+        if (amount <= 0 || amount > CustomerPayableAmount)
+            return Error.Validation("booking.refund_amount",
+                "Số tiền hoàn phải lớn hơn 0 và không vượt số tiền thực thu.");
+        RefundAmount = amount;
+        return Result.Success();
+    }
+
+    public Result RecordDisputeRefund(long amount)
+    {
+        if (Status != BookingStatus.Disputed)
+            return Error.Conflict("booking.refund_policy",
+                "Chỉ booking đang tranh chấp mới được ghi nhận phán quyết hoàn tiền.");
+        if (amount < 0 || amount > CustomerPayableAmount)
+            return Error.Validation("booking.refund_amount",
+                "Số tiền hoàn không được vượt số tiền thực thu.");
+        RefundAmount = amount;
         return Result.Success();
     }
 

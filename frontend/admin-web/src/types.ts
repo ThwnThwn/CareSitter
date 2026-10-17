@@ -189,12 +189,21 @@ export type Payout = {
   walletAccountId: string;
   amount: number;
   bankName: string;
+  bankBin: string;
   accountHolderName: string;
   accountNumber: string;
   status: string;
   requestedAt: string;
   reviewedAt?: string;
   rejectReason?: string;
+  provider: string;
+  providerReferenceId: string;
+  providerPayoutId?: string;
+  providerState?: string;
+  providerTransactionId?: string;
+  providerErrorCode?: string;
+  providerAttemptCount: number;
+  completedAt?: string;
 };
 
 export type PaymentReview = {
@@ -215,6 +224,32 @@ export type PaymentReview = {
   provider?: string;
   intentStatus?: string;
   canResolve?: boolean;
+};
+
+export type RefundRequest = {
+  id: string;
+  bookingId: string;
+  paymentIntentId: string;
+  customerId: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  status: string;
+  requestId: string;
+  originalProviderOrderRef?: string;
+  originalProviderTransactionId?: string;
+  providerResponseId?: string;
+  providerRefundId?: string;
+  providerTransactionStatus?: string;
+  lastErrorCode?: string;
+  attemptCount: number;
+  requestedAt: string;
+  lastAttemptAt?: string;
+  nextAttemptAt?: string;
+  completedAt?: string;
+  confirmedByAdminId?: string;
+  adminConfirmationNote?: string;
 };
 
 export type SupportTicket = {

@@ -23,23 +23,46 @@ internal sealed class BookingJobsService(BookingCheckoutJobs checkoutJobs, IBook
     public async Task RefundUnmatchedBookingsAsync()
     {
         await foreach (var booking in settlements.UnmatchedBookingsAsync())
+            await ProcessOriginalPaymentRefundAsync(booking, "NO_CAREGIVER_AVAILABLE");
+        await foreach (var booking in settlements.BookingsAwaitingRefundAsync())
+            await ProcessOriginalPaymentRefundAsync(booking,
+                booking.Status == BookingStatus.Disputed
+                    ? "DISPUTE_CUSTOMER_REFUND"
+                    : "CUSTOMER_CANCELLATION");
+    }
+
+    private async Task ProcessOriginalPaymentRefundAsync(
+        CareSitter.Modules.Booking.Domain.Booking booking,
+        string reason)
+    {
+        try
         {
-            try
+            var amount = booking.RefundAmount ?? booking.CustomerPayableAmount;
+            var requested = await wallet.RequestOriginalPaymentRefundAsync(
+                booking.Id, booking.CustomerId, amount, reason);
+            if (requested.IsFailure)
             {
-                var credited = await wallet.RefundToCustomerWalletAsync(booking.Id, booking.CustomerId);
-                if (credited.IsFailure)
-                {
-                    logger.LogWarning("Could not credit customer wallet for unmatched booking {BookingId}: {Reason}",
-                        booking.Id, credited.Error.Message);
-                    continue;
-                }
+                logger.LogWarning(
+                    "Could not ensure original-payment refund for booking {BookingId}: {ErrorCode}",
+                    booking.Id, requested.Error.Code);
+                return;
+            }
+
+            if (requested.Value.State == OriginalPaymentRefundState.Confirmed)
+            {
                 var refunded = await settlements.MarkRefundedAsync(booking.Id);
-                if (refunded is not null) await notifier.RefundedAsync(refunded);
+                if (refunded is not null)
+                    await notifier.RefundedAsync(refunded, requested.Value);
             }
-            catch (Exception error)
-            {
-                logger.LogError(error, "Failed to refund unmatched booking {BookingId}", booking.Id);
-            }
+            else if (requested.Value.State is OriginalPaymentRefundState.Failed or
+                     OriginalPaymentRefundState.NotRequired)
+                logger.LogWarning(
+                    "Refund for booking {BookingId} is {RefundState}; booking remains unchanged.",
+                    booking.Id, requested.Value.State);
+        }
+        catch (Exception error)
+        {
+            logger.LogError(error, "Failed to reconcile refund for booking {BookingId}", booking.Id);
         }
     }
 

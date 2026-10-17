@@ -17,6 +17,12 @@ $migrationDirectory = if ([string]::IsNullOrWhiteSpace($MigrationPath)) {
 else {
     (Resolve-Path -LiteralPath $MigrationPath).Path
 }
+$migrationSearchDirectory = if ([string]::IsNullOrWhiteSpace($MigrationPath)) {
+    Join-Path $migrationDirectory 'modules'
+}
+else {
+    $migrationDirectory
+}
 $destructiveMigrations = @(
     '19-drop-caregiver-availability.sql',
     '21-drop-caregiver-hourly-rate.sql'
@@ -83,9 +89,10 @@ if ([string]::IsNullOrWhiteSpace($script:databaseUser) -or [string]::IsNullOrWhi
 
 Invoke-DatabaseSql 'CREATE TABLE IF NOT EXISTS public.schema_migrations (filename text PRIMARY KEY, checksum_sha256 varchar(64) NOT NULL, applied_at timestamptz NOT NULL DEFAULT now());'
 
-$migrations = Get-ChildItem $migrationDirectory -File |
+$migrations = Get-ChildItem $migrationSearchDirectory -File -Recurse |
     Where-Object {
         $_.Name -match '^(?<number>\d{2})-.*\.sql$' -and
+        $_.Name -ne '00-init.sql' -and
         [int]$Matches.number -ge $From
     } |
     Sort-Object Name
@@ -113,7 +120,9 @@ foreach ($migration in $migrations) {
         throw "Checksum mismatch for applied migration '$fileName'. Restore the original file and add a new migration instead."
     }
 
-    $containerMigrationFile = "/docker-entrypoint-initdb.d/$fileName"
+    $relativePath = [System.IO.Path]::GetRelativePath(
+        $migrationDirectory, $migration.FullName).Replace('\', '/')
+    $containerMigrationFile = "/docker-entrypoint-initdb.d/$relativePath"
     Write-Host "Applying: $fileName"
     & docker exec $ContainerName psql -v ON_ERROR_STOP=1 -U $script:databaseUser -d $script:databaseName -f $containerMigrationFile
     if ($LASTEXITCODE -ne 0) {

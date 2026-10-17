@@ -1,5 +1,7 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Application.Refunds;
+using CareSitter.Modules.Payments.Domain;
 using CareSitter.Modules.Payments.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -37,29 +39,132 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
     }
 
     [PostgresFact]
-    public async Task ConcurrentRefundRetry_CreditsCustomerExactlyOnce()
+    public async Task ConcurrentOriginalRefundRequest_CreatesOneManualPayOSRequestWithoutCreditingWallet()
     {
         var seed = await GetSeedAsync();
         var bookingId = await CreateFinancialBookingAsync(seed, "MATCHING_FAILED");
         await ResetWalletsAsync(seed);
         await InsertEscrowLockAsync(bookingId, 100_000);
+        await InsertSucceededPayOSIntentAsync(bookingId, seed.CustomerId, 100_000);
 
         async Task ResolveAsync()
         {
             await using var db = CreatePaymentsDbContext();
             var service = CreateWalletService(db, seed);
-            var result = await service.RefundToCustomerWalletAsync(
-                bookingId, seed.CustomerId);
+            var result = await service.RequestOriginalPaymentRefundAsync(
+                bookingId, seed.CustomerId, "NO_CAREGIVER_AVAILABLE");
             Assert.True(result.IsSuccess, result.Error.Message);
+            Assert.Equal(OriginalPaymentRefundState.ManualActionRequired, result.Value.State);
         }
 
         await Task.WhenAll(ResolveAsync(), ResolveAsync());
 
         var state = await ReadFinancialStateAsync(bookingId, seed);
-        Assert.Equal(100_000, state.CustomerAvailable);
+        Assert.Equal(0, state.CustomerAvailable);
         Assert.Equal(0, state.CaregiverAvailable);
+        Assert.Equal(0, state.RefundCount);
+        Assert.Equal(0, state.RefundAmount);
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT count(*), min(status), min(provider), min(amount)
+            FROM payments.refund_requests
+            WHERE booking_id = @booking_id
+            """, connection);
+        command.Parameters.AddWithValue("booking_id", bookingId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt64(0));
+        Assert.Equal("MANUAL_REQUIRED", reader.GetString(1));
+        Assert.Equal("PAYOS", reader.GetString(2));
+        Assert.Equal(100_000, reader.GetInt64(3));
+    }
+
+    [PostgresFact]
+    public async Task ProviderConfirmedVNPayRefund_PostsOneExternalRefundLedgerWithoutCreditingWallet()
+    {
+        var seed = await GetSeedAsync();
+        var bookingId = await CreateFinancialBookingAsync(seed, "MATCHING_FAILED");
+        await ResetWalletsAsync(seed);
+        await InsertEscrowLockAsync(bookingId, 100_000);
+        var paymentIntentId = await InsertSucceededVNPayIntentAsync(
+            bookingId, seed.CustomerId, 100_000);
+
+        await using (var createDb = CreatePaymentsDbContext())
+        {
+            var coordinator = new OriginalPaymentRefundCoordinator(new RefundStore(createDb));
+            var created = await coordinator.EnsureRefundAsync(
+                bookingId, seed.CustomerId, null, "NO_CAREGIVER_AVAILABLE");
+            Assert.True(created.IsSuccess, created.Error.Message);
+            Assert.Equal(OriginalPaymentRefundState.Pending, created.Value.State);
+        }
+
+        Guid requestId;
+        Guid leaseId;
+        await using (var processDb = CreatePaymentsDbContext())
+        {
+            var store = new RefundStore(processDb);
+            var now = DateTimeOffset.UtcNow;
+            var work = await store.ClaimNextAsync(
+                now, now.AddSeconds(30), now.AddSeconds(10));
+            Assert.NotNull(work);
+            Assert.True(work.Submit);
+            requestId = work.Request.Id;
+            leaseId = work.LeaseId;
+
+            var confirmed = await store.ApplyProviderResultAsync(
+                requestId,
+                leaseId,
+                new RefundProviderResult(
+                    RefundProviderOutcome.Confirmed,
+                    "response-001",
+                    "refund-001",
+                    "00"),
+                now.AddSeconds(1),
+                now.AddSeconds(10));
+            Assert.True(confirmed.IsSuccess, confirmed.Error.Message);
+
+            // A duplicated provider result must not create a second ledger movement.
+            var replay = await store.ApplyProviderResultAsync(
+                requestId,
+                leaseId,
+                new RefundProviderResult(
+                    RefundProviderOutcome.Confirmed,
+                    "response-001",
+                    "refund-001",
+                    "00"),
+                now.AddSeconds(2),
+                now.AddSeconds(10));
+            Assert.True(replay.IsSuccess, replay.Error.Message);
+        }
+
+        await using (var verifyDb = CreatePaymentsDbContext())
+        {
+            var coordinator = new OriginalPaymentRefundCoordinator(new RefundStore(verifyDb));
+            var existing = await coordinator.EnsureRefundAsync(
+                bookingId, seed.CustomerId, null, "NO_CAREGIVER_AVAILABLE");
+            Assert.True(existing.IsSuccess, existing.Error.Message);
+            Assert.Equal(OriginalPaymentRefundState.Confirmed, existing.Value.State);
+        }
+
+        var state = await ReadFinancialStateAsync(bookingId, seed);
+        Assert.Equal(0, state.CustomerAvailable);
         Assert.Equal(1, state.RefundCount);
         Assert.Equal(100_000, state.RefundAmount);
+
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var command = new NpgsqlCommand("""
+            SELECT payment_intent_id, debit_account, credit_account, status
+            FROM payments.ledger_entries
+            WHERE booking_id = @booking_id AND transaction_type = 'REFUND'
+            """, connection);
+        command.Parameters.AddWithValue("booking_id", bookingId);
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(paymentIntentId, reader.GetGuid(0));
+        Assert.Equal("escrow:platform", reader.GetString(1));
+        Assert.Equal("provider-refund:vnpay", reader.GetString(2));
+        Assert.Equal("POSTED", reader.GetString(3));
+        Assert.False(await reader.ReadAsync());
     }
 
     [PostgresFact]
@@ -76,9 +181,10 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
             var service = CreateWalletService(db, seed);
             var result = await service.ResolveDisputeAsync(
                 bookingId,
-                seed.CustomerId,
                 seed.CaregiverProfileId,
                 escrowAmount: 100_000,
+                customerPayableAmount: 100_000,
+                promotionSubsidyAmount: 0,
                 platformFeeAmount: 15_000,
                 decision: "PARTIAL_REFUND",
                 refundAmount: 40_000,
@@ -89,17 +195,17 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
         await Task.WhenAll(ResolveAsync(), ResolveAsync());
 
         var state = await ReadFinancialStateAsync(bookingId, seed);
-        Assert.Equal(40_000, state.CustomerAvailable);
-        Assert.Equal(40_000, state.CaregiverAvailable);
-        Assert.Equal(1, state.RefundCount);
-        Assert.Equal(40_000, state.RefundAmount);
-        Assert.Equal(40_000, state.CaregiverEarningAmount);
-        Assert.Equal(15_000, state.PlatformFeeAmount);
+        Assert.Equal(0, state.CustomerAvailable);
+        Assert.Equal(46_000, state.CaregiverAvailable);
+        Assert.Equal(0, state.RefundCount);
+        Assert.Equal(0, state.RefundAmount);
+        Assert.Equal(46_000, state.CaregiverEarningAmount);
+        Assert.Equal(9_000, state.PlatformFeeAmount);
         Assert.Equal(5_000, state.PenaltyAmount);
         Assert.Equal(4, state.PostedResolutionEntries);
-        Assert.Equal(100_000,
-            state.RefundAmount + state.CaregiverEarningAmount +
-            state.PlatformFeeAmount + state.PenaltyAmount);
+        Assert.Equal(60_000,
+            state.CaregiverEarningAmount + state.PlatformFeeAmount +
+            state.PenaltyAmount);
     }
 
     [PostgresFact]
@@ -114,9 +220,10 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
         var service = CreateWalletService(db, seed);
         var result = await service.ResolveDisputeAsync(
             bookingId,
-            seed.CustomerId,
             seed.CaregiverProfileId,
             escrowAmount: 100_000,
+            customerPayableAmount: 100_000,
+            promotionSubsidyAmount: 0,
             platformFeeAmount: 15_000,
             decision: "CUSTOMER_WINS",
             refundAmount: 100_000,
@@ -124,9 +231,9 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
 
         Assert.True(result.IsSuccess, result.Error.Message);
         var state = await ReadFinancialStateAsync(bookingId, seed);
-        Assert.Equal(100_000, state.CustomerAvailable);
+        Assert.Equal(0, state.CustomerAvailable);
         Assert.Equal(0, state.CaregiverAvailable);
-        Assert.Equal(100_000, state.RefundAmount);
+        Assert.Equal(0, state.RefundAmount);
         Assert.Equal(0, state.PlatformFeeAmount);
         Assert.Equal(0, state.PenaltyAmount);
         Assert.Equal(1, state.PostedResolutionEntries);
@@ -207,9 +314,45 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
             .Options);
 
     private WalletService CreateWalletService(PaymentsDbContext db, SeedRecord seed) => new(
-        new WalletLedgerStore(db),
+        new WalletLedgerStore(db,
+            new PostgresDisputeLookupStub(_database.ConnectionString)),
         new PostgresDisputeLookupStub(_database.ConnectionString),
-        new PeopleLookupStub(seed.CaregiverProfileId, seed.CaregiverUserId));
+        new PeopleLookupStub(seed.CaregiverProfileId, seed.CaregiverUserId),
+        new OriginalPaymentRefundCoordinator(new RefundStore(db)));
+
+    private async Task InsertSucceededPayOSIntentAsync(
+        Guid bookingId,
+        Guid customerId,
+        long amount)
+    {
+        await using var db = CreatePaymentsDbContext();
+        var intent = PaymentIntent.Create(
+            bookingId, customerId, "PAYOS", amount, $"test-{Guid.NewGuid():N}").Value;
+        Assert.True(intent.SetProviderOrderRef(
+            Random.Shared.NextInt64(1, 9_007_199_254_740_991).ToString()).IsSuccess);
+        Assert.True(intent.MarkPending().IsSuccess);
+        Assert.True(intent.MarkSucceeded("payos-link-id", finalizedSource: "TEST").IsSuccess);
+        db.PaymentIntents.Add(intent);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<Guid> InsertSucceededVNPayIntentAsync(
+        Guid bookingId,
+        Guid customerId,
+        long amount)
+    {
+        await using var db = CreatePaymentsDbContext();
+        var intent = PaymentIntent.Create(
+            bookingId, customerId, "VNPAY", amount, $"test-{Guid.NewGuid():N}").Value;
+        Assert.True(intent.SetProviderOrderRef($"CS{Random.Shared.NextInt64(100_000, 999_999)}").IsSuccess);
+        Assert.True(intent.MarkPending().IsSuccess);
+        Assert.True(intent.MarkSucceeded(
+            Random.Shared.NextInt64(100_000_000, 999_999_999).ToString(),
+            finalizedSource: "TEST").IsSuccess);
+        db.PaymentIntents.Add(intent);
+        await db.SaveChangesAsync();
+        return intent.Id;
+    }
 
     private async Task<SeedRecord> GetSeedAsync()
     {
@@ -366,7 +509,8 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
               COALESCE(sum(amount) FILTER (WHERE transaction_type = 'PLATFORM_FEE'), 0),
               COALESCE(sum(amount) FILTER (WHERE transaction_type = 'PENALTY'), 0),
               count(*) FILTER (WHERE transaction_type IN
-                  ('REFUND','CAREGIVER_EARNING','PLATFORM_FEE','PENALTY') AND status = 'POSTED'),
+                  ('REFUND','CAREGIVER_EARNING','PLATFORM_FEE','PENALTY','DISPUTE_RESOLUTION')
+                  AND status = 'POSTED'),
               (SELECT settlement_released_at FROM booking.bookings WHERE id = @booking_id)
             FROM payments.ledger_entries
             WHERE booking_id = @booking_id
