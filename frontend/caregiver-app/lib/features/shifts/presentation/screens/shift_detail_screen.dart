@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
@@ -42,6 +43,10 @@ class ShiftDetailScreen extends ConsumerWidget {
         Expanded(child: ShiftDetailBody(booking: booking)),
         if (booking.canStartEnRoute)
           ShiftDetailStartTravelAction(booking: booking),
+        if (booking.statusType.index >= ShiftStatus.confirmed.index &&
+            booking.statusType != ShiftStatus.completed &&
+            booking.statusType != ShiftStatus.cancelled)
+          _ChatButton(bookingId: booking.id),
       ]),
     );
   }

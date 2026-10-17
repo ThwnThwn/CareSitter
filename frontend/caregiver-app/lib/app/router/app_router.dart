@@ -27,6 +27,7 @@ import 'package:caregiver_app/features/settings/presentation/screens/reviews_scr
 import 'package:caregiver_app/features/settings/presentation/screens/faq_screen.dart';
 import 'package:caregiver_app/features/settings/presentation/screens/support_screen.dart';
 import 'package:caregiver_app/features/support_chat/presentation/support_chat_screen.dart';
+import 'package:caregiver_app/features/booking_chat/presentation/booking_chat_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_customer_report_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -351,6 +352,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/support',
         pageBuilder: (ctx, state) =>
             _detailPage(pageKey: state.pageKey, child: const SupportScreen()),
+      ),
+      // -- Booking Chat --
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/shifts/:id/chat',
+        pageBuilder: (ctx, state) => _detailPage(
+          pageKey: state.pageKey,
+          child: BookingChatScreen(
+            bookingId: state.pathParameters['id']!,
+            bookingTitle: state.uri.queryParameters['title'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/settings/support/chat',
