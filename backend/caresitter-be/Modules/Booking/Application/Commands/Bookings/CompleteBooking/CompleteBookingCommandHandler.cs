@@ -11,6 +11,7 @@ internal sealed class CompleteBookingCommandHandler(
     ICurrentUser currentUser,
     IDisputeLookupService disputeLookup,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IAuditLogger auditLogger,
     IBookingResponseMapper responseMapper)
@@ -43,6 +44,10 @@ internal sealed class CompleteBookingCommandHandler(
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKOUT", "Ca chăm sóc hoàn thành"));
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Completed);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.Completed, "Ca chăm sóc đã hoàn tất.",
+            booking.ActualEnd ?? DateTimeOffset.UtcNow,
+            BookingChatTransitionEffect.StartPostShiftGrace, ct);
         await bookings.SaveChangesAsync(ct);
         await auditLogger.WriteAsync("BOOKING_COMPLETED_AWAITING_SETTLEMENT", "Booking", booking.Id,
             new { status = oldStatus },

@@ -2,6 +2,7 @@ using CareSitter.Contracts.Services;
 using CareSitter.Contracts.IntegrationEvents;
 using CareSitter.Infrastructure.Time;
 using CareSitter.Modules.Booking.Application;
+using CareSitter.Modules.Booking.Application.BookingChat;
 using CareSitter.Modules.Booking.Application.Commands.AcceptBooking;
 using CareSitter.Modules.Booking.Application.Commands.CancelBooking;
 using CareSitter.Modules.Booking.Application.Commands.CompleteBooking;
@@ -14,6 +15,7 @@ using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -43,7 +45,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var hold = await AddHoldAsync(db, booking, committed: true);
         var handler = new CancelBookingCommandHandler(new BookingRepository(db),
             new Actor(booking.CustomerId, "CUSTOMER"), new SystemClock(), new Promotions(),
-            new BookingSyncService(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
 
         var result = await handler.Handle(new(booking.Id, "Đổi kế hoạch"), default);
 
@@ -76,7 +78,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
 
         var handler = new CancelBookingCommandHandler(new BookingRepository(db),
             new Actor(booking.CustomerId, "CUSTOMER"), new SystemClock(), new Promotions(),
-            new BookingSyncService(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
         var result = await handler.Handle(new(booking.Id, null), default);
 
         Assert.True(result.IsSuccess, result.Error.Message);
@@ -160,7 +162,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var handler = new AcceptBookingCommandHandler(new BookingRepository(db),
             new BookingAcceptanceTransaction(db), new Actor(caregiverUserId, "CAREGIVER"),
             new People(booking.CaregiverId!.Value, caregiverUserId, approved: false), null!,
-            new BookingSyncService(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
 
         var result = await handler.Handle(new(booking.Id), default);
 
@@ -180,13 +182,134 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var handler = new AcceptBookingCommandHandler(new BookingRepository(db),
             new BookingAcceptanceTransaction(db), new Actor(caregiverUserId, "CAREGIVER"),
             new People(booking.CaregiverId!.Value, caregiverUserId, approved: true), null!,
-            new BookingSyncService(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
 
         var result = await handler.Handle(new(booking.Id), default);
 
         Assert.True(result.IsSuccess, result.Error.Message);
         Assert.Equal(BookingStatus.CaregiverAccepted, booking.Status);
         Assert.Equal("COMMITTED", (await db.CaregiverSlotHolds.SingleAsync()).Status);
+    }
+
+    [PostgresFact]
+    public async Task AcceptBooking_WithChatEnabled_CreatesFirstEpochAndDurableSignalsAtomically()
+    {
+        await using var db = CreateDb();
+        var booking = await SeedBookingAsync(db, "CONFIRMED");
+        var caregiverUserId = await db.Database.SqlQuery<Guid>(
+            $"SELECT user_id AS \"Value\" FROM people.caregiver_profiles WHERE id = {booking.CaregiverId!.Value}")
+            .SingleAsync();
+        var chat = new BookingChatWriter(db, Options.Create(new BookingChatOptions
+        {
+            Enabled = true
+        }));
+        var handler = new AcceptBookingCommandHandler(new BookingRepository(db),
+            new BookingAcceptanceTransaction(db), new Actor(caregiverUserId, "CAREGIVER"),
+            new People(booking.CaregiverId.Value, caregiverUserId, approved: true), null!,
+            new BookingSyncService(db), chat, new PostCommit(), new Mapper());
+
+        var result = await handler.Handle(new(booking.Id), default);
+
+        Assert.True(result.IsSuccess, result.Error.Message);
+        var conversation = await db.BookingChatConversations.SingleAsync(x => x.BookingId == booking.Id);
+        var epoch = await db.BookingChatEpochs.SingleAsync(x => x.ConversationId == conversation.Id);
+        var message = await db.BookingChatMessages.SingleAsync(x => x.ConversationId == conversation.Id);
+        var signals = await db.BookingChatOutbox
+            .Where(x => x.ConversationId == conversation.Id)
+            .OrderBy(x => x.RecipientUserId)
+            .ToListAsync();
+        Assert.Equal(1, conversation.LastSequence);
+        Assert.Equal(1, conversation.ChangeVersion);
+        Assert.Equal(booking.CaregiverId, epoch.CaregiverProfileId);
+        Assert.Equal(caregiverUserId, epoch.CaregiverUserId);
+        Assert.Equal("system", message.Kind);
+        Assert.Equal("Caregiver đã nhận lịch.", message.BodySnapshot);
+        Assert.NotNull(message.SourceEventId);
+        Assert.Equal(2, signals.Count);
+        Assert.Contains(signals, x => x.RecipientUserId == booking.CustomerId);
+        Assert.Contains(signals, x => x.RecipientUserId == caregiverUserId);
+        Assert.All(signals, x => Assert.Equal(message.Id, x.MessageId));
+    }
+
+    [PostgresFact]
+    public async Task BookingChat_SendRetryPaginationAndRead_AreConsistent()
+    {
+        await using var db = CreateDb();
+        var booking = await SeedBookingAsync(db, "CONFIRMED");
+        var caregiverUserId = await db.Database.SqlQuery<Guid>(
+            $"SELECT user_id AS \"Value\" FROM people.caregiver_profiles WHERE id = {booking.CaregiverId!.Value}")
+            .SingleAsync();
+        var people = new People(booking.CaregiverId.Value, caregiverUserId, approved: true);
+        var chatOptions = Options.Create(new BookingChatOptions { Enabled = true });
+        var dataProtection = new EphemeralDataProtectionProvider();
+        var writer = new BookingChatWriter(db, chatOptions);
+        var accepted = await new AcceptBookingCommandHandler(new BookingRepository(db),
+            new BookingAcceptanceTransaction(db), new Actor(caregiverUserId, "CAREGIVER"),
+            people, null!, new BookingSyncService(db), writer, new PostCommit(), new Mapper())
+            .Handle(new(booking.Id), default);
+        Assert.True(accepted.IsSuccess, accepted.Error.Message);
+
+        var customerChat = new BookingChatService(db,
+            new Actor(booking.CustomerId, "CUSTOMER"), people, chatOptions, dataProtection);
+        var caregiverChat = new BookingChatService(db,
+            new Actor(caregiverUserId, "CAREGIVER"), people, chatOptions, dataProtection);
+        var metadata = await customerChat.GetMetadataAsync(booking.Id);
+        Assert.True(metadata.IsSuccess, metadata.Error.Message);
+        Assert.True(metadata.Value.CanSend);
+        var epochId = metadata.Value.CurrentEpochId!.Value;
+
+        var customerKey = Guid.NewGuid();
+        var customerRequest = new BookingChatSendRequest(epochId, "text",
+            "  Chào bạn, hẹn gặp đúng giờ.  ", null, null, null);
+        var customerMessage = await customerChat.SendAsync(
+            booking.Id, customerKey, customerRequest);
+        Assert.True(customerMessage.IsSuccess, customerMessage.Error.Message);
+        Assert.Equal("Chào bạn, hẹn gặp đúng giờ.", customerMessage.Value.Body);
+
+        var caregiverKey = Guid.NewGuid();
+        var caregiverRequest = new BookingChatSendRequest(epochId, "quick_message", null,
+            "caregiver.accepted_on_time", 1, null);
+        var caregiverMessage = await caregiverChat.SendAsync(
+            booking.Id, caregiverKey, caregiverRequest);
+        Assert.True(caregiverMessage.IsSuccess, caregiverMessage.Error.Message);
+        var replay = await caregiverChat.SendAsync(booking.Id, caregiverKey, caregiverRequest);
+        Assert.True(replay.IsSuccess, replay.Error.Message);
+        Assert.Equal(caregiverMessage.Value.Id, replay.Value.Id);
+
+        var conflict = await caregiverChat.SendAsync(booking.Id, caregiverKey,
+            caregiverRequest with { TemplateKey = "caregiver.confirm_address" });
+        Assert.True(conflict.IsFailure);
+        Assert.Equal("booking.chat.idempotency_conflict", conflict.Error.Code);
+
+        var latest = await customerChat.GetMessagesAsync(booking.Id, null, null, 2);
+        Assert.True(latest.IsSuccess, latest.Error.Message);
+        Assert.Equal(2, latest.Value.Items.Count);
+        Assert.True(latest.Value.HasMoreBefore);
+        Assert.NotNull(latest.Value.PreviousCursor);
+        var older = await customerChat.GetMessagesAsync(
+            booking.Id, null, latest.Value.PreviousCursor, 2);
+        Assert.True(older.IsSuccess, older.Error.Message);
+        Assert.Single(older.Value.Items);
+        Assert.Equal("system", older.Value.Items[0].Kind);
+
+        var unread = await customerChat.GetMetadataAsync(booking.Id);
+        Assert.Equal(1, unread.Value.UnreadCount);
+        var read = await customerChat.MarkReadAsync(booking.Id,
+            new BookingChatReadRequest(epochId, caregiverMessage.Value.Id));
+        Assert.True(read.IsSuccess, read.Error.Message);
+        Assert.True(read.Value.Changed);
+        var readReplay = await customerChat.MarkReadAsync(booking.Id,
+            new BookingChatReadRequest(epochId, caregiverMessage.Value.Id));
+        Assert.True(readReplay.IsSuccess, readReplay.Error.Message);
+        Assert.False(readReplay.Value.Changed);
+        Assert.Equal(0, (await customerChat.GetMetadataAsync(booking.Id)).Value.UnreadCount);
+
+        var tampered = latest.Value.NextCursor![..^1] +
+            (latest.Value.NextCursor[^1] == 'A' ? "B" : "A");
+        var invalidCursor = await customerChat.GetMessagesAsync(
+            booking.Id, tampered, null, 2);
+        Assert.True(invalidCursor.IsFailure);
+        Assert.Equal("booking.chat.cursor_invalid", invalidCursor.Error.Code);
     }
 
     [PostgresFact]
@@ -199,7 +322,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
 
         CompleteBookingCommandHandler Handler(ICurrentUser actor) => new(
             new BookingRepository(db), actor, new Disputes(), new BookingSyncService(db),
-            new PostCommit(), new Audit(), new Mapper());
+            DisabledBookingChat(db), new PostCommit(), new Audit(), new Mapper());
         var customerResult = await Handler(new Actor(booking.CustomerId, "CUSTOMER"))
             .Handle(new(booking.Id), default);
 
@@ -237,13 +360,18 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var sync = new BookingSyncService(db);
         var postCommit = new PostCommit();
         var mapper = new Mapper();
+        var chat = new BookingChatWriter(db, Options.Create(new BookingChatOptions
+        {
+            Enabled = true
+        }));
         var payment = new PaymentSucceeded(booking.Id, Guid.NewGuid(), booking.CustomerPayableAmount);
         var paymentHandler = PaymentHandler(db);
         await paymentHandler.Handle(payment, default);
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
         Assert.NotEmpty(await db.CareTasks.Where(x => x.BookingId == booking.Id).ToListAsync());
         var accepted = await new AcceptBookingCommandHandler(repository,
-            new BookingAcceptanceTransaction(db), actor, people, null!, sync, postCommit, mapper)
+            new BookingAcceptanceTransaction(db), actor, people, null!, sync,
+            chat, postCommit, mapper)
             .Handle(new(booking.Id), default);
         Assert.True(accepted.IsSuccess, accepted.Error.Message);
         // Durable outbox delivery may repeat after the caregiver has already accepted.
@@ -252,12 +380,14 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         Assert.Equal(BookingStatus.CaregiverAccepted, booking.Status);
         Assert.Equal(acceptedVersion, booking.SyncVersion);
         var enRoute = await new StartBookingEnRouteCommandHandler(
-            repository, actor, people, sync, postCommit, mapper).Handle(new(booking.Id), default);
+            repository, actor, people, sync, chat, postCommit, mapper)
+            .Handle(new(booking.Id), default);
         Assert.True(enRoute.IsSuccess, enRoute.Error.Message);
 
         var policy = Options.Create(new CheckInOptions());
         var checkIn = new CheckInBookingCommandHandler(repository, actor, people, new Catalog(),
-            policy, new CheckInBookingCommandValidator(policy), sync, postCommit, mapper);
+            policy, new CheckInBookingCommandValidator(policy), sync,
+            chat, postCommit, mapper);
         var outside = await checkIn.Handle(new(booking.Id, 11, 107, 5), default);
         Assert.Equal("booking.geofence", outside.Error.Code);
         var inside = await checkIn.Handle(new(booking.Id, 10.762622, 106.660172, 5), default);
@@ -271,11 +401,13 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
             task.MarkCompleted(caregiverUserId);
         await db.SaveChangesAsync();
         var requested = await new RequestBookingCheckoutCommandHandler(
-            repository, actor, people, sync, postCommit, mapper).Handle(new(booking.Id), default);
+            repository, actor, people, sync, chat, postCommit, mapper)
+            .Handle(new(booking.Id), default);
         Assert.True(requested.IsSuccess, requested.Error.Message);
         Assert.Equal(BookingStatus.CheckoutPendingReview, booking.Status);
         var completed = await new CompleteBookingCommandHandler(repository,
-            new Actor(booking.CustomerId, "CUSTOMER"), new Disputes(), sync, postCommit, new Audit(), mapper)
+            new Actor(booking.CustomerId, "CUSTOMER"), new Disputes(), sync,
+            chat, postCommit, new Audit(), mapper)
             .Handle(new(booking.Id), default);
         Assert.True(completed.IsSuccess, completed.Error.Message);
         await db.Entry(booking).ReloadAsync();
@@ -284,6 +416,23 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         Assert.NotNull(booking.ActualEnd);
         Assert.Null(booking.SettlementReleasedAt);
         Assert.Equal(6, await db.BookingSyncEvents.CountAsync(x => x.BookingId == booking.Id));
+        var conversation = await db.BookingChatConversations.SingleAsync(x => x.BookingId == booking.Id);
+        var messages = await db.BookingChatMessages
+            .Where(x => x.ConversationId == conversation.Id)
+            .OrderBy(x => x.Sequence)
+            .ToListAsync();
+        Assert.Equal(5, conversation.LastSequence);
+        Assert.Equal(5, conversation.ChangeVersion);
+        Assert.Equal(5, messages.Count);
+        Assert.Equal(5, messages.Select(x => x.SourceEventId).Distinct().Count());
+        Assert.Equal("Caregiver đã nhận lịch.", messages[0].BodySnapshot);
+        Assert.Equal("Ca chăm sóc đã hoàn tất.", messages[^1].BodySnapshot);
+        Assert.InRange(
+            Math.Abs((booking.CheckoutPendingReviewAt!.Value -
+                conversation.GraceStartedAt!.Value).Ticks), 0, 10);
+        Assert.Equal(conversation.GraceStartedAt!.Value.AddHours(24), conversation.WriteClosesAt);
+        Assert.Equal(10, await db.BookingChatOutbox.CountAsync(
+            x => x.ConversationId == conversation.Id));
 
         await using var connection = await _database.OpenConnectionAsync();
         await using var command = new NpgsqlCommand("""
@@ -314,6 +463,9 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
     private static PaymentIntegrationEventHandler PaymentHandler(BookingDbContext db) => new(
         db, new ChecklistCatalog(), new BookingSyncService(db), new PostCommit(), new Matching(),
         null!, new Promotions(), new SystemClock(), NullLogger<PaymentIntegrationEventHandler>.Instance);
+
+    private static IBookingChatWriter DisabledBookingChat(BookingDbContext db) =>
+        new BookingChatWriter(db, Options.Create(new BookingChatOptions()));
 
     [PostgresFact]
     public async Task GpsTrack_WritesScalarCoordinatesAndRequiredGeography()

@@ -292,23 +292,40 @@ public sealed class PasswordRecoveryTests : IAsyncLifetime
         var auth = (await login.Content.ReadFromJsonAsync<LoginResponse>())!;
         var connector = app.GetTestServer().CreateWebSocketClient();
         connector.ConfigureRequest = message => message.Headers.Authorization = "Bearer " + auth.AccessToken;
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        using var socket = await connector.ConnectAsync(new Uri("ws://localhost/hubs/care-tracking"), timeout.Token);
-        await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("{\"protocol\":\"json\",\"version\":1}\u001e")), WebSocketMessageType.Text, true, timeout.Token);
+        using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var socket = await connector.ConnectAsync(new Uri("ws://localhost/hubs/care-tracking"), connectTimeout.Token);
+        await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("{\"protocol\":\"json\",\"version\":1}\u001e")), WebSocketMessageType.Text, true, connectTimeout.Token);
         var buffer = new byte[1024];
-        var handshake = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), timeout.Token);
+        var handshake = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), connectTimeout.Token);
         Assert.Contains("{}", Encoding.UTF8.GetString(buffer, 0, handshake.Count));
-        // Wait for OnConnected's registration/validation, not a fixture-only socket.
+
+        // A SignalR handshake response can arrive before OnConnectedAsync has registered
+        // the session. A completed hub invocation proves that registration/validation is done.
+        using var readyTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var readyInvocation = "{\"type\":1,\"invocationId\":\"ready\",\"target\":\"LeaveBookingGroup\",\"arguments\":[\"" +
+            Guid.NewGuid() + "\"]}\u001e";
+        await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(readyInvocation)),
+            WebSocketMessageType.Text, true, readyTimeout.Token);
+        var ready = false;
+        while (!ready)
+        {
+            var response = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), readyTimeout.Token);
+            var payload = Encoding.UTF8.GetString(buffer, 0, response.Count);
+            ready = payload.Contains("\"type\":3", StringComparison.Ordinal) &&
+                payload.Contains("\"invocationId\":\"ready\"", StringComparison.Ordinal);
+        }
+
         var grant = await GrantAsync(user);
         var reset = await client.PostAsJsonAsync("/api/v1/auth/password-recovery/reset", new
             { resetToken = grant.ResetToken, newPassword = "NewPassword456", confirmPassword = "NewPassword456" });
         Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        using var disconnectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         try
         {
             var terminated = false;
             for (var i = 0; i < 5 && !terminated; i++)
             {
-                var closed = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), timeout.Token);
+                var closed = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), disconnectTimeout.Token);
                 terminated = closed.MessageType == WebSocketMessageType.Close ||
                     Encoding.UTF8.GetString(buffer, 0, closed.Count).Contains("\"type\":7", StringComparison.Ordinal);
             }

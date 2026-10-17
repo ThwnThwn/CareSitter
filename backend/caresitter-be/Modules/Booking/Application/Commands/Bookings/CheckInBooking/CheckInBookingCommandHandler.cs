@@ -17,6 +17,7 @@ internal sealed class CheckInBookingCommandHandler(
     IOptions<CheckInOptions> checkInOptions,
     IValidator<CheckInBookingCommand> validator,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<CheckInBookingCommand, Result<BookingResponse>>
@@ -61,6 +62,9 @@ internal sealed class CheckInBookingCommandHandler(
             distanceToAddressMeters: distance));
 
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CheckedIn);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.CheckedIn, "Caregiver đã đến và ca chăm sóc bắt đầu.",
+            booking.ActualStart ?? DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("check-in status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,

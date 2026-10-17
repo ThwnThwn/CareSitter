@@ -300,6 +300,12 @@ SELECT (
   to_regclass('identity.users') IS NOT NULL
   AND to_regclass('catalog.service_types') IS NOT NULL
   AND to_regclass('booking.bookings') IS NOT NULL
+  AND to_regclass('booking.booking_chat_conversations') IS NOT NULL
+  AND to_regclass('booking.booking_chat_epochs') IS NOT NULL
+  AND to_regclass('booking.booking_chat_messages') IS NOT NULL
+  AND to_regclass('booking.booking_chat_read_cursors') IS NOT NULL
+  AND to_regclass('booking.booking_chat_outbox') IS NOT NULL
+  AND to_regclass('booking.booking_chat_reports') IS NOT NULL
   AND to_regclass('payments.ledger_entries') IS NOT NULL
   AND EXISTS (
     SELECT 1 FROM information_schema.columns
@@ -352,7 +358,7 @@ SELECT (
         -DatabaseName $Database.Database `
         -Sql $sql
     if ($valid -ne 'true' -and $valid -ne 't') {
-        throw 'The database does not contain the required schema through migration 32.'
+        throw 'The database does not contain the required schema through migration 44.'
     }
 }
 

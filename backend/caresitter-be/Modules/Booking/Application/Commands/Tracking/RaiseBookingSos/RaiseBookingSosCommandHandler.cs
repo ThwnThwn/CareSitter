@@ -11,6 +11,7 @@ internal sealed class RaiseBookingSosCommandHandler(
     ICurrentUser currentUser,
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<RaiseBookingSosCommand, Result<BookingResponse>>
@@ -37,6 +38,9 @@ internal sealed class RaiseBookingSosCommandHandler(
             booking.Id, booking.CaregiverId, "SOS",
             "Cấp cứu / tình huống khẩn cấp", note: $"SOS raised by user {userId}"));
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CrisisRaised);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.CrisisRaised,
+            "Lịch đã chuyển sang trạng thái hỗ trợ khẩn cấp.", DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("SOS status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,

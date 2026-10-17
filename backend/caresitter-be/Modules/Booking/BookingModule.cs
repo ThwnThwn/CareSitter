@@ -2,6 +2,7 @@ using CareSitter.Contracts.Services;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
+using CareSitter.Modules.Booking.Application.BookingChat;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Modules;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FluentValidation;
+using Microsoft.AspNetCore.DataProtection;
 using System.Reflection;
 
 namespace CareSitter.Modules.Booking;
@@ -45,12 +47,30 @@ public sealed class BookingModule : IModule
                 x.MaxSampleAgeSeconds is >= 30 and <= 120 && x.MaxFutureSkewSeconds is >= 0 and <= 30,
                 "LiveTracking configuration is outside the supported range.")
             .ValidateOnStart();
+        services.AddOptions<BookingChatOptions>()
+            .Bind(configuration.GetSection(BookingChatOptions.SectionName))
+            .Validate(x => x.PostShiftGraceHours is >= 1 and <= 168,
+                "BookingChat:PostShiftGraceHours phai nam trong khoang 1-168.")
+            .Validate(x => x.RetentionDays is >= 30 and <= 730,
+                "BookingChat:RetentionDays phai nam trong khoang 30-730.")
+            .Validate(x => x.DispatcherPollIntervalSeconds is >= 1 and <= 300,
+                "BookingChat:DispatcherPollIntervalSeconds phai nam trong khoang 1-300.")
+            .Validate(x => x.DispatcherLeaseSeconds is >= 5 and <= 600,
+                "BookingChat:DispatcherLeaseSeconds phai nam trong khoang 5-600.")
+            .Validate(x => x.DispatcherBatchSize is >= 1 and <= 200,
+                "BookingChat:DispatcherBatchSize phai nam trong khoang 1-200.")
+            .Validate(x => x.DispatcherMaxAttempts is >= 1 and <= 50,
+                "BookingChat:DispatcherMaxAttempts phai nam trong khoang 1-50.")
+            .Validate(x => x.DispatcherRetryDelaySeconds is >= 1 and <= 3600,
+                "BookingChat:DispatcherRetryDelaySeconds phai nam trong khoang 1-3600.")
+            .ValidateOnStart();
 
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),
                 npgsql => npgsql.UseNetTopologySuite()
                     .MigrationsHistoryTable("__ef_migrations", BookingDbContext.SchemaName)));
+        services.AddDataProtection();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingModule>());
         services.AddValidatorsFromAssemblyContaining<BookingModule>();
@@ -74,6 +94,14 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingResponseMapper, BookingResponseMapper>();
         services.AddScoped<IBookingPostCommitService, BookingPostCommitService>();
         services.AddScoped<IBookingAcceptanceTransaction, BookingAcceptanceTransaction>();
+        services.AddScoped<IBookingChatWriter, BookingChatWriter>();
+        services.AddScoped<IBookingChatService, BookingChatService>();
+        services.AddScoped<IBookingChatDispatcher, BookingChatDispatcher>();
+        services.AddScoped<IBookingChatBackfillStore, BookingChatBackfillStore>();
+        services.AddSingleton<BookingChatMetrics>();
+        // Worker tự tắt khi BookingChat:Enabled=false; outbox đã commit vẫn được giữ
+        // và sẽ gửi tiếp khi bật lại, không mất signal.
+        services.AddHostedService<BookingChatDispatchWorker>();
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
@@ -95,3 +123,4 @@ public sealed class BookingModule : IModule
     // Controllers tự được map qua app.MapControllers() ở Program.cs
     public void MapEndpoints(IEndpointRouteBuilder endpoints) { }
 }
+

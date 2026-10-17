@@ -1,4 +1,5 @@
 using CareSitter.Contracts.Services;
+using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.SharedKernel.Results;
@@ -10,7 +11,8 @@ internal sealed class DisputeBookingWorkflow(
     BookingDbContext db,
     IPeopleLookupService people,
     IWalletService wallet,
-    IBookingSyncService sync) : IDisputeBookingWorkflow
+    IBookingSyncService sync,
+    IBookingChatWriter bookingChat) : IDisputeBookingWorkflow
 {
     public async Task<DisputeBookingSnapshot?> GetAsync(
         Guid bookingId, CancellationToken ct = default)
@@ -62,6 +64,11 @@ internal sealed class DisputeBookingWorkflow(
         var transitioned = booking.TransitionTo(BookingStatus.Disputed);
         if (transitioned.IsFailure) return transitioned.Error;
         sync.WriteSyncEvent(booking, BookingSyncEventTypes.Disputed);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.Disputed, "Lịch đã được chuyển sang tranh chấp.",
+            DateTimeOffset.UtcNow,
+            BookingChatTransitionEffect.LockForDispute |
+            BookingChatTransitionEffect.ScheduleRetention, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Result.Success();
@@ -120,6 +127,18 @@ internal sealed class DisputeBookingWorkflow(
             target == BookingStatus.Refunded
                 ? BookingSyncEventTypes.Refunded
                 : BookingSyncEventTypes.Completed);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            target == BookingStatus.Refunded
+                ? BookingSyncEventTypes.Refunded
+                : BookingSyncEventTypes.Completed,
+            target == BookingStatus.Refunded
+                ? "Khoản thanh toán của lịch đã được hoàn lại."
+                : "Tranh chấp đã được xử lý.",
+            resolvedAt,
+            target == BookingStatus.Refunded
+                ? BookingChatTransitionEffect.ScheduleRetention
+                : BookingChatTransitionEffect.None,
+            ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return Result.Success();
