@@ -1,5 +1,6 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Application.Refunds;
 using CareSitter.Modules.Payments.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,9 +16,10 @@ public sealed class WalletServiceTests
         var caregiverUserId = Guid.NewGuid();
         await using var db = CreateDbContext();
         var service = new WalletService(
-            new WalletLedgerStore(db),
+            new WalletLedgerStore(db, new DisputeLookupStub(false)),
             new DisputeLookupStub(false),
-            new PeopleLookupStub(caregiverProfileId, caregiverUserId));
+            new PeopleLookupStub(caregiverProfileId, caregiverUserId),
+            new RefundCoordinatorStub());
 
         var first = await service.SettleAsync(
             bookingId, caregiverProfileId, escrowAmount: 100_000, platformFeeAmount: 15_000);
@@ -40,9 +42,10 @@ public sealed class WalletServiceTests
     {
         await using var db = CreateDbContext();
         var service = new WalletService(
-            new WalletLedgerStore(db),
+            new WalletLedgerStore(db, new DisputeLookupStub(false)),
             new DisputeLookupStub(false),
-            new PeopleLookupStub(Guid.NewGuid(), null));
+            new PeopleLookupStub(Guid.NewGuid(), null),
+            new RefundCoordinatorStub());
 
         var result = await service.SettleAsync(
             Guid.NewGuid(), Guid.NewGuid(), escrowAmount: 100_000, platformFeeAmount: 15_000);
@@ -57,8 +60,10 @@ public sealed class WalletServiceTests
     {
         var bookingId = Guid.NewGuid();
         await using var db = CreateDbContext();
-        var service = new WalletService(new WalletLedgerStore(db), new DisputeLookupStub(false),
-            new PeopleLookupStub(Guid.NewGuid(), null));
+        var service = new WalletService(
+            new WalletLedgerStore(db, new DisputeLookupStub(false)),
+            new DisputeLookupStub(false),
+            new PeopleLookupStub(Guid.NewGuid(), null), new RefundCoordinatorStub());
 
         var first = await service.RecordPromotionSubsidyAsync(bookingId, 100_000);
         var retry = await service.RecordPromotionSubsidyAsync(bookingId, 100_000);
@@ -85,6 +90,18 @@ public sealed class WalletServiceTests
     {
         public Task<bool> HasOpenDisputeAsync(Guid bookingId, CancellationToken ct = default) =>
             Task.FromResult(hasOpenDispute);
+    }
+
+    private sealed class RefundCoordinatorStub : IOriginalPaymentRefundCoordinator
+    {
+        public Task<CareSitter.SharedKernel.Results.Result<OriginalPaymentRefundOutcome>> EnsureRefundAsync(
+            Guid bookingId,
+            Guid customerId,
+            long? amount,
+            string reason,
+            CancellationToken ct = default) =>
+            Task.FromResult<CareSitter.SharedKernel.Results.Result<OriginalPaymentRefundOutcome>>(
+                new OriginalPaymentRefundOutcome(OriginalPaymentRefundState.Pending));
     }
 
     private sealed class PeopleLookupStub(Guid caregiverProfileId, Guid? caregiverUserId)

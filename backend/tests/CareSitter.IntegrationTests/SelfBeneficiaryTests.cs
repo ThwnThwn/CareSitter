@@ -261,7 +261,12 @@ public sealed class SelfBeneficiaryTests : IAsyncLifetime
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
-            var path = Path.Combine(directory.FullName, "init-db", "37-beneficiary-self-profile.sql");
+            var path = Path.Combine(
+                directory.FullName,
+                "init-db",
+                "modules",
+                "people",
+                "37-beneficiary-self-profile.sql");
             if (File.Exists(path)) return path;
         }
         throw new FileNotFoundException("Không tìm thấy migration 37.");

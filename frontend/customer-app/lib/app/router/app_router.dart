@@ -33,6 +33,7 @@ import 'package:caresitter_customer/features/settings/presentation/screens/saved
 import 'package:caresitter_customer/features/settings/presentation/screens/change_password_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/faq_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/support_screen.dart';
+import 'package:caresitter_customer/features/refunds/presentation/screens/refund_history_screen.dart';
 import 'package:caresitter_customer/features/support_chat/presentation/support_chat_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
@@ -400,6 +401,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const FaqScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings/refunds',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const RefundHistoryScreen(),
         ),
       ),
       GoRoute(

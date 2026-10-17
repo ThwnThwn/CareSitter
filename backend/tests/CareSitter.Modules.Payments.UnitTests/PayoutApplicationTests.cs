@@ -25,7 +25,7 @@ public sealed class PayoutApplicationTests
     {
         var validator = new CreatePayoutCommandValidator();
         var valid = new CreatePayoutCommand(
-            100_000, "VCB", "NGUYEN VAN A", "0123456789", null, " header-key ");
+            100_000, "VCB", "970436", "NGUYEN VAN A", "0123456789", null, " header-key ");
         var invalid = valid with { AccountNumber = "   " };
 
         Assert.Equal("header-key", valid.ResolveIdempotencyKey());
@@ -59,7 +59,7 @@ public sealed class PayoutApplicationTests
             CreatePayoutResult>([validator]);
         var handlerCalled = false;
         var invalid = new CreatePayoutCommand(
-            1, "VCB", "NGUYEN VAN A", "0123456789", "key", null);
+            1, "VCB", "970436", "NGUYEN VAN A", "0123456789", "key", null);
 
         var result = await behavior.Handle(
             invalid,
@@ -85,6 +85,7 @@ public sealed class PayoutApplicationTests
             "key",
             100_000,
             "VCB",
+            "970436",
             "NGUYEN VAN A",
             "encrypted:0123456789").Value;
         var mapper = new PayoutMapper(new EncryptionStub());

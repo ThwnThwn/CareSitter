@@ -1,0 +1,26 @@
+namespace CareSitter.Modules.Payments.Application.Refunds;
+
+public sealed record RefundResponse(
+    Guid Id,
+    Guid BookingId,
+    Guid PaymentIntentId,
+    Guid CustomerId,
+    string Provider,
+    long Amount,
+    string Currency,
+    string Reason,
+    string Status,
+    string RequestId,
+    string? OriginalProviderOrderRef,
+    string? OriginalProviderTransactionId,
+    string? ProviderResponseId,
+    string? ProviderRefundId,
+    string? ProviderTransactionStatus,
+    string? LastErrorCode,
+    int AttemptCount,
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? LastAttemptAt,
+    DateTimeOffset? NextAttemptAt,
+    DateTimeOffset? CompletedAt,
+    Guid? ConfirmedByAdminId,
+    string? AdminConfirmationNote);

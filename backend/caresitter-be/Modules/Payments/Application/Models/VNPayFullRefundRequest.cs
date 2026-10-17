@@ -12,15 +12,16 @@ namespace CareSitter.Modules.Payments.Application.Refunds;
 /// </summary>
 public sealed class VNPayFullRefundRequest
 {
-    private VNPayFullRefundRequest(PaymentIntent intent, string requestId, string merchantCode,
+    private VNPayFullRefundRequest(Guid paymentIntentId, string requestId, string merchantCode,
+        string orderReference, string originalTransactionId, long amount,
         string originalCreateDate, DateTimeOffset createdAt, string serverIpAddress)
     {
-        PaymentIntentId = intent.Id;
+        PaymentIntentId = paymentIntentId;
         RequestId = requestId;
         MerchantCode = merchantCode;
-        OrderReference = intent.ProviderOrderRef!;
-        OriginalTransactionId = intent.ProviderTransactionId!;
-        Amount = intent.Amount;
+        OrderReference = orderReference;
+        OriginalTransactionId = originalTransactionId;
+        Amount = amount;
         OriginalCreateDate = originalCreateDate;
         CreateDate = FormatVietnamDate(createdAt);
         ServerIpAddress = serverIpAddress;
@@ -46,20 +47,40 @@ public sealed class VNPayFullRefundRequest
     {
         if (intent.Provider != "VNPAY" || intent.Status != "SUCCEEDED" || intent.Currency != "VND")
             return Invalid("Only a succeeded VNPAY/VND payment can be refunded.");
+        if (originalCreateDate != intent.ProviderCreateDate)
+            return Invalid("The exact original payment create date is required.");
+        return Restore(intent.Id, requestId, merchantCode, intent.ProviderOrderRef,
+            intent.ProviderTransactionId, intent.Amount, originalCreateDate,
+            createdAt, serverIpAddress);
+    }
+
+    /// <summary>Khôi phục đúng wire snapshot đã được lưu trước lần POST đầu tiên.</summary>
+    public static Result<VNPayFullRefundRequest> Restore(
+        Guid paymentIntentId,
+        string requestId,
+        string merchantCode,
+        string? orderReference,
+        string? originalTransactionId,
+        long amount,
+        string? originalCreateDate,
+        DateTimeOffset createdAt,
+        string serverIpAddress)
+    {
         // VNPAY accepts at most 12 digits AFTER the VND * 100 conversion.
-        if (intent.Amount is <= 0 or > 9_999_999_999)
+        if (amount is <= 0 or > 9_999_999_999)
             return Invalid("The paid amount is outside the VNPAY refund range.");
         if (!IsAlphaNumeric(requestId, 1, 32) || !IsAlphaNumeric(merchantCode, 8, 8) ||
-            !IsAlphaNumeric(intent.ProviderOrderRef, 1, 100) ||
-            !IsNumeric(intent.ProviderTransactionId, 1, 15))
+            !IsAlphaNumeric(orderReference, 1, 100) ||
+            !IsNumeric(originalTransactionId, 1, 15))
             return Invalid("Refund references are missing or invalid.");
-        if (!IsDate(originalCreateDate) || originalCreateDate != intent.ProviderCreateDate ||
+        if (!IsDate(originalCreateDate) ||
             string.CompareOrdinal(originalCreateDate, FormatVietnamDate(createdAt)) > 0)
             return Invalid("The exact original payment create date is required.");
         if (!IPAddress.TryParse(serverIpAddress, out _) || serverIpAddress.Length is < 7 or > 45)
             return Invalid("A valid API server IP address is required.");
-        return new VNPayFullRefundRequest(intent, requestId, merchantCode,
-            originalCreateDate, createdAt, serverIpAddress);
+        return new VNPayFullRefundRequest(paymentIntentId, requestId, merchantCode,
+            orderReference!, originalTransactionId!, amount, originalCreateDate!,
+            createdAt, serverIpAddress);
     }
 
     internal static bool IsAlphaNumeric(string? value, int min, int max) =>

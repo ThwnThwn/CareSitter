@@ -9,6 +9,7 @@ namespace CareSitter.Modules.Booking.Infrastructure;
 internal sealed class DisputeBookingWorkflow(
     BookingDbContext db,
     IPeopleLookupService people,
+    IWalletService wallet,
     IBookingSyncService sync) : IDisputeBookingWorkflow
 {
     public async Task<DisputeBookingSnapshot?> GetAsync(
@@ -28,6 +29,15 @@ internal sealed class DisputeBookingWorkflow(
     public async Task<Result> OpenAsync(Guid bookingId, CancellationToken ct = default)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
+        if (db.Database.IsRelational())
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtextextended({bookingId.ToString()}, 0))", ct);
+        }
+        if (await wallet.HasSettlementAsync(bookingId, ct))
+            return Error.Conflict("support.dispute.settlement_released",
+                "Booking đã giải ngân nên không thể mở tranh chấp mới.");
+
         var booking = await db.Bookings
             .FromSqlInterpolated($"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
             .SingleOrDefaultAsync(ct);
@@ -39,9 +49,9 @@ internal sealed class DisputeBookingWorkflow(
             await tx.CommitAsync(ct);
             return Result.Success();
         }
-        if (booking.Status is not (BookingStatus.CheckoutPendingReview or BookingStatus.Completed))
+        if (!CanOpen(booking, DateTimeOffset.UtcNow))
             return Error.Conflict("support.dispute.invalid_state",
-                "Chỉ có thể khiếu nại booking đang chờ xác nhận hoặc đã hoàn thành.");
+                "Booking chưa ở trạng thái cho phép khiếu nại hoặc chưa qua thời gian chờ no-show.");
         if (booking.Status == BookingStatus.Completed &&
             (booking.ActualEnd is null ||
              booking.ActualEnd.Value.AddHours(booking.DisputeWindowHours) < DateTimeOffset.UtcNow ||
@@ -57,8 +67,13 @@ internal sealed class DisputeBookingWorkflow(
         return Result.Success();
     }
 
-    public async Task<Result> ResolveAsync(Guid bookingId, string decision,
-        DateTimeOffset resolvedAt, CancellationToken ct = default)
+    public async Task<Result> ResolveAsync(
+        Guid bookingId,
+        string decision,
+        long refundAmount,
+        OriginalPaymentRefundState refundState,
+        DateTimeOffset resolvedAt,
+        CancellationToken ct = default)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var booking = await db.Bookings
@@ -67,9 +82,21 @@ internal sealed class DisputeBookingWorkflow(
         if (booking is null)
             return Error.NotFound("support.dispute.booking_not_found", "Không tìm thấy booking.");
 
-        var target = decision == "CUSTOMER_WINS"
-            ? BookingStatus.Refunded
-            : BookingStatus.Completed;
+        var target = decision == "CUSTOMER_WINS" &&
+            (refundState is OriginalPaymentRefundState.Confirmed or
+                OriginalPaymentRefundState.NotRequired)
+                ? BookingStatus.Refunded
+                : decision == "CUSTOMER_WINS"
+                    ? BookingStatus.Disputed
+                    : BookingStatus.Completed;
+        if (target == BookingStatus.Disputed && booking.Status == BookingStatus.Disputed)
+        {
+            var pendingRefund = booking.RecordDisputeRefund(refundAmount);
+            if (pendingRefund.IsFailure) return pendingRefund.Error;
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Result.Success();
+        }
         if (booking.Status == target)
         {
             await tx.CommitAsync(ct);
@@ -79,6 +106,8 @@ internal sealed class DisputeBookingWorkflow(
             return Error.Conflict("support.dispute.invalid_state",
                 "Booking không còn ở trạng thái tranh chấp.");
 
+        var recorded = booking.RecordDisputeRefund(refundAmount);
+        if (recorded.IsFailure) return recorded.Error;
         var transitioned = booking.TransitionTo(target);
         if (transitioned.IsFailure) return transitioned.Error;
         if (target == BookingStatus.Completed)
@@ -104,8 +133,24 @@ internal sealed class DisputeBookingWorkflow(
         caregiverUserId,
         BookingStatusCodec.ToApi(booking.Status),
         booking.EscrowAmount,
+        booking.CustomerPayableAmount,
+        booking.PromotionSubsidyAmount,
         booking.PlatformFeeAmount,
         booking.DisputeWindowHours,
+        booking.ScheduledStart,
+        booking.ActualStart,
         booking.ActualEnd,
         booking.SettlementReleasedAt);
+
+    private static bool CanOpen(Domain.Booking booking, DateTimeOffset now)
+    {
+        if (booking.Status is BookingStatus.CheckoutPendingReview or BookingStatus.Completed)
+            return true;
+
+        return (booking.Status is BookingStatus.Confirmed or
+                   BookingStatus.CaregiverAccepted or BookingStatus.CaregiverEnRoute) &&
+               booking.CaregiverId is not null &&
+               booking.ActualStart is null &&
+               now >= booking.ScheduledStart.AddMinutes(30);
+    }
 }

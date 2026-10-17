@@ -15,6 +15,12 @@ class SettingsSupportSection extends StatelessWidget {
           onTap: () => context.push('/settings/faq'),
         ),
         SettingsSettingsItem(
+          icon: Icons.currency_exchange_rounded,
+          title: 'Hoàn tiền',
+          subtitle: 'Theo dõi trạng thái và lịch sử hoàn tiền',
+          onTap: () => context.push('/settings/refunds'),
+        ),
+        SettingsSettingsItem(
           icon: Icons.headset_mic_outlined,
           title: 'Liên hệ hỗ trợ',
           subtitle: 'Hotline: 1800 6789',

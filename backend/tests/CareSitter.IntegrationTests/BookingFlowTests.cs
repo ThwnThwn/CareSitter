@@ -178,6 +178,32 @@ public sealed class BookingFlowTests
         Assert.Equal("support.dispute.window_expired", result.Error.Code);
     }
 
+    [Fact]
+    public async Task Dispute_CaregiverNoShowAfterGracePeriod_CanBeOpened()
+    {
+        var ownerId = Guid.NewGuid();
+        var bookingId = Guid.NewGuid();
+        var noShow = Snapshot(bookingId, ownerId) with
+        {
+            Status = "caregiver_en_route",
+            ScheduledStart = DateTimeOffset.UtcNow.AddMinutes(-31),
+            ActualStart = null,
+            ActualEnd = null
+        };
+        var workflow = new DisputeWorkflowStub(noShow);
+        var handler = new CreateDisputeCommandHandler(
+            new SupportRepositoryStub(),
+            new CurrentUserStub(ownerId, "CUSTOMER"),
+            workflow);
+
+        var result = await handler.Handle(
+            new CreateDisputeCommand(bookingId, "NO_SHOW", "Caregiver chưa đến"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error.Message);
+        Assert.True(workflow.OpenCalled);
+    }
+
     private static DisputeBookingSnapshot Snapshot(Guid bookingId, Guid customerId) => new(
         bookingId,
         customerId,
@@ -185,8 +211,12 @@ public sealed class BookingFlowTests
         Guid.NewGuid(),
         "completed",
         100_000,
+        100_000,
+        0,
         15_000,
         48,
+        DateTimeOffset.UtcNow.AddHours(-3),
+        DateTimeOffset.UtcNow.AddHours(-2),
         DateTimeOffset.UtcNow.AddHours(-1),
         null);
 
@@ -221,6 +251,7 @@ public sealed class BookingFlowTests
         }
 
         public Task<Result> ResolveAsync(Guid bookingId, string decision,
+            long refundAmount, OriginalPaymentRefundState refundState,
             DateTimeOffset resolvedAt, CancellationToken ct = default) =>
             Task.FromResult(Result.Success());
     }

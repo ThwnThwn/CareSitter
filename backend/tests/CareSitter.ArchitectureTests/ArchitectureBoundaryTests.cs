@@ -48,6 +48,27 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void Database_bootstrap_imports_every_module_migration_once_in_filename_order()
+    {
+        var initRoot = Path.Combine(RepositoryRoot, "backend", "init-db");
+        var moduleRoot = Path.Combine(initRoot, "modules");
+        var expected = Directory.EnumerateFiles(
+                moduleRoot, "*.sql", SearchOption.AllDirectories)
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
+            .Select(path => Path.GetRelativePath(initRoot, path).Replace('\\', '/'))
+            .ToArray();
+        var manifest = File.ReadAllText(Path.Combine(initRoot, "00-init.sql"));
+        var actual = Regex.Matches(
+                manifest,
+                @"^\\ir\s+(?<path>modules/\S+\.sql)\s*$",
+                RegexOptions.Multiline)
+            .Select(match => match.Groups["path"].Value)
+            .ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void Application_infrastructure_debt_can_only_decrease()
     {
         AssertNoNewDebt(

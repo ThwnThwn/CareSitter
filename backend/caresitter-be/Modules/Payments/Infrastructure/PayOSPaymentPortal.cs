@@ -150,7 +150,7 @@ internal sealed class PayOSPaymentPortal(PaymentsDbContext db, IBookingPaymentGa
     {
         if (!service.VerifyWebhook(payload)) return new(400, "Invalid signature.");
         JsonElement data;
-        string orderCode, reference, linkId, accountNumber;
+        string orderCode, reference, linkId;
         long amount;
         try
         {
@@ -159,7 +159,6 @@ internal sealed class PayOSPaymentPortal(PaymentsDbContext db, IBookingPaymentGa
             PayOSService.ParseOrderCode(orderCode);
             reference = PayOSService.RequiredString(data, "reference", 200);
             linkId = PayOSService.RequiredString(data, "paymentLinkId", 100);
-            accountNumber = PayOSService.RequiredString(data, "accountNumber", 100);
             amount = data.GetProperty("amount").GetInt64();
             if (amount <= 0 || data.GetProperty("currency").GetString() != "VND" ||
                 data.GetProperty("code").GetString() != "00") return new(400, "Invalid payment data.");
@@ -170,9 +169,10 @@ internal sealed class PayOSPaymentPortal(PaymentsDbContext db, IBookingPaymentGa
             x.Provider == "PAYOS" && x.ProviderOrderRef == orderCode, ct);
         // payOS gửi giao dịch mẫu khi xác thực webhook. Không ghi nhận tiền cho mã không thuộc hệ thống.
         if (intent is null) return new(200, "Accepted.");
-        if ((intent.ProviderLinkId is not null && intent.ProviderLinkId != linkId) ||
-            (intent.ProviderAccountNumber is not null &&
-                accountNumber != intent.ProviderAccountNumber))
+        // data.accountNumber identifies the sender account in real payOS transfer
+        // callbacks; it is not the merchant receiving account returned when the link
+        // was created. Bind the signed callback to our order and paymentLinkId instead.
+        if (intent.ProviderLinkId is not null && intent.ProviderLinkId != linkId)
             return new(400, "Payment link mismatch.");
 
         var eventId = $"{orderCode}:{reference}";

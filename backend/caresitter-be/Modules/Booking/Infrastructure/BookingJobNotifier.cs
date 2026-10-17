@@ -66,14 +66,17 @@ internal sealed class BookingJobNotifier(IHubContext<CareTrackingHub> hub, IUser
             BookingNotificationData(booking)), ct);
     }
 
-    public async Task RefundedAsync(BookingEntity booking, CancellationToken ct = default)
+    public async Task RefundedAsync(
+        BookingEntity booking,
+        OriginalPaymentRefundOutcome outcome,
+        CancellationToken ct = default)
     {
         await hub.Clients.Group(CareTrackingHub.BookingGroup(booking.Id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 booking.Id, "matching_failed", "refunded", DateTimeOffset.UtcNow), ct);
         await notifications.NotifyAsync(new UserNotificationMessage(
-            booking.CustomerId, "PAYMENT", "Đã hoàn tiền vào Ví CareSitter",
-            $"{booking.EscrowAmount:N0}đ đã được cộng vào Ví CareSitter vì chưa tìm được người chăm sóc phù hợp.",
+            booking.CustomerId, "PAYMENT", "Đã hoàn tiền",
+            $"{outcome.Amount:N0}đ đã được hoàn về phương thức thanh toán {outcome.Provider} ban đầu.",
             BookingNotificationData(booking)), ct);
     }
 

@@ -1,11 +1,13 @@
 using CareSitter.Contracts.Services;
+using CareSitter.Modules.Payments.Application.Refunds;
 using CareSitter.Modules.Payments.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Payments.Application;
 
 internal sealed class WalletService(IWalletLedgerStore ledger,
-    IDisputeLookupService disputeLookup, IPeopleLookupService peopleLookup) : IWalletService
+    IDisputeLookupService disputeLookup, IPeopleLookupService peopleLookup,
+    IOriginalPaymentRefundCoordinator refunds) : IWalletService
 {
     public Task<Result> LockEscrowAsync(Guid bookingId, long amount, string idempotencyKey, CancellationToken ct = default) =>
         ledger.LockEscrowAsync(bookingId, amount, idempotencyKey, ct);
@@ -21,8 +23,23 @@ internal sealed class WalletService(IWalletLedgerStore ledger,
     public Task<Result> ReleaseEscrowAsync(Guid bookingId, long amount, CancellationToken ct = default) =>
         ledger.ReleaseEscrowAsync(bookingId, amount, ct);
 
-    public Task<Result> RefundToCustomerWalletAsync(Guid bookingId, Guid customerId, CancellationToken ct = default) =>
-        ledger.RefundToCustomerWalletAsync(bookingId, customerId, ct);
+    public Task<Result<OriginalPaymentRefundOutcome>> RequestOriginalPaymentRefundAsync(
+        Guid bookingId,
+        Guid customerId,
+        string reason,
+        CancellationToken ct = default) =>
+        refunds.EnsureRefundAsync(bookingId, customerId, null, reason, ct);
+
+    public Task<Result<OriginalPaymentRefundOutcome>> RequestOriginalPaymentRefundAsync(
+        Guid bookingId,
+        Guid customerId,
+        long amount,
+        string reason,
+        CancellationToken ct = default) =>
+        refunds.EnsureRefundAsync(bookingId, customerId, amount, reason, ct);
+
+    public Task<bool> HasSettlementAsync(Guid bookingId, CancellationToken ct = default) =>
+        ledger.HasSettlementAsync(bookingId, ct);
 
     public async Task<Result> SettleAsync(Guid bookingId, Guid caregiverId, long escrowAmount,
         long platformFeeAmount, CancellationToken ct = default)
@@ -38,17 +55,20 @@ internal sealed class WalletService(IWalletLedgerStore ledger,
         return await ledger.SettleAsync(bookingId, caregiverUserId.Value, caregiverAmount, platformFeeAmount, ct);
     }
 
-    public async Task<Result> ResolveDisputeAsync(Guid bookingId, Guid customerId, Guid caregiverId,
-        long escrowAmount, long platformFeeAmount, string decision, long? refundAmount,
+    public async Task<Result> ResolveDisputeAsync(Guid bookingId, Guid caregiverId,
+        long escrowAmount, long customerPayableAmount, long promotionSubsidyAmount,
+        long platformFeeAmount, string decision, long? refundAmount,
         long? caregiverPenaltyAmount, CancellationToken ct = default)
     {
-        var allocation = DisputeAllocation.Create(escrowAmount, platformFeeAmount, decision,
-            refundAmount, caregiverPenaltyAmount);
+        var allocation = DisputeAllocation.Create(escrowAmount, customerPayableAmount,
+            promotionSubsidyAmount, platformFeeAmount, decision, refundAmount,
+            caregiverPenaltyAmount);
         if (allocation.IsFailure) return allocation.Error;
         var caregiverUserId = await peopleLookup.GetUserIdByCaregiverProfileIdAsync(caregiverId, ct);
         if (caregiverUserId is null)
             return Error.NotFound("payments.caregiver_not_found", "Không tìm thấy tài khoản caregiver.");
-        return await ledger.ResolveDisputeAsync(bookingId, customerId, caregiverUserId.Value, allocation.Value, ct);
+        return await ledger.ResolveDisputeAsync(
+            bookingId, caregiverUserId.Value, allocation.Value, ct);
     }
 
     public async Task<Result> ReleaseMatureSettlementAsync(

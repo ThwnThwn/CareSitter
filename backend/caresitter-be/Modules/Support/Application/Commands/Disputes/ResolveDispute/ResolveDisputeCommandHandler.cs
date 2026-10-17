@@ -32,7 +32,7 @@ internal sealed class ResolveDisputeCommandHandler(
         var decision = request.Decision.Trim().ToUpperInvariant();
         var effectiveRefund = decision switch
         {
-            "CUSTOMER_WINS" => booking.EscrowAmount,
+            "CUSTOMER_WINS" => booking.CustomerPayableAmount,
             "CAREGIVER_WINS" => 0,
             _ => request.RefundAmount
         };
@@ -40,11 +40,28 @@ internal sealed class ResolveDisputeCommandHandler(
             effectiveRefund, request.CaregiverPenaltyAmount);
         if (result.IsFailure) return result.Error;
 
+        var refundState = OriginalPaymentRefundState.NotRequired;
+        if (effectiveRefund is > 0)
+        {
+            var refund = await wallet.RequestOriginalPaymentRefundAsync(
+                booking.BookingId,
+                booking.CustomerId,
+                effectiveRefund.Value,
+                $"DISPUTE_{decision}",
+                ct);
+            if (refund.IsFailure) return refund.Error;
+            if (refund.Value.State == OriginalPaymentRefundState.NotRequired)
+                return Error.Conflict("support.dispute.payment_missing",
+                    "Không tìm thấy giao dịch gốc đã thu tiền để hoàn; cần đối soát thủ công.");
+            refundState = refund.Value.State;
+        }
+
         var financial = await wallet.ResolveDisputeAsync(
             booking.BookingId,
-            booking.CustomerId,
             caregiverId,
             booking.EscrowAmount,
+            booking.CustomerPayableAmount,
+            booking.PromotionSubsidyAmount,
             booking.PlatformFeeAmount,
             decision,
             effectiveRefund,
@@ -54,7 +71,8 @@ internal sealed class ResolveDisputeCommandHandler(
 
         var resolvedAt = dispute.ResolvedAt ?? DateTimeOffset.UtcNow;
         var bookingResult = await bookingWorkflow.ResolveAsync(
-            booking.BookingId, decision, resolvedAt, ct);
+            booking.BookingId, decision, effectiveRefund ?? 0,
+            refundState, resolvedAt, ct);
         if (bookingResult.IsFailure) return bookingResult.Error;
 
         await repository.SaveChangesAsync(ct);

@@ -18,6 +18,7 @@ public sealed class PayoutRequest : Entity
         string idempotencyKey,
         long amount,
         string bankName,
+        string bankBin,
         string accountHolderName,
         string accountNumberEncrypted)
     {
@@ -27,8 +28,11 @@ public sealed class PayoutRequest : Entity
         IdempotencyKey = idempotencyKey;
         Amount = amount;
         BankName = bankName;
+        BankBin = bankBin;
         AccountHolderName = accountHolderName;
         AccountNumberEncrypted = accountNumberEncrypted;
+        Provider = "PAYOS";
+        ProviderReferenceId = $"CS{id:N}";
         Status = "PENDING";
         RequestedAt = DateTimeOffset.UtcNow;
     }
@@ -39,8 +43,21 @@ public sealed class PayoutRequest : Entity
     public long Amount { get; private set; }
 
     public string BankName { get; private set; } = null!;
+    public string BankBin { get; private set; } = null!;
     public string AccountHolderName { get; private set; } = null!;
     public string AccountNumberEncrypted { get; private set; } = null!;
+
+    public string Provider { get; private set; } = null!;
+    public string ProviderReferenceId { get; private set; } = null!;
+    public string? ProviderPayoutId { get; private set; }
+    public string? ProviderState { get; private set; }
+    public string? ProviderTransactionId { get; private set; }
+    public string? ProviderErrorCode { get; private set; }
+    public int ProviderAttemptCount { get; private set; }
+    public DateTimeOffset? ProcessingStartedAt { get; private set; }
+    public DateTimeOffset? LastProviderCheckAt { get; private set; }
+    public DateTimeOffset? NextProviderCheckAt { get; private set; }
+    public DateTimeOffset? CompletedAt { get; private set; }
 
     /// <summary>Allowed values: 'PENDING', 'APPROVED', 'REJECTED', 'PROCESSING', 'PAID', 'FAILED'.</summary>
     public string Status { get; private set; } = null!;
@@ -56,6 +73,7 @@ public sealed class PayoutRequest : Entity
         string idempotencyKey,
         long amount,
         string bankName,
+        string bankBin,
         string accountHolderName,
         string accountNumberEncrypted)
     {
@@ -65,13 +83,16 @@ public sealed class PayoutRequest : Entity
             return Error.Validation("payout.amount", "Số tiền rút tối thiểu là 100.000đ.");
         if (string.IsNullOrWhiteSpace(bankName))
             return Error.Validation("payout.bank_name", "bank_name không được rỗng.");
+        if (bankBin is null || bankBin.Length != 6 || !bankBin.All(char.IsAsciiDigit))
+            return Error.Validation("payout.bank_bin", "bank_bin phải gồm đúng 6 chữ số.");
         if (string.IsNullOrWhiteSpace(accountHolderName))
             return Error.Validation("payout.account_holder_name", "account_holder_name không được rỗng.");
         if (string.IsNullOrWhiteSpace(accountNumberEncrypted))
             return Error.Validation("payout.account_number", "account_number_encrypted không được rỗng.");
 
-        return new PayoutRequest(Guid.NewGuid(), caregiverId, walletAccountId, idempotencyKey.Trim(), amount,
-            bankName, accountHolderName, accountNumberEncrypted);
+        var id = Guid.NewGuid();
+        return new PayoutRequest(id, caregiverId, walletAccountId, idempotencyKey.Trim(), amount,
+            bankName.Trim(), bankBin, accountHolderName.Trim(), accountNumberEncrypted);
     }
 
     public Result Approve(Guid adminId)
@@ -95,27 +116,59 @@ public sealed class PayoutRequest : Entity
         return Result.Success();
     }
 
-    public Result MarkProcessing()
+    public Result BeginProviderAttempt(DateTimeOffset now, DateTimeOffset nextCheckAt)
     {
-        if (Status != "APPROVED")
+        if (Status is not ("APPROVED" or "PROCESSING"))
             return Error.Conflict("payout.status", $"không thể chuyen {Status} -> PROCESSING.");
         Status = "PROCESSING";
+        ProcessingStartedAt ??= now;
+        LastProviderCheckAt = now;
+        NextProviderCheckAt = nextCheckAt;
+        ProviderAttemptCount++;
         return Result.Success();
     }
 
-    public Result MarkPaid()
+    public Result RecordProviderProgress(
+        string? providerPayoutId,
+        string providerState,
+        string? providerTransactionId,
+        string? errorCode,
+        DateTimeOffset checkedAt,
+        DateTimeOffset? nextCheckAt)
     {
-        if (Status is not ("APPROVED" or "PROCESSING"))
+        if (Status != "PROCESSING")
+            return Error.Conflict("payout.status", $"không thể cập nhật provider khi payout đang {Status}.");
+        if (!string.IsNullOrWhiteSpace(providerPayoutId))
+        {
+            if (ProviderPayoutId is not null && ProviderPayoutId != providerPayoutId)
+                return Error.Conflict("payout.provider_id", "Provider payout id không khớp.");
+            ProviderPayoutId = providerPayoutId;
+        }
+        ProviderState = providerState;
+        ProviderTransactionId = providerTransactionId ?? ProviderTransactionId;
+        ProviderErrorCode = errorCode;
+        LastProviderCheckAt = checkedAt;
+        NextProviderCheckAt = nextCheckAt;
+        return Result.Success();
+    }
+
+    public Result MarkPaid(DateTimeOffset completedAt)
+    {
+        if (Status != "PROCESSING")
             return Error.Conflict("payout.status", $"không thể chuyen {Status} -> PAID.");
         Status = "PAID";
+        CompletedAt = completedAt;
+        NextProviderCheckAt = null;
         return Result.Success();
     }
 
-    public Result MarkFailed()
+    public Result MarkFailed(DateTimeOffset completedAt)
     {
-        if (Status is not ("APPROVED" or "PROCESSING"))
+        if (Status != "PROCESSING")
             return Error.Conflict("payout.status", $"không thể chuyen {Status} -> FAILED.");
         Status = "FAILED";
+        CompletedAt = completedAt;
+        NextProviderCheckAt = null;
         return Result.Success();
     }
 }

@@ -20,7 +20,13 @@ internal sealed class CreateDisputeCommandHandler(
         var booking = await bookingWorkflow.GetAsync(request.BookingId, ct);
         if (booking is null) return SupportErrors.DisputeBookingNotFound();
         if (booking.CustomerId != userId) return SupportErrors.Forbidden();
-        if (booking.Status is not ("checkout_pending_review" or "completed"))
+        var noShowEligible = (booking.Status is "confirmed" or
+                "caregiver_accepted" or "caregiver_en_route") &&
+            booking.CaregiverId is not null &&
+            booking.ActualStart is null &&
+            DateTimeOffset.UtcNow >= booking.ScheduledStart.AddMinutes(30);
+        if (booking.Status is not ("checkout_pending_review" or "completed") &&
+            !noShowEligible)
             return SupportErrors.DisputeInvalidState();
         if (booking.Status == "completed" &&
             (booking.ActualEnd is null ||

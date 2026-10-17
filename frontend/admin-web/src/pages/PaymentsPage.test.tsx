@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { PaymentsPage } from './PaymentsPage';
-import type { PaymentReview } from '../types';
+import type { PaymentReview, RefundRequest } from '../types';
 
 vi.mock('../adminMetadata', () => ({ useAdminMetadata: () => ({ statusDefinitions: {} }) }));
 
@@ -34,4 +34,36 @@ it('keeps manual resolution available for a pending payOS booking in review', as
   expect(screen.getByRole('button', { name: 'Xác nhận đã thanh toán' })).toBeTruthy();
   expect(screen.getByLabelText('Mã giao dịch thanh toán')).toBeTruthy();
   expect(screen.queryByText('Mã giao dịch VNPay')).toBeNull();
+});
+
+it('requires external provider evidence before confirming a manual payOS refund', async () => {
+  const refund: RefundRequest = {
+    id: 'refund-123', bookingId: 'booking-456', paymentIntentId: 'intent-456', customerId: 'customer-456',
+    provider: 'PAYOS', amount: 2000, currency: 'VND', reason: 'BOOKING_CANCELLED', status: 'MANUAL_REQUIRED',
+    requestId: 'refund-booking-456', originalProviderOrderRef: '1019656752193156', attemptCount: 0,
+    requestedAt: '2026-10-16T10:00:00Z',
+  };
+  const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes('/api/v1/admin/payment-reconciliation')) return Response.json([]);
+    if (url.includes('/api/v1/admin/refunds/refund-123/confirm')) return new Response(null, { status: 204 });
+    if (url.includes('/api/v1/admin/refunds')) return Response.json({ items: [refund], total: 1, page: 1, pageSize: 20 });
+    throw new Error(`Unexpected request: ${url} ${init?.method || 'GET'}`);
+  });
+  vi.stubGlobal('fetch', fetch);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+  render(<PaymentsPage />);
+  await userEvent.click(screen.getByRole('tab', { name: 'Hoàn tiền' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Xác nhận hoàn tiền' }));
+  expect(screen.getByText('Không bấm trước khi provider xác nhận hoàn tiền')).toBeTruthy();
+
+  await userEvent.type(screen.getByLabelText('Mã hoàn tiền từ provider'), 'PAYOS-REFUND-001');
+  await userEvent.type(screen.getByLabelText('Ghi chú đối soát refund'), 'Đã kiểm tra merchant portal lúc 17:00.');
+  await userEvent.click(screen.getByRole('button', { name: 'Xác nhận đã hoàn tiền' }));
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  const confirmCall = fetch.mock.calls.find(([input]) => String(input).includes('/refund-123/confirm'));
+  expect(confirmCall?.[1]).toMatchObject({ method: 'POST' });
+  expect(confirmCall?.[1]?.body).toContain('PAYOS-REFUND-001');
 });

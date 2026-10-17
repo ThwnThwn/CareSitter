@@ -184,7 +184,7 @@ public sealed class SecurityContractTests
     {
         var adminId = Guid.NewGuid();
         var payout = PayoutRequest.Create(Guid.NewGuid(), Guid.NewGuid(), "phase10-key",
-            200_000, "VCB", "NGUYEN VAN A", "encrypted").Value;
+            200_000, "VCB", "970436", "NGUYEN VAN A", "encrypted").Value;
 
         Assert.True(payout.Approve(adminId).IsSuccess);
         Assert.Equal(adminId, payout.ReviewedByAdminId);

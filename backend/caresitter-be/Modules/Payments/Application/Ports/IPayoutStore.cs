@@ -14,6 +14,14 @@ internal interface IPayoutStore
         Guid payoutId, Guid adminId, CancellationToken ct = default);
     Task<Result<PayoutRequest>> RejectAsync(
         Guid payoutId, Guid adminId, string? reason, CancellationToken ct = default);
+    Task<PayoutRequest?> ClaimNextProviderWorkAsync(
+        DateTimeOffset now, DateTimeOffset nextCheckAt, CancellationToken ct = default);
+    Task<Result> ApplyProviderResultAsync(
+        Guid payoutId,
+        PayoutProviderResult result,
+        DateTimeOffset now,
+        DateTimeOffset nextCheckAt,
+        CancellationToken ct = default);
     Task<PayoutPage> ListForCaregiverAsync(
         Guid caregiverId, int page, int pageSize, PayoutMapper mapper,
         CancellationToken ct = default);
