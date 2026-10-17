@@ -35,6 +35,7 @@ import 'package:caresitter_customer/features/settings/presentation/screens/faq_s
 import 'package:caresitter_customer/features/settings/presentation/screens/support_screen.dart';
 import 'package:caresitter_customer/features/refunds/presentation/screens/refund_history_screen.dart';
 import 'package:caresitter_customer/features/support_chat/presentation/support_chat_screen.dart';
+import 'package:caresitter_customer/features/booking_chat/presentation/booking_chat_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -321,6 +322,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           pageKey: state.pageKey,
           child: ReviewScreen(bookingId: state.pathParameters['id']!),
         ),
+
+      // -- Booking Chat --
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/bookings/:id/chat',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BookingChatScreen(
+            bookingId: state.pathParameters['id']!,
+            bookingTitle: state.uri.queryParameters['title'],
+          ),
+        ),
+      ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -446,3 +460,4 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+

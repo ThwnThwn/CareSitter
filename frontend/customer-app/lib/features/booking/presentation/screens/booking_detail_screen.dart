@@ -75,6 +75,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           onDispute: () => context.push('/bookings/${booking.id}/dispute'),
           onReview: () => context.push('/bookings/${booking.id}/review'),
           onRebook: () => context.push('/booking/new'),
+          onChat: () => context.push('/bookings/${booking.id}/chat'),
         ),
       ),
     );
@@ -194,3 +195,4 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     );
   }
 }
+
