@@ -1,0 +1,243 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Ứng dụng cần đóng gói
+        required: true
+        type: choice
+        options:
+          - customer-app
+          - caregiver-app
+      target_environment:
+        description: Môi trường backend
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      api_base_url:
+        description: HTTPS API URL, kết thúc bằng /api/v1
+        required: true
+        type: string
+      hub_base_url:
+        description: HTTPS origin cho SignalR, không có /api/v1
+        required: true
+        type: string
+      distribution:
+        description: Chỉ tạo IPA hoặc tải lên TestFlight
+        required: true
+        default: build-only
+        type: choice
+        options:
+          - build-only
+          - testflight
+
+concurrency:
+  group: ios-${{ inputs.app }}-${{ inputs.target_environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ inputs.app }} for ${{ inputs.target_environment }}
+    runs-on: macos-15
+    timeout-minutes: 45
+    environment: ${{ inputs.target_environment }}
+    env:
+      FLUTTER_VERSION: 3.44.4
+      API_BASE_URL: ${{ inputs.api_base_url }}
+      HUB_BASE_URL: ${{ inputs.hub_base_url }}
+      APP_ENVIRONMENT: ${{ inputs.target_environment }}
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+      IOS_CUSTOMER_PROFILE_BASE64: ${{ secrets.IOS_CUSTOMER_PROFILE_BASE64 }}
+      IOS_CAREGIVER_PROFILE_BASE64: ${{ secrets.IOS_CAREGIVER_PROFILE_BASE64 }}
+      CARTO_API_KEY: ${{ secrets.CARTO_API_KEY }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Validate release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$API_BASE_URL" in
+            https://*/api/v1|https://*/api/v1/) ;;
+            *) echo "api_base_url must use HTTPS and end with /api/v1." >&2; exit 1 ;;
+          esac
+          case "$HUB_BASE_URL" in
+            https://*) ;;
+            *) echo "hub_base_url must be an HTTPS origin." >&2; exit 1 ;;
+          esac
+          required=(
+            IOS_TEAM_ID IOS_CERTIFICATE_BASE64 IOS_CERTIFICATE_PASSWORD
+            IOS_KEYCHAIN_PASSWORD CARTO_API_KEY
+          )
+          if [ "${{ inputs.app }}" = "customer-app" ]; then
+            required+=(IOS_CUSTOMER_PROFILE_BASE64)
+            echo "APP_BUNDLE_ID=vn.caresitter.customer" >> "$GITHUB_ENV"
+          else
+            required+=(IOS_CAREGIVER_PROFILE_BASE64)
+            echo "APP_BUNDLE_ID=vn.caresitter.caregiver" >> "$GITHUB_ENV"
+          fi
+          if [ "${{ inputs.distribution }}" = "testflight" ]; then
+            required+=(
+              APP_STORE_CONNECT_KEY_ID APP_STORE_CONNECT_ISSUER_ID
+              APP_STORE_CONNECT_PRIVATE_KEY_BASE64
+            )
+          fi
+          for name in "${required[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required environment secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install signing identity and provisioning profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          certificate="$RUNNER_TEMP/caresitter-distribution.p12"
+          profile="$RUNNER_TEMP/caresitter.mobileprovision"
+          keychain="$RUNNER_TEMP/caresitter-signing.keychain-db"
+          if [ "${{ inputs.app }}" = "customer-app" ]; then
+            profile_base64="$IOS_CUSTOMER_PROFILE_BASE64"
+          else
+            profile_base64="$IOS_CAREGIVER_PROFILE_BASE64"
+          fi
+          printf '%s' "$IOS_CERTIFICATE_BASE64" | base64 --decode > "$certificate"
+          printf '%s' "$profile_base64" | base64 --decode > "$profile"
+          security create-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          security import "$certificate" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -k "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          security list-keychains -d user -s "$keychain"
+
+          profile_plist="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$profile" > "$profile_plist"
+          profile_uuid=$(/usr/libexec/PlistBuddy -c 'Print:UUID' "$profile_plist")
+          profile_name=$(/usr/libexec/PlistBuddy -c 'Print:Name' "$profile_plist")
+          profile_team=$(/usr/libexec/PlistBuddy -c 'Print:TeamIdentifier:0' "$profile_plist")
+          application_id=$(/usr/libexec/PlistBuddy -c 'Print:Entitlements:application-identifier' "$profile_plist")
+          if [ "$profile_team" != "$IOS_TEAM_ID" ]; then
+            echo "Provisioning profile belongs to a different Apple team." >&2
+            exit 1
+          fi
+          case "$application_id" in
+            "$IOS_TEAM_ID.$APP_BUNDLE_ID"|"$IOS_TEAM_ID.*") ;;
+            *) echo "Provisioning profile does not cover $APP_BUNDLE_ID." >&2; exit 1 ;;
+          esac
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$profile" "$HOME/Library/MobileDevice/Provisioning Profiles/$profile_uuid.mobileprovision"
+          echo "IOS_PROFILE_UUID=$profile_uuid" >> "$GITHUB_ENV"
+          echo "IOS_PROFILE_NAME=$profile_name" >> "$GITHUB_ENV"
+          echo "IOS_KEYCHAIN_PATH=$keychain" >> "$GITHUB_ENV"
+
+      - name: Analyze and test
+        working-directory: frontend/${{ inputs.app }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get
+          flutter analyze --no-pub
+          flutter test --no-pub
+
+      - name: Build signed IPA
+        working-directory: frontend/${{ inputs.app }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo
+            echo "DEVELOPMENT_TEAM=$IOS_TEAM_ID"
+            echo "CODE_SIGN_STYLE=Manual"
+            echo "PROVISIONING_PROFILE_SPECIFIER=$IOS_PROFILE_NAME"
+            echo "CODE_SIGN_IDENTITY=Apple Distribution"
+          } >> ios/Flutter/Release.xcconfig
+          export_options="$RUNNER_TEMP/ExportOptions.plist"
+          cat > "$export_options" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>destination</key><string>export</string>
+            <key>method</key><string>app-store-connect</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>teamID</key><string>$IOS_TEAM_ID</string>
+            <key>provisioningProfiles</key>
+            <dict><key>$APP_BUNDLE_ID</key><string>$IOS_PROFILE_NAME</string></dict>
+            <key>stripSwiftSymbols</key><true/>
+            <key>uploadBitcode</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          flutter build ipa --release \
+            --build-number="$GITHUB_RUN_NUMBER" \
+            --export-options-plist="$export_options" \
+            --dart-define="APP_ENV=$APP_ENVIRONMENT" \
+            --dart-define="BASE_URL=$API_BASE_URL" \
+            --dart-define="HUB_BASE_URL=$HUB_BASE_URL" \
+            --dart-define="MAP_PROVIDER=carto" \
+            --dart-define="CARTO_API_KEY=$CARTO_API_KEY"
+
+      - name: Preserve signed IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app }}-${{ inputs.target_environment }}-${{ github.run_number }}
+          path: frontend/${{ inputs.app }}/build/ios/ipa/*.ipa
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload to TestFlight
+        if: inputs.distribution == 'testflight'
+        working-directory: frontend/${{ inputs.app }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          key_dir="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$key_dir"
+          key_file="$key_dir/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > "$key_file"
+          chmod 600 "$key_file"
+          ipa=$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)
+          if [ -z "$ipa" ]; then
+            echo "Signed IPA was not produced." >&2
+            exit 1
+          fi
+          xcrun altool --upload-app --type ios --file "$ipa" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${IOS_KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$IOS_KEYCHAIN_PATH" || true
+          fi
+          if [ -n "${IOS_PROFILE_UUID:-}" ]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$IOS_PROFILE_UUID.mobileprovision"
+          fi
+          if [ -n "${APP_STORE_CONNECT_KEY_ID:-}" ]; then
+            rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8"
+          fi
+          rm -f "$RUNNER_TEMP/caresitter-distribution.p12" \
+            "$RUNNER_TEMP/caresitter.mobileprovision" \
+            "$RUNNER_TEMP/profile.plist" \
+            "$RUNNER_TEMP/ExportOptions.plist"
