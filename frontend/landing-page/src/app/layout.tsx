@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
+import { Be_Vietnam_Pro, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const beVietnamPro = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700"],
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-dm-sans",
+  subsets: ["latin", "latin-ext", "vietnamese"],
+  variable: "--font-body-family",
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  weight: "400",
+const sourceSerif = Source_Serif_4({
+  weight: "variable",
   style: ["normal", "italic"],
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-instrument-serif",
+  subsets: ["latin", "latin-ext", "vietnamese"],
+  variable: "--font-display-family",
   display: "swap",
 });
 
@@ -61,7 +61,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${dmSans.variable} ${instrumentSerif.variable} ${ibmPlexMono.variable}`}
+      className={`${beVietnamPro.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}
     >
       <body>{children}</body>
     </html>
