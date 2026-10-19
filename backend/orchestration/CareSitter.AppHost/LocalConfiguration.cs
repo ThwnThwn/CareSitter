@@ -6,17 +6,23 @@ namespace CareSitter.AppHost;
 
 internal static class LocalConfiguration
 {
+    private static readonly HashSet<string> EnvironmentOverrides = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "AppHost:ApiPort"
+    };
+
     public static string Load(IConfigurationManager configuration, string appHostDirectory, string repository)
     {
         var envPath = Path.GetFullPath(configuration["AppHost:ApiEnvFile"] ?? Path.Combine(repository, "backend/.env"));
         if (File.Exists(envPath))
         {
             // Parse only: do not expose every API credential in the AppHost/other services' process environment.
+            // The API port is an explicit AppHost override; other .env values remain fallbacks.
             var fallback = DotNetEnv.Env.NoEnvVars().Load(envPath)
                 .Select(pair => new KeyValuePair<string, string?>(pair.Key.Replace("__", ":"), pair.Value))
                 // ApiHost uses NoClobber: the first occurrence wins, including normalized/case-insensitive keys.
                 .GroupBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(group => group.First())
-                .Where(pair => configuration[pair.Key] is null).ToArray();
+                .Where(pair => EnvironmentOverrides.Contains(pair.Key) || configuration[pair.Key] is null).ToArray();
             configuration.AddInMemoryCollection(fallback);
         }
 
