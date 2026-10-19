@@ -23,11 +23,25 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
     public DbSet<BookingSyncEvent> BookingSyncEvents => Set<BookingSyncEvent>();
+    public DbSet<BookingChatConversation> BookingChatConversations => Set<BookingChatConversation>();
+    public DbSet<BookingChatEpoch> BookingChatEpochs => Set<BookingChatEpoch>();
+    public DbSet<BookingChatMessage> BookingChatMessages => Set<BookingChatMessage>();
+    public DbSet<BookingChatReadCursor> BookingChatReadCursors => Set<BookingChatReadCursor>();
+    public DbSet<BookingChatOutboxEvent> BookingChatOutbox => Set<BookingChatOutboxEvent>();
+    public DbSet<BookingChatActivityEvent> BookingChatActivityEvents => Set<BookingChatActivityEvent>();
+    public DbSet<BookingChatReport> BookingChatReports => Set<BookingChatReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new LiveLocationConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatConversationConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatEpochConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatReadCursorConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatOutboxConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatActivityEventConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatReportConfiguration());
 
         modelBuilder.Entity<Domain.Booking>(b =>
         {

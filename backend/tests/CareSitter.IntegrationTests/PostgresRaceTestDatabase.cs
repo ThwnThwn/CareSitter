@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Npgsql;
 
 namespace CareSitter.IntegrationTests;
@@ -12,6 +12,16 @@ internal sealed class PostgresFactAttribute : FactAttribute
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(ConnectionVariable)))
             Skip = $"Set {ConnectionVariable} to run PostgreSQL race tests.";
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+internal sealed class PostgresTheoryAttribute : TheoryAttribute
+{
+    public PostgresTheoryAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgresFactAttribute.ConnectionVariable)))
+            Skip = $"Set {PostgresFactAttribute.ConnectionVariable} to run PostgreSQL race tests.";
     }
 }
 
@@ -135,14 +145,13 @@ internal sealed class PostgresRaceTestDatabase : IAsyncDisposable
             NpgsqlConnection.ClearPool(testConnection);
         await using var admin = new NpgsqlConnection(_adminConnectionString);
         await admin.OpenAsync();
-        await using (var terminate = new NpgsqlCommand(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = @database AND pid <> pg_backend_pid()",
-            admin))
+        // FORCE terminates connections and prevents a reconnect from landing in
+        // the gap that existed between separate terminate and drop commands.
+        await using var drop = new NpgsqlCommand(
+            $"DROP DATABASE IF EXISTS \"{_databaseName}\" WITH (FORCE)", admin)
         {
-            terminate.Parameters.AddWithValue("database", _databaseName);
-            await terminate.ExecuteNonQueryAsync();
-        }
-        await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{_databaseName}\"", admin);
+            CommandTimeout = 120
+        };
         await drop.ExecuteNonQueryAsync();
     }
 }

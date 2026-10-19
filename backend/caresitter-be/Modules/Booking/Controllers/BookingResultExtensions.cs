@@ -76,6 +76,9 @@ public static class BookingResultExtensions
             });
         if (error.Code == BookingErrors.GpsTrackingDisabledCode)
             return controller.StatusCode(StatusCodes.Status410Gone, new { error = error.Message });
+        if (error.Code == "booking.chat.purged")
+            return controller.StatusCode(StatusCodes.Status410Gone, new ProblemDetails
+                { Title = error.Code, Detail = error.Message });
         if (error.Code == "booking.gps.rate_limited")
         {
             controller.Response.Headers.RetryAfter = "15";

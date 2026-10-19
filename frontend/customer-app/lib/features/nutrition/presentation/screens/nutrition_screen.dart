@@ -5,6 +5,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
 import '../controllers/nutrition_controller.dart';
 import '../widgets/nutrition_health_form.dart';
+import '../widgets/nutrition_personalization_requirement.dart';
 import '../widgets/nutrition_result.dart';
 
 class NutritionScreen extends ConsumerStatefulWidget {
@@ -52,7 +53,9 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _content(context);
+
+  Widget _content(BuildContext context) {
     final flow = ref.watch(nutritionFlowProvider(widget.beneficiaryId));
     final session = ref.watch(nutritionSessionProvider);
     ref.listen(nutritionSessionProvider, (_, __) {
@@ -71,6 +74,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
         .where((b) => b.id == widget.beneficiaryId)
         .firstOrNull;
     final health = flow.health;
+    final readiness = flow.readiness;
     return Scaffold(
         appBar: AppBar(title: const Text('Gợi ý thực đơn')),
         body: health == null
@@ -110,6 +114,8 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
                           }
                           controller.saveHealth(changes);
                         }),
+                    const SizedBox(height: AppSpacing.compact),
+                    NutritionPersonalizationRequirement(readiness: readiness),
                     const SizedBox(height: AppSpacing.compact),
                     if (_dirty)
                       const Text(

@@ -44,7 +44,9 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
   }
 
   void _change(String key, Object? value) {
-    setState(() => _changes[key] = value);
+    setState(() {
+      _changes[key] = value;
+    });
     widget.onDirtyChanged(true);
   }
 
@@ -63,6 +65,9 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
 
   List<String> _items(String value) =>
       value.split(';').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+
+  void _save() => widget.onSave(Map.of(_changes));
+
   @override
   void dispose() {
     _allergies.dispose();
@@ -73,6 +78,14 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
   @override
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Thông tin bắt buộc cho gợi ý cá nhân hóa',
+            style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.xs),
+        const Text(
+          'Hãy xác nhận bệnh lý và dị ứng đã biết. Khi có thông tin, ghi rõ '
+          'để hệ thống loại các món không phù hợp; không dùng mục này để tự chẩn đoán.',
+        ),
+        const SizedBox(height: AppSpacing.md),
         NutritionStatusField(
             label: 'Dị ứng thực phẩm',
             value: _allergyStatus,
@@ -93,8 +106,8 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
               maxLength: 1000,
               onChanged: (v) => _change('allergies', _items(v)),
               decoration: const InputDecoration(
-                  labelText: 'Thực phẩm gây dị ứng',
-                  helperText: 'Ngăn cách các thực phẩm bằng dấu ;')),
+                  labelText: 'Thực phẩm gây dị ứng *',
+                  helperText: 'Bắt buộc khi có dị ứng. Ngăn cách bằng dấu ;')),
         const SizedBox(height: AppSpacing.compact),
         NutritionStatusField(
             label: 'Thông tin bệnh lý hiện có',
@@ -120,8 +133,9 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
               maxLength: 2000,
               onChanged: (v) => _change('chronicConditions', _items(v)),
               decoration: const InputDecoration(
-                  labelText: 'Bệnh đã được thông báo',
-                  helperText: 'Không nhập triệu chứng như một chẩn đoán.')),
+                  labelText: 'Bệnh lý đã biết *',
+                  helperText:
+                      'Bắt buộc khi có bệnh. Chỉ nhập thông tin đã được ghi nhận; ngăn cách bằng dấu ;.')),
         const SizedBox(height: AppSpacing.compact),
         NutritionHealthFields(
             health: widget.health,
@@ -133,8 +147,7 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
             onChanged: (key, value) => _change(key, value)),
         const SizedBox(height: AppSpacing.md),
         OutlinedButton(
-            onPressed:
-                widget.enabled ? () => widget.onSave(Map.of(_changes)) : null,
+            onPressed: widget.enabled ? _save : null,
             child: const Text('Lưu phần thông tin đã cập nhật')),
       ]);
 }

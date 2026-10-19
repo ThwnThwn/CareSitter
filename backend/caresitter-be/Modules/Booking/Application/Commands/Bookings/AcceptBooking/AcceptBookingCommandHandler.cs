@@ -13,6 +13,7 @@ internal sealed class AcceptBookingCommandHandler(
     IPeopleLookupService people,
     IMatchingService matching,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<AcceptBookingCommand, Result<BookingResponse>>
@@ -97,6 +98,8 @@ internal sealed class AcceptBookingCommandHandler(
                 bookings.AddTimelineEvent(CareTimelineEvent.Create(
                     booking.Id, caregiverId, "CHECKIN", "Caregiver đã nhận ca"));
                 bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverAccepted);
+                await bookingChat.EnsureFirstEpochAsync(booking, userId,
+                    DateTimeOffset.UtcNow, innerCt);
                 return Result.Success();
             }, ct);
         if (accepted.IsFailure) return accepted.Error;

@@ -306,7 +306,7 @@ public sealed class SecurityContractTests
 
     private static CompleteBookingCommandHandler CreateCompleteHandler(
         IBookingRepository repository, ICurrentUser currentUser) =>
-        new(repository, currentUser, null!, null!, null!, null!, null!);
+        new(repository, currentUser, null!, null!, null!, null!, null!, null!);
 
     private static string? GetHttpPostTemplate(Type controllerType, string methodName) =>
         controllerType.GetMethod(methodName)?
@@ -317,7 +317,7 @@ public sealed class SecurityContractTests
 
     private static StartBookingEnRouteCommandHandler CreateStartEnRouteHandler(
         IBookingRepository repository, ICurrentUser currentUser, IPeopleLookupService people) =>
-        new(repository, currentUser, people, null!, null!, null!);
+        new(repository, currentUser, people, null!, null!, null!, null!);
 
     private static Booking CreateAssignedBooking(Guid customerId, Guid caregiverProfileId)
     {

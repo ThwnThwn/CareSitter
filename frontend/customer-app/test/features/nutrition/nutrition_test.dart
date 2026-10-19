@@ -11,6 +11,7 @@ import 'package:caresitter_customer/features/nutrition/data/repositories/nutriti
 import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_controller.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_fields.dart';
+import 'package:caresitter_customer/features/nutrition/domain/nutrition_personalization_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,102 @@ Future<void> settle() async {
 }
 
 void main() {
+  test('personalized nutrition requires all seven health declarations', () {
+    final unknown = NutritionPersonalizationRules.evaluate(
+        allergyStatus: 'unknown',
+        allergies: const [],
+        conditionStatus: 'unknown',
+        chronicConditions: const [],
+        medicationsStatus: 'unknown',
+        medications: const [],
+        feedingRoute: 'unknown',
+        swallowingStatus: 'unknown',
+        fluidRestriction: 'unknown',
+        electrolyteRestriction: 'unknown');
+    expect(unknown.isReady, isFalse);
+    expect(unknown.missingFields, hasLength(3));
+    expect(unknown.totalIssueCount, 7);
+
+    final incomplete = NutritionPersonalizationRules.evaluate(
+        allergyStatus: 'reported_present',
+        allergies: const [],
+        conditionStatus: 'reported_present',
+        chronicConditions: const [],
+        medicationsStatus: 'reported_none',
+        medications: const [],
+        feedingRoute: 'oral',
+        swallowingStatus: 'normal',
+        fluidRestriction: 'none',
+        electrolyteRestriction: 'none');
+    expect(incomplete.isReady, isFalse);
+    expect(incomplete.missingFields,
+        containsAll(['Ghi rõ thực phẩm gây dị ứng', 'Ghi rõ bệnh lý đã biết']));
+
+    final ready = NutritionPersonalizationRules.evaluate(
+        allergyStatus: 'reported_none',
+        allergies: const [],
+        conditionStatus: 'reported_present',
+        chronicConditions: const ['Tăng huyết áp'],
+        medicationsStatus: 'reported_none',
+        medications: const [],
+        feedingRoute: 'oral',
+        swallowingStatus: 'normal',
+        fluidRestriction: 'none',
+        electrolyteRestriction: 'none');
+    expect(ready.isReady, isTrue);
+  });
+
+  test('personalized nutrition detects contradictory none declarations', () {
+    final readiness = NutritionPersonalizationRules.evaluate(
+        allergyStatus: 'reported_none',
+        allergies: const ['Tôm'],
+        conditionStatus: 'reported_none',
+        chronicConditions: const ['Tăng huyết áp'],
+        medicationsStatus: 'reported_none',
+        medications: const [
+          {'name': 'Thuốc A'}
+        ],
+        feedingRoute: 'oral',
+        swallowingStatus: 'normal',
+        fluidRestriction: 'none',
+        electrolyteRestriction: 'none');
+
+    expect(readiness.isReady, isFalse);
+    expect(readiness.totalIssueCount, 3);
+    expect(
+        readiness.missingFields, contains('Làm rõ thông tin dị ứng mâu thuẫn'));
+    expect(readiness.missingFields,
+        contains('Làm rõ thông tin bệnh lý mâu thuẫn'));
+    expect(
+        readiness.missingFields, contains('Làm rõ thông tin thuốc mâu thuẫn'));
+  });
+
+  testWidgets(
+      'assessment remains available when health declarations are missing',
+      (tester) async {
+    final repository = _Repository()
+      ..healthOverride = {
+        'revision': 7,
+        'allergyStatus': 'unknown',
+        'generalNote': null,
+        'healthHistory': {
+          'nutrition': {'schemaVersion': 1, 'conditionsStatus': 'unknown'}
+        }
+      };
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+        ],
+        child:
+            const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
+    await tester.pumpAndSettle();
+    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    await tester.scrollUntilVisible(check, 250);
+    expect(tester.widget<FilledButton>(check).onPressed, isNotNull);
+  });
+
   testWidgets(
       'structured restriction is saved sparsely and survives a failed save',
       (tester) async {
@@ -130,7 +227,7 @@ void main() {
   test(
       'unknown allergies remain unknown and existing structured data needs no new description',
       () async {
-    final repository = _Repository();
+    final repository = _Repository()..healthOverride = _unknownHealth();
     final c = NutritionFlowController(repository, 'first', 'owner');
     addTearDown(c.dispose);
     await settle();
@@ -162,6 +259,7 @@ void main() {
   test('AI failure retains source and cannot become a healthy profile',
       () async {
     final repository = _Repository()
+      ..healthOverride = _unknownHealth()
       ..result = _resource(
           'failed', {'errorCode': 'nutrition.ai_timeout', 'retryable': true});
     final c = NutritionFlowController(repository, 'first', 'owner');
@@ -346,6 +444,7 @@ class _Repository extends NutritionRepository {
     'meals': []
   });
   AppApiException? writeError, patchError;
+  Map<String, dynamic>? healthOverride;
   Completer<Map<String, dynamic>>? pending;
   final writes = <({String route, Map<String, dynamic> data})>[];
   final tokens = <ApiCancellation>[];
@@ -361,14 +460,7 @@ class _Repository extends NutritionRepository {
           recommendationsEnabled: true);
   @override
   Future<HealthProfileModel> health(String id, ApiCancellation token) async =>
-      HealthProfileModel.fromJson({
-        'revision': 7,
-        'allergyStatus': 'unknown',
-        'generalNote': null,
-        'healthHistory': {
-          'nutrition': {'schemaVersion': 1, 'conditionsStatus': 'reported_none'}
-        }
-      });
+      HealthProfileModel.fromJson(healthOverride ?? _readyHealth());
   @override
   Future<NutritionResourceModel> write(String id, String route,
       Map<String, dynamic> data, ApiCancellation token) async {
@@ -400,3 +492,29 @@ class _Beneficiaries extends BeneficiaryStore {
   @override
   List<BeneficiaryModel> build() => [];
 }
+
+Map<String, dynamic> _readyHealth() => {
+      'revision': 7,
+      'allergyStatus': 'reported_none',
+      'generalNote': null,
+      'healthHistory': {
+        'nutrition': {
+          'schemaVersion': 1,
+          'conditionsStatus': 'reported_none',
+          'medicationsStatus': 'reported_none',
+          'feedingRoute': 'oral',
+          'swallowingStatus': 'normal',
+          'fluidRestriction': 'none',
+          'electrolyteRestriction': 'none',
+        }
+      }
+    };
+
+Map<String, dynamic> _unknownHealth() => {
+      'revision': 7,
+      'allergyStatus': 'unknown',
+      'generalNote': null,
+      'healthHistory': {
+        'nutrition': {'schemaVersion': 1, 'conditionsStatus': 'reported_none'}
+      }
+    };

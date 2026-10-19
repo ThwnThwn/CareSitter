@@ -28,6 +28,10 @@ void main() {
                 ),
               ),
             ),
+            GoRoute(
+              path: '/nutrition',
+              builder: (_, __) => const Scaffold(body: Text('Trang thực đơn')),
+            ),
           ],
         ),
         GoRoute(
@@ -55,7 +59,14 @@ void main() {
     expect(addRect.top, greaterThanOrEqualTo(barRect.top - AppSpacing.sm));
     expect(addRect.bottom, lessThanOrEqualTo(barRect.bottom));
     expect(find.text('Đặt lịch'), findsOneWidget);
+    expect(find.text('Thực đơn'), findsOneWidget);
 
+    await tester.tap(find.text('Thực đơn'));
+    await tester.pumpAndSettle();
+    expect(find.text('Trang thực đơn'), findsOneWidget);
+
+    router.go('/home');
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.add_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Tạo lịch mới'), findsOneWidget);
@@ -78,6 +89,10 @@ void main() {
             GoRoute(
               path: '/home',
               builder: (_, __) => const Scaffold(body: Text('Trang chủ')),
+            ),
+            GoRoute(
+              path: '/nutrition',
+              builder: (_, __) => const Scaffold(body: Text('Trang thực đơn')),
             ),
           ],
         ),
@@ -104,7 +119,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Chăm sóc viên'), findsOneWidget);
+    expect(find.text('Chăm sóc viên'), findsNothing);
+    expect(find.text('Thực đơn'), findsOneWidget);
     expect(find.text('Đặt lịch'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

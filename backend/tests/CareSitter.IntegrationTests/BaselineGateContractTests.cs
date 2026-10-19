@@ -35,7 +35,7 @@ public sealed class BaselineGateContractTests
     }
 
     [Fact]
-    public void Local_baseline_uses_disposable_services_and_includes_admin_tests_and_schema_32()
+    public void Local_baseline_uses_disposable_services_and_includes_admin_tests_and_schema_44()
     {
         var runner = Read("backend/scripts/test-phase7.ps1");
         Assert.DoesNotContain("docker compose", runner);
@@ -52,6 +52,10 @@ public sealed class BaselineGateContractTests
         Assert.Contains("provider_create_date", runner);
         Assert.Contains("cccd_front_media_id", runner);
         Assert.Contains("delivery_type", runner);
+        Assert.Contains("booking.booking_chat_conversations", runner);
+        Assert.Contains("booking.booking_chat_messages", runner);
+        Assert.Contains("booking.booking_chat_outbox", runner);
+        Assert.Contains("migration 44", runner);
         Assert.Contains("LegacyReplay", runner);
     }
 

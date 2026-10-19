@@ -11,6 +11,7 @@ internal sealed class StartBookingEnRouteCommandHandler(
     ICurrentUser currentUser,
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<StartBookingEnRouteCommand, Result<BookingResponse>>
@@ -31,6 +32,9 @@ internal sealed class StartBookingEnRouteCommandHandler(
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKIN", "Caregiver đang trên đường đến"));
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CaregiverEnRoute);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.CaregiverEnRoute, "Caregiver đang trên đường đến.",
+            DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("en-route status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,

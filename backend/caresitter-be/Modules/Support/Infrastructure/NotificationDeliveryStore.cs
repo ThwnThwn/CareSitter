@@ -14,6 +14,7 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
     {
         string? title;
         string? body;
+        string? type;
         Dictionary<string, string>? data;
         Guid token;
         await using (var tx = await db.Database.BeginTransactionAsync(ct))
@@ -32,13 +33,21 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
             delivery.Status = "Sending";
             title = notification.Title;
             body = notification.Body;
+            type = notification.Type;
             data = notification.Data is null ? [] : JsonSerializer.Deserialize<Dictionary<string, string>>(notification.Data);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
         }
         // Identity remains the sole owner of device tokens. This data never enters the event log.
         var recipient = await recipients.GetAsync(recipientId, ct);
-        return new("Acquired", token, title, body, data, recipient.PushTokens, recipient.Email);
+        var pushEnabled = type switch
+        {
+            "BOOKING_CHAT" => recipient.ChatMessagePushEnabled,
+            "SUPPORT_CHAT" => recipient.SupportChatPushEnabled,
+            _ => true
+        };
+        return new("Acquired", token, title, body, data,
+            pushEnabled ? recipient.PushTokens : [], recipient.Email);
     }
 
     /// <summary>Uses the claim token as a fencing value; stale workers cannot complete a newer attempt.</summary>

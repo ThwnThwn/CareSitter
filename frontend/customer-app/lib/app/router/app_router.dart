@@ -15,6 +15,7 @@ import 'package:caresitter_customer/features/beneficiary/presentation/screens/be
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
+import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
@@ -35,6 +36,7 @@ import 'package:caresitter_customer/features/settings/presentation/screens/faq_s
 import 'package:caresitter_customer/features/settings/presentation/screens/support_screen.dart';
 import 'package:caresitter_customer/features/refunds/presentation/screens/refund_history_screen.dart';
 import 'package:caresitter_customer/features/support_chat/presentation/support_chat_screen.dart';
+import 'package:caresitter_customer/features/booking_chat/presentation/booking_chat_screen.dart';
 import 'package:caresitter_customer/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_edit_screen.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -201,6 +203,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/nutrition',
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const NutritionEntryScreen(),
+            ),
+          ),
+          GoRoute(
             path: '/caregivers',
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
@@ -320,6 +329,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: ReviewScreen(bookingId: state.pathParameters['id']!),
+        ),
+      ),
+
+      // -- Booking Chat --
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/bookings/:id/chat',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BookingChatScreen(
+            bookingId: state.pathParameters['id']!,
+            bookingTitle: state.uri.queryParameters['title'],
+          ),
         ),
       ),
       GoRoute(

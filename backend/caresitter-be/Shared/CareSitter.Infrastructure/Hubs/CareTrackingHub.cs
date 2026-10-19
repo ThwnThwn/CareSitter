@@ -187,3 +187,17 @@ public sealed record BookingListSyncEvent(
     long BookingVersion,
     long Cursor,
     DateTimeOffset ChangedAt);
+
+/// <summary>
+/// Lightweight booking-chat signal. Client refetches metadata/delta through REST
+/// using its own cursor; the event never carries a message body or a cursor, and
+/// receiving it grants no access. Sent to customer-{userId} or caregiver-{userId}
+/// for the recipient captured when the signal was committed.
+/// </summary>
+public sealed record BookingChatChangedEvent(
+    Guid BookingId,
+    Guid ConversationId,
+    long ChangeVersion,
+    Guid EventId,
+    string Kind,
+    DateTimeOffset ChangedAt);

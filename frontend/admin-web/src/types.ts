@@ -345,3 +345,81 @@ export type ConsultationRequest = {
   consentAt: string;
   createdAt: string;
 };
+
+export type BookingChatAdminItem = {
+  conversationId: string;
+  bookingId: string;
+  changeVersion: number;
+  lastSequence: number;
+  lastMessageAt: string | null;
+  writeBlocked: boolean;
+  legalHoldActive: boolean;
+  updatedAt: string;
+  reportCount: number;
+  deadLetterCount: number;
+};
+
+export type BookingChatAdminReport = {
+  id: string;
+  messageId: string;
+  reporterUserId: string;
+  reason: string;
+  status: string;
+  supportTicketId: string | null;
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BookingChatAdminDetail = {
+  conversationId: string;
+  bookingId: string;
+  changeVersion: number;
+  scopeVersion: number;
+  writeBlocked: boolean;
+  writeBlockReason: string | null;
+  blockedByUserId: string | null;
+  legalHoldAt: string | null;
+  legalHoldReason: string | null;
+  legalHoldReleasedAt: string | null;
+  disputeLockedAt: string | null;
+  writeClosesAt: string | null;
+  purgedAt: string | null;
+  reports: BookingChatAdminReport[];
+};
+
+export type BookingChatAdminFilter = {
+  reported?: boolean;
+  blocked?: boolean;
+  deadLetter?: boolean;
+  bookingId?: string;
+  userId?: string;
+  from?: string;
+  to?: string;
+};
+
+export type BookingChatAdminMessage = {
+  id: string;
+  epochId: string;
+  sequence: number;
+  senderUserId: string | null;
+  senderRole: string | null;
+  kind: string;
+  body: string;
+  createdAt: string;
+};
+
+export type BookingChatAdminActivity = {
+  id: string;
+  actorUserId: string | null;
+  action: string;
+  reason: string | null;
+  createdAt: string;
+};
+
+export type CursorPage<T> = { items: T[]; nextCursor: string | null };
+export type BookingChatMessagePage = {
+  items: BookingChatAdminMessage[];
+  nextBeforeSequence: number | null;
+};

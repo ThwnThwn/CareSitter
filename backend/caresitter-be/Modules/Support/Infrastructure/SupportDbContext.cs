@@ -24,12 +24,22 @@ public sealed class SupportDbContext : ModuleDbContext
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ChatReadCursor> ChatReadCursors => Set<ChatReadCursor>();
     public DbSet<ChatActivityEvent> ChatActivityEvents => Set<ChatActivityEvent>();
+    public DbSet<BookingChatReportTicketSource> BookingChatReportTicketSources => Set<BookingChatReportTicketSource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new ConsultationRequestConfiguration());
         modelBuilder.ApplyKafkaOutbox(SchemaName);
+        modelBuilder.Entity<BookingChatReportTicketSource>(b =>
+        {
+            b.ToTable("booking_chat_report_ticket_sources", SchemaName);
+            b.HasKey(x => x.ReportId);
+            b.Property(x => x.ReportId).HasColumnName("report_id");
+            b.Property(x => x.TicketId).HasColumnName("ticket_id");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.HasIndex(x => x.TicketId).IsUnique();
+        });
         modelBuilder.Entity<ChatConversation>(b =>
         {
             b.ToTable("chat_conversations", SchemaName);

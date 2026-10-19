@@ -11,6 +11,7 @@ internal sealed class RequestBookingCheckoutCommandHandler(
     ICurrentUser currentUser,
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<RequestBookingCheckoutCommand, Result<BookingResponse>>
@@ -36,6 +37,10 @@ internal sealed class RequestBookingCheckoutCommandHandler(
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
             booking.Id, caregiverId, "CHECKOUT_MANUAL_REQUESTED", "Yêu cầu checkout thủ công"));
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.CheckoutRequested);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.CheckoutRequested, "Caregiver đã gửi yêu cầu checkout.",
+            booking.CheckoutPendingReviewAt ?? DateTimeOffset.UtcNow,
+            BookingChatTransitionEffect.StartPostShiftGrace, ct);
         await bookings.SaveChangesAsync(ct);
         await postCommit.RunAsync("checkout-request status broadcast", () =>
             postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,

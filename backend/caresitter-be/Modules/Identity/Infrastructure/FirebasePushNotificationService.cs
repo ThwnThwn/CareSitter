@@ -17,6 +17,15 @@ internal sealed class FirebasePushNotificationService(
 
     public async Task SendToUserAsync(UserNotificationMessage message, CancellationToken ct = default)
     {
+        var notificationPrefs = await db.Users.AsNoTracking()
+            .Where(x => x.Id == message.UserId)
+            .Select(x => x.NotificationPrefs)
+            .SingleOrDefaultAsync(ct);
+        var preferences = Application.NotificationPrefs.Parse(notificationPrefs);
+        if ((message.Type == "BOOKING_CHAT" && !preferences.ChatMessage) ||
+            (message.Type == "SUPPORT_CHAT" && !preferences.SupportChatMessage))
+            return;
+
         var app = GetOrCreateFirebaseApp();
         if (app is null)
         {
@@ -87,6 +96,7 @@ internal sealed class FirebasePushNotificationService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Firebase push failed for user {UserId}.", message.UserId);
+            throw;
         }
     }
 

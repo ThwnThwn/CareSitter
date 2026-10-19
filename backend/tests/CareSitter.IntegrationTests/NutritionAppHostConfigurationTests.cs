@@ -38,6 +38,16 @@ public sealed class NutritionAppHostConfigurationTests : IDisposable
     }
 
     [Fact]
+    public void Api_port_from_env_overrides_apphost_default()
+    {
+        var appHost = Prepare("AppHost__ApiPort=5040\n");
+        using var configuration = new ConfigurationManager();
+        configuration["AppHost:ApiPort"] = "5033";
+        LocalConfiguration.Load(configuration, appHost, _root);
+        Assert.Equal("5040", configuration["AppHost:ApiPort"]);
+    }
+
+    [Fact]
     public void Generated_local_parameters_survive_subsequent_launches()
     {
         var appHost = Prepare("");

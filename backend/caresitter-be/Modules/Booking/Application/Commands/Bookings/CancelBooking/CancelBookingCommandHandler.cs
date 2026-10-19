@@ -12,6 +12,7 @@ internal sealed class CancelBookingCommandHandler(
     IClock clock,
     IPromotionService promotions,
     IBookingSyncService bookingSync,
+    IBookingChatWriter bookingChat,
     IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<CancelBookingCommand, Result<BookingResponse>>
@@ -37,6 +38,9 @@ internal sealed class CancelBookingCommandHandler(
         foreach (var slotHold in slotHolds)
             slotHold.Release();
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.Cancelled);
+        await bookingChat.RecordSystemTransitionAsync(booking,
+            BookingSyncEventTypes.Cancelled, "Lịch chăm sóc đã bị hủy.", cancelledAt,
+            BookingChatTransitionEffect.ScheduleRetention, ct);
         await bookings.SaveChangesAsync(ct);
         await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
             "BOOKING_CANCELLED", ct);

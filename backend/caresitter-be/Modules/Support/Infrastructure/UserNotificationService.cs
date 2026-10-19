@@ -66,27 +66,94 @@ internal sealed class UserNotificationService(
             return;
         }
 
+        var fallbackClaimToken = Guid.NewGuid();
+        Guid fallbackNotificationId;
         try
         {
-            var data = JsonSerializer.Serialize(payload);
-            var notification = Notification.Create(
-                normalized.UserId,
-                normalized.Type,
-                normalized.Title,
-                normalized.Body,
-                data);
-
-            if (notification.IsSuccess)
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtextextended({normalized.EventId!.Value.ToString()}, 0))", ct);
+            var existing = await db.Set<NotificationDelivery>().AsNoTracking()
+                .SingleOrDefaultAsync(x => x.EventId == normalized.EventId.Value &&
+                                           x.Channel == "push", ct);
+            if (existing is not null)
             {
+                if (!await db.Notifications.AnyAsync(x => x.Id == existing.NotificationId &&
+                                                          x.UserId == normalized.UserId, ct))
+                    throw new InvalidOperationException(
+                        "The event identity belongs to a different recipient.");
+                if (existing.Status == "Sent" || existing.LeaseUntil > DateTimeOffset.UtcNow)
+                {
+                    await transaction.CommitAsync(ct);
+                    return;
+                }
+
+                fallbackNotificationId = existing.NotificationId;
+                await db.Set<NotificationDelivery>()
+                    .Where(x => x.EventId == normalized.EventId.Value && x.Channel == "push")
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Status, "Sending")
+                        .SetProperty(x => x.ClaimToken, fallbackClaimToken)
+                        .SetProperty(x => x.LeaseUntil, DateTimeOffset.UtcNow.AddSeconds(45))
+                        .SetProperty(x => x.LastError, (string?)null), ct);
+            }
+            else
+            {
+                var notification = Notification.Create(normalized.UserId, normalized.Type,
+                    normalized.Title, normalized.Body, JsonSerializer.Serialize(payload));
+                if (notification.IsFailure)
+                    throw new InvalidOperationException("Invalid notification request.");
+                fallbackNotificationId = notification.Value.Id;
                 db.Notifications.Add(notification.Value);
+                db.Set<NotificationDelivery>().Add(new NotificationDelivery
+                {
+                    EventId = normalized.EventId.Value,
+                    NotificationId = fallbackNotificationId,
+                    Channel = "push",
+                    Status = "Sending",
+                    ClaimToken = fallbackClaimToken,
+                    LeaseUntil = DateTimeOffset.UtcNow.AddSeconds(45)
+                });
                 await db.SaveChangesAsync(ct);
             }
+
+            await transaction.CommitAsync(ct);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to persist notification for user {UserId}.", message.UserId);
+            throw;
         }
 
-        await push.SendToUserAsync(normalized with { Data = payload }, ct);
+        try
+        {
+            await push.SendToUserAsync(normalized with { Data = payload }, ct);
+            var completed = await db.Set<NotificationDelivery>()
+                .Where(x => x.EventId == normalized.EventId.Value && x.Channel == "push" &&
+                            x.NotificationId == fallbackNotificationId &&
+                            x.ClaimToken == fallbackClaimToken)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Status, "Sent")
+                    .SetProperty(x => x.SentAt, DateTimeOffset.UtcNow)
+                    .SetProperty(x => x.ClaimToken, (Guid?)null)
+                    .SetProperty(x => x.LeaseUntil, (DateTimeOffset?)null)
+                    .SetProperty(x => x.LastError, (string?)null), ct);
+            if (completed == 0)
+                logger.LogInformation(
+                    "Ignored stale fallback notification claim {ClaimToken} for event {EventId}.",
+                    fallbackClaimToken, normalized.EventId);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            await db.Set<NotificationDelivery>()
+                .Where(x => x.EventId == normalized.EventId.Value && x.Channel == "push" &&
+                            x.ClaimToken == fallbackClaimToken)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Status, "Failed")
+                    .SetProperty(x => x.ClaimToken, (Guid?)null)
+                    .SetProperty(x => x.LeaseUntil, (DateTimeOffset?)null)
+                    .SetProperty(x => x.LastError, exception.GetType().Name), ct);
+            throw;
+        }
     }
 }

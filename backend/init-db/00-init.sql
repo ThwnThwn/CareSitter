@@ -53,3 +53,7 @@
 \ir modules/payments/41-payos-caregiver-payouts.sql
 \ir modules/payments/42-original-payment-refunds.sql
 \ir modules/payments/43-fin03-dispute-refund-policy.sql
+\ir modules/booking/44-booking-party-chat.sql
+\ir modules/booking/45-booking-chat-admin-reporting.sql
+\ir modules/support/46-booking-chat-notification-type.sql
+\ir modules/support/47-booking-chat-report-ticket-sources.sql

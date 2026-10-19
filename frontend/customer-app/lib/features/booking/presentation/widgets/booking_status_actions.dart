@@ -24,7 +24,8 @@ class BookingStatusActions extends StatelessWidget {
       required this.onComplete,
       required this.onDispute,
       required this.onReview,
-      required this.onRebook});
+      required this.onRebook,
+      this.onChat});
   final String status;
   final void Function() onPay;
   final BookingModel booking;
@@ -36,6 +37,7 @@ class BookingStatusActions extends StatelessWidget {
   final void Function() onDispute;
   final void Function() onReview;
   final void Function() onRebook;
+  final void Function()? onChat;
 
   @override
   Widget build(BuildContext context) => FadeSlideStaggered(
@@ -73,15 +75,21 @@ class BookingStatusActions extends StatelessWidget {
                 status: status,
                 cancelButton: cancelButton,
               )
-            else if (status == 'caregiver_en_route')
+            else if (status == 'caregiver_en_route') ...[
               BookingEnRouteActions(
                 onTrack: onTrack,
                 cancelButton: cancelButton,
-              )
-            else if (status == 'in_progress')
-              BookingActiveActions(onTrack: onTrack, onExtend: onExtend)
-            else if (status == 'checkout_pending_review')
-              BookingCompletedActions(onComplete: onComplete, onDispute: onDispute)
+              ),
+              if (onChat != null) _ChatFloatButton(onChat: onChat!),
+            ]
+            else if (status == 'in_progress') ...[
+              BookingActiveActions(onTrack: onTrack, onExtend: onExtend),
+              if (onChat != null) _ChatFloatButton(onChat: onChat!),
+            ]
+            else if (status == 'checkout_pending_review') ...[
+              BookingCompletedActions(onComplete: onComplete, onDispute: onDispute),
+              if (onChat != null) _ChatFloatButton(onChat: onChat!),
+            ]
             else if (status == 'completed')
               BookingReviewActions(
                   booking: booking, onReview: onReview, onRebook: onRebook)
@@ -97,4 +105,31 @@ class BookingStatusActions extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _ChatFloatButton extends StatelessWidget {
+  const _ChatFloatButton({required this.onChat});
+  final VoidCallback onChat;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onChat,
+          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+          label: const Text('Nhắn tin với caregiver'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ),
+    );
+  }
 }

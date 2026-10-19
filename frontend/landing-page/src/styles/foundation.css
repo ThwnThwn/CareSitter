@@ -13,8 +13,8 @@
   --amber: #ff6b35;
   --line: #e2ddd5;
   --line-light: rgba(255, 255, 255, 0.22);
-  --font-body: var(--font-dm-sans), sans-serif;
-  --font-display: var(--font-instrument-serif), serif;
+  --font-body: var(--font-body-family), "Segoe UI", Arial, sans-serif;
+  --font-display: var(--font-display-family), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-ibm-plex-mono), monospace;
   --shell: 1240px;
   --radius: 14px;
@@ -37,6 +37,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
+  font-optical-sizing: auto;
   margin: 0;
   overflow-x: hidden;
 }
@@ -133,17 +134,17 @@ html.lenis {
 
 .display--hero {
   font-size: clamp(3.35rem, 6.1vw, 5.75rem);
-  line-height: 1.02;
+  line-height: 1.06;
 }
 
 .display--section {
   font-size: clamp(2.65rem, 4.9vw, 4.8rem);
-  line-height: 1.04;
+  line-height: 1.07;
 }
 
 .display--cta {
   font-size: clamp(2.8rem, 5vw, 5rem);
-  line-height: 1.04;
+  line-height: 1.07;
 }
 
 .section-label {
