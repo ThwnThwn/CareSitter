@@ -30,6 +30,9 @@ public sealed class BookingChatConversation
     public Guid? BlockedByUserId { get; private set; }
     public DateTimeOffset? RetainedUntil { get; private set; }
     public DateTimeOffset? HoldUntil { get; private set; }
+    public DateTimeOffset? LegalHoldAt { get; private set; }
+    public string? LegalHoldReason { get; private set; }
+    public DateTimeOffset? LegalHoldReleasedAt { get; private set; }
     public DateTimeOffset? PurgedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -71,6 +74,133 @@ public sealed class BookingChatConversation
         ChangeVersion++;
         UpdatedAt = now;
         return ChangeVersion;
+    }
+
+    public long BlockWrites(Guid adminUserId, string reason, DateTimeOffset now)
+    {
+        WriteBlockedAt = now;
+        WriteBlockReason = reason;
+        BlockedByUserId = adminUserId;
+        return AdvanceChangeVersion(now);
+    }
+
+    public long UnblockWrites(DateTimeOffset now)
+    {
+        WriteBlockedAt = null;
+        WriteBlockReason = null;
+        BlockedByUserId = null;
+        return AdvanceChangeVersion(now);
+    }
+
+    public void PlaceLegalHold(string reason, DateTimeOffset now)
+    {
+        LegalHoldAt ??= now;
+        LegalHoldReason = reason;
+        LegalHoldReleasedAt = null;
+        UpdatedAt = now;
+    }
+
+    public long ReleaseLegalHold(DateTimeOffset now)
+    {
+        LegalHoldReleasedAt = now;
+        HoldUntil = null;
+        return AdvanceChangeVersion(now);
+    }
+
+    public void MarkPurged(DateTimeOffset now)
+    {
+        PurgedAt = now;
+        UpdatedAt = now;
+    }
+}
+
+public sealed class BookingChatActivityEvent
+{
+    private BookingChatActivityEvent() { }
+
+    private BookingChatActivityEvent(Guid conversationId, Guid? actorUserId, string action,
+        string? reason, DateTimeOffset createdAt)
+    {
+        Id = Guid.NewGuid();
+        ConversationId = conversationId;
+        ActorUserId = actorUserId;
+        Action = action;
+        Reason = reason;
+        CreatedAt = createdAt;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid ConversationId { get; private set; }
+    public Guid? ActorUserId { get; private set; }
+    public string Action { get; private set; } = null!;
+    public string? Reason { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; }
+
+    public static BookingChatActivityEvent Create(Guid conversationId, Guid? actorUserId,
+        string action, string? reason, DateTimeOffset now) =>
+        new(conversationId, actorUserId, action, reason, now);
+}
+
+public sealed class BookingChatReport
+{
+    private BookingChatReport() { }
+
+    private BookingChatReport(Guid messageId, Guid reporterUserId, string reason, DateTimeOffset now)
+    {
+        Id = Guid.NewGuid();
+        MessageId = messageId;
+        ReporterUserId = reporterUserId;
+        Reason = reason;
+        Status = "PENDING";
+        AvailableAt = now;
+        CreatedAt = now;
+        UpdatedAt = now;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid MessageId { get; private set; }
+    public Guid ReporterUserId { get; private set; }
+    public string Reason { get; private set; } = null!;
+    public Guid? SupportTicketId { get; private set; }
+    public string Status { get; private set; } = null!;
+    public int Attempts { get; private set; }
+    public DateTimeOffset AvailableAt { get; private set; }
+    public DateTimeOffset? LeaseUntil { get; private set; }
+    public Guid? ClaimToken { get; private set; }
+    public string? LastError { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
+
+    public static BookingChatReport Create(Guid messageId, Guid reporterUserId, string reason,
+        DateTimeOffset now) => new(messageId, reporterUserId, reason, now);
+
+    public void Claim(Guid token, DateTimeOffset now, DateTimeOffset leaseUntil)
+    {
+        Status = "PROCESSING";
+        ClaimToken = token;
+        LeaseUntil = leaseUntil;
+        Attempts++;
+        UpdatedAt = now;
+    }
+
+    public void Link(Guid ticketId, DateTimeOffset now)
+    {
+        SupportTicketId = ticketId;
+        Status = "LINKED";
+        ClaimToken = null;
+        LeaseUntil = null;
+        LastError = null;
+        UpdatedAt = now;
+    }
+
+    public void Fail(string error, DateTimeOffset availableAt, DateTimeOffset now, bool deadLetter)
+    {
+        Status = deadLetter ? "DEAD_LETTER" : "FAILED";
+        ClaimToken = null;
+        LeaseUntil = null;
+        AvailableAt = availableAt;
+        LastError = error.Length <= 500 ? error : error[..500];
+        UpdatedAt = now;
     }
 }
 

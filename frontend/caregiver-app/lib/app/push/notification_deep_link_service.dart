@@ -45,6 +45,8 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
       return type.isEmpty ? null : '/notifications';
     }
 
+    if (type == 'BOOKING_CHAT') return '/shifts/$bookingId/chat';
+
     if (type == 'SOS' || status == 'in_progress' || status == 'checked_in') {
       return '/shifts/$bookingId/active';
     }
@@ -145,16 +147,24 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     final uri = Uri.tryParse(route);
     if (uri != null &&
         (uri.scheme == 'caresitter' || uri.scheme == 'caresitter-caregiver')) {
-      route =
-          '/${[uri.host, ...uri.pathSegments].where((e) => e.isNotEmpty).join('/')}';
+      route = '/${[
+        uri.host,
+        ...uri.pathSegments
+      ].where((e) => e.isNotEmpty).join('/')}';
     }
 
-    final bookingRoute = RegExp(r'^/bookings/([A-Za-z0-9-]+)$').firstMatch(route);
+    final bookingRoute =
+        RegExp(r'^/bookings/([A-Za-z0-9-]+)$').firstMatch(route);
     if (bookingRoute != null) return '/shifts/${bookingRoute.group(1)}';
+    final bookingChatRoute =
+        RegExp(r'^/bookings/([A-Za-z0-9-]+)/chat$').firstMatch(route);
+    if (bookingChatRoute != null) {
+      return '/shifts/${bookingChatRoute.group(1)}/chat';
+    }
 
     final patterns = [
       RegExp(r'^/shifts/[A-Za-z0-9-]+$'),
-      RegExp(r'^/shifts/[A-Za-z0-9-]+/(active|map|summary)$'),
+      RegExp(r'^/shifts/[A-Za-z0-9-]+/(active|map|summary|chat)$'),
       RegExp(r'^/earnings$'),
       RegExp(r'^/settings/support$'),
       RegExp(r'^/settings/support/chat$'),

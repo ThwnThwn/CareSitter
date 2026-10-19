@@ -101,6 +101,7 @@ enum SignalRConnectionState {
 /// Caregiver join group → nhận BookingStatusChanged và TimelineEventAdded.
 class CareSignalRService {
   final Ref _ref;
+  final HubConnection Function()? _connectionFactory;
   HubConnection? _connection;
   Future<void>? _connectOperation;
 
@@ -111,6 +112,7 @@ class CareSignalRService {
       StreamController<SignalRConnectionState>.broadcast();
   final _taskUpdateController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final _bookingChatController = StreamController<String>.broadcast();
 
   Stream<BookingStatusChange> get statusStream => _statusController.stream;
   Stream<BookingOfferChange> get offerStream => _offerController.stream;
@@ -121,11 +123,13 @@ class CareSignalRService {
   /// Stream cho CareTaskUpdated — payload: { bookingId, task }
   Stream<Map<String, dynamic>> get onTaskUpdated =>
       _taskUpdateController.stream;
+  Stream<String> get bookingChatStream => _bookingChatController.stream;
   Stream<void> get onReconnected => lifecycleStream
       .where((state) => state == SignalRConnectionState.reconnected)
       .map((_) {});
 
-  CareSignalRService(this._ref) {
+  CareSignalRService(this._ref, {HubConnection Function()? connectionFactory})
+      : _connectionFactory = connectionFactory {
     _authNotifier = _ref.read(authStateProvider.notifier);
     _authNotifier.registerLogoutCleanup(disconnect);
   }
@@ -135,7 +139,8 @@ class CareSignalRService {
   bool get isConnected => _connection?.state == HubConnectionState.Connected;
 
   /// Danh sách booking đang theo dõi — dùng để re-join sau khi reconnect.
-  final Set<String> _activeBookings = {};
+  final Map<String, int> _activeBookings = {};
+  final Set<String> _joinedBookings = {};
 
   Future<void> connect() {
     if (isConnected) return Future.value();
@@ -155,16 +160,17 @@ class CareSignalRService {
       } catch (_) {}
     }
 
-    _connection = HubConnectionBuilder()
-        .withUrl(
-      '$_hubBaseUrl/hubs/care-tracking',
-      options: HttpConnectionOptions(
-        accessTokenFactory: () async =>
-            _ref.read(authStateProvider).value?.accessToken ?? '',
-      ),
-    )
-        .withAutomaticReconnect(
-            retryDelays: [1000, 2000, 5000, 10000, 30000]).build();
+    _connection = _connectionFactory?.call() ??
+        HubConnectionBuilder()
+            .withUrl(
+          '$_hubBaseUrl/hubs/care-tracking',
+          options: HttpConnectionOptions(
+            accessTokenFactory: () async =>
+                _ref.read(authStateProvider).value?.accessToken ?? '',
+          ),
+        )
+            .withAutomaticReconnect(
+                retryDelays: [1000, 2000, 5000, 10000, 30000]).build();
 
     _connection!.on('BookingStatusChanged', (args) {
       if (args == null || args.isEmpty) return;
@@ -198,12 +204,25 @@ class CareSignalRService {
       } catch (_) {}
     });
 
+    _connection!.on('BookingChatChanged', (args) {
+      if (args == null || args.isEmpty) return;
+      try {
+        final data = Map<String, dynamic>.from(args[0] as Map);
+        final bookingId = data['bookingId']?.toString();
+        if (bookingId != null && bookingId.isNotEmpty) {
+          _bookingChatController.add(bookingId);
+        }
+      } catch (_) {}
+    });
+
     _connection!.onclose(({error}) {
+      _joinedBookings.clear();
       debugPrint('[SignalR-Caregiver] Connection closed.');
       _lifecycleController.add(SignalRConnectionState.closed);
     });
 
     _connection!.onreconnecting(({error}) {
+      _joinedBookings.clear();
       debugPrint('[SignalR-Caregiver] Reconnecting.');
       _lifecycleController.add(SignalRConnectionState.reconnecting);
     });
@@ -211,8 +230,13 @@ class CareSignalRService {
     _connection!.onreconnected(({connectionId}) {
       debugPrint(
           '[SignalR-Caregiver] Reconnected — re-joining ${_activeBookings.length} groups');
-      for (final bid in _activeBookings) {
-        _connection!.invoke('JoinBookingGroup', args: [bid]).catchError((_) {
+      _joinedBookings.clear();
+      for (final bid in _activeBookings.keys) {
+        _connection!.invoke('JoinBookingGroup', args: [bid]).then((result) {
+          if (result == 'ok' && _activeBookings.containsKey(bid)) {
+            _joinedBookings.add(bid);
+          }
+        }).catchError((_) {
           debugPrint('[SignalR-Caregiver] Re-join failed for $bid.');
           return null;
         });
@@ -234,24 +258,32 @@ class CareSignalRService {
   }
 
   Future<void> joinBooking(String bookingId) async {
+    _activeBookings.update(bookingId, (count) => count + 1, ifAbsent: () => 1);
     await connect();
-    if (!isConnected) return;
+    if (!isConnected || _joinedBookings.contains(bookingId)) return;
     try {
       final result =
           await _connection!.invoke('JoinBookingGroup', args: [bookingId]);
       if (result == 'unauthorized') {
         debugPrint('[SignalR-Caregiver] joinBooking UNAUTHORIZED: $bookingId');
+        _activeBookings.remove(bookingId);
         return;
       }
-      _activeBookings.add(bookingId);
+      if (result == 'ok') _joinedBookings.add(bookingId);
     } catch (_) {
       debugPrint('[SignalR-Caregiver] Could not join booking group.');
     }
   }
 
   Future<void> leaveBooking(String bookingId) async {
+    final count = _activeBookings[bookingId] ?? 0;
+    if (count > 1) {
+      _activeBookings[bookingId] = count - 1;
+      return;
+    }
     _activeBookings.remove(bookingId);
-    if (!isConnected) return;
+    final joined = _joinedBookings.remove(bookingId);
+    if (!isConnected || !joined) return;
     try {
       await _connection!.invoke('LeaveBookingGroup', args: [bookingId]);
     } catch (_) {}
@@ -259,6 +291,7 @@ class CareSignalRService {
 
   Future<void> disconnect() async {
     _activeBookings.clear();
+    _joinedBookings.clear();
     final connection = _connection;
     _connection = null;
     try {
@@ -277,5 +310,6 @@ class CareSignalRService {
     await _timelineController.close();
     await _lifecycleController.close();
     await _taskUpdateController.close();
+    await _bookingChatController.close();
   }
 }

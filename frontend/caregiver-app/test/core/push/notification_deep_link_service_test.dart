@@ -37,6 +37,18 @@ void main() {
     );
   });
 
+  test('maps booking chat push and customer deep link to shift chat', () {
+    expect(
+      service
+          .resolveRoute({'type': 'BOOKING_CHAT', 'bookingId': 'booking-123'}),
+      '/shifts/booking-123/chat',
+    );
+    expect(
+      service.resolveRoute({'deepLink': '/bookings/booking-123/chat'}),
+      '/shifts/booking-123/chat',
+    );
+  });
+
   test('normalizes legacy booking routes and rejects external links', () {
     expect(
       service.resolveRoute({'deepLink': '/bookings/booking-123'}),

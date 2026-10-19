@@ -26,9 +26,12 @@ public sealed class BookingChatOptions
 {
     public const string SectionName = "BookingChat";
     public bool Enabled { get; set; }
+    /// <summary>Cho phép dispatcher xếp push cho tin nhắn người dùng; SignalR vẫn hoạt động khi tắt.</summary>
+    public bool PushEnabled { get; set; }
     public int PostShiftGraceHours { get; set; } = 24;
     public int RetentionDays { get; set; } = 180;
     public bool PurgeEnabled { get; set; }
+    public int RetentionPollIntervalMinutes { get; set; } = 60;
 
     /// <summary>Chu kỳ quét outbox chat; tách khỏi chu kỳ của Payments/Identity.</summary>
     public int DispatcherPollIntervalSeconds { get; set; } = 5;

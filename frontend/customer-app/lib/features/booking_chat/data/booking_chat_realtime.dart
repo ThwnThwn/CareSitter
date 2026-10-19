@@ -1,121 +1,62 @@
 import 'dart:async';
 
-import 'package:caresitter_customer/core/auth/auth_notifier.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:signalr_netcore/signalr_client.dart';
+import 'package:caresitter_customer/core/realtime/care_signalr_service.dart';
+import 'package:caresitter_customer/features/booking_chat/data/booking_chat_realtime_port.dart';
 
-const _hubBaseUrl = String.fromEnvironment('HUB_BASE_URL',
-    defaultValue: 'http://localhost:5033');
+export 'package:caresitter_customer/features/booking_chat/data/booking_chat_realtime_port.dart';
 
-/// SignalR listener cho sự kiện BookingChatChanged từ CareTrackingHub.
-/// Hub chỉ mang tín hiệu thay đổi — REST vẫn là nguồn sự thật.
-class BookingChatRealtime {
-  BookingChatRealtime(this._ref);
-  final Ref _ref;
+/// Owns only Booking Chat subscriptions; the app service owns the shared hub.
+class BookingChatRealtime implements BookingChatRealtimePort {
+  BookingChatRealtime(this._hub) {
+    _chatSubscription = _hub.bookingChatStream.listen((bookingId) {
+      if (!_disposed && bookingId == _bookingId) _changes.add(null);
+    });
+    _reconnectSubscription = _hub.onReconnected.listen((_) {
+      if (!_disposed && _bookingId != null) _changes.add(null);
+    });
+  }
+
+  final CareSignalRService _hub;
   final _changes = StreamController<void>.broadcast();
-  HubConnection? _connection;
-  Future<void>? _connecting;
-  String? _joinedBookingId;
+  late final StreamSubscription<String> _chatSubscription;
+  late final StreamSubscription<void> _reconnectSubscription;
+  String? _bookingId;
   bool _disposed = false;
-  int _generation = 0;
 
+  @override
   Stream<void> get changes => _changes.stream;
 
+  @override
   Future<void> connect(String bookingId) async {
-    if (_disposed ||
-        _ref.read(authStateProvider).valueOrNull?.accessToken == null) {
-      return;
+    if (_disposed || _bookingId == bookingId) return;
+    final previousBookingId = _bookingId;
+    _bookingId = bookingId;
+    if (previousBookingId != null) {
+      await _hub.leaveBooking(previousBookingId);
     }
-    if (_connection?.state == HubConnectionState.Connected &&
-        _joinedBookingId == bookingId) {
-      return;
-    }
-    if (_connecting != null) return _connecting!;
-    _connecting =
-        _connect(bookingId).whenComplete(() => _connecting = null);
-    return _connecting;
-  }
-
-  Future<void> _connect(String bookingId) async {
-    final generation = ++_generation;
-    await _stopCurrent();
-    if (_disposed || generation != _generation) return;
-
-    final connection = HubConnectionBuilder()
-        .withUrl(
-          '$_hubBaseUrl/hubs/care-tracking',
-          options: HttpConnectionOptions(
-              accessTokenFactory: () async =>
-                  _ref.read(authStateProvider).valueOrNull?.accessToken ?? ''),
-        )
-        .withAutomaticReconnect(retryDelays: [2000, 5000, 10000, 30000])
-        .build();
-    _connection = connection;
-
-    connection.on('BookingChatChanged', (_) {
-      if (!_disposed) _changes.add(null);
-    });
-    // Cũng lắng nghe BookingListSync để cập nhật unread badge trên list.
-    connection.on('BookingListSync', (_) {
-      if (!_disposed) _changes.add(null);
-    });
-
-    connection.onreconnected(({connectionId}) {
-      if (_disposed || generation != _generation ||
-          !identical(_connection, connection)) return;
-      unawaited(_join(connection, bookingId).then((_) {
-        if (!_disposed) _changes.add(null);
-      }).catchError((_) {}));
-    });
-    connection.onclose(({error}) {
-      if (!_disposed && identical(_connection, connection)) {
-        _joinedBookingId = null;
-        _changes.add(null);
-      }
-    });
-
-    try {
-      await connection.start();
-      if (_disposed || generation != _generation ||
-          !identical(_connection, connection)) {
-        unawaited(connection.stop());
-        return;
-      }
-      await _join(connection, bookingId);
-      _changes.add(null);
-    } catch (_) {
-      if (identical(_connection, connection)) {
-        _connection = null;
-        _joinedBookingId = null;
-        unawaited(connection.stop());
-      }
+    if (_disposed || _bookingId != bookingId) return;
+    await _hub.joinBooking(bookingId);
+    if (_disposed || _bookingId != bookingId) {
+      await _hub.leaveBooking(bookingId);
     }
   }
 
-  Future<void> _join(HubConnection connection, String bookingId) async {
-    await connection.invoke('JoinBooking', args: [bookingId]);
-    _joinedBookingId = bookingId;
-  }
-
+  @override
   Future<void> disconnect() async {
-    _generation++;
-    await _stopCurrent();
+    final bookingId = _bookingId;
+    _bookingId = null;
+    if (bookingId != null) await _hub.leaveBooking(bookingId);
   }
 
-  Future<void> _stopCurrent() async {
-    final previous = _connection;
-    _connection = null;
-    _joinedBookingId = null;
-    if (previous != null) {
-      try {
-        await previous.stop();
-      } catch (_) {}
-    }
-  }
-
+  @override
   void dispose() {
+    if (_disposed) return;
     _disposed = true;
-    unawaited(disconnect());
+    final bookingId = _bookingId;
+    _bookingId = null;
+    if (bookingId != null) unawaited(_hub.leaveBooking(bookingId));
+    unawaited(_chatSubscription.cancel());
+    unawaited(_reconnectSubscription.cancel());
     unawaited(_changes.close());
   }
 }

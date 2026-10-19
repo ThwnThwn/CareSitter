@@ -6,6 +6,7 @@ import 'package:signalr_netcore/hub_connection.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 import 'package:caresitter_customer/core/realtime/care_signalr_service.dart';
+import 'package:caresitter_customer/features/booking_chat/data/booking_chat_realtime.dart';
 
 class TestAuth extends AuthNotifier {
   @override
@@ -17,6 +18,7 @@ class FakeHub implements HubConnection {
   @override
   HubConnectionState? state = HubConnectionState.Disconnected;
   bool failStart = false;
+  int stopCalls = 0;
   Object? joinResult = 'ok';
   Completer<Object?>? joinGate;
   final calls = <String>[];
@@ -32,6 +34,7 @@ class FakeHub implements HubConnection {
 
   @override
   Future<void> stop() async {
+    stopCalls++;
     state = HubConnectionState.Disconnected;
     closed?.call();
   }
@@ -133,6 +136,34 @@ void main() {
     expect(hub.calls.where((call) => call.startsWith('Leave')), isEmpty);
     await service.leaveBooking('booking');
     expect(hub.calls.where((call) => call.startsWith('Leave')).length, 1);
+    await service.dispose();
+    container.dispose();
+  });
+
+  test('Booking Chat uses the shared hub without owning its connection',
+      () async {
+    final hub = FakeHub();
+    final (container, service) = await setup(hub);
+    final realtime = BookingChatRealtime(service);
+    final changes = <void>[];
+    final subscription = realtime.changes.listen(changes.add);
+
+    await realtime.connect('booking');
+    hub.handlers['BookingChatChanged']!.call([
+      {'bookingId': 'another-booking'}
+    ]);
+    hub.handlers['BookingChatChanged']!.call([
+      {'bookingId': 'booking'}
+    ]);
+    await Future<void>.delayed(Duration.zero);
+    expect(changes, hasLength(1));
+
+    await realtime.disconnect();
+    expect(hub.state, HubConnectionState.Connected);
+    expect(hub.stopCalls, 0);
+
+    await subscription.cancel();
+    realtime.dispose();
     await service.dispose();
     container.dispose();
   });

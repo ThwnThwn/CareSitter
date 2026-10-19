@@ -51,3 +51,20 @@ class ShiftDetailScreen extends ConsumerWidget {
     );
   }
 }
+
+class _ChatButton extends StatelessWidget {
+  const _ChatButton({required this.bookingId});
+
+  final String bookingId;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: OutlinedButton.icon(
+          onPressed: () => context.push('/shifts/$bookingId/chat'),
+          icon: const Icon(Icons.chat_bubble_outline_rounded),
+          label: const Text('Nhắn tin với khách hàng'),
+        ),
+      );
+}

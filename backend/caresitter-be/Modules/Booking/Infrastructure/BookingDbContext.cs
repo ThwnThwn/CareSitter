@@ -28,6 +28,8 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<BookingChatMessage> BookingChatMessages => Set<BookingChatMessage>();
     public DbSet<BookingChatReadCursor> BookingChatReadCursors => Set<BookingChatReadCursor>();
     public DbSet<BookingChatOutboxEvent> BookingChatOutbox => Set<BookingChatOutboxEvent>();
+    public DbSet<BookingChatActivityEvent> BookingChatActivityEvents => Set<BookingChatActivityEvent>();
+    public DbSet<BookingChatReport> BookingChatReports => Set<BookingChatReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +40,8 @@ public sealed class BookingDbContext : ModuleDbContext
         modelBuilder.ApplyConfiguration(new BookingChatMessageConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatReadCursorConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatOutboxConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatActivityEventConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatReportConfiguration());
 
         modelBuilder.Entity<Domain.Booking>(b =>
         {

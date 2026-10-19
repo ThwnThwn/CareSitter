@@ -31,6 +31,14 @@ void main() {
     expect(service.resolveRoute({'type': 'PAYMENT'}), '/bookings');
   });
 
+  test('maps booking chat push to the booking chat route', () {
+    expect(
+      service
+          .resolveRoute({'type': 'BOOKING_CHAT', 'bookingId': 'booking-123'}),
+      '/bookings/booking-123/chat',
+    );
+  });
+
   test('accepts only known app routes', () {
     expect(
       service.resolveRoute({'deepLink': 'caresitter://bookings/booking-123'}),
@@ -42,7 +50,8 @@ void main() {
     );
   });
 
-  test('payment callbacks retain safe identifiers and never trust supplied success',
+  test(
+      'payment callbacks retain safe identifiers and never trust supplied success',
       () {
     expect(
         service.resolveRoute({
@@ -52,7 +61,8 @@ void main() {
         '/payment-result?bookingId=booking-123&intentId=intent-123&result=pending');
     expect(
         service.resolveRoute({
-          'deepLink': 'caresitter-customer://payment-result?bookingId=booking-123'
+          'deepLink':
+              'caresitter-customer://payment-result?bookingId=booking-123'
         }),
         '/payment-result?bookingId=booking-123&result=pending');
     expect(
@@ -63,7 +73,8 @@ void main() {
         isNull);
     expect(
         service.resolveRoute({
-          'deepLink': 'caresitter-customer:/payment-result?bookingId=../settings'
+          'deepLink':
+              'caresitter-customer:/payment-result?bookingId=../settings'
         }),
         isNull);
   });

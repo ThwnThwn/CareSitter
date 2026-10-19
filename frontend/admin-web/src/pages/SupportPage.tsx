@@ -3,6 +3,7 @@ import { Tabs } from '../components/Common';
 import { ConsultationInbox } from '../features/support/ConsultationInbox';
 import { SupportTickets } from '../features/support/SupportTickets';
 import { SupportConversations } from '../features/support/SupportConversations';
+import { BookingChatConversations } from '../features/support/BookingChatConversations';
 
 export function SupportPage() {
   const [tab, setTab] = useState('tickets');
@@ -15,10 +16,11 @@ export function SupportPage() {
           { value: 'tickets', label: 'Ticket hỗ trợ' },
           { value: 'consultations', label: 'Yêu cầu tư vấn' },
           { value: 'chat', label: 'Chat hỗ trợ' },
+          { value: 'booking-chat', label: 'Booking Chat' },
         ]}
       />
-      {tab === 'tickets' ? <SupportTickets /> :
-        tab === 'consultations' ? <ConsultationInbox /> : <SupportConversations />}
+      {tab === 'tickets' ? <SupportTickets /> : tab === 'consultations' ? <ConsultationInbox /> :
+        tab === 'chat' ? <SupportConversations /> : <BookingChatConversations />}
     </>
   );
 }

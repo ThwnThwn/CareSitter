@@ -63,6 +63,8 @@ public sealed class BookingModule : IModule
                 "BookingChat:DispatcherMaxAttempts phai nam trong khoang 1-50.")
             .Validate(x => x.DispatcherRetryDelaySeconds is >= 1 and <= 3600,
                 "BookingChat:DispatcherRetryDelaySeconds phai nam trong khoang 1-3600.")
+            .Validate(x => x.RetentionPollIntervalMinutes is >= 5 and <= 1_440,
+                "BookingChat:RetentionPollIntervalMinutes phai nam trong khoang 5-1440.")
             .ValidateOnStart();
 
         services.AddDbContext<BookingDbContext>(options =>
@@ -96,12 +98,17 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingAcceptanceTransaction, BookingAcceptanceTransaction>();
         services.AddScoped<IBookingChatWriter, BookingChatWriter>();
         services.AddScoped<IBookingChatService, BookingChatService>();
+        services.AddScoped<IBookingChatAdminService, BookingChatAdminService>();
         services.AddScoped<IBookingChatDispatcher, BookingChatDispatcher>();
+        services.AddScoped<BookingChatReportDispatcher>();
+        services.AddScoped<BookingChatRetentionService>();
         services.AddScoped<IBookingChatBackfillStore, BookingChatBackfillStore>();
         services.AddSingleton<BookingChatMetrics>();
         // Worker tự tắt khi BookingChat:Enabled=false; outbox đã commit vẫn được giữ
         // và sẽ gửi tiếp khi bật lại, không mất signal.
         services.AddHostedService<BookingChatDispatchWorker>();
+        services.AddHostedService<BookingChatReportWorker>();
+        services.AddHostedService<BookingChatRetentionWorker>();
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/realtime/care_signalr_service.dart';
 import 'package:caresitter_customer/features/booking_chat/data/booking_chat_realtime.dart';
 import 'package:caresitter_customer/features/booking_chat/data/booking_chat_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,10 +13,14 @@ import 'package:uuid/uuid.dart';
 
 final bookingChatControllerProvider = StateNotifierProvider.autoDispose
     .family<BookingChatController, BookingChatState, String>((ref, bookingId) {
+  ref.watch(authStateProvider.select((value) => (
+        value.valueOrNull?.userId,
+        value.valueOrNull?.isAuthenticated == true,
+      )));
   return BookingChatController(
     bookingId: bookingId,
     repository: ref.read(bookingChatRepositoryProvider),
-    realtime: BookingChatRealtime(ref),
+    realtime: BookingChatRealtime(ref.read(careSignalRProvider)),
   );
 });
 
@@ -29,7 +35,7 @@ class BookingChatState {
     this.error,
     this.meta,
     this.messages = const [],
-    this.nextCursor,
+    this.previousCursor,
     this.hasMoreBefore = false,
   });
 
@@ -38,7 +44,7 @@ class BookingChatState {
   final String? error;
   final BookingChatMeta? meta;
   final List<BookingChatMessage> messages;
-  final String? nextCursor;  // cursor để load trang cũ hơn (backward)
+  final String? previousCursor;
   final bool hasMoreBefore;
 
   int get unreadCount => meta?.unreadCount ?? 0;
@@ -54,8 +60,8 @@ class BookingChatState {
     bool clearError = false,
     BookingChatMeta? meta,
     List<BookingChatMessage>? messages,
-    String? nextCursor,
-    bool clearNextCursor = false,
+    String? previousCursor,
+    bool clearPreviousCursor = false,
     bool? hasMoreBefore,
   }) =>
       BookingChatState(
@@ -64,7 +70,8 @@ class BookingChatState {
         error: clearError ? null : error ?? this.error,
         meta: meta ?? this.meta,
         messages: messages ?? this.messages,
-        nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
+        previousCursor:
+            clearPreviousCursor ? null : previousCursor ?? this.previousCursor,
         hasMoreBefore: hasMoreBefore ?? this.hasMoreBefore,
       );
 }
@@ -79,30 +86,48 @@ class BookingChatController extends StateNotifier<BookingChatState> {
     required this.repository,
     required this.realtime,
   }) : super(const BookingChatState()) {
-    _realtimeSub =
-        realtime.changes.listen((_) => unawaited(refresh()));
+    _realtimeSub = realtime.changes.listen((_) => unawaited(refresh()));
     unawaited(refresh());
     _startTimer();
   }
 
   final String bookingId;
-  final BookingChatRepository repository;
-  final BookingChatRealtime realtime;
+  final BookingChatRepositoryPort repository;
+  final BookingChatRealtimePort realtime;
 
   StreamSubscription<void>? _realtimeSub;
   Timer? _timer;
   Future<void>? _refreshTask;
   bool _active = true;
+  int _accessGeneration = 0;
 
   String? _sendPayload;
   String? _sendKey;
+  String? _quickPayload;
+  String? _quickKey;
+  String? _nextCursor;
   // Lưu lại messageId cuối đã mark-read để tránh gọi lặp.
   String? _lastReadMessageId;
 
+  void _clearConversation({BookingChatMeta? meta, String? error}) {
+    _accessGeneration++;
+    _sendPayload = null;
+    _sendKey = null;
+    _quickPayload = null;
+    _quickKey = null;
+    _nextCursor = null;
+    _lastReadMessageId = null;
+    state = BookingChatState(
+      loading: false,
+      error: error,
+      meta: meta,
+    );
+  }
+
   void _startTimer() {
     _timer?.cancel();
-    _timer =
-        Timer.periodic(const Duration(seconds: 15), (_) => unawaited(refresh()));
+    _timer = Timer.periodic(
+        const Duration(seconds: 15), (_) => unawaited(refresh()));
   }
 
   void setActive(bool active) {
@@ -125,24 +150,50 @@ class BookingChatController extends StateNotifier<BookingChatState> {
 
   Future<void> _reload() async {
     try {
+      final previousMeta = state.meta;
       final meta = await repository.metadata(bookingId);
       if (!mounted) return;
 
       if (!meta.featureEnabled || !meta.canRead) {
-        state = state.copyWith(meta: meta, loading: false, clearError: true);
+        _clearConversation(meta: meta);
         unawaited(realtime.disconnect());
         return;
       }
 
-      // Load tin nhắn mới nhất (không thay đổi cursor đã lưu cho backward)
-      final page = await repository.messages(bookingId, limit: 50);
+      final accessScopeChanged = previousMeta != null &&
+          (previousMeta.conversationId != meta.conversationId ||
+              previousMeta.currentEpochId != meta.currentEpochId ||
+              previousMeta.scopeVersion != meta.scopeVersion);
+      if (accessScopeChanged) {
+        _clearConversation(meta: meta);
+      }
+
+      final initialLoad =
+          accessScopeChanged || state.messages.isEmpty || _nextCursor == null;
+      var page = initialLoad
+          ? await repository.messages(bookingId, limit: 50)
+          : await repository.messages(bookingId,
+              afterCursor: _nextCursor, limit: 50);
+      final incoming = <BookingChatMessage>[...page.items];
+      while (!initialLoad && page.hasMoreAfter) {
+        final cursor = page.nextCursor;
+        if (cursor == null || cursor == _nextCursor) {
+          throw StateError('Cursor phân trang tin nhắn không tiến lên.');
+        }
+        _nextCursor = cursor;
+        page = await repository.messages(bookingId,
+            afterCursor: _nextCursor, limit: 50);
+        incoming.addAll(page.items);
+      }
       if (!mounted) return;
+      _nextCursor = page.nextCursor;
 
       // Merge messages mới vào danh sách hiện có (dedup by sequence)
-      final current = state.messages;
+      final current =
+          accessScopeChanged ? const <BookingChatMessage>[] : state.messages;
       final bySeq = <int, BookingChatMessage>{
         for (final m in current) m.sequence: m,
-        for (final m in page.items) m.sequence: m,
+        for (final m in incoming) m.sequence: m,
       };
       final sorted = bySeq.values.toList()
         ..sort((a, b) => a.sequence.compareTo(b.sequence));
@@ -152,8 +203,9 @@ class BookingChatController extends StateNotifier<BookingChatState> {
         loading: false,
         clearError: true,
         messages: sorted,
-        hasMoreBefore: page.hasMoreBefore,
-        nextCursor: page.nextCursor ?? state.nextCursor,
+        hasMoreBefore: initialLoad ? page.hasMoreBefore : state.hasMoreBefore,
+        previousCursor:
+            initialLoad ? page.previousCursor : state.previousCursor,
       );
 
       // Kết nối SignalR khi có conversation
@@ -161,20 +213,23 @@ class BookingChatController extends StateNotifier<BookingChatState> {
         unawaited(realtime.connect(bookingId));
       }
     } catch (error) {
-      if (mounted) state = state.copyWith(loading: false, error: error.toString());
+      if (!mounted) return;
+      _clearConversation(error: error.toString());
+      unawaited(realtime.disconnect());
     }
   }
 
   /// Load trang cũ hơn (scroll up).
   Future<void> loadMore() async {
     if (state.busy || !state.hasMoreBefore) return;
-    final cursor = state.nextCursor;
+    final cursor = state.previousCursor;
     if (cursor == null) return;
+    final accessGeneration = _accessGeneration;
     state = state.copyWith(busy: true, clearError: true);
     try {
-      final page = await repository.messages(bookingId,
-          beforeCursor: cursor, limit: 50);
-      if (!mounted) return;
+      final page =
+          await repository.messages(bookingId, beforeCursor: cursor, limit: 50);
+      if (!mounted || accessGeneration != _accessGeneration) return;
       final bySeq = <int, BookingChatMessage>{
         for (final m in page.items) m.sequence: m,
         for (final m in state.messages) m.sequence: m,
@@ -185,10 +240,12 @@ class BookingChatController extends StateNotifier<BookingChatState> {
         busy: false,
         messages: sorted,
         hasMoreBefore: page.hasMoreBefore,
-        nextCursor: page.previousCursor,
+        previousCursor: page.previousCursor,
       );
     } catch (error) {
-      if (mounted) state = state.copyWith(busy: false, error: error.toString());
+      if (mounted && accessGeneration == _accessGeneration) {
+        state = state.copyWith(busy: false, error: error.toString());
+      }
     }
   }
 
@@ -196,8 +253,12 @@ class BookingChatController extends StateNotifier<BookingChatState> {
   Future<void> markVisibleRead() async {
     final meta = state.meta;
     final msgs = state.messages;
-    if (!_active || meta == null || meta.currentEpochId == null ||
-        msgs.isEmpty) return;
+    if (!_active ||
+        meta == null ||
+        meta.currentEpochId == null ||
+        msgs.isEmpty) {
+      return;
+    }
     final lastMsg = msgs.last;
     if (lastMsg.id == _lastReadMessageId) return;
     if (lastMsg.sequence <= meta.lastReadSequence) return;
@@ -223,7 +284,8 @@ class BookingChatController extends StateNotifier<BookingChatState> {
     }
     state = state.copyWith(busy: true, clearError: true);
     try {
-      await repository.sendText(bookingId, meta.currentEpochId!, clean, _sendKey!);
+      await repository.sendText(
+          bookingId, meta.currentEpochId!, clean, _sendKey!);
       if (!mounted) return;
       _sendKey = null;
       _sendPayload = null;
@@ -241,12 +303,22 @@ class BookingChatController extends StateNotifier<BookingChatState> {
     final meta = state.meta;
     if (meta == null || !meta.canSend || state.busy) return;
     if (meta.currentEpochId == null) return;
-    final key = const Uuid().v4();
+    final sortedParams = params?.entries.toList()
+      ?..sort((a, b) => a.key.compareTo(b.key));
+    final payload = '${template.key}:${template.version}:'
+        '${sortedParams?.map((entry) => '${entry.key}=${entry.value}').join('&') ?? ''}';
+    if (_quickPayload != payload) {
+      _quickPayload = payload;
+      _quickKey = const Uuid().v4();
+    }
     state = state.copyWith(busy: true, clearError: true);
     try {
-      await repository.sendQuick(bookingId, meta.currentEpochId!,
-          template.key, template.version, key, params: params);
+      await repository.sendQuick(bookingId, meta.currentEpochId!, template.key,
+          template.version, _quickKey!,
+          params: params);
       if (!mounted) return;
+      _quickPayload = null;
+      _quickKey = null;
       await refresh();
     } catch (error) {
       if (mounted) state = state.copyWith(error: error.toString());

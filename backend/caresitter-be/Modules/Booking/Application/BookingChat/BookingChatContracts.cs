@@ -65,6 +65,13 @@ public sealed record BookingChatReadResponse(
     long ChangeVersion,
     bool Changed);
 
+public sealed record BookingChatReportRequest(string Reason);
+
+public sealed record BookingChatReportResponse(
+    Guid ReportId,
+    string Status,
+    Guid? SupportTicketId);
+
 public interface IBookingChatService
 {
     Task<Result<BookingChatMetadataResponse>> GetMetadataAsync(
@@ -80,12 +87,22 @@ public interface IBookingChatService
 
     Task<Result<BookingChatReadResponse>> MarkReadAsync(
         Guid bookingId, BookingChatReadRequest request, CancellationToken ct = default);
+
+    Task<Result<BookingChatReportResponse>> ReportMessageAsync(
+        Guid bookingId, Guid messageId, BookingChatReportRequest request,
+        CancellationToken ct = default);
+
+    Task<Result<BookingChatReportResponse>> GetReportAsync(
+        Guid bookingId, Guid reportId, CancellationToken ct = default);
 }
 
 internal static class BookingChatErrors
 {
     public static Error Unauthenticated() =>
         Error.Unauthorized("booking.chat.unauthenticated", string.Empty);
+
+    public static Error Forbidden() =>
+        Error.Forbidden("booking.chat.forbidden", string.Empty);
 
     public static Error NotFound() =>
         Error.NotFound("booking.chat.not_found", string.Empty);
@@ -116,4 +133,7 @@ internal static class BookingChatErrors
 
     public static Error Purged() =>
         Error.Conflict("booking.chat.purged", "Nội dung cuộc trò chuyện đã hết thời hạn lưu trữ.");
+
+    public static Error AlreadyReported() =>
+        Error.Conflict("booking.chat.already_reported", "Bạn đã báo cáo tin nhắn này.");
 }

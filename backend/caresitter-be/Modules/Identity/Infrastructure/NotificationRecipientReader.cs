@@ -11,10 +11,12 @@ internal sealed class NotificationRecipientReader(IdentityDbContext db) : INotif
     {
         var account = await db.Users.Where(x => x.Id == userId)
             .Select(x => new { x.Email, x.NotificationPrefs }).SingleOrDefaultAsync(ct);
+        var preferences = Application.NotificationPrefs.Parse(account?.NotificationPrefs);
         return new(
-        account?.Email,
-        await db.UserDevices.Where(x => x.UserId == userId && x.PushToken != null)
-            .Select(x => x.PushToken!).Distinct().ToArrayAsync(ct),
-        Application.NotificationPrefs.Parse(account?.NotificationPrefs).SupportChatMessage);
+            account?.Email,
+            await db.UserDevices.Where(x => x.UserId == userId && x.PushToken != null)
+                .Select(x => x.PushToken!).Distinct().ToArrayAsync(ct),
+            preferences.SupportChatMessage,
+            preferences.ChatMessage);
     }
 }

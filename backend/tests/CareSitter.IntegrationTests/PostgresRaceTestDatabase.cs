@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Npgsql;
 
 namespace CareSitter.IntegrationTests;
@@ -12,6 +12,16 @@ internal sealed class PostgresFactAttribute : FactAttribute
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(ConnectionVariable)))
             Skip = $"Set {ConnectionVariable} to run PostgreSQL race tests.";
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method)]
+internal sealed class PostgresTheoryAttribute : TheoryAttribute
+{
+    public PostgresTheoryAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgresFactAttribute.ConnectionVariable)))
+            Skip = $"Set {PostgresFactAttribute.ConnectionVariable} to run PostgreSQL race tests.";
     }
 }
 

@@ -25,12 +25,55 @@ internal sealed class BookingChatConversationConfiguration
         b.Property(x => x.BlockedByUserId).HasColumnName("blocked_by_user_id");
         b.Property(x => x.RetainedUntil).HasColumnName("retained_until");
         b.Property(x => x.HoldUntil).HasColumnName("hold_until");
+        b.Property(x => x.LegalHoldAt).HasColumnName("legal_hold_at");
+        b.Property(x => x.LegalHoldReason).HasColumnName("legal_hold_reason").HasMaxLength(500);
+        b.Property(x => x.LegalHoldReleasedAt).HasColumnName("legal_hold_released_at");
         b.Property(x => x.PurgedAt).HasColumnName("purged_at");
         b.Property(x => x.CreatedAt).HasColumnName("created_at");
         b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         b.HasOne<Domain.Booking>().WithOne().HasForeignKey<BookingChatConversation>(x => x.BookingId)
             .OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => x.BookingId).IsUnique().HasDatabaseName("uq_booking_chat_booking");
+    }
+}
+
+internal sealed class BookingChatActivityEventConfiguration
+    : IEntityTypeConfiguration<BookingChatActivityEvent>
+{
+    public void Configure(EntityTypeBuilder<BookingChatActivityEvent> b)
+    {
+        b.ToTable("booking_chat_activity_events", BookingDbContext.SchemaName);
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.ConversationId).HasColumnName("conversation_id");
+        b.Property(x => x.ActorUserId).HasColumnName("actor_user_id");
+        b.Property(x => x.Action).HasColumnName("action").HasMaxLength(40);
+        b.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500);
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+    }
+}
+
+internal sealed class BookingChatReportConfiguration : IEntityTypeConfiguration<BookingChatReport>
+{
+    public void Configure(EntityTypeBuilder<BookingChatReport> b)
+    {
+        b.ToTable("booking_chat_reports", BookingDbContext.SchemaName);
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.MessageId).HasColumnName("message_id");
+        b.Property(x => x.ReporterUserId).HasColumnName("reporter_user_id");
+        b.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500);
+        b.Property(x => x.SupportTicketId).HasColumnName("support_ticket_id");
+        b.Property(x => x.Status).HasColumnName("status").HasMaxLength(20);
+        b.Property(x => x.Attempts).HasColumnName("attempts");
+        b.Property(x => x.AvailableAt).HasColumnName("available_at");
+        b.Property(x => x.LeaseUntil).HasColumnName("lease_until");
+        b.Property(x => x.ClaimToken).HasColumnName("claim_token");
+        b.Property(x => x.LastError).HasColumnName("last_error").HasMaxLength(500);
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.HasIndex(x => new { x.MessageId, x.ReporterUserId }).IsUnique()
+            .HasDatabaseName("uq_booking_chat_report");
     }
 }
 

@@ -322,6 +322,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           pageKey: state.pageKey,
           child: ReviewScreen(bookingId: state.pathParameters['id']!),
         ),
+      ),
 
       // -- Booking Chat --
       GoRoute(
@@ -334,7 +335,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             bookingTitle: state.uri.queryParameters['title'],
           ),
         ),
-      ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -460,4 +460,3 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-

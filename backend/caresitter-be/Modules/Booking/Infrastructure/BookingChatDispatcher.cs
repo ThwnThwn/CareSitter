@@ -1,4 +1,5 @@
 using CareSitter.Infrastructure.Hubs;
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Domain;
 using Microsoft.AspNetCore.SignalR;
@@ -17,6 +18,7 @@ namespace CareSitter.Modules.Booking.Infrastructure;
 internal sealed class BookingChatDispatcher(
     BookingDbContext db,
     IHubContext<CareTrackingHub> hub,
+    IUserNotificationService notifications,
     IOptions<BookingChatOptions> options,
     BookingChatMetrics metrics,
     ILogger<BookingChatDispatcher> logger) : IBookingChatDispatcher
@@ -118,7 +120,13 @@ internal sealed class BookingChatDispatcher(
 
         var epoch = await db.BookingChatEpochs.AsNoTracking()
             .Where(x => x.Id == signal.EpochId)
-            .Select(x => new { x.CaregiverUserId, x.EndedAt })
+            .Select(x => new
+            {
+                x.ConversationId,
+                x.CaregiverProfileId,
+                x.CaregiverUserId,
+                x.EndedAt
+            })
             .SingleOrDefaultAsync(ct);
         if (epoch is null)
         {
@@ -146,7 +154,9 @@ internal sealed class BookingChatDispatcher(
             // Caregiver cũ mất quyền ngay khi epoch đóng hoặc booking đổi người.
             // Bỏ signal thay vì chuyển nội dung của lần phân công cũ sang người mới.
             var stillAssigned = epoch.EndedAt is null &&
+                epoch.ConversationId == signal.ConversationId &&
                 booking.CaregiverId is not null &&
+                booking.CaregiverId == epoch.CaregiverProfileId &&
                 epoch.CaregiverUserId == signal.RecipientUserId;
             if (!stillAssigned)
             {
@@ -163,6 +173,37 @@ internal sealed class BookingChatDispatcher(
                 signal.EventId,
                 signal.Kind,
                 DateTimeOffset.UtcNow), ct);
+
+        // Re-use the per-recipient outbox event as the notification identity. This
+        // makes retries at-least-once while the notification service stays deduplicated.
+        if (_options.PushEnabled && signal.Kind == "USER_MESSAGE_CREATED" &&
+            signal.MessageId is { } messageId)
+        {
+            var senderUserId = await db.BookingChatMessages.AsNoTracking()
+                .Where(x => x.Id == messageId)
+                .Select(x => x.SenderUserId)
+                .SingleOrDefaultAsync(ct);
+            if (senderUserId is { } sender && sender != signal.RecipientUserId)
+            {
+                var deepLink = isCustomer
+                    ? $"/bookings/{context.BookingId}/chat"
+                    : $"/shifts/{context.BookingId}/chat";
+                await notifications.NotifyAsync(new UserNotificationMessage(
+                    signal.RecipientUserId,
+                    "BOOKING_CHAT",
+                    "Tin nhắn mới về lịch chăm sóc",
+                    "Bạn có tin nhắn mới. Mở ứng dụng để xem.",
+                    new Dictionary<string, string>
+                    {
+                        ["bookingId"] = context.BookingId.ToString(),
+                        ["conversationId"] = signal.ConversationId.ToString(),
+                        ["messageId"] = messageId.ToString(),
+                        ["deepLink"] = deepLink
+                    },
+                    signal.EventId,
+                    DateTimeOffset.UtcNow), ct);
+            }
+        }
 
         await MarkSentAsync(signal, ct);
         return true;

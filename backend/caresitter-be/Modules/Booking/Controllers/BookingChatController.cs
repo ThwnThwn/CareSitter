@@ -57,4 +57,24 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         var result = await chat.MarkReadAsync(bookingId, request, ct);
         return result.ToActionResult(this);
     }
+
+    [HttpPost("messages/{messageId:guid}/reports")]
+    public async Task<IActionResult> Report(
+        Guid bookingId,
+        Guid messageId,
+        [FromBody] BookingChatReportRequest request,
+        CancellationToken ct)
+    {
+        var result = await chat.ReportMessageAsync(bookingId, messageId, request, ct);
+        return result.ToActionResult(this, report => report.Status == "LINKED"
+            ? Ok(report)
+            : Accepted($"/api/v1/bookings/{bookingId}/chat/reports/{report.ReportId}", report));
+    }
+
+    [HttpGet("reports/{reportId:guid}")]
+    public async Task<IActionResult> GetReport(
+        Guid bookingId,
+        Guid reportId,
+        CancellationToken ct) =>
+        (await chat.GetReportAsync(bookingId, reportId, ct)).ToActionResult(this);
 }

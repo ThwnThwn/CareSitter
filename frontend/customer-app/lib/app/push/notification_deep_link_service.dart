@@ -45,6 +45,8 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
       return type.isEmpty ? null : '/notifications';
     }
 
+    if (type == 'BOOKING_CHAT') return '/bookings/$bookingId/chat';
+
     if (type == 'SOS' ||
         status == 'en_route' ||
         status == 'in_progress' ||
@@ -145,8 +147,10 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     final uri = Uri.tryParse(route);
     if (uri != null &&
         (uri.scheme == 'caresitter' || uri.scheme == 'caresitter-customer')) {
-      route =
-          '/${[uri.host, ...uri.pathSegments].where((e) => e.isNotEmpty).join('/')}';
+      route = '/${[
+        uri.host,
+        ...uri.pathSegments
+      ].where((e) => e.isNotEmpty).join('/')}';
     }
 
     if (uri != null &&
@@ -167,7 +171,8 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
 
     final patterns = [
       RegExp(r'^/bookings/[A-Za-z0-9-]+$'),
-      RegExp(r'^/bookings/[A-Za-z0-9-]+/(tracking|timeline|review|dispute)$'),
+      RegExp(
+          r'^/bookings/[A-Za-z0-9-]+/(tracking|timeline|review|dispute|chat)$'),
       RegExp(r'^/settings/(support|payment)$'),
       RegExp(r'^/settings/support/chat$'),
       RegExp(r'^/notifications$'),

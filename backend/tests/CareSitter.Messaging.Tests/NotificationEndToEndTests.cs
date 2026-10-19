@@ -232,10 +232,39 @@ public sealed class NotificationEndToEndTests(MessagingFixture fixture) : IClass
         var sender = new LegacyPush();
         var service = new UserNotificationService(db, sender, NullLogger<UserNotificationService>.Instance,
             new MessagingSettings(false, false, false, false, "test"));
-        await service.NotifyAsync(new UserNotificationMessage(Guid.NewGuid(), "SYSTEM", "Fallback"));
+        var eventId = Guid.NewGuid();
+        var message = new UserNotificationMessage(
+            Guid.NewGuid(), "SYSTEM", "Fallback", EventId: eventId);
+        await service.NotifyAsync(message);
+        await service.NotifyAsync(message);
         Assert.Equal(1, sender.Count);
         Assert.Empty(await db.Set<KafkaOutboxMessage>().ToArrayAsync());
         Assert.Single(await db.Notifications.ToArrayAsync());
+        Assert.Single(await db.Set<CareSitter.Modules.Support.Domain.NotificationDelivery>()
+            .Where(x => x.EventId == eventId && x.Status == "Sent").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Disabled_notification_flow_keeps_failed_push_retryable()
+    {
+        var connection = await CreateDatabase();
+        await using var db = SupportDatabase(connection);
+        await db.Database.EnsureCreatedAsync();
+        var service = new UserNotificationService(db, new FailingPush(),
+            NullLogger<UserNotificationService>.Instance,
+            new MessagingSettings(false, false, false, false, "test"));
+        var eventId = Guid.NewGuid();
+
+        await Assert.ThrowsAsync<TimeoutException>(() => service.NotifyAsync(
+            new UserNotificationMessage(Guid.NewGuid(), "BOOKING_CHAT", "Fallback",
+                EventId: eventId)));
+
+        db.ChangeTracker.Clear();
+        var delivery = await db.Set<CareSitter.Modules.Support.Domain.NotificationDelivery>()
+            .SingleAsync(x => x.EventId == eventId);
+        Assert.Equal("Failed", delivery.Status);
+        Assert.Null(delivery.LeaseUntil);
+        Assert.Equal(nameof(TimeoutException), delivery.LastError);
     }
 
     private SupportDbContext SupportDatabase(string connection) => new(new DbContextOptionsBuilder<SupportDbContext>().UseNpgsql(connection).Options);
@@ -261,6 +290,12 @@ public sealed class NotificationEndToEndTests(MessagingFixture fixture) : IClass
     {
         public int Count;
         public Task SendToUserAsync(UserNotificationMessage message, CancellationToken ct = default) { Count++; return Task.CompletedTask; }
+    }
+    private sealed class FailingPush : IPushNotificationService
+    {
+        public Task SendToUserAsync(UserNotificationMessage message,
+            CancellationToken ct = default) =>
+            Task.FromException(new TimeoutException("Injected push failure."));
     }
     private sealed class RecordingSender : INotificationSender
     {

@@ -153,6 +153,7 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
 .filter-bar > label:not(.search-field) { min-width: 180px; }
 .filter-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 220px)); }
 .filter-grid.user-filters { grid-template-columns: minmax(250px, 1fr) minmax(150px, 220px) minmax(150px, 220px); }
+.filter-grid.booking-chat-filters { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .search-field { min-width: min(100%, 320px); border: 1px solid #cbd9d3; border-radius: 9px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--muted); background: #fff; }
 .search-field:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(11,107,87,.12); }
 .search-field input { min-height: 40px; border: 0; padding: 0; box-shadow: none; background: transparent; }
@@ -193,6 +194,12 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
 .pagination { min-height: 53px; padding: 9px 15px; border-top: 1px solid var(--line); color: var(--muted); display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: 10px; }
 .pagination > div { display: flex; align-items: center; gap: 9px; }
 .icon-page { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font-size: 18px; }
+.booking-chat-access { margin-bottom: 14px; }
+.booking-chat-access .form-columns { padding: 17px 20px 20px; }
+.cursor-pagination { min-height: 58px; padding: 9px 15px; border-top: 1px solid var(--line); color: var(--muted); display: flex; align-items: center; justify-content: flex-end; gap: 12px; font-size: 11px; }
+.cursor-pagination .secondary { min-height: 36px; }
+.booking-chat-messages { max-height: 360px; overflow-y: auto; }
+.booking-chat-messages p { overflow-wrap: anywhere; }
 
 .tabs { margin-bottom: 0; border-bottom: 1px solid var(--line); display: flex; gap: 4px; overflow-x: auto; }
 .tabs button { min-height: 43px; border: 0; border-bottom: 2px solid transparent; padding: 0 13px; color: var(--muted); background: transparent; display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 650; white-space: nowrap; }

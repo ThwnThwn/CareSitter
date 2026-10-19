@@ -108,6 +108,9 @@ internal sealed class BookingChatService(
     {
         if (currentUser.UserId is not { } userId)
             return BookingChatErrors.Unauthenticated();
+        if ((afterCursor is not null && string.IsNullOrWhiteSpace(afterCursor)) ||
+            (beforeCursor is not null && string.IsNullOrWhiteSpace(beforeCursor)))
+            return BookingChatErrors.CursorInvalid();
         if (!string.IsNullOrWhiteSpace(afterCursor) && !string.IsNullOrWhiteSpace(beforeCursor))
             return BookingChatErrors.InvalidRequest("Không dùng đồng thời afterCursor và beforeCursor.");
         if (limit is < 1 or > MaxPageSize)
@@ -130,9 +133,9 @@ internal sealed class BookingChatService(
             (currentEpoch is null || currentEpoch.CaregiverUserId != userId))
             return BookingChatErrors.NotFound();
 
-        var direction = string.IsNullOrWhiteSpace(beforeCursor) ? "after" : "before";
+        var direction = beforeCursor is null ? "after" : "before";
         CursorPayload? cursor = null;
-        if (!string.IsNullOrWhiteSpace(afterCursor) || !string.IsNullOrWhiteSpace(beforeCursor))
+        if (afterCursor is not null || beforeCursor is not null)
         {
             cursor = TryReadCursor(afterCursor ?? beforeCursor!);
             if (cursor is null || cursor.ConversationId != conversation.Id ||
@@ -323,6 +326,105 @@ internal sealed class BookingChatService(
         await tx.CommitAsync(ct);
         return new BookingChatReadResponse(epoch.Id, read.LastReadSequence,
             conversation.ChangeVersion, changed);
+    }
+
+    public async Task<Result<BookingChatReportResponse>> ReportMessageAsync(
+        Guid bookingId, Guid messageId, BookingChatReportRequest request,
+        CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId)
+            return BookingChatErrors.Unauthenticated();
+        var reason = request.Reason?.Trim();
+        if (messageId == Guid.Empty || string.IsNullOrWhiteSpace(reason) || reason.Length > 500)
+            return BookingChatErrors.InvalidRequest("Lý do báo cáo phải từ 1 đến 500 ký tự.");
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (booking is null) return BookingChatErrors.NotFound();
+        var access = await ResolveAccessAsync(booking, userId, ct);
+        if (access is null) return BookingChatErrors.NotFound();
+        var reportLockKey = $"booking-chat-report:{messageId}:{userId}";
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({reportLockKey}, 0))", ct);
+        var conversation = await db.BookingChatConversations.FromSqlInterpolated(
+            $"SELECT * FROM booking.booking_chat_conversations WHERE booking_id = {bookingId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (conversation is null) return BookingChatErrors.NotReady();
+        if (conversation.PurgedAt is not null) return BookingChatErrors.Purged();
+        var currentEpoch = await db.BookingChatEpochs.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.ConversationId == conversation.Id && x.EndedAt == null, ct);
+        if (access.Role == "CAREGIVER" &&
+            (currentEpoch is null || currentEpoch.CaregiverUserId != userId))
+            return BookingChatErrors.NotFound();
+
+        var messageQuery = db.BookingChatMessages.Where(x =>
+            x.Id == messageId && x.ConversationId == conversation.Id && x.SenderUserId != null);
+        if (access.Role == "CAREGIVER")
+            messageQuery = messageQuery.Where(x => x.EpochId == currentEpoch!.Id);
+        var message = await messageQuery.SingleOrDefaultAsync(ct);
+        if (message is null)
+            return BookingChatErrors.InvalidRequest("Tin nhắn không thuộc phạm vi bạn có thể báo cáo.");
+        if (message.SenderUserId == userId)
+            return BookingChatErrors.InvalidRequest("Chỉ có thể báo cáo tin nhắn của người còn lại.");
+        var existing = await db.BookingChatReports.SingleOrDefaultAsync(x =>
+            x.MessageId == message.Id && x.ReporterUserId == userId, ct);
+        if (existing is not null)
+        {
+            await tx.CommitAsync(ct);
+            return new BookingChatReportResponse(
+                existing.Id, existing.Status, existing.SupportTicketId);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var report = BookingChatReport.Create(message.Id, userId, reason, now);
+        conversation.PlaceLegalHold("Báo cáo tin nhắn đang chờ xử lý", now);
+        db.BookingChatReports.Add(report);
+        db.BookingChatActivityEvents.Add(BookingChatActivityEvent.Create(conversation.Id, userId,
+            "MESSAGE_REPORTED", reason, now));
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return new BookingChatReportResponse(report.Id, report.Status, report.SupportTicketId);
+    }
+
+    public async Task<Result<BookingChatReportResponse>> GetReportAsync(
+        Guid bookingId, Guid reportId, CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId)
+            return BookingChatErrors.Unauthenticated();
+
+        var booking = await db.Bookings.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == bookingId, ct);
+        if (booking is null) return BookingChatErrors.NotFound();
+        var access = await ResolveAccessAsync(booking, userId, ct);
+        if (access is null) return BookingChatErrors.NotFound();
+
+        var conversation = await db.BookingChatConversations.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.BookingId == bookingId, ct);
+        if (conversation is null) return BookingChatErrors.NotFound();
+
+        var reportQuery = db.BookingChatReports.AsNoTracking().Where(report =>
+            report.Id == reportId && report.ReporterUserId == userId &&
+            db.BookingChatMessages.Any(message => message.Id == report.MessageId &&
+                message.ConversationId == conversation.Id));
+        if (access.Role == "CAREGIVER")
+        {
+            var epochId = await db.BookingChatEpochs.AsNoTracking()
+                .Where(x => x.ConversationId == conversation.Id && x.EndedAt == null &&
+                    x.CaregiverUserId == userId)
+                .Select(x => (Guid?)x.Id)
+                .SingleOrDefaultAsync(ct);
+            if (epochId is null) return BookingChatErrors.NotFound();
+            reportQuery = reportQuery.Where(report => db.BookingChatMessages.Any(message =>
+                message.Id == report.MessageId && message.EpochId == epochId.Value));
+        }
+
+        var report = await reportQuery.SingleOrDefaultAsync(ct);
+        return report is null
+            ? BookingChatErrors.NotFound()
+            : new BookingChatReportResponse(
+                report.Id, report.Status, report.SupportTicketId);
     }
 
     private async Task<ChatAccess?> ResolveAccessAsync(
