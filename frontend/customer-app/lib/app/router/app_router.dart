@@ -15,6 +15,7 @@ import 'package:caresitter_customer/features/beneficiary/presentation/screens/be
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
+import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
@@ -199,6 +200,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const BookingListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/nutrition',
+            pageBuilder: (ctx, state) => _grabTabPage(
+              pageKey: state.pageKey,
+              child: const NutritionEntryScreen(),
             ),
           ),
           GoRoute(

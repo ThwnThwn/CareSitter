@@ -1,12 +1,10 @@
 import 'package:caresitter_customer/app/router/shell_stitch_bottom_bar.dart';
 import 'package:caresitter_customer/app/router/shell_nav_item.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
-class ShellScaffold extends ConsumerWidget {
+class ShellScaffold extends StatelessWidget {
   final Widget child;
   const ShellScaffold({super.key, required this.child});
 
@@ -17,9 +15,9 @@ class ShellScaffold extends ConsumerWidget {
         label: 'Lịch hẹn',
         path: '/bookings'),
     ShellNavItem(
-        icon: Icons.people_outline_rounded,
-        label: 'Chăm sóc viên',
-        path: '/caregivers'),
+        icon: Icons.restaurant_menu_outlined,
+        label: 'Thực đơn',
+        path: '/nutrition'),
     ShellNavItem(
         icon: Icons.person_outline_rounded, label: 'Hồ sơ', path: '/settings'),
   ];
@@ -29,18 +27,12 @@ class ShellScaffold extends ConsumerWidget {
     for (int i = 0; i < _tabs.length; i++) {
       if (location.startsWith(_tabs[i].path)) return i;
     }
-    return 0;
+    return -1;
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final idx = _selectedIndex(context);
-
-    // Tính số lượng ca đang diễn ra (cần theo dõi) thật từ bookingStore
-    final bookings = ref.watch(bookingStoreProvider);
-    final now = DateTime.now();
-    final activeTrackingCount =
-        bookings.where((b) => b.isLiveTrackingAt(now)).length;
 
     return Scaffold(
       body: Center(
@@ -57,7 +49,6 @@ class ShellScaffold extends ConsumerWidget {
       extendBody: false,
       bottomNavigationBar: ShellStitchBottomBar(
         selectedIndex: idx,
-        activeTrackingCount: activeTrackingCount,
         tabs: _tabs,
         onTabSelected: (i) => context.go(_tabs[i].path),
         onCreateBooking: () => context.push('/booking/new'),
