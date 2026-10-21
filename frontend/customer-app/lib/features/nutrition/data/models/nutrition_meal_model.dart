@@ -9,6 +9,8 @@ class NutritionMealModel {
   String get name => _json['name']?.toString() ?? '';
   String get mealType => _json['mealType']?.toString() ?? '';
   String get recipeVersionId => _json['recipeVersionId']?.toString() ?? '';
+  String? get imageUrl => _optionalString('imageUrl');
+  String? get imageAlt => _optionalString('imageAlt');
   num? get servings =>
       _json['servings'] is num ? _json['servings'] as num : null;
   List<MealIngredientModel> get ingredients =>
@@ -25,4 +27,9 @@ class NutritionMealModel {
   Map<String, dynamic>? get nutrients =>
       _json['nutrients'] is Map ? nutritionJsonMap(_json['nutrients']) : null;
   Map<String, dynamic> toJson() => Map.of(_json);
+
+  String? _optionalString(String key) {
+    final value = _json[key]?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
 }

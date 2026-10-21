@@ -13,8 +13,25 @@ class NutritionDecisionModel {
       : const [];
   List<String> get allowedActions =>
       nutritionJsonStrings(_json['allowedActions']);
-  bool allows(String action) =>
-      _json['allowedActions'] is! List || allowedActions.contains(action);
+  bool allows(String action) {
+    if (_json['allowedActions'] is List) {
+      return allowedActions.contains(action);
+    }
+    // Older responses did not include allowedActions. Preserve only the
+    // actions defined by their state instead of allowing every action.
+    return switch (state) {
+      'needs_information' ||
+      'needs_professional_guidance' =>
+        action == 'edit_health',
+      'awaiting_confirmation' => action == 'edit_health' || action == 'confirm',
+      'eligible' => action == 'recommend',
+      'suggested' => action == 'replace' || action == 'save',
+      'failed' => action == 'retry' || action == 'edit_health',
+      'stale' => action == 'reload',
+      _ => false,
+    };
+  }
+
   List<NutritionQuestionModel> get questions =>
       nutritionJsonObjects(_json['questions'])
           .map(NutritionQuestionModel.fromJson)

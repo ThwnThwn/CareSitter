@@ -1,0 +1,909 @@
+{
+  "schema_version": 1,
+  "split": "selection",
+  "cases": [
+    {
+      "case_id": "sel-neg-01",
+      "split": "selection",
+      "primary_group": "negation",
+      "tags": [
+        "negation"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Cháo cá không chứa đậu phộng."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 29
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cháo cá",
+            "span_id": "s1"
+          },
+          {
+            "type": "Allergen",
+            "name": "đậu phộng",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-neg-02",
+      "split": "selection",
+      "primary_group": "negation",
+      "tags": [
+        "combined",
+        "direction_sensitive",
+        "long",
+        "negation"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Bánh hấp không có sữa và không dành riêng cho tăng huyết áp. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 2419
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "bánh hấp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Allergen",
+            "name": "sữa",
+            "span_id": "s1"
+          },
+          {
+            "type": "Condition",
+            "name": "tăng huyết áp",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-neg-03",
+      "split": "selection",
+      "primary_group": "negation",
+      "tags": [
+        "negation"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Cơm mềm không chứa mè; nhận xét trước đó về mè đã bị bác bỏ."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 60
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cơm mềm",
+            "span_id": "s1"
+          },
+          {
+            "type": "Allergen",
+            "name": "mè",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-neg-04",
+      "split": "selection",
+      "primary_group": "negation",
+      "tags": [
+        "negation"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Canh rau không cung cấp số liệu natri trong tài liệu này."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 57
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "canh rau",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "natri",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-num-01",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Một suất cơm gà cung cấp 520 kcal."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 34
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cơm gà",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": [
+          {
+            "type": "ENERGY",
+            "subject": "cơm gà",
+            "value": 520,
+            "unit": "kcal",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-num-02",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "long",
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Một bát phở rau có năng lượng 1460 kJ. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 2397
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "phở rau",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": [
+          {
+            "type": "ENERGY",
+            "subject": "phở rau",
+            "value": 1460,
+            "unit": "kJ",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-num-03",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "direction_sensitive",
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Trong 100 g cá hấp có 19,5 g protein."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 37
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cá hấp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "cá hấp",
+            "object": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "NUTRIENT_AMOUNT",
+            "subject": "cá hấp",
+            "value": 19.5,
+            "unit": "g/100 g",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-num-04",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "direction_sensitive",
+        "numeric",
+        "unicode_nfd"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Trong 100 g sữa chua có 3,2 g protein."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 40
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "sữa chua",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "sữa chua",
+            "object": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "NUTRIENT_AMOUNT",
+            "subject": "sữa chua",
+            "value": 3.2,
+            "unit": "g/100 g",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-num-05",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "direction_sensitive",
+        "long",
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Một khẩu phần súp nấm chứa 320 mg natri. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 2399
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "súp nấm",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "natri",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "súp nấm",
+            "object": "natri",
+            "span_id": "s1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "SODIUM_AMOUNT",
+            "subject": "súp nấm",
+            "value": 320,
+            "unit": "mg",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-num-06",
+      "split": "selection",
+      "primary_group": "numeric",
+      "tags": [
+        "combined",
+        "direction_sensitive",
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Nước dùng có 1,2 g muối trong mỗi khẩu phần; không tự đổi thành natri."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 70
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "nước dùng",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "muối",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "natri",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "nước dùng",
+            "object": "muối",
+            "span_id": "s1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "SALT_EQUIVALENT",
+            "subject": "nước dùng",
+            "value": 1.2,
+            "unit": "g",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-table-01",
+      "split": "selection",
+      "primary_group": "table",
+      "tags": [
+        "table"
+      ],
+      "spans": [
+        {
+          "span_id": "h",
+          "text": "Món | Năng lượng"
+        },
+        {
+          "span_id": "r1",
+          "text": "Bún bí đỏ | 210 kcal"
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "h",
+          "start": 0,
+          "end": 16
+        },
+        {
+          "span_id": "r1",
+          "start": 17,
+          "end": 37
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "bún bí đỏ",
+            "span_id": "r1"
+          }
+        ],
+        "relations": [],
+        "claims": [
+          {
+            "type": "ENERGY",
+            "subject": "bún bí đỏ",
+            "value": 210,
+            "unit": "kcal",
+            "span_id": "r1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-table-02",
+      "split": "selection",
+      "primary_group": "table",
+      "tags": [
+        "combined",
+        "direction_sensitive",
+        "long",
+        "table"
+      ],
+      "spans": [
+        {
+          "span_id": "h",
+          "text": "Món | Chất | Lượng Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới."
+        },
+        {
+          "span_id": "r1",
+          "text": "Đậu hũ hấp | protein | 8 g/100 g"
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "h",
+          "start": 0,
+          "end": 2377
+        },
+        {
+          "span_id": "r1",
+          "start": 2378,
+          "end": 2410
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "đậu hũ hấp",
+            "span_id": "r1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "protein",
+            "span_id": "r1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "đậu hũ hấp",
+            "object": "protein",
+            "span_id": "r1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "NUTRIENT_AMOUNT",
+            "subject": "đậu hũ hấp",
+            "value": 8,
+            "unit": "g/100 g",
+            "span_id": "r1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-table-03",
+      "split": "selection",
+      "primary_group": "table",
+      "tags": [
+        "direction_sensitive",
+        "table"
+      ],
+      "spans": [
+        {
+          "span_id": "h",
+          "text": "Món | Natri"
+        },
+        {
+          "span_id": "r1",
+          "text": "Cháo sen | 95 mg"
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "h",
+          "start": 0,
+          "end": 11
+        },
+        {
+          "span_id": "r1",
+          "start": 12,
+          "end": 28
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cháo sen",
+            "span_id": "r1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "natri",
+            "span_id": "r1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "cháo sen",
+            "object": "natri",
+            "span_id": "r1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "SODIUM_AMOUNT",
+            "subject": "cháo sen",
+            "value": 95,
+            "unit": "mg",
+            "span_id": "r1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "sel-alias-01",
+      "split": "selection",
+      "primary_group": "alias",
+      "tags": [
+        "alias",
+        "direction_sensitive"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Bắp là tên gọi khác của ngô."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 28
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "bắp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Food",
+            "name": "ngô",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "ALIAS_OF",
+            "subject": "bắp",
+            "object": "ngô",
+            "span_id": "s1"
+          }
+        ],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-alias-02",
+      "split": "selection",
+      "primary_group": "alias",
+      "tags": [
+        "alias",
+        "direction_sensitive"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Đậu phộng còn được gọi là lạc."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 30
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Allergen",
+            "name": "đậu phộng",
+            "span_id": "s1"
+          },
+          {
+            "type": "Allergen",
+            "name": "lạc",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "ALIAS_OF",
+            "subject": "đậu phộng",
+            "object": "lạc",
+            "span_id": "s1"
+          }
+        ],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-alias-03",
+      "split": "selection",
+      "primary_group": "alias",
+      "tags": [
+        "alias",
+        "direction_sensitive"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Vitamin C là tên thường dùng của acid ascorbic."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 47
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Nutrient",
+            "name": "vitamin C",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "acid ascorbic",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "ALIAS_OF",
+            "subject": "vitamin C",
+            "object": "acid ascorbic",
+            "span_id": "s1"
+          }
+        ],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-amb-01",
+      "split": "selection",
+      "primary_group": "ambiguous",
+      "tags": [
+        "ambiguous"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Lan ghi về cháo và súp. Món đó chứa sắt, nhưng không rõ 'món đó' là món nào."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 76
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cháo",
+            "span_id": "s1"
+          },
+          {
+            "type": "Food",
+            "name": "súp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "sắt",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-amb-02",
+      "split": "selection",
+      "primary_group": "ambiguous",
+      "tags": [
+        "ambiguous"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Hai món cá hấp và đậu hũ được nhắc tới. Nó có 12 g protein nhưng đại từ không có tiền ngữ rõ."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 93
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cá hấp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Food",
+            "name": "đậu hũ",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-empty-01",
+      "split": "selection",
+      "primary_group": "empty",
+      "tags": [
+        "empty"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Tài liệu được đánh số trang và lưu trong tủ hồ sơ vào chiều thứ hai."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 68
+        }
+      ],
+      "gold": {
+        "entities": [],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "sel-empty-02",
+      "split": "selection",
+      "primary_group": "empty",
+      "tags": [
+        "empty"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Nhân viên đã kiểm tra kiểu chữ, màu nền và thời gian cập nhật của biểu mẫu."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 75
+        }
+      ],
+      "gold": {
+        "entities": [],
+        "relations": [],
+        "claims": []
+      }
+    }
+  ]
+}

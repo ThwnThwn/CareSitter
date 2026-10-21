@@ -16,22 +16,35 @@ class SettingsFlatHeader extends StatelessWidget {
           right: AppSpacing.md,
           bottom: AppSpacing.inset),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Expanded(
-              child: Text('Hồ sơ của tôi',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: AppFontSizes.s22,
-                      fontWeight: FontWeight.w800))),
-          GestureDetector(
-            onTap: () => context.push('/settings/profile/edit'),
-            child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                    color: AppColors.background, shape: BoxShape.circle),
-                child: const Icon(Icons.settings_outlined,
-                    color: AppColors.textSecondary, size: 22)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Hồ sơ của tôi',
+                    style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: AppFontSizes.s22,
+                        fontWeight: FontWeight.w800)),
+                SizedBox(height: 2),
+                Text('Tài khoản & dịch vụ CareSitter',
+                    style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: AppFontSizes.s12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          IconButton(
+            onPressed: () => context.push('/settings/profile/edit'),
+            tooltip: 'Cài đặt hồ sơ',
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.background,
+              foregroundColor: AppColors.textSecondary,
+              minimumSize: const Size(44, 44),
+            ),
+            icon: const Icon(Icons.settings_outlined, size: 22),
           ),
         ],
       ),

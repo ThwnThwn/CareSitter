@@ -23,30 +23,20 @@ IResourceBuilder<ParameterResource> Secret(string name, string value)
 var jwtKey = Secret("identity-jwt-key", Required("Jwt:SecretKey"));
 var jwtIssuer = Required("Jwt:Issuer");
 var jwtAudience = Required("Jwt:Audience");
-var coreConnection = Secret("care-db-connection", Required("ConnectionStrings:CareSitter"));
+var coreConnectionValue = Required("ConnectionStrings:CareSitter");
+var coreConnection = Secret("care-db-connection", coreConnectionValue);
 var redisConnection = Secret("auth-cache-connection", Required("Redis:ConnectionString"));
-var adminPassword = builder.AddParameter("nutrition-admin-password", secret: true);
 var runtimePassword = builder.AddParameter("nutrition-runtime-password", secret: true);
 var gatewayKey = builder.AddParameter("nutrition-gateway-key", secret: true);
 var peopleKey = builder.AddParameter("nutrition-people-key", secret: true);
-
-var postgres = builder.AddPostgres("nutrition-db", password: adminPassword)
-    .WithImageTag("16")
-    .WithEnvironment("POSTGRES_DB", "nutrition")
-    .WithEnvironment("NUTRITION_DB_APP_PASSWORD", runtimePassword)
-    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/01-nutrition-workflow.sql"),
-        "/docker-entrypoint-initdb.d/01-schema.sql", isReadOnly: true)
-    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/02-runtime-role.sql"), "/runtime-role.sql", isReadOnly: true)
-    .WithBindMount(Path.Combine(repository, "backend/services/nutrition/scripts/02-runtime-role.sh"),
-        "/docker-entrypoint-initdb.d/02-runtime-role.sh", isReadOnly: true)
-    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/03-catalog-governance.sql"),
-        "/docker-entrypoint-initdb.d/03-catalog-governance.sql", isReadOnly: true)
-    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/04-catalog-nutrient-constraints.sql"),
-        "/docker-entrypoint-initdb.d/04-catalog-nutrient-constraints.sql", isReadOnly: true)
-    .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/05-recipe-source-citations.sql"),
-        "/docker-entrypoint-initdb.d/05-recipe-source-citations.sql", isReadOnly: true)
-    .WithDataVolume(builder.Configuration["AppHost:NutritionDataVolume"] ?? "caresitter-apphost-nutrition");
-var nutritionDatabase = postgres.AddDatabase("nutrition-store", databaseName: "nutrition");
+var healthParserProvider = builder.Configuration["HealthParser:Provider"] ?? "OpenAI";
+var healthParserIsGemini = string.Equals(healthParserProvider, "Gemini", StringComparison.OrdinalIgnoreCase);
+var healthParserModel = builder.Configuration["HealthParser:Model"] ??
+                        (healthParserIsGemini ? "gemini-3.5-flash-lite" : "gpt-6-luna");
+var healthParserBaseUrl = builder.Configuration["HealthParser:BaseUrl"] ??
+                          (healthParserIsGemini
+                              ? "https://generativelanguage.googleapis.com/v1beta/"
+                              : "https://api.openai.com/v1/");
 
 var api = builder.AddProject<Projects.CareSitter_ApiHost>("api", launchProfileName: null)
     .WithHttpEndpoint(port: builder.Configuration.GetValue("AppHost:ApiPort", 5033), name: "http", isProxied: false)
@@ -72,15 +62,15 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("Gateway__ServiceKey", gatewayKey)
     .WithEnvironment("People__ServiceKey", peopleKey)
     .WithEnvironment("People__BaseUrl", api.GetEndpoint("http"))
-    .WithEnvironment("ConnectionStrings__Nutrition", ReferenceExpression.Create(
-        $"Host={postgres.GetEndpoint("tcp").Property(EndpointProperty.Host)};Port={postgres.GetEndpoint("tcp").Property(EndpointProperty.Port)};Database=nutrition;Username=nutrition_app;Password={runtimePassword}"))
     .WithEnvironment("Nutrition__Enabled", builder.Configuration.GetValue("Nutrition:Enabled", false).ToString())
     .WithEnvironment("Nutrition__AssessmentsEnabled", builder.Configuration.GetValue("Nutrition:AssessmentsEnabled", false).ToString())
     .WithEnvironment("Nutrition__RecommendationsEnabled", builder.Configuration.GetValue("Nutrition:RecommendationsEnabled", false).ToString())
+    .WithEnvironment("NutritionCatalog__LocalDemoEnabled", builder.Configuration.GetValue("NutritionCatalog:LocalDemoEnabled", false).ToString())
+    .WithEnvironment("NutritionCatalog__LocalDemoPackageKey", builder.Configuration["NutritionCatalog:LocalDemoPackageKey"] ?? "adult-baseline-p2a-v1-local-demo")
     .WithEnvironment("HealthParser__Enabled", builder.Configuration.GetValue("HealthParser:Enabled", false).ToString())
-    .WithEnvironment("HealthParser__Provider", builder.Configuration["HealthParser:Provider"] ?? "OpenAI")
-    .WithEnvironment("HealthParser__Model", builder.Configuration["HealthParser:Model"] ?? "gpt-6-luna")
-    .WithEnvironment("HealthParser__BaseUrl", builder.Configuration["HealthParser:BaseUrl"] ?? "https://api.openai.com/v1/")
+    .WithEnvironment("HealthParser__Provider", healthParserProvider)
+    .WithEnvironment("HealthParser__Model", healthParserModel)
+    .WithEnvironment("HealthParser__BaseUrl", healthParserBaseUrl)
     .WithEnvironment("HealthParser__DataProcessingApproved", builder.Configuration.GetValue("HealthParser:DataProcessingApproved", false).ToString())
     .WithEnvironment("HealthParser__TimeoutSeconds", builder.Configuration.GetValue("HealthParser:TimeoutSeconds", 25).ToString())
     .WithEnvironment("HealthParser__MaxOutputTokens", builder.Configuration.GetValue("HealthParser:MaxOutputTokens", 2048).ToString())
@@ -91,11 +81,64 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("HealthParser__MaxResponseBytes", builder.Configuration.GetValue("HealthParser:MaxResponseBytes", 262144).ToString())
     .WithEnvironment("Kestrel__Endpoints__Http__Protocols", "Http1")
     .WithEnvironment("Kestrel__Endpoints__Grpc__Protocols", "Http2")
-    .WithHttpHealthCheck("/health/ready", endpointName: "http")
-    .WaitFor(nutritionDatabase);
+    .WithHttpHealthCheck("/health/ready", endpointName: "http");
+
+var nutritionConnection = builder.Configuration.GetConnectionString("Nutrition");
+if (string.IsNullOrWhiteSpace(nutritionConnection) &&
+    builder.Configuration.GetValue("NutritionDatabase:UseCareSitterServer", false))
+{
+    nutritionConnection = NutritionDatabaseConfiguration.BuildSharedServerConnection(
+        coreConnectionValue,
+        builder.Configuration["NutritionDatabase:Name"] ?? "nutrition",
+        builder.Configuration["NutritionDatabase:Username"] ?? "nutrition_app",
+        Required("Parameters:nutrition-runtime-password"));
+}
+
+if (!string.IsNullOrWhiteSpace(nutritionConnection))
+{
+    nutrition.WithEnvironment("ConnectionStrings__Nutrition",
+        Secret("nutrition-db-connection", nutritionConnection));
+}
+else
+{
+    var adminPassword = builder.AddParameter("nutrition-admin-password", secret: true);
+    var postgres = builder.AddPostgres("nutrition-db", password: adminPassword)
+        .WithImageTag("16")
+        .WithEnvironment("POSTGRES_DB", "nutrition")
+        .WithEnvironment("NUTRITION_DB_APP_PASSWORD", runtimePassword)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/01-nutrition-workflow.sql"),
+            "/docker-entrypoint-initdb.d/01-schema.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/02-runtime-role.sql"), "/runtime-role.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/services/nutrition/scripts/02-runtime-role.sh"),
+            "/docker-entrypoint-initdb.d/02-runtime-role.sh", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/03-catalog-governance.sql"),
+            "/docker-entrypoint-initdb.d/03-catalog-governance.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/04-catalog-nutrient-constraints.sql"),
+            "/docker-entrypoint-initdb.d/04-catalog-nutrient-constraints.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/05-recipe-source-citations.sql"),
+            "/docker-entrypoint-initdb.d/05-recipe-source-citations.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/06-catalog-release-evidence.sql"),
+            "/docker-entrypoint-initdb.d/06-catalog-release-evidence.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/07-catalog-knowledge-review-gate.sql"),
+            "/docker-entrypoint-initdb.d/07-catalog-knowledge-review-gate.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/08-local-demo-catalog.sql"),
+            "/docker-entrypoint-initdb.d/08-local-demo-catalog.sql", isReadOnly: true)
+        .WithDataVolume(builder.Configuration["AppHost:NutritionDataVolume"] ?? "caresitter-apphost-nutrition");
+    var nutritionDatabase = postgres.AddDatabase("nutrition-store", databaseName: "nutrition");
+    nutrition
+        .WithEnvironment("ConnectionStrings__Nutrition", ReferenceExpression.Create(
+            $"Host={postgres.GetEndpoint("tcp").Property(EndpointProperty.Host)};Port={postgres.GetEndpoint("tcp").Property(EndpointProperty.Port)};Database=nutrition;Username=nutrition_app;Password={runtimePassword}"))
+        .WaitFor(nutritionDatabase);
+}
 
 if (builder.Configuration.GetValue<bool>("HealthParser:Enabled"))
-    nutrition.WithEnvironment("HealthParser__ApiKey", Secret("nutrition-health-parser-api-key", Required("HealthParser:ApiKey")));
+{
+    var healthParserSecretName = healthParserIsGemini
+        ? "nutrition-gemini-api-key"
+        : "nutrition-openai-api-key";
+    nutrition.WithEnvironment("HealthParser__ApiKey",
+        Secret(healthParserSecretName, Required("HealthParser:ApiKey")));
+}
 
 nutrition.WithEnvironment("Kestrel__Endpoints__Http__Url", nutrition.GetEndpoint("http"));
 nutrition.WithEnvironment("Kestrel__Endpoints__Grpc__Url", nutrition.GetEndpoint("grpc"));

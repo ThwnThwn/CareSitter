@@ -92,6 +92,10 @@ Desktop.ini
 # =====================  BACKEND (.NET)  =====================
 [Bb]in/
 [Oo]bj/
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
 [Dd]ebug/
 [Rr]elease/
 artifacts/
@@ -157,3 +161,8 @@ pnpm-debug.log*
 # Tài liệu Markdown tập trung trong plan/ và chỉ lưu local theo yêu cầu.
 /plan/
 baocao/
+
+# Local UI design/preview artifacts (not runtime assets)
+**/.kombai/
+**/jitter_preview.png
+**/landing_fullpage_sliding.png

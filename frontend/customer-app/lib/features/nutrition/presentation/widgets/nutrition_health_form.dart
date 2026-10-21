@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../data/models/health_profile_model.dart';
 import 'nutrition_health_fields.dart';
-import 'nutrition_status_field.dart';
 import 'nutrition_notes_fields.dart';
+import 'nutrition_preferences_panel.dart';
+import 'nutrition_reported_health_fields.dart';
+import 'nutrition_required_header.dart';
 
 class NutritionHealthForm extends StatefulWidget {
   const NutritionHealthForm(
@@ -25,7 +27,7 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
   final _allergies = TextEditingController(),
       _conditions = TextEditingController();
   final Map<String, dynamic> _changes = {};
-  late String _allergyStatus, _conditionStatus;
+  late String _allergyStatus, _conditionStatus, _dietaryPattern, _nutritionGoal;
   @override
   void initState() {
     super.initState();
@@ -38,9 +40,12 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
     _conditions.text = labels(widget.health['chronicConditions']);
     _allergyStatus = widget.health.allergyStatus;
     final history = widget.health['healthHistory'];
-    _conditionStatus = history is Map && history['nutrition'] is Map
-        ? history['nutrition']['conditionsStatus']?.toString() ?? 'unknown'
-        : 'unknown';
+    final profile = history is Map && history['nutrition'] is Map
+        ? history['nutrition'] as Map
+        : const {};
+    _conditionStatus = profile['conditionsStatus']?.toString() ?? 'unknown';
+    _dietaryPattern = profile['dietaryPattern']?.toString() ?? 'regular';
+    _nutritionGoal = profile['nutritionGoal']?.toString() ?? 'maintain';
   }
 
   void _change(String key, Object? value) {
@@ -51,17 +56,26 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
   }
 
   void _structured(Map<String, dynamic> value) {
-    final existing = _changes['nutritionProfile'] as Map<String, dynamic>?;
-    _changes.addAll({
-      ...value,
-      if (existing?['conditionsStatus'] != null)
-        'nutritionProfile': {
-          ...?value['nutritionProfile'] as Map<String, dynamic>?,
-          'conditionsStatus': existing!['conditionsStatus']
+    setState(() {
+      for (final entry in value.entries) {
+        if (entry.key != 'nutritionProfile') {
+          _changes[entry.key] = entry.value;
         }
+      }
+      final incoming = value['nutritionProfile'];
+      if (incoming is Map) {
+        _changes['nutritionProfile'] = {
+          ...?_changes['nutritionProfile'] as Map<String, dynamic>?,
+          ...Map<String, dynamic>.from(incoming),
+        };
+      }
     });
     widget.onDirtyChanged(true);
   }
+
+  void _changeNutritionField(String field, String value) => _structured({
+        'nutritionProfile': {field: value}
+      });
 
   List<String> _items(String value) =>
       value.split(';').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
@@ -78,75 +92,62 @@ class _NutritionHealthFormState extends State<NutritionHealthForm> {
   @override
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Thông tin bắt buộc cho gợi ý cá nhân hóa',
-            style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: AppSpacing.xs),
-        const Text(
-          'Hãy xác nhận bệnh lý và dị ứng đã biết. Khi có thông tin, ghi rõ '
-          'để hệ thống loại các món không phù hợp; không dùng mục này để tự chẩn đoán.',
-        ),
+        const NutritionRequiredHeader(),
         const SizedBox(height: AppSpacing.md),
-        NutritionStatusField(
-            label: 'Dị ứng thực phẩm',
-            value: _allergyStatus,
-            enabled: widget.enabled,
-            options: const {
-              'unknown': 'Chưa rõ',
-              'reported_present': 'Có dị ứng thực phẩm',
-              'reported_none': 'Đã xác nhận không có'
-            },
-            onChanged: (v) {
-              _allergyStatus = v;
-              _change('foodAllergyStatus', v);
-            }),
-        if (_allergyStatus == 'reported_present' || _allergies.text.isNotEmpty)
-          TextField(
-              controller: _allergies,
-              enabled: widget.enabled,
-              maxLength: 1000,
-              onChanged: (v) => _change('allergies', _items(v)),
-              decoration: const InputDecoration(
-                  labelText: 'Thực phẩm gây dị ứng *',
-                  helperText: 'Bắt buộc khi có dị ứng. Ngăn cách bằng dấu ;')),
-        const SizedBox(height: AppSpacing.compact),
-        NutritionStatusField(
-            label: 'Thông tin bệnh lý hiện có',
-            value: _conditionStatus,
-            enabled: widget.enabled,
-            options: const {
-              'unknown': 'Chưa rõ / cần cập nhật',
-              'reported_present': 'Có thông tin bệnh lý',
-              'reported_none': 'Gia đình xác nhận chưa có bệnh lý'
-            },
-            onChanged: (v) {
-              _conditionStatus = v;
-              _change('nutritionProfile', {
-                ...?_changes['nutritionProfile'] as Map<String, dynamic>?,
-                'conditionsStatus': v
-              });
-            }),
-        if (_conditionStatus == 'reported_present' ||
-            _conditions.text.isNotEmpty)
-          TextField(
-              controller: _conditions,
-              enabled: widget.enabled,
-              maxLength: 2000,
-              onChanged: (v) => _change('chronicConditions', _items(v)),
-              decoration: const InputDecoration(
-                  labelText: 'Bệnh lý đã biết *',
-                  helperText:
-                      'Bắt buộc khi có bệnh. Chỉ nhập thông tin đã được ghi nhận; ngăn cách bằng dấu ;.')),
+        NutritionReportedHealthFields(
+          enabled: widget.enabled,
+          allergyStatus: _allergyStatus,
+          conditionStatus: _conditionStatus,
+          allergyController: _allergies,
+          conditionController: _conditions,
+          onAllergyStatusChanged: (value) {
+            _allergyStatus = value;
+            _change('foodAllergyStatus', value);
+          },
+          onConditionStatusChanged: (value) {
+            _conditionStatus = value;
+            _changeNutritionField('conditionsStatus', value);
+          },
+          onAllergiesChanged: (value) => _change('allergies', _items(value)),
+          onConditionsChanged: (value) =>
+              _change('chronicConditions', _items(value)),
+        ),
+        NutritionPreferencesPanel(
+          enabled: widget.enabled,
+          dietaryPattern: _dietaryPattern,
+          nutritionGoal: _nutritionGoal,
+          onDietaryPatternChanged: (value) {
+            _dietaryPattern = value;
+            _changeNutritionField('dietaryPattern', value);
+          },
+          onNutritionGoalChanged: (value) {
+            _nutritionGoal = value;
+            _changeNutritionField('nutritionGoal', value);
+          },
+        ),
         const SizedBox(height: AppSpacing.compact),
         NutritionHealthFields(
             health: widget.health,
             enabled: widget.enabled,
             onChanged: _structured),
+        const SizedBox(height: AppSpacing.compact),
         NutritionNotesFields(
             health: widget.health,
             enabled: widget.enabled,
             onChanged: (key, value) => _change(key, value)),
         const SizedBox(height: AppSpacing.md),
         OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primary, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.control),
+              ),
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.compact,
+                horizontal: AppSpacing.md,
+              ),
+            ),
             onPressed: widget.enabled ? _save : null,
             child: const Text('Lưu phần thông tin đã cập nhật')),
       ]);

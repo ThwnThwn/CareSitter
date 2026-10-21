@@ -14,8 +14,8 @@ import 'package:caresitter_customer/features/home/presentation/screens/activity_
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_list_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_create_screen.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
-import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
 import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
+import 'package:caresitter_customer/app/screens/nutrition_detail_entry_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
@@ -462,7 +462,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/beneficiaries/:id/nutrition',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
-          child: NutritionScreen(beneficiaryId: state.pathParameters['id']!),
+          child: NutritionDetailEntryScreen(
+            beneficiaryId: state.pathParameters['id']!,
+          ),
         ),
       ),
     ],

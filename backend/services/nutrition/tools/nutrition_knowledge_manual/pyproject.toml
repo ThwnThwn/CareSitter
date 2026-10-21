@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caresitter-nutrition-knowledge-manual"
+version = "0.2.0"
+description = "Fail-closed nutrition knowledge, catalog authoring and review pipeline"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pdfplumber==0.11.9"]
+
+[project.scripts]
+nutrition-knowledge-manual = "nutrition_knowledge_manual.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

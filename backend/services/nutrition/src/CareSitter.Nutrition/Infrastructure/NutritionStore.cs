@@ -3,8 +3,10 @@ using Npgsql;
 
 namespace CareSitter.Nutrition.Infrastructure;
 
-internal sealed class NutritionStore(NpgsqlDataSource dataSource) : INutritionStore
+internal sealed class NutritionStore(NpgsqlDataSource dataSource, LocalDemoCatalogOptions localDemo) : INutritionStore
 {
+    internal NutritionStore(NpgsqlDataSource dataSource) : this(dataSource, LocalDemoCatalogOptions.Disabled) { }
+
     public async Task<T> InOwnerScopeAsync<T>(Guid owner, Func<INutritionSession, Task<T>> action, CancellationToken ct)
     {
         await using var connection = await dataSource.OpenConnectionAsync(ct);
@@ -15,7 +17,7 @@ internal sealed class NutritionStore(NpgsqlDataSource dataSource) : INutritionSt
             scope.Parameters.AddWithValue("owner", owner);
             await scope.ExecuteNonQueryAsync(ct);
         }
-        var result = await action(new NutritionSession(connection, transaction, owner));
+        var result = await action(new NutritionSession(connection, transaction, owner, localDemo));
         await transaction.CommitAsync(ct);
         return result;
     }

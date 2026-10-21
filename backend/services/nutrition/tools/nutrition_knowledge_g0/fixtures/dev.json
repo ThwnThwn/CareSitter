@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "split": "dev",
+  "cases": [
+    {
+      "case_id": "dev-neg-01",
+      "split": "dev",
+      "primary_group": "negation",
+      "tags": [
+        "negation"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Súp bí đỏ không chứa lạc."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 25
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "súp bí đỏ",
+            "span_id": "s1"
+          },
+          {
+            "type": "Allergen",
+            "name": "lạc",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "dev-num-01",
+      "split": "dev",
+      "primary_group": "numeric",
+      "tags": [
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Một phần cháo yến mạch cung cấp 180 kcal."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 41
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "cháo yến mạch",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [],
+        "claims": [
+          {
+            "type": "ENERGY",
+            "subject": "cháo yến mạch",
+            "value": 180,
+            "unit": "kcal",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "dev-num-02",
+      "split": "dev",
+      "primary_group": "numeric",
+      "tags": [
+        "direction_sensitive",
+        "long",
+        "numeric"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Trong 100 g đậu xanh có 23 g protein. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới. Ghi chú tổng hợp này chỉ mô tả cách ghi nhận thông tin trong một phiếu thử nghiệm. Người đọc cần phân biệt phần mô tả, phần số liệu và phần kết luận; không suy diễn thêm từ những câu không nêu trực tiếp thành phần hay giá trị. Các câu nền được lặp lại có chủ ý để kiểm tra ngữ cảnh dài, nhưng chúng không bổ sung dữ kiện dinh dưỡng mới."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 2396
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "đậu xanh",
+            "span_id": "s1"
+          },
+          {
+            "type": "Nutrient",
+            "name": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "CONTAINS",
+            "subject": "đậu xanh",
+            "object": "protein",
+            "span_id": "s1"
+          }
+        ],
+        "claims": [
+          {
+            "type": "NUTRIENT_AMOUNT",
+            "subject": "đậu xanh",
+            "value": 23,
+            "unit": "g/100 g",
+            "span_id": "s1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "dev-table-01",
+      "split": "dev",
+      "primary_group": "table",
+      "tags": [
+        "direction_sensitive",
+        "table"
+      ],
+      "spans": [
+        {
+          "span_id": "h",
+          "text": "Thực phẩm | Năng lượng"
+        },
+        {
+          "span_id": "r1",
+          "text": "Khoai lang | 119 kcal"
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "h",
+          "start": 0,
+          "end": 22
+        },
+        {
+          "span_id": "r1",
+          "start": 23,
+          "end": 44
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "khoai lang",
+            "span_id": "r1"
+          }
+        ],
+        "relations": [],
+        "claims": [
+          {
+            "type": "ENERGY",
+            "subject": "khoai lang",
+            "value": 119,
+            "unit": "kcal",
+            "span_id": "r1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "dev-alias-01",
+      "split": "dev",
+      "primary_group": "alias",
+      "tags": [
+        "alias",
+        "direction_sensitive"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Bắp còn được gọi là ngô."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 24
+        }
+      ],
+      "gold": {
+        "entities": [
+          {
+            "type": "Food",
+            "name": "bắp",
+            "span_id": "s1"
+          },
+          {
+            "type": "Food",
+            "name": "ngô",
+            "span_id": "s1"
+          }
+        ],
+        "relations": [
+          {
+            "type": "ALIAS_OF",
+            "subject": "bắp",
+            "object": "ngô",
+            "span_id": "s1"
+          }
+        ],
+        "claims": []
+      }
+    },
+    {
+      "case_id": "dev-empty-01",
+      "split": "dev",
+      "primary_group": "empty",
+      "tags": [
+        "empty"
+      ],
+      "spans": [
+        {
+          "span_id": "s1",
+          "text": "Phiếu được lập vào buổi sáng và sẽ được rà soát sau."
+        }
+      ],
+      "span_offsets": [
+        {
+          "span_id": "s1",
+          "start": 0,
+          "end": 52
+        }
+      ],
+      "gold": {
+        "entities": [],
+        "relations": [],
+        "claims": []
+      }
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+import 'nutrition_expansion_card.dart';
+
 /// Edits only the structured fields supplied by the customer; saved history stays on People.
 class NutritionHealthFields extends StatefulWidget {
   final Map<String, dynamic> health;
@@ -80,12 +82,10 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return ExpansionTile(
+    return NutritionExpansionCard(
       key: const ValueKey('nutrition-structured-fields'),
-      tilePadding: EdgeInsets.zero,
-      title: const Text('Thuốc và nhu cầu ăn uống'),
-      subtitle:
-          const Text('Xác nhận từng mục; chọn Chưa rõ nếu chưa có thông tin.'),
+      title: 'Thuốc và nhu cầu ăn uống',
+      subtitle: 'Xác nhận từng mục; chọn Chưa rõ nếu chưa có thông tin.',
       children: [
         const SizedBox(height: AppSpacing.compact),
         _choice('medicationsStatus', 'Việc dùng thuốc hiện tại', const {

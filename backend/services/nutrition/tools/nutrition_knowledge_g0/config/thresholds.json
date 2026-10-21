@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "generation_options": {
+    "temperature": 0,
+    "seed": 20261020,
+    "num_ctx": 8192,
+    "num_predict": 1024,
+    "num_thread": 8
+  },
+  "selection": {
+    "schema_valid_cases": 19,
+    "semantic_valid_cases": 19,
+    "context_valid_cases": 20,
+    "entity_f1": 0.85,
+    "entity_precision": 0.80,
+    "entity_recall": 0.80,
+    "relation_claim_f1": 0.75,
+    "relation_claim_precision": 0.80,
+    "negation_complete": 4,
+    "numeric_complete": 5,
+    "empty_complete": 2,
+    "evidence_locatable_rate": 0.95,
+    "admission_precision": 0.90,
+    "group_floor": 1,
+    "latency_p95_seconds": 90
+  },
+  "holdout": {
+    "entity_f1": 0.80,
+    "relation_claim_f1": 0.70,
+    "negation_complete": 2,
+    "numeric_complete": 2,
+    "empty_complete": 2,
+    "evidence_locatable_rate": 0.95,
+    "admission_precision": 0.90,
+    "context_valid_cases": 12,
+    "latency_p95_seconds": 90
+  },
+  "engineering_margin": 0.03,
+  "selection_tie_delta": 0.02
+}

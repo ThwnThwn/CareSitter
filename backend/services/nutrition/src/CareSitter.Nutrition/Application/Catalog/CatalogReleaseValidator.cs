@@ -37,6 +37,16 @@ public static class CatalogReleaseValidator
             Add("evidence.bundleFileSha256", "bundle_mismatch", "Evidence must be bound to the exact catalog bundle file.");
         if (evidence.ContentStatus != "review_ready")
             Add("evidence.contentStatus", "not_review_ready", "Content status must be review_ready before release.");
+        var releaseProfile = evidence.ReleaseProfile ?? "adult_condition_v1";
+        if (releaseProfile is not ("adult_baseline_v1" or "adult_condition_v1"))
+            Add("evidence.releaseProfile", "unsupported", "Release profile must be adult_baseline_v1 or adult_condition_v1.");
+        if (releaseProfile == "adult_baseline_v1")
+        {
+            if ((bundle.Rules ?? []).Length > 0)
+                Add("rules", "baseline_rule_forbidden", "Baseline release cannot contain disease rules.");
+            if ((bundle.SupportedScopes ?? []).Any(scope => (scope?.ConditionCodes ?? []).Length > 0))
+                Add("supportedScopes", "baseline_condition_scope_forbidden", "Baseline release cannot enable disease conditions.");
+        }
         if (string.IsNullOrWhiteSpace(evidence.CalculationBasis))
             Add("evidence.calculationBasis", "required", "Calculation basis is required.");
 
@@ -80,7 +90,8 @@ public static class CatalogReleaseValidator
         foreach (var group in ruleEvidence.Where(x => x.Value.Length > 1))
             Add("evidence.rules", "duplicate", $"Rule version {group.Key} has duplicate evidence.");
         var rules = bundle.Rules ?? [];
-        if (rules.Length == 0) Add("rules", "p2_rule_missing", "P2 requires at least one disease rule.");
+        if (releaseProfile == "adult_condition_v1" && rules.Length == 0)
+            Add("rules", "p2_rule_missing", "A condition release requires at least one disease rule.");
         for (var index = 0; index < rules.Length; index++)
             ValidateRule(rules[index], index, ruleEvidence, bundle.Citations ?? [], Add);
 
@@ -89,10 +100,12 @@ public static class CatalogReleaseValidator
         else
         {
             if (string.IsNullOrWhiteSpace(review.ReviewerName)) Add("evidence.clinicalReview.reviewerName", "required", "Reviewer name is required.");
+            if (string.IsNullOrWhiteSpace(review.ReviewerId)) Add("evidence.clinicalReview.reviewerId", "required", "Reviewer ID is required.");
             if (string.IsNullOrWhiteSpace(review.Credentials)) Add("evidence.clinicalReview.credentials", "required", "Reviewer credentials are required.");
             if (review.ReviewedAt == default) Add("evidence.clinicalReview.reviewedAt", "required", "Review time is required.");
             if (review.Decision != "approved") Add("evidence.clinicalReview.decision", "not_approved", "Clinical review decision must be approved.");
         }
+        ValidateKnowledgeReview(evidence.KnowledgeReview, review, Add);
 
         combinations.Add(CountCombinations("baseline", null, recipes, [], []));
         foreach (var rule in rules)
@@ -269,5 +282,43 @@ public static class CatalogReleaseValidator
     private static bool HasCitation(string id, IEnumerable<CatalogCitation> citations) =>
         citations.Any(x => string.Equals(x.Id, id, StringComparison.Ordinal));
 
-    private static bool IsSha256(string value) => !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, "^[A-Fa-f0-9]{64}$");
+    private static void ValidateKnowledgeReview(
+        CatalogKnowledgeReview? review,
+        CatalogClinicalReview? clinicalReview,
+        Action<string, string, string> add)
+    {
+        const string path = "evidence.knowledgeReview";
+        if (review is null)
+        {
+            add(path, "knowledge_review_required", "A reviewed candidate graph authorization is required before release.");
+            return;
+        }
+        if (review.SchemaVersion != 1) add(path + ".schemaVersion", "unsupported", "Only knowledge review schema version 1 is supported.");
+        if (!IsSha256(review.CandidateGraphSha256)) add(path + ".candidateGraphSha256", "invalid_digest", "Candidate graph SHA-256 is required.");
+        if (!IsSha256(review.DecisionLedgerSha256)) add(path + ".decisionLedgerSha256", "invalid_digest", "Decision ledger SHA-256 is required.");
+        if (!IsSha256(review.ReviewedGraphSha256)) add(path + ".reviewedGraphSha256", "invalid_digest", "Reviewed graph SHA-256 is required.");
+        if (review.CandidateCount <= 0 || review.ApprovedCount != review.CandidateCount || review.PendingCount != 0 || review.RejectedCount != 0)
+            add(path, "review_incomplete", "Every candidate must be approved with no pending or rejected item.");
+        if (review.Decision != "approved") add(path + ".decision", "not_approved", "Knowledge review decision must be approved.");
+        if (review.Sources is not { Length: > 0 }) add(path + ".sources", "required", "At least one permitted source revision is required.");
+        else
+        {
+            foreach (var source in review.Sources)
+            {
+                if (source is null || string.IsNullOrWhiteSpace(source.SourceRevisionId))
+                    add(path + ".sources", "required", "Every knowledge source needs a revision ID.");
+                else if (source.RightsStatus != "permitted")
+                    add(path + ".sources", "source_not_permitted", $"Source revision {source.SourceRevisionId} is not permitted.");
+            }
+            if (review.Sources.Where(x => x is not null).GroupBy(x => x.SourceRevisionId, StringComparer.Ordinal).Any(x => x.Count() > 1))
+                add(path + ".sources", "duplicate", "Knowledge source revisions cannot be repeated.");
+        }
+        if (review.ClinicalReviewerIds is not { Length: > 0 } || review.ClinicalReviewerIds.Any(string.IsNullOrWhiteSpace))
+            add(path + ".clinicalReviewerIds", "required", "At least one clinical reviewer ID is required.");
+        else if (!string.IsNullOrWhiteSpace(clinicalReview?.ReviewerId) &&
+                 !review.ClinicalReviewerIds.Contains(clinicalReview.ReviewerId, StringComparer.Ordinal))
+            add(path + ".clinicalReviewerIds", "reviewer_mismatch", "Clinical review must be bound to a reviewer in the candidate decision ledger.");
+    }
+
+    private static bool IsSha256(string? value) => !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, "^[A-Fa-f0-9]{64}$");
 }

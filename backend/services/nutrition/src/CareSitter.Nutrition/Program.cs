@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+var localDemoCatalog = LocalDemoCatalogOptions.From(builder.Configuration, builder.Environment);
 var jwtSecret = builder.Configuration["Jwt:SecretKey"] ?? "";
 var issuer = builder.Configuration["Jwt:Issuer"];
 var audience = builder.Configuration["Jwt:Audience"];
@@ -96,6 +97,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddAuthorization(); builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddSingleton<INutritionFeatures, NutritionFeatures>();
+builder.Services.AddSingleton(localDemoCatalog);
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Nutrition")
     ?? throw new InvalidOperationException("ConnectionStrings:Nutrition is required.")));
 builder.Services.AddScoped<INutritionStore, NutritionStore>();
@@ -108,13 +110,23 @@ builder.Services.AddScoped<UnconfiguredHealthParser>();
 builder.Services.AddHttpClient<OpenAiHealthDescriptionParser>((services, client) =>
 {
     var options = services.GetRequiredService<IOptions<HealthParserOptions>>().Value;
-    client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + '/');
+    client.BaseAddress = new Uri(options.EffectiveBaseUrl.TrimEnd('/') + '/');
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
+builder.Services.AddHttpClient<GeminiHealthDescriptionParser>((services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<HealthParserOptions>>().Value;
+    client.BaseAddress = new Uri(options.EffectiveBaseUrl.TrimEnd('/') + '/');
     client.Timeout = Timeout.InfiniteTimeSpan;
 });
 builder.Services.AddScoped<IHealthDescriptionParser>(services =>
-    services.GetRequiredService<IOptions<HealthParserOptions>>().Value.Enabled
-        ? services.GetRequiredService<OpenAiHealthDescriptionParser>()
-        : services.GetRequiredService<UnconfiguredHealthParser>());
+{
+    var options = services.GetRequiredService<IOptions<HealthParserOptions>>().Value;
+    if (!options.Enabled) return services.GetRequiredService<UnconfiguredHealthParser>();
+    return HealthParserProviders.IsGemini(options.Provider)
+        ? services.GetRequiredService<GeminiHealthDescriptionParser>()
+        : services.GetRequiredService<OpenAiHealthDescriptionParser>();
+});
 builder.Services.AddScoped<AssessmentProcessor>();
 builder.Services.AddScoped<NutritionWriteScope>();
 builder.Services.AddScoped<MealPreparationService>();

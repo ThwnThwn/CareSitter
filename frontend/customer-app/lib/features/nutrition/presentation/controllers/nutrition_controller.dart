@@ -159,16 +159,29 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   Future<void> openPlan(String planId) =>
       _withResource(() => _actions.openPlan(planId, _token));
   Future<List<T>?> _list<T>(Future<List<T>> Function() action) async {
+    if (!mounted || view.loading || revision == 0) return null;
     final generation = _generation;
-    List<T>? results;
-    await _run(() async {
-      results = await action();
-      return NutritionFlow(
-          health: view.health,
-          resource: view.resource,
-          recommendationsEnabled: view.recommendationsEnabled);
-    });
-    return _current(generation) && view.error == null ? results : null;
+    try {
+      final results = await action();
+      if (!_current(generation)) return null;
+      if (view.error != null) {
+        _publish(NutritionFlow(
+            health: view.health,
+            resource: view.resource,
+            recommendationsEnabled: view.recommendationsEnabled));
+      }
+      return results;
+    } catch (e) {
+      if (_current(generation)) {
+        final failure = NutritionFailureModel(e);
+        _publish(NutritionFlow(
+            health: failure.denied ? null : view.health,
+            resource: failure.denied ? null : view.resource,
+            error: failure.message,
+            recommendationsEnabled: view.recommendationsEnabled));
+      }
+      return null;
+    }
   }
 
   Future<void> _withResource(
@@ -237,14 +250,14 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   void resume() {
     if (!mounted) return;
     final r = view.resource;
-    if (r == null) {
+    if (view.health == null || view.loading) {
       load();
       return;
     }
-    if (r.id.isNotEmpty && NutritionAssessmentRules.pending(r.status)) {
+    if (r != null &&
+        r.id.isNotEmpty &&
+        NutritionAssessmentRules.pending(r.status)) {
       _schedule(r.id, _generation);
-    } else {
-      load();
     }
   }
 

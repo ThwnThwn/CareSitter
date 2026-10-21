@@ -14,6 +14,9 @@ services:
       - ../../init-db/nutrition-service/03-catalog-governance.sql:/docker-entrypoint-initdb.d/03-catalog-governance.sql:ro
       - ../../init-db/nutrition-service/04-catalog-nutrient-constraints.sql:/docker-entrypoint-initdb.d/04-catalog-nutrient-constraints.sql:ro
       - ../../init-db/nutrition-service/05-recipe-source-citations.sql:/docker-entrypoint-initdb.d/05-recipe-source-citations.sql:ro
+      - ../../init-db/nutrition-service/06-catalog-release-evidence.sql:/docker-entrypoint-initdb.d/06-catalog-release-evidence.sql:ro
+      - ../../init-db/nutrition-service/07-catalog-knowledge-review-gate.sql:/docker-entrypoint-initdb.d/07-catalog-knowledge-review-gate.sql:ro
+      - ../../init-db/nutrition-service/08-local-demo-catalog.sql:/docker-entrypoint-initdb.d/08-local-demo-catalog.sql:ro
     healthcheck:
       test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d nutrition"]
       interval: 5s
@@ -40,6 +43,8 @@ services:
       Nutrition__Enabled: ${NUTRITION_ENABLED:-false}
       Nutrition__AssessmentsEnabled: ${NUTRITION_ASSESSMENTS_ENABLED:-false}
       Nutrition__RecommendationsEnabled: ${NUTRITION_RECOMMENDATIONS_ENABLED:-false}
+      NutritionCatalog__LocalDemoEnabled: ${NUTRITION_LOCAL_DEMO_ENABLED:-false}
+      NutritionCatalog__LocalDemoPackageKey: ${NUTRITION_LOCAL_DEMO_PACKAGE_KEY:-adult-baseline-p2a-v1-local-demo}
       HealthParser__Enabled: ${NUTRITION_HEALTH_PARSER_ENABLED:-false}
       HealthParser__Provider: ${NUTRITION_HEALTH_PARSER_PROVIDER:-OpenAI}
       HealthParser__Model: ${NUTRITION_HEALTH_PARSER_MODEL:-gpt-6-luna}

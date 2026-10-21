@@ -76,4 +76,41 @@ void main() {
     expect(find.text('10,000+ Gia đình'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('delays credential validation until login is submitted',
+      (tester) async {
+    await pumpLogin(tester, const Size(430, 932));
+
+    await tester.enterText(find.byType(TextFormField).first, 'thuanvct1');
+    await tester.pump();
+
+    expect(find.text('Email hoặc số điện thoại không hợp lệ'), findsNothing);
+    expect(find.text('Vui lòng nhập mật khẩu'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Đăng nhập'));
+    await tester.pump();
+
+    expect(find.text('Email hoặc số điện thoại không hợp lệ'), findsOneWidget);
+    expect(find.text('Vui lòng nhập mật khẩu'), findsOneWidget);
+
+    await tester.enterText(
+        find.byType(TextFormField).first, 'user@example.com');
+    await tester.enterText(find.byType(TextFormField).last, 'secret1');
+    await tester.pump();
+
+    expect(find.text('Email hoặc số điện thoại không hợp lệ'), findsNothing);
+    expect(find.text('Vui lòng nhập mật khẩu'), findsNothing);
+  });
+
+  testWidgets('aligns auxiliary action and social divider with the form',
+      (tester) async {
+    await pumpLogin(tester, const Size(430, 932));
+
+    final fieldRect = tester.getRect(find.byType(TextFormField).first);
+    final forgotPasswordRect = tester.getRect(find.text('Quên mật khẩu?'));
+    final socialDividerRect = tester.getRect(find.text('Hoặc tiếp tục với'));
+
+    expect(forgotPasswordRect.right, closeTo(fieldRect.right, 0.5));
+    expect(socialDividerRect.center.dx, closeTo(fieldRect.center.dx, 0.5));
+  });
 }

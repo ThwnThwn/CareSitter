@@ -96,12 +96,16 @@ static async Task<int> RunProviderAsync(string corpusPath, string runPath, strin
     if (selected.Length == 0) throw new ParserEvalException("Split must be development, validation or holdout.", 2);
     EnsureWritable(runPath, force);
 
+    var provider = Environment.GetEnvironmentVariable("NUTRITION_PARSER_EVAL_PROVIDER") ??
+                   HealthParserProviders.OpenAi;
     var options = new HealthParserOptions
     {
         Enabled = true,
-        Provider = "OpenAI",
-        Model = "gpt-6-luna",
-        BaseUrl = "https://api.openai.com/v1/",
+        Provider = provider,
+        Model = Environment.GetEnvironmentVariable("NUTRITION_PARSER_EVAL_MODEL") ??
+                HealthParserProviders.DefaultModel(provider),
+        BaseUrl = Environment.GetEnvironmentVariable("NUTRITION_PARSER_EVAL_BASE_URL") ??
+                  HealthParserProviders.DefaultBaseUrl(provider),
         ApiKey = Environment.GetEnvironmentVariable("NUTRITION_PARSER_EVAL_API_KEY") ?? string.Empty,
         ApiKeyFile = Environment.GetEnvironmentVariable("NUTRITION_PARSER_EVAL_API_KEY_FILE") ?? string.Empty,
         DataProcessingApproved = true,
@@ -117,10 +121,16 @@ static async Task<int> RunProviderAsync(string corpusPath, string runPath, strin
     if (optionResult.Failed)
         throw new ParserEvalException(optionResult.FailureMessage ?? "Provider options are invalid.", 3);
 
-    using var http = new HttpClient { BaseAddress = new Uri(options.BaseUrl), Timeout = Timeout.InfiniteTimeSpan };
+    using var http = new HttpClient
+    {
+        BaseAddress = new Uri(options.EffectiveBaseUrl),
+        Timeout = Timeout.InfiniteTimeSpan
+    };
     using var guard = new HealthParserRuntimeGuard(options, TimeProvider.System);
     var logger = new EvaluationLogger();
-    var parser = new OpenAiHealthDescriptionParser(http, Options.Create(options), guard, logger);
+    IHealthDescriptionParser parser = HealthParserProviders.IsGemini(options.Provider)
+        ? new GeminiHealthDescriptionParser(http, Options.Create(options), guard, logger)
+        : new OpenAiHealthDescriptionParser(http, Options.Create(options), guard, logger);
     var started = DateTimeOffset.UtcNow;
     var results = new List<HealthParserEvaluationRunCase>(selected.Length);
     foreach (var item in selected)
@@ -145,7 +155,7 @@ static async Task<int> RunProviderAsync(string corpusPath, string runPath, strin
         }
     }
     var run = new HealthParserEvaluationRun(HealthParserEvaluation.SchemaVersion, corpus.CorpusVersion, split,
-        options.Provider, options.Model, parser.PromptVersion ?? "unknown", corpus.DictionaryRevision,
+        options.Provider, options.EffectiveModel, parser.PromptVersion ?? "unknown", corpus.DictionaryRevision,
         HealthKnowledgeGraphRetriever.SchemaVersion, HealthKnowledgeGraphRetriever.Strategy, started,
         DateTimeOffset.UtcNow, results.ToArray());
     await WriteFileAsync(runPath, NutritionJson.Write(run), force);
@@ -209,7 +219,7 @@ sealed class ParserEvalException(string message, int exitCode) : Exception(messa
     public int ExitCode { get; } = exitCode;
 }
 
-sealed class EvaluationLogger : ILogger<OpenAiHealthDescriptionParser>
+sealed class EvaluationLogger : ILogger<OpenAiHealthDescriptionParser>, ILogger<GeminiHealthDescriptionParser>
 {
     public long InputTokens { get; private set; }
     public long OutputTokens { get; private set; }

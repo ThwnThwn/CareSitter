@@ -21,11 +21,12 @@ internal sealed class ReplaceMealCommandHandler(NutritionWriteScope scope, MealP
         Recipe[]? selected = null;
         if (meal.Eligibility.State == "eligible")
         {
+            var dietaryPattern = meal.Health.Evidence.GetValueOrDefault("dietaryPattern", "regular");
             var replacement = meal.Recipes.FirstOrDefault(r =>
                 r.VersionId == request.Input.RecipeVersionId && r.MealType == request.Input.MealType);
             if (replacement is null) return NutritionAccessRules.ContentChanged();
             selected = meal.Previous!.Meals.Select(m => m.MealType == request.Input.MealType ? replacement : m).ToArray();
-            if (!MealConstraintPolicy.Matches(selected, meal.Analyzed.Facts, meal.Rules))
+            if (!MealConstraintPolicy.Matches(selected, meal.Analyzed.Facts, meal.Rules, dietaryPattern))
                 return Error.Conflict("nutrition.constraint", "Món thay thế không đáp ứng các yêu cầu của toàn bộ thực đơn.");
         }
         var payload = meal.Complete(selected);

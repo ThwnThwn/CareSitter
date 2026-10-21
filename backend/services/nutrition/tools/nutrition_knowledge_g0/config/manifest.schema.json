@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "sources"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id", "revision_id", "title", "path", "sha256", "byte_size",
+          "mime", "language", "rights_status", "allowed_uses", "rights_evidence",
+          "checked_by", "checked_at_utc"
+        ]
+      }
+    }
+  }
+}

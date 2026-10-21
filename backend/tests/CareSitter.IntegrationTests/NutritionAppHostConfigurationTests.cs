@@ -60,6 +60,24 @@ public sealed class NutritionAppHostConfigurationTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Shared_server_connection_keeps_server_settings_but_uses_the_nutrition_identity()
+    {
+        const string source = "Host=localhost;Port=5432;Database=caresitter;Username=admin;Password=main-secret;SSL Mode=Prefer";
+
+        var value = NutritionDatabaseConfiguration.BuildSharedServerConnection(
+            source, "nutrition", "nutrition_app", new string('a', 64));
+        var connection = new Npgsql.NpgsqlConnectionStringBuilder(value);
+
+        Assert.Equal("localhost", connection.Host);
+        Assert.Equal(5432, connection.Port);
+        Assert.Equal("nutrition", connection.Database);
+        Assert.Equal("nutrition_app", connection.Username);
+        Assert.Equal(new string('a', 64), connection.Password);
+        Assert.Equal(Npgsql.SslMode.Prefer, connection.SslMode);
+        Assert.DoesNotContain("main-secret", value, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         var resolved = Path.GetFullPath(_root);

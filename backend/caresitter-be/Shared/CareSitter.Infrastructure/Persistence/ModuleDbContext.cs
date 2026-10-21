@@ -35,6 +35,7 @@ public abstract class ModuleDbContext : DbContext
     /// Không dùng SaveChanges() đồng bộ — sẽ bỏ qua RLS context.
     /// Luôn dùng SaveChangesAsync để đảm bảo set_config được gọi trước khi ghi.
     /// </summary>
+#pragma warning disable CS0809 // Intentionally make the non-obsolete EF override a compile-time error for callers.
     [Obsolete("Dùng SaveChangesAsync để đảm bảo RLS context được thiết lập trước khi ghi.", error: true)]
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
         => throw new InvalidOperationException(
@@ -45,6 +46,7 @@ public abstract class ModuleDbContext : DbContext
     public override int SaveChanges()
         => throw new InvalidOperationException(
             "SaveChanges() đồng bộ không được phép trong ModuleDbContext vì sẽ bỏ qua RLS context. Dùng SaveChangesAsync().");
+#pragma warning restore CS0809
 
     private void UpdateTimestamps()
     {

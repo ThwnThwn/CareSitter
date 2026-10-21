@@ -25,6 +25,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _obscurePass = true;
   bool _rememberLogin = true;
+  bool _validationEnabled = false;
 
   @override
   void dispose() {
@@ -36,6 +37,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     final controller = ref.read(loginControllerProvider.notifier);
     controller.clearError();
+    if (!_validationEnabled) {
+      setState(() => _validationEnabled = true);
+    }
     if (_formKey.currentState?.validate() != true) return;
 
     final loggedIn = await controller.login(
@@ -62,6 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           passCtrl: _passCtrl,
           obscurePass: _obscurePass,
           rememberLogin: _rememberLogin,
+          validationEnabled: _validationEnabled,
           onRememberLoginChanged: (value) =>
               setState(() => _rememberLogin = value),
           login: _login,

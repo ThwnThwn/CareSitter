@@ -4,6 +4,8 @@ import 'package:caresitter_customer/features/nutrition/data/models/nutrition_res
 import 'package:caresitter_customer/features/nutrition/data/models/recipe_option_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/meal_plan_summary_model.dart';
 import 'package:caresitter_customer/features/nutrition/domain/nutrition_response_rules.dart';
+import 'package:caresitter_customer/features/nutrition/domain/nutrition_error_codes.dart';
+import 'package:caresitter_customer/features/nutrition/domain/nutrition_error_copy.dart';
 
 void main() {
   test(
@@ -34,6 +36,9 @@ void main() {
           {
             'mealType': 'lunch',
             'name': 'Món đã duyệt',
+            'imageUrl':
+                'https://res.cloudinary.com/demo/image/upload/lunch.jpg',
+            'imageAlt': 'Ảnh món ăn cho bữa trưa',
             'servings': 1,
             'ingredients': [
               {
@@ -71,6 +76,9 @@ void main() {
     expect(resource.result.decision.questions.single.options,
         ['reported_none', 'reported_present', 'unknown']);
     expect(resource.result.meals.single.ingredients.single.amount, 20);
+    expect(resource.result.meals.single.imageUrl,
+        'https://res.cloudinary.com/demo/image/upload/lunch.jpg');
+    expect(resource.result.meals.single.imageAlt, 'Ảnh món ăn cho bữa trưa');
     expect(resource.result.meals.single.sourceDetails.single.title,
         'Dinh dưỡng lâm sàng');
     expect(resource.result.meals.single.sourceDetails.single.year, 2019);
@@ -92,6 +100,11 @@ void main() {
         {'state': 'eligible', 'allowedActions': <String>[]});
 
     expect(legacy.allows('recommend'), isTrue);
+    expect(legacy.allows('save'), isFalse);
+    expect(
+        NutritionDecisionModel.fromJson({'state': 'future_state'})
+            .allows('recommend'),
+        isFalse);
     expect(explicitlyBlocked.allows('recommend'), isFalse);
   });
   test(
@@ -116,5 +129,24 @@ void main() {
         isFalse);
     expect(NutritionResponseRules.denied(404), isTrue);
     expect(NutritionResponseRules.denied(503), isFalse);
+  });
+  test(
+      'AI failures explain configuration, credential and availability separately',
+      () {
+    expect(
+        NutritionErrorCopy.failedAssessment(
+            NutritionErrorCodes.aiNotConfigured),
+        contains('chưa được bật hoặc thiếu API key'));
+    expect(
+        NutritionErrorCopy.failedAssessment(
+            NutritionErrorCodes.aiAuthenticationFailed),
+        contains('API key của dịch vụ AI không hợp lệ'));
+    expect(
+        NutritionErrorCopy.failedAssessment(
+            NutritionErrorCodes.aiConfigurationInvalid),
+        contains('model hoặc endpoint AI không hợp lệ'));
+    expect(
+        NutritionErrorCopy.failedAssessment(NutritionErrorCodes.aiUnavailable),
+        contains('Không kết nối được dịch vụ AI'));
   });
 }

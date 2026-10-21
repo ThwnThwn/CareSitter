@@ -124,16 +124,43 @@ public sealed class OpenAiHealthDescriptionParserTests
     }
 
     [Fact]
-    public async Task Provider_permission_failure_is_not_retried()
+    public async Task Provider_authentication_failure_is_reported_precisely_and_not_retried()
     {
         var handler = new RecordingHandler(new HttpResponseMessage(HttpStatusCode.Forbidden));
         var parser = Parser(handler, EnabledOptions() with { MaxAttempts = 2 }, out var disposable);
         using (disposable)
         {
             var error = await Assert.ThrowsAsync<HealthParserException>(() => parser.ParseAsync(Request(), default));
-            Assert.Equal("nutrition.ai_unavailable", error.Code);
+            Assert.Equal("nutrition.ai_authentication_failed", error.Code);
             Assert.False(error.Retryable);
             Assert.Single(handler.IdempotencyKeys);
+        }
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task Provider_configuration_failure_is_reported_precisely(HttpStatusCode statusCode)
+    {
+        var parser = Parser(new RecordingHandler(new HttpResponseMessage(statusCode)), EnabledOptions(),
+            out var disposable);
+        using (disposable)
+        {
+            var error = await Assert.ThrowsAsync<HealthParserException>(() => parser.ParseAsync(Request(), default));
+            Assert.Equal("nutrition.ai_configuration_invalid", error.Code);
+            Assert.False(error.Retryable);
+        }
+    }
+
+    [Fact]
+    public async Task Disabled_parser_is_reported_as_not_configured()
+    {
+        var parser = Parser(new RecordingHandler(), new HealthParserOptions(), out var disposable);
+        using (disposable)
+        {
+            var error = await Assert.ThrowsAsync<HealthParserException>(() => parser.ParseAsync(Request(), default));
+            Assert.Equal("nutrition.ai_not_configured", error.Code);
+            Assert.False(error.Retryable);
         }
     }
 

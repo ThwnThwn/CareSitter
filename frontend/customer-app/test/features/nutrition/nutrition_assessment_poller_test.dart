@@ -1,9 +1,22 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
+import 'package:caresitter_customer/features/nutrition/domain/nutrition_assessment_rules.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_assessment_poller.dart';
 
 void main() {
+  test('scheduled polling delay stays below one minute', () {
+    var total = Duration.zero;
+    for (var attempt = 0;
+        attempt <= NutritionAssessmentRules.maximumPollAttempt;
+        attempt++) {
+      total += NutritionAssessmentRules.pollDelay(attempt);
+    }
+
+    expect(total, const Duration(seconds: 46));
+    expect(total < const Duration(minutes: 1), isTrue);
+  });
+
   testWidgets(
       'stopping a poll ignores its late response and cancels the next tick',
       (tester) async {

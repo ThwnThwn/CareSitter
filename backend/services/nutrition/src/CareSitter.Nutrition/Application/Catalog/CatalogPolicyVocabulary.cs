@@ -12,6 +12,16 @@ public static class CatalogPolicyVocabulary
         "breakfast", "lunch", "dinner"
     };
 
+    public static readonly IReadOnlySet<string> DietaryPatterns = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "vegetarian"
+    };
+
+    public static readonly IReadOnlySet<string> NutritionGoals = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "maintain", "gain", "lose"
+    };
+
     public static readonly IReadOnlySet<int> SupportedSchemaVersions = new HashSet<int> { 1, SchemaVersion };
 
     public static readonly IReadOnlySet<string> NutrientConstraintScopes = new HashSet<string>(StringComparer.Ordinal)

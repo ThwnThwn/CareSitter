@@ -14,6 +14,9 @@ $rolePath = Join-Path $backendRoot 'init-db/nutrition-service/02-runtime-role.sq
 $catalogPath = Join-Path $backendRoot 'init-db/nutrition-service/03-catalog-governance.sql'
 $constraintPath = Join-Path $backendRoot 'init-db/nutrition-service/04-catalog-nutrient-constraints.sql'
 $citationPath = Join-Path $backendRoot 'init-db/nutrition-service/05-recipe-source-citations.sql'
+$releaseEvidencePath = Join-Path $backendRoot 'init-db/nutrition-service/06-catalog-release-evidence.sql'
+$knowledgeReviewPath = Join-Path $backendRoot 'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql'
+$localDemoPath = Join-Path $backendRoot 'init-db/nutrition-service/08-local-demo-catalog.sql'
 foreach ($program in @('initdb.exe', 'pg_ctl.exe', 'psql.exe')) {
     if (!(Test-Path -LiteralPath (Join-Path $PostgresBin $program))) { throw "Missing PostgreSQL tool: $program" }
 }
@@ -90,9 +93,33 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Catalog nutrient constraint migration failed.' }
         & $psql @arguments -d nutrition -f $citationPath
         if ($LASTEXITCODE -ne 0) { throw 'Recipe source citation migration failed.' }
+        $releaseEvidenceExists = & $psql @arguments -d nutrition -Atc "SELECT to_regclass('nutrition.catalog_release_evidence') IS NOT NULL"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog release evidence schema.' }
+        if ($releaseEvidenceExists.Trim() -eq 'f') {
+            & $psql @arguments -d nutrition -f $releaseEvidencePath
+            if ($LASTEXITCODE -ne 0) { throw 'Catalog release evidence migration failed.' }
+        }
+        $knowledgeReviewExists = & $psql @arguments -d nutrition -Atc "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='require_catalog_knowledge_review' AND NOT tgisinternal)"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog knowledge review gate.' }
+        if ($knowledgeReviewExists.Trim() -eq 'f') {
+            & $psql @arguments -d nutrition -f $knowledgeReviewPath
+            if ($LASTEXITCODE -ne 0) { throw 'Catalog knowledge review migration failed.' }
+        }
+        # This migration is idempotent and also upgrades the guarded import function for existing local databases.
+        & $psql @arguments -d nutrition -f $localDemoPath
+        if ($LASTEXITCODE -ne 0) { throw 'Local demo catalog migration failed.' }
         $env:PGPASSWORD = $config.AppPassword
-        $verify = & $psql -X -h 127.0.0.1 -p $Port -U nutrition_app -d nutrition -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='nutrition'"
-        if ($LASTEXITCODE -ne 0 -or $verify.Trim() -ne '10') { throw 'Nutrition schema or runtime access is incomplete. No existing data was reset.' }
+        $requiredTables = @(
+            'assessment_jobs', 'assessments', 'catalog_audit', 'catalog_package_entries',
+            'catalog_packages', 'catalog_release_evidence', 'catalog_state', 'concepts',
+            'local_demo_catalog', 'meal_plans', 'preferences', 'recipe_source_citations', 'recipe_versions',
+            'recommendations', 'rule_versions'
+        )
+        $requiredTableSql = ($requiredTables | ForEach-Object { "('$_')" }) -join ','
+        $missingTables = & $psql -X -h 127.0.0.1 -p $Port -U nutrition_app -d nutrition -v ON_ERROR_STOP=1 -Atc "SELECT string_agg(required.name, ',') FROM (VALUES $requiredTableSql) required(name) WHERE to_regclass('nutrition.' || required.name) IS NULL"
+        if ($LASTEXITCODE -ne 0 -or ![string]::IsNullOrWhiteSpace($missingTables)) {
+            throw "Nutrition schema or runtime access is incomplete; missing tables: $missingTables. No existing data was reset."
+        }
         Write-Host "Nutrition PostgreSQL is running at 127.0.0.1:$Port (database nutrition, runtime nutrition_app)."
         Write-Host "Local configuration: $configPath"
         Write-Host 'The existing CareSitter database was not modified. Full schema and permission checks run at /health/ready.'

@@ -19,7 +19,9 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
         if (prepared.IsFailure) return prepared.Error;
         var meal = prepared.Value;
         var chosen = meal.Eligibility.State == "eligible"
-            ? MealConstraintPolicy.Choose(meal.Recipes, meal.Analyzed.Facts, meal.Rules) : null;
+            ? MealConstraintPolicy.Choose(meal.Recipes, meal.Analyzed.Facts, meal.Rules,
+                meal.Health.Evidence.GetValueOrDefault("dietaryPattern", "regular"),
+                meal.Health.Evidence.GetValueOrDefault("nutritionGoal", "maintain")) : null;
         var payload = meal.Complete(chosen);
         return new NutritionResourceDraft(payload.Decision.State, NutritionJson.Write(payload));
     }

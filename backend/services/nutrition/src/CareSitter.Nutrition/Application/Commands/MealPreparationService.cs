@@ -40,13 +40,13 @@ internal sealed class MealPreparationService
             || !previous.AppliedRules.Order().SequenceEqual(activeRules)))
             return NutritionAccessRules.ContentChanged();
 
-        return new MealPreparation(assessment.Id, date, analyzed, previous, recipes, rules, activeRules, eligibility, revision);
+        return new MealPreparation(assessment.Id, date, analyzed, previous, recipes, rules, activeRules, eligibility, revision, health);
     }
 }
 
 internal sealed record MealPreparation(Guid AssessmentId, DateOnly PlannedDate, AssessmentPayload Analyzed,
     MealPayload? Previous, Recipe[] Recipes, IReadOnlyList<DietaryRule> Rules, Guid[] ActiveRules,
-    NutritionDecision Eligibility, long CatalogRevision)
+    NutritionDecision Eligibility, long CatalogRevision, NormalizedHealth Health)
 {
     public MealPayload Complete(Recipe[]? meals)
     {
