@@ -22,6 +22,7 @@ class LoginAuthFields extends StatelessWidget {
       required this.passCtrl,
       required this.obscurePass,
       required this.rememberLogin,
+      required this.validationEnabled,
       required this.onRememberLoginChanged,
       required this.togglePassword,
       required this.login});
@@ -31,6 +32,7 @@ class LoginAuthFields extends StatelessWidget {
   final TextEditingController passCtrl;
   final bool obscurePass;
   final bool rememberLogin;
+  final bool validationEnabled;
   final ValueChanged<bool> onRememberLoginChanged;
   final void Function() togglePassword;
   final Future<void> Function() login;
@@ -62,7 +64,9 @@ class LoginAuthFields extends StatelessWidget {
       child: AutofillGroup(
         child: Form(
           key: formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: validationEnabled
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

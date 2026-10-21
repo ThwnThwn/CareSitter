@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "packageKey": "synthetic-manual-graph-v1",
+  "bundleFileSha256": "d73dd190d731bda08bcf3ac12051f53aa32739b23b61a353576d113ccfd59969",
+  "contentStatus": "review_ready",
+  "calculationBasis": "Synthetic fixture only.",
+  "requiredNutrients": ["energy_kcal", "protein_g", "carbohydrate_g", "fat_g", "fiber_g", "sodium_mg"],
+  "recipes": [],
+  "rules": [],
+  "clinicalReview": {
+    "reviewerName": "Synthetic reviewer",
+    "credentials": "Automated test fixture only",
+    "reviewedAt": "2026-10-20T00:00:00+07:00",
+    "decision": "approved",
+    "notes": "Not clinical approval.",
+    "reviewerId": "dietitian-fixture"
+  }
+}

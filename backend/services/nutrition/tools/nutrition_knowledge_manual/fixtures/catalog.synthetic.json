@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "packageKey": "synthetic-manual-graph-v1",
+  "supportedScopes": [
+    {
+      "code": "synthetic-adult-baseline",
+      "population": "adult",
+      "conditionCodes": ["SYNTHETIC_CONDITION"],
+      "medicationPolicy": "reported_none_only",
+      "blockedSpecialNeeds": []
+    }
+  ],
+  "citations": [
+    {
+      "id": "SYNTHETIC_SOURCE",
+      "title": "Nguồn tổng hợp kiểm thử",
+      "organization": "CareSitter engineering",
+      "year": 2026,
+      "locator": "fixture",
+      "reference": "synthetic://manual-graph"
+    }
+  ],
+  "concepts": [
+    {"code": "SYNTHETIC_CONDITION", "kind": "condition", "aliases": ["Tình trạng giả lập"], "version": 1},
+    {"code": "SYNTHETIC_RICE", "kind": "ingredient", "aliases": ["Gạo giả lập"], "version": 1},
+    {"code": "SYNTHETIC_PEANUT", "kind": "food_allergy", "aliases": ["Lạc giả lập"], "version": 1}
+  ],
+  "recipes": [
+    {
+      "recipeId": "11111111-1111-4111-8111-111111111111",
+      "version": 1,
+      "payload": {
+        "name": "Bữa sáng giả lập",
+        "mealType": "breakfast",
+        "servings": 1,
+        "ingredients": [{"code": "SYNTHETIC_RICE", "name": "Gạo giả lập", "amount": 50, "unit": "g", "basis": "raw"}],
+        "allergens": ["SYNTHETIC_PEANUT"],
+        "nutrients": {"energy_kcal": 180, "sodium_mg": 20},
+        "preparationSteps": ["Dữ liệu tổng hợp, không dùng làm hướng dẫn ăn uống."],
+        "sources": ["SYNTHETIC_SOURCE"],
+        "allergenDataComplete": true
+      }
+    }
+  ],
+  "rules": [
+    {
+      "ruleId": "22222222-2222-4222-8222-222222222222",
+      "version": 1,
+      "payload": {
+        "conditionCode": "SYNTHETIC_CONDITION",
+        "prerequisites": [],
+        "excludedIngredients": ["SYNTHETIC_PEANUT"],
+        "dailyMaximums": {"sodium_mg": 2000},
+        "sources": ["SYNTHETIC_SOURCE"],
+        "nutrientConstraints": []
+      }
+    }
+  ]
+}

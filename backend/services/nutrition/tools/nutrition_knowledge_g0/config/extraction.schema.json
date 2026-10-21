@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entities", "relations", "claims"],
+  "properties": {
+    "entities": {
+      "type": "array",
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "name", "span_id", "evidence_quote"],
+        "properties": {
+          "type": {"enum": ["Food", "Nutrient", "Condition", "Allergen", "Preparation"]},
+          "name": {"type": "string", "minLength": 1, "maxLength": 120},
+          "span_id": {"type": "string", "minLength": 1},
+          "evidence_quote": {"type": "string", "minLength": 1, "maxLength": 96}
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "subject", "object", "span_id", "evidence_quote"],
+        "properties": {
+          "type": {"enum": ["CONTAINS", "AVOID_FOR", "ALIAS_OF", "PREPARED_AS"]},
+          "subject": {"type": "string", "minLength": 1, "maxLength": 120},
+          "object": {"type": "string", "minLength": 1, "maxLength": 120},
+          "span_id": {"type": "string", "minLength": 1},
+          "evidence_quote": {"type": "string", "minLength": 1, "maxLength": 96}
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "subject", "value", "unit", "span_id", "evidence_quote"],
+        "properties": {
+          "type": {"enum": ["ENERGY", "NUTRIENT_AMOUNT", "SODIUM_AMOUNT", "SALT_EQUIVALENT"]},
+          "subject": {"type": "string", "minLength": 1, "maxLength": 120},
+          "value": {"type": "number"},
+          "unit": {"type": "string", "minLength": 1, "maxLength": 32},
+          "span_id": {"type": "string", "minLength": 1},
+          "evidence_quote": {"type": "string", "minLength": 1, "maxLength": 96}
+        }
+      }
+    }
+  }
+}

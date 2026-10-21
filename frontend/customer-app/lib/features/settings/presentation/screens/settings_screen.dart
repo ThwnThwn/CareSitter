@@ -10,8 +10,8 @@ import '../widgets/settings_beneficiaries_section.dart';
 import '../widgets/settings_account_section.dart';
 import '../widgets/settings_security_section.dart';
 import '../widgets/settings_support_section.dart';
-import '../widgets/settings_logout_button.dart';
 
+/// Màn hình Cài đặt & Hồ sơ của tôi — thiết kế chuẩn theo Stitch "Hồ sơ của tôi - CareSitter Redesign".
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -22,39 +22,64 @@ class SettingsScreen extends ConsumerWidget {
     final totalSpent = bookings
         .where((b) => b.status == 'completed')
         .fold(0.0, (sum, b) => sum + b.totalPrice);
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(slivers: [
-        SliverToBoxAdapter(
-          child:
-              SettingsFlatHeader(topPadding: MediaQuery.paddingOf(context).top),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
-          sliver: SliverList.list(children: [
-            FadeSlideStaggered(
-                index: 0,
-                child: SettingsProfileCard(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SettingsFlatHeader(
+              topPadding: MediaQuery.paddingOf(context).top,
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              100,
+            ),
+            sliver: SliverList.list(
+              children: [
+                // 1. Profile Hero Card
+                FadeSlideStaggered(
+                  index: 0,
+                  child: SettingsProfileCard(
                     profile: profile,
                     bookingCount: bookings.length,
-                    totalSpent: totalSpent)),
-            const SizedBox(height: AppSpacing.section),
-            const FadeSlideStaggered(
-                index: 1, child: SettingsBeneficiariesSection()),
-            const SizedBox(height: AppSpacing.section),
-            const SettingsAccountSection(),
-            const SizedBox(height: AppSpacing.md),
-            const FadeSlideStaggered(
-                index: 3, child: SettingsSecuritySection()),
-            const SizedBox(height: AppSpacing.md),
-            const FadeSlideStaggered(index: 4, child: SettingsSupportSection()),
-            const SizedBox(height: AppSpacing.lg),
-            const FadeSlideStaggered(index: 5, child: SettingsLogoutButton()),
-            const SizedBox(height: AppSpacing.xl),
-          ]),
-        ),
-      ]),
+                    totalSpent: totalSpent,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // 2. Người thân được chăm sóc
+                const FadeSlideStaggered(
+                  index: 1,
+                  child: SettingsBeneficiariesSection(),
+                ),
+                const SizedBox(height: 18),
+
+                // 3. Tài khoản
+                const SettingsAccountSection(),
+                const SizedBox(height: 18),
+
+                // 4. Bảo mật
+                const FadeSlideStaggered(
+                  index: 3,
+                  child: SettingsSecuritySection(),
+                ),
+                const SizedBox(height: 18),
+
+                // 5. Hỗ trợ & Điều khoản & Đăng xuất
+                const FadeSlideStaggered(
+                  index: 4,
+                  child: SettingsSupportSection(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

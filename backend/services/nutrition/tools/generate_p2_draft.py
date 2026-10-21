@@ -22,6 +22,16 @@ PACKAGE_KEY = "adult-hypertension-p2-technical-draft"
 NAMESPACE = uuid.UUID("da02b691-8293-40ed-8ed0-791825c1a62f")
 SOURCE_PAGE = "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham"
 API = "https://viendinhduong.vn/api/fe/foodNatunal/getPageFoodData?page=1&pageSize=50&name={}"
+IMAGE_URLS = {
+    "breakfast": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+    "lunch": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+    "dinner": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+}
+IMAGE_ALTS = {
+    "breakfast": "Ảnh minh hoạ món ăn cho bữa sáng",
+    "lunch": "Ảnh minh hoạ món ăn cho bữa trưa",
+    "dinner": "Ảnh minh hoạ món ăn cho bữa tối",
+}
 
 NUTRIENT_KEYS = {
     "energy_kcal": ("energy", "kcal"),
@@ -78,6 +88,21 @@ RECIPES = [
     ("dinner", "Cơm đậu xanh, rau muống và cà chua", [("RICE_WHITE_RAW", 50), ("MUNG_BEAN_DRY", 30), ("WATER_SPINACH_FRESH", 200), ("TOMATO_FRESH", 50)]),
     ("dinner", "Khoai lang, đậu tương và cải thìa", [("SWEET_POTATO_BOILED", 250), ("SOYBEAN_DRY", 30), ("BOK_CHOY_BOILED", 150)]),
     ("dinner", "Cơm lạc vừng, bắp cải và hành tây", [("RICE_WHITE_RAW", 50), ("PEANUT_DRY", 25), ("SESAME_DRY", 5), ("CABBAGE_BOILED", 150), ("ONION_FRESH", 50)]),
+    # Local-demo expansion: these combinations use only the same pinned food
+    # snapshot and calculation contract as the original twelve recipes. They are
+    # still technical candidates and do not bypass data or clinical review.
+    ("breakfast", "Cháo gạo tẻ đậu phụ và cà chua", [("RICE_WHITE_RAW", 50), ("TOFU_BOILED", 80), ("TOMATO_FRESH", 80)]),
+    ("breakfast", "Khoai lang luộc với đậu xanh", [("SWEET_POTATO_BOILED", 180), ("MUNG_BEAN_DRY", 25)]),
+    ("breakfast", "Cháo gạo tẻ lạc vừng", [("RICE_WHITE_RAW", 45), ("PEANUT_DRY", 15), ("SESAME_DRY", 5)]),
+    ("breakfast", "Khoai lang, đậu tương và bắp cải", [("SWEET_POTATO_BOILED", 180), ("SOYBEAN_DRY", 20), ("CABBAGE_BOILED", 100)]),
+    ("lunch", "Cơm đậu phụ, rau muống và cà chua", [("RICE_WHITE_RAW", 60), ("TOFU_BOILED", 100), ("WATER_SPINACH_FRESH", 150), ("TOMATO_FRESH", 80)]),
+    ("lunch", "Cơm đậu xanh, cải thìa và hành tây", [("RICE_WHITE_RAW", 60), ("MUNG_BEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("ONION_FRESH", 50)]),
+    ("lunch", "Cơm đậu tương, bắp cải và su su", [("RICE_WHITE_RAW", 60), ("SOYBEAN_DRY", 30), ("CABBAGE_BOILED", 150), ("CHAYOTE_FRESH", 100)]),
+    ("lunch", "Cơm lạc vừng, rau muống và cà chua", [("RICE_WHITE_RAW", 60), ("PEANUT_DRY", 25), ("SESAME_DRY", 5), ("WATER_SPINACH_FRESH", 150), ("TOMATO_FRESH", 80)]),
+    ("dinner", "Cơm đậu phụ, rau muống và su su", [("RICE_WHITE_RAW", 50), ("TOFU_BOILED", 100), ("WATER_SPINACH_FRESH", 150), ("CHAYOTE_FRESH", 100)]),
+    ("dinner", "Cơm đậu xanh, cải thìa và cà chua", [("RICE_WHITE_RAW", 50), ("MUNG_BEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("TOMATO_FRESH", 80)]),
+    ("dinner", "Khoai lang, đậu phụ và bắp cải", [("SWEET_POTATO_BOILED", 250), ("TOFU_BOILED", 100), ("CABBAGE_BOILED", 150)]),
+    ("dinner", "Cơm đậu tương, cải thìa và hành tây", [("RICE_WHITE_RAW", 50), ("SOYBEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("ONION_FRESH", 50)]),
 ]
 
 
@@ -162,6 +187,8 @@ def build_recipe(food_by_code: dict[str, dict], meal_type: str, name: str, items
             "versionId": version_id,
             "name": name,
             "mealType": meal_type,
+            "imageUrl": IMAGE_URLS[meal_type],
+            "imageAlt": IMAGE_ALTS[meal_type],
             "servings": 1,
             "ingredients": ingredients,
             "allergens": allergens([code for code, _ in items]),
@@ -172,6 +199,7 @@ def build_recipe(food_by_code: dict[str, dict], meal_type: str, name: str, items
             ],
             "sources": ["VIEN_DINH_DUONG_2019", "VIETNAM_FOOD_COMPOSITION_2017"],
             "allergenDataComplete": True,
+            "dietaryPatterns": ["vegetarian"],
         },
     }
     nutrient_evidence = [{

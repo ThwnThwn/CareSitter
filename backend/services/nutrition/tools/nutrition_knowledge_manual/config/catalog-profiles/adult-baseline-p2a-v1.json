@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "profile_id": "adult-baseline-p2a-v1",
+  "package_key": "adult-baseline-p2a-v1",
+  "release_profile": "adult_baseline_v1",
+  "authoring_enabled": true,
+  "release_enabled": false,
+  "product_semantics": "meal_suggestions",
+  "scope": {
+    "code": "adult-baseline-v1",
+    "population": "adult",
+    "conditionCodes": [],
+    "medicationPolicy": "reported_none_only",
+    "blockedSpecialNeeds": [
+      "KIDNEY_DISEASE",
+      "DYSPHAGIA",
+      "TUBE_FEEDING",
+      "FLUID_RESTRICTION",
+      "ELECTROLYTE_RESTRICTION"
+    ]
+  },
+  "food_source_id": "VIETNAM_FOOD_COMPOSITION_2017",
+  "food_reference_code_field": "ninCode",
+  "source_rule_policy": "omit_for_baseline",
+  "required_nutrients": {
+    "energy_kcal": "kcal",
+    "protein_g": "g",
+    "carbohydrate_g": "g",
+    "fat_g": "g",
+    "fiber_g": "g",
+    "sodium_mg": "mg"
+  },
+  "expected_recipe_counts": {
+    "breakfast": 8,
+    "lunch": 8,
+    "dinner": 8
+  },
+  "factor_policy": {
+    "status": "unresolved",
+    "edible_portion_factor": 1,
+    "yield_factor": 1,
+    "rationale": "Retention, yield and edible-portion policy has not been clinically approved."
+  },
+  "ingredient_allergens": {
+    "RICE_WHITE_RAW": [],
+    "MUNG_BEAN_DRY": [],
+    "SWEET_POTATO_BOILED": [],
+    "TOFU_BOILED": ["SOY"],
+    "BOK_CHOY_BOILED": [],
+    "SOYBEAN_DRY": ["SOY"],
+    "PEANUT_DRY": ["PEANUT"],
+    "SESAME_DRY": ["SESAME"],
+    "TOMATO_FRESH": [],
+    "WATER_SPINACH_FRESH": [],
+    "CABBAGE_BOILED": [],
+    "CHAYOTE_FRESH": [],
+    "ONION_FRESH": []
+  },
+  "default_recipe_unresolved_items": [
+    "Portion sizes and preparation steps require review by a dietitian or physician.",
+    "These three meal suggestions are not represented as a complete daily diet."
+  ],
+  "daily_targets": {},
+  "input_file_sha256": {
+    "draft": "bb2a651ba64517f0b31267cb1c3a2222c18b46c241ebc6d78106c7ff121aacb4",
+    "food_snapshot": "f1004f8b54689ee2194255b96345cb2abde198c1837e6f9db6b2531d6c1e875b"
+  },
+  "blockers": [
+    "Retention and yield factors have no clinical approval.",
+    "Portion sizes and preparation steps have no clinical approval.",
+    "No clinical reviewer is assigned.",
+    "Candidate artifacts must pass catalog review and knowledge review before release."
+  ]
+}

@@ -3,7 +3,7 @@ import 'nutrition_meal_card.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
-import '../../domain/nutrition_error_codes.dart';
+import '../../domain/nutrition_error_copy.dart';
 
 class NutritionResult extends StatelessWidget {
   const NutritionResult(
@@ -33,8 +33,8 @@ class NutritionResult extends StatelessWidget {
               'Cần hướng dẫn phù hợp trước khi gợi ý',
           'awaiting_confirmation': 'Kiểm tra bản tóm tắt',
           'eligible': 'Thông tin đã được xác nhận',
-          'no_content': 'Chưa có công thức đã duyệt cho nhu cầu này',
-          'no_match': 'Chưa tìm được món đáp ứng các yêu cầu',
+          'no_content': 'Chưa có dữ liệu thực đơn để gợi ý',
+          'no_match': 'Chưa có thực đơn phù hợp',
           'failed': 'Chưa phân tích được thông tin',
           'stale': 'Thông tin đã thay đổi — cần kiểm tra lại',
           'suggested':
@@ -46,10 +46,16 @@ class NutritionResult extends StatelessWidget {
       const SizedBox(height: AppSpacing.compact)
     ];
     widgets.add(NutritionFacts(decision: decision, data: data, state: state));
+    if (state == 'no_content') {
+      widgets.add(const Text(
+          'Kho thực đơn hiện chưa có món đủ dữ liệu để gợi ý. Thông tin sức khỏe của bạn đã được giữ lại; vui lòng kiểm tra lại sau.'));
+    }
+    if (state == 'no_match') {
+      widgets.add(const Text(
+          'Chưa tìm được món đáp ứng các yêu cầu sức khỏe đã xác nhận. Thông tin của bạn đã được giữ lại; vui lòng kiểm tra lại sau.'));
+    }
     if (state == 'failed') {
-      widgets.add(Text(data.errorCode == NutritionErrorCodes.aiUnavailable
-          ? 'Dịch vụ AI chưa được cấu hình. Thông tin đã nhập vẫn được giữ.'
-          : 'Phân tích chưa thành công. Thông tin đã nhập vẫn được giữ.'));
+      widgets.add(Text(NutritionErrorCopy.failedAssessment(data.errorCode)));
     }
     widgets.add(const SizedBox(height: AppSpacing.compact));
     if (state == 'awaiting_confirmation' && decision.allows('confirm')) {
@@ -74,8 +80,19 @@ class NutritionResult extends StatelessWidget {
           onPressed: flow.loading ? null : () => c.assess(retryFailed: true),
           child: const Text('Thử phân tích lại')));
     }
-    for (final meal in data.meals) {
-      if (state != 'stale') {
+    if (state != 'stale') {
+      final meals = data.meals;
+      for (int i = 0; i < meals.length; i++) {
+        final meal = meals[i];
+        // Divider nhẹ giữa các section bữa ăn (trừ section đầu tiên)
+        if (i > 0) {
+          widgets.add(const Divider(
+            height: AppSpacing.compact,
+            indent: AppSpacing.section,
+            endIndent: AppSpacing.section,
+          ));
+        }
+        widgets.add(_MealSectionHeader(mealType: meal.mealType));
         widgets.add(NutritionMealCard(
             meal: meal,
             loading: flow.loading,
@@ -92,4 +109,80 @@ class NutritionResult extends StatelessWidget {
     }
     return widgets;
   }
+}
+
+// ── Section header: icon + label bữa ăn ─────────────────────────────────────
+
+class _MealSectionHeader extends StatelessWidget {
+  const _MealSectionHeader({required this.mealType});
+
+  final String mealType;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _sectionMeta(mealType);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.compact,
+        AppSpacing.section,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: meta.bgColor,
+              borderRadius: BorderRadius.circular(AppRadius.compact),
+            ),
+            child: Icon(meta.icon, size: 16, color: meta.iconColor),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            meta.label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _SectionMeta _sectionMeta(String type) => switch (type) {
+        'lunch' => const _SectionMeta(
+            label: 'Bữa trưa',
+            icon: Icons.wb_sunny_outlined,
+            iconColor: Color(0xFFE67E22),
+            bgColor: Color(0xFFFFF3E0),
+          ),
+        'dinner' => const _SectionMeta(
+            label: 'Bữa tối',
+            icon: Icons.nightlight_round,
+            iconColor: Color(0xFF5C6BC0),
+            bgColor: Color(0xFFEDE7F6),
+          ),
+        _ => const _SectionMeta(
+            label: 'Bữa sáng',
+            icon: Icons.wb_twilight_outlined,
+            iconColor: AppColors.primary,
+            bgColor: AppColors.primaryContainer,
+          ),
+      };
+}
+
+class _SectionMeta {
+  const _SectionMeta({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+  });
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
 }

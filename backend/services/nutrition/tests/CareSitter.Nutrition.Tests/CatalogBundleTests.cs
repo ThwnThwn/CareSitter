@@ -94,6 +94,82 @@ public sealed class CatalogBundleTests
     }
 
     [Fact]
+    public void Unsupported_or_duplicate_dietary_pattern_is_rejected()
+    {
+        var bundle = Bundle();
+        bundle = bundle with
+        {
+            Recipes =
+            [
+                bundle.Recipes[0] with
+                {
+                    Payload = bundle.Recipes[0].Payload with
+                    {
+                        DietaryPatterns = ["vegetarian", "vegetarian", "pescatarian"]
+                    }
+                },
+                .. bundle.Recipes[1..]
+            ]
+        };
+
+        var result = CatalogBundleValidator.Validate(bundle);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "duplicate" && issue.Path.EndsWith("dietaryPatterns", StringComparison.Ordinal));
+        Assert.Contains(result.Issues, issue => issue.Code == "unsupported" && issue.Path.EndsWith("dietaryPatterns", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Recipe_image_requires_https_url_and_accessible_alt_text()
+    {
+        var bundle = Bundle();
+        var recipe = bundle.Recipes[0];
+        bundle = bundle with
+        {
+            Recipes =
+            [
+                recipe with
+                {
+                    Payload = recipe.Payload with
+                    {
+                        ImageUrl = "http://res.cloudinary.com/demo/image/upload/breakfast.jpg",
+                        ImageAlt = null
+                    }
+                },
+                .. bundle.Recipes[1..]
+            ]
+        };
+
+        var result = CatalogBundleValidator.Validate(bundle);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "https_required" && issue.Path.EndsWith("imageUrl", StringComparison.Ordinal));
+        Assert.Contains(result.Issues, issue => issue.Code == "required" && issue.Path.EndsWith("imageAlt", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Recipe_image_round_trips_through_catalog_json()
+    {
+        const string imageUrl = "https://res.cloudinary.com/demo/image/upload/breakfast.jpg";
+        const string imageAlt = "Ảnh minh hoạ món cháo cho bữa sáng";
+        var bundle = Bundle();
+        var recipe = bundle.Recipes[0];
+        bundle = bundle with
+        {
+            Recipes =
+            [
+                recipe with { Payload = recipe.Payload with { ImageUrl = imageUrl, ImageAlt = imageAlt } },
+                .. bundle.Recipes[1..]
+            ]
+        };
+
+        var restored = NutritionJson.Read<CatalogBundle>(NutritionJson.Write(bundle));
+        var result = CatalogBundleValidator.Validate(restored);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Issues.Select(x => $"{x.Path}: {x.Code}")));
+        Assert.Equal(imageUrl, restored.Recipes[0].Payload.ImageUrl);
+        Assert.Equal(imageAlt, restored.Recipes[0].Payload.ImageAlt);
+    }
+
+    [Fact]
     public void Clinician_only_conditions_can_be_concepts_but_never_published_as_rules()
     {
         var bundle = Bundle();

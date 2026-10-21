@@ -189,7 +189,10 @@ try {
         'init-db/nutrition-service/01-nutrition-workflow.sql',
         'init-db/nutrition-service/03-catalog-governance.sql',
         'init-db/nutrition-service/04-catalog-nutrient-constraints.sql',
-        'init-db/nutrition-service/05-recipe-source-citations.sql')) {
+        'init-db/nutrition-service/05-recipe-source-citations.sql',
+        'init-db/nutrition-service/06-catalog-release-evidence.sql',
+        'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql',
+        'init-db/nutrition-service/08-local-demo-catalog.sql')) {
         Invoke-AdminPsql -Database $databaseName -File (Join-Path $backendRoot $migration) | Out-Null
     }
     Invoke-AdminPsql -Database $databaseName -Sql @"
@@ -198,12 +201,72 @@ GRANT USAGE ON SCHEMA nutrition TO nutrition_app;
 GRANT SELECT,INSERT,UPDATE,DELETE ON nutrition.assessments,nutrition.assessment_jobs,
  nutrition.recommendations,nutrition.meal_plans,nutrition.preferences TO nutrition_app;
 GRANT SELECT ON nutrition.recipe_versions,nutrition.rule_versions,nutrition.concepts,
- nutrition.recipe_source_citations TO nutrition_app;
+ nutrition.recipe_source_citations,nutrition.local_demo_catalog TO nutrition_app;
 GRANT SELECT,UPDATE(id) ON nutrition.catalog_state TO nutrition_app;
 "@ | Out-Null
 
     $packageId = [Guid]::NewGuid()
-    $payload = (Get-Content -LiteralPath $catalogFixturePath -Raw).Replace("'", "''")
+    # Expand the isolated synthetic fixture to the P2A release shape; never write it to the real catalog.
+    $fixture = Get-Content -LiteralPath $catalogFixturePath -Raw | ConvertFrom-Json
+    $recipes = @($fixture.recipes)
+    foreach ($meal in @('breakfast', 'lunch', 'dinner')) {
+        $original = @($recipes | Where-Object { $_.payload.mealType -eq $meal })
+        while (@($recipes | Where-Object { $_.payload.mealType -eq $meal }).Count -lt 4) {
+            $copy = $original[0] | ConvertTo-Json -Depth 100 | ConvertFrom-Json
+            $copy.recipeId = [Guid]::NewGuid().ToString()
+            $copy.payload.versionId = [Guid]::NewGuid().ToString()
+            $copy.payload.name += ' (smoke variant)'
+            $recipes += $copy
+        }
+    }
+    $fixture.recipes = $recipes
+    foreach ($recipe in $fixture.recipes) {
+        foreach ($nutrient in @('carbohydrate_g', 'fat_g', 'fiber_g')) {
+            $recipe.payload.nutrients | Add-Member -NotePropertyName $nutrient -NotePropertyValue 1 -Force
+        }
+    }
+    $bundleJson = $fixture | ConvertTo-Json -Depth 100 -Compress
+    $bundleSha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($bundleJson))).ToLowerInvariant()
+    $evidence = [ordered]@{
+        schemaVersion = 1
+        packageKey = $fixture.packageKey
+        bundleFileSha256 = $bundleSha
+        contentStatus = 'review_ready'
+        releaseProfile = 'adult_baseline_v1'
+        requiredNutrients = @('energy_kcal', 'protein_g', 'carbohydrate_g', 'fat_g', 'fiber_g', 'sodium_mg')
+        recipes = @($fixture.recipes | ForEach-Object {
+            $nutrients = $_.payload.nutrients
+            [ordered]@{
+                recipeVersionId = $_.payload.versionId
+                ingredients = @($_.payload.ingredients)
+                nutrients = @($nutrients.PSObject.Properties | ForEach-Object { @{ key = $_.Name; value = $_.Value } })
+                unresolvedItems = @()
+            }
+        })
+        rules = @()
+        clinicalReview = @{
+            reviewerName = 'Synthetic smoke reviewer'
+            reviewerId = 'synthetic-smoke-reviewer'
+            credentials = 'Automated test fixture only'
+            reviewedAt = [DateTimeOffset]::UtcNow.ToString('O')
+            decision = 'approved'
+        }
+        knowledgeReview = @{
+            schemaVersion = 1
+            candidateGraphSha256 = ('b' * 64)
+            decisionLedgerSha256 = ('c' * 64)
+            reviewedGraphSha256 = ('d' * 64)
+            candidateCount = @($fixture.recipes).Count
+            approvedCount = @($fixture.recipes).Count
+            pendingCount = 0
+            rejectedCount = 0
+            sources = @(@{ sourceRevisionId = 'synthetic-p4-smoke@1'; rightsStatus = 'permitted' })
+            clinicalReviewerIds = @('synthetic-smoke-reviewer')
+            decision = 'approved'
+        }
+    }
+    $payload = $bundleJson.Replace("'", "''")
+    $evidenceJson = ($evidence | ConvertTo-Json -Depth 100 -Compress).Replace("'", "''")
     $importOutput = Invoke-AdminPsql -Database $databaseName -TuplesOnly -Sql @"
 SET SESSION AUTHORIZATION nutrition_catalog_importer;
 SELECT nutrition.import_catalog_bundle('$packageId','p4-api-smoke','$payload'::jsonb);
@@ -213,6 +276,7 @@ SELECT nutrition.import_catalog_bundle('$packageId','p4-api-smoke','$payload'::j
     if ($digest -notmatch '^[a-f0-9]{64}$') { throw 'Catalog import did not return a valid digest.' }
     Invoke-AdminPsql -Database $databaseName -TuplesOnly -Sql @"
 SET SESSION AUTHORIZATION nutrition_catalog_reviewer;
+SELECT nutrition.record_catalog_release_evidence('$packageId','$digest','$payload'::jsonb,'$evidenceJson'::jsonb);
 SELECT nutrition.review_catalog_bundle('$packageId','$digest');
 "@ | Out-Null
     Invoke-AdminPsql -Database $databaseName -TuplesOnly -Sql @"
@@ -373,7 +437,7 @@ SELECT nutrition.publish_catalog_bundle('$packageId','$digest');
     $options = Invoke-SmokeRequest -Method Get -Path "/api/v1/beneficiaries/$beneficiaryId/meal-recommendations/$($recommend.Body.id)/replacement-options?mealType=lunch" -Headers $sessionHeaders
     Assert-Equal $options.Status 200 'Replacement options HTTP status'
     $replacementOptions = @($options.Body)
-    Assert-Equal $replacementOptions.Count 1 'Replacement option count'
+    if ($replacementOptions.Count -lt 1) { throw 'Replacement options must contain at least one eligible recipe.' }
     Assert-Equal @($replacementOptions[0].sourceDetails).Count 1 'Replacement source detail count'
 
     $replace = Invoke-SmokeRequest -Method Post -Path "/api/v1/beneficiaries/$beneficiaryId/meal-recommendations/$($recommend.Body.id)/replacements" -Headers $sessionHeaders -Body @{

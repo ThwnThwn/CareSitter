@@ -45,7 +45,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var hold = await AddHoldAsync(db, booking, committed: true);
         var handler = new CancelBookingCommandHandler(new BookingRepository(db),
             new Actor(booking.CustomerId, "CUSTOMER"), new SystemClock(), new Promotions(),
-            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new Mapper());
 
         var result = await handler.Handle(new(booking.Id, "Đổi kế hoạch"), default);
 
@@ -78,7 +78,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
 
         var handler = new CancelBookingCommandHandler(new BookingRepository(db),
             new Actor(booking.CustomerId, "CUSTOMER"), new SystemClock(), new Promotions(),
-            new BookingSyncService(db), DisabledBookingChat(db), new PostCommit(), new Mapper());
+            new BookingSyncService(db), DisabledBookingChat(db), new Mapper());
         var result = await handler.Handle(new(booking.Id, null), default);
 
         Assert.True(result.IsSuccess, result.Error.Message);
@@ -322,7 +322,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
 
         CompleteBookingCommandHandler Handler(ICurrentUser actor) => new(
             new BookingRepository(db), actor, new Disputes(), new BookingSyncService(db),
-            DisabledBookingChat(db), new PostCommit(), new Audit(), new Mapper());
+            DisabledBookingChat(db), new Audit(), new Mapper());
         var customerResult = await Handler(new Actor(booking.CustomerId, "CUSTOMER"))
             .Handle(new(booking.Id), default);
 
@@ -380,14 +380,14 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         Assert.Equal(BookingStatus.CaregiverAccepted, booking.Status);
         Assert.Equal(acceptedVersion, booking.SyncVersion);
         var enRoute = await new StartBookingEnRouteCommandHandler(
-            repository, actor, people, sync, chat, postCommit, mapper)
+            repository, actor, people, sync, chat, mapper)
             .Handle(new(booking.Id), default);
         Assert.True(enRoute.IsSuccess, enRoute.Error.Message);
 
         var policy = Options.Create(new CheckInOptions());
         var checkIn = new CheckInBookingCommandHandler(repository, actor, people, new Catalog(),
             policy, new CheckInBookingCommandValidator(policy), sync,
-            chat, postCommit, mapper);
+            chat, mapper, new SystemClock());
         var outside = await checkIn.Handle(new(booking.Id, 11, 107, 5), default);
         Assert.Equal("booking.geofence", outside.Error.Code);
         var inside = await checkIn.Handle(new(booking.Id, 10.762622, 106.660172, 5), default);
@@ -401,13 +401,13 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
             task.MarkCompleted(caregiverUserId);
         await db.SaveChangesAsync();
         var requested = await new RequestBookingCheckoutCommandHandler(
-            repository, actor, people, sync, chat, postCommit, mapper)
+            repository, actor, people, sync, chat, mapper)
             .Handle(new(booking.Id), default);
         Assert.True(requested.IsSuccess, requested.Error.Message);
         Assert.Equal(BookingStatus.CheckoutPendingReview, booking.Status);
         var completed = await new CompleteBookingCommandHandler(repository,
             new Actor(booking.CustomerId, "CUSTOMER"), new Disputes(), sync,
-            chat, postCommit, new Audit(), mapper)
+            chat, new Audit(), mapper)
             .Handle(new(booking.Id), default);
         Assert.True(completed.IsSuccess, completed.Error.Message);
         await db.Entry(booking).ReloadAsync();

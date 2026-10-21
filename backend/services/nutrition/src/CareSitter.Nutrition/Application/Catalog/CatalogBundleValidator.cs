@@ -135,11 +135,40 @@ public static class CatalogBundleValidator
         foreach (var allergen in recipe.Allergens ?? [])
             if (!concepts.TryGetValue(allergen, out var concept) || concept.Kind != "food_allergy") add(path + ".payload.allergens", "unknown_reference", $"Allergen {allergen} must reference a food_allergy concept.");
         if (!recipe.AllergenDataComplete) add(path + ".payload.allergenDataComplete", "required", "Published recipes require complete allergen data.");
+        if (recipe.DietaryPatterns is { } patterns)
+        {
+            if (patterns.Distinct(StringComparer.Ordinal).Count() != patterns.Length)
+                add(path + ".payload.dietaryPatterns", "duplicate", "Dietary patterns cannot be repeated.");
+            foreach (var pattern in patterns)
+                if (!CatalogPolicyVocabulary.DietaryPatterns.Contains(pattern))
+                    add(path + ".payload.dietaryPatterns", "unsupported", $"Dietary pattern {pattern} is not supported.");
+        }
         if (recipe.Nutrients is null || recipe.Nutrients.Count == 0) add(path + ".payload.nutrients", "required", "Nutrients are required.");
         else foreach (var nutrient in recipe.Nutrients)
             if (string.IsNullOrWhiteSpace(nutrient.Key) || nutrient.Value < 0) add(path + ".payload.nutrients", "invalid", "Nutrient names must be non-empty and values cannot be negative.");
         if (recipe.PreparationSteps is not { Length: > 0 } || recipe.PreparationSteps.Any(string.IsNullOrWhiteSpace)) add(path + ".payload.preparationSteps", "required", "Preparation steps are required.");
+        ValidateImage(recipe, path + ".payload", add);
         ValidateSources(recipe.Sources, path + ".payload.sources", citations, add);
+    }
+
+    private static void ValidateImage(Recipe recipe, string path, Action<string, string, string> add)
+    {
+        if (string.IsNullOrWhiteSpace(recipe.ImageUrl))
+        {
+            if (!string.IsNullOrWhiteSpace(recipe.ImageAlt))
+                add(path + ".imageUrl", "required", "An image URL is required when image alt text is provided.");
+            return;
+        }
+
+        if (recipe.ImageUrl.Length > 2048)
+            add(path + ".imageUrl", "length", "Image URL cannot exceed 2048 characters.");
+        if (!Uri.TryCreate(recipe.ImageUrl, UriKind.Absolute, out var imageUri) ||
+            !string.Equals(imageUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            add(path + ".imageUrl", "https_required", "Image URL must be an absolute HTTPS URL.");
+        if (string.IsNullOrWhiteSpace(recipe.ImageAlt))
+            add(path + ".imageAlt", "required", "Accessible image alt text is required when an image URL is provided.");
+        else if (recipe.ImageAlt.Length > 200)
+            add(path + ".imageAlt", "length", "Image alt text cannot exceed 200 characters.");
     }
 
     private static void ValidateRule(CatalogRuleVersion? version, int index, int schemaVersion, IReadOnlySet<string> citations,

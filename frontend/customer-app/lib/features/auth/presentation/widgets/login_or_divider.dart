@@ -8,32 +8,26 @@ class LoginOrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        Expanded(
-          child: Divider(
-            color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.5),
-            thickness: 1,
-          ),
+        Divider(
+          color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.5),
+          thickness: 1,
         ),
-        const Flexible(
+        const DecoratedBox(
+          decoration: BoxDecoration(color: LoginHeroTokens.background),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             child: Text(
               'Hoặc tiếp tục với',
               textAlign: TextAlign.center,
-              softWrap: true,
+              maxLines: 2,
               style: TextStyle(
                 fontSize: AppFontSizes.s12,
                 color: LoginHeroTokens.onSurfaceVariant,
               ),
             ),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-            color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.5),
-            thickness: 1,
           ),
         ),
       ],

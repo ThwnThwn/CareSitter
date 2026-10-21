@@ -219,6 +219,62 @@ public sealed class EligibilityTests
         Assert.False(MealConstraintPolicy.Matches(meals, [new("food_allergy", "SHRIMP", "Tôm", "present", "current", "x", "Tôm", "beneficiary")], []));
         Assert.Null(MealConstraintPolicy.Choose([], [], []));
     }
+
+    [Fact]
+    public void Dietary_pattern_filters_recipes_and_goal_changes_energy_ranking()
+    {
+        Recipe Meal(string meal, string suffix, decimal energy, bool vegetarian) =>
+            Recipe(meal, 1) with
+            {
+                Name = $"{meal} {suffix}",
+                Nutrients = new() { ["sodium_mg"] = 1, ["energy_kcal"] = energy },
+                DietaryPatterns = vegetarian ? ["vegetarian"] : null
+            };
+        var recipes = new[]
+        {
+            Meal("breakfast", "low", 100, true), Meal("breakfast", "high", 200, false),
+            Meal("lunch", "low", 200, true), Meal("lunch", "high", 400, false),
+            Meal("dinner", "low", 150, true), Meal("dinner", "high", 300, false)
+        };
+
+        var lose = MealConstraintPolicy.Choose(recipes, [], [], "regular", "lose")!;
+        var gain = MealConstraintPolicy.Choose(recipes, [], [], "regular", "gain")!;
+        var vegetarian = MealConstraintPolicy.Choose(recipes, [], [], "vegetarian", "gain")!;
+
+        Assert.Equal(450, lose.Sum(meal => meal.Nutrients["energy_kcal"]));
+        Assert.Equal(900, gain.Sum(meal => meal.Nutrients["energy_kcal"]));
+        Assert.All(vegetarian, meal => Assert.Contains("vegetarian", meal.DietaryPatterns!));
+        Assert.Null(MealConstraintPolicy.Choose(recipes, [], [], "unsupported", "maintain"));
+    }
+
+    [Fact]
+    public void Structured_preferences_are_normalized_for_meal_selection()
+    {
+        var source = Healthy() with
+        {
+            HealthHistory = JsonSerializer.SerializeToElement(new
+            {
+                nutrition = new
+                {
+                    schemaVersion = 1,
+                    conditionsStatus = "reported_none",
+                    medicationsStatus = "reported_none",
+                    feedingRoute = "oral",
+                    swallowingStatus = "normal",
+                    fluidRestriction = "none",
+                    electrolyteRestriction = "none",
+                    dietaryPattern = "vegetarian",
+                    nutritionGoal = "lose"
+                }
+            })
+        };
+
+        var health = HealthSnapshotNormalizer.Normalize(source, []);
+
+        Assert.Equal("vegetarian", health.Evidence["dietaryPattern"]);
+        Assert.Equal("lose", health.Evidence["nutritionGoal"]);
+        Assert.DoesNotContain("healthHistory/nutrition/dietaryPattern", health.Unresolved);
+    }
     internal static Recipe Recipe(string meal, decimal sodium) => new(Guid.NewGuid(), "Fixture recipe", meal, 1,
         [new("RICE", "Gạo", 100, "g", "raw")], [], new() { { "sodium_mg", sodium } }, ["Fixture step"], ["Fixture source"], true);
     private static DietaryRule Rule(string code, decimal maximum) => new(Guid.NewGuid(), code, [], [], new() { { "sodium_mg", maximum } }, ["Fixture rule"]);

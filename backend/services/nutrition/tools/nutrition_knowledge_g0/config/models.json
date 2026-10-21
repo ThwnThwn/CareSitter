@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "extractors": [
+    {"tag": "qwen3:1.7b", "think": false},
+    {"tag": "qwen3:4b", "think": false},
+    {"tag": "gemma3:4b", "think": null},
+    {"tag": "qwen3:8b", "think": false}
+  ],
+  "embedding": {"tag": "bge-m3:latest", "dimensions": 1024}
+}

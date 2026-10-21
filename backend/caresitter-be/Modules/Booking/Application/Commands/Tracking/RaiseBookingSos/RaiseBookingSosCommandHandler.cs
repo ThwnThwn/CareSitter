@@ -12,7 +12,6 @@ internal sealed class RaiseBookingSosCommandHandler(
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<RaiseBookingSosCommand, Result<BookingResponse>>
 {
@@ -30,7 +29,6 @@ internal sealed class RaiseBookingSosCommandHandler(
         if (!isCustomer && !isAssignedCaregiver && !isAdmin)
             return BookingErrors.Forbidden();
 
-        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.RaiseSos(userId);
         if (result.IsFailure) return result.Error;
 
@@ -42,13 +40,6 @@ internal sealed class RaiseBookingSosCommandHandler(
             BookingSyncEventTypes.CrisisRaised,
             "Lịch đã chuyển sang trạng thái hỗ trợ khẩn cấp.", DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
-        await postCommit.RunAsync("SOS status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusPresenter.ToApi(booking.Status), ct));
-        await postCommit.RunAsync("SOS customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("SOS notifications", () =>
-            postCommit.NotifySosTargetsAsync(booking, userId, ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

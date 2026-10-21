@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "g0-dev-fixtures",
+      "revision_id": "g0-dev-fixtures@sha256:ec4ca536b35f99ec",
+      "title": "G0 dev synthetic fixtures",
+      "author": "",
+      "edition": "",
+      "year": null,
+      "path": "backend/services/nutrition/tools/nutrition_knowledge_g0/fixtures/dev.json",
+      "sha256": "ec4ca536b35f99ec6a6f4f2e548daa2fe7241d43845e721eb2d9852697db6b96",
+      "byte_size": 8328,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "synthetic",
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Project-authored synthetic benchmark fixture; contains no book text or patient data.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "g0-selection-fixtures",
+      "revision_id": "g0-selection-fixtures@sha256:38b8b78574930b2c",
+      "title": "G0 selection synthetic fixtures",
+      "author": "",
+      "edition": "",
+      "year": null,
+      "path": "backend/services/nutrition/tools/nutrition_knowledge_g0/fixtures/selection.json",
+      "sha256": "38b8b78574930b2c4daab1b6b201fad65034b951aaffc9a6df6023a7786a1487",
+      "byte_size": 31638,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "synthetic",
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Project-authored synthetic benchmark fixture; contains no book text or patient data.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "g0-holdout-fixtures",
+      "revision_id": "g0-holdout-fixtures@sha256:a3a5a71899f90269",
+      "title": "G0 holdout synthetic fixtures",
+      "author": "",
+      "edition": "",
+      "year": null,
+      "path": "backend/services/nutrition/tools/nutrition_knowledge_g0/fixtures/holdout.json",
+      "sha256": "a3a5a71899f9026987cce1d6118b5c92afc2c0dad8b339a8cdbefce33c4e6c71",
+      "byte_size": 17263,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "synthetic",
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Project-authored synthetic benchmark fixture; contains no book text or patient data.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "book-an-gi-khong-chet-sample",
+      "revision_id": "book-an-gi-khong-chet-sample@sha256:993dd986d9ea7e4d",
+      "title": "Ăn gì không chết — official sample metadata",
+      "author": "",
+      "edition": "NXB Trẻ",
+      "year": 2022,
+      "path": "book/An_gi_khong_chet_NXB_Tre_2022_official_sample.html",
+      "sha256": "993dd986d9ea7e4df78d9b9a80a1a16e38c045d8676191678316f6bbd8d899c9",
+      "byte_size": 68075,
+      "mime": "text/html",
+      "language": "vi",
+      "rights_status": "unverified",
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "book-che-do-an-truong-tho-product-page",
+      "revision_id": "book-che-do-an-truong-tho-product-page@sha256:54b849bce2d27677",
+      "title": "Chế độ ăn trường thọ — product metadata page",
+      "author": "",
+      "edition": "MedInsights",
+      "year": null,
+      "path": "book/Che_do_an_truong_tho_Medinsights_product_page_2026-10-16.html",
+      "sha256": "54b849bce2d2767730b7cf5c556d03997ae5a840abe010545f6eac5d17dfae25",
+      "byte_size": 144075,
+      "mime": "text/html",
+      "language": "vi",
+      "rights_status": "unverified",
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "book-dinh-duong-lam-sang-2019",
+      "revision_id": "book-dinh-duong-lam-sang-2019@sha256:abea34b8a6a63e9e",
+      "title": "Dinh dưỡng lâm sàng",
+      "author": "Viện Dinh dưỡng",
+      "edition": "",
+      "year": 2019,
+      "path": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "sha256": "abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737",
+      "byte_size": 4573499,
+      "mime": "application/pdf",
+      "language": "vi",
+      "rights_status": "unverified",
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "nutrition-p2-draft-bundle",
+      "revision_id": "nutrition-p2-draft-bundle@sha256:bb2a651ba64517f0",
+      "title": "Nutrition P2 draft catalog bundle",
+      "author": "",
+      "edition": "",
+      "year": null,
+      "path": "backend/services/nutrition/catalog/drafts/adult-hypertension-p2.bundle.json",
+      "sha256": "bb2a651ba64517f0b31267cb1c3a2222c18b46c241ebc6d78106c7ff121aacb4",
+      "byte_size": 56513,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "unverified",
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "nutrition-p2-draft-evidence",
+      "revision_id": "nutrition-p2-draft-evidence@sha256:299c068bc7e5003d",
+      "title": "Nutrition P2 draft evidence sidecar",
+      "author": "",
+      "edition": "",
+      "year": null,
+      "path": "backend/services/nutrition/catalog/drafts/adult-hypertension-p2.evidence.json",
+      "sha256": "299c068bc7e5003ddaf499816991395a215247a0029e5b05ab6d59a8fde3f1fb",
+      "byte_size": 117949,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "unverified",
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="780" viewBox="0 0 360 780">
+<rect width="360" height="780" rx="28" fill="#F7F5FF"/><rect x="16" y="16" width="328" height="748" rx="24" fill="#fff"/>
+<text x="32" y="58" font-family="Arial" font-size="14" fill="#69657A">CareSitter · Nutri</text><text x="32" y="96" font-family="Arial" font-size="26" font-weight="700" fill="#27233A">Sức khỏe &amp; ăn uống</text>
+<text x="32" y="124" font-family="Arial" font-size="14" fill="#69657A">Nguyễn Văn An · cập nhật hôm nay</text>
+<rect x="32" y="150" width="296" height="92" rx="18" fill="#EEF8F4"/><text x="50" y="180" font-family="Arial" font-size="13" fill="#34856E">HỒ SƠ ĐÃ ĐỦ DỮ LIỆU</text><text x="50" y="210" font-family="Arial" font-size="18" font-weight="700" fill="#214D42">Sẵn sàng gợi ý thực đơn</text><text x="50" y="230" font-family="Arial" font-size="12" fill="#54786E">Có thể phân tích khẩu vị và dị ứng</text>
+<text x="32" y="282" font-family="Arial" font-size="16" font-weight="700" fill="#27233A">Tóm tắt</text>
+<rect x="32" y="300" width="140" height="82" rx="16" fill="#F5F1FF"/><text x="48" y="328" font-family="Arial" font-size="12" fill="#69657A">Dị ứng</text><text x="48" y="356" font-family="Arial" font-size="17" font-weight="700" fill="#4C3B86">Không ghi nhận</text>
+<rect x="188" y="300" width="140" height="82" rx="16" fill="#FFF5E9"/><text x="204" y="328" font-family="Arial" font-size="12" fill="#806744">Ưu tiên</text><text x="204" y="356" font-family="Arial" font-size="17" font-weight="700" fill="#8A5F21">Mềm, ít muối</text>
+<rect x="32" y="410" width="296" height="58" rx="16" fill="#6C58C7"/><text x="180" y="446" text-anchor="middle" font-family="Arial" font-size="16" font-weight="700" fill="#fff">Gợi ý thực đơn hôm nay →</text>
+<rect x="32" y="490" width="296" height="58" rx="16" fill="#F1EFF8"/><text x="180" y="526" text-anchor="middle" font-family="Arial" font-size="16" font-weight="700" fill="#514A68">Cập nhật hồ sơ ăn uống</text>
+<text x="32" y="608" font-family="Arial" font-size="14" fill="#69657A">Lần phân tích gần nhất</text><text x="32" y="634" font-family="Arial" font-size="18" font-weight="700" fill="#27233A">17/10/2026 · 08:40</text>
+<text x="32" y="710" font-family="Arial" font-size="12" fill="#8B879A">C-NUT-01 · Entry / overview</text>
+</svg>

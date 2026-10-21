@@ -1,0 +1,5 @@
+# G0 deliberately uses only the Python 3.12 standard library.
+# Build tooling is pinned separately in pyproject.toml and is not required at runtime.
+
+# G0 intentionally uses only the Python 3.12 standard library.
+# Keep this file free of DB drivers and cloud SDKs.

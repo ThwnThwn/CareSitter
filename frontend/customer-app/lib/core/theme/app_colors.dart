@@ -47,7 +47,8 @@ class AppColors {
   static const Color secondaryStrong = Color(0xFFA43F16);
   static const Color onSecondary = Color(0xFF0D1117);
 
-  static const Color background = Color(0xFFF5F3EE);
+  // Shared app canvas: the cool off-white used by the redesigned Settings UI.
+  static const Color background = Color(0xFFF6F9F8);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = primaryContainer;
   static const Color cardBackground = surface;

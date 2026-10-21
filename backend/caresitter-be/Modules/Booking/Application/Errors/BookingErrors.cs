@@ -32,6 +32,8 @@ internal static class BookingErrors
     public const string OpenDisputeCode = "booking.complete.open_dispute";
     public const string GpsTrackingDisabledCode = "booking.gps_tracking.disabled";
     public const string InvalidStatusCode = "booking.status.invalid";
+    public const string IdempotencyConflictCode = "booking.idempotency.conflict";
+    public const string IdempotencyRecordInvalidCode = "booking.idempotency.record_invalid";
 
     public static Error Unauthenticated() =>
         Error.Unauthorized(UnauthenticatedCode, string.Empty);
@@ -106,4 +108,12 @@ internal static class BookingErrors
 
     public static Error InvalidStatus() =>
         Error.Validation(InvalidStatusCode, "Trạng thái booking không hợp lệ.");
+
+    public static Error IdempotencyConflict() =>
+        Error.Conflict(IdempotencyConflictCode,
+            "Idempotency-Key này đã được dùng với nội dung booking khác.");
+
+    public static Error IdempotencyRecordInvalid() =>
+        Error.Failure(IdempotencyRecordInvalidCode,
+            "Không thể khôi phục booking từ yêu cầu trước đó.");
 }

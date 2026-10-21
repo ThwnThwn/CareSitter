@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/nutrition/data/models/health_profile_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_capabilities_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/meal_plan_summary_model.dart';
 import 'package:caresitter_customer/core/api/api_cancellation.dart';
 import 'dart:async';
 import 'package:caresitter_customer/core/api/dio_client.dart';
@@ -10,7 +11,10 @@ import 'package:caresitter_customer/features/beneficiary/presentation/controller
 import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_repository.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_controller.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_screen.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_expansion_card.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_fields.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_form.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_status_field.dart';
 import 'package:caresitter_customer/features/nutrition/domain/nutrition_personalization_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +27,24 @@ Future<void> settle() async {
 }
 
 void main() {
+  testWidgets('status field falls back to the first declared option',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NutritionStatusField(
+          label: 'Chế độ ăn',
+          value: 'legacy-value',
+          options: const {'regular': 'Ăn thông thường'},
+          enabled: true,
+          onChanged: (_) {},
+        ),
+      ),
+    ));
+
+    expect(find.text('Ăn thông thường'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test('personalized nutrition requires all seven health declarations', () {
     final unknown = NutritionPersonalizationRules.evaluate(
         allergyStatus: 'unknown',
@@ -133,7 +155,11 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     final section = find.text('Thuốc và nhu cầu ăn uống');
-    await tester.ensureVisible(section);
+    await Scrollable.ensureVisible(
+      tester.element(section),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(section);
     await tester.pumpAndSettle();
     final route = find.byKey(const ValueKey('nutrition-feedingRoute'));
@@ -152,6 +178,65 @@ void main() {
     });
     await tester.ensureVisible(route);
     expect(find.text('Ăn qua ống'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'dietary pattern and nutrition goal are saved in one profile patch',
+      (tester) async {
+    Map<String, dynamic>? changes;
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: ListView(children: [
+      NutritionHealthForm(
+          health: HealthProfileModel.fromJson(const {
+            'allergyStatus': 'reported_none',
+            'healthHistory': {
+              'nutrition': {
+                'schemaVersion': 1,
+                'conditionsStatus': 'reported_none'
+              }
+            }
+          }),
+          enabled: true,
+          onDirtyChanged: (_) {},
+          onSave: (value) => changes = value),
+    ]))));
+
+    expect(find.byType(NutritionExpansionCard), findsNWidgets(3));
+
+    final preferences = find.text('Kiểu ăn và mục tiêu');
+    await tester.ensureVisible(preferences);
+    await tester.tap(preferences);
+    await tester.pumpAndSettle();
+
+    final dietaryPattern =
+        find.byKey(const ValueKey('nutrition-dietaryPattern'));
+    await tester.ensureVisible(dietaryPattern);
+    await tester.tap(dietaryPattern);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ăn chay').last);
+    await tester.pumpAndSettle();
+
+    final nutritionGoal = find.byKey(const ValueKey('nutrition-nutritionGoal'));
+    await tester.ensureVisible(nutritionGoal);
+    await tester.tap(nutritionGoal);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tăng cân').last);
+    await tester.pumpAndSettle();
+
+    final save =
+        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(changes, {
+      'nutritionProfile': {
+        'dietaryPattern': 'vegetarian',
+        'nutritionGoal': 'gain'
+      }
+    });
     expect(tester.takeException(), isNull);
   });
 
@@ -271,6 +356,32 @@ void main() {
     expect(repository.writes.single.route, 'nutrition-assessments');
   });
 
+  testWidgets('AI credential failure is explained precisely on screen',
+      (tester) async {
+    final repository = _Repository()
+      ..result = _resource('failed', {
+        'errorCode': 'nutrition.ai_authentication_failed',
+        'retryable': false
+      });
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+        ],
+        child:
+            const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
+    await tester.pumpAndSettle();
+    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    await tester.scrollUntilVisible(check, 250);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    final message = find.textContaining('API key của dịch vụ AI không hợp lệ');
+    await tester.scrollUntilVisible(message, 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(message, findsOneWidget);
+  });
+
   test('lost ownership clears all server content', () async {
     final repository = _Repository();
     final c = NutritionFlowController(repository, 'first', 'owner');
@@ -296,6 +407,37 @@ void main() {
     repository.pending!.complete(_resource('suggested', {'meals': []}));
     await request;
     expect(c.view.resource, isNull);
+  });
+
+  test('resuming an already loaded nutrition flow does not reload health',
+      () async {
+    final repository = _Repository();
+    final c = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(c.dispose);
+    await settle();
+
+    expect(repository.healthCalls, 1);
+    c.suspend();
+    c.resume();
+    await settle();
+
+    expect(repository.healthCalls, 1);
+  });
+
+  test('loading saved plans does not put the nutrition page in loading state',
+      () async {
+    final repository = _Repository()
+      ..plansPending = Completer<List<MealPlanSummaryModel>>();
+    final c = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(c.dispose);
+    await settle();
+
+    final request = c.plans();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.view.loading, isFalse);
+
+    repository.plansPending!.complete(const []);
+    await request;
   });
 
   test('profile or catalog conflict marks previous recommendation stale',
@@ -367,14 +509,43 @@ void main() {
       await tester.tap(check);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-          find.text('Chưa có công thức đã duyệt cho nhu cầu này'), 150,
+          find.text('Chưa có dữ liệu thực đơn để gợi ý'), 150,
           scrollable: find.byType(Scrollable).first);
-      expect(find.text('Chưa có công thức đã duyệt cho nhu cầu này'),
+      expect(find.text('Chưa có dữ liệu thực đơn để gợi ý'), findsOneWidget);
+      expect(find.textContaining('Kho thực đơn hiện chưa có món đủ dữ liệu'),
           findsOneWidget);
       expect(find.text('Fixture recipe'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('nutrition distinguishes no matching menu from an empty catalog',
+      (tester) async {
+    final repository = _Repository()
+      ..result = _resource('no_match', {
+        'decision': {'state': 'no_match'},
+        'meals': []
+      });
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+        ],
+        child:
+            const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
+    await tester.pumpAndSettle();
+    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    await tester.scrollUntilVisible(check, 250);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Chưa có thực đơn phù hợp'), 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Chưa có thực đơn phù hợp'), findsOneWidget);
+    expect(find.textContaining('Chưa tìm được món đáp ứng các yêu cầu'),
+        findsOneWidget);
+    expect(find.text('Chưa có dữ liệu thực đơn để gợi ý'), findsNothing);
+  });
 
   testWidgets(
       'failed analysis preserves draft notes and disables stale analysis until saved',
@@ -389,8 +560,11 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Lưu ý và hướng dẫn hiện có'));
-    await tester.tap(find.text('Lưu ý và hướng dẫn hiện có'));
+    final notesSection = find.text('Lưu ý và hướng dẫn hiện có');
+    await Scrollable.ensureVisible(tester.element(notesSection),
+        alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(notesSection);
     await tester.pumpAndSettle();
     final note =
         find.widgetWithText(TextField, 'Lưu ý sức khỏe / triệu chứng chưa rõ');
@@ -438,7 +612,7 @@ class _UnusedDio implements DioClient {
 }
 
 class _Repository extends NutritionRepository {
-  _Repository() : super(_UnusedDio(), _UnusedDio());
+  _Repository() : super(_UnusedDio());
   Map<String, dynamic> result = _resource('no_content', {
     'decision': {'state': 'no_content'},
     'meals': []
@@ -446,9 +620,11 @@ class _Repository extends NutritionRepository {
   AppApiException? writeError, patchError;
   Map<String, dynamic>? healthOverride;
   Completer<Map<String, dynamic>>? pending;
+  Completer<List<MealPlanSummaryModel>>? plansPending;
   final writes = <({String route, Map<String, dynamic> data})>[];
   final tokens = <ApiCancellation>[];
   final patches = <Map<String, dynamic>>[];
+  int healthCalls = 0;
   @override
   bool get isConfigured => true;
   @override
@@ -459,8 +635,19 @@ class _Repository extends NutritionRepository {
           assessmentsEnabled: true,
           recommendationsEnabled: true);
   @override
-  Future<HealthProfileModel> health(String id, ApiCancellation token) async =>
-      HealthProfileModel.fromJson(healthOverride ?? _readyHealth());
+  Future<HealthProfileModel> health(String id, ApiCancellation token) async {
+    healthCalls++;
+    return HealthProfileModel.fromJson(healthOverride ?? _readyHealth());
+  }
+
+  @override
+  Future<List<MealPlanSummaryModel>> savedPlans(
+      String id, ApiCancellation token) async {
+    return plansPending == null
+        ? const <MealPlanSummaryModel>[]
+        : await plansPending!.future;
+  }
+
   @override
   Future<NutritionResourceModel> write(String id, String route,
       Map<String, dynamic> data, ApiCancellation token) async {

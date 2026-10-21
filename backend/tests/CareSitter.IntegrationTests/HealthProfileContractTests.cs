@@ -19,6 +19,8 @@ public sealed class HealthProfileContractTests
     [InlineData("{\"chronicConditions\":[{\"label\":\"A\",\"assertion\":\"diagnosed\"}]}")]
     [InlineData("{\"chronicConditions\":[{\"label\":\"A\",\"subject\":\"other\"}]}")]
     [InlineData("{\"nutritionProfile\":{\"swallowingStatus\":\"soft\"}}")]
+    [InlineData("{\"nutritionProfile\":{\"dietaryPattern\":\"pescatarian\"}}")]
+    [InlineData("{\"nutritionProfile\":{\"nutritionGoal\":\"bulk\"}}")]
     [InlineData("{\"nutritionProfile\":{\"feedingRoute\":true}}")]
     [InlineData("{\"nutritionProfile\":{\"schemaVersion\":2}}")]
     [InlineData("{\"nutritionProfile\":{},\"healthHistory\":null}")]
@@ -38,12 +40,14 @@ public sealed class HealthProfileContractTests
         await using var fixture = new Fixture();
         fixture.Seed("""{"legacy":{"note":"keep"},"nutrition":{"schemaVersion":1,"feedingRoute":"tube","conditionsStatus":"reported_present"}}""",
             """[{"name":"A","dosage":"old dosage","is_active":true}]""");
-        var result = await fixture.PatchAsync("""{"nutritionProfile":{"medicationsStatus":"reported_present","fluidRestriction":"present"}}""");
+        var result = await fixture.PatchAsync("""{"nutritionProfile":{"medicationsStatus":"reported_present","fluidRestriction":"present","dietaryPattern":"vegetarian","nutritionGoal":"gain"}}""");
         Assert.True(result.IsSuccess);
         var history = result.Value.HealthHistory!.Value;
         Assert.Equal("keep", history.GetProperty("legacy").GetProperty("note").GetString());
         Assert.Equal("tube", history.GetProperty("nutrition").GetProperty("feedingRoute").GetString());
         Assert.Equal("present", history.GetProperty("nutrition").GetProperty("fluidRestriction").GetString());
+        Assert.Equal("vegetarian", history.GetProperty("nutrition").GetProperty("dietaryPattern").GetString());
+        Assert.Equal("gain", history.GetProperty("nutrition").GetProperty("nutritionGoal").GetString());
         Assert.Equal("old dosage", result.Value.Medications!.Value[0].GetProperty("dosage").GetString());
         Assert.Null(result.Value.GeneralNote);
     }

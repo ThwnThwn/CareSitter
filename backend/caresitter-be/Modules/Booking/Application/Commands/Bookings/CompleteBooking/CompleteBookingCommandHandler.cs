@@ -12,7 +12,6 @@ internal sealed class CompleteBookingCommandHandler(
     IDisputeLookupService disputeLookup,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
     IAuditLogger auditLogger,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<CompleteBookingCommand, Result<BookingResponse>>
@@ -60,17 +59,6 @@ internal sealed class CompleteBookingCommandHandler(
                 approvedBy = isAdmin ? "ADMIN" : "CUSTOMER",
                 booking.DisputeWindowHours
             }, ct);
-        await postCommit.RunAsync("complete status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusPresenter.ToApi(booking.Status), ct));
-        await postCommit.RunAsync("complete customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("complete customer notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking, "Ca chăm sóc đã hoàn tất",
-                "Lịch chăm sóc đã được xác nhận hoàn tất.", ct));
-        await postCommit.RunAsync("complete caregiver notification", () =>
-            postCommit.NotifyCaregiverAsync(booking, "Ca chăm sóc đã hoàn tất",
-                "Thu nhập sẽ khả dụng sau thời hạn khiếu nại nếu không có tranh chấp.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

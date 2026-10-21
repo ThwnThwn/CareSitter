@@ -7,5 +7,5 @@ internal sealed class UnconfiguredHealthParser : IHealthDescriptionParser
     public string? PromptVersion => null;
 
     public Task<HealthParseResult> ParseAsync(HealthParseRequest request, CancellationToken ct) =>
-        Task.FromException<HealthParseResult>(new HealthParserException("nutrition.ai_unavailable", false));
+        Task.FromException<HealthParseResult>(new HealthParserException("nutrition.ai_not_configured", false));
 }

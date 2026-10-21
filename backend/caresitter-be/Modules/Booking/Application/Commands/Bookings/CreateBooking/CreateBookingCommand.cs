@@ -1,5 +1,6 @@
 using CareSitter.SharedKernel.Results;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 
@@ -11,4 +12,5 @@ public sealed record CreateBookingCommand(
     DateTimeOffset ScheduledEnd,
     Guid? CaregiverId = null,
     IReadOnlyList<string>? RequiredSkills = null,
-    string? PromotionCode = null) : IRequest<Result<BookingResponse>>;
+    string? PromotionCode = null,
+    [property: JsonIgnore] Guid IdempotencyKey = default) : IRequest<Result<BookingResponse>>;

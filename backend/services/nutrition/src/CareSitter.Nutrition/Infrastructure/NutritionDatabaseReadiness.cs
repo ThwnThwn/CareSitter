@@ -46,6 +46,13 @@ internal static class NutritionDatabaseReadiness
               ('catalog_audit','id','int8'),('catalog_audit','package_id','uuid'),('catalog_audit','package_key','text'),
               ('catalog_audit','package_version','int4'),('catalog_audit','action','text'),('catalog_audit','actor','text'),
               ('catalog_audit','payload_digest','text'),('catalog_audit','metadata','jsonb'),('catalog_audit','occurred_at','timestamptz'),
+              ('catalog_release_evidence','package_id','uuid'),('catalog_release_evidence','payload_digest','text'),
+              ('catalog_release_evidence','bundle_file_sha256','text'),('catalog_release_evidence','evidence','jsonb'),
+              ('catalog_release_evidence','evidence_digest','text'),('catalog_release_evidence','recorded_by','text'),
+              ('catalog_release_evidence','recorded_at','timestamptz'),
+              ('local_demo_catalog','package_key','text'),('local_demo_catalog','revision','int8'),
+              ('local_demo_catalog','payload','jsonb'),('local_demo_catalog','payload_digest','text'),
+              ('local_demo_catalog','imported_by','text'),('local_demo_catalog','imported_at','timestamptz'),
               ('recipe_source_citations','recipe_version_id','uuid'),('recipe_source_citations','package_id','uuid'),
               ('recipe_source_citations','source_id','text'),('recipe_source_citations','title','text'),
               ('recipe_source_citations','organization','text'),('recipe_source_citations','year','int4'),
@@ -68,19 +75,23 @@ internal static class NutritionDatabaseReadiness
                 AND (NOT r.relrowsecurity OR NOT r.relforcerowsecurity OR NOT EXISTS (
                   SELECT 1 FROM pg_policy p WHERE p.polrelid=r.oid AND p.polname='owner_access')))
               AND NOT EXISTS (SELECT 1 FROM relations r
-                WHERE r.relname IN ('catalog_state','assessments','assessment_jobs','recommendations','meal_plans','preferences','recipe_versions','rule_versions','concepts','recipe_source_citations')
+                WHERE r.relname IN ('catalog_state','assessments','assessment_jobs','recommendations','meal_plans','preferences','recipe_versions','rule_versions','concepts','recipe_source_citations','local_demo_catalog')
                   AND NOT has_table_privilege(r.oid,'SELECT'))
               AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('assessments','assessment_jobs','recommendations','meal_plans','preferences')
                 AND (NOT has_table_privilege(r.oid,'INSERT') OR NOT has_table_privilege(r.oid,'UPDATE') OR NOT has_table_privilege(r.oid,'DELETE')))
-              AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('recipe_versions','rule_versions','concepts','recipe_source_citations')
+              AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('recipe_versions','rule_versions','concepts','recipe_source_citations','local_demo_catalog')
                 AND (has_table_privilege(r.oid,'INSERT') OR has_table_privilege(r.oid,'UPDATE') OR has_table_privilege(r.oid,'DELETE')))
-              AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('catalog_packages','catalog_package_entries','catalog_audit')
+              AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('catalog_packages','catalog_package_entries','catalog_audit','catalog_release_evidence')
                 AND (has_table_privilege(r.oid,'SELECT') OR has_table_privilege(r.oid,'INSERT') OR has_table_privilege(r.oid,'UPDATE') OR has_table_privilege(r.oid,'DELETE')))
               AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-                WHERE n.nspname='nutrition' AND p.proname IN ('import_catalog_bundle','review_catalog_bundle','publish_catalog_bundle','retire_catalog_bundle'))=4
+                WHERE n.nspname='nutrition' AND p.proname IN ('import_catalog_bundle','review_catalog_bundle','publish_catalog_bundle','retire_catalog_bundle','record_catalog_release_evidence','import_local_demo_catalog'))=6
               AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-                WHERE n.nspname='nutrition' AND p.proname IN ('import_catalog_bundle','review_catalog_bundle','publish_catalog_bundle','retire_catalog_bundle')
+                WHERE n.nspname='nutrition' AND p.proname IN ('import_catalog_bundle','review_catalog_bundle','publish_catalog_bundle','retire_catalog_bundle','record_catalog_release_evidence','import_local_demo_catalog')
                   AND has_function_privilege(p.oid,'EXECUTE'))
+              AND EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
+                JOIN pg_namespace n ON n.oid=c.relnamespace
+                WHERE n.nspname='nutrition' AND c.relname='catalog_release_evidence'
+                  AND t.tgname='require_catalog_knowledge_review' AND NOT t.tgisinternal AND t.tgenabled<>'D')
               AND EXISTS (SELECT 1 FROM relations r JOIN pg_attribute a ON a.attrelid=r.oid AND a.attname='id'
                 WHERE r.relname='catalog_state' AND has_column_privilege(r.oid,a.attnum,'UPDATE'))
             """, connection) { CommandTimeout = 5 };

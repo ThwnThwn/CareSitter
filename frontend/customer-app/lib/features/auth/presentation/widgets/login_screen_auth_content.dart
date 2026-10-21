@@ -14,6 +14,7 @@ class LoginScreenAuthContent extends StatelessWidget {
       required this.passCtrl,
       required this.obscurePass,
       required this.rememberLogin,
+      required this.validationEnabled,
       required this.onRememberLoginChanged,
       required this.login,
       required this.togglePassword});
@@ -23,6 +24,7 @@ class LoginScreenAuthContent extends StatelessWidget {
   final TextEditingController passCtrl;
   final bool obscurePass;
   final bool rememberLogin;
+  final bool validationEnabled;
   final ValueChanged<bool> onRememberLoginChanged;
   final Future<void> Function() login;
   final VoidCallback togglePassword;
@@ -42,6 +44,7 @@ class LoginScreenAuthContent extends StatelessWidget {
                 passCtrl: passCtrl,
                 obscurePass: obscurePass,
                 rememberLogin: rememberLogin,
+                validationEnabled: validationEnabled,
                 onRememberLoginChanged: onRememberLoginChanged,
                 togglePassword: togglePassword,
                 login: login)),

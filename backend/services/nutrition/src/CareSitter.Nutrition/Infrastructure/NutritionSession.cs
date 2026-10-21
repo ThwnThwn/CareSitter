@@ -4,9 +4,13 @@ using Npgsql;
 
 namespace CareSitter.Nutrition.Infrastructure;
 
-internal sealed class NutritionSession(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid owner) : INutritionSession
+internal sealed class NutritionSession(
+    NpgsqlConnection connection,
+    NpgsqlTransaction transaction,
+    Guid owner,
+    LocalDemoCatalogOptions localDemo) : INutritionSession
 {
-    private readonly NutritionCatalogReader _catalog = new(connection, transaction);
+    private readonly NutritionCatalogReader _catalog = new(connection, transaction, localDemo);
 
     private static string Table(string kind) => kind switch
     {

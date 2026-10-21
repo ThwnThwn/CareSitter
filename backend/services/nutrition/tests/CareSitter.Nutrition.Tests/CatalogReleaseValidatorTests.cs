@@ -8,6 +8,36 @@ public sealed class CatalogReleaseValidatorTests
     private const string Digest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     [Fact]
+    public void Reviewed_baseline_bundle_without_disease_rules_is_release_ready()
+    {
+        var (bundle, evidence) = Package();
+        bundle = bundle with
+        {
+            SupportedScopes = [bundle.SupportedScopes[0] with { ConditionCodes = [] }],
+            Rules = []
+        };
+        evidence = evidence with { ReleaseProfile = "adult_baseline_v1", Rules = [] };
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.True(result.IsReleaseReady, string.Join(Environment.NewLine, result.Issues.Select(x => $"{x.Path}: {x.Code}")));
+        Assert.Contains(result.Combinations, x => x.ScopeCode == "baseline" && x.ValidCombinations == 64);
+        Assert.DoesNotContain(result.Combinations, x => x.ScopeCode.StartsWith("condition-", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Baseline_profile_cannot_smuggle_a_disease_rule_or_scope()
+    {
+        var (bundle, evidence) = Package();
+        evidence = evidence with { ReleaseProfile = "adult_baseline_v1" };
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.Contains(result.Issues, x => x.Code == "baseline_rule_forbidden");
+        Assert.Contains(result.Issues, x => x.Code == "baseline_condition_scope_forbidden");
+    }
+
+    [Fact]
     public void Reviewed_p2_bundle_with_source_evidence_and_replacement_coverage_is_release_ready()
     {
         var (bundle, evidence) = Package();
@@ -147,6 +177,27 @@ public sealed class CatalogReleaseValidatorTests
         Assert.Contains(result.Issues, issue => issue.Code == "unsupported_nutrient");
     }
 
+    [Fact]
+    public void Knowledge_review_must_be_complete_permitted_and_bound_to_clinical_reviewer()
+    {
+        var (bundle, evidence) = Package();
+        evidence = evidence with
+        {
+            KnowledgeReview = evidence.KnowledgeReview! with
+            {
+                PendingCount = 1,
+                Sources = [new("source@1", "unverified")],
+                ClinicalReviewerIds = ["different-reviewer"]
+            }
+        };
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "review_incomplete");
+        Assert.Contains(result.Issues, issue => issue.Code == "source_not_permitted");
+        Assert.Contains(result.Issues, issue => issue.Code == "reviewer_mismatch");
+    }
+
     private static (CatalogBundle Bundle, CatalogReleaseEvidence Evidence) Package()
     {
         const string sourceId = "VIEN_DINH_DUONG_2019";
@@ -186,7 +237,10 @@ public sealed class CatalogReleaseValidatorTests
             "Tổng từng chất từ khối lượng ăn được của nguyên liệu.", CatalogReleaseValidator.RequiredP2Nutrients.ToArray(),
             recipeEvidence,
             [new(rule.VersionId, [sourceId], "Chương tăng huyết áp, trang in 131-143", [])],
-            new("Nguyễn Văn A", "Bác sĩ dinh dưỡng", new DateTimeOffset(2026, 10, 16, 8, 0, 0, TimeSpan.FromHours(7)), "approved", null));
+            new("Nguyễn Văn A", "Bác sĩ dinh dưỡng", new DateTimeOffset(2026, 10, 16, 8, 0, 0, TimeSpan.FromHours(7)), "approved", null, "clinical-reviewer-1"),
+            null,
+            new(1, Digest, new string('1', 64), new string('2', 64), 20, 20, 0, 0,
+                [new("source@sha256:fixture", "permitted")], ["clinical-reviewer-1"], "approved"));
         return (bundle, evidence);
     }
 

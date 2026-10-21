@@ -9,7 +9,8 @@ internal static class HealthProfilePatch
     private static readonly HashSet<string> Fields = ["generalNote", "careInstructions", "healthHistory",
         "allergies", "chronicConditions", "medications", "foodAllergyStatus", "nutritionProfile"];
     private static readonly HashSet<string> NutritionFields = ["conditionsStatus", "medicationsStatus",
-        "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction", "guidance", "symptoms"];
+        "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction",
+        "dietaryPattern", "nutritionGoal", "guidance", "symptoms"];
 
     public static Result Validate(JsonElement changes)
     {
@@ -89,6 +90,8 @@ internal static class HealthProfilePatch
                 "feedingRoute" => text is "unknown" or "oral" or "tube",
                 "swallowingStatus" => text is "unknown" or "normal" or "difficulty",
                 "fluidRestriction" or "electrolyteRestriction" => text is "unknown" or "none" or "present",
+                "dietaryPattern" => text is "regular" or "vegetarian",
+                "nutritionGoal" => text is "maintain" or "gain" or "lose",
                 _ => text!.Length <= 4000
             };
         });

@@ -18,8 +18,8 @@ internal sealed class CheckInBookingCommandHandler(
     IValidator<CheckInBookingCommand> validator,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
-    IBookingResponseMapper responseMapper)
+    IBookingResponseMapper responseMapper,
+    IClock clock)
     : IRequestHandler<CheckInBookingCommand, Result<BookingResponse>>
 {
     public async Task<Result<BookingResponse>> Handle(CheckInBookingCommand request, CancellationToken ct)
@@ -44,20 +44,30 @@ internal sealed class CheckInBookingCommandHandler(
         var caregiverGeo = new GeoPoint(request.Latitude, request.Longitude);
         var addressGeo = new GeoPoint(addressLocation.Value.Lat, addressLocation.Value.Lng);
 
-        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
+        var distance = caregiverGeo.DistanceMetersTo(addressGeo);
         var result = booking.CheckIn(
             caregiverGeo,
             addressGeo,
-            checkedInAt: DateTimeOffset.UtcNow,
+            checkedInAt: clock.UtcNow,
             earlyWindow: TimeSpan.FromMinutes(policy.EarlyWindowMinutes),
             checkInRadiusMeters: policy.MaxDistanceMeters);
-        if (result.IsFailure) return result.Error;
+        if (result.IsFailure)
+        {
+            if (result.Error.Code == "booking.geofence")
+            {
+                bookings.AddTimelineEvent(CareTimelineEvent.Create(
+                    booking.Id, caregiverId, "CHECKIN_OUTSIDE_GEOFENCE",
+                    "Từ chối check-in ngoài vùng cho phép",
+                    latitude: request.Latitude, longitude: request.Longitude,
+                    distanceToAddressMeters: distance));
+                await bookings.SaveChangesAsync(ct);
+            }
 
-        double distance = caregiverGeo.DistanceMetersTo(addressGeo);
-        string eventType = distance <= policy.MaxDistanceMeters
-            ? "CHECKIN_VALID" : "CHECKIN_OUTSIDE_GEOFENCE";
+            return result.Error;
+        }
+
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
-            booking.Id, caregiverId, eventType, "Caregiver đã check-in",
+            booking.Id, caregiverId, "CHECKIN_VALID", "Caregiver đã check-in",
             latitude: request.Latitude, longitude: request.Longitude,
             distanceToAddressMeters: distance));
 
@@ -66,14 +76,6 @@ internal sealed class CheckInBookingCommandHandler(
             BookingSyncEventTypes.CheckedIn, "Caregiver đã đến và ca chăm sóc bắt đầu.",
             booking.ActualStart ?? DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
-        await postCommit.RunAsync("check-in status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusPresenter.ToApi(booking.Status), ct));
-        await postCommit.RunAsync("check-in customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("check-in customer notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã check-in",
-                "Ca chăm sóc đã bắt đầu.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

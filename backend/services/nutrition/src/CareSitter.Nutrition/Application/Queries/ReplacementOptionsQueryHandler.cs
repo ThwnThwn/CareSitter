@@ -39,10 +39,12 @@ internal sealed class ReplacementOptionsQueryHandler(IPeopleHealthClient people,
             if (NutritionEligibilityPolicy.Evaluate(source, health, analyzed.Facts, rules, true).State != "eligible")
                 return Error.Conflict("nutrition.not_eligible", "Cần kiểm tra lại thông tin sức khỏe.");
             // Chỉ đưa ứng viên khi thay vào vẫn đáp ứng ràng buộc của cả ngày.
-            return recipes.Where(r => r.MealType == request.MealType &&
+            var dietaryPattern = health.Evidence.GetValueOrDefault("dietaryPattern", "regular");
+            var nutritionGoal = health.Evidence.GetValueOrDefault("nutritionGoal", "maintain");
+            var candidates = recipes.Where(r => r.MealType == request.MealType &&
                 !meal.Meals.Any(m => m.VersionId == r.VersionId) &&
-                MealConstraintPolicy.Matches(meal.Meals.Select(m => m.MealType == request.MealType ? r : m).ToArray(), analyzed.Facts, rules))
-                .Take(20).ToArray();
+                MealConstraintPolicy.Matches(meal.Meals.Select(m => m.MealType == request.MealType ? r : m).ToArray(), analyzed.Facts, rules, dietaryPattern));
+            return MealConstraintPolicy.OrderForGoal(candidates, nutritionGoal).Take(20).ToArray();
         }, ct);
         var current = await people.ReadAsync(user.UserId.Value, request.BeneficiaryId, ct);
         if (current is null) return NutritionAccessRules.Missing();

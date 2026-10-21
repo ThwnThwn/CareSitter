@@ -313,6 +313,8 @@
         "versionId": "652556c5-b968-56d3-831f-57ee51a398eb",
         "name": "Cháo gạo tẻ đậu xanh",
         "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
         "servings": 1,
         "ingredients": [
           {
@@ -347,7 +349,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -357,6 +362,8 @@
         "versionId": "38341079-c145-5f66-a0a4-498c4b85bf3b",
         "name": "Khoai lang luộc với đậu phụ và cải thìa",
         "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
         "servings": 1,
         "ingredients": [
           {
@@ -400,7 +407,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -410,6 +420,8 @@
         "versionId": "38e55752-8f4e-5a3f-9af3-8e045e61730e",
         "name": "Cháo gạo tẻ đậu tương",
         "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
         "servings": 1,
         "ingredients": [
           {
@@ -446,7 +458,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -456,6 +471,8 @@
         "versionId": "296ddf6b-2859-5961-a923-3d8139f8fc6f",
         "name": "Cơm mềm lạc vừng và cà chua",
         "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
         "servings": 1,
         "ingredients": [
           {
@@ -507,7 +524,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -517,6 +537,8 @@
         "versionId": "0d15cf62-6df1-5cff-8c41-00b895974194",
         "name": "Cơm đậu phụ, cải thìa và cà chua",
         "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
         "servings": 1,
         "ingredients": [
           {
@@ -567,7 +589,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -577,6 +602,8 @@
         "versionId": "5235bd49-71c9-53a3-8ec9-85fa1d7b042e",
         "name": "Cơm đậu xanh, bắp cải và su su",
         "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
         "servings": 1,
         "ingredients": [
           {
@@ -625,7 +652,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -635,6 +665,8 @@
         "versionId": "26d65a17-254c-5709-8a75-e0196f90d09e",
         "name": "Cơm đậu tương, rau muống và hành tây",
         "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
         "servings": 1,
         "ingredients": [
           {
@@ -685,7 +717,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -695,6 +730,8 @@
         "versionId": "442bca9c-c762-585b-9dad-ed1a3193b96f",
         "name": "Cơm lạc vừng, cải thìa và su su",
         "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
         "servings": 1,
         "ingredients": [
           {
@@ -753,7 +790,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -763,6 +803,8 @@
         "versionId": "1747a8dc-c21d-5e0d-9bb0-7f59548ca096",
         "name": "Cơm đậu phụ, bắp cải và su su",
         "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
         "servings": 1,
         "ingredients": [
           {
@@ -813,7 +855,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -823,6 +868,8 @@
         "versionId": "5e835b05-3a62-53f9-bf2e-42d4462d62a1",
         "name": "Cơm đậu xanh, rau muống và cà chua",
         "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
         "servings": 1,
         "ingredients": [
           {
@@ -871,7 +918,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -881,6 +931,8 @@
         "versionId": "28d8f7b7-ba60-5c49-880b-5802c24f4bd3",
         "name": "Khoai lang, đậu tương và cải thìa",
         "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
         "servings": 1,
         "ingredients": [
           {
@@ -924,7 +976,10 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     },
     {
@@ -934,6 +989,8 @@
         "versionId": "44c49cd9-908c-50f7-bfa8-2ee36bba62a3",
         "name": "Cơm lạc vừng, bắp cải và hành tây",
         "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
         "servings": 1,
         "ingredients": [
           {
@@ -992,7 +1049,751 @@
           "VIEN_DINH_DUONG_2019",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "2af3db7b-0758-5b09-9c24-c59a83195c68",
+      "version": 1,
+      "payload": {
+        "versionId": "6bbf7556-9b6c-5ab5-bba1-780fe02c2821",
+        "name": "Cháo gạo tẻ đậu phụ và cà chua",
+        "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "TOFU_BOILED",
+            "name": "Đậu phụ luộc",
+            "amount": 80,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "amount": 80,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 270.6,
+          "protein_g": 13.24,
+          "carbohydrate_g": 42.85,
+          "fat_g": 5.04,
+          "fiber_g": 1.16,
+          "sodium_mg": 17.92
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "4be93755-157f-5676-a423-fb4341944186",
+      "version": 1,
+      "payload": {
+        "versionId": "92b53019-8387-5a21-b8b6-2aaed9a61086",
+        "name": "Khoai lang luộc với đậu xanh",
+        "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "SWEET_POTATO_BOILED",
+            "name": "Khoai lang, luộc",
+            "amount": 180,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "MUNG_BEAN_DRY",
+            "name": "Đậu xanh (đậu tắt), hạt, khô",
+            "amount": 25,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [],
+        "nutrients": {
+          "energy_kcal": 306.1,
+          "protein_g": 7.25,
+          "carbohydrate_g": 67.05,
+          "fat_g": 0.96,
+          "fiber_g": 3.46,
+          "sodium_mg": 56.2
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "57faaf4f-d5c8-516e-8542-95c835838177",
+      "version": 1,
+      "payload": {
+        "versionId": "ea551bb6-e9e2-52e3-b921-bfd343df0ddc",
+        "name": "Cháo gạo tẻ lạc vừng",
+        "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 45,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "PEANUT_DRY",
+            "name": "Lạc hạt, khô",
+            "amount": 15,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "SESAME_DRY",
+            "name": "Vừng (đen, trắng), hạt, khô",
+            "amount": 5,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "PEANUT",
+          "SESAME"
+        ],
+        "nutrients": {
+          "energy_kcal": 272.25,
+          "protein_g": 8.68,
+          "carbohydrate_g": 38.09,
+          "fat_g": 9.44,
+          "fiber_g": 0.73,
+          "sodium_mg": 3.4
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "0bcaec60-8c6b-5aa0-89f4-7970b4308b3c",
+      "version": 1,
+      "payload": {
+        "versionId": "d85ce899-d291-56d9-af1e-5d5cdbd12716",
+        "name": "Khoai lang, đậu tương và bắp cải",
+        "mealType": "breakfast",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa sáng",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "SWEET_POTATO_BOILED",
+            "name": "Khoai lang, luộc",
+            "amount": 180,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "SOYBEAN_DRY",
+            "name": "Đậu tương, đậu nành, hạt khô",
+            "amount": 20,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "CABBAGE_BOILED",
+            "name": "Cải bắp, luộc",
+            "amount": 100,
+            "unit": "g",
+            "basis": "cooked"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 344.2,
+          "protein_g": 10.16,
+          "carbohydrate_g": 66.03,
+          "fat_g": 4.37,
+          "fiber_g": 4.93,
+          "sodium_mg": 85.86
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "685557dc-e4bc-5076-b046-615bbc4018af",
+      "version": 1,
+      "payload": {
+        "versionId": "8bafe6dd-3c42-5624-b512-f8c00af7eff6",
+        "name": "Cơm đậu phụ, rau muống và cà chua",
+        "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 60,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "TOFU_BOILED",
+            "name": "Đậu phụ luộc",
+            "amount": 100,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "WATER_SPINACH_FRESH",
+            "name": "Rau muống,  tươi",
+            "amount": 150,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "amount": 80,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 366.8,
+          "protein_g": 21.03,
+          "carbohydrate_g": 55.6,
+          "fat_g": 6.59,
+          "fiber_g": 2.78,
+          "sodium_mg": 75.93
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "d37eb5af-a036-5af6-8d8f-4b7add09c91b",
+      "version": 1,
+      "payload": {
+        "versionId": "670a063d-eed3-58ad-9cc3-4c5b87f71879",
+        "name": "Cơm đậu xanh, cải thìa và hành tây",
+        "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 60,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "MUNG_BEAN_DRY",
+            "name": "Đậu xanh (đậu tắt), hạt, khô",
+            "amount": 30,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "BOK_CHOY_BOILED",
+            "name": "Cải thìa (cải trắng), luộc",
+            "amount": 150,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [],
+        "nutrients": {
+          "energy_kcal": 375.9,
+          "protein_g": 15.02,
+          "carbohydrate_g": 75.18,
+          "fat_g": 1.7,
+          "fiber_g": 5.23,
+          "sodium_mg": 50.68
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "b7277bf5-711c-57f0-86b6-b72c00d105d4",
+      "version": 1,
+      "payload": {
+        "versionId": "1bfbf539-62cb-5023-a3fd-0c7da7082f7a",
+        "name": "Cơm đậu tương, bắp cải và su su",
+        "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 60,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "SOYBEAN_DRY",
+            "name": "Đậu tương, đậu nành, hạt khô",
+            "amount": 30,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "CABBAGE_BOILED",
+            "name": "Cải bắp, luộc",
+            "amount": 150,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "CHAYOTE_FRESH",
+            "name": "Quả su su, tươi",
+            "amount": 100,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 417.5,
+          "protein_g": 18.68,
+          "carbohydrate_g": 70.52,
+          "fat_g": 6.72,
+          "fiber_g": 5.2,
+          "sodium_mg": 51.74
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "20f2917e-738c-5e0b-81fa-a7faade2b900",
+      "version": 1,
+      "payload": {
+        "versionId": "4ee26ffb-268c-5104-b59d-2be1da9ed871",
+        "name": "Cơm lạc vừng, rau muống và cà chua",
+        "mealType": "lunch",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa trưa",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 60,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "PEANUT_DRY",
+            "name": "Lạc hạt, khô",
+            "amount": 25,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "SESAME_DRY",
+            "name": "Vừng (đen, trắng), hạt, khô",
+            "amount": 5,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "WATER_SPINACH_FRESH",
+            "name": "Rau muống,  tươi",
+            "amount": 150,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "amount": 80,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "PEANUT",
+          "SESAME"
+        ],
+        "nutrients": {
+          "energy_kcal": 443.65,
+          "protein_g": 17.9,
+          "carbohydrate_g": 60.04,
+          "fat_g": 14.59,
+          "fiber_g": 3.18,
+          "sodium_mg": 70.41
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "ec17295b-9c0d-5e2e-aeec-42932b3f724a",
+      "version": 1,
+      "payload": {
+        "versionId": "d26315f7-3aca-583c-a840-8218a76c44a0",
+        "name": "Cơm đậu phụ, rau muống và su su",
+        "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "TOFU_BOILED",
+            "name": "Đậu phụ luộc",
+            "amount": 100,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "WATER_SPINACH_FRESH",
+            "name": "Rau muống,  tươi",
+            "amount": 150,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "CHAYOTE_FRESH",
+            "name": "Quả su su, tươi",
+            "amount": 100,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 336.0,
+          "protein_g": 20.56,
+          "carbohydrate_g": 48.75,
+          "fat_g": 6.41,
+          "fiber_g": 3.1,
+          "sodium_mg": 67.67
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "aebbb013-28c8-566d-80ad-964b8ef467b3",
+      "version": 1,
+      "payload": {
+        "versionId": "762238ef-653e-5e41-be7a-2b0a64261669",
+        "name": "Cơm đậu xanh, cải thìa và cà chua",
+        "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "MUNG_BEAN_DRY",
+            "name": "Đậu xanh (đậu tắt), hạt, khô",
+            "amount": 30,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "BOK_CHOY_BOILED",
+            "name": "Cải thìa (cải trắng), luộc",
+            "amount": 150,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "amount": 80,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [],
+        "nutrients": {
+          "energy_kcal": 338.0,
+          "protein_g": 13.8,
+          "carbohydrate_g": 66.72,
+          "fat_g": 1.73,
+          "fiber_g": 5.28,
+          "sodium_mg": 56.2
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "6c59ca64-e4ea-5657-b787-ad8c6be8b615",
+      "version": 1,
+      "payload": {
+        "versionId": "004e9a1d-bdf2-5da4-b72c-ca482fb45602",
+        "name": "Khoai lang, đậu phụ và bắp cải",
+        "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "SWEET_POTATO_BOILED",
+            "name": "Khoai lang, luộc",
+            "amount": 250,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "TOFU_BOILED",
+            "name": "Đậu phụ luộc",
+            "amount": 100,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "CABBAGE_BOILED",
+            "name": "Cải bắp, luộc",
+            "amount": 150,
+            "unit": "g",
+            "basis": "cooked"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 464.5,
+          "protein_g": 15.9,
+          "carbohydrate_g": 85.58,
+          "fat_g": 6.44,
+          "fiber_g": 6.18,
+          "sodium_mg": 129.18
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
+      }
+    },
+    {
+      "recipeId": "3314adc6-d3dc-5ecc-8057-da5aedc9c15b",
+      "version": 1,
+      "payload": {
+        "versionId": "42563a76-05c0-5e1c-a305-f2eb40cd34a3",
+        "name": "Cơm đậu tương, cải thìa và hành tây",
+        "mealType": "dinner",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh minh hoạ món ăn cho bữa tối",
+        "servings": 1,
+        "ingredients": [
+          {
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "SOYBEAN_DRY",
+            "name": "Đậu tương, đậu nành, hạt khô",
+            "amount": 30,
+            "unit": "g",
+            "basis": "raw"
+          },
+          {
+            "code": "BOK_CHOY_BOILED",
+            "name": "Cải thìa (cải trắng), luộc",
+            "amount": 150,
+            "unit": "g",
+            "basis": "cooked"
+          },
+          {
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "amount": 50,
+            "unit": "g",
+            "basis": "raw"
+          }
+        ],
+        "allergens": [
+          "SOY"
+        ],
+        "nutrients": {
+          "energy_kcal": 362.9,
+          "protein_g": 17.4,
+          "carbohydrate_g": 58.94,
+          "fat_g": 6.4,
+          "fiber_g": 5.13,
+          "sodium_mg": 48.98
+        },
+        "preparationSteps": [
+          "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
+          "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này."
+        ],
+        "sources": [
+          "VIEN_DINH_DUONG_2019",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "allergenDataComplete": true,
+        "dietaryPatterns": [
+          "vegetarian"
+        ]
       }
     }
   ],

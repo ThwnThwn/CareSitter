@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "source_id": "manual-graph-synthetic-catalog",
+      "revision_id": "manual-graph-synthetic-catalog@sha256:d73dd190d731bda0",
+      "title": "Synthetic nutrition catalog for manual graph tests",
+      "path": "backend/services/nutrition/tools/nutrition_knowledge_manual/fixtures/catalog.synthetic.json",
+      "sha256": "d73dd190d731bda08bcf3ac12051f53aa32739b23b61a353576d113ccfd59969",
+      "byte_size": 1942,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "synthetic",
+      "citation_ids": [
+        "SYNTHETIC_SOURCE"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Project-authored synthetic fixture; contains no book text or patient data.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T00:00:00Z"
+    },
+    {
+      "source_id": "book-an-gi-khong-chet-sample",
+      "revision_id": "book-an-gi-khong-chet-sample@sha256:993dd986d9ea7e4d",
+      "title": "Ăn gì không chết — official sample metadata",
+      "path": "book/An_gi_khong_chet_NXB_Tre_2022_official_sample.html",
+      "sha256": "993dd986d9ea7e4df78d9b9a80a1a16e38c045d8676191678316f6bbd8d899c9",
+      "byte_size": 68075,
+      "mime": "text/html",
+      "language": "vi",
+      "rights_status": "permitted",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Workspace owner confirmed permission for internal local use in the Codex thread on 2026-10-20; this artifact is an official sample metadata page, not the complete book, and this does not assert public redistribution rights.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "book-che-do-an-truong-tho-product-page",
+      "revision_id": "book-che-do-an-truong-tho-product-page@sha256:54b849bce2d27677",
+      "title": "Chế độ ăn trường thọ — product metadata page",
+      "path": "book/Che_do_an_truong_tho_Medinsights_product_page_2026-10-16.html",
+      "sha256": "54b849bce2d2767730b7cf5c556d03997ae5a840abe010545f6eac5d17dfae25",
+      "byte_size": 144075,
+      "mime": "text/html",
+      "language": "vi",
+      "rights_status": "permitted",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Workspace owner confirmed permission for internal local use in the Codex thread on 2026-10-20; this artifact is a product metadata page, not the complete book, and this does not assert public redistribution rights.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "nutrition-p2-draft-bundle",
+      "revision_id": "nutrition-p2-draft-bundle@sha256:766898c2d6b38b31",
+      "title": "Nutrition P2 draft catalog bundle",
+      "path": "backend/services/nutrition/catalog/drafts/adult-hypertension-p2.bundle.json",
+      "sha256": "766898c2d6b38b315ad5bb05c76c487de9c0129a16a40dfae7bd3055e0ff474c",
+      "byte_size": 29948,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "permitted",
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Workspace owner confirmed permission for internal local use in the Codex thread on 2026-10-20; this does not assert public redistribution rights.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "book-dinh-duong-lam-sang-2019",
+      "revision_id": "book-dinh-duong-lam-sang-2019@sha256:abea34b8a6a63e9e",
+      "title": "Dinh dưỡng lâm sàng",
+      "path": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "sha256": "abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737",
+      "byte_size": 4573499,
+      "mime": "application/pdf",
+      "language": "vi",
+      "rights_status": "permitted",
+      "citation_ids": [
+        "VIEN_DINH_DUONG_2019"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Workspace owner confirmed permission for internal local use in the Codex thread on 2026-10-20; this does not assert public redistribution rights.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "nin-food-composition-snapshot-2026-10-16",
+      "revision_id": "nin-food-composition-snapshot-2026-10-16@sha256:f1004f8b54689ee2",
+      "title": "Snapshot thành phần thực phẩm Việt Nam",
+      "path": "backend/services/nutrition/catalog/sources/nin-food-composition-2026-10-16.json",
+      "sha256": "f1004f8b54689ee2194255b96345cb2abde198c1837e6f9db6b2531d6c1e875b",
+      "byte_size": 14933,
+      "mime": "application/json",
+      "language": "vi",
+      "rights_status": "permitted",
+      "citation_ids": [
+        "VIETNAM_FOOD_COMPOSITION_2017"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Workspace owner confirmed permission for internal local use in the Codex thread on 2026-10-20; this does not assert public redistribution rights.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "who-fao-healthy-diets-2024",
+      "revision_id": "who-fao-healthy-diets-2024@sha256:fcc13d9c0396fb7b",
+      "title": "What are healthy diets? Joint statement by FAO and WHO",
+      "path": "book/WHO_FAO_What_are_healthy_diets_2024.pdf",
+      "source_url": "https://www.who.int/publications/i/item/9789240101876",
+      "sha256": "fcc13d9c0396fb7bfd1cdaca51cc51e128ea072d377a6fcc6b80ef4f1709bbe0",
+      "byte_size": 1236940,
+      "mime": "application/pdf",
+      "language": "en",
+      "rights_status": "permitted",
+      "license": "CC BY-NC-SA 3.0 IGO",
+      "citation_ids": [
+        "WHO_FAO_HEALTHY_DIETS_2024"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "WHO publication record and the publication copyright page state CC BY-NC-SA 3.0 IGO; admitted only for non-commercial local indexing, querying and internal citation.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "who-europe-healthy-ageing-diets-2023",
+      "revision_id": "who-europe-healthy-ageing-diets-2023@sha256:91e3438046a10f4b",
+      "title": "Promoting physical activity and healthy diets for healthy ageing in the WHO European Region",
+      "path": "book/WHO_Europe_Healthy_Ageing_Diets_2023.pdf",
+      "source_url": "https://www.who.int/europe/publications/i/item/WHO-EURO-2023-8002-47770-70520",
+      "sha256": "91e3438046a10f4b9e14d29fa3184d5d5497ba3be89bef97157aeee9dff6be20",
+      "byte_size": 1845564,
+      "mime": "application/pdf",
+      "language": "en",
+      "rights_status": "permitted",
+      "license": "CC BY-NC-SA 3.0 IGO",
+      "citation_ids": [
+        "WHO_EURO_HEALTHY_AGEING_2023"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "The publication copyright page states CC BY-NC-SA 3.0 IGO; admitted only for non-commercial local indexing, querying and internal citation.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "vdd-ten-nutrition-recommendations-2030-en",
+      "revision_id": "vdd-ten-nutrition-recommendations-2030-en@sha256:52ac8de09bfa35ec",
+      "title": "Ten Recommendations for Proper Nutrition toward 2030",
+      "path": "book/VDD_Ten_recommendations_proper_nutrition_2030_official_en.html",
+      "source_url": "https://viendinhduong.vn/en/professional-activities/nutrition-communication-education/ten-recommendations-for-proper-nutrition-toward-2030-67e957976cff2a3640091f85",
+      "sha256": "52ac8de09bfa35ec020dc140867355d9ccdd8ba80b7b593d486e4af31c8da5bc",
+      "byte_size": 111164,
+      "mime": "text/html",
+      "language": "en",
+      "rights_status": "permitted",
+      "license": "Internal local use authorized by workspace owner; no public redistribution claim",
+      "citation_ids": [
+        "MOH_QD_3594_2024"
+      ],
+      "allowed_uses": [
+        "metadata",
+        "local_index",
+        "local_query",
+        "internal_citation"
+      ],
+      "rights_evidence": "Official National Institute of Nutrition page for Decision 3594/QD-BYT. Workspace owner authorized internal local use; public redistribution rights are not asserted.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "who-keep-fit-for-life-2002",
+      "revision_id": "who-keep-fit-for-life-2002@sha256:03cf4225e0311ce8",
+      "title": "Keep fit for life: meeting the nutritional needs of older persons",
+      "path": "book/WHO_Keep_fit_for_life_2002.pdf",
+      "source_url": "https://www.who.int/publications/i/item/keep-fit-for-life-meeting-the-nutritional-needs-of-older-persons",
+      "sha256": "03cf4225e0311ce8f0de5f8dc5a1a1f48de720aa89d6230ca02525518732c817",
+      "byte_size": 293888,
+      "mime": "application/pdf",
+      "language": "en",
+      "rights_status": "unverified",
+      "license": "All rights reserved",
+      "citation_ids": [
+        "WHO_KEEP_FIT_FOR_LIFE_2002"
+      ],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "The publication copyright page states all rights reserved and directs non-commercial reproduction requests to WHO. The exact local artifact is bound for metadata verification only and is excluded from the corpus.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "espen-geriatrics-guideline-2022",
+      "revision_id": "espen-geriatrics-guideline-2022@sha256:b5456f29359f345a",
+      "title": "ESPEN practical guideline: Clinical nutrition and hydration in geriatrics",
+      "path": "book/ESPEN_Clinical_nutrition_hydration_geriatrics_2022.pdf",
+      "source_url": "https://2022.espen.org/files/ESPEN-Guidelines/ESPEN_practical_guideline_Clinical_nutrition_and_hydration_in_geriatrics.pdf",
+      "sha256": "b5456f29359f345ab7c4943c54605934beff4c0175f206f96ca435a344f5355c",
+      "byte_size": 6547995,
+      "mime": "application/pdf",
+      "language": "en",
+      "rights_status": "unverified",
+      "license": "All rights reserved",
+      "citation_ids": [
+        "ESPEN_GERIATRICS_2022"
+      ],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "The official PDF states Published by Elsevier Ltd. All rights reserved. The exact local artifact is bound for metadata verification only and is excluded from the corpus.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "vietnam-rda-2014-2016-candidate",
+      "revision_id": "vietnam-rda-2014-2016-candidate@unresolved",
+      "title": "Bảng nhu cầu dinh dưỡng khuyến nghị cho người Việt Nam",
+      "path": null,
+      "source_url": null,
+      "sha256": null,
+      "byte_size": null,
+      "mime": "application/octet-stream",
+      "language": "vi",
+      "rights_status": "unverified",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "A secondary link was supplied, but no exact official table artifact and licence were bound. Numerical RDA data must remain structured and cannot enter text chunking until the official revision is verified.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "fao-vietnam-food-based-dietary-guidelines-candidate",
+      "revision_id": "fao-vietnam-food-based-dietary-guidelines-candidate@unresolved",
+      "title": "Food-based dietary guidelines - Viet Nam",
+      "path": null,
+      "source_url": "https://www.fao.org/nutrition/education/food-dietary-guidelines/regions/countries/vietnam/en/",
+      "sha256": null,
+      "byte_size": null,
+      "mime": "text/html",
+      "language": "en",
+      "rights_status": "unverified",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "The official FAO country page describes the older Vietnamese food-based dietary guidelines. It is retained as provenance metadata but excluded from default retrieval because Decision 3594/QD-BYT (2024) supersedes the earlier recommendations and no exact current artifact is bound here.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "vdd-life-course-food-pyramids-2025-candidate",
+      "revision_id": "vdd-life-course-food-pyramids-2025-candidate@unresolved",
+      "title": "Bộ 07 Tháp dinh dưỡng theo vòng đời",
+      "path": null,
+      "source_url": "https://viendinhduong.vn/",
+      "sha256": null,
+      "byte_size": null,
+      "mime": "application/octet-stream",
+      "language": "vi",
+      "rights_status": "unverified",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "The National Institute of Nutrition reports Decision 640/QD-VDD dated 26 May 2025, but the exact seven official artifacts and their reuse terms have not yet been bound.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "moh-nutrition-treatment-guide-2015-candidate",
+      "revision_id": "moh-nutrition-treatment-guide-2015-candidate@unresolved",
+      "title": "Hướng dẫn điều trị dinh dưỡng",
+      "path": null,
+      "source_url": null,
+      "sha256": null,
+      "byte_size": null,
+      "mime": "application/pdf",
+      "language": "vi",
+      "rights_status": "unverified",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "Only a bibliography entry was supplied. No exact Ministry of Health artifact, revision hash or reuse terms are available, so the source remains metadata-only.",
+      "checked_by": "CareSitter engineering",
+      "checked_at_utc": "2026-10-20T14:00:00Z"
+    },
+    {
+      "source_id": "moh-hypertension-guide-2010",
+      "revision_id": "moh-hypertension-guide-2010@unresolved",
+      "title": "Hướng dẫn chẩn đoán và điều trị tăng huyết áp",
+      "path": null,
+      "sha256": null,
+      "byte_size": null,
+      "mime": "application/pdf",
+      "language": "vi",
+      "rights_status": "unverified",
+      "citation_ids": [
+        "MOH_HTN_GUIDE_2010"
+      ],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "Workspace owner approved internal use, but no exact local artifact/revision exists yet; admission remains unverified until path, hash and size are bound.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    },
+    {
+      "source_id": "usda-fooddata-central-candidate",
+      "revision_id": "usda-fooddata-central-candidate@unresolved",
+      "title": "USDA FoodData Central candidate source",
+      "path": null,
+      "sha256": null,
+      "byte_size": null,
+      "mime": "application/octet-stream",
+      "language": "en",
+      "rights_status": "unverified",
+      "citation_ids": [],
+      "allowed_uses": [
+        "metadata"
+      ],
+      "rights_evidence": "Workspace owner approved internal use, but no exact dataset release/local artifact exists yet; admission remains unverified until path, hash and size are bound.",
+      "checked_by": "Workspace owner",
+      "checked_at_utc": "2026-10-20T10:42:12Z"
+    }
+  ]
+}

@@ -76,7 +76,10 @@
         "nutrients": { "type": "object", "minProperties": 1, "additionalProperties": { "type": ["number", "null"], "minimum": 0 } },
         "preparationSteps": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
         "sources": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/code" } },
-        "allergenDataComplete": { "const": true }
+        "allergenDataComplete": { "const": true },
+        "dietaryPatterns": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "imageUrl": { "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 2048 },
+        "imageAlt": { "type": "string", "minLength": 1, "maxLength": 200 }
       }
     },
     "recipeVersion": {

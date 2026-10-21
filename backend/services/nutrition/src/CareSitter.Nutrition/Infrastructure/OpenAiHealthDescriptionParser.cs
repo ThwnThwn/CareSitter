@@ -17,7 +17,7 @@ internal sealed class OpenAiHealthDescriptionParser(HttpClient http, IOptions<He
 
     public async Task<HealthParseResult> ParseAsync(HealthParseRequest request, CancellationToken ct)
     {
-        if (!_options.Enabled) throw new HealthParserException("nutrition.ai_unavailable", false);
+        if (!_options.Enabled) throw new HealthParserException("nutrition.ai_not_configured", false);
         if (request.Sources.Values.Sum(value => value.Length) > _options.MaxInputCharacters)
             throw new HealthParserException("nutrition.ai_input_too_large", false);
         if (!HealthKnowledgeGraphRetriever.IsValid(request.Graph, request.DictionaryRevision))
@@ -48,16 +48,29 @@ internal sealed class OpenAiHealthDescriptionParser(HttpClient http, IOptions<He
                 {
                     await DelayForRetryAsync(response.Headers.RetryAfter, timeout.Token); continue;
                 }
-                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden ||
-                    response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
-                    throw new HealthParserException("nutrition.ai_unavailable", false);
+                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                {
+                    logger.LogWarning(
+                        "Nutrition AI provider rejected its credential: StatusCode={StatusCode}, ErrorCode={ErrorCode}.",
+                        (int)response.StatusCode, "nutrition.ai_authentication_failed");
+                    throw new HealthParserException("nutrition.ai_authentication_failed", false);
+                }
+                if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
+                {
+                    logger.LogWarning(
+                        "Nutrition AI provider rejected its request configuration: StatusCode={StatusCode}, ErrorCode={ErrorCode}.",
+                        (int)response.StatusCode, "nutrition.ai_configuration_invalid");
+                    throw new HealthParserException("nutrition.ai_configuration_invalid", false);
+                }
+                if (response.StatusCode is HttpStatusCode.TooManyRequests)
+                    throw new HealthParserException("nutrition.ai_rate_limited", true);
                 if (!response.IsSuccessStatusCode)
                     throw new HealthParserException("nutrition.ai_unavailable", Transient(response.StatusCode));
                 var body = await ReadLimitedAsync(response.Content, _options.MaxResponseBytes, timeout.Token);
                 var parsed = ParseResponse(body, request, redacted, out var usage);
                 inputTokens += usage.InputTokens; outputTokens += usage.OutputTokens;
                 logger.LogInformation("Nutrition GraphRAG parser completed: Provider={Provider}, Model={Model}, Prompt={Prompt}, Schema={Schema}, Dictionary={Dictionary}, GraphSchema={GraphSchema}, GraphNodes={GraphNodes}, GraphEdges={GraphEdges}, Retrieval={Retrieval}, Attempts={Attempts}, LatencyMs={LatencyMs}, InputTokens={InputTokens}, OutputTokens={OutputTokens}.",
-                    _options.Provider, _options.Model, OpenAiHealthParserContract.PromptVersion, request.SchemaVersion,
+                    _options.Provider, _options.EffectiveModel, OpenAiHealthParserContract.PromptVersion, request.SchemaVersion,
                     request.DictionaryRevision, request.Graph.SchemaVersion, request.Graph.Nodes.Length,
                     request.Graph.Edges.Length, request.Graph.RetrievalStrategy, attempt, stopwatch.ElapsedMilliseconds,
                     inputTokens, outputTokens);
@@ -78,7 +91,7 @@ internal sealed class OpenAiHealthDescriptionParser(HttpClient http, IOptions<He
     private byte[] BuildRequest(HealthParseRequest request, IReadOnlyDictionary<string, string> sources) =>
         JsonSerializer.SerializeToUtf8Bytes(new
         {
-            model = _options.Model,
+            model = _options.EffectiveModel,
             store = false,
             reasoning = new { effort = "none" },
             instructions = OpenAiHealthParserContract.Instructions,
@@ -113,10 +126,7 @@ internal sealed class OpenAiHealthDescriptionParser(HttpClient http, IOptions<He
                 throw new HealthParserException("nutrition.ai_invalid_output", false);
             if (!TryOutput(root, out var output, out var refused))
                 throw new HealthParserException(refused ? "nutrition.ai_refused" : "nutrition.ai_invalid_output", false);
-            var result = NutritionJson.Read<HealthParseResult>(output);
-            if (result.Facts is null || result.UnresolvedStatements is null || result.IrrelevantSourceKeys is null)
-                throw new HealthParserException("nutrition.ai_invalid_output", false);
-            result = RestoreQuotes(result, request.Sources, redacted);
+            var result = HealthParserResponse.Parse(output, request, redacted);
             usage = ReadUsage(root);
             return result;
         }
@@ -141,24 +151,6 @@ internal sealed class OpenAiHealthDescriptionParser(HttpClient http, IOptions<He
             }
         }
         return false;
-    }
-
-    private static HealthParseResult RestoreQuotes(HealthParseResult result, IReadOnlyDictionary<string, string> original,
-        IReadOnlyDictionary<string, string> redacted) => result with
-        {
-            Facts = result.Facts.Select(fact => fact with { Quote = Restore(fact.SourceKey, fact.Quote, fact.StartOffset, fact.EndOffset, original, redacted) }).ToArray(),
-            UnresolvedStatements = result.UnresolvedStatements.Select(statement => statement with
-            { Quote = Restore(statement.SourceKey, statement.Quote, statement.StartOffset, statement.EndOffset, original, redacted) }).ToArray()
-        };
-
-    private static string Restore(string sourceKey, string quote, int start, int end,
-        IReadOnlyDictionary<string, string> original, IReadOnlyDictionary<string, string> redacted)
-    {
-        if (!original.TryGetValue(sourceKey, out var raw) || !redacted.TryGetValue(sourceKey, out var safe) ||
-            start < 0 || end <= start || end > raw.Length || end > safe.Length || end - start != quote.Length ||
-            !safe.AsSpan(start, quote.Length).SequenceEqual(quote.AsSpan()))
-            throw new HealthParserException("nutrition.ai_invalid_output", false);
-        return raw.Substring(start, end - start);
     }
 
     private static (long InputTokens, long OutputTokens) ReadUsage(JsonElement root)

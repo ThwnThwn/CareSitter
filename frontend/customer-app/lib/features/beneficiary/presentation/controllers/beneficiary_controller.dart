@@ -6,6 +6,7 @@ import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
 import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
+import 'beneficiary_load_state_controller.dart';
 
 export 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
 
@@ -36,15 +37,29 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
         _sessionGeneration++;
         state = const [];
       }
+      final loadState = ref.read(beneficiaryLoadStateProvider.notifier);
+      if (next.isLoading) {
+        loadState.setLoading();
+        return;
+      }
+      if (next.hasError) {
+        state = const [];
+        loadState.setError(next.error!, next.stackTrace ?? StackTrace.current);
+        return;
+      }
       final isAuth = next.value?.isAuthenticated ?? false;
       if (isAuth) {
         _loadFromBackend();
       } else {
         state = const [];
+        loadState.setLoaded();
       }
     });
 
-    _loadFromBackend();
+    // Defer cross-provider state updates until this provider has completed its
+    // own initialization. Riverpod rejects modifying loadState while build()
+    // is still mounting BeneficiaryStore.
+    Future.microtask(_loadFromBackend);
     // Tài khoản người dùng mới bắt đầu với danh sách rỗng
     return const [];
   }
@@ -53,33 +68,63 @@ class BeneficiaryStore extends Notifier<List<BeneficiaryModel>> {
     final session = _sessionGeneration;
     final userId = _userId;
     final generation = ++_loadGeneration;
-    final isAuth = ref.read(authStateProvider).value?.isAuthenticated ?? false;
-    if (!isAuth) return;
+    final loadState = ref.read(beneficiaryLoadStateProvider.notifier);
+    final auth = ref.read(authStateProvider);
+    if (auth.isLoading) return;
+    if (auth.hasError) {
+      loadState.setError(auth.error!, auth.stackTrace ?? StackTrace.current);
+      return;
+    }
+    final isAuth = auth.value?.isAuthenticated ?? false;
+    if (!isAuth) {
+      loadState.setLoaded();
+      return;
+    }
+    loadState.setLoading();
 
     try {
-      final addresses = await _readAddresses();
-      final addressesById = {
-        for (final address in addresses) address.id: address.fullAddress
-      };
       final data = await _repository.getBeneficiaries();
       if (session != _sessionGeneration ||
           userId != _userId ||
           generation != _loadGeneration) {
         return;
       }
-      if (data.isNotEmpty) {
-        final list = data
-            .map((item) => BeneficiaryModel.fromBackend(item,
-                addressesById: addressesById))
-            .toList();
-        state = list;
-      } else {
-        state = const [];
+      state = data
+          .map((item) => BeneficiaryModel.fromBackend(item))
+          .toList(growable: false);
+      loadState.setLoaded();
+      if (data.isEmpty) return;
+
+      // Nutrition only needs the beneficiary identity to render. Do not keep
+      // that screen in a loading state while the independent address request
+      // is slow; enrich the cached models when addresses become available.
+      final addresses = await _readAddresses();
+      if (addresses.isEmpty ||
+          session != _sessionGeneration ||
+          userId != _userId ||
+          generation != _loadGeneration) {
+        return;
       }
-    } catch (_) {
+      final addressesById = {
+        for (final address in addresses) address.id: address.fullAddress
+      };
+      state = data
+          .map((item) => BeneficiaryModel.fromBackend(
+                item,
+                addressesById: addressesById,
+              ))
+          .toList(growable: false);
+    } catch (error, stackTrace) {
       // Khi có lỗi mạng hoặc tài khoản mới chưa có data → giữ state hiện tại
+      if (session == _sessionGeneration &&
+          userId == _userId &&
+          generation == _loadGeneration) {
+        loadState.setError(error, stackTrace);
+      }
     }
   }
+
+  Future<void> reload() => _loadFromBackend();
 
   Future<BeneficiaryModel> add({
     required String name,
