@@ -93,12 +93,6 @@ internal sealed class PaymentIntegrationEventHandler(
 
         await FinalizePromotionAsync(booking, ct);
 
-        await postCommit.RunAsync("payment customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("payment notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking,
-                "Thanh toán thành công",
-                "Booking đã được xác nhận và đang tìm người chăm sóc phù hợp.", ct));
         await postCommit.RunAsync("caregiver matching", () =>
             matching.OfferTopCandidatesAsync(booking.Id, ct));
     }
@@ -155,12 +149,6 @@ internal sealed class PaymentIntegrationEventHandler(
         await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
             "PAYMENT_REJECTED", ct);
 
-        await postCommit.RunAsync("payment rejection customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("payment rejection notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking,
-                "Thanh toán không được chấp nhận",
-                "Booking đã bị hủy sau khi đối soát thanh toán.", ct));
     }
 
     public async Task Handle(PaymentReconciliationStarted notification, CancellationToken ct)
@@ -179,9 +167,6 @@ internal sealed class PaymentIntegrationEventHandler(
         bookingSync.WriteSyncEvent(booking, "PAYMENT_RECONCILIATION_STARTED");
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        await postCommit.RunAsync("payment reconciliation status", () =>
-            postCommit.BroadcastStatusAsync(booking.Id, "pending_payment",
-                "payment_reconciliation_pending", ct));
     }
 
     public async Task Handle(PaymentExpired notification, CancellationToken ct)
@@ -201,7 +186,6 @@ internal sealed class PaymentIntegrationEventHandler(
             throw new InvalidOperationException(
                 $"Booking {booking.Id} cannot expire payment from state {booking.Status}.");
 
-        var oldStatus = BookingStatusCodec.ToApi(booking.Status);
         var cancelled = booking.Cancel(
             booking.CustomerId, "SYSTEM", notification.Reason, clock.UtcNow);
         if (cancelled.IsFailure) throw new InvalidOperationException(cancelled.Error.Message);
@@ -214,12 +198,6 @@ internal sealed class PaymentIntegrationEventHandler(
         await tx.CommitAsync(ct);
         await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
             "PAYMENT_EXPIRED", ct);
-        await postCommit.RunAsync("payment expiration status", () =>
-            postCommit.BroadcastStatusAsync(booking.Id, oldStatus, "cancelled", ct));
-        await postCommit.RunAsync("payment expiration notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking,
-                "Booking đã hết hạn thanh toán",
-                "Booking đã được hủy vì thanh toán không hoàn tất.", ct));
     }
 
     public async Task Handle(PaymentNeedsManualReview notification, CancellationToken ct)
@@ -246,9 +224,6 @@ internal sealed class PaymentIntegrationEventHandler(
         bookingSync.WriteSyncEvent(booking, "PAYMENT_NEEDS_MANUAL_REVIEW");
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        await postCommit.RunAsync("payment manual review status", () =>
-            postCommit.BroadcastStatusAsync(booking.Id, "payment_reconciliation_pending",
-                "needs_manual_review", ct));
     }
 
     private Task<Domain.Booking?> LockBookingAsync(Guid bookingId, CancellationToken ct) =>

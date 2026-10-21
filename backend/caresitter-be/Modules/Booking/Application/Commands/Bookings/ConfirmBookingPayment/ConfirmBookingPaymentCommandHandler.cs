@@ -80,13 +80,8 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         await bookings.SaveChangesAsync(ct);
         var promotionFinalization = await FinalizePromotionAsync(booking, ct);
         if (promotionFinalization.IsFailure) return promotionFinalization.Error;
-        await postCommit.RunAsync("payment customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
         await postCommit.RunAsync("caregiver matching", () =>
             matching.OfferTopCandidatesAsync(request.BookingId, ct));
-        await postCommit.RunAsync("payment caregiver notification", () =>
-            postCommit.NotifyCaregiverAsync(booking, "Bạn có lịch chăm sóc mới",
-                "Khách hàng đã thanh toán và đang chờ bạn xác nhận ca.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 

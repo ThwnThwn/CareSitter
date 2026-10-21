@@ -12,7 +12,6 @@ internal sealed class StartBookingEnRouteCommandHandler(
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<StartBookingEnRouteCommand, Result<BookingResponse>>
 {
@@ -26,7 +25,6 @@ internal sealed class StartBookingEnRouteCommandHandler(
         if (!await people.IsCaregiverForBookingAsync(caregiverId, userId, ct))
             return BookingErrors.Forbidden();
 
-        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.StartEnRoute();
         if (result.IsFailure) return result.Error;
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
@@ -36,14 +34,6 @@ internal sealed class StartBookingEnRouteCommandHandler(
             BookingSyncEventTypes.CaregiverEnRoute, "Caregiver đang trên đường đến.",
             DateTimeOffset.UtcNow, ct: ct);
         await bookings.SaveChangesAsync(ct);
-        await postCommit.RunAsync("en-route status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusPresenter.ToApi(booking.Status), ct));
-        await postCommit.RunAsync("en-route customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("en-route customer notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đang di chuyển",
-                "Caregiver đang trên đường đến địa điểm chăm sóc.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

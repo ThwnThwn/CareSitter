@@ -57,3 +57,6 @@
 \ir modules/booking/45-booking-chat-admin-reporting.sql
 \ir modules/support/46-booking-chat-notification-type.sql
 \ir modules/support/47-booking-chat-report-ticket-sources.sql
+\ir modules/support/48-notification-type-after-support-chat.sql
+\ir modules/booking/49-booking-create-idempotency.sql
+\ir modules/booking/50-booking-domain-outbox.sql

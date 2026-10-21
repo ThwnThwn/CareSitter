@@ -3,6 +3,7 @@ using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Application.BookingChat;
+using CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.SharedKernel.Modules;
@@ -66,6 +67,15 @@ public sealed class BookingModule : IModule
             .Validate(x => x.RetentionPollIntervalMinutes is >= 5 and <= 1_440,
                 "BookingChat:RetentionPollIntervalMinutes phai nam trong khoang 5-1440.")
             .ValidateOnStart();
+        services.AddOptions<BookingSideEffectOptions>()
+            .Bind(configuration.GetSection(BookingSideEffectOptions.SectionName))
+            .Validate(x => x.PollIntervalSeconds is >= 1 and <= 300 &&
+                x.LeaseSeconds is >= 5 and <= 600 &&
+                x.BatchSize is >= 1 and <= 200 &&
+                x.MaxAttempts is >= 1 and <= 50 &&
+                x.RetryDelaySeconds is >= 1 and <= 3600,
+                "BookingSideEffects configuration is outside the supported range.")
+            .ValidateOnStart();
 
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
@@ -93,8 +103,10 @@ public sealed class BookingModule : IModule
         // Scoped vì inject BookingDbContext (Scoped).
         services.AddScoped<IBookingSyncService, BookingSyncService>();
         services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IBookingCreationIdempotencyStore, BookingCreationIdempotencyStore>();
         services.AddScoped<IBookingResponseMapper, BookingResponseMapper>();
         services.AddScoped<IBookingPostCommitService, BookingPostCommitService>();
+        services.AddScoped<BookingDomainOutboxDispatcher>();
         services.AddScoped<IBookingAcceptanceTransaction, BookingAcceptanceTransaction>();
         services.AddScoped<IBookingChatWriter, BookingChatWriter>();
         services.AddScoped<IBookingChatService, BookingChatService>();
@@ -107,6 +119,7 @@ public sealed class BookingModule : IModule
         // Worker tự tắt khi BookingChat:Enabled=false; outbox đã commit vẫn được giữ
         // và sẽ gửi tiếp khi bật lại, không mất signal.
         services.AddHostedService<BookingChatDispatchWorker>();
+        services.AddHostedService<BookingDomainOutboxWorker>();
         services.AddHostedService<BookingChatReportWorker>();
         services.AddHostedService<BookingChatRetentionWorker>();
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();

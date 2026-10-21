@@ -12,7 +12,6 @@ internal sealed class RequestBookingCheckoutCommandHandler(
     IPeopleLookupService people,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<RequestBookingCheckoutCommand, Result<BookingResponse>>
 {
@@ -31,7 +30,6 @@ internal sealed class RequestBookingCheckoutCommandHandler(
         if (await bookings.HasRequiredSkippedCareTasksAsync(request.BookingId, ct))
             booking.MarkNeedsReview();
 
-        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var result = booking.RequestManualCheckout();
         if (result.IsFailure) return result.Error;
         bookings.AddTimelineEvent(CareTimelineEvent.Create(
@@ -42,14 +40,6 @@ internal sealed class RequestBookingCheckoutCommandHandler(
             booking.CheckoutPendingReviewAt ?? DateTimeOffset.UtcNow,
             BookingChatTransitionEffect.StartPostShiftGrace, ct);
         await bookings.SaveChangesAsync(ct);
-        await postCommit.RunAsync("checkout-request status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus,
-                BookingStatusPresenter.ToApi(booking.Status), ct));
-        await postCommit.RunAsync("checkout-request customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("checkout-request customer notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver yêu cầu checkout",
-                "Vui lòng kiểm tra và xác nhận hoàn tất ca chăm sóc.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

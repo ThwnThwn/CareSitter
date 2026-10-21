@@ -44,9 +44,19 @@ public sealed class BookingsController : ControllerBase
     /// <summary>Tạo booking mới qua MediatR CreateBookingCommand. Trả về đầy đủ BookingResponse để FE không cần gọi thêm GET.</summary>
     [HttpPost]
     [Authorize(Roles = "CUSTOMER")]
-    public async Task<IActionResult> Create([FromBody] CreateBookingRequest request, CancellationToken ct)
+    public async Task<IActionResult> Create(
+        [FromBody] CreateBookingRequest request,
+        [FromHeader(Name = "Idempotency-Key")] Guid idempotencyKey,
+        CancellationToken ct)
     {
-        var result = await _mediator.Send(request.ToCommand(), ct);
+        if (idempotencyKey == Guid.Empty)
+            return BadRequest(new ProblemDetails
+            {
+                Title = "booking.idempotency_key.invalid",
+                Detail = "Idempotency-Key phải là UUID hợp lệ và khác rỗng."
+            });
+
+        var result = await _mediator.Send(request.ToCommand(idempotencyKey), ct);
         return result.ToActionResult(this,
             booking => Created($"/api/v1/bookings/{booking.Id}", booking));
     }

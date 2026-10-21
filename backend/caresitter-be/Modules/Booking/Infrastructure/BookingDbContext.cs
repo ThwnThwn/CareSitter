@@ -2,6 +2,7 @@ using CareSitter.Infrastructure.Persistence;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Domain;
 using Microsoft.EntityFrameworkCore;
+using CareSitter.SharedKernel.Domain;
 
 namespace CareSitter.Modules.Booking.Infrastructure;
 
@@ -30,6 +31,8 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<BookingChatOutboxEvent> BookingChatOutbox => Set<BookingChatOutboxEvent>();
     public DbSet<BookingChatActivityEvent> BookingChatActivityEvents => Set<BookingChatActivityEvent>();
     public DbSet<BookingChatReport> BookingChatReports => Set<BookingChatReport>();
+    public DbSet<BookingDomainOutboxEvent> BookingDomainOutbox => Set<BookingDomainOutboxEvent>();
+    internal DbSet<BookingCreationRequest> BookingCreationRequests => Set<BookingCreationRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +45,25 @@ public sealed class BookingDbContext : ModuleDbContext
         modelBuilder.ApplyConfiguration(new BookingChatOutboxConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatActivityEventConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatReportConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingDomainOutboxConfiguration());
+
+        modelBuilder.Entity<BookingCreationRequest>(b =>
+        {
+            b.ToTable("booking_creation_requests");
+            b.HasKey(x => new { x.CustomerId, x.IdempotencyKey });
+            b.Property(x => x.CustomerId).HasColumnName("customer_id");
+            b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key");
+            b.Property(x => x.PayloadHash).HasColumnName("payload_hash").HasMaxLength(64);
+            b.Property(x => x.BookingId).HasColumnName("booking_id");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.HasOne<Domain.Booking>()
+                .WithMany()
+                .HasForeignKey(x => x.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasIndex(x => x.BookingId)
+                .IsUnique()
+                .HasDatabaseName("uq_booking_creation_request_booking");
+        });
 
         modelBuilder.Entity<Domain.Booking>(b =>
         {
@@ -229,4 +251,34 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.ReceivedAt).HasColumnName("received_at");
         });
     }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var aggregates = ChangeTracker.Entries<Domain.Booking>()
+            .Select(entry => entry.Entity)
+            .Where(booking => booking.DomainEvents.Count > 0)
+            .Distinct()
+            .ToArray();
+
+        foreach (var booking in aggregates)
+        {
+            foreach (var domainEvent in booking.DomainEvents)
+            {
+                if (!BookingDomainOutbox.Local.Any(x => x.EventId == EventId(domainEvent)))
+                    BookingDomainOutbox.Add(BookingDomainOutboxEvent.From(
+                        domainEvent, booking.SyncVersion));
+            }
+        }
+
+        var saved = await base.SaveChangesAsync(cancellationToken);
+        foreach (var booking in aggregates)
+            booking.ClearDomainEvents();
+        return saved;
+    }
+
+    private static Guid EventId(IDomainEvent domainEvent) => domainEvent switch
+    {
+        Domain.Events.BookingDomainEvent bookingEvent => bookingEvent.EventId,
+        _ => Guid.Empty
+    };
 }

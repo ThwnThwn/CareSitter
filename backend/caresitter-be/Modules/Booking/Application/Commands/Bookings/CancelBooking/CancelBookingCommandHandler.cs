@@ -13,7 +13,6 @@ internal sealed class CancelBookingCommandHandler(
     IPromotionService promotions,
     IBookingSyncService bookingSync,
     IBookingChatWriter bookingChat,
-    IBookingPostCommitService postCommit,
     IBookingResponseMapper responseMapper)
     : IRequestHandler<CancelBookingCommand, Result<BookingResponse>>
 {
@@ -22,7 +21,6 @@ internal sealed class CancelBookingCommandHandler(
         if (currentUser.UserId is not { } userId) return BookingErrors.Unauthenticated();
         var booking = await bookings.GetForCustomerAsync(request.BookingId, userId, ct);
         if (booking is null) return BookingErrors.NotFound();
-        var oldStatus = BookingStatusPresenter.ToApi(booking.Status);
         var cancelledAt = clock.UtcNow;
         var policy = BookingCancellationPolicy.Evaluate(booking, cancelledAt);
         if (policy.IsFailure) return policy.Error;
@@ -44,13 +42,6 @@ internal sealed class CancelBookingCommandHandler(
         await bookings.SaveChangesAsync(ct);
         await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
             "BOOKING_CANCELLED", ct);
-        await postCommit.RunAsync("cancel status broadcast", () =>
-            postCommit.BroadcastStatusAsync(request.BookingId, oldStatus, "cancelled", ct));
-        await postCommit.RunAsync("cancel customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
-        await postCommit.RunAsync("cancel caregiver notification", () =>
-            postCommit.NotifyCaregiverAsync(booking, "Lịch chăm sóc đã bị hủy",
-                "Khách hàng đã hủy lịch chăm sóc.", ct));
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

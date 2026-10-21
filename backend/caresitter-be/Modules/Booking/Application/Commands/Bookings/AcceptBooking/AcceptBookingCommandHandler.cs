@@ -27,7 +27,6 @@ internal sealed class AcceptBookingCommandHandler(
         if (currentCaregiverId is null) return BookingErrors.Forbidden();
 
         var caregiverId = currentCaregiverId.Value;
-        var oldStatus = string.Empty;
         IReadOnlyList<BookingAssignment> otherOffers = [];
         var accepted = await acceptanceTransaction.ExecuteAsync(request.BookingId,
             async (booking, innerCt) =>
@@ -66,7 +65,6 @@ internal sealed class AcceptBookingCommandHandler(
                 if (booking.Status is not (BookingStatus.Confirmed or BookingStatus.Crisis))
                     return BookingErrors.NotAwaitingAcceptance();
 
-                oldStatus = BookingStatusPresenter.ToApi(booking.Status);
                 var assigned = booking.AssignCaregiver(caregiverId);
                 if (assigned.IsFailure) return assigned.Error;
 
@@ -111,15 +109,8 @@ internal sealed class AcceptBookingCommandHandler(
             await postCommit.RunAsync("cancelled offer update", () =>
                 postCommit.PublishOfferChangedAsync(otherOffer.CaregiverId, request.BookingId, "cancelled", ct));
 
-        // Lưu inbox trước khi gửi SignalR để customer có thể refresh badge ngay
-        // khi nhận event realtime, không gặp race với transaction notification.
-        await postCommit.RunAsync("accepted customer notification", () =>
-            postCommit.NotifyBookingUserAsync(booking.CustomerId, booking, "Caregiver đã nhận ca",
-                "Caregiver đã xác nhận lịch chăm sóc của bạn.", ct));
-        await postCommit.RunAsync("accepted status broadcast", () =>
-            postCommit.BroadcastAcceptedStatusAsync(booking, oldStatus, ct));
-        await postCommit.RunAsync("accepted customer sync", () =>
-            postCommit.PublishCustomerSyncEventAsync(booking, ct));
+        // Status, customer sync and notification are delivered by the durable
+        // booking domain outbox captured in the acceptance transaction.
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }
