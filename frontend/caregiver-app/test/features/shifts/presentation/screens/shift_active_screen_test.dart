@@ -80,7 +80,7 @@ void main() {
       expect(find.text('Minh chứng'), findsNWidgets(3));
       expect(find.text('Hoàn thành'), findsNWidgets(3));
       expect(find.text('Bỏ qua'), findsNWidgets(3));
-      expect(find.text('Phi y tế'), findsOneWidget);
+      expect(find.text('Phi y tế'), findsNothing);
       expect(find.text('Đề xuất thêm'), findsOneWidget);
       expect(find.text('Ghi chú ca'), findsOneWidget);
       expect(find.text('Trợ giúp nhanh'), findsOneWidget);

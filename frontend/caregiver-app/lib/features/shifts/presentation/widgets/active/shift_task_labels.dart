@@ -11,10 +11,7 @@ class ShiftTaskLabels extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = task.isRequired ||
-        task.isAdHoc ||
-        _isNonMedicalReminder(task) ||
-        task.isSkipped;
+    final visible = task.isRequired || task.isAdHoc || task.isSkipped;
     if (!visible) return const SizedBox.shrink();
 
     return Padding(
@@ -24,8 +21,6 @@ class ShiftTaskLabels extends StatelessWidget {
         runSpacing: AppSpacing.xs,
         children: [
           if (task.isRequired) const _TaskLabel('● Công việc bắt buộc'),
-          if (_isNonMedicalReminder(task))
-            const _TaskLabel('Phi y tế', tone: _LabelTone.neutral),
           if (task.isAdHoc)
             const _TaskLabel('Đề xuất thêm', tone: _LabelTone.suggested),
           if (task.isSkipped) _TaskLabel('Đã bỏ qua: ${task.skipReason ?? ''}'),
@@ -50,7 +45,6 @@ class _TaskLabel extends StatelessWidget {
         decoration: BoxDecoration(
           color: switch (tone) {
             _LabelTone.required => AppColors.authErrorSurface,
-            _LabelTone.neutral => AppColors.surfaceContainerHigh,
             _LabelTone.suggested => AppColors.primaryContainer,
           },
           borderRadius: BorderRadius.circular(AppRadius.full),
@@ -60,7 +54,6 @@ class _TaskLabel extends StatelessWidget {
           style: TextStyle(
             color: switch (tone) {
               _LabelTone.required => AppColors.error,
-              _LabelTone.neutral => AppColors.textSecondary,
               _LabelTone.suggested => AppColors.primary,
             },
             fontSize: AppFontSizes.s10,
@@ -70,9 +63,4 @@ class _TaskLabel extends StatelessWidget {
       );
 }
 
-enum _LabelTone { required, neutral, suggested }
-
-bool _isNonMedicalReminder(CareTaskModel task) {
-  final content = '${task.title} ${task.description ?? ''}'.toLowerCase();
-  return content.contains('thuốc');
-}
+enum _LabelTone { required, suggested }
