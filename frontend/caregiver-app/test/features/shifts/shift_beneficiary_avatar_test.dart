@@ -1,4 +1,4 @@
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_beneficiary_avatar.dart';
+import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,7 +8,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: ShiftBeneficiaryAvatar(
+          body: BeneficiaryAvatar(
             name: 'Văn Châu Trường Thuận',
             age: 23,
           ),
@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: ShiftBeneficiaryAvatar(
+          body: BeneficiaryAvatar(
             name: 'Trần Thị Loan',
             age: 49,
             gender: 'FEMALE',
@@ -47,7 +47,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: ShiftBeneficiaryAvatar(
+          body: BeneficiaryAvatar(
             name: 'Nguyễn Văn Ba',
             age: 48,
             gender: 'MALE',
@@ -69,7 +69,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: ShiftBeneficiaryAvatar(
+          body: BeneficiaryAvatar(
             name: 'Ông Nguyễn Văn Ba',
             age: 78,
             gender: 'MALE',

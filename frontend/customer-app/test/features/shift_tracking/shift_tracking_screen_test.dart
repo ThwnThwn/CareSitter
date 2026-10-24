@@ -110,6 +110,34 @@ void main() {
     expect(error, isNull);
   });
 
+  testWidgets('renders a required pending task without layout errors',
+      (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingStoreProvider.overrideWith(_RequiredTaskBookingStore.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const ShiftTrackingScreen(bookingId: _bookingId),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('Bắt buộc'), findsOneWidget);
+    final error = tester.takeException();
+    debugDefaultTargetPlatformOverride = null;
+    expect(error, isNull);
+  });
+
   testWidgets('does not render a cancelled future booking as a live shift',
       (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
@@ -189,6 +217,27 @@ class _InProgressBookingStore extends BookingStore {
           tasks: [
             CareTaskModel.fromApi(const <String, dynamic>{}),
             CareTaskModel.fromApi(const <String, dynamic>{'name': null}),
+          ],
+        ),
+      ];
+
+  @override
+  Future<List<CareTaskModel>> loadTasks(String bookingId) async =>
+      state.single.tasks;
+}
+
+class _RequiredTaskBookingStore extends BookingStore {
+  @override
+  List<BookingModel> build() => [
+        _booking(
+          status: 'in_progress',
+          actualStart: DateTime.now().subtract(const Duration(minutes: 10)),
+          tasks: const [
+            CareTaskModel(
+              id: 'required-task',
+              title: 'Xác nhận ghi chú chăm sóc',
+              isRequired: true,
+            ),
           ],
         ),
       ];

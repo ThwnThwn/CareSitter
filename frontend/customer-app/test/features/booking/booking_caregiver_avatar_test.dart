@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_avatar.dart';
+import 'package:caresitter_customer/core/widgets/caregiver_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: BookingCaregiverAvatar(
+          body: CaregiverAvatar(
             avatarUrl: 'https://cdn.example/caregivers/bich-ngoc.jpg',
             initials: 'NN',
             radius: 24,
@@ -29,7 +29,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: BookingCaregiverAvatar(
+          body: CaregiverAvatar(
             initials: 'NN',
             radius: 24,
           ),

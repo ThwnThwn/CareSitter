@@ -49,51 +49,10 @@ class ToastMessageContent extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ExcludeSemantics(
-                child: Container(
-                  width: AppSpacing.lg,
-                  height: AppSpacing.lg,
-                  margin: const EdgeInsets.only(top: AppSpacing.micro),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: AppColors.onPrimary, size: 16),
-                ),
-              ),
+              _ToastLeading(accent: accent, icon: icon),
               const SizedBox(width: AppSpacing.compact),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.micro),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSizes.s15,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
-                      ),
-                      if (message case final description?) ...[
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          description,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: AppFontSizes.s13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                child: _ToastCopy(title: title, message: message),
               ),
               IconButton(
                 onPressed: callbackAction1,
@@ -111,6 +70,64 @@ class ToastMessageContent extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      );
+}
+
+class _ToastLeading extends StatelessWidget {
+  const _ToastLeading({required this.accent, required this.icon});
+
+  final Color accent;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: Container(
+          width: AppSpacing.lg,
+          height: AppSpacing.lg,
+          margin: const EdgeInsets.only(top: AppSpacing.micro),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+          child: Icon(icon, color: AppColors.onPrimary, size: 16),
+        ),
+      );
+}
+
+class _ToastCopy extends StatelessWidget {
+  const _ToastCopy({required this.title, this.message});
+
+  final String title;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.micro),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppFontSizes.s15,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+            if (message case final description?) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppFontSizes.s13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ],
         ),
       );
 }

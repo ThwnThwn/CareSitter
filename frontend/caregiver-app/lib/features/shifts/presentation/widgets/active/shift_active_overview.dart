@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_beneficiary_avatar.dart';
+import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
 
 class ShiftActiveOverview extends StatelessWidget {
   const ShiftActiveOverview({super.key, required this.booking});
@@ -22,7 +22,7 @@ class ShiftActiveOverview extends StatelessWidget {
         ),
         child: Row(
           children: [
-            ShiftBeneficiaryAvatar(
+            BeneficiaryAvatar(
               name: booking.beneficiaryName,
               age: booking.beneficiaryAge,
               gender: booking.beneficiaryGender,

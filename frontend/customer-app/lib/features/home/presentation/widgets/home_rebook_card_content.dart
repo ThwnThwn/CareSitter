@@ -1,6 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/features/home/presentation/widgets/home_hover_button.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_avatar.dart';
+import 'package:caresitter_customer/core/widgets/caregiver_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -23,7 +23,7 @@ class HomeRebookCardContent extends StatelessWidget {
         children: [
           Row(
             children: [
-              BookingCaregiverAvatar(
+              CaregiverAvatar(
                 radius: 24,
                 avatarUrl: booking.caregiverAvatar,
                 initials: initials,

@@ -20,104 +20,124 @@ class HomeServicesSection extends StatelessWidget {
   final HomeServiceAccent Function(int) serviceAccent;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _FeaturedServicesHeader(
+            onViewAll: () => context.push(AppRoutes.catalog),
+          ),
+          const SizedBox(height: AppSpacing.inset),
+          _FeaturedServicesContent(
+            buildServiceCard: buildServiceCard,
+            serviceAccent: serviceAccent,
+          ),
+        ],
+      );
+}
+
+class _FeaturedServicesHeader extends StatelessWidget {
+  const _FeaturedServicesHeader({required this.onViewAll});
+
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dịch vụ nổi bật',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppFontSizes.s17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  '4 gói hỗ trợ phi y tế dành cho gia đình',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppFontSizes.s11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          HomeHoverButton(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            onTap: onViewAll,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Dịch vụ nổi bật',
+                    'Tất cả',
                     style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: AppFontSizes.s17,
+                      color: AppColors.primary,
+                      fontSize: AppFontSizes.s13,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '4 gói hỗ trợ phi y tế dành cho gia đình',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppFontSizes.s11,
-                      fontWeight: FontWeight.w500,
-                      height: 1.3,
-                    ),
+                  SizedBox(width: AppSpacing.micro),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: AppColors.primary,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            HomeHoverButton(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              onTap: () => context.push(AppRoutes.catalog),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xs,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tất cả',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppFontSizes.s13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.micro),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.inset),
-        Consumer(
-          builder: (context, ref, _) {
-            final servicesAsync = ref.watch(serviceStoreProvider);
-            return servicesAsync.when(
-              loading: () => const _FeaturedServicesSkeleton(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (services) {
-                final featured = services.take(4).toList(growable: false);
-                if (featured.isEmpty) {
-                  return const SizedBox.shrink();
-                }
+          ),
+        ],
+      );
+}
 
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  child: IntrinsicHeight(
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < featured.length; i++) ...[
-                          buildServiceCard(featured[i], serviceAccent(i)),
-                          if (i != featured.length - 1)
-                            const SizedBox(width: AppSpacing.control),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ],
+class _FeaturedServicesContent extends ConsumerWidget {
+  const _FeaturedServicesContent({
+    required this.buildServiceCard,
+    required this.serviceAccent,
+  });
+
+  final Widget Function(ServiceModel, HomeServiceAccent) buildServiceCard;
+  final HomeServiceAccent Function(int) serviceAccent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final servicesAsync = ref.watch(serviceStoreProvider);
+    return servicesAsync.when(
+      loading: () => const _FeaturedServicesSkeleton(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (services) {
+        final featured = services.take(4).toList(growable: false);
+        if (featured.isEmpty) return const SizedBox.shrink();
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          scrollDirection: Axis.horizontal,
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                for (var i = 0; i < featured.length; i++) ...[
+                  buildServiceCard(featured[i], serviceAccent(i)),
+                  if (i != featured.length - 1)
+                    const SizedBox(width: AppSpacing.control),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

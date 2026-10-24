@@ -15,59 +15,7 @@ class CatalogScreenBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Chưa biết chọn gói nào?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: AppFontSizes.s16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'CareSitter hỗ trợ gia đình chọn dịch vụ phù hợp với nhu cầu sinh hoạt.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: AppFontSizes.s12,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.compact),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.inset, vertical: AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.phone_rounded,
-                        size: 13,
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        'Tư vấn miễn phí: 1800 6789',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: AppFontSizes.s12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const Expanded(child: _CatalogSupportCopy()),
           const SizedBox(width: AppSpacing.compact),
           Container(
             width: 52,
@@ -86,4 +34,66 @@ class CatalogScreenBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CatalogSupportCopy extends StatelessWidget {
+  const _CatalogSupportCopy();
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Chưa biết chọn gói nào?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: AppFontSizes.s16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'CareSitter hỗ trợ gia đình chọn dịch vụ phù hợp với nhu cầu sinh hoạt.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: AppFontSizes.s12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.compact),
+          const _CatalogContactPill(),
+        ],
+      );
+}
+
+class _CatalogContactPill extends StatelessWidget {
+  const _CatalogContactPill();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.inset,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.phone_rounded, size: 13, color: AppColors.primary),
+            SizedBox(width: 5),
+            Text(
+              'Tư vấn miễn phí: 1800 6789',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: AppFontSizes.s12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
 }

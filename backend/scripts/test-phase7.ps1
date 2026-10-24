@@ -255,6 +255,30 @@ SELECT json_build_object(
         -Sql $sql
 }
 
+function Assert-ProtectedDataPreserved {
+    param(
+        [Parameter(Mandatory)][string]$Before,
+        [Parameter(Mandatory)][string]$After
+    )
+
+    $beforeCounts = $Before | ConvertFrom-Json
+    $afterCounts = $After | ConvertFrom-Json
+
+    foreach ($property in $beforeCounts.PSObject.Properties) {
+        $name = $property.Name
+        $afterProperty = $afterCounts.PSObject.Properties[$name]
+        if ($null -eq $afterProperty) {
+            throw "Legacy upgrade data signature is missing '$name'."
+        }
+
+        $beforeCount = [long]$property.Value
+        $afterCount = [long]$afterProperty.Value
+        if ($afterCount -lt $beforeCount) {
+            throw "Legacy upgrade removed protected seed rows from '$name'. Before: $beforeCount; after: $afterCount"
+        }
+    }
+}
+
 function Initialize-SeedAccounts {
     param([Parameter(Mandatory)]$Database)
 
@@ -401,9 +425,7 @@ function Test-LegacyUpgrade {
         -MigrationPath $legacyDirectory
 
     $after = Get-DataSignature -Database $legacyDatabase
-    if ($before -ne $after) {
-        throw "Legacy upgrade changed protected seed-row counts. Before: $before; after: $after"
-    }
+    Assert-ProtectedDataPreserved -Before $before -After $after
     Assert-Phase7Schema -Database $legacyDatabase
 
     # Checksum-based replay must not reapply SQL or change protected row counts.

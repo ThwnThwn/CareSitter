@@ -16,7 +16,6 @@ import 'package:caresitter_customer/features/nutrition/data/models/health_profil
 import 'package:caresitter_customer/features/nutrition/data/models/meal_plan_summary_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_capabilities_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
-import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_entry_preference_store.dart';
 import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_repository.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_form.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +32,6 @@ void main() {
           _ImmediateBeneficiaryRepository(),
         ),
         addressStoreProvider.overrideWith(_PendingAddresses.new),
-        nutritionEntryPreferenceStoreProvider.overrideWithValue(
-          _PreferenceStore(),
-        ),
       ],
     );
     addTearDown(container.dispose);
@@ -87,9 +83,6 @@ void main() {
           beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
           beneficiaryLoadStateProvider.overrideWith(_LoadedState.new),
           nutritionRepositoryProvider.overrideWithValue(_NutritionRepository()),
-          nutritionEntryPreferenceStoreProvider.overrideWithValue(
-            _PreferenceStore(),
-          ),
         ],
         child: MaterialApp.router(
           theme: AppTheme.lightTheme,
@@ -112,7 +105,7 @@ void main() {
     expect(find.byType(NutritionHealthForm), findsOneWidget);
   });
 
-  testWidgets('restores the last profile and opens its saved menu first',
+  testWidgets('always opens the profile picker before a saved menu',
       (tester) async {
     tester.view.physicalSize = const Size(320, 720);
     tester.view.devicePixelRatio = 1;
@@ -127,9 +120,6 @@ void main() {
           beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
           beneficiaryLoadStateProvider.overrideWith(_LoadedState.new),
           nutritionRepositoryProvider.overrideWithValue(repository),
-          nutritionEntryPreferenceStoreProvider.overrideWithValue(
-            _PreferenceStore(selected: 'loan'),
-          ),
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -145,6 +135,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+    expect(find.text('Chọn người cần lập thực đơn'), findsOneWidget);
+    expect(find.text('Thực đơn cho Trần Thị Loan'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('nutrition-beneficiary-loan')),
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
 
     await tester.ensureVisible(find.text('23'));
@@ -226,25 +224,6 @@ class _Beneficiaries extends BeneficiaryStore {
 class _LoadedState extends BeneficiaryLoadStateController {
   @override
   AsyncValue<void> build() => const AsyncData(null);
-}
-
-class _PreferenceStore implements NutritionEntryPreferenceStore {
-  _PreferenceStore({this.selected});
-
-  String? selected;
-
-  @override
-  Future<String?> read(String userId) async => selected;
-
-  @override
-  Future<void> write(String userId, String beneficiaryId) async {
-    selected = beneficiaryId;
-  }
-
-  @override
-  Future<void> clear(String userId) async {
-    selected = null;
-  }
 }
 
 class _NutritionRepository extends NutritionRepository {

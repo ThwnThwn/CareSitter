@@ -1,8 +1,7 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/theme/shift_status_style.dart';
 import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
-import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_shift_card.dart';
+import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_timeline_shift_overlays.dart';
 import 'package:flutter/material.dart';
 
 class ScheduleTimeline extends StatelessWidget {
@@ -35,7 +34,6 @@ class ScheduleTimeline extends StatelessWidget {
           shift.timelineEndMinute > latest ? shift.timelineEndMinute : latest,
     );
     final hourCount = ((latestMinute + 59) ~/ 60).clamp(24, 30);
-    final timelineHeight = hourCount * hourExtent;
 
     return DecoratedBox(
       decoration: const BoxDecoration(color: AppColors.background),
@@ -43,7 +41,7 @@ class ScheduleTimeline extends StatelessWidget {
         controller: timelineScrollController,
         padding: const EdgeInsets.only(bottom: _bottomPadding),
         child: SizedBox(
-          height: timelineHeight,
+          height: hourCount * hourExtent,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -57,8 +55,21 @@ class ScheduleTimeline extends StatelessWidget {
                   },
                 ),
               ),
-              for (final shift in shifts) _TimelineShiftTime(shift: shift),
-              for (final shift in shifts) _TimelineShiftPosition(shift: shift),
+              for (final shift in shifts)
+                ScheduleTimelineShiftTime(
+                  shift: shift,
+                  hourExtent: hourExtent,
+                  hourLabelWidth: _hourLabelWidth,
+                ),
+              for (final shift in shifts)
+                ScheduleTimelineShiftPosition(
+                  shift: shift,
+                  hourExtent: hourExtent,
+                  hourLabelWidth: _hourLabelWidth,
+                  railWidth: _railWidth,
+                  contentGap: _contentGap,
+                  hourMarkerOffset: _hourMarkerOffset,
+                ),
               for (var index = 0; index < shifts.length - 1; index++)
                 _TimelineBreakMarker(
                   startMinute: shifts[index].timelineEndMinute,
@@ -74,50 +85,6 @@ class ScheduleTimeline extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TimelineShiftTime extends StatelessWidget {
-  const _TimelineShiftTime({required this.shift});
-
-  final TimelineShift shift;
-
-  @override
-  Widget build(BuildContext context) {
-    final top = shift.timelineStartMinute / 60 * ScheduleTimeline.hourExtent;
-    final color = ShiftStatusStyle.of(shift.status).color;
-    return Positioned(
-      top: top + AppSpacing.xs,
-      left: 0,
-      width: ScheduleTimeline._hourLabelWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            TimelineShift.formatMinute(shift.timelineStartMinute),
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontSize: AppFontSizes.s11,
-              height: 1.15,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.micro),
-          Text(
-            TimelineShift.formatMinute(shift.timelineEndMinute),
-            maxLines: 1,
-            softWrap: false,
-            style: const TextStyle(
-              fontSize: AppFontSizes.s9,
-              height: 1.15,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -200,15 +167,7 @@ class _TimelineHour extends StatelessWidget {
               alignment: Alignment.topCenter,
               child: Padding(
                 padding: const EdgeInsets.only(top: 4.5),
-                child: Container(
-                  key: ValueKey('schedule-hour-dot-$hour'),
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.border,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+                child: _TimelineHourDot(hour: hour),
               ),
             ),
           ),
@@ -226,98 +185,21 @@ class _TimelineHour extends StatelessWidget {
       );
 }
 
-class _TimelineShiftPosition extends StatelessWidget {
-  const _TimelineShiftPosition({required this.shift});
+class _TimelineHourDot extends StatelessWidget {
+  const _TimelineHourDot({required this.hour});
 
-  final TimelineShift shift;
+  final int hour;
 
   @override
-  Widget build(BuildContext context) {
-    final start = shift.timelineStartMinute.clamp(0, 30 * 60).toInt();
-    final end = shift.timelineEndMinute.clamp(start + 1, 30 * 60).toInt();
-    final top = start / 60 * ScheduleTimeline.hourExtent;
-    final railHeight = ((end - start) / 60 * ScheduleTimeline.hourExtent +
-            ScheduleTimeline._hourMarkerOffset)
-        .clamp(44.0, double.infinity)
-        .toDouble();
-    final layoutHeight = railHeight < 216 ? 216.0 : railHeight;
-    final statusColor = ShiftStatusStyle.of(shift.status).color;
-
-    return Positioned(
-      top: top,
-      left: ScheduleTimeline._hourLabelWidth,
-      right: AppSpacing.md,
-      height: layoutHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: ScheduleTimeline._railWidth,
-            height: railHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.topCenter,
-              children: [
-                Positioned(
-                  top: ScheduleTimeline._hourMarkerOffset,
-                  bottom: 0,
-                  child: Container(
-                    key: ValueKey('schedule-duration-rail-${shift.id}'),
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 11,
-                  height: 11,
-                  margin: const EdgeInsets.only(top: 2.5),
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.background,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -5.5,
-                  child: Container(
-                    key: ValueKey(
-                      'schedule-duration-end-dot-${shift.id}',
-                    ),
-                    width: 11,
-                    height: 11,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.background,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: ScheduleTimeline._contentGap),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: ScheduleShiftCard(shift: shift),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        key: ValueKey('schedule-hour-dot-$hour'),
+        width: 7,
+        height: 7,
+        decoration: const BoxDecoration(
+          color: AppColors.border,
+          shape: BoxShape.circle,
+        ),
+      );
 }
 
 class _TimelineBreakMarker extends StatelessWidget {

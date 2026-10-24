@@ -11,6 +11,7 @@ import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_photo_picker.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_task_editor.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_task_evidence.dart';
+import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_task_labels.dart';
 
 class ShiftTaskRow extends ConsumerWidget {
   const ShiftTaskRow({super.key, required this.booking, required this.task});
@@ -187,29 +188,7 @@ class _TaskSummary extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (task.isRequired ||
-                    task.isAdHoc ||
-                    _isNonMedicalReminder(task) ||
-                    task.isSkipped) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Wrap(
-                    spacing: AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      if (task.isRequired)
-                        const _TaskLabel('● Công việc bắt buộc'),
-                      if (_isNonMedicalReminder(task))
-                        const _TaskLabel('Phi y tế', tone: _LabelTone.neutral),
-                      if (task.isAdHoc)
-                        const _TaskLabel(
-                          'Đề xuất thêm',
-                          tone: _LabelTone.suggested,
-                        ),
-                      if (task.isSkipped)
-                        _TaskLabel('Đã bỏ qua: ${task.skipReason ?? ''}'),
-                    ],
-                  ),
-                ],
+                ShiftTaskLabels(task: task),
               ],
             ),
           ),
@@ -253,46 +232,4 @@ class _TaskActions extends StatelessWidget {
           ),
         ],
       );
-}
-
-class _TaskLabel extends StatelessWidget {
-  const _TaskLabel(this.label, {this.tone = _LabelTone.required});
-
-  final String label;
-  final _LabelTone tone;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xxs,
-        ),
-        decoration: BoxDecoration(
-          color: switch (tone) {
-            _LabelTone.required => AppColors.authErrorSurface,
-            _LabelTone.neutral => AppColors.surfaceContainerHigh,
-            _LabelTone.suggested => AppColors.primaryContainer,
-          },
-          borderRadius: BorderRadius.circular(AppRadius.full),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: switch (tone) {
-              _LabelTone.required => AppColors.error,
-              _LabelTone.neutral => AppColors.textSecondary,
-              _LabelTone.suggested => AppColors.primary,
-            },
-            fontSize: AppFontSizes.s10,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-}
-
-enum _LabelTone { required, neutral, suggested }
-
-bool _isNonMedicalReminder(CareTaskModel task) {
-  final content = '${task.title} ${task.description ?? ''}'.toLowerCase();
-  return content.contains('thuốc');
 }

@@ -1,7 +1,7 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
 import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_beneficiary_avatar.dart';
 import 'package:flutter/material.dart';
 
 class ScheduleShiftRecipientStatus extends StatelessWidget {
@@ -68,7 +68,7 @@ class ScheduleShiftRecipientStatus extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: statusColor.withValues(alpha: 0.2)),
             ),
-            child: ShiftBeneficiaryAvatar(
+            child: BeneficiaryAvatar(
               name: shift.beneficiaryName,
               age: shift.beneficiaryAge,
               gender: shift.beneficiaryGender,

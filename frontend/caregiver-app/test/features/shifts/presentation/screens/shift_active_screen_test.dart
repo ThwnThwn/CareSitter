@@ -7,7 +7,7 @@ import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_active_controller.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_active_screen.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_beneficiary_avatar.dart';
+import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
 import 'package:caregiver_app/core/widgets/app_toast.dart';
 import '../../fixtures/shift_active_fakes.dart';
 
@@ -84,12 +84,12 @@ void main() {
       expect(find.text('Đề xuất thêm'), findsOneWidget);
       expect(find.text('Ghi chú ca'), findsOneWidget);
       expect(find.text('Trợ giúp nhanh'), findsOneWidget);
-      expect(find.byType(ShiftBeneficiaryAvatar), findsOneWidget);
+      expect(find.byType(BeneficiaryAvatar), findsOneWidget);
       final completeTask = find.widgetWithText(TextButton, 'Hoàn thành').first;
       expect(tester.widget<TextButton>(completeTask).onPressed, isNotNull);
       expect(find.text('Cần ảnh'), findsNothing);
       final portrait = tester.widget<Image>(find.descendant(
-        of: find.byType(ShiftBeneficiaryAvatar),
+        of: find.byType(BeneficiaryAvatar),
         matching: find.byType(Image),
       ));
       expect(

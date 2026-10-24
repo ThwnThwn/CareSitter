@@ -3,8 +3,8 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:flutter/material.dart';
 
-class BookingCaregiverAvatar extends StatelessWidget {
-  const BookingCaregiverAvatar({
+class CaregiverAvatar extends StatelessWidget {
+  const CaregiverAvatar({
     super.key,
     required this.initials,
     required this.radius,
@@ -22,7 +22,7 @@ class BookingCaregiverAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = avatarUrl?.trim() ?? '';
-    final fallback = _DefaultAvatar(
+    final fallback = _DefaultCaregiverAvatar(
       seed: seed?.trim().isNotEmpty == true ? seed! : initials,
       backgroundColor: backgroundColor,
     );
@@ -44,8 +44,8 @@ class BookingCaregiverAvatar extends StatelessWidget {
   }
 }
 
-class _DefaultAvatar extends StatelessWidget {
-  const _DefaultAvatar({
+class _DefaultCaregiverAvatar extends StatelessWidget {
+  const _DefaultCaregiverAvatar({
     required this.seed,
     required this.backgroundColor,
   });

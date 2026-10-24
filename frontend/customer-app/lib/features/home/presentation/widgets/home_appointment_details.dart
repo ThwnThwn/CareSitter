@@ -1,5 +1,5 @@
 import 'package:caresitter_customer/features/home/presentation/widgets/home_appointment_trailing_status.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_avatar.dart';
+import 'package:caresitter_customer/core/widgets/caregiver_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -28,7 +28,7 @@ class HomeAppointmentDetails extends StatelessWidget {
         ),
         child: Row(
           children: [
-            BookingCaregiverAvatar(
+            CaregiverAvatar(
               radius: 22,
               avatarUrl: avatarUrl,
               initials: initials,

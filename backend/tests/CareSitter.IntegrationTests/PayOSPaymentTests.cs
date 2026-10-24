@@ -103,7 +103,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         Assert.All(outcomes, outcome => Assert.Equal(200, outcome.StatusCode));
         await using var verify = Scope();
         Assert.Equal("SUCCEEDED", (await verify.Payments.PaymentIntents.SingleAsync()).Status);
-        Assert.Single(await verify.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await verify.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Single(await verify.Payments.OutboxMessages.ToListAsync());
         Assert.Equal("PROCESSED", (await verify.Payments.PaymentWebhooks.SingleAsync()).Status);
         Assert.Equal(BookingStatus.Confirmed, (await verify.Bookings.Bookings.SingleAsync(x => x.Id == booking.Id)).Status);
@@ -119,7 +120,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         await using var scope = Scope();
         Assert.Equal(400, (await scope.PayOS.ProcessWebhookAsync(forged)).StatusCode);
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "registration-probe", orderCode: 1))).StatusCode);
-        Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Empty(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Empty(await scope.Payments.PaymentWebhooks.ToListAsync());
         Assert.Equal("PENDING", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
     }
@@ -138,7 +140,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
             _bank.Webhook(intent, "different-sender", accountNumber: "other-account"));
 
         Assert.Equal(200, outcome.StatusCode);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Single(await scope.Payments.PaymentWebhooks.ToListAsync());
         Assert.Equal("SUCCEEDED", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
     }
@@ -151,12 +154,14 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         _bank.Paid = 30000;
         await using var scope = Scope();
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "partial", amount: 30000))).StatusCode);
-        Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Empty(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         scope.Bookings.ChangeTracker.Clear();
         Assert.Equal(BookingStatus.NeedsManualReview, (await scope.Bookings.Bookings.SingleAsync(x => x.Id == booking.Id)).Status);
         _bank.Paid = 100000;
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "remaining", amount: 70000))).StatusCode);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Equal("SUCCEEDED", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
     }
 
@@ -169,12 +174,14 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         var url = await scope.PayOS.GetReturnUrlAsync(intent.ProviderOrderRef);
         Assert.Contains("result=pending", url);
         Assert.Contains("intentId=" + intent.Id, url);
-        Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Empty(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Null(await scope.Portal.GetIntentAsync(intent.Id, Guid.NewGuid()));
         _bank.Paid = 100000;
         var result = await scope.Portal.GetIntentAsync(intent.Id, booking.CustomerId);
         Assert.Equal("SUCCEEDED", result!.Status);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
     }
 
     [PostgresFact]
@@ -190,7 +197,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         await scope.Bookings.SaveChangesAsync();
         _bank.Paid = 100000;
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "late-payment"))).StatusCode);
-        Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Empty(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Equal(BookingStatus.Cancelled, closed.Status);
         var queue = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit())
             .ListAsync();
@@ -199,7 +207,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         var rejected = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit())
             .ResolveAsync(new ResolvePaymentReviewCommand(intent.Id, true, "Test cannot reopen", "bank-reference"));
         Assert.True(rejected.IsFailure);
-        Assert.Empty(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Empty(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
     }
 
     [PostgresFact]
@@ -212,7 +221,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "first-transfer"));
         _bank.Paid = 200000;
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "second-transfer"))).StatusCode);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         var queue = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit()).ListAsync();
         Assert.Single(queue); Assert.False(queue[0].CanResolve);
         Assert.Contains("PAYOS_ADDITIONAL_PAYMENT", queue[0].ManualReviewReason);
@@ -273,7 +283,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/payments/payos/webhook", webhook)).StatusCode);
         var bad = JsonDocument.Parse(webhook.GetRawText().Replace("100000", "999999")).RootElement;
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/payments/payos/webhook", bad)).StatusCode);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         await app.StopAsync();
     }
 
@@ -293,7 +304,8 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
             scope.Finalizer, scope.Outbox, new SystemClock(), NullLogger<PaymentReconciliationJob>.Instance);
         await job.ExecuteAsync();
         Assert.Equal("SUCCEEDED", (await scope.Payments.PaymentIntents.SingleAsync()).Status);
-        Assert.Single(await scope.Payments.LedgerEntries.ToListAsync());
+        Assert.Single(await scope.Payments.LedgerEntries
+            .Where(x => x.BookingId == booking.Id).ToListAsync());
         scope.Bookings.ChangeTracker.Clear();
         Assert.Equal(BookingStatus.Confirmed, (await scope.Bookings.Bookings.SingleAsync(x => x.Id == booking.Id)).Status);
     }

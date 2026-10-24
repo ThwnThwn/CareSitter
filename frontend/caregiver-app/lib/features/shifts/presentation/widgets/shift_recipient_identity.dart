@@ -2,7 +2,7 @@ import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
-import 'package:caregiver_app/features/shifts/presentation/widgets/shift_beneficiary_avatar.dart';
+import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
 
 class ShiftRecipientIdentity extends StatelessWidget {
   const ShiftRecipientIdentity(
@@ -17,7 +17,7 @@ class ShiftRecipientIdentity extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          ShiftBeneficiaryAvatar(
+          BeneficiaryAvatar(
             name: beneficiary.name,
             age: displayAge > 0 ? displayAge : booking.beneficiaryAge,
             gender: booking.beneficiaryGender,

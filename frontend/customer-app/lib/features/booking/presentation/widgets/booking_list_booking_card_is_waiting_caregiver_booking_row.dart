@@ -1,5 +1,5 @@
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_booking_card_is_waiting_caregiver_booking_content.dart';
-import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_avatar.dart';
+import 'package:caresitter_customer/core/widgets/caregiver_avatar.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_action_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -26,7 +26,7 @@ class BookingListBookingCardIsWaitingCaregiverBookingRow
                   Icon(Icons.auto_awesome, size: 16, color: AppColors.warning),
             )
           else
-            BookingCaregiverAvatar(
+            CaregiverAvatar(
               radius: 18,
               avatarUrl: booking.caregiverAvatar,
               initials: booking.caregiverInitials,

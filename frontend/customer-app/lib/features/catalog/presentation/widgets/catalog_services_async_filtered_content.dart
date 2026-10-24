@@ -71,29 +71,7 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
                 // ── Section Title ──────────────────────────────────────────
                 const FadeSlideStaggered(
                   index: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Dịch vụ chăm sóc tại nhà',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSizes.s17,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Chọn gói phi y tế phù hợp với thời gian và nhu cầu của gia đình.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: AppFontSizes.s12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _CatalogSectionIntro(),
                 ),
                 const SizedBox(height: AppSpacing.compact),
 
@@ -103,6 +81,35 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
                     filterServices: filtered,
                     buildServiceCard: buildServiceCard),
               ]),
+            ),
+          ),
+        ],
+      );
+}
+
+class _CatalogSectionIntro extends StatelessWidget {
+  const _CatalogSectionIntro();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dịch vụ chăm sóc tại nhà',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: AppFontSizes.s17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.1,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            'Chọn gói phi y tế phù hợp với thời gian và nhu cầu của gia đình.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppFontSizes.s12,
+              height: 1.4,
             ),
           ),
         ],
