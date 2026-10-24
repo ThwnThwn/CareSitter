@@ -1,0 +1,437 @@
+{
+  "cases": [
+    {
+      "case_id": "nutrition-retrieval-001",
+      "question": "Việc đánh giá tình trạng dinh dưỡng của người bệnh được trình bày ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-dacd2fd6c90704aae9b3e5c6"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "assessment",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-002",
+      "question": "Phần nào giải thích nuôi dưỡng đường ruột trong hỗ trợ dinh dưỡng?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-26482d96f8e3ce77acf51426"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "enteral_nutrition",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-003",
+      "question": "Các vấn đề dinh dưỡng thường gặp ở người cao tuổi được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-7b613dd842b4f076363cde07"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "older_adult",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-004",
+      "question": "Chế độ dinh dưỡng cho trẻ suy dinh dưỡng được đề cập ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-cdd68b932bddc5e1156d06b4"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "child_malnutrition",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-005",
+      "question": "Cách đánh giá và phân loại thừa cân béo phì ở người trưởng thành nằm ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-4ad125a1fcda16ee11dd43ac"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "obesity",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-006",
+      "question": "Định nghĩa và phân loại tăng huyết áp được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-ac008456fbce9273a4fc9e67"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "hypertension",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-007",
+      "question": "Cơ chế bệnh sinh của bệnh đái tháo đường được trình bày ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-0200506192f23cbf2100374c"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "diabetes",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-008",
+      "question": "Phân giai đoạn bệnh thận mạn ở người trưởng thành nằm ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-ffb2b283b34c5b122be3935a"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "chronic_kidney_disease",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-009",
+      "question": "Các dấu hiệu chẩn đoán hội chứng thận hư nguyên phát được nêu ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-5af19f1a8e677dd6996e2537"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "nephrotic_syndrome",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-010",
+      "question": "Chẩn đoán viêm cầu thận cấp sau nhiễm liên cầu được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-aebfbd87763718332fd7a9ff"
+      ],
+      "review_status": "candidate",
+      "split": "development",
+      "tags": [
+        "glomerulonephritis",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-011",
+      "question": "Tài liệu định nghĩa tăng acid uric máu và bệnh gout ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-4ac4a727cc4d274125d32ec9"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "gout",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-012",
+      "question": "Nguyên nhân rối loạn lipid máu tiên phát và thứ phát được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-dbc8c00d66956e1eee5e46e5"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "dyslipidemia",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-013",
+      "question": "Phân loại loãng xương người cao tuổi, sau mãn kinh và thứ phát nằm ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-adbbe82fc5672dd045787e8e"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "osteoporosis",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-014",
+      "question": "Phân độ suy tim được trình bày ở chương dinh dưỡng nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-3a8264085c07c045b098c0d8"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "heart_failure",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-015",
+      "question": "Cơ chế điều hòa tuần hoàn não trong tai biến mạch máu não nằm ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-b4976d11f8957ebbbad303fc"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "stroke",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-016",
+      "question": "Cơ chế sinh bệnh ung thư được trình bày ở phần dinh dưỡng điều trị nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-db5e6f8b94f13c7605bdadad"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "cancer",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-017",
+      "question": "Nguyên tắc dinh dưỡng cho viêm gan virus cấp được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-eec9252380914d09d7616f90"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "acute_hepatitis",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-018",
+      "question": "Nguyên tắc dinh dưỡng trong viêm túi mật cấp nằm ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-8edde1f3dbbec8858f5ed37a"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "cholecystitis",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-019",
+      "question": "Nuôi dưỡng theo độ nặng của viêm tụy cấp được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-64cb2108af483051155df345"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "pancreatitis",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-020",
+      "question": "Nguyên nhân và cơ chế bệnh sinh của bệnh viêm ruột nằm ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-b79541407d95cc54f9c82da0"
+      ],
+      "review_status": "candidate",
+      "split": "validation",
+      "tags": [
+        "inflammatory_bowel_disease",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-021",
+      "question": "Các giai đoạn của hội chứng ruột ngắn được mô tả ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-ccbda09d1ce84b3302041f73"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "short_bowel_syndrome",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-022",
+      "question": "Tác nhân gây tiêu chảy cấp được trình bày ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-3fc629964afc05b4d2911a3b"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "acute_diarrhea",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-023",
+      "question": "Dinh dưỡng trước và sau phẫu thuật đường tiêu hóa được trình bày ở chương nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-0979bb7033b1b6fc8fd59822"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "gastrointestinal_surgery",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-024",
+      "question": "Thay đổi chuyển hóa và tăng dị hóa đạm ở bệnh nhân nặng được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-7fdacdbfb78dfd42ae7c98cb"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "critical_care",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-025",
+      "question": "Tác nhân và chẩn đoán tổn thương bỏng nằm ở phần dinh dưỡng điều trị nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-81d1bd2b1a8ffa642ce60787"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "burns",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-026",
+      "question": "Mối quan hệ giữa dinh dưỡng, miễn dịch và bệnh nhiễm khuẩn được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-5d9ae35029643960d9d94fdc"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "infection",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-027",
+      "question": "Cơ chế bệnh sinh liên quan dinh dưỡng ở người bệnh HIV/AIDS nằm ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-17a1c508e4b49fa01b4a2954"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "hiv_aids",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-028",
+      "question": "Cơ chế bệnh sinh của bệnh phổi tắc nghẽn mạn tính được trình bày ở đâu?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-23e719293507e3f15c83385a"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "copd",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-029",
+      "question": "Chế độ dinh dưỡng cho người bệnh suy giảm trí nhớ Alzheimer nằm ở chương nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-453f6ab2c761dc0c99490c2a"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "alzheimer",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    },
+    {
+      "case_id": "nutrition-retrieval-030",
+      "question": "Nguyên nhân của đái tháo đường thai kỳ được trình bày ở phần nào?",
+      "relevant_chunk_ids": [
+        "nutrition-chunk-60568ab59b82a21e4cfd7d88"
+      ],
+      "review_status": "candidate",
+      "split": "holdout",
+      "tags": [
+        "gestational_diabetes",
+        "section_locator"
+      ],
+      "answerability": "answerable"
+    }
+  ],
+  "corpus": {
+    "chunks_sha256": "dd618cf850cbb48c586f91538c21c3d5fcafcf571f770d028bb5c05e75623c34",
+    "corpus_freeze_sha256": "c553d2ebe59622c5870f8359b648b0d0003918db2392f35dd2a9f45991cfa82a",
+    "source_revision_id": "book-dinh-duong-lam-sang-2019@sha256:abea34b8a6a63e9e"
+  },
+  "evaluation_policy": {
+    "minimum_recall_at_5": 0.9,
+    "required_citation_integrity": 1,
+    "top_k": 5
+  },
+  "holdout_status": "candidate_visible",
+  "schema_version": 1,
+  "status": "candidate_requires_independent_clinical_review"
+}

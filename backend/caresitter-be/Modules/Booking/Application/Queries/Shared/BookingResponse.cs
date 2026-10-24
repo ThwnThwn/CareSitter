@@ -28,4 +28,7 @@ public sealed record BookingResponse(Guid Id, Guid BeneficiaryId, Guid? Caregive
     long PromotionDiscountAmount = 0,
     long PromotionSubsidyAmount = 0,
     Guid? PromotionId = null,
-    string? PromotionCode = null);
+    string? PromotionCode = null,
+    string? CaregiverAvatar = null,
+    string? BeneficiaryGender = null,
+    string? BeneficiaryAvatarUrl = null);

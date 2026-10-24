@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/shift_card.dart';
 
@@ -38,8 +39,7 @@ class ShiftListContent extends ConsumerWidget {
       itemCount: shifts.length,
       itemBuilder: (context, index) {
         final shift = shifts[index];
-        final isInvitation = shift.statusType == ShiftStatus.pending ||
-            shift.statusType == ShiftStatus.open;
+        final isInvitation = shift.canAccept;
         return ShiftCard(
           shift: shift,
           onTap: () => context.push(

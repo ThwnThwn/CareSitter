@@ -24,6 +24,9 @@ class LoginPasswordField extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         decoration: InputDecoration(
+          filled: true,
+          fillColor: AppColors.surface,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
           labelText: 'Mật khẩu',
           hintText: '••••••••',
           prefixIcon: const Icon(

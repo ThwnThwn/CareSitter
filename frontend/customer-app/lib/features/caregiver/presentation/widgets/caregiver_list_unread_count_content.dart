@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -7,7 +8,7 @@ class CaregiverListUnreadCountContent extends StatelessWidget {
   final int unreadCount;
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => context.push('/notifications'),
+        onTap: () => context.push(AppRoutes.notifications),
         child: Stack(
           clipBehavior: Clip.none,
           children: [

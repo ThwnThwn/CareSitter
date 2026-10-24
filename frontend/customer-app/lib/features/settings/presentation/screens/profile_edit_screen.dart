@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_form.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -142,7 +143,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('✅ Đã cập nhật thông tin cá nhân!'),
           backgroundColor: AppColors.primary));
-      popOrGo(context, fallbackRoute: '/settings');
+      popOrGo(context, fallbackRoute: AppRoutes.settings);
     }
   }
 
@@ -155,7 +156,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     return DiscardChangesGuard(
       hasChanges: () => _formState != _initialFormState,
-      fallbackRoute: '/settings',
+      fallbackRoute: AppRoutes.settings,
       builder: (context, requestExit) => Scaffold(
         backgroundColor: AppColors.background,
         appBar: ProfileEditAppBar(
@@ -177,7 +178,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             gender: _gender,
             onSave: _saveProfile,
             onNameChanged: (_) => setState(() {}),
-            onEditRecoveryEmail: () => context.push('/settings/recovery-email'),
+            onEditRecoveryEmail: () => context.push(AppRoutes.recoveryEmail),
             onGenderChanged: (v) {
               if (v != null) setState(() => _gender = v);
             }),

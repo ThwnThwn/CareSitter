@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
 import '../../../controllers/booking_wizard_controller.dart';
 import '../../../controllers/booking_wizard_selectors.dart';
@@ -141,7 +142,7 @@ class _ManageAddressButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.control),
         onTap: () async {
-          await context.push('/settings/addresses');
+          await context.push(AppRoutes.addresses);
           if (context.mounted) onReturned();
         },
         child: Padding(

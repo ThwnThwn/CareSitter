@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/caregiver/presentation/widgets/care
 import 'package:caresitter_customer/features/caregiver/presentation/widgets/caregiver_list_caregiver_card_caregiver_content.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -15,7 +16,7 @@ class CaregiverListScreenCaregiverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/caregivers/${caregiver.id}'),
+      onTap: () => context.push(AppRoutes.caregiverDetail(caregiver.id)),
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.compact),
         padding: const EdgeInsets.all(AppSpacing.md),

@@ -11,13 +11,22 @@ class BookingPaymentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: AppFontSizes.s13)),
-        Text(amount == 0 ? 'Miễn phí' : '${formatVnd(amount)}đ',
-            style: TextStyle(
-                color: amount == 0 ? AppColors.success : AppColors.textPrimary,
-                fontSize: AppFontSizes.s13,
-                fontWeight: FontWeight.w500)),
+        Expanded(
+          flex: 3,
+          child: Text(label,
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: AppFontSizes.s13)),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          flex: 2,
+          child: Text(amount == 0 ? 'Miễn phí' : '${formatVnd(amount)}đ',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                  color:
+                      amount == 0 ? AppColors.success : AppColors.textPrimary,
+                  fontSize: AppFontSizes.s13,
+                  fontWeight: FontWeight.w500)),
+        ),
       ]);
 }

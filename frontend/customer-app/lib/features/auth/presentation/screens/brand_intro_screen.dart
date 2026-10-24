@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -86,7 +87,7 @@ class _BrandIntroScreenState extends State<BrandIntroScreen>
     if (onFinished != null) {
       onFinished();
     } else {
-      context.go('/home');
+      context.go(AppRoutes.home);
     }
   }
 

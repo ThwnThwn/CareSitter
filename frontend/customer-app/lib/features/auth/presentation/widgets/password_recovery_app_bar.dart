@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/password_recovery_controller.dart';
 
@@ -20,7 +21,7 @@ class PasswordRecoveryAppBar extends StatelessWidget
                   if (context.canPop()) {
                     context.pop();
                   } else {
-                    context.go('/auth/login');
+                    context.go(AppRoutes.login);
                   }
                 }));
 }

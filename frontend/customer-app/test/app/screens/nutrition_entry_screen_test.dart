@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
+import 'package:caresitter_customer/core/api/api_cancellation.dart';
+import 'package:caresitter_customer/core/api/dio_client.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
 import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
@@ -10,6 +12,13 @@ import 'package:caresitter_customer/features/beneficiary/presentation/controller
     show BeneficiaryStore, beneficiaryStoreProvider;
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_load_state_controller.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/health_profile_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/meal_plan_summary_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_capabilities_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_entry_preference_store.dart';
+import 'package:caresitter_customer/features/nutrition/data/repositories/nutrition_repository.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +33,9 @@ void main() {
           _ImmediateBeneficiaryRepository(),
         ),
         addressStoreProvider.overrideWith(_PendingAddresses.new),
+        nutritionEntryPreferenceStoreProvider.overrideWithValue(
+          _PreferenceStore(),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -45,7 +57,7 @@ void main() {
     expect(find.text('Trần Thị Loan'), findsOneWidget);
   });
 
-  testWidgets('opens the existing nutrition route for the selected profile',
+  testWidgets('opens nutrition inline after selecting a profile',
       (tester) async {
     final router = GoRouter(
       initialLocation: '/nutrition',
@@ -71,8 +83,13 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          authStateProvider.overrideWith(_Auth.new),
           beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
           beneficiaryLoadStateProvider.overrideWith(_LoadedState.new),
+          nutritionRepositoryProvider.overrideWithValue(_NutritionRepository()),
+          nutritionEntryPreferenceStoreProvider.overrideWithValue(
+            _PreferenceStore(),
+          ),
         ],
         child: MaterialApp.router(
           theme: AppTheme.lightTheme,
@@ -87,7 +104,74 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('nutrition:loan'), findsOneWidget);
+    expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
+    expect(find.byType(NutritionHealthForm), findsNothing);
+    await tester.tap(find.byTooltip('Cập nhật thông tin dinh dưỡng'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cập nhật thông tin cho Trần Thị Loan'), findsOneWidget);
+    expect(find.byType(NutritionHealthForm), findsOneWidget);
+  });
+
+  testWidgets('restores the last profile and opens its saved menu first',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _NutritionRepository(withSavedPlan: true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+          beneficiaryLoadStateProvider.overrideWith(_LoadedState.new),
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          nutritionEntryPreferenceStoreProvider.overrideWithValue(
+            _PreferenceStore(selected: 'loan'),
+          ),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.3),
+            ),
+            child: child!,
+          ),
+          home: const NutritionEntryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('23'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('23'));
+    await tester.pumpAndSettle();
+    expect(repository.lastReadRoute, 'meal-plans/plan-2');
+
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('Súp bí đỏ'), findsOneWidget);
+    expect(find.byType(NutritionHealthForm), findsNothing);
+    expect(find.byTooltip('Trở về chọn người'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Trở về chọn người'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chọn người cần lập thực đơn'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('nutrition-beneficiary-loan')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Cập nhật thông tin dinh dưỡng'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(NutritionHealthForm), findsOneWidget);
   });
 }
 
@@ -143,3 +227,107 @@ class _LoadedState extends BeneficiaryLoadStateController {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 }
+
+class _PreferenceStore implements NutritionEntryPreferenceStore {
+  _PreferenceStore({this.selected});
+
+  String? selected;
+
+  @override
+  Future<String?> read(String userId) async => selected;
+
+  @override
+  Future<void> write(String userId, String beneficiaryId) async {
+    selected = beneficiaryId;
+  }
+
+  @override
+  Future<void> clear(String userId) async {
+    selected = null;
+  }
+}
+
+class _NutritionRepository extends NutritionRepository {
+  _NutritionRepository({this.withSavedPlan = false}) : super(_UnusedDio());
+
+  final bool withSavedPlan;
+  String? lastReadRoute;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  Future<NutritionCapabilitiesModel> capabilities(
+          ApiCancellation token) async =>
+      const NutritionCapabilitiesModel(
+        enabled: true,
+        assessmentsEnabled: true,
+        recommendationsEnabled: true,
+      );
+
+  @override
+  Future<HealthProfileModel> health(String id, ApiCancellation token) async =>
+      HealthProfileModel.fromJson(_readyHealth());
+
+  @override
+  Future<List<MealPlanSummaryModel>> savedPlans(
+      String id, ApiCancellation token) async {
+    if (!withSavedPlan) return const [];
+    return [
+      MealPlanSummaryModel.fromJson({
+        'id': 'plan-1',
+        'status': 'saved',
+        'data': {'plannedDate': '2026-10-22'},
+      }),
+      MealPlanSummaryModel.fromJson({
+        'id': 'plan-2',
+        'status': 'saved',
+        'data': {'plannedDate': '2026-10-23'},
+      }),
+    ];
+  }
+
+  @override
+  Future<NutritionResourceModel> read(
+      String id, String route, ApiCancellation token) async {
+    lastReadRoute = route;
+    final secondPlan = route == 'meal-plans/plan-2';
+    return NutritionResourceModel.fromJson({
+      'id': secondPlan ? 'plan-2' : 'plan-1',
+      'status': 'saved',
+      'healthRevision': 7,
+      'data': {
+        'plannedDate': secondPlan ? '2026-10-23' : '2026-10-22',
+        'decision': {'state': 'suggested'},
+        'meals': [
+          {
+            'mealType': 'breakfast',
+            'name': secondPlan ? 'Súp bí đỏ' : 'Cháo yến mạch',
+            'servings': 1,
+          },
+        ],
+      },
+    });
+  }
+}
+
+class _UnusedDio implements DioClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Map<String, dynamic> _readyHealth() => {
+      'revision': 7,
+      'allergyStatus': 'reported_none',
+      'healthHistory': {
+        'nutrition': {
+          'schemaVersion': 1,
+          'conditionsStatus': 'reported_none',
+          'medicationsStatus': 'reported_none',
+          'feedingRoute': 'oral',
+          'swallowingStatus': 'normal',
+          'fluidRestriction': 'none',
+          'electrolyteRestriction': 'none',
+        },
+      },
+    };

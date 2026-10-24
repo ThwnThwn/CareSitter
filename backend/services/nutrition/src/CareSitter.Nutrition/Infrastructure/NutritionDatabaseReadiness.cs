@@ -4,7 +4,10 @@ namespace CareSitter.Nutrition.Infrastructure;
 
 internal static class NutritionDatabaseReadiness
 {
-    public static async Task<bool> CheckAsync(NpgsqlDataSource db, CancellationToken ct)
+    public static async Task<bool> CheckAsync(
+        NpgsqlDataSource db,
+        CancellationToken ct,
+        bool requirePublishedCatalog = false)
     {
         await using var connection = await db.OpenConnectionAsync(ct);
         await using var command = new NpgsqlCommand("""
@@ -97,6 +100,21 @@ internal static class NutritionDatabaseReadiness
             """, connection) { CommandTimeout = 5 };
         if (await command.ExecuteScalarAsync(ct) is not true) return false;
         command.CommandText = "SELECT EXISTS(SELECT 1 FROM nutrition.catalog_state WHERE id=1 AND revision>0)";
+        if (await command.ExecuteScalarAsync(ct) is not true) return false;
+        if (!requirePublishedCatalog) return true;
+
+        command.CommandText = """
+            SELECT
+              EXISTS (SELECT 1 FROM nutrition.recipe_versions
+                WHERE status='published' AND payload->>'mealType'='breakfast'
+                  AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL AND published_at IS NOT NULL)
+              AND EXISTS (SELECT 1 FROM nutrition.recipe_versions
+                WHERE status='published' AND payload->>'mealType'='lunch'
+                  AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL AND published_at IS NOT NULL)
+              AND EXISTS (SELECT 1 FROM nutrition.recipe_versions
+                WHERE status='published' AND payload->>'mealType'='dinner'
+                  AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL AND published_at IS NOT NULL)
+            """;
         return await command.ExecuteScalarAsync(ct) is true;
     }
 }

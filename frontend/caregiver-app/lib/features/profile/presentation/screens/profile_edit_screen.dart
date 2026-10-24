@@ -1,9 +1,9 @@
 import 'package:caregiver_app/features/profile/presentation/widgets/profile_edit_form.dart';
 import 'package:caregiver_app/features/profile/presentation/widgets/profile_edit_app_bar.dart';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 
@@ -73,9 +73,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       );
       if (picked == null || !mounted) return;
 
-      final success = await ref
-          .read(profileProvider.notifier)
-          .uploadAvatar(File(picked.path));
+      final success =
+          await ref.read(profileProvider.notifier).uploadAvatar(picked);
 
       if (!mounted) return;
       if (success) {
@@ -95,9 +94,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      final message = e is AppException
+          ? e.message
+          : 'Không thể đọc hoặc tải ảnh. Vui lòng chọn ảnh khác.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Lỗi: $e'),
+          content: Text(message),
           backgroundColor: AppColors.error,
         ),
       );
@@ -132,44 +134,49 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     if (!_formKey.currentState!.validate() || _isSaving) return;
 
     setState(() => _isSaving = true);
+    try {
+      final success = await ref.read(profileProvider.notifier).updateProfile(
+            fullName: _nameController.text.trim(),
+            bio: _bioController.text.trim(),
+            yearsOfExperience: int.tryParse(_expController.text.trim()),
+            skills: _skills,
+            serviceCity: _cityController.text.trim().isNotEmpty
+                ? _cityController.text.trim()
+                : null,
+            serviceDistrict: _districtController.text.trim().isNotEmpty
+                ? _districtController.text.trim()
+                : null,
+            gender: _gender,
+            dateOfBirth: _dobController.text.trim().isNotEmpty
+                ? _dobController.text.trim()
+                : null,
+          );
 
-    final success = await ref.read(profileProvider.notifier).updateProfile(
-          fullName: _nameController.text.trim(),
-          bio: _bioController.text.trim(),
-          yearsOfExperience: int.tryParse(_expController.text.trim()),
-          skills: _skills,
-          serviceCity: _cityController.text.trim().isNotEmpty
-              ? _cityController.text.trim()
-              : null,
-          serviceDistrict: _districtController.text.trim().isNotEmpty
-              ? _districtController.text.trim()
-              : null,
-          gender: _gender,
-          dateOfBirth: _dobController.text.trim().isNotEmpty
-              ? _dobController.text.trim()
-              : null,
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã cập nhật thông tin cá nhân thành công'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
-
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-
-    if (success) {
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is AppException
+          ? error.message
+          : 'Không thể cập nhật hồ sơ. Vui lòng thử lại.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã cập nhật thông tin cá nhân thành công'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cập nhật thất bại. Vui lòng kiểm tra lại kết nối.'),
+        SnackBar(
+          content: Text(message),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 

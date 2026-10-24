@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -18,7 +19,7 @@ class ProfileEditAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) => AppBar(
         title: const Text('Thông tin cá nhân'),
         leading: AppBackButton(
-          fallbackRoute: '/settings',
+          fallbackRoute: AppRoutes.settings,
           onPressed: requestExit,
         ),
         actions: [

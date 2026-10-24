@@ -166,9 +166,10 @@ var app = builder.Build(); app.UseExceptionHandler(); app.UseCors();
 app.UseMiddleware<NutritionGatewayAuthenticationMiddleware>();
 app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter();
 app.MapGet("/health/live", () => Results.Ok(new { status = "up" })).AllowAnonymous();
-app.MapGet("/health/ready", async (NpgsqlDataSource db, CancellationToken ct) =>
+app.MapGet("/health/ready", async (NpgsqlDataSource db, INutritionFeatures features, CancellationToken ct) =>
 {
-    return await NutritionDatabaseReadiness.CheckAsync(db, ct)
+    var requirePublishedCatalog = features.RecommendationsEnabled && !localDemoCatalog.Enabled;
+    return await NutritionDatabaseReadiness.CheckAsync(db, ct, requirePublishedCatalog)
         ? Results.Ok(new { status = "ready" }) : Results.StatusCode(503);
 }).AllowAnonymous();
 app.MapControllers(); app.MapGrpcService<NutritionRpcService>(); app.Run();

@@ -33,12 +33,10 @@ class HomeTodayTimeline extends StatelessWidget {
           else
             ...List.generate(shifts.length, (i) {
               final shift = shifts[i];
-              final isFirst = i == 0;
               final isLast = i == shifts.length - 1;
               final statusStyle = ShiftStatusStyle.of(shift.status);
 
               return TimelineItem(
-                isFirst: isFirst,
                 isLast: isLast,
                 isActive: shift.status == 'in_progress' ||
                     shift.status == 'caregiver_en_route',

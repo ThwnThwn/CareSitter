@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/email_log
 import 'package:caresitter_customer/features/auth/presentation/widgets/email_login_register_link.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_widgets.dart';
@@ -78,7 +79,7 @@ class EmailLoginForm extends StatelessWidget {
               // Hoặc đăng nhập bằng mật khẩu
               Center(
                 child: TextButton.icon(
-                  onPressed: () => context.push('/auth/login'),
+                  onPressed: () => context.push(AppRoutes.login),
                   icon: const Icon(Icons.key_rounded, size: 18),
                   label: const Text(
                     'Đăng nhập bằng Mật khẩu',

@@ -19,4 +19,7 @@ public interface ICatalogReadStore
 
     Task<IReadOnlyList<AdminServiceResponse>> ListAdminServicesAsync(
         CancellationToken ct = default);
+
+    Task<AdminServiceResponse?> GetAdminServiceAsync(
+        Guid serviceId, CancellationToken ct = default);
 }

@@ -7,15 +7,17 @@ import 'package:caregiver_app/features/shifts/presentation/controllers/shift_lis
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_list_screen.dart';
 import '../../support/bundled_google_fonts.dart';
 
-ShiftModel _shift(String id, String status) => ShiftModel(
-    id: id,
-    beneficiaryName: 'Người nhận $id',
-    caregiverName: 'Hoa',
-    caregiverAvatar: 'TH',
-    serviceName: 'Chăm sóc tại nhà',
-    status: status,
-    totalPrice: 300000,
-    address: 'TP. Hồ Chí Minh');
+ShiftModel _shift(String id, String status, {DateTime? scheduledEnd}) =>
+    ShiftModel(
+        id: id,
+        beneficiaryName: 'Người nhận $id',
+        caregiverName: 'Hoa',
+        caregiverAvatar: 'TH',
+        serviceName: 'Chăm sóc tại nhà',
+        scheduledEnd: scheduledEnd,
+        status: status,
+        totalPrice: 300000,
+        address: 'TP. Hồ Chí Minh');
 
 class _Shifts extends StateNotifier<List<ShiftModel>>
     implements ShiftListController {
@@ -23,6 +25,11 @@ class _Shifts extends StateNotifier<List<ShiftModel>>
       : super([
           _shift('active', 'in_progress'),
           _shift('offer', 'open'),
+          _shift(
+            'expired-offer',
+            'open',
+            scheduledEnd: DateTime(2020, 1, 1),
+          ),
           _shift('history', 'completed')
         ]);
   var declineCalls = 0;
@@ -85,6 +92,7 @@ void main() {
     await tester.tap(find.text('Đang chờ'));
     await tester.pumpAndSettle();
     expect(find.text('Người nhận offer'), findsOneWidget);
+    expect(find.text('Người nhận expired-offer'), findsNothing);
     await tester.tap(find.text('Từ chối'));
     await tester.pumpAndSettle();
     expect(shifts.declineCalls, 1);

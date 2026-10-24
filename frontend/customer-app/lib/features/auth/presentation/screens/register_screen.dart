@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
@@ -36,7 +37,7 @@ class RegisterScreen extends StatelessWidget {
                       behavior: SnackBarBehavior.floating,
                       duration: Duration(seconds: 4),
                     ));
-                    context.go('/auth/login');
+                    context.go(AppRoutes.login);
                   }),
                 ]),
               ),

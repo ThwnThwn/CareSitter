@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 
 /// Entry points for managing people who receive care.
@@ -14,10 +15,10 @@ class SettingsBeneficiariesSection extends StatelessWidget {
       children: [
         const _SectionHeading(),
         const SizedBox(height: 10),
-        _BeneficiaryListLink(onTap: () => context.push('/beneficiaries')),
+        _BeneficiaryListLink(onTap: () => context.push(AppRoutes.beneficiaries)),
         const SizedBox(height: 10),
         _AddBeneficiaryButton(
-          onTap: () => context.push('/beneficiaries/create'),
+          onTap: () => context.push(AppRoutes.beneficiaryNew),
         ),
       ],
     );

@@ -14,15 +14,22 @@ class ScheduleWeekStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 72,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
-          itemCount: 7,
-          itemBuilder: (_, index) => ScheduleDayCell(
-            date: weekStart.add(Duration(days: index)),
-            selectedDate: selectedDate,
-            onSelectDate: onSelectDate,
+        height: 64,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.micro),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: List.generate(
+              7,
+              (index) => Expanded(
+                child: ScheduleDayCell(
+                  date: weekStart.add(Duration(days: index)),
+                  selectedDate: selectedDate,
+                  chipWidth: double.infinity,
+                  onSelectDate: onSelectDate,
+                ),
+              ),
+            ),
           ),
         ),
       );

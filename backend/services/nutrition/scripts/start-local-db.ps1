@@ -17,6 +17,7 @@ $citationPath = Join-Path $backendRoot 'init-db/nutrition-service/05-recipe-sour
 $releaseEvidencePath = Join-Path $backendRoot 'init-db/nutrition-service/06-catalog-release-evidence.sql'
 $knowledgeReviewPath = Join-Path $backendRoot 'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql'
 $localDemoPath = Join-Path $backendRoot 'init-db/nutrition-service/08-local-demo-catalog.sql'
+$knowledgeChunksPath = Join-Path $backendRoot 'init-db/nutrition-service/09-knowledge-chunks.sql'
 foreach ($program in @('initdb.exe', 'pg_ctl.exe', 'psql.exe')) {
     if (!(Test-Path -LiteralPath (Join-Path $PostgresBin $program))) { throw "Missing PostgreSQL tool: $program" }
 }
@@ -93,21 +94,20 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Catalog nutrient constraint migration failed.' }
         & $psql @arguments -d nutrition -f $citationPath
         if ($LASTEXITCODE -ne 0) { throw 'Recipe source citation migration failed.' }
-        $releaseEvidenceExists = & $psql @arguments -d nutrition -Atc "SELECT to_regclass('nutrition.catalog_release_evidence') IS NOT NULL"
-        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog release evidence schema.' }
-        if ($releaseEvidenceExists.Trim() -eq 'f') {
-            & $psql @arguments -d nutrition -f $releaseEvidencePath
-            if ($LASTEXITCODE -ne 0) { throw 'Catalog release evidence migration failed.' }
-        }
-        $knowledgeReviewExists = & $psql @arguments -d nutrition -Atc "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='require_catalog_knowledge_review' AND NOT tgisinternal)"
-        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog knowledge review gate.' }
-        if ($knowledgeReviewExists.Trim() -eq 'f') {
-            & $psql @arguments -d nutrition -f $knowledgeReviewPath
-            if ($LASTEXITCODE -ne 0) { throw 'Catalog knowledge review migration failed.' }
-        }
+        # Both migrations are idempotent and refresh release functions for existing local databases.
+        & $psql @arguments -d nutrition -f $releaseEvidencePath
+        if ($LASTEXITCODE -ne 0) { throw 'Catalog release evidence migration failed.' }
+        & $psql @arguments -d nutrition -f $knowledgeReviewPath
+        if ($LASTEXITCODE -ne 0) { throw 'Catalog knowledge review migration failed.' }
         # This migration is idempotent and also upgrades the guarded import function for existing local databases.
         & $psql @arguments -d nutrition -f $localDemoPath
         if ($LASTEXITCODE -ne 0) { throw 'Local demo catalog migration failed.' }
+        $knowledgeChunksExists = & $psql @arguments -d nutrition -Atc "SELECT to_regclass('nutrition.knowledge_chunks') IS NOT NULL"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the knowledge chunk schema.' }
+        if ($knowledgeChunksExists.Trim() -eq 'f') {
+            & $psql @arguments -d nutrition -f $knowledgeChunksPath
+            if ($LASTEXITCODE -ne 0) { throw 'Knowledge chunk migration failed.' }
+        }
         $env:PGPASSWORD = $config.AppPassword
         $requiredTables = @(
             'assessment_jobs', 'assessments', 'catalog_audit', 'catalog_package_entries',

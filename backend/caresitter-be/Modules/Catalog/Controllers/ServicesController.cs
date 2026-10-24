@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CareSitter.Modules.Catalog.Controllers;
 
 /// <summary>
-/// Quản lý danh mục dịch vụ chăm sóc (Genki Dưỡng / An / Tâm).
+/// Quản lý danh mục dịch vụ hỗ trợ chăm sóc phi y tế.
 /// Cho phép liệt kê, xem chi tiết và báo giá theo khung giờ đặt lịch.
 /// </summary>
 [ApiController]
@@ -21,7 +21,7 @@ public sealed class ServicesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Lấy danh sách tất cả dịch vụ đang hoạt động, sắp xếp theo tên.</summary>
+    /// <summary>Lấy dịch vụ đang hoạt động, sắp xếp theo thời lượng gợi ý rồi theo tên.</summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)

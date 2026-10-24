@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:caregiver_app/core/api/api_constants.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import '../models/shift_model.dart';
 import '../models/shift_mapper.dart';
 import '../models/task_photo_model.dart';
@@ -123,13 +124,32 @@ class ShiftRepository {
   /// Upload ảnh selfie minh chứng trước khi gọi check-in GPS.
   Future<Map<String, dynamic>> uploadCheckInSelfie(
       String id, XFile image) async {
+    final length = await image.length();
+    if (length == 0) {
+      throw const AppApiException(message: 'Ảnh không có dữ liệu.');
+    }
+    if (length > 10 * 1024 * 1024) {
+      throw const AppApiException(
+        message: 'Ảnh vượt quá dung lượng tối đa 10 MB.',
+        statusCode: 413,
+      );
+    }
+
+    final mimeType = _resolveImageMimeType(image);
+    final filename = image.name.trim().isNotEmpty
+        ? image.name.trim()
+        : _fallbackImageName(mimeType, prefix: 'selfie');
     final bytes = await image.readAsBytes();
     final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(bytes, filename: image.name),
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+        contentType: DioMediaType.parse(mimeType),
+      ),
     });
-    final response = await _dio.post<Map<String, dynamic>>(
+    final response = await _dio.postForm<Map<String, dynamic>>(
       ApiPaths.checkInSelfie(id),
-      data: formData,
+      formData,
     );
     return response.data ?? {};
   }
@@ -199,6 +219,37 @@ class ShiftRepository {
       'webp' => 'image/webp',
       _ => 'image/jpeg',
     };
+  }
+
+  String _resolveImageMimeType(XFile image) {
+    final declaredType = image.mimeType?.trim().toLowerCase();
+    if (declaredType == 'image/jpg') return 'image/jpeg';
+    if (declaredType == 'image/jpeg' ||
+        declaredType == 'image/png' ||
+        declaredType == 'image/webp') {
+      return declaredType!;
+    }
+
+    final fileName = image.name.trim().toLowerCase();
+    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+    if (fileName.endsWith('.png')) return 'image/png';
+    if (fileName.endsWith('.webp')) return 'image/webp';
+
+    throw const AppApiException(
+      message: 'Chỉ nhận ảnh JPG, PNG hoặc WEBP.',
+      statusCode: 422,
+    );
+  }
+
+  String _fallbackImageName(String mimeType, {required String prefix}) {
+    final extension = switch (mimeType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      _ => 'jpg',
+    };
+    return '$prefix.$extension';
   }
 
   Future<Map<String, dynamic>> skipTask(

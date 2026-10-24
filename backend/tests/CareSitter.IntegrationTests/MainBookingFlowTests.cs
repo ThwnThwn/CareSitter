@@ -38,6 +38,30 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
     }
 
     [PostgresFact]
+    public async Task ListCareTasks_WithExistingTask_DoesNotFailWhileFilteringPhotoEvents()
+    {
+        await using var db = CreateDb();
+        var booking = await SeedBookingAsync(db, "CONFIRMED");
+        var task = CareTask.Create(booking.Id, "Theo dõi thuốc", isRequired: true);
+        db.CareTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var manager = new CareTaskManager(
+            db,
+            new BookingMediaStoreStub(),
+            new Actor(booking.CustomerId, "CUSTOMER"),
+            new People(Guid.NewGuid(), Guid.NewGuid(), approved: true),
+            null!,
+            null!,
+            NullLogger<CareTaskManager>.Instance);
+
+        var result = await manager.ListAsync(booking.Id);
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Message : null);
+        Assert.Contains(result.Value, item => item.Id == task.Id);
+    }
+
+    [PostgresFact]
     public async Task CancelPaidBooking_ReleasesCommittedSlot_AllowingAnotherBooking()
     {
         await using var db = CreateDb();
@@ -96,6 +120,41 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         Assert.Equal(booking.Id, Assert.Single(firstPage.Items).Id);
         Assert.DoesNotContain(nextPage.Items, item => item.Id == booking.Id);
         Assert.Equal(firstPage.Total, nextPage.Total);
+    }
+
+    [PostgresFact]
+    public async Task ListBookings_ForAdmin_OrdersNewestCreatedBookingFirst()
+    {
+        await using var db = CreateDb();
+        var olderBooking = await SeedBookingAsync(db, "CONFIRMED");
+        var newerBooking = await SeedBookingAsync(db, "CONFIRMED");
+        var olderCreatedAt = DateTimeOffset.UtcNow.AddHours(-2);
+        var newerCreatedAt = olderCreatedAt.AddHours(1);
+        var fartherScheduledStart = DateTimeOffset.UtcNow.AddMonths(2);
+        var nearerScheduledStart = DateTimeOffset.UtcNow.AddDays(2);
+
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE booking.bookings
+            SET created_at = {olderCreatedAt}, updated_at = {olderCreatedAt},
+                scheduled_start = {fartherScheduledStart},
+                scheduled_end = {fartherScheduledStart.AddHours(2)}
+            WHERE id = {olderBooking.Id}
+            """);
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE booking.bookings
+            SET created_at = {newerCreatedAt}, updated_at = {newerCreatedAt},
+                scheduled_start = {nearerScheduledStart},
+                scheduled_end = {nearerScheduledStart.AddHours(2)}
+            WHERE id = {newerBooking.Id}
+            """);
+
+        await using var readDb = CreateDb();
+        var store = new BookingReadStore(readDb);
+        var result = await store.GetPageAsync(new BookingPageCriteria(
+            BookingReadAudience.Admin, null, null, BookingStatus.Confirmed, 1, 2));
+
+        Assert.Equal(new[] { newerBooking.Id, olderBooking.Id },
+            result.Items.Select(item => item.Id));
     }
 
     [PostgresFact]
@@ -633,6 +692,18 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         public Guid? UserId => id;
         public IReadOnlyCollection<string> Roles => roles;
         public bool IsInRole(string role) => roles.Contains(role);
+    }
+
+    private sealed class BookingMediaStoreStub : IBookingMediaStore
+    {
+        public Task<Result<Guid>> AddPhotoAsync(Guid ownerUserId, Guid bookingId, string url,
+            string mimeType, long sizeBytes, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetUrlsAsync(
+            IReadOnlyCollection<Guid> mediaIds, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(
+                new Dictionary<Guid, string>());
     }
 
     private sealed class Pricing(long amount) : IPricingService

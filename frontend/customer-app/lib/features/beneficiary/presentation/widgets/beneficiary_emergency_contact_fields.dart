@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import '../../domain/beneficiary_form_rules.dart';
 import '../models/beneficiary_form_options.dart';
 import 'beneficiary_contact_entry.dart';
@@ -34,7 +35,7 @@ class BeneficiaryEmergencyContactFields extends StatelessWidget {
           validator: beneficiaryContactPhoneError,
         ),
         const SizedBox(height: AppSpacing.control),
-        DropdownButtonFormField<String>(
+        AppDropdownField<String>(
           initialValue: entry.relationship,
           isExpanded: true,
           decoration: const InputDecoration(
@@ -46,7 +47,8 @@ class BeneficiaryEmergencyContactFields extends StatelessWidget {
               entry.relationship,
             ...BeneficiaryFormOptions.contactRelations,
           ]
-              .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+              .map(
+                  (value) => DropdownMenuItem(value: value, child: Text(value)))
               .toList(),
           onChanged: (value) {
             if (value != null) entry.relationship = value;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class HomeRebookCard extends StatelessWidget {
   const HomeRebookCard({super.key, required this.booking});
@@ -17,8 +18,6 @@ class HomeRebookCard extends StatelessWidget {
         .map((p) => p[0].toUpperCase())
         .take(2)
         .join();
-    final serviceId = Uri.encodeComponent(booking.serviceTypeId);
-
     final textScale =
         MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3).toDouble();
 
@@ -37,8 +36,10 @@ class HomeRebookCard extends StatelessWidget {
           name: name,
           booking: booking,
           callbackAction1: () => context.push(
-                '/booking/new?serviceId=$serviceId&caregiverId=${booking.caregiverId ?? ""}',
-              )),
+            AppRoutes.bookingNewWith(
+              serviceId: booking.serviceTypeId,
+            ),
+          )),
     );
   }
 }

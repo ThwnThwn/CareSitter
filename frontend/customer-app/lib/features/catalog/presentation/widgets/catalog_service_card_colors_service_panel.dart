@@ -19,11 +19,12 @@ class CatalogServiceCardColorsServicePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.control),
-        padding: const EdgeInsets.all(AppSpacing.inset),
+        padding: const EdgeInsets.all(AppSpacing.control),
         decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: AppColors.border.withValues(alpha: 0.6),
+            color: AppColors.border,
             width: 1,
           ),
         ),
@@ -33,24 +34,23 @@ class CatalogServiceCardColorsServicePanel extends StatelessWidget {
             // ── Icon ──
             CatalogServiceCardColorsServicePanelBody(
                 colors: colors, service: service),
-            const SizedBox(width: AppSpacing.compact),
+            const SizedBox(width: AppSpacing.md),
 
             // ── Content ──
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name + Category badge
                   CatalogServiceCardServiceRow(service: service),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: AppSpacing.tight),
 
                   // Description
                   CatalogServiceCardServiceLabel(service: service),
-                  const SizedBox(height: AppSpacing.control),
+                  const SizedBox(height: AppSpacing.compact),
 
                   // Price + Duration + CTA
                   CatalogServiceCardColorsServiceRow(
-                      colors: colors, service: service, formatVnd: formatVnd),
+                      service: service, formatVnd: formatVnd),
                 ],
               ),
             ),

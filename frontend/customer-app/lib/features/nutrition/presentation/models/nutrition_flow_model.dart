@@ -6,14 +6,22 @@ import '../../domain/nutrition_personalization_rules.dart';
 class NutritionFlow {
   final HealthProfileModel? health;
   final NutritionResourceModel? resource;
-  final bool loading, recommendationsEnabled;
+  final bool loading, restoringPlan, recommendationsEnabled, canAssess;
+  final DateTime? selectedDate;
+  final bool dateLoading;
   final String? error;
+  final String? dateError;
   const NutritionFlow(
       {this.health,
       this.resource,
       this.loading = false,
+      this.restoringPlan = false,
       this.error,
-      this.recommendationsEnabled = false});
+      this.recommendationsEnabled = false,
+      this.canAssess = false,
+      this.selectedDate,
+      this.dateLoading = false,
+      this.dateError});
 
   NutritionPersonalizationReadiness get readiness {
     final profile = _nutritionProfile(health?['healthHistory']);

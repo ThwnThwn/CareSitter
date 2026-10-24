@@ -2,6 +2,7 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/otp_verif
 import '../controllers/otp_controller.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -98,7 +99,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const AppBackButton(
-          fallbackRoute: '/auth/email',
+          fallbackRoute: AppRoutes.email,
           color: AppColors.textPrimary,
         ),
       ),

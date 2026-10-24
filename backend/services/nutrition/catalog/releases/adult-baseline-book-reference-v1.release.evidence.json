@@ -1,0 +1,2254 @@
+{
+  "bundleFileSha256": "d924322df87f7eda293ac05d7c2cdb77a4322dfbad22f1926574043d55e167e8",
+  "calculationBasis": "Published-source reference estimates. Sum ingredient grams against the pinned Viện Dinh dưỡng food-composition snapshot with identity edible/yield factors; source-missing nutrient fields use the snapshot's documented zero normalization. Not a disease-treatment prescription.",
+  "clinicalReview": null,
+  "contentStatus": "review_ready",
+  "knowledgeReview": {
+    "approvedCount": 12,
+    "candidateCount": 12,
+    "candidateGraphSha256": "896107ccd073b62b6f4534ef4d841535d2955b46badefe365c1620f7fecbdb84",
+    "clinicalReviewerIds": [],
+    "decision": "approved",
+    "decisionLedgerSha256": "5c7933d9de870f457bb0759a34e30d66ad8f2a968a2e9a000f6e77a0b839c27f",
+    "pendingCount": 0,
+    "rejectedCount": 0,
+    "releaseAuthorityIds": [
+      "project-owner-source-reference-20261024"
+    ],
+    "reviewedGraphSha256": "29cb9b5fca7110d765c7782fec41c5ba7cf3e2f021bab2a1a4a9ee160bc0ebda",
+    "schemaVersion": 1,
+    "sources": [
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "BOOK_2019_CKD_P219_220@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737"
+      },
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "BOOK_2019_HTN_P143@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737"
+      },
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "BOOK_2019_OBESITY_P273@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737"
+      },
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "BOOK_2019_OSTEOPOROSIS_P286@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737"
+      },
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "BOOK_2019_POSTOP_P370@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737"
+      },
+      {
+        "rightsStatus": "permitted",
+        "sourceRevisionId": "VIETNAM_FOOD_COMPOSITION_2017@verified:2026-10-24"
+      }
+    ]
+  },
+  "packageKey": "adult-baseline-book-reference-v1",
+  "recipes": [
+    {
+      "ingredients": [
+        {
+          "amountBasis": "cooked",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_NOODLE_READY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 31.2,
+            "energy_kcal": 146,
+            "fat_g": 0.9,
+            "fiber_g": 0,
+            "protein_g": 3.2,
+            "sodium_mg": 3
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1013",
+          "sourceReferenceCode": "1013",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "BEEF_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 118,
+            "fat_g": 3.8,
+            "fiber_g": 0,
+            "protein_g": 21,
+            "sodium_mg": 83
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7003",
+          "sourceReferenceCode": "7003",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SCALLION_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 5.2,
+            "energy_kcal": 26,
+            "fat_g": 0,
+            "fiber_g": 0.9,
+            "protein_g": 1.3,
+            "sodium_mg": 16
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4038",
+          "sourceReferenceCode": "4038",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 262.9
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 12.28
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 47.32
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 2.68
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 0.09
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 35.15
+        }
+      ],
+      "recipeVersionId": "34a33263-bd12-5f9b-8765-5bd8a17b2a0e",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SCALLION_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 5.2,
+            "energy_kcal": 26,
+            "fat_g": 0,
+            "fiber_g": 0.9,
+            "protein_g": 1.3,
+            "sodium_mg": 16
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4038",
+          "sourceReferenceCode": "4038",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 274.9
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 11.62
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 38.41
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 8.3
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 0.24
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 33.7
+        }
+      ],
+      "recipeVersionId": "bfa06fc6-2372-539e-88e6-effca0601559",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "CHICKEN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 199,
+            "fat_g": 13.1,
+            "fiber_g": 0,
+            "protein_g": 20.3,
+            "sodium_mg": 70
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7013",
+          "sourceReferenceCode": "7013",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "cooked",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_NOODLE_READY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 31.2,
+            "energy_kcal": 146,
+            "fat_g": 0.9,
+            "fiber_g": 0,
+            "protein_g": 3.2,
+            "sodium_mg": 3
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1013",
+          "sourceReferenceCode": "1013",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 318.5
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 14.95
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 46.8
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 7.9
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 0
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 39.5
+        }
+      ],
+      "recipeVersionId": "5fd8eaae-bd3b-5e62-92ff-7c11da06ac33",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GLASS_NOODLE_DRY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 83.7,
+            "energy_kcal": 338,
+            "fat_g": 0.1,
+            "fiber_g": 1.5,
+            "protein_g": 0.6,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2015",
+          "sourceReferenceCode": "2015",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "DUCK_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 288,
+            "fat_g": 24.45,
+            "fiber_g": 0,
+            "protein_g": 17.05,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7090",
+          "sourceReferenceCode": "7090",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_DRY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 18,
+            "energy_kcal": 583,
+            "fat_g": 44.5,
+            "fiber_g": 2.5,
+            "protein_g": 27.5,
+            "sodium_mg": 4
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
+          "sourceReferenceCode": "3017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "AROMATIC_HERBS_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 5.4,
+            "energy_kcal": 30,
+            "fat_g": 0,
+            "fiber_g": 3,
+            "protein_g": 2,
+            "sodium_mg": 6.3
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4094",
+          "sourceReferenceCode": "4094",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 287.9
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 6.66
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 44.19
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 9.39
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 1.3
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 1.03
+        }
+      ],
+      "recipeVersionId": "b0128004-869e-5a0a-9160-cc92063b0d7b",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "cooked",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "TOFU_BOILED",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 1.11,
+            "energy_kcal": 98,
+            "fat_g": 5.45,
+            "fiber_g": 0.4,
+            "protein_g": 11.01,
+            "sodium_mg": 7.07
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
+          "sourceReferenceCode": "3025002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "BOK_CHOY_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 4.26,
+            "energy_kcal": 24,
+            "fat_g": 0.14,
+            "fiber_g": 1.8,
+            "protein_g": 1.4,
+            "sodium_mg": 25
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015",
+          "sourceReferenceCode": "4015",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "MALABAR_SPINACH_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.9,
+            "energy_kcal": 24,
+            "fat_g": 0,
+            "fiber_g": 2.5,
+            "protein_g": 2,
+            "sodium_mg": 37.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4080",
+          "sourceReferenceCode": "4080",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "POMELO_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 8,
+            "energy_kcal": 33,
+            "fat_g": 0,
+            "fiber_g": 0.7,
+            "protein_g": 0.2,
+            "sodium_mg": 2.6
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5001",
+          "sourceReferenceCode": "5001",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 495.5
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 21.74
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 72.58
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 13.02
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 6.61
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 117.07
+        }
+      ],
+      "recipeVersionId": "2af6a2cd-3ece-5fba-8e84-7e9ac16e07d2",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "VEAL_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 85,
+            "fat_g": 0.5,
+            "fiber_g": 0,
+            "protein_g": 20,
+            "sodium_mg": 80
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7002",
+          "sourceReferenceCode": "7002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GINGER_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 8.59,
+            "energy_kcal": 41,
+            "fat_g": 0.51,
+            "fiber_g": 3.3,
+            "protein_g": 0.4,
+            "sodium_mg": 7
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13003",
+          "sourceReferenceCode": "13003",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "FERMENTED_SOYBEAN_RICE",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 15.7,
+            "energy_kcal": 86,
+            "fat_g": 0.7,
+            "fiber_g": 0,
+            "protein_g": 4.3,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13020",
+          "sourceReferenceCode": "13020",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_DRY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 18,
+            "energy_kcal": 583,
+            "fat_g": 44.5,
+            "fiber_g": 2.5,
+            "protein_g": 27.5,
+            "sodium_mg": 4
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
+          "sourceReferenceCode": "3017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SWEET_POTATO_LEAVES_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.99,
+            "energy_kcal": 28,
+            "fat_g": 0.21,
+            "fiber_g": 1.4,
+            "protein_g": 2.6,
+            "sodium_mg": 19.01
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4076",
+          "sourceReferenceCode": "4076",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SAUROPUS_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 5.9,
+            "energy_kcal": 45,
+            "fat_g": 0,
+            "fiber_g": 2.5,
+            "protein_g": 5.3,
+            "sodium_mg": 24.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4086",
+          "sourceReferenceCode": "4086",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "ORANGE_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 9.74,
+            "energy_kcal": 43,
+            "fat_g": 0.06,
+            "fiber_g": 1.4,
+            "protein_g": 0.9,
+            "sodium_mg": 3.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5002",
+          "sourceReferenceCode": "5002",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 674.95
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 31.31
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 92.45
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 20
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 7.82
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 102.17
+        }
+      ],
+      "recipeVersionId": "62661b9c-098b-5ccd-a4f2-5d44b5b31cd5",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_RIB_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 187,
+            "fat_g": 12.8,
+            "fiber_g": 0,
+            "protein_g": 17.9,
+            "sodium_mg": 60
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7053",
+          "sourceReferenceCode": "7053",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "TILAPIA_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 100,
+            "fat_g": 2.3,
+            "fiber_g": 0,
+            "protein_g": 19.7,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8024",
+          "sourceReferenceCode": "8024",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "cooked",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "MUSTARD_STEM_BOILED",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 2.32,
+            "energy_kcal": 18,
+            "fat_g": 0.21,
+            "fiber_g": 1.06,
+            "protein_g": 1.6,
+            "sodium_mg": 69.15
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4134002",
+          "sourceReferenceCode": "4134002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "WINTER_MELON_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.4,
+            "energy_kcal": 16,
+            "fat_g": 0,
+            "fiber_g": 1,
+            "protein_g": 0.6,
+            "sodium_mg": 12.73
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4002",
+          "sourceReferenceCode": "4002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "WATERMELON_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 2.8,
+            "energy_kcal": 18,
+            "fat_g": 0.2,
+            "fiber_g": 0.5,
+            "protein_g": 1.2,
+            "sodium_mg": 4.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5011",
+          "sourceReferenceCode": "5011",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 684.15
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 33.62
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 106.47
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 13.6
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 2.79
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 128.14
+        }
+      ],
+      "recipeVersionId": "08d91c19-86b0-5e61-9290-49a2837ab4a3",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GOBY_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 70,
+            "fat_g": 0.8,
+            "fiber_g": 0,
+            "protein_g": 15.8,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8001",
+          "sourceReferenceCode": "8001",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "BOK_CHOY_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 4.26,
+            "energy_kcal": 24,
+            "fat_g": 0.14,
+            "fiber_g": 1.8,
+            "protein_g": 1.4,
+            "sodium_mg": 25
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015",
+          "sourceReferenceCode": "4015",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GARLIC_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 24.65,
+            "energy_kcal": 126,
+            "fat_g": 0.35,
+            "fiber_g": 1.5,
+            "protein_g": 6,
+            "sodium_mg": 18
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4103",
+          "sourceReferenceCode": "4103",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "MANGO_RIPE_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 15.9,
+            "energy_kcal": 69,
+            "fat_g": 0.3,
+            "fiber_g": 0,
+            "protein_g": 0.6,
+            "sodium_mg": 2.1
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5055",
+          "sourceReferenceCode": "5055",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 502.8
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 18.92
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 77.57
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 12.94
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 3.08
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 59.03
+        }
+      ],
+      "recipeVersionId": "9c0e9d96-6211-5b79-b728-4583d56986ba",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GRASS_CARP_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 91,
+            "fat_g": 2.6,
+            "fiber_g": 0,
+            "protein_g": 17,
+            "sodium_mg": 26
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8029",
+          "sourceReferenceCode": "8029",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "TOMATO_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 4.77,
+            "energy_kcal": 24,
+            "fat_g": 0.23,
+            "fiber_g": 0.8,
+            "protein_g": 0.6,
+            "sodium_mg": 12.2
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
+          "sourceReferenceCode": "4005",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "CHICKEN_EGG_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 1.25,
+            "energy_kcal": 150,
+            "fat_g": 10.33,
+            "fiber_g": 0,
+            "protein_g": 12.96,
+            "sodium_mg": 158
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 9001",
+          "sourceReferenceCode": "9001",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "WATER_SPINACH_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.26,
+            "energy_kcal": 28,
+            "fat_g": 0.24,
+            "fiber_g": 1,
+            "protein_g": 3.2,
+            "sodium_mg": 37.4
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083",
+          "sourceReferenceCode": "4083",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SAUROPUS_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 5.9,
+            "energy_kcal": 45,
+            "fat_g": 0,
+            "fiber_g": 2.5,
+            "protein_g": 5.3,
+            "sodium_mg": 24.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4086",
+          "sourceReferenceCode": "4086",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "MANDARIN_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 9.2,
+            "energy_kcal": 40,
+            "fat_g": 0,
+            "fiber_g": 0.6,
+            "protein_g": 0.8,
+            "sodium_mg": 3.6
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5047",
+          "sourceReferenceCode": "5047",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 532.5
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 30.07
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 68.03
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 15.55
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 4.45
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 155.73
+        }
+      ],
+      "recipeVersionId": "1d1f754f-8a57-5162-939a-b44894425b2e",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SEA_SHRIMP_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0.9,
+            "energy_kcal": 82,
+            "fat_g": 0.9,
+            "fiber_g": 0,
+            "protein_g": 17.6,
+            "sodium_mg": 148
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8051",
+          "sourceReferenceCode": "8051",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "CHILI_SAUCE",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 8.5,
+            "energy_kcal": 41,
+            "fat_g": 0.5,
+            "fiber_g": 0.9,
+            "protein_g": 0.5,
+            "sodium_mg": 25
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13021",
+          "sourceReferenceCode": "13021",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "WATERCRESS_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.33,
+            "energy_kcal": 22,
+            "fat_g": 0.07,
+            "fiber_g": 2,
+            "protein_g": 2.1,
+            "sodium_mg": 85.2
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4014",
+          "sourceReferenceCode": "4014",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "MUSTARD_GREENS_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.76,
+            "energy_kcal": 23,
+            "fat_g": 0.14,
+            "fiber_g": 1.8,
+            "protein_g": 1.7,
+            "sodium_mg": 28.6
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4016",
+          "sourceReferenceCode": "4016",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RAMBUTAN_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 17.7,
+            "energy_kcal": 77,
+            "fat_g": 0,
+            "fiber_g": 1.3,
+            "protein_g": 1.5,
+            "sodium_mg": 94
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5004",
+          "sourceReferenceCode": "5004",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 585.25
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 28.46
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 81.74
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 16.08
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 7.14
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 434.35
+        }
+      ],
+      "recipeVersionId": "9678e2b2-265b-554d-8c32-14c3ed3563d4",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "CHICKEN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 199,
+            "fat_g": 13.1,
+            "fiber_g": 0,
+            "protein_g": 20.3,
+            "sodium_mg": 70
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7013",
+          "sourceReferenceCode": "7013",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SHIITAKE_DRY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 40.5,
+            "energy_kcal": 342,
+            "fat_g": 4,
+            "fiber_g": 17,
+            "protein_g": 36,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4126",
+          "sourceReferenceCode": "4126",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "BITTER_MELON_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 4.1,
+            "energy_kcal": 20,
+            "fat_g": 0,
+            "fiber_g": 1.1,
+            "protein_g": 0.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4055",
+          "sourceReferenceCode": "4055",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "SHIITAKE_DRY",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 40.5,
+            "energy_kcal": 342,
+            "fat_g": 4,
+            "fiber_g": 17,
+            "protein_g": 36,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4126",
+          "sourceReferenceCode": "4126",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "cooked",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "GREEN_BEANS_BOILED",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 15.38,
+            "energy_kcal": 85,
+            "fat_g": 0.22,
+            "fiber_g": 1.08,
+            "protein_g": 5.38,
+            "sodium_mg": 102.9
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4029002",
+          "sourceReferenceCode": "4029002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "APPLE_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 11.71,
+            "energy_kcal": 50,
+            "fat_g": 0.09,
+            "fiber_g": 0.6,
+            "protein_g": 0.5,
+            "sodium_mg": 15.2
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5051",
+          "sourceReferenceCode": "5051",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 608.9
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 29.47
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 98.55
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 10.69
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 4.23
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 204.83
+        }
+      ],
+      "recipeVersionId": "11d4fb6b-e523-5728-9765-e90f604a8bab",
+      "unresolvedItems": []
+    },
+    {
+      "ingredients": [
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "RICE_WHITE_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 76.3,
+            "energy_kcal": 346,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "protein_g": 7.9,
+            "sodium_mg": 5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceReferenceCode": "1004",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PORK_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 139,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "protein_g": 19,
+            "sodium_mg": 76
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
+          "sourceReferenceCode": "7017",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "TOMATO_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 4.77,
+            "energy_kcal": 24,
+            "fat_g": 0.23,
+            "fiber_g": 0.8,
+            "protein_g": 0.6,
+            "sodium_mg": 12.2
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
+          "sourceReferenceCode": "4005",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "BEEF_LEAN_RAW",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 118,
+            "fat_g": 3.8,
+            "fiber_g": 0,
+            "protein_g": 21,
+            "sodium_mg": 83
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7003",
+          "sourceReferenceCode": "7003",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "ONION_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 9.29,
+            "energy_kcal": 45,
+            "fat_g": 0.11,
+            "fiber_g": 1.1,
+            "protein_g": 1.8,
+            "sodium_mg": 7.5
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039",
+          "sourceReferenceCode": "4039",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "PEANUT_OIL",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 0,
+            "energy_kcal": 900,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "protein_g": 0,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
+          "sourceReferenceCode": "6011",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "WINTER_MELON_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 3.4,
+            "energy_kcal": 16,
+            "fat_g": 0,
+            "fiber_g": 1,
+            "protein_g": 0.6,
+            "sodium_mg": 12.73
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4002",
+          "sourceReferenceCode": "4002",
+          "yieldFactor": 1
+        },
+        {
+          "amountBasis": "raw",
+          "ediblePortionFactor": 1,
+          "ingredientCode": "DRAGON_FRUIT_FRESH",
+          "nutrientsPer100G": {
+            "carbohydrate_g": 10.5,
+            "energy_kcal": 47,
+            "fat_g": 0,
+            "fiber_g": 1.8,
+            "protein_g": 1.3,
+            "sodium_mg": 0
+          },
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5044",
+          "sourceReferenceCode": "5044",
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "energy_kcal",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "kcal",
+          "value": 536.6
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "protein_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 20.38
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "carbohydrate_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 85.98
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fat_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 12.4
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "fiber_g",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "g",
+          "value": 5.46
+        },
+        {
+          "calculation": "Sum ingredient grams × pinned per-100-g value × edible factor 1 × yield factor 1; round half-even to 2 decimals.",
+          "key": "sodium_mg",
+          "method": "ingredient_sum_identity_factors",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "unit": "mg",
+          "value": 70.16
+        }
+      ],
+      "recipeVersionId": "8f82fd2f-e2f4-5f15-9a8a-8df7d4b67a78",
+      "unresolvedItems": []
+    }
+  ],
+  "releaseAuthorization": {
+    "authorityType": "product_owner",
+    "authorizationId": "project-owner-source-reference-20261024",
+    "authorizedAt": "2026-10-24T07:50:00+07:00",
+    "authorizedBy": "CareSitter project owner (direct user authorization)",
+    "decision": "approved",
+    "notes": "User directly authorized release of published-book reference menus for adult baseline without a second clinical-review claim; disease conditions and special feeding needs remain blocked."
+  },
+  "releaseProfile": "adult_baseline_source_reference_v1",
+  "requiredNutrients": [
+    "energy_kcal",
+    "protein_g",
+    "carbohydrate_g",
+    "fat_g",
+    "fiber_g",
+    "sodium_mg"
+  ],
+  "rules": [],
+  "schemaVersion": 1,
+  "sourcePublication": {
+    "decision": "verified",
+    "documentSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+    "organization": "Viện Dinh dưỡng",
+    "publicationYear": 2019,
+    "sourceId": "BOOK_2019_CKD_P219_220",
+    "sourceRevisionId": "BOOK_2019_CKD_P219_220@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737",
+    "verifiedAt": "2026-10-24T07:50:00+07:00"
+  }
+}

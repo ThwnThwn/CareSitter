@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,11 +58,18 @@ class ShiftCheckinController {
       );
     }
 
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } on TimeoutException {
+      throw const LocationUnavailableException(
+        'Chưa lấy được vị trí GPS mới. Hãy kiểm tra GPS rồi thử lại.',
+      );
+    }
   }
 }
 

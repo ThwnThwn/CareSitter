@@ -33,7 +33,7 @@ it('shows a recoverable loading error and then a real empty state', async () => 
     ? Response.json({ detail: 'Mất kết nối' }, { status: 503 })
     : Response.json({ items: [], total: 0, page: 1, pageSize: 20 })));
   render(<PromotionsPage />);
-  expect(await screen.findByText('Mất kết nối')).toBeTruthy();
+  expect(await screen.findByText('Hệ thống đang gặp sự cố. Vui lòng thử lại sau.')).toBeTruthy();
   expect(screen.queryByLabelText('Đang tải dữ liệu')).toBeNull();
   offline = false; await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
   expect(await screen.findByText('Chưa có chiến dịch ưu đãi')).toBeTruthy();

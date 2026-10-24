@@ -8,7 +8,13 @@ extension ShiftDisplayModel on ShiftModel {
   String get time => scheduledStart == null || scheduledEnd == null
       ? 'Chưa có giờ'
       : '${formatClock(scheduledStart!)} - ${formatClock(scheduledEnd!)}';
-  String get duration => scheduledStart == null || scheduledEnd == null
-      ? 'Chưa có thời lượng'
-      : '${scheduledEnd!.difference(scheduledStart!).inHours} giờ';
+  String get duration {
+    if (scheduledStart == null || scheduledEnd == null) return 'Chưa có thời lượng';
+    final diff = scheduledEnd!.difference(scheduledStart!);
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes % 60;
+    if (hours == 0) return '$minutes phút';
+    if (minutes == 0) return '$hours tiếng';
+    return '$hours tiếng $minutes phút';
+  }
 }

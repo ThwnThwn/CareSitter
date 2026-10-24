@@ -1,4 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
+import 'package:caregiver_app/core/utils/default_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -7,14 +8,18 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 /// Screen sở hữu trạng thái upload và gọi onTap khi cần.
 class ProfileAvatarEditor extends StatelessWidget {
   final String? avatarUrl;
-  final String initials;
+  final String? gender;
+  final DateTime? dateOfBirth;
+  final String seed;
   final bool isUploading;
   final VoidCallback onTap;
 
   const ProfileAvatarEditor({
     super.key,
     required this.avatarUrl,
-    required this.initials,
+    this.gender,
+    this.dateOfBirth,
+    this.seed = '',
     required this.isUploading,
     required this.onTap,
   });
@@ -30,22 +35,18 @@ class ProfileAvatarEditor extends StatelessWidget {
               CircleAvatar(
                 radius: 52,
                 backgroundColor: AppColors.primaryContainer,
-                backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty
                     ? ResizeImage(CachedNetworkImageProvider(avatarUrl!),
                         width: 192)
-                    : null,
+                    : AssetImage(defaultAvatarAsset(
+                        dateOfBirth: dateOfBirth,
+                        gender: gender,
+                        seed: seed,
+                      ))) as ImageProvider<Object>,
+                onBackgroundImageError: (_, __) {},
                 child: isUploading
                     ? const CircularProgressIndicator(color: AppColors.primary)
-                    : (avatarUrl == null || avatarUrl!.isEmpty)
-                        ? Text(
-                            initials,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: AppFontSizes.s32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
+                    : null,
               ),
               Positioned(
                 bottom: 0,

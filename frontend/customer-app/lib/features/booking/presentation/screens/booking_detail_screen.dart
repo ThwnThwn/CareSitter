@@ -14,6 +14,7 @@ import '../../data/models/payment_intent_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/widgets/confirm_action_dialog.dart';
 import 'package:caresitter_customer/core/error/app_exception.dart';
@@ -66,16 +67,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               cancelDialogOpen: _cancelDialogOpen,
               confirmCancel: _confirmCancel),
           onPay: () => _handleConfirmPayment(context, ref, booking),
-          onTrack: () => context.push('/bookings/${booking.id}/tracking'),
+          onTrack: () => context.push(AppRoutes.bookingTracking(booking.id)),
           onExtend: () => showDialog<void>(
             context: context,
             builder: (_) => const BookingExtensionUnavailableDialog(),
           ),
           onComplete: () => _showCompleteShiftDialog(context, ref, booking),
-          onDispute: () => context.push('/bookings/${booking.id}/dispute'),
-          onReview: () => context.push('/bookings/${booking.id}/review'),
-          onRebook: () => context.push('/booking/new'),
-          onChat: () => context.push('/bookings/${booking.id}/chat'),
+          onDispute: () => context.push(AppRoutes.bookingDispute(booking.id)),
+          onReview: () => context.push(AppRoutes.bookingReview(booking.id)),
+          onRebook: () => context.push(AppRoutes.bookingNew),
+          onChat: () => context.push(AppRoutes.bookingChat(booking.id)),
         ),
       ),
     );
@@ -172,11 +173,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       builder: (_) => PaymentCheckoutSheet(booking: booking),
     );
     if (intent == null || !context.mounted) return;
-    context.go(Uri(path: '/payment-result', queryParameters: {
-      'bookingId': booking.id,
-      if (intent.id.isNotEmpty) 'intentId': intent.id,
-      'result': 'pending',
-    }).toString());
+    context.go(AppRoutes.bookingDetailPaymentResult(
+      bookingId: booking.id,
+      intentId: intent.id.isNotEmpty ? intent.id : null,
+      result: 'pending',
+    ));
   }
 
   void _showMoreOptions(

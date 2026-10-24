@@ -61,6 +61,8 @@ class BookingWizardController
     return BookingWizardState(
         serviceId: initial ? arg.serviceId : null,
         beneficiaryId: initial ? arg.beneficiaryId : null,
+        caregiverId: initial ? arg.caregiverId : null,
+        systemMatched: !initial || arg.caregiverId == null,
         step: initial && arg.serviceId != null ? 1 : 0,
         initialResolved: !initial || arg.beneficiaryId == null);
   }
@@ -78,7 +80,24 @@ class BookingWizardController
         addressId: profile?.defaultAddressId);
   }
 
-  void selectService(String id) => state = state.copyWith(serviceId: id);
+  void selectService(String id) {
+    final service = ref
+        .read(serviceStoreProvider)
+        .valueOrNull
+        ?.where((item) => item.id == id)
+        .firstOrNull;
+    final suggestedHours = service == null
+        ? state.duration
+        : ((service.defaultDurationMinutes + 59) ~/ 60)
+            .clamp(minimumDurationHours, maximumDurationHours)
+            .toInt();
+    state = state.copyWith(
+      serviceId: id,
+      duration: suggestedHours,
+      caregiverId: null,
+    );
+  }
+
   void selectRecipient(BeneficiaryModel profile) => state = state.copyWith(
       beneficiaryId: profile.id, addressId: profile.defaultAddressId);
   void forSelf(bool value) {

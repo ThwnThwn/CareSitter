@@ -1,8 +1,10 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsProfileCard extends StatelessWidget {
@@ -79,19 +81,10 @@ class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({required this.profile});
   final UserProfile profile;
 
-  String get initials => profile.name.trim().isNotEmpty
-      ? profile.name
-          .trim()
-          .split(RegExp(r'\s+'))
-          .where((part) => part.isNotEmpty)
-          .map((part) => part[0].toUpperCase())
-          .take(2)
-          .join()
-      : 'U';
-
   @override
   Widget build(BuildContext context) {
     final hasAvatar = profile.avatarUrl?.isNotEmpty ?? false;
+    final fallback = _DefaultAvatar(profile);
     return Stack(clipBehavior: Clip.none, children: [
       Container(
         width: 92,
@@ -109,9 +102,9 @@ class _ProfileAvatar extends StatelessWidget {
                   width: 92,
                   height: 92,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _Initials(initials),
+                  errorBuilder: (_, __, ___) => fallback,
                 )
-              : _Initials(initials),
+              : fallback,
         ),
       ),
       const Positioned(bottom: 0, right: 0, child: _CameraButton()),
@@ -119,19 +112,18 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _Initials extends StatelessWidget {
-  const _Initials(this.value);
-  final String value;
+class _DefaultAvatar extends StatelessWidget {
+  const _DefaultAvatar(this.profile);
+  final UserProfile profile;
+
   @override
-  Widget build(BuildContext context) => Container(
-        color: AppColors.primaryContainer,
-        alignment: Alignment.center,
-        child: Text(value,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            )),
+  Widget build(BuildContext context) => Image.asset(
+        defaultAvatarAsset(
+          dateOfBirth: parseAvatarDate(profile.dob),
+          gender: profile.gender,
+          seed: profile.name,
+        ),
+        fit: BoxFit.cover,
       );
 }
 
@@ -141,7 +133,7 @@ class _CameraButton extends StatelessWidget {
   Widget build(BuildContext context) => Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/settings/profile/edit'),
+          onTap: () => context.push(AppRoutes.profileEdit),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             width: 30,
@@ -275,7 +267,7 @@ class _EditProfileButton extends StatelessWidget {
         width: double.infinity,
         height: 46,
         child: OutlinedButton.icon(
-          onPressed: () => context.push('/settings/profile/edit'),
+          onPressed: () => context.push(AppRoutes.profileEdit),
           icon: const Icon(Icons.edit_outlined, size: 17),
           label: const Text('Chỉnh sửa hồ sơ'),
           style: OutlinedButton.styleFrom(

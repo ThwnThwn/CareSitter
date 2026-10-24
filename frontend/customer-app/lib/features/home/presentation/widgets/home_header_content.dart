@@ -8,14 +8,10 @@ import 'package:caresitter_customer/features/settings/presentation/controllers/p
 class HomeHeaderContent extends StatelessWidget {
   const HomeHeaderContent(
       {super.key,
-      required this.avatarImage,
-      required this.initials,
       required this.profile,
       required this.unreadCount,
       required this.callbackAction1,
       required this.callbackAction2});
-  final ImageProvider<Object>? avatarImage;
-  final String initials;
   final UserProfile profile;
   final int unreadCount;
   final void Function() callbackAction1;
@@ -26,10 +22,7 @@ class HomeHeaderContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // ── Avatar ──
-          HomeProfileAvatar(
-              callbackAction1: callbackAction1,
-              avatarImage: avatarImage,
-              initials: initials),
+          HomeProfileAvatar(callbackAction1: callbackAction1, profile: profile),
           const SizedBox(width: AppSpacing.compact),
 
           // ── App Branding ──

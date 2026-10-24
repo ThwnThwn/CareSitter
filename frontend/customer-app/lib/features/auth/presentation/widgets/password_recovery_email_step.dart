@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/auth/presentation/widgets/password_recovery_email_field.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/password_recovery_controller.dart';
@@ -33,7 +34,7 @@ class PasswordRecoveryEmailStep extends StatelessWidget {
                 'Chưa xác minh email? Đăng nhập bằng mã email trước để xác minh. Nếu mất quyền truy cập email, cần liên hệ đơn vị hỗ trợ.',
                 style: TextStyle(color: AppColors.textSecondary)),
             TextButton(
-                onPressed: flow.busy ? null : () => context.go('/auth/email'),
+                onPressed: flow.busy ? null : () => context.go(AppRoutes.email),
                 child: const Text('Đăng nhập bằng mã email')),
           ]);
 }

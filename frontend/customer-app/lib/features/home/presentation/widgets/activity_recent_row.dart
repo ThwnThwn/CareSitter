@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -18,7 +19,7 @@ class ActivityRecentRow extends StatelessWidget {
     final isCancelled = status == 'cancelled';
 
     return GestureDetector(
-      onTap: () => context.push('/bookings/${booking.id}'),
+      onTap: () => context.push(AppRoutes.bookingDetail(booking.id)),
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.inset),
@@ -34,7 +35,7 @@ class ActivityRecentRow extends StatelessWidget {
                 isCancelled: isCancelled,
                 booking: booking,
                 status: status,
-                onBookAgain: () => context.push('/booking/new')),
+                onBookAgain: () => context.push(AppRoutes.bookingNew)),
 
             // Price + status badge
             ActivityRecentBookingAmount(

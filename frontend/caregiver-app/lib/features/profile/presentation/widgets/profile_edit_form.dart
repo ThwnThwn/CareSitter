@@ -57,7 +57,9 @@ class ProfileEditForm extends StatelessWidget {
             Center(
               child: ProfileAvatarEditor(
                 avatarUrl: profile.avatarUrl,
-                initials: profile.initials,
+                gender: gender,
+                dateOfBirth: DateTime.tryParse(dobController.text.trim()),
+                seed: profile.userId,
                 isUploading: isUploadingAvatar,
                 onTap: pickAndUploadAvatar,
               ),

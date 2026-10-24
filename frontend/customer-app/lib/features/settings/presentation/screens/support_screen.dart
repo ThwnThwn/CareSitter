@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/settings/presentation/widgets/support_panel.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -14,7 +15,7 @@ class SupportScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Liên hệ hỗ trợ'),
-        leading: const AppBackButton(fallbackRoute: '/settings'),
+        leading: const AppBackButton(fallbackRoute: AppRoutes.settings),
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -37,7 +38,7 @@ class SupportScreen extends StatelessWidget {
             title: 'Chat trực tuyến',
             subtitle: 'Gửi yêu cầu và theo dõi phản hồi trong ứng dụng',
             actionText: 'Bắt đầu chat',
-            onTap: () => context.push('/settings/support/chat'),
+            onTap: () => context.push(AppRoutes.supportChat),
           ),
         ],
       ),

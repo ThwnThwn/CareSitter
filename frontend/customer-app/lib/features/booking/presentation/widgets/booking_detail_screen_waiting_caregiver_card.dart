@@ -9,20 +9,27 @@ class BookingDetailScreenWaitingCaregiverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.comfortable),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border, width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 10,
-            offset: Offset(0, 3),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Caregiver đồng hành',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
           ),
+          SizedBox(height: AppSpacing.inset),
+          BookingWaitingCaregiverContent(),
         ],
       ),
-      child: const BookingWaitingCaregiverContent(),
     );
   }
 }

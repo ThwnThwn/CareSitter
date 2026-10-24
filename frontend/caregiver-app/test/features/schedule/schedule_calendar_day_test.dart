@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:caregiver_app/features/schedule/presentation/controllers/schedule_selectors.dart';
 import 'package:caregiver_app/features/schedule/presentation/models/timeline_shift_model.dart';
 import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_day_cell.dart';
+import 'package:caregiver_app/features/schedule/presentation/widgets/schedule_day_label.dart';
 
 void main() {
   testWidgets('calendar reacts to booked shifts and selects the displayed date',
@@ -45,5 +46,48 @@ void main() {
         findsOneWidget);
     await tester.tap(find.text('13'));
     expect(selected, date);
+  });
+
+  testWidgets('shift dot does not move the date or weekday labels',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 120,
+            height: 64,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ScheduleDayLabel(
+                    date: DateTime(2026, 10, 19),
+                    compact: false,
+                    isSelected: false,
+                    isCurrentDay: false,
+                    dayName: 'T2',
+                    hasShifts: false,
+                  ),
+                ),
+                Expanded(
+                  child: ScheduleDayLabel(
+                    date: DateTime(2026, 10, 20),
+                    compact: false,
+                    isSelected: false,
+                    isCurrentDay: false,
+                    dayName: 'T3',
+                    hasShifts: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getTopLeft(find.text('19')).dy,
+        tester.getTopLeft(find.text('20')).dy);
+    expect(tester.getTopLeft(find.text('T2')).dy,
+        tester.getTopLeft(find.text('T3')).dy);
   });
 }

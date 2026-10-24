@@ -4,6 +4,7 @@ import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/core/auth/auth_state.dart';
 import 'package:caregiver_app/core/realtime/care_signalr_service.dart';
@@ -53,7 +54,7 @@ class _Profiles implements ProfileRepository {
   }
 
   @override
-  Future<bool> uploadAvatar(File file) {
+  Future<bool> uploadAvatar(XFile file) {
     final pending = Completer<bool>();
     avatars.add(pending);
     return pending.future;
@@ -188,11 +189,11 @@ void main() {
     await container.read(authStateProvider.future);
     final oldUpload = container
         .read(profileProvider.notifier)
-        .uploadAvatar(File('test-image'));
+        .uploadAvatar(XFile('test-image'));
     (container.read(authStateProvider.notifier) as _Auth).switchTo('second');
     final newUpload = container
         .read(profileProvider.notifier)
-        .uploadAvatar(File('test-image'));
+        .uploadAvatar(XFile('test-image'));
     profiles.avatars.first.complete(true);
     expect(await oldUpload, isFalse);
     expect(container.read(caregiverAvatarUploadingProvider), isTrue);

@@ -37,6 +37,8 @@ class ShiftModel {
   final double platformRevenue;
   final double caregiverEarning;
   final int? beneficiaryAge;
+  final String? beneficiaryGender;
+  final String? beneficiaryAvatarUrl;
   final String? beneficiaryRelationship;
   final String? beneficiaryCondition;
   final String? beneficiaryNotes;
@@ -81,6 +83,8 @@ class ShiftModel {
     this.platformRevenue = 0,
     this.caregiverEarning = 0,
     this.beneficiaryAge,
+    this.beneficiaryGender,
+    this.beneficiaryAvatarUrl,
     this.beneficiaryRelationship,
     this.beneficiaryCondition,
     this.beneficiaryNotes,
@@ -102,6 +106,8 @@ class ShiftModel {
     double? platformRevenue,
     double? caregiverEarning,
     int? beneficiaryAge,
+    String? beneficiaryGender,
+    String? beneficiaryAvatarUrl,
     String? beneficiaryRelationship,
     String? beneficiaryCondition,
     String? beneficiaryNotes,
@@ -140,6 +146,8 @@ class ShiftModel {
       platformRevenue: platformRevenue ?? this.platformRevenue,
       caregiverEarning: caregiverEarning ?? this.caregiverEarning,
       beneficiaryAge: beneficiaryAge ?? this.beneficiaryAge,
+      beneficiaryGender: beneficiaryGender ?? this.beneficiaryGender,
+      beneficiaryAvatarUrl: beneficiaryAvatarUrl ?? this.beneficiaryAvatarUrl,
       beneficiaryRelationship:
           beneficiaryRelationship ?? this.beneficiaryRelationship,
       beneficiaryCondition: beneficiaryCondition ?? this.beneficiaryCondition,

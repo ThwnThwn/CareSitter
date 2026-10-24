@@ -30,9 +30,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (response.status === 204) return undefined as T;
   const payload = await response.json().catch(() => null);
-  const fallback = response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.'
-    : response.status === 409 ? 'Dữ liệu đã thay đổi. Vui lòng tải lại trước khi tiếp tục.' : 'Không thể hoàn tất yêu cầu.';
-  if (!response.ok) throw new ApiError(errorMessage(payload, fallback), response.status,
+  const fallback = response.status >= 500 ? 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.'
+    : response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.'
+      : response.status === 409 ? 'Dữ liệu đã thay đổi. Vui lòng tải lại trước khi tiếp tục.' : 'Không thể hoàn tất yêu cầu.';
+  const message = response.status >= 500 ? fallback : errorMessage(payload, fallback);
+  if (!response.ok) throw new ApiError(message, response.status,
     payload && typeof payload === 'object' && typeof payload.title === 'string' ? payload.title : undefined);
   if (payload === null) throw new ApiError('Phản hồi máy chủ không hợp lệ. Vui lòng thử lại.', response.status);
   return payload as T;

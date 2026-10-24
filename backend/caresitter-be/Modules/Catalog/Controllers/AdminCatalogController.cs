@@ -21,6 +21,13 @@ public sealed class AdminCatalogController : ControllerBase
     public async Task<IActionResult> List(CancellationToken ct) =>
         Ok(await _mediator.Send(new ListAdminServicesQuery(), ct));
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetAdminServiceQuery(id), ct);
+        return result.ToActionResult(this);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] UpsertServiceRequest request, CancellationToken ct)
     {

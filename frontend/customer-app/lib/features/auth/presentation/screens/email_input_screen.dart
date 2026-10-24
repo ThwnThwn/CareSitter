@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/email_log
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/auth_session_controller.dart';
 
@@ -46,7 +47,7 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
     try {
       await ref.read(authSessionControllerProvider).sendOtp(email);
       if (mounted) {
-        context.push('/auth/otp', extra: email);
+        context.push(AppRoutes.otp, extra: email);
       }
     } catch (e) {
       if (mounted) {

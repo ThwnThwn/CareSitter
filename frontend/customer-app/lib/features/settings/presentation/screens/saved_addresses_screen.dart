@@ -4,6 +4,7 @@ import 'package:caresitter_customer/features/settings/presentation/widgets/saved
 import 'package:caresitter_customer/features/settings/presentation/widgets/saved_addresses_address_form_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -138,7 +139,7 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
             widget.selectionMode ? 'Chọn địa chỉ chăm sóc' : 'Địa chỉ đã lưu'),
         leading: widget.selectionMode
             ? BackButton(onPressed: () => Navigator.pop(context))
-            : const AppBackButton(fallbackRoute: '/settings'),
+            : const AppBackButton(fallbackRoute: AppRoutes.settings),
       ),
       body: addressesAsync.when(
         loading: _buildLoadingState,

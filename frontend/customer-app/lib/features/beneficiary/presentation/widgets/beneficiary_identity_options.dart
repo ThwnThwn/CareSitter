@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import '../controllers/beneficiary_form_controller.dart';
 import '../models/beneficiary_form_options.dart';
 import 'beneficiary_field_label.dart';
@@ -15,7 +16,7 @@ class BeneficiaryIdentityOptions extends ConsumerWidget {
     final draft = ref.watch(provider);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const BeneficiaryFieldLabel(text: 'Giới tính'),
-      DropdownButtonFormField<String>(
+      AppDropdownField<String>(
         initialValue: draft.gender,
         isExpanded: true,
         decoration: const InputDecoration(hintText: 'Chưa cập nhật'),
@@ -30,7 +31,7 @@ class BeneficiaryIdentityOptions extends ConsumerWidget {
       if (draft.isSelf)
         const Text('Bản thân')
       else
-        DropdownButtonFormField<String>(
+        AppDropdownField<String>(
           initialValue: draft.relation,
           isExpanded: true,
           items: [
@@ -38,7 +39,8 @@ class BeneficiaryIdentityOptions extends ConsumerWidget {
               draft.relation,
             ...BeneficiaryFormOptions.relations,
           ]
-              .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+              .map(
+                  (value) => DropdownMenuItem(value: value, child: Text(value)))
               .toList(),
           onChanged: (value) {
             if (value != null) ref.read(provider.notifier).relation = value;

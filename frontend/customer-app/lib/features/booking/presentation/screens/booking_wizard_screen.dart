@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 import '../controllers/booking_wizard_controller.dart';
@@ -9,14 +10,22 @@ import '../controllers/booking_wizard_state.dart';
 import '../controllers/booking_submit_result.dart';
 import '../widgets/wizard/booking_wizard_body.dart';
 import '../widgets/wizard/booking_wizard_footer.dart';
+import '../widgets/wizard/booking_wizard_header.dart';
 import '../widgets/wizard/booking_step_indicator.dart';
 
 class BookingWizardScreen extends ConsumerWidget {
   const BookingWizardScreen(
-      {super.key, this.initialServiceId, this.initialBeneficiaryId});
-  final String? initialServiceId, initialBeneficiaryId;
+      {super.key,
+      this.initialServiceId,
+      this.initialBeneficiaryId,
+      this.initialCaregiverId});
+  final String? initialServiceId, initialBeneficiaryId, initialCaregiverId;
   BookingWizardArgs get args =>
-      (serviceId: initialServiceId, beneficiaryId: initialBeneficiaryId);
+      (
+        serviceId: initialServiceId,
+        beneficiaryId: initialBeneficiaryId,
+        caregiverId: initialCaregiverId,
+      );
   Future<void> _submit(BuildContext context, WidgetRef ref,
       {bool reconcile = false}) async {
     final controller = ref.read(bookingWizardProvider(args).notifier);
@@ -27,7 +36,7 @@ class BookingWizardScreen extends ConsumerWidget {
       case BookingSubmitted(:final id, :final message):
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(message), backgroundColor: AppColors.success));
-        context.pushReplacement('/bookings/$id');
+        context.pushReplacement(AppRoutes.bookingDetail(id));
       case BookingSubmitMessage(:final message, :final caregiverConflict):
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(message),
@@ -51,25 +60,27 @@ class BookingWizardScreen extends ConsumerWidget {
     return DiscardChangesGuard(
         hasChanges: () =>
             ref.read(bookingWizardProvider(args).notifier).hasChanges,
-        fallbackRoute: '/home',
+        fallbackRoute: AppRoutes.home,
         builder: (context, requestExit) => Scaffold(
             backgroundColor: AppColors.background,
-            appBar: AppBar(
-                title: const Text('Đặt lịch hỗ trợ'),
-                leading: AppCloseButton(
-                    fallbackRoute: '/home', onPressed: requestExit)),
+            appBar: BookingWizardHeader(step: flow.step, onClose: requestExit),
             body: Column(children: [
               BookingStepIndicator(step: flow.step),
               Expanded(
                   child: SingleChildScrollView(
                       padding: const EdgeInsets.all(AppSpacing.md),
-                      child: AbsorbPointer(
-                          absorbing: flow.submitting || flow.uncertain,
-                          child: FadeSlideStaggered(
-                              key: ValueKey(flow.step),
-                              index: 0,
-                              child: BookingWizardBody(
-                                  args: args, step: flow.step))))),
+                      child: Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                  maxWidth: AppLayout.authFormMaxWidth),
+                              child: AbsorbPointer(
+                                  absorbing: flow.submitting || flow.uncertain,
+                                  child: FadeSlideStaggered(
+                                      key: ValueKey(flow.step),
+                                      index: 0,
+                                      child: BookingWizardBody(
+                                          args: args, step: flow.step))))))),
               if (flow.uncertain)
                 Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -82,7 +93,7 @@ class BookingWizardScreen extends ConsumerWidget {
                               : () => _submit(context, ref, reconcile: true),
                           child: const Text('Kiểm tra lịch đã gửi')),
                       TextButton(
-                          onPressed: () => context.go('/bookings'),
+                          onPressed: () => context.go(AppRoutes.bookings),
                           child: const Text('Xem danh sách lịch')),
                     ])),
               BookingWizardFooter(

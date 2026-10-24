@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_tokens.dart';
@@ -121,7 +122,7 @@ class _ForgotPasswordButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextButton(
         onPressed:
-            isLoading ? null : () => context.push('/auth/forgot-password'),
+            isLoading ? null : () => context.push(AppRoutes.forgotPassword),
         style: TextButton.styleFrom(
           alignment: Alignment.centerRight,
           padding: EdgeInsets.zero,

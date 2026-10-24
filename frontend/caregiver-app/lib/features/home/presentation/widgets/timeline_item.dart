@@ -1,6 +1,5 @@
 import 'package:caregiver_app/features/home/presentation/widgets/timeline_directions_action.dart';
 import 'package:caregiver_app/features/home/presentation/widgets/timeline_shift_status.dart';
-import 'package:caregiver_app/features/home/presentation/widgets/timeline_connector.dart';
 import 'package:caregiver_app/features/home/presentation/widgets/timeline_address.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +9,6 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 
 /// Timeline item for today's shifts
 class TimelineItem extends StatelessWidget {
-  final bool isFirst;
   final bool isLast;
   final bool isActive;
   final String time;
@@ -23,7 +21,6 @@ class TimelineItem extends StatelessWidget {
 
   const TimelineItem({
     super.key,
-    required this.isFirst,
     required this.isLast,
     required this.isActive,
     required this.time,
@@ -43,10 +40,6 @@ class TimelineItem extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Timeline line + node
-            TimelineConnector(
-                isFirst: isFirst, isActive: isActive, isLast: isLast),
-            const SizedBox(width: AppSpacing.compact),
             // Card content
             Expanded(
               child: Container(

@@ -2,6 +2,7 @@ import 'package:caresitter_customer/features/caregiver/presentation/widgets/care
 import 'package:caresitter_customer/features/caregiver/presentation/widgets/caregiver_profile_header_button.dart';
 import 'package:caresitter_customer/features/caregiver/presentation/widgets/caregiver_profile_favorite_button.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -22,7 +23,7 @@ class CaregiverProfileHeader extends StatelessWidget {
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       leading: const AppBackButton(
-        fallbackRoute: '/caregivers',
+        fallbackRoute: AppRoutes.caregivers,
         color: Colors.white,
       ),
       actions: [

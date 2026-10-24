@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -35,7 +36,8 @@ class CaregiverListCaregiverCardCaregiverFormatCurrencyContent
         );
         final actions = <Widget>[
           OutlinedButton(
-            onPressed: () => context.push('/caregivers/${caregiver.id}'),
+            onPressed: () =>
+                context.push(AppRoutes.caregiverDetail(caregiver.id)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
@@ -51,7 +53,9 @@ class CaregiverListCaregiverCardCaregiverFormatCurrencyContent
           ),
           ElevatedButton.icon(
             onPressed: () =>
-                context.push('/booking/new?caregiverId=${caregiver.id}'),
+                context.push(AppRoutes.bookingNewWith(
+                  caregiverId: caregiver.id,
+                )),
             icon: const Icon(Icons.arrow_forward_rounded, size: 14),
             label: const Text('Đặt ngay'),
             style: ElevatedButton.styleFrom(

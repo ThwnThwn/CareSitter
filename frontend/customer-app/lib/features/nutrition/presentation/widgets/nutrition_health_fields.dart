@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 
 import 'nutrition_expansion_card.dart';
@@ -57,7 +58,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
     final current = _profileChanges[field] ?? _profile[field];
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: DropdownButtonFormField<String>(
+      child: AppDropdownField<String>(
         key: ValueKey('nutrition-$field'),
         initialValue:
             options.containsKey(current) ? current as String : 'unknown',
@@ -67,7 +68,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
             .map((e) => DropdownMenuItem(
                 value: e.key,
                 child: Text(e.value,
-                    maxLines: 2, overflow: TextOverflow.ellipsis)))
+                    maxLines: 1, overflow: TextOverflow.ellipsis)))
             .toList(),
         onChanged: !widget.enabled
             ? null
@@ -167,7 +168,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
                 _medicationsDirty = true;
                 _emit();
               }),
-          DropdownButtonFormField<String>(
+          AppDropdownField<String>(
             initialValue: medication.active == null
                 ? 'unknown'
                 : medication.active!

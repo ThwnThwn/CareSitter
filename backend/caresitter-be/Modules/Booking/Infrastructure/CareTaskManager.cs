@@ -184,7 +184,7 @@ internal sealed class CareTaskManager(
     {
         var photoEvents = await db.TimelineEvents.AsNoTracking().Where(x =>
                 x.BookingId == bookingId && x.EventType == "PHOTO_UPLOADED" &&
-                x.TaskId.HasValue && taskIds.Contains(x.TaskId.Value) && x.MediaId.HasValue)
+                x.TaskId.HasValue && Enumerable.Contains(taskIds, x.TaskId.Value) && x.MediaId.HasValue)
             .Select(x => new { x.TaskId, x.MediaId }).ToListAsync(ct);
         var mediaIds = photoEvents.Select(x => x.MediaId!.Value).Distinct().ToArray();
         var urls = await mediaStore.GetUrlsAsync(mediaIds, ct);

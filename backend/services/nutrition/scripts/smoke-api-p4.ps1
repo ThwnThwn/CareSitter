@@ -192,7 +192,8 @@ try {
         'init-db/nutrition-service/05-recipe-source-citations.sql',
         'init-db/nutrition-service/06-catalog-release-evidence.sql',
         'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql',
-        'init-db/nutrition-service/08-local-demo-catalog.sql')) {
+        'init-db/nutrition-service/08-local-demo-catalog.sql',
+        'init-db/nutrition-service/09-knowledge-chunks.sql')) {
         Invoke-AdminPsql -Database $databaseName -File (Join-Path $backendRoot $migration) | Out-Null
     }
     Invoke-AdminPsql -Database $databaseName -Sql @"

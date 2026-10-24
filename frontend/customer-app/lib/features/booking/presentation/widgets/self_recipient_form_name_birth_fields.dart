@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/booking/presentation/widgets/self_recipient_form_i_contact_names_fields.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/family_contact_controller.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/widgets/birth_date_field.dart';
@@ -60,7 +61,7 @@ class SelfRecipientFormNameBirthFields extends StatelessWidget {
         const SizedBox(height: AppSpacing.compact),
         BirthDateField(controller: birth),
         const SizedBox(height: AppSpacing.md),
-        DropdownButtonFormField<String>(
+        AppDropdownField<String>(
             initialValue: gender,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Giới tính'),
@@ -74,7 +75,7 @@ class SelfRecipientFormNameBirthFields extends StatelessWidget {
             ],
             onChanged: callbackAction5),
         const SizedBox(height: AppSpacing.md),
-        DropdownButtonFormField<String>(
+        AppDropdownField<String>(
             initialValue: careLevel,
             isExpanded: true,
             decoration:

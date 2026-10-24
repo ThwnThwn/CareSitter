@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
 
 /// Card chọn người thân trong bước 2 của booking wizard.
@@ -121,7 +122,13 @@ class _BeneficiaryAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final path = beneficiary.avatarPath;
+    final path = beneficiary.avatarPath?.trim() ?? '';
+    final fallbackAsset = defaultAvatarAsset(
+      dateOfBirth: beneficiary.dateOfBirth,
+      gender: beneficiary.gender,
+      seed: beneficiary.id.isNotEmpty ? beneficiary.id : beneficiary.name,
+    );
+    final fallback = Image.asset(fallbackAsset, fit: BoxFit.cover);
     return Container(
       width: 48,
       height: 48,
@@ -134,41 +141,13 @@ class _BeneficiaryAvatar extends StatelessWidget {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: path != null && path.isNotEmpty
+      child: path.isNotEmpty
           ? Image.network(
               path,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _InitialText(
-                initial: beneficiary.avatarInitial,
-                selected: selected,
-              ),
+              errorBuilder: (_, __, ___) => fallback,
             )
-          : _InitialText(
-              initial: beneficiary.avatarInitial,
-              selected: selected,
-            ),
-    );
-  }
-}
-
-class _InitialText extends StatelessWidget {
-  const _InitialText({required this.initial, required this.selected});
-
-  final String initial;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        initial,
-        style: TextStyle(
-          fontSize: AppFontSizes.s15,
-          fontWeight: FontWeight.w700,
-          color: selected ? Colors.white : AppColors.primary,
-          letterSpacing: 0.5,
-        ),
-      ),
+          : fallback,
     );
   }
 }

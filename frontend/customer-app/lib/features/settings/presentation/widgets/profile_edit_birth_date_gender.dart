@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 
 class ProfileEditBirthDateGender extends StatelessWidget {
   const ProfileEditBirthDateGender(
@@ -29,7 +30,7 @@ class ProfileEditBirthDateGender extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.compact),
           Expanded(
-            child: DropdownButtonFormField<String>(
+            child: AppDropdownField<String>(
               initialValue: gender,
               decoration: const InputDecoration(
                 labelText: 'Giới tính',

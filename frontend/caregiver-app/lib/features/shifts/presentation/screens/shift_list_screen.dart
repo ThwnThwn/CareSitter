@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 
 class ShiftListScreen extends ConsumerWidget {
@@ -44,11 +45,9 @@ class ShiftListScreen extends ConsumerWidget {
                 storageKey: 'upcoming-shifts',
               ),
               ShiftListContent(
-                filtered: shifts.where((shift) => const {
-                      ShiftStatus.pending,
-                      ShiftStatus.open,
-                      ShiftStatus.checkoutPendingReview,
-                    }.contains(shift.statusType)),
+                filtered: shifts.where((shift) =>
+                    shift.canAccept ||
+                    shift.statusType == ShiftStatus.checkoutPendingReview),
                 emptyIcon: Icons.hourglass_empty_rounded,
                 emptyTitle: 'Không có ca đang chờ',
                 emptyMessage:

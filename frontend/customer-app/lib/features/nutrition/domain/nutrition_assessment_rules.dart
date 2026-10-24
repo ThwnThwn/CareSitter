@@ -1,4 +1,15 @@
 class NutritionAssessmentRules {
+  static bool canStart({
+    required bool loading,
+    required bool restoringPlan,
+    required String? resourceStatus,
+    required bool retryable,
+    required bool retryAllowed,
+  }) =>
+      !loading &&
+      !restoringPlan &&
+      (resourceStatus != 'failed' || (retryable && retryAllowed));
+
   static bool pending(String status) =>
       status == 'queued' || status == 'processing';
   static Duration pollDelay(int attempt) =>

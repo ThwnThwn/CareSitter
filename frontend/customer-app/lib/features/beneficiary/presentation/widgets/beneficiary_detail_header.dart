@@ -1,5 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -15,14 +17,14 @@ class BeneficiaryDetailHeader extends StatelessWidget {
         expandedHeight: 220,
         backgroundColor: AppColors.primary,
         leading: const AppBackButton(
-          fallbackRoute: '/beneficiaries',
+          fallbackRoute: AppRoutes.beneficiaries,
           color: Colors.white,
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             onPressed: () =>
-                context.push('/beneficiaries/${b.id}/edit').then((_) {
+                context.push(AppRoutes.beneficiaryEdit(b.id)).then((_) {
               if (context.mounted) (context as Element).markNeedsBuild();
             }),
           ),
@@ -38,19 +40,28 @@ class BeneficiaryDetailHeader extends StatelessWidget {
               (() {
                 final hasAvatar =
                     b.avatarPath != null && b.avatarPath!.isNotEmpty;
+                final defaultAvatarPath = defaultAvatarAssetForGender(
+                  age: b.age,
+                  gender: b.gender,
+                );
                 return CircleAvatar(
                   radius: 46,
                   backgroundColor: Colors.white.withValues(alpha: 0.22),
                   backgroundImage: hasAvatar
                       ? beneficiaryAvatarImageProvider(b.avatarPath!)
+                      : defaultAvatarPath == null
+                          ? null
+                          : AssetImage(defaultAvatarPath),
+                  onBackgroundImageError: hasAvatar || defaultAvatarPath != null
+                      ? (_, __) {}
                       : null,
-                  child: hasAvatar
-                      ? null
-                      : Text(b.avatarInitial,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: AppFontSizes.s22,
-                              fontWeight: FontWeight.w800)),
+                  child: !hasAvatar && defaultAvatarPath == null
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          color: Colors.white,
+                          size: 42,
+                        )
+                      : null,
                 );
               })(),
               const SizedBox(height: AppSpacing.sm),

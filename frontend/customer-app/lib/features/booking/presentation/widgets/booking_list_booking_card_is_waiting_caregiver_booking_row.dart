@@ -1,6 +1,6 @@
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_booking_card_is_waiting_caregiver_booking_content.dart';
+import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_avatar.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_action_icon_button.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -18,22 +18,19 @@ class BookingListBookingCardIsWaitingCaregiverBookingRow
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: isWaitingCaregiver
-                ? AppColors.warningLight
-                : AppColors.primaryContainer,
-            child: isWaitingCaregiver
-                ? const Icon(Icons.auto_awesome,
-                    size: 16, color: AppColors.warning)
-                : Text(
-                    booking.caregiverAvatar ?? booking.caregiverInitials,
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppFontSizes.s10,
-                        fontWeight: FontWeight.w700),
-                  ),
-          ),
+          if (isWaitingCaregiver)
+            const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.warningLight,
+              child:
+                  Icon(Icons.auto_awesome, size: 16, color: AppColors.warning),
+            )
+          else
+            BookingCaregiverAvatar(
+              radius: 18,
+              avatarUrl: booking.caregiverAvatar,
+              initials: booking.caregiverInitials,
+            ),
           const SizedBox(width: AppSpacing.sm),
           BookingListBookingCardIsWaitingCaregiverBookingContent(
               isWaitingCaregiver: isWaitingCaregiver, booking: booking),

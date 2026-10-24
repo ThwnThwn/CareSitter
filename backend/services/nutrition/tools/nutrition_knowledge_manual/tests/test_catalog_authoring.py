@@ -260,6 +260,14 @@ class CatalogAuthoringTests(unittest.TestCase):
         with self.assertRaisesRegex(ManualGraphError, "unsupported dietary patterns"):
             _prepare(draft=draft)
 
+    def test_candidate_allows_empty_patterns_for_regular_diet_recipes(self):
+        draft = _draft()
+        draft["recipes"][0]["payload"]["dietaryPatterns"] = []
+
+        prepared = _prepare(draft=draft)
+
+        self.assertEqual([], prepared["bundle"]["recipes"][0]["payload"]["dietaryPatterns"])
+
     def test_candidate_preserves_only_accessible_https_recipe_images(self):
         prepared = _prepare()
         payload = prepared["bundle"]["recipes"][0]["payload"]
@@ -542,7 +550,7 @@ class CatalogAuthoringTests(unittest.TestCase):
     def test_real_profile_builds_review_only_candidate_and_stays_release_disabled(self):
         profile = load_json(ROOT / "config" / "catalog-profiles" / "adult-baseline-p2a-v1.json")
         draft_path = WORKSPACE / "backend" / "services" / "nutrition" / "catalog" / "drafts" / "adult-hypertension-p2.bundle.json"
-        snapshot_path = WORKSPACE / "backend" / "services" / "nutrition" / "catalog" / "sources" / "nin-food-composition-2026-10-16.json"
+        snapshot_path = WORKSPACE / "backend" / "services" / "nutrition" / "catalog" / "sources" / "nin-food-composition-2026-10-23.json"
         result = prepare_catalog_candidate(
             profile=profile,
             draft=load_json(draft_path),
@@ -552,7 +560,7 @@ class CatalogAuthoringTests(unittest.TestCase):
                 "food_snapshot": file_sha256(snapshot_path),
             },
         )
-        self.assertEqual(24, len(result["bundle"]["recipes"]))
+        self.assertEqual(3, len(result["bundle"]["recipes"]))
         self.assertEqual([], result["bundle"]["rules"])
         self.assertEqual([], result["bundle"]["supportedScopes"][0]["conditionCodes"])
         self.assertEqual(1, result["manifest"]["source_projection"]["omitted_rule_count"])

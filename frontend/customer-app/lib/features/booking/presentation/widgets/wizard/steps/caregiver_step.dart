@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,11 +101,8 @@ class _CaregiverCard extends StatelessWidget {
           CircleAvatar(
               radius: 22,
               backgroundColor: AppColors.primaryLight,
-              child: Text(caregiver.initials,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700))),
+              backgroundImage:
+                  AssetImage(defaultAvatarAsset(seed: caregiver.initials))),
           if (caregiver.isOnline)
             Positioned(
                 right: 0,

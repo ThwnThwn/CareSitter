@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/review/presentation/widgets/dispute
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -86,13 +87,13 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
     final bk = matches.first;
     return DiscardChangesGuard(
       hasChanges: () => _hasUnsavedChanges,
-      fallbackRoute: '/bookings',
+      fallbackRoute: AppRoutes.bookings,
       builder: (context, requestExit) => Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Khiếu nại'),
           leading: AppBackButton(
-            fallbackRoute: '/bookings',
+            fallbackRoute: AppRoutes.bookings,
             onPressed: requestExit,
           ),
         ),
@@ -141,7 +142,7 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
           );
       if (mounted) {
         setState(() => _isSubmitting = false);
-        popOrGo(context, fallbackRoute: '/bookings');
+        popOrGo(context, fallbackRoute: AppRoutes.bookings);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(

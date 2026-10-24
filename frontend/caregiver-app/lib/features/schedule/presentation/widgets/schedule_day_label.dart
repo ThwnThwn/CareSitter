@@ -8,51 +8,63 @@ class ScheduleDayLabel extends StatelessWidget {
       required this.date,
       required this.compact,
       required this.isSelected,
+      required this.isCurrentDay,
       required this.dayName,
       required this.hasShifts});
   final DateTime date;
   final bool compact;
   final bool isSelected;
+  final bool isCurrentDay;
   final String dayName;
   final bool hasShifts;
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '${date.day}',
-            style: TextStyle(
-              fontSize: compact ? AppFontSizes.s14 : AppFontSizes.s18,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-          if (!compact) ...[
-            const SizedBox(height: AppSpacing.micro),
+  Widget build(BuildContext context) {
+    final showIndicator = !isSelected && (isCurrentDay || hasShifts);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Text(
-              dayName,
+              '${date.day}',
               style: TextStyle(
-                fontSize: AppFontSizes.s11,
-                fontWeight: FontWeight.w500,
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.85)
-                    : AppColors.textSecondary,
+                fontSize: compact ? AppFontSizes.s14 : AppFontSizes.s18,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
               ),
             ),
+            if (!compact) ...[
+              const SizedBox(height: AppSpacing.micro),
+              Text(
+                dayName,
+                style: TextStyle(
+                  fontSize: AppFontSizes.s11,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ],
-          // Dot indicator for days with booked shifts
-          if (hasShifts && !isSelected) ...[
-            SizedBox(height: compact ? 2 : 4),
-            Container(
+        ),
+        if (showIndicator)
+          Positioned(
+            bottom: compact ? AppSpacing.xxs : AppSpacing.tight,
+            child: Container(
               width: 4,
               height: 4,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: isCurrentDay
+                    ? AppColors.primary
+                    : AppColors.primary.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
             ),
-          ],
-        ],
-      );
+          ),
+      ],
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/recovery_email_controller.dart';
 
@@ -20,7 +21,7 @@ class RecoveryEmailAppBar extends StatelessWidget
                   if (context.canPop()) {
                     context.pop();
                   } else {
-                    context.go('/settings');
+                    context.go(AppRoutes.settings);
                   }
                 }));
 }

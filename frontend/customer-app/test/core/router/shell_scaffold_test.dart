@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/app/router/shell_scaffold.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,13 +15,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final router = GoRouter(
-      initialLocation: '/home',
+      initialLocation: AppRoutes.home,
       routes: [
         ShellRoute(
           builder: (_, __, child) => ShellScaffold(child: child),
           routes: [
             GoRoute(
-              path: '/home',
+              path: AppRoutes.home,
               builder: (_, __) => const Scaffold(
                 body: SizedBox.expand(
                   key: ValueKey('home-body'),
@@ -29,13 +30,13 @@ void main() {
               ),
             ),
             GoRoute(
-              path: '/nutrition',
+              path: AppRoutes.nutrition,
               builder: (_, __) => const Scaffold(body: Text('Trang thực đơn')),
             ),
           ],
         ),
         GoRoute(
-          path: '/booking/new',
+          path: AppRoutes.bookingNew,
           builder: (_, __) => const Scaffold(body: Text('Tạo lịch mới')),
         ),
       ],
@@ -65,7 +66,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Trang thực đơn'), findsOneWidget);
 
-    router.go('/home');
+    router.go(AppRoutes.home);
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.add_rounded));
     await tester.pumpAndSettle();
@@ -81,23 +82,23 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final router = GoRouter(
-      initialLocation: '/home',
+      initialLocation: AppRoutes.home,
       routes: [
         ShellRoute(
           builder: (_, __, child) => ShellScaffold(child: child),
           routes: [
             GoRoute(
-              path: '/home',
+              path: AppRoutes.home,
               builder: (_, __) => const Scaffold(body: Text('Trang chủ')),
             ),
             GoRoute(
-              path: '/nutrition',
+              path: AppRoutes.nutrition,
               builder: (_, __) => const Scaffold(body: Text('Trang thực đơn')),
             ),
           ],
         ),
         GoRoute(
-          path: '/booking/new',
+          path: AppRoutes.bookingNew,
           builder: (_, __) => const Scaffold(body: Text('Tạo lịch mới')),
         ),
       ],

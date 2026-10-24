@@ -1,9 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// BookingStepIndicator theo Stitch design:
-/// Step dots lớn hơn (w-7), checkmark cho bước done, ring brand khi active,
-/// badge "Bước X/6" ở góc phải, connector track mỏng.
+/// Thanh tiến trình sáu bước theo màn booking trên Stitch.
 class BookingStepIndicator extends StatelessWidget {
   const BookingStepIndicator({super.key, required this.step});
   final int step;
@@ -12,69 +10,28 @@ class BookingStepIndicator extends StatelessWidget {
     'Dịch vụ',
     'Người nhận',
     'Lịch & địa chỉ',
-    'Chăm sóc viên',
+    'Chăm sóc',
     'Đồng ý',
     'Xác nhận'
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.cardBackground,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.compact),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _StepHeader(step: step, titles: titles),
-          const SizedBox(height: AppSpacing.compact),
-          _StepTrack(step: step, titles: titles),
-        ],
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.control,
+          AppSpacing.md,
+          AppSpacing.sm,
+        ),
+        child: _StepTrack(step: step, titles: titles),
       ),
     );
-  }
-}
-
-class _StepHeader extends StatelessWidget {
-  const _StepHeader({required this.step, required this.titles});
-
-  final int step;
-  final List<String> titles;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Expanded(
-        child: Text(
-          step < titles.length ? titles[step] : '',
-          style: Theme.of(context)
-              .textTheme
-              .labelMedium
-              ?.copyWith(color: AppColors.textSecondary),
-        ),
-      ),
-      const SizedBox(width: AppSpacing.sm),
-      Flexible(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Text(
-            'Bước ${step + 1}/${titles.length}',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-      ),
-    ]);
   }
 }
 
@@ -133,14 +90,17 @@ class _StepItem extends StatelessWidget {
       Text(
         title,
         textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: active
               ? AppColors.primary
               : completed
                   ? AppColors.textSecondary
                   : AppColors.textHint,
-          fontSize: 9,
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          fontSize: 10,
+          height: 1.2,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
     ]);
@@ -153,15 +113,24 @@ class _StepConnector extends StatelessWidget {
   final bool active;
 
   @override
-  Widget build(BuildContext context) => visible
-      ? Container(
-          height: 2,
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary : AppColors.divider,
-            borderRadius: BorderRadius.circular(1),
-          ),
-        )
-      : const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    return visible
+        ? AnimatedContainer(
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            height: 2,
+            decoration: BoxDecoration(
+              color: active ? AppColors.primary : AppColors.divider,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          )
+        : const SizedBox.shrink();
+  }
 }
 
 class _StepDot extends StatelessWidget {
@@ -176,33 +145,61 @@ class _StepDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      width: 26,
-      height: 26,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color:
-            completed || active ? AppColors.primary : AppColors.surfaceVariant,
-        shape: BoxShape.circle,
-        boxShadow: active
-            ? [
-                BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    spreadRadius: 4)
-              ]
-            : null,
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final duration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 220);
+
+    return AnimatedScale(
+      scale: active ? 1.04 : 1,
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      child: AnimatedContainer(
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        height: 28,
+        constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: completed || active
+              ? AppColors.primary
+              : AppColors.cardBackground,
+          shape: BoxShape.circle,
+          border:
+              completed || active ? null : Border.all(color: AppColors.border),
+          boxShadow: active
+              ? const [
+                  BoxShadow(
+                    color: AppColors.primaryContainer,
+                    spreadRadius: 4,
+                  )
+                ]
+              : null,
+        ),
+        child: AnimatedSwitcher(
+          duration: duration,
+          reverseDuration:
+              reduceMotion ? Duration.zero : const Duration(milliseconds: 150),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: completed
+              ? const Icon(
+                  Icons.check_rounded,
+                  key: ValueKey('completed'),
+                  size: 14,
+                  color: Colors.white,
+                )
+              : Text(
+                  '${index + 1}',
+                  key: ValueKey(index),
+                  style: TextStyle(
+                    color: active ? Colors.white : AppColors.textHint,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+        ),
       ),
-      child: completed
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-          : Text(
-              '${index + 1}',
-              style: TextStyle(
-                color: active ? Colors.white : AppColors.textHint,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
     );
   }
 }

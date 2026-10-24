@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -19,7 +20,7 @@ class EmailLoginRegisterLink extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () => context.push('/auth/register'),
+            onPressed: () => context.push(AppRoutes.register),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.tight),
               minimumSize: Size.zero,

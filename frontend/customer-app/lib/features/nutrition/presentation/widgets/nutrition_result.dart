@@ -3,6 +3,7 @@ import 'nutrition_meal_card.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
+import '../models/nutrition_meal_presentation.dart';
 import '../../domain/nutrition_error_copy.dart';
 
 class NutritionResult extends StatelessWidget {
@@ -10,10 +11,14 @@ class NutritionResult extends StatelessWidget {
       {super.key,
       required this.flow,
       required this.controller,
-      required this.onReplace});
+      required this.plannedDate,
+      required this.onReplace,
+      this.menuOnly = false});
   final NutritionFlow flow;
   final NutritionFlowController controller;
+  final DateTime plannedDate;
   final ValueChanged<String> onReplace;
+  final bool menuOnly;
   @override
   Widget build(BuildContext context) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +50,9 @@ class NutritionResult extends StatelessWidget {
       Text(title, style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.compact)
     ];
-    widgets.add(NutritionFacts(decision: decision, data: data, state: state));
+    if (!menuOnly) {
+      widgets.add(NutritionFacts(decision: decision, data: data, state: state));
+    }
     if (state == 'no_content') {
       widgets.add(const Text(
           'Kho thực đơn hiện chưa có món đủ dữ liệu để gợi ý. Thông tin sức khỏe của bạn đã được giữ lại; vui lòng kiểm tra lại sau.'));
@@ -67,12 +74,13 @@ class NutritionResult extends StatelessWidget {
         flow.recommendationsEnabled &&
         decision.allows('recommend')) {
       widgets.add(FilledButton(
-          onPressed: flow.loading ? null : c.recommend,
+          onPressed:
+              flow.loading ? null : () => c.recommend(plannedDate: plannedDate),
           child: const Text('Xem gợi ý thực đơn')));
     }
     if (state == 'stale') {
       widgets.add(FilledButton(
-          onPressed: flow.loading ? null : c.load,
+          onPressed: flow.loading ? null : c.reassess,
           child: const Text('Kiểm tra lại hồ sơ')));
     }
     if (state == 'failed' && data.retryable && decision.allows('retry')) {
@@ -120,12 +128,12 @@ class _MealSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _sectionMeta(mealType);
+    final meta = NutritionMealPresentation.forType(mealType);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        0,
         AppSpacing.compact,
-        AppSpacing.section,
+        0,
         AppSpacing.xs,
       ),
       child: Row(
@@ -134,7 +142,7 @@ class _MealSectionHeader extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: meta.bgColor,
+              color: meta.backgroundColor,
               borderRadius: BorderRadius.circular(AppRadius.compact),
             ),
             child: Icon(meta.icon, size: 16, color: meta.iconColor),
@@ -151,38 +159,4 @@ class _MealSectionHeader extends StatelessWidget {
       ),
     );
   }
-
-  _SectionMeta _sectionMeta(String type) => switch (type) {
-        'lunch' => const _SectionMeta(
-            label: 'Bữa trưa',
-            icon: Icons.wb_sunny_outlined,
-            iconColor: Color(0xFFE67E22),
-            bgColor: Color(0xFFFFF3E0),
-          ),
-        'dinner' => const _SectionMeta(
-            label: 'Bữa tối',
-            icon: Icons.nightlight_round,
-            iconColor: Color(0xFF5C6BC0),
-            bgColor: Color(0xFFEDE7F6),
-          ),
-        _ => const _SectionMeta(
-            label: 'Bữa sáng',
-            icon: Icons.wb_twilight_outlined,
-            iconColor: AppColors.primary,
-            bgColor: AppColors.primaryContainer,
-          ),
-      };
-}
-
-class _SectionMeta {
-  const _SectionMeta({
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-  });
-  final String label;
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
 }

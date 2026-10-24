@@ -18,26 +18,33 @@ class BookingCaregiverContactActions extends StatelessWidget {
               onTap: callbackAction1,
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
-                height: 42,
+                height: 46,
                 decoration: BoxDecoration(
                   color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.chat_bubble_outline,
-                        size: 17, color: AppColors.primary),
-                    SizedBox(width: AppSpacing.tight),
-                    Text(
-                      'Nhắn tin',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppFontSizes.s13,
-                        fontWeight: FontWeight.w600,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline,
+                          size: 17, color: AppColors.primary),
+                      SizedBox(width: AppSpacing.tight),
+                      Flexible(
+                        child: Text(
+                          'Nhắn tin',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: AppFontSizes.s13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -48,7 +55,7 @@ class BookingCaregiverContactActions extends StatelessWidget {
               onTap: callbackAction2,
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
-                height: 42,
+                height: 46,
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -60,20 +67,27 @@ class BookingCaregiverContactActions extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.call, size: 17, color: Colors.white),
-                    SizedBox(width: AppSpacing.tight),
-                    Text(
-                      'Gọi trực tiếp',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppFontSizes.s13,
-                        fontWeight: FontWeight.w600,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.call, size: 17, color: Colors.white),
+                      SizedBox(width: AppSpacing.tight),
+                      Flexible(
+                        child: Text(
+                          'Gọi điện',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: AppFontSizes.s13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/controllers/nutrition_entry_controller.dart';
@@ -22,7 +23,8 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
       return Scaffold(
         appBar: AppBar(
             title: const Text('Hồ sơ người thân'),
-            leading: const AppBackButton(fallbackRoute: '/beneficiaries')),
+            leading:
+                const AppBackButton(fallbackRoute: AppRoutes.beneficiaries)),
         body: const Center(child: Text('Không tìm thấy hồ sơ người thân.')),
       );
     }
@@ -53,7 +55,7 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                             'Kiểm tra thông tin sức khỏe và chọn món'),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () =>
-                            context.push('/beneficiaries/${b.id}/nutrition'),
+                            context.push(AppRoutes.beneficiaryNutrition(b.id)),
                       ),
                     ),
                   // Mức chăm sóc
@@ -67,8 +69,9 @@ class BeneficiaryDetailScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () =>
-                          context.push('/booking/new?beneficiaryId=${b.id}'),
+                      onPressed: () => context.push(
+                        AppRoutes.bookingNewWith(beneficiaryId: b.id),
+                      ),
                       icon: const Icon(Icons.add),
                       label: Text('Đặt lịch cho ${b.name}'),
                     ),

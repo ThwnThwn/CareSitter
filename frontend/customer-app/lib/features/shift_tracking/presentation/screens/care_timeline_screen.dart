@@ -5,6 +5,7 @@ import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -27,7 +28,8 @@ class CareTimelineScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Nhật ký hỗ trợ'),
-        leading: AppBackButton(fallbackRoute: '/bookings/$bookingId'),
+        leading:
+            AppBackButton(fallbackRoute: AppRoutes.bookingDetail(bookingId)),
       ),
       body: Column(
         children: [

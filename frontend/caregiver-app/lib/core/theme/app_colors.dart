@@ -24,7 +24,8 @@ class AppColors {
   static const Color tertiaryContainer = secondaryContainer;
 
   // ── Surfaces ──
-  static const Color background = Color(0xFFF5F3EE);
+  /// Shared cool off-white canvas used by customer-app.
+  static const Color background = Color(0xFFF6F9F8);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = primaryContainer;
   static const Color surfaceContainer = Color(0xFFFAF8F5);

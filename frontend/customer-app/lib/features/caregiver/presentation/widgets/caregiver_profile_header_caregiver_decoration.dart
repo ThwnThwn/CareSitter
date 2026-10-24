@@ -1,4 +1,4 @@
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -16,13 +16,8 @@ class CaregiverProfileHeaderCaregiverDecoration extends StatelessWidget {
             child: CircleAvatar(
               radius: 44,
               backgroundColor: Colors.white.withValues(alpha: 0.25),
-              child: Text(
-                caregiver.initials,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppFontSizes.s20,
-                    fontWeight: FontWeight.w800),
-              ),
+              backgroundImage:
+                  AssetImage(defaultAvatarAsset(seed: caregiver.initials)),
             ),
           ),
           if (caregiver.isOnline)

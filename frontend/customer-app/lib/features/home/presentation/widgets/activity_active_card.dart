@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -14,7 +15,7 @@ class ActivityActiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       key: ValueKey('active_${booking.id}'),
-      onTap: () => context.push('/bookings/${booking.id}/tracking'),
+      onTap: () => context.push(AppRoutes.bookingTracking(booking.id)),
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.compact),
         padding: const EdgeInsets.all(AppSpacing.comfortable),
@@ -39,7 +40,7 @@ class ActivityActiveCard extends StatelessWidget {
             // Theo dõi button
             ActivityActiveCardControl(
                 onTrackBooking: () =>
-                    context.push('/bookings/${booking.id}/tracking')),
+                    context.push(AppRoutes.bookingTracking(booking.id))),
           ],
         ),
       ),

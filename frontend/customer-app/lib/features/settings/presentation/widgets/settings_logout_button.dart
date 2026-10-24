@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -26,7 +27,7 @@ class SettingsLogoutButton extends ConsumerWidget {
                   onPressed: () async {
                     Navigator.pop(ctx);
                     await ref.read(authSessionControllerProvider).logout();
-                    if (context.mounted) context.go('/auth/login');
+                    if (context.mounted) context.go(AppRoutes.login);
                   },
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,

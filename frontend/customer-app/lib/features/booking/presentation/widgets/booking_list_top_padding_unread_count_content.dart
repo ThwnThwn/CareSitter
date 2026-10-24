@@ -2,6 +2,7 @@ import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class BookingListTopPaddingUnreadCountContent extends StatelessWidget {
   const BookingListTopPaddingUnreadCountContent(
@@ -31,7 +32,7 @@ class BookingListTopPaddingUnreadCountContent extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => context.push('/notifications'),
+                onTap: () => context.push(AppRoutes.notifications),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [

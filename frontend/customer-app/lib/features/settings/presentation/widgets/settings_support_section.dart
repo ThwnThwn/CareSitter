@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -22,7 +23,7 @@ class SettingsSupportSection extends ConsumerWidget {
           iconColor: const Color(0xFF2563EB), // blue-600
           title: 'Trung tâm trợ giúp & CSKH',
           subtitle: 'Câu hỏi thường gặp và hỗ trợ 24/7',
-          onTap: () => context.push('/settings/faq'),
+          onTap: () => context.push(AppRoutes.faq),
         ),
         SettingsSettingsItem(
           icon: Icons.verified_user_outlined,
@@ -66,7 +67,7 @@ class SettingsSupportSection extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               await ref.read(authSessionControllerProvider).logout();
-              if (context.mounted) context.go('/auth/login');
+              if (context.mounted) context.go(AppRoutes.login);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,

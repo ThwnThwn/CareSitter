@@ -6,6 +6,7 @@ namespace CareSitter.Nutrition.Application.Catalog;
 public static class CatalogReleaseValidator
 {
     public const int EvidenceSchemaVersion = 1;
+    public const string SourceReferenceReleaseProfile = "adult_baseline_source_reference_v1";
     public static readonly IReadOnlySet<string> RequiredP2Nutrients = new HashSet<string>(StringComparer.Ordinal)
     {
         "energy_kcal", "protein_g", "carbohydrate_g", "fat_g", "fiber_g", "sodium_mg"
@@ -38,9 +39,10 @@ public static class CatalogReleaseValidator
         if (evidence.ContentStatus != "review_ready")
             Add("evidence.contentStatus", "not_review_ready", "Content status must be review_ready before release.");
         var releaseProfile = evidence.ReleaseProfile ?? "adult_condition_v1";
-        if (releaseProfile is not ("adult_baseline_v1" or "adult_condition_v1"))
-            Add("evidence.releaseProfile", "unsupported", "Release profile must be adult_baseline_v1 or adult_condition_v1.");
-        if (releaseProfile == "adult_baseline_v1")
+        var sourceReferenceRelease = releaseProfile == SourceReferenceReleaseProfile;
+        if (releaseProfile is not ("adult_baseline_v1" or "adult_condition_v1" or SourceReferenceReleaseProfile))
+            Add("evidence.releaseProfile", "unsupported", "Release profile must be adult_baseline_v1, adult_baseline_source_reference_v1 or adult_condition_v1.");
+        if (releaseProfile is "adult_baseline_v1" or SourceReferenceReleaseProfile)
         {
             if ((bundle.Rules ?? []).Length > 0)
                 Add("rules", "baseline_rule_forbidden", "Baseline release cannot contain disease rules.");
@@ -96,7 +98,14 @@ public static class CatalogReleaseValidator
             ValidateRule(rules[index], index, ruleEvidence, bundle.Citations ?? [], Add);
 
         var review = evidence.ClinicalReview;
-        if (review is null) Add("evidence.clinicalReview", "clinical_review_required", "Clinical review is required before release.");
+        if (sourceReferenceRelease)
+        {
+            ValidateSourceReferenceRelease(bundle, evidence.SourcePublication, evidence.ReleaseAuthorization, Add);
+        }
+        else if (review is null)
+        {
+            Add("evidence.clinicalReview", "clinical_review_required", "Clinical review is required before release.");
+        }
         else
         {
             if (string.IsNullOrWhiteSpace(review.ReviewerName)) Add("evidence.clinicalReview.reviewerName", "required", "Reviewer name is required.");
@@ -105,7 +114,11 @@ public static class CatalogReleaseValidator
             if (review.ReviewedAt == default) Add("evidence.clinicalReview.reviewedAt", "required", "Review time is required.");
             if (review.Decision != "approved") Add("evidence.clinicalReview.decision", "not_approved", "Clinical review decision must be approved.");
         }
-        ValidateKnowledgeReview(evidence.KnowledgeReview, review, Add);
+        ValidateKnowledgeReview(
+            evidence.KnowledgeReview,
+            review,
+            sourceReferenceRelease ? evidence.ReleaseAuthorization : null,
+            Add);
 
         combinations.Add(CountCombinations("baseline", null, recipes, [], []));
         foreach (var rule in rules)
@@ -285,6 +298,7 @@ public static class CatalogReleaseValidator
     private static void ValidateKnowledgeReview(
         CatalogKnowledgeReview? review,
         CatalogClinicalReview? clinicalReview,
+        CatalogReleaseAuthorization? releaseAuthorization,
         Action<string, string, string> add)
     {
         const string path = "evidence.knowledgeReview";
@@ -313,11 +327,69 @@ public static class CatalogReleaseValidator
             if (review.Sources.Where(x => x is not null).GroupBy(x => x.SourceRevisionId, StringComparer.Ordinal).Any(x => x.Count() > 1))
                 add(path + ".sources", "duplicate", "Knowledge source revisions cannot be repeated.");
         }
-        if (review.ClinicalReviewerIds is not { Length: > 0 } || review.ClinicalReviewerIds.Any(string.IsNullOrWhiteSpace))
-            add(path + ".clinicalReviewerIds", "required", "At least one clinical reviewer ID is required.");
-        else if (!string.IsNullOrWhiteSpace(clinicalReview?.ReviewerId) &&
-                 !review.ClinicalReviewerIds.Contains(clinicalReview.ReviewerId, StringComparer.Ordinal))
-            add(path + ".clinicalReviewerIds", "reviewer_mismatch", "Clinical review must be bound to a reviewer in the candidate decision ledger.");
+        if (releaseAuthorization is not null)
+        {
+            if (review.ReleaseAuthorityIds is not { Length: > 0 } || review.ReleaseAuthorityIds.Any(string.IsNullOrWhiteSpace))
+                add(path + ".releaseAuthorityIds", "required", "At least one release authority ID is required for a source-reference release.");
+            else if (!review.ReleaseAuthorityIds.Contains(releaseAuthorization.AuthorizationId, StringComparer.Ordinal))
+                add(path + ".releaseAuthorityIds", "reviewer_mismatch", "Release authorization must be bound to the candidate decision ledger.");
+        }
+        else
+        {
+            if (review.ClinicalReviewerIds is not { Length: > 0 } || review.ClinicalReviewerIds.Any(string.IsNullOrWhiteSpace))
+                add(path + ".clinicalReviewerIds", "required", "At least one clinical reviewer ID is required.");
+            else if (!string.IsNullOrWhiteSpace(clinicalReview?.ReviewerId) &&
+                     !review.ClinicalReviewerIds.Contains(clinicalReview.ReviewerId, StringComparer.Ordinal))
+                add(path + ".clinicalReviewerIds", "reviewer_mismatch", "Clinical review must be bound to a reviewer in the candidate decision ledger.");
+        }
+    }
+
+    private static void ValidateSourceReferenceRelease(
+        CatalogBundle bundle,
+        CatalogSourcePublicationReview? publication,
+        CatalogReleaseAuthorization? authorization,
+        Action<string, string, string> add)
+    {
+        const string publicationPath = "evidence.sourcePublication";
+        if (publication is null)
+        {
+            add(publicationPath, "source_publication_required", "Published-source verification is required for a source-reference release.");
+        }
+        else
+        {
+            if (publication.Decision != "verified") add(publicationPath + ".decision", "not_verified", "Published source must be verified.");
+            if (string.IsNullOrWhiteSpace(publication.SourceRevisionId)) add(publicationPath + ".sourceRevisionId", "required", "Source revision ID is required.");
+            if (string.IsNullOrWhiteSpace(publication.Organization)) add(publicationPath + ".organization", "required", "Publishing organization is required.");
+            if (publication.PublicationYear <= 0) add(publicationPath + ".publicationYear", "required", "Publication year is required.");
+            if (publication.VerifiedAt == default) add(publicationPath + ".verifiedAt", "required", "Source verification time is required.");
+            if (!IsSha256(publication.DocumentSha256)) add(publicationPath + ".documentSha256", "invalid_digest", "Published document SHA-256 is required.");
+            var citation = (bundle.Citations ?? []).FirstOrDefault(item =>
+                string.Equals(item.Id, publication.SourceId, StringComparison.Ordinal));
+            if (citation is null)
+                add(publicationPath + ".sourceId", "unknown_reference", "Published source must reference a citation in the bundle.");
+            else
+            {
+                if (!string.Equals(citation.Organization, publication.Organization, StringComparison.Ordinal))
+                    add(publicationPath + ".organization", "source_mismatch", "Publishing organization must match the bundle citation.");
+                if (citation.Year != publication.PublicationYear)
+                    add(publicationPath + ".publicationYear", "source_mismatch", "Publication year must match the bundle citation.");
+                if (!IsSha256(citation.FileSha256) ||
+                    !string.Equals(citation.FileSha256, publication.DocumentSha256, StringComparison.OrdinalIgnoreCase))
+                    add(publicationPath + ".documentSha256", "source_mismatch", "Published document SHA-256 must match the bundle citation.");
+            }
+        }
+
+        const string authorizationPath = "evidence.releaseAuthorization";
+        if (authorization is null)
+        {
+            add(authorizationPath, "release_authorization_required", "Product-owner authorization is required for a source-reference release.");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(authorization.AuthorizationId)) add(authorizationPath + ".authorizationId", "required", "Authorization ID is required.");
+        if (authorization.AuthorityType != "product_owner") add(authorizationPath + ".authorityType", "unsupported", "Source-reference release authority must be product_owner.");
+        if (string.IsNullOrWhiteSpace(authorization.AuthorizedBy)) add(authorizationPath + ".authorizedBy", "required", "Release authority identity is required.");
+        if (authorization.AuthorizedAt == default) add(authorizationPath + ".authorizedAt", "required", "Authorization time is required.");
+        if (authorization.Decision != "approved") add(authorizationPath + ".decision", "not_approved", "Release authorization must be approved.");
     }
 
     private static bool IsSha256(string? value) => !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, "^[A-Fa-f0-9]{64}$");

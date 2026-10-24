@@ -28,6 +28,10 @@ internal sealed class BookingReadStore(BookingDbContext db) : IBookingReadStore
             // Ưu tiên thao tác gần nhất (đặt, hủy, hoàn tất) trước khi phân trang.
             BookingReadAudience.Customer => query.OrderByDescending(x => x.UpdatedAt)
                 .ThenByDescending(x => x.Id),
+            // Màn hình vận hành cần thấy booking vừa được tạo trước, bất kể ca
+            // được đặt cho ngày gần hay xa trong tương lai.
+            BookingReadAudience.Admin => query.OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id),
             BookingReadAudience.OfferInbox => query.OrderBy(x => x.ScheduledStart),
             _ => query.OrderByDescending(x => x.ScheduledStart)
         };

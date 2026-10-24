@@ -12,11 +12,18 @@ class NutritionActionsController {
   final NutritionRepository repository;
   final String beneficiaryId;
   final Map<String, String> _keys = {};
-  void healthChanged() => _keys.clear();
+  String? _retriedAssessmentId;
+  void healthChanged() {
+    _keys.clear();
+    _retriedAssessmentId = null;
+  }
+
   Future<NutritionResourceModel> assess(int revision, ApiCancellation token,
-      {bool retryFailed = false}) {
-    if (retryFailed) {
+      {String? retryOf}) {
+    // Rotate once per known failed assessment; a lost retry response keeps its key.
+    if (retryOf != null && retryOf != _retriedAssessmentId) {
       _keys.removeWhere((key, _) => key.startsWith('nutrition-assessments:'));
+      _retriedAssessmentId = retryOf;
     }
     return _write('nutrition-assessments', revision, token);
   }
@@ -25,9 +32,16 @@ class NutritionActionsController {
           String assessmentId, int revision, ApiCancellation token) =>
       _write('nutrition-assessments/$assessmentId/confirm', revision, token);
   Future<NutritionResourceModel> recommend(
-          String assessmentId, int revision, ApiCancellation token) =>
-      _write('meal-recommendations', revision, token,
-          {'assessmentId': assessmentId});
+          String assessmentId, int revision, ApiCancellation token,
+          {required DateTime plannedDate}) =>
+      _write('meal-recommendations', revision, token, {
+        'assessmentId': assessmentId,
+        'plannedDate':
+            DateTime(plannedDate.year, plannedDate.month, plannedDate.day)
+                .toIso8601String()
+                .split('T')
+                .first,
+      });
   Future<NutritionResourceModel> save(
           String recommendationId, int revision, ApiCancellation token) =>
       _write('meal-plans', revision, token,
@@ -46,6 +60,12 @@ class NutritionActionsController {
           beneficiaryId, recommendationId, mealType, token);
   Future<List<MealPlanSummaryModel>> plans(ApiCancellation token) =>
       repository.savedPlans(beneficiaryId, token);
+  Future<NutritionResourceModel?> latestPlan(ApiCancellation token) async {
+    final saved = await plans(token);
+    if (saved.isEmpty || saved.first.id.isEmpty) return null;
+    return openPlan(saved.first.id, token);
+  }
+
   Future<NutritionResourceModel> openPlan(String id, ApiCancellation token) =>
       repository.read(beneficiaryId, 'meal-plans/$id', token);
   Future<NutritionResourceModel> readAssessment(

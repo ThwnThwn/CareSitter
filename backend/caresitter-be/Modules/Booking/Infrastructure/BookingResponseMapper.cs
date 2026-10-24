@@ -124,7 +124,10 @@ public sealed class BookingResponseMapper(
             x.PromotionDiscountAmount,
             x.PromotionSubsidyAmount,
             x.PromotionId,
-            x.PromotionCode);
+            x.PromotionCode,
+            caregiver?.AvatarUrl,
+            beneficiary?.Gender,
+            beneficiary?.AvatarUrl);
 
     private sealed record OfferMetadata(Guid Id, DateTimeOffset? ExpiresAt, int? Rank);
 }

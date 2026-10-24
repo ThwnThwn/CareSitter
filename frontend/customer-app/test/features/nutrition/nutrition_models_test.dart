@@ -40,6 +40,7 @@ void main() {
                 'https://res.cloudinary.com/demo/image/upload/lunch.jpg',
             'imageAlt': 'Ảnh món ăn cho bữa trưa',
             'servings': 1,
+            'nutrients': {'energy_kcal': 412.5},
             'ingredients': [
               {
                 'name': 'Nguyên liệu',
@@ -79,6 +80,7 @@ void main() {
     expect(resource.result.meals.single.imageUrl,
         'https://res.cloudinary.com/demo/image/upload/lunch.jpg');
     expect(resource.result.meals.single.imageAlt, 'Ảnh món ăn cho bữa trưa');
+    expect(resource.result.meals.single.energyKcal, 412.5);
     expect(resource.result.meals.single.sourceDetails.single.title,
         'Dinh dưỡng lâm sàng');
     expect(resource.result.meals.single.sourceDetails.single.year, 2019);

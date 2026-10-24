@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/features/home/presentation/widgets/home_hover_button.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -48,7 +49,7 @@ class HomeRecentlyBookedSection extends StatelessWidget {
               ),
             ),
             HomeHoverButton(
-              onTap: () => context.push('/bookings'),
+              onTap: () => context.push(AppRoutes.bookings),
               child: const Text(
                 'Xem thêm',
                 style: TextStyle(

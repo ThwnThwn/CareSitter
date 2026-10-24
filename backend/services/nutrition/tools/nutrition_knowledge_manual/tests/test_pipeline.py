@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from contextlib import closing
+import csv
+import io
 import json
 from pathlib import Path
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -15,7 +19,9 @@ from nutrition_knowledge_manual.errors import ManualGraphError
 from nutrition_knowledge_manual.chunk_pdf import chunk_page
 from nutrition_knowledge_manual.chunk_html import extract_html_blocks
 from nutrition_knowledge_manual.graph import build_candidate_graph
-from nutrition_knowledge_manual.jsonio import file_sha256, load_json
+from nutrition_knowledge_manual.jsonio import content_sha256, file_sha256, load_json
+from nutrition_knowledge_manual.seed_chunks import seed_local_chunks
+from nutrition_knowledge_manual.seed_postgres import build_seed_sql
 from nutrition_knowledge_manual.review import append_decision, empty_decision_ledger, materialize_reviewed_graph
 from nutrition_knowledge_manual.release import prepare_release
 from nutrition_knowledge_manual.rights import resolve_source
@@ -60,6 +66,76 @@ class ManualGraphPipelineTests(unittest.TestCase):
         self.assertTrue(all(item["pdf_page"] == 20 for item in first))
         self.assertTrue(all(item["token_count"] <= 180 for item in first))
         self.assertTrue(all(unicodedata.is_normalized("NFC", item["text"]) for item in first))
+
+    def test_local_chunk_seed_is_idempotent_and_keeps_review_gate(self):
+        source = {"source_id": "book", "revision_id": "book@1", "sha256": "a" * 64}
+        chunks, _ = chunk_page(
+            source=source, pdf_page=8,
+            layout_text="1. Mục\n\n" + "Nội dung tổng hợp có trang. " * 45,
+            target_tokens=120, maximum_tokens=180, overlap_tokens=20,
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            chunks_path = root / "chunks.jsonl"
+            chunks_path.write_text(
+                "".join(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n" for item in chunks),
+                encoding="utf-8",
+            )
+            report = {
+                "source_id": source["source_id"],
+                "source_revision_id": source["revision_id"],
+                "source_sha256": source["sha256"],
+                "output_sha256": file_sha256(chunks_path),
+                "chunk_count": len(chunks),
+                "index_eligible_count": sum(item["index_eligible"] for item in chunks),
+                "pdf_page_count": 8,
+                "maximum_tokens": 180,
+            }
+            report["content_sha256"] = content_sha256(report)
+            report_path = root / "report.json"
+            report_path.write_text(json.dumps(report), encoding="utf-8")
+            database_path = root / "index.sqlite3"
+
+            first = seed_local_chunks(
+                source=source, chunks_path=chunks_path,
+                report_path=report_path, database_path=database_path,
+            )
+            second = seed_local_chunks(
+                source=source, chunks_path=chunks_path,
+                report_path=report_path, database_path=database_path,
+            )
+            self.assertEqual("seeded", first["status"])
+            self.assertEqual("already_seeded", second["status"])
+            with closing(sqlite3.connect(database_path)) as connection:
+                self.assertEqual(len(chunks), connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0])
+                self.assertEqual(
+                    sum(item["index_eligible"] for item in chunks),
+                    connection.execute("SELECT COUNT(*) FROM chunks WHERE index_eligible = 1").fetchone()[0],
+                )
+
+            chunks_path.write_text(chunks_path.read_text(encoding="utf-8") + "{}\n", encoding="utf-8")
+            with self.assertRaisesRegex(ManualGraphError, "chunk file hash"):
+                seed_local_chunks(
+                    source=source, chunks_path=chunks_path,
+                    report_path=report_path, database_path=database_path,
+                )
+
+    def test_postgres_seed_sql_escapes_source_and_preserves_chunk_json(self):
+        source = {
+            "source_id": "book", "revision_id": "book@1", "title": "O'Reilly",
+            "sha256": "a" * 64, "rights_status": "permitted",
+        }
+        chunks, _ = chunk_page(
+            source=source, pdf_page=3,
+            layout_text='1. Mục\n\nNội dung có dấu "nháy" và \\gạch chéo. ' * 20,
+            target_tokens=120, maximum_tokens=180, overlap_tokens=20,
+        )
+        script = build_seed_sql(source=source, chunks=chunks, chunks_sha256="b" * 64)
+        self.assertIn("'O''Reilly'", script)
+        copy_data = script.split("COPY knowledge_import(payload) FROM STDIN WITH (FORMAT csv);\n", 1)[1]
+        copy_data = copy_data.split("\\.\n", 1)[0]
+        decoded = list(csv.reader(io.StringIO(copy_data)))
+        self.assertEqual(chunks, [json.loads(row[0]) for row in decoded])
 
     def test_html_extraction_keeps_content_and_drops_navigation_and_scripts(self):
         blocks = extract_html_blocks("""

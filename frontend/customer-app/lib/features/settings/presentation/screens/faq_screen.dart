@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -40,7 +41,7 @@ class FaqScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Câu hỏi thường gặp'),
-        leading: const AppBackButton(fallbackRoute: '/settings'),
+        leading: const AppBackButton(fallbackRoute: AppRoutes.settings),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(

@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/booking/presentation/widgets/payment_result_payment_result_content.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -64,7 +65,7 @@ class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen>
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            onPressed: () => context.go('/bookings'),
+            onPressed: () => context.go(AppRoutes.bookings),
             icon: const Icon(Icons.close_rounded),
             tooltip: 'Đóng',
           ),
@@ -83,8 +84,8 @@ class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen>
                 bookingId: widget.bookingId,
                 onOpenBooking: widget.bookingId == null
                     ? null
-                    : () => context.go('/bookings/${widget.bookingId}'),
-                onOpenBookings: () => context.go('/bookings'),
+                    : () => context.go(AppRoutes.bookingDetail(widget.bookingId!)),
+                onOpenBookings: () => context.go(AppRoutes.bookings),
                 onRetry: flow.refreshing
                     ? null
                     : () => ref

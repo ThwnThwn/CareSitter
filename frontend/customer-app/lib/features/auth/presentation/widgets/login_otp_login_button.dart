@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_tokens.dart';
@@ -14,7 +15,7 @@ class LoginOtpLoginButton extends StatelessWidget {
     return SizedBox(
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: enabled ? () => context.push('/auth/email') : null,
+        onPressed: enabled ? () => context.push(AppRoutes.email) : null,
         icon: const Icon(
           Icons.mark_email_read_outlined,
           size: 18,

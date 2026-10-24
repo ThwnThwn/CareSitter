@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:caregiver_app/core/api/api_cancellation.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:caregiver_app/core/api/api_constants.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
@@ -52,7 +54,7 @@ class ProfileRepository {
         if (fullName != null) 'fullName': fullName,
         if (bio != null) 'bio': bio,
         if (yearsOfExperience != null) 'yearsOfExperience': yearsOfExperience,
-        if (skills != null) 'skills': skills.join(','),
+        if (skills != null) 'skills': jsonEncode(skills),
         if (serviceCity != null) 'serviceCity': serviceCity,
         if (serviceDistrict != null) 'serviceDistrict': serviceDistrict,
         if (gender != null) 'gender': gender,
@@ -68,17 +70,55 @@ class ProfileRepository {
     ).then((_) {});
   }
 
-  Future<bool> uploadAvatar(File imageFile) async {
+  Future<bool> uploadAvatar(XFile imageFile) async {
+    final length = await imageFile.length();
+    if (length <= 0) {
+      throw const AppApiException(message: 'File ảnh không được rỗng.');
+    }
+    if (length > 5 * 1024 * 1024) {
+      throw const AppApiException(message: 'Ảnh không được vượt quá 5 MB.');
+    }
+
+    final pickedName = imageFile.name.trim().isEmpty
+        ? ''
+        : imageFile.name.split(RegExp(r'[/\\]')).last;
+    final mime = _avatarMimeType(pickedName, imageFile.mimeType);
+    final fileName = pickedName.isEmpty
+        ? switch (mime) {
+            'image/png' => 'avatar.png',
+            'image/webp' => 'avatar.webp',
+            _ => 'avatar.jpg',
+          }
+        : pickedName;
+    final bytes = await imageFile.readAsBytes();
     final response = await _dio.postForm<Map<String, dynamic>>(
       '/profile/avatar',
       FormData.fromMap({
-        'file': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: _fileName(imageFile),
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: fileName,
+          contentType: DioMediaType.parse(mime),
         ),
       }),
     );
     return response.statusCode == 200;
+  }
+
+  static String _avatarMimeType(String fileName, String? providedMime) {
+    const allowed = {'image/jpeg', 'image/png', 'image/webp'};
+    final normalizedMime = providedMime?.trim().toLowerCase();
+    if (normalizedMime != null && allowed.contains(normalizedMime)) {
+      return normalizedMime;
+    }
+
+    final extension = fileName.split('.').last.toLowerCase();
+    return switch (extension) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => throw const AppApiException(
+          message: 'Chỉ nhận ảnh JPG, PNG hoặc WEBP.'),
+    };
   }
 
   Future<String> uploadKycImage(File imageFile, String documentType,

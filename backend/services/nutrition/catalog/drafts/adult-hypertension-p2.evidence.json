@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "packageKey": "adult-hypertension-p2-technical-draft",
-  "bundleFileSha256": "BB2A651BA64517F0B31267CB1C3A2222C18B46C241EBC6D78106C7FF121AACB4",
+  "bundleFileSha256": "bc5332320216b1ec80ba87c39ead3c956e7e8bef66915787553d339f27a273f2",
   "contentStatus": "technical_draft",
   "calculationBasis": "Cộng từng nguyên liệu theo khối lượng ghi trong công thức và giá trị trên 100 g từ snapshot Viện Dinh dưỡng; làm tròn 2 chữ số thập phân.",
   "requiredNutrients": [
@@ -14,7 +14,127 @@
   ],
   "recipes": [
     {
-      "recipeVersionId": "652556c5-b968-56d3-831f-57ee51a398eb",
+      "recipeVersionId": "427aada7-7add-5134-816e-613763ca5d05",
+      "ingredients": [
+        {
+          "ingredientCode": "RICE_NOODLE_READY",
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1013",
+          "amountBasis": "cooked",
+          "nutrientsPer100G": {
+            "energy_kcal": 146,
+            "protein_g": 3.2,
+            "carbohydrate_g": 31.2,
+            "fat_g": 0.9,
+            "fiber_g": 0,
+            "sodium_mg": 3
+          },
+          "ediblePortionFactor": 1,
+          "yieldFactor": 1
+        },
+        {
+          "ingredientCode": "BEEF_LEAN_RAW",
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7003",
+          "amountBasis": "raw",
+          "nutrientsPer100G": {
+            "energy_kcal": 118,
+            "protein_g": 21,
+            "carbohydrate_g": 0,
+            "fat_g": 3.8,
+            "fiber_g": 0,
+            "sodium_mg": 83
+          },
+          "ediblePortionFactor": 1,
+          "yieldFactor": 1
+        },
+        {
+          "ingredientCode": "SCALLION_FRESH",
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4038",
+          "amountBasis": "raw",
+          "nutrientsPer100G": {
+            "energy_kcal": 26,
+            "protein_g": 1.3,
+            "carbohydrate_g": 5.2,
+            "fat_g": 0,
+            "fiber_g": 0.9,
+            "sodium_mg": 16
+          },
+          "ediblePortionFactor": 1,
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "key": "energy_kcal",
+          "value": 262.9,
+          "unit": "kcal",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 146/100 + BEEF_LEAN_RAW: 35 g × 118/100 + SCALLION_FRESH: 10 g × 26/100"
+        },
+        {
+          "key": "protein_g",
+          "value": 12.28,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 3.2/100 + BEEF_LEAN_RAW: 35 g × 21/100 + SCALLION_FRESH: 10 g × 1.3/100"
+        },
+        {
+          "key": "carbohydrate_g",
+          "value": 47.32,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 31.2/100 + BEEF_LEAN_RAW: 35 g × 0/100 + SCALLION_FRESH: 10 g × 5.2/100"
+        },
+        {
+          "key": "fat_g",
+          "value": 2.68,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 0.9/100 + BEEF_LEAN_RAW: 35 g × 3.8/100 + SCALLION_FRESH: 10 g × 0/100"
+        },
+        {
+          "key": "fiber_g",
+          "value": 0.09,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 0/100 + BEEF_LEAN_RAW: 35 g × 0/100 + SCALLION_FRESH: 10 g × 0.9/100"
+        },
+        {
+          "key": "sodium_mg",
+          "value": 35.15,
+          "unit": "mg",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_NOODLE_READY: 150 g × 3/100 + BEEF_LEAN_RAW: 35 g × 83/100 + SCALLION_FRESH: 10 g × 16/100"
+        }
+      ],
+      "unresolvedItems": [
+        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
+        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1.",
+        "Đây là món từ thực đơn tham khảo trong sách; các giá trị trống được ghim về 0 theo PINNED_ZERO_NUTRIENTS và dầu ml đang dùng lượng số làm đại diện kỹ thuật để thử local."
+      ]
+    },
+    {
+      "recipeVersionId": "b438abfb-6efb-58c0-b051-cdbea4289b54",
       "ingredients": [
         {
           "ingredientCode": "RICE_WHITE_RAW",
@@ -33,104 +153,17 @@
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "MUNG_BEAN_DRY",
+          "ingredientCode": "PORK_LEAN_RAW",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 242.2,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + MUNG_BEAN_DRY: 20 g × 346/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 8.63,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + MUNG_BEAN_DRY: 20 g × 23.4/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 49.71,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + MUNG_BEAN_DRY: 20 g × 57.8/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 0.98,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + MUNG_BEAN_DRY: 20 g × 2.4/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 1.14,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + MUNG_BEAN_DRY: 20 g × 4.7/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 3.7,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + MUNG_BEAN_DRY: 20 g × 6/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "38341079-c145-5f66-a0a4-498c4b85bf3b",
-      "ingredients": [
-        {
-          "ingredientCode": "SWEET_POTATO_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2008002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 122,
-            "protein_g": 0.78,
-            "carbohydrate_g": 29.22,
-            "fat_g": 0.2,
-            "fiber_g": 1.27,
-            "sodium_mg": 30.39
+            "energy_kcal": 139,
+            "protein_g": 19,
+            "carbohydrate_g": 0,
+            "fat_g": 7,
+            "fiber_g": 0,
+            "sodium_mg": 76
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
@@ -152,239 +185,169 @@
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "BOK_CHOY_BOILED",
+          "ingredientCode": "BOK_CHOY_FRESH",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 330.8,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 122/100 + TOFU_BOILED: 60 g × 98/100 + BOK_CHOY_BOILED: 100 g × 28/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 9.74,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 0.78/100 + TOFU_BOILED: 60 g × 11.01/100 + BOK_CHOY_BOILED: 100 g × 1.57/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 64.05,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 29.22/100 + TOFU_BOILED: 60 g × 1.11/100 + BOK_CHOY_BOILED: 100 g × 4.94/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 3.89,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 0.2/100 + TOFU_BOILED: 60 g × 5.45/100 + BOK_CHOY_BOILED: 100 g × 0.22/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.8,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 1.27/100 + TOFU_BOILED: 60 g × 0.4/100 + BOK_CHOY_BOILED: 100 g × 2.02/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 93.11,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 200 g × 30.39/100 + TOFU_BOILED: 60 g × 7.07/100 + BOK_CHOY_BOILED: 100 g × 28.09/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "38e55752-8f4e-5a3f-9af3-8e045e61730e",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
+            "energy_kcal": 24,
+            "protein_g": 1.4,
+            "carbohydrate_g": 4.26,
+            "fat_g": 0.14,
+            "fiber_g": 1.8,
+            "sodium_mg": 25
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "SOYBEAN_DRY",
+          "ingredientCode": "PEANUT_OIL",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 256.6,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + SOYBEAN_DRY: 20 g × 418/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 10.75,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + SOYBEAN_DRY: 20 g × 34/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 43.97,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + SOYBEAN_DRY: 20 g × 29.1/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 4.18,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + SOYBEAN_DRY: 20 g × 18.4/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 1.1,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + SOYBEAN_DRY: 20 g × 4.5/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 2.9,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + SOYBEAN_DRY: 20 g × 2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "296ddf6b-2859-5961-a923-3d8139f8fc6f",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
+            "energy_kcal": 900,
+            "protein_g": 0,
+            "carbohydrate_g": 0,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "sodium_mg": 0
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "PEANUT_DRY",
+          "ingredientCode": "MALABAR_SPINACH_FRESH",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4080",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 583,
-            "protein_g": 27.5,
-            "carbohydrate_g": 18,
-            "fat_g": 44.5,
+            "energy_kcal": 24,
+            "protein_g": 2,
+            "carbohydrate_g": 3.9,
+            "fat_g": 0,
             "fiber_g": 2.5,
-            "sodium_mg": 4
+            "sodium_mg": 37.5
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "SESAME_DRY",
+          "ingredientCode": "POMELO_FRESH",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3020",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5001",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 582,
-            "protein_g": 20.1,
-            "carbohydrate_g": 21.1,
-            "fat_g": 46.4,
-            "fiber_g": 3.5,
-            "sodium_mg": 11
+            "energy_kcal": 33,
+            "protein_g": 0.2,
+            "carbohydrate_g": 8,
+            "fat_g": 0,
+            "fiber_g": 0.7,
+            "sodium_mg": 2.6
+          },
+          "ediblePortionFactor": 1,
+          "yieldFactor": 1
+        }
+      ],
+      "nutrients": [
+        {
+          "key": "energy_kcal",
+          "value": 495.5,
+          "unit": "kcal",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + PORK_LEAN_RAW: 50 g × 139/100 + TOFU_BOILED: 30 g × 98/100 + BOK_CHOY_FRESH: 200 g × 24/100 + PEANUT_OIL: 7 g × 900/100 + MALABAR_SPINACH_FRESH: 50 g × 24/100 + POMELO_FRESH: 200 g × 33/100"
+        },
+        {
+          "key": "protein_g",
+          "value": 21.74,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + PORK_LEAN_RAW: 50 g × 19/100 + TOFU_BOILED: 30 g × 11.01/100 + BOK_CHOY_FRESH: 200 g × 1.4/100 + PEANUT_OIL: 7 g × 0/100 + MALABAR_SPINACH_FRESH: 50 g × 2/100 + POMELO_FRESH: 200 g × 0.2/100"
+        },
+        {
+          "key": "carbohydrate_g",
+          "value": 72.58,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + PORK_LEAN_RAW: 50 g × 0/100 + TOFU_BOILED: 30 g × 1.11/100 + BOK_CHOY_FRESH: 200 g × 4.26/100 + PEANUT_OIL: 7 g × 0/100 + MALABAR_SPINACH_FRESH: 50 g × 3.9/100 + POMELO_FRESH: 200 g × 8/100"
+        },
+        {
+          "key": "fat_g",
+          "value": 13.02,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + PORK_LEAN_RAW: 50 g × 7/100 + TOFU_BOILED: 30 g × 5.45/100 + BOK_CHOY_FRESH: 200 g × 0.14/100 + PEANUT_OIL: 7 g × 100/100 + MALABAR_SPINACH_FRESH: 50 g × 0/100 + POMELO_FRESH: 200 g × 0/100"
+        },
+        {
+          "key": "fiber_g",
+          "value": 6.61,
+          "unit": "g",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + PORK_LEAN_RAW: 50 g × 0/100 + TOFU_BOILED: 30 g × 0.4/100 + BOK_CHOY_FRESH: 200 g × 1.8/100 + PEANUT_OIL: 7 g × 0/100 + MALABAR_SPINACH_FRESH: 50 g × 2.5/100 + POMELO_FRESH: 200 g × 0.7/100"
+        },
+        {
+          "key": "sodium_mg",
+          "value": 117.07,
+          "unit": "mg",
+          "method": "ingredient_sum_per_100g",
+          "sourceIds": [
+            "VIETNAM_FOOD_COMPOSITION_2017"
+          ],
+          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + PORK_LEAN_RAW: 50 g × 76/100 + TOFU_BOILED: 30 g × 7.07/100 + BOK_CHOY_FRESH: 200 g × 25/100 + PEANUT_OIL: 7 g × 0/100 + MALABAR_SPINACH_FRESH: 50 g × 37.5/100 + POMELO_FRESH: 200 g × 2.6/100"
+        }
+      ],
+      "unresolvedItems": [
+        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
+        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1.",
+        "Đây là món từ thực đơn tham khảo trong sách; các giá trị trống được ghim về 0 theo PINNED_ZERO_NUTRIENTS và dầu ml đang dùng lượng số làm đại diện kỹ thuật để thử local."
+      ]
+    },
+    {
+      "recipeVersionId": "c2660ccc-f3f4-5412-b582-26d1dad4ad06",
+      "ingredients": [
+        {
+          "ingredientCode": "RICE_WHITE_RAW",
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "amountBasis": "raw",
+          "nutrientsPer100G": {
+            "energy_kcal": 346,
+            "protein_g": 7.9,
+            "carbohydrate_g": 76.3,
+            "fat_g": 1,
+            "fiber_g": 0.4,
+            "sodium_mg": 5
+          },
+          "ediblePortionFactor": 1,
+          "yieldFactor": 1
+        },
+        {
+          "ingredientCode": "GRASS_CARP_RAW",
+          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8029",
+          "amountBasis": "raw",
+          "nutrientsPer100G": {
+            "energy_kcal": 91,
+            "protein_g": 17,
+            "carbohydrate_g": 0,
+            "fat_g": 2.6,
+            "fiber_g": 0,
+            "sodium_mg": 26
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
@@ -404,376 +367,35 @@
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 313.55,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + PEANUT_DRY: 15 g × 583/100 + SESAME_DRY: 5 g × 582/100 + TOMATO_FRESH: 100 g × 24/100"
         },
         {
-          "key": "protein_g",
-          "value": 9.68,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + PEANUT_DRY: 15 g × 27.5/100 + SESAME_DRY: 5 g × 20.1/100 + TOMATO_FRESH: 100 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 46.68,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + PEANUT_DRY: 15 g × 18/100 + SESAME_DRY: 5 g × 21.1/100 + TOMATO_FRESH: 100 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 9.72,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + PEANUT_DRY: 15 g × 44.5/100 + SESAME_DRY: 5 g × 46.4/100 + TOMATO_FRESH: 100 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 1.55,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + PEANUT_DRY: 15 g × 2.5/100 + SESAME_DRY: 5 g × 3.5/100 + TOMATO_FRESH: 100 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 15.85,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + PEANUT_DRY: 15 g × 4/100 + SESAME_DRY: 5 g × 11/100 + TOMATO_FRESH: 100 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "0d15cf62-6df1-5cff-8c41-00b895974194",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
+          "ingredientCode": "PEANUT_OIL",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
+            "energy_kcal": 900,
+            "protein_g": 0,
+            "carbohydrate_g": 0,
+            "fat_g": 100,
+            "fiber_g": 0,
+            "sodium_mg": 0
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "TOFU_BOILED",
+          "ingredientCode": "CHICKEN_EGG_RAW",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 9001",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 373.6,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + TOFU_BOILED: 100 g × 98/100 + BOK_CHOY_BOILED: 200 g × 28/100 + TOMATO_FRESH: 50 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 19.19,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + TOFU_BOILED: 100 g × 11.01/100 + BOK_CHOY_BOILED: 200 g × 1.57/100 + TOMATO_FRESH: 50 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 59.16,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + TOFU_BOILED: 100 g × 1.11/100 + BOK_CHOY_BOILED: 200 g × 4.94/100 + TOMATO_FRESH: 50 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.6,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + TOFU_BOILED: 100 g × 5.45/100 + BOK_CHOY_BOILED: 200 g × 0.22/100 + TOMATO_FRESH: 50 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.08,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + TOFU_BOILED: 100 g × 0.4/100 + BOK_CHOY_BOILED: 200 g × 2.02/100 + TOMATO_FRESH: 50 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 72.35,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + TOFU_BOILED: 100 g × 7.07/100 + BOK_CHOY_BOILED: 200 g × 28.09/100 + TOMATO_FRESH: 50 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "5235bd49-71c9-53a3-8ec9-85fa1d7b042e",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "MUNG_BEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CHAYOTE_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4098",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 23,
-            "protein_g": 0.8,
-            "carbohydrate_g": 4.6,
-            "fat_g": 0.1,
-            "fiber_g": 1,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 395.9,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + MUNG_BEAN_DRY: 30 g × 346/100 + CABBAGE_BOILED: 150 g × 41/100 + CHAYOTE_FRESH: 100 g × 23/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 15.5,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + MUNG_BEAN_DRY: 30 g × 23.4/100 + CABBAGE_BOILED: 150 g × 1.96/100 + CHAYOTE_FRESH: 100 g × 0.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 79.14,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + MUNG_BEAN_DRY: 30 g × 57.8/100 + CABBAGE_BOILED: 150 g × 7.61/100 + CHAYOTE_FRESH: 100 g × 4.6/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 1.92,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + MUNG_BEAN_DRY: 30 g × 2.4/100 + CABBAGE_BOILED: 150 g × 0.33/100 + CHAYOTE_FRESH: 100 g × 0.1/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.26,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + MUNG_BEAN_DRY: 30 g × 4.7/100 + CABBAGE_BOILED: 150 g × 1.74/100 + CHAYOTE_FRESH: 100 g × 1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 52.94,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + MUNG_BEAN_DRY: 30 g × 6/100 + CABBAGE_BOILED: 150 g × 30.76/100 + CHAYOTE_FRESH: 100 g × 2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "26d65a17-254c-5709-8a75-e0196f90d09e",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SOYBEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
+            "energy_kcal": 150,
+            "protein_g": 12.96,
+            "carbohydrate_g": 1.25,
+            "fat_g": 10.33,
+            "fiber_g": 0,
+            "sodium_mg": 158
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
@@ -795,168 +417,33 @@
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "ONION_FRESH",
+          "ingredientCode": "SAUROPUS_FRESH",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4086",
           "amountBasis": "raw",
           "nutrientsPer100G": {
             "energy_kcal": 45,
-            "protein_g": 1.8,
-            "carbohydrate_g": 9.29,
-            "fat_g": 0.11,
-            "fiber_g": 1.1,
-            "sodium_mg": 7.5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 411.5,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + SOYBEAN_DRY: 30 g × 418/100 + WATER_SPINACH_FRESH: 200 g × 28/100 + ONION_FRESH: 50 g × 45/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 22.24,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + SOYBEAN_DRY: 30 g × 34/100 + WATER_SPINACH_FRESH: 200 g × 3.2/100 + ONION_FRESH: 50 g × 1.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 65.68,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + SOYBEAN_DRY: 30 g × 29.1/100 + WATER_SPINACH_FRESH: 200 g × 3.26/100 + ONION_FRESH: 50 g × 9.29/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.66,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + SOYBEAN_DRY: 30 g × 18.4/100 + WATER_SPINACH_FRESH: 200 g × 0.24/100 + ONION_FRESH: 50 g × 0.11/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.14,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + SOYBEAN_DRY: 30 g × 4.5/100 + WATER_SPINACH_FRESH: 200 g × 1/100 + ONION_FRESH: 50 g × 1.1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 82.15,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + SOYBEAN_DRY: 30 g × 2/100 + WATER_SPINACH_FRESH: 200 g × 37.4/100 + ONION_FRESH: 50 g × 7.5/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "442bca9c-c762-585b-9dad-ed1a3193b96f",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "PEANUT_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 583,
-            "protein_g": 27.5,
-            "carbohydrate_g": 18,
-            "fat_g": 44.5,
+            "protein_g": 5.3,
+            "carbohydrate_g": 5.9,
+            "fat_g": 0,
             "fiber_g": 2.5,
-            "sodium_mg": 4
+            "sodium_mg": 24.5
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
         },
         {
-          "ingredientCode": "SESAME_DRY",
+          "ingredientCode": "MANDARIN_FRESH",
           "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3020",
+          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5047",
           "amountBasis": "raw",
           "nutrientsPer100G": {
-            "energy_kcal": 582,
-            "protein_g": 20.1,
-            "carbohydrate_g": 21.1,
-            "fat_g": 46.4,
-            "fiber_g": 3.5,
-            "sodium_mg": 11
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CHAYOTE_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4098",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 23,
+            "energy_kcal": 40,
             "protein_g": 0.8,
-            "carbohydrate_g": 4.6,
-            "fat_g": 0.1,
-            "fiber_g": 1,
-            "sodium_mg": 2
+            "carbohydrate_g": 9.2,
+            "fat_g": 0,
+            "fiber_g": 0.6,
+            "sodium_mg": 3.6
           },
           "ediblePortionFactor": 1,
           "yieldFactor": 1
@@ -965,2148 +452,69 @@
       "nutrients": [
         {
           "key": "energy_kcal",
-          "value": 447.45,
+          "value": 532.5,
           "unit": "kcal",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + PEANUT_DRY: 25 g × 583/100 + SESAME_DRY: 5 g × 582/100 + BOK_CHOY_BOILED: 150 g × 28/100 + CHAYOTE_FRESH: 100 g × 23/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + GRASS_CARP_RAW: 70 g × 91/100 + TOMATO_FRESH: 30 g × 24/100 + PEANUT_OIL: 10 g × 900/100 + CHICKEN_EGG_RAW: 25 g × 150/100 + WATER_SPINACH_FRESH: 200 g × 28/100 + SAUROPUS_FRESH: 50 g × 45/100 + MANDARIN_FRESH: 120 g × 40/100"
         },
         {
           "key": "protein_g",
-          "value": 15.78,
+          "value": 30.07,
           "unit": "g",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + PEANUT_DRY: 25 g × 27.5/100 + SESAME_DRY: 5 g × 20.1/100 + BOK_CHOY_BOILED: 150 g × 1.57/100 + CHAYOTE_FRESH: 100 g × 0.8/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + GRASS_CARP_RAW: 70 g × 17/100 + TOMATO_FRESH: 30 g × 0.6/100 + PEANUT_OIL: 10 g × 0/100 + CHICKEN_EGG_RAW: 25 g × 12.96/100 + WATER_SPINACH_FRESH: 200 g × 3.2/100 + SAUROPUS_FRESH: 50 g × 5.3/100 + MANDARIN_FRESH: 120 g × 0.8/100"
         },
         {
           "key": "carbohydrate_g",
-          "value": 63.34,
+          "value": 68.03,
           "unit": "g",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + PEANUT_DRY: 25 g × 18/100 + SESAME_DRY: 5 g × 21.1/100 + BOK_CHOY_BOILED: 150 g × 4.94/100 + CHAYOTE_FRESH: 100 g × 4.6/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + GRASS_CARP_RAW: 70 g × 0/100 + TOMATO_FRESH: 30 g × 4.77/100 + PEANUT_OIL: 10 g × 0/100 + CHICKEN_EGG_RAW: 25 g × 1.25/100 + WATER_SPINACH_FRESH: 200 g × 3.26/100 + SAUROPUS_FRESH: 50 g × 5.9/100 + MANDARIN_FRESH: 120 g × 9.2/100"
         },
         {
           "key": "fat_g",
-          "value": 14.48,
+          "value": 15.55,
           "unit": "g",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + PEANUT_DRY: 25 g × 44.5/100 + SESAME_DRY: 5 g × 46.4/100 + BOK_CHOY_BOILED: 150 g × 0.22/100 + CHAYOTE_FRESH: 100 g × 0.1/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + GRASS_CARP_RAW: 70 g × 2.6/100 + TOMATO_FRESH: 30 g × 0.23/100 + PEANUT_OIL: 10 g × 100/100 + CHICKEN_EGG_RAW: 25 g × 10.33/100 + WATER_SPINACH_FRESH: 200 g × 0.24/100 + SAUROPUS_FRESH: 50 g × 0/100 + MANDARIN_FRESH: 120 g × 0/100"
         },
         {
           "key": "fiber_g",
-          "value": 5.07,
+          "value": 4.45,
           "unit": "g",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + PEANUT_DRY: 25 g × 2.5/100 + SESAME_DRY: 5 g × 3.5/100 + BOK_CHOY_BOILED: 150 g × 2.02/100 + CHAYOTE_FRESH: 100 g × 1/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + GRASS_CARP_RAW: 70 g × 0/100 + TOMATO_FRESH: 30 g × 0.8/100 + PEANUT_OIL: 10 g × 0/100 + CHICKEN_EGG_RAW: 25 g × 0/100 + WATER_SPINACH_FRESH: 200 g × 1/100 + SAUROPUS_FRESH: 50 g × 2.5/100 + MANDARIN_FRESH: 120 g × 0.6/100"
         },
         {
           "key": "sodium_mg",
-          "value": 48.68,
+          "value": 155.73,
           "unit": "mg",
           "method": "ingredient_sum_per_100g",
           "sourceIds": [
             "VIETNAM_FOOD_COMPOSITION_2017"
           ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + PEANUT_DRY: 25 g × 4/100 + SESAME_DRY: 5 g × 11/100 + BOK_CHOY_BOILED: 150 g × 28.09/100 + CHAYOTE_FRESH: 100 g × 2/100"
+          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + GRASS_CARP_RAW: 70 g × 26/100 + TOMATO_FRESH: 30 g × 12.2/100 + PEANUT_OIL: 10 g × 0/100 + CHICKEN_EGG_RAW: 25 g × 158/100 + WATER_SPINACH_FRESH: 200 g × 37.4/100 + SAUROPUS_FRESH: 50 g × 24.5/100 + MANDARIN_FRESH: 120 g × 3.6/100"
         }
       ],
       "unresolvedItems": [
         "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "1747a8dc-c21d-5e0d-9bb0-7f59548ca096",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOFU_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CHAYOTE_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4098",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 23,
-            "protein_g": 0.8,
-            "carbohydrate_g": 4.6,
-            "fat_g": 0.1,
-            "fiber_g": 1,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 355.5,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + TOFU_BOILED: 100 g × 98/100 + CABBAGE_BOILED: 150 g × 41/100 + CHAYOTE_FRESH: 100 g × 23/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 18.7,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + TOFU_BOILED: 100 g × 11.01/100 + CABBAGE_BOILED: 150 g × 1.96/100 + CHAYOTE_FRESH: 100 g × 0.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 55.28,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + TOFU_BOILED: 100 g × 1.11/100 + CABBAGE_BOILED: 150 g × 7.61/100 + CHAYOTE_FRESH: 100 g × 4.6/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.54,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + TOFU_BOILED: 100 g × 5.45/100 + CABBAGE_BOILED: 150 g × 0.33/100 + CHAYOTE_FRESH: 100 g × 0.1/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.21,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + TOFU_BOILED: 100 g × 0.4/100 + CABBAGE_BOILED: 150 g × 1.74/100 + CHAYOTE_FRESH: 100 g × 1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 57.71,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + TOFU_BOILED: 100 g × 7.07/100 + CABBAGE_BOILED: 150 g × 30.76/100 + CHAYOTE_FRESH: 100 g × 2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "5e835b05-3a62-53f9-bf2e-42d4462d62a1",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "MUNG_BEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "WATER_SPINACH_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 3.2,
-            "carbohydrate_g": 3.26,
-            "fat_g": 0.24,
-            "fiber_g": 1,
-            "sodium_mg": 37.4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 344.8,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + MUNG_BEAN_DRY: 30 g × 346/100 + WATER_SPINACH_FRESH: 200 g × 28/100 + TOMATO_FRESH: 50 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 17.67,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + MUNG_BEAN_DRY: 30 g × 23.4/100 + WATER_SPINACH_FRESH: 200 g × 3.2/100 + TOMATO_FRESH: 50 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 64.4,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + MUNG_BEAN_DRY: 30 g × 57.8/100 + WATER_SPINACH_FRESH: 200 g × 3.26/100 + TOMATO_FRESH: 50 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 1.82,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + MUNG_BEAN_DRY: 30 g × 2.4/100 + WATER_SPINACH_FRESH: 200 g × 0.24/100 + TOMATO_FRESH: 50 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.01,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + MUNG_BEAN_DRY: 30 g × 4.7/100 + WATER_SPINACH_FRESH: 200 g × 1/100 + TOMATO_FRESH: 50 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 85.2,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + MUNG_BEAN_DRY: 30 g × 6/100 + WATER_SPINACH_FRESH: 200 g × 37.4/100 + TOMATO_FRESH: 50 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "28d8f7b7-ba60-5c49-880b-5802c24f4bd3",
-      "ingredients": [
-        {
-          "ingredientCode": "SWEET_POTATO_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2008002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 122,
-            "protein_g": 0.78,
-            "carbohydrate_g": 29.22,
-            "fat_g": 0.2,
-            "fiber_g": 1.27,
-            "sodium_mg": 30.39
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SOYBEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 472.4,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 122/100 + SOYBEAN_DRY: 30 g × 418/100 + BOK_CHOY_BOILED: 150 g × 28/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 14.5,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 0.78/100 + SOYBEAN_DRY: 30 g × 34/100 + BOK_CHOY_BOILED: 150 g × 1.57/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 89.19,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 29.22/100 + SOYBEAN_DRY: 30 g × 29.1/100 + BOK_CHOY_BOILED: 150 g × 4.94/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.35,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 0.2/100 + SOYBEAN_DRY: 30 g × 18.4/100 + BOK_CHOY_BOILED: 150 g × 0.22/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 7.56,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 1.27/100 + SOYBEAN_DRY: 30 g × 4.5/100 + BOK_CHOY_BOILED: 150 g × 2.02/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 118.71,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 30.39/100 + SOYBEAN_DRY: 30 g × 2/100 + BOK_CHOY_BOILED: 150 g × 28.09/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "44c49cd9-908c-50f7-bfa8-2ee36bba62a3",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "PEANUT_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 583,
-            "protein_g": 27.5,
-            "carbohydrate_g": 18,
-            "fat_g": 44.5,
-            "fiber_g": 2.5,
-            "sodium_mg": 4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SESAME_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3020",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 582,
-            "protein_g": 20.1,
-            "carbohydrate_g": 21.1,
-            "fat_g": 46.4,
-            "fiber_g": 3.5,
-            "sodium_mg": 11
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "ONION_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 45,
-            "protein_g": 1.8,
-            "carbohydrate_g": 9.29,
-            "fat_g": 0.11,
-            "fiber_g": 1.1,
-            "sodium_mg": 7.5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 431.85,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + PEANUT_DRY: 25 g × 583/100 + SESAME_DRY: 5 g × 582/100 + CABBAGE_BOILED: 150 g × 41/100 + ONION_FRESH: 50 g × 45/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 15.67,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + PEANUT_DRY: 25 g × 27.5/100 + SESAME_DRY: 5 g × 20.1/100 + CABBAGE_BOILED: 150 g × 1.96/100 + ONION_FRESH: 50 g × 1.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 59.76,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + PEANUT_DRY: 25 g × 18/100 + SESAME_DRY: 5 g × 21.1/100 + CABBAGE_BOILED: 150 g × 7.61/100 + ONION_FRESH: 50 g × 9.29/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 14.5,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + PEANUT_DRY: 25 g × 44.5/100 + SESAME_DRY: 5 g × 46.4/100 + CABBAGE_BOILED: 150 g × 0.33/100 + ONION_FRESH: 50 g × 0.11/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.16,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + PEANUT_DRY: 25 g × 2.5/100 + SESAME_DRY: 5 g × 3.5/100 + CABBAGE_BOILED: 150 g × 1.74/100 + ONION_FRESH: 50 g × 1.1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 53.94,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + PEANUT_DRY: 25 g × 4/100 + SESAME_DRY: 5 g × 11/100 + CABBAGE_BOILED: 150 g × 30.76/100 + ONION_FRESH: 50 g × 7.5/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "6bbf7556-9b6c-5ab5-bba1-780fe02c2821",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOFU_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 270.6,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + TOFU_BOILED: 80 g × 98/100 + TOMATO_FRESH: 80 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 13.24,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + TOFU_BOILED: 80 g × 11.01/100 + TOMATO_FRESH: 80 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 42.85,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + TOFU_BOILED: 80 g × 1.11/100 + TOMATO_FRESH: 80 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 5.04,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + TOFU_BOILED: 80 g × 5.45/100 + TOMATO_FRESH: 80 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 1.16,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + TOFU_BOILED: 80 g × 0.4/100 + TOMATO_FRESH: 80 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 17.92,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + TOFU_BOILED: 80 g × 7.07/100 + TOMATO_FRESH: 80 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "92b53019-8387-5a21-b8b6-2aaed9a61086",
-      "ingredients": [
-        {
-          "ingredientCode": "SWEET_POTATO_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2008002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 122,
-            "protein_g": 0.78,
-            "carbohydrate_g": 29.22,
-            "fat_g": 0.2,
-            "fiber_g": 1.27,
-            "sodium_mg": 30.39
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "MUNG_BEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 306.1,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 122/100 + MUNG_BEAN_DRY: 25 g × 346/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 7.25,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 0.78/100 + MUNG_BEAN_DRY: 25 g × 23.4/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 67.05,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 29.22/100 + MUNG_BEAN_DRY: 25 g × 57.8/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 0.96,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 0.2/100 + MUNG_BEAN_DRY: 25 g × 2.4/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 3.46,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 1.27/100 + MUNG_BEAN_DRY: 25 g × 4.7/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 56.2,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 30.39/100 + MUNG_BEAN_DRY: 25 g × 6/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "ea551bb6-e9e2-52e3-b921-bfd343df0ddc",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "PEANUT_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 583,
-            "protein_g": 27.5,
-            "carbohydrate_g": 18,
-            "fat_g": 44.5,
-            "fiber_g": 2.5,
-            "sodium_mg": 4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SESAME_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3020",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 582,
-            "protein_g": 20.1,
-            "carbohydrate_g": 21.1,
-            "fat_g": 46.4,
-            "fiber_g": 3.5,
-            "sodium_mg": 11
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 272.25,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 346/100 + PEANUT_DRY: 15 g × 583/100 + SESAME_DRY: 5 g × 582/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 8.68,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 7.9/100 + PEANUT_DRY: 15 g × 27.5/100 + SESAME_DRY: 5 g × 20.1/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 38.09,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 76.3/100 + PEANUT_DRY: 15 g × 18/100 + SESAME_DRY: 5 g × 21.1/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 9.44,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 1/100 + PEANUT_DRY: 15 g × 44.5/100 + SESAME_DRY: 5 g × 46.4/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 0.73,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 0.4/100 + PEANUT_DRY: 15 g × 2.5/100 + SESAME_DRY: 5 g × 3.5/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 3.4,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 45 g × 5/100 + PEANUT_DRY: 15 g × 4/100 + SESAME_DRY: 5 g × 11/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "d85ce899-d291-56d9-af1e-5d5cdbd12716",
-      "ingredients": [
-        {
-          "ingredientCode": "SWEET_POTATO_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2008002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 122,
-            "protein_g": 0.78,
-            "carbohydrate_g": 29.22,
-            "fat_g": 0.2,
-            "fiber_g": 1.27,
-            "sodium_mg": 30.39
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SOYBEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 344.2,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 122/100 + SOYBEAN_DRY: 20 g × 418/100 + CABBAGE_BOILED: 100 g × 41/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 10.16,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 0.78/100 + SOYBEAN_DRY: 20 g × 34/100 + CABBAGE_BOILED: 100 g × 1.96/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 66.03,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 29.22/100 + SOYBEAN_DRY: 20 g × 29.1/100 + CABBAGE_BOILED: 100 g × 7.61/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 4.37,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 0.2/100 + SOYBEAN_DRY: 20 g × 18.4/100 + CABBAGE_BOILED: 100 g × 0.33/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 4.93,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 1.27/100 + SOYBEAN_DRY: 20 g × 4.5/100 + CABBAGE_BOILED: 100 g × 1.74/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 85.86,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 180 g × 30.39/100 + SOYBEAN_DRY: 20 g × 2/100 + CABBAGE_BOILED: 100 g × 30.76/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "8bafe6dd-3c42-5624-b512-f8c00af7eff6",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOFU_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "WATER_SPINACH_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 3.2,
-            "carbohydrate_g": 3.26,
-            "fat_g": 0.24,
-            "fiber_g": 1,
-            "sodium_mg": 37.4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 366.8,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + TOFU_BOILED: 100 g × 98/100 + WATER_SPINACH_FRESH: 150 g × 28/100 + TOMATO_FRESH: 80 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 21.03,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + TOFU_BOILED: 100 g × 11.01/100 + WATER_SPINACH_FRESH: 150 g × 3.2/100 + TOMATO_FRESH: 80 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 55.6,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + TOFU_BOILED: 100 g × 1.11/100 + WATER_SPINACH_FRESH: 150 g × 3.26/100 + TOMATO_FRESH: 80 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.59,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + TOFU_BOILED: 100 g × 5.45/100 + WATER_SPINACH_FRESH: 150 g × 0.24/100 + TOMATO_FRESH: 80 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 2.78,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + TOFU_BOILED: 100 g × 0.4/100 + WATER_SPINACH_FRESH: 150 g × 1/100 + TOMATO_FRESH: 80 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 75.93,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + TOFU_BOILED: 100 g × 7.07/100 + WATER_SPINACH_FRESH: 150 g × 37.4/100 + TOMATO_FRESH: 80 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "670a063d-eed3-58ad-9cc3-4c5b87f71879",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "MUNG_BEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "ONION_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 45,
-            "protein_g": 1.8,
-            "carbohydrate_g": 9.29,
-            "fat_g": 0.11,
-            "fiber_g": 1.1,
-            "sodium_mg": 7.5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 375.9,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + MUNG_BEAN_DRY: 30 g × 346/100 + BOK_CHOY_BOILED: 150 g × 28/100 + ONION_FRESH: 50 g × 45/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 15.02,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + MUNG_BEAN_DRY: 30 g × 23.4/100 + BOK_CHOY_BOILED: 150 g × 1.57/100 + ONION_FRESH: 50 g × 1.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 75.18,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + MUNG_BEAN_DRY: 30 g × 57.8/100 + BOK_CHOY_BOILED: 150 g × 4.94/100 + ONION_FRESH: 50 g × 9.29/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 1.7,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + MUNG_BEAN_DRY: 30 g × 2.4/100 + BOK_CHOY_BOILED: 150 g × 0.22/100 + ONION_FRESH: 50 g × 0.11/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.23,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + MUNG_BEAN_DRY: 30 g × 4.7/100 + BOK_CHOY_BOILED: 150 g × 2.02/100 + ONION_FRESH: 50 g × 1.1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 50.68,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + MUNG_BEAN_DRY: 30 g × 6/100 + BOK_CHOY_BOILED: 150 g × 28.09/100 + ONION_FRESH: 50 g × 7.5/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "1bfbf539-62cb-5023-a3fd-0c7da7082f7a",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SOYBEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CHAYOTE_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4098",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 23,
-            "protein_g": 0.8,
-            "carbohydrate_g": 4.6,
-            "fat_g": 0.1,
-            "fiber_g": 1,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 417.5,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + SOYBEAN_DRY: 30 g × 418/100 + CABBAGE_BOILED: 150 g × 41/100 + CHAYOTE_FRESH: 100 g × 23/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 18.68,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + SOYBEAN_DRY: 30 g × 34/100 + CABBAGE_BOILED: 150 g × 1.96/100 + CHAYOTE_FRESH: 100 g × 0.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 70.52,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + SOYBEAN_DRY: 30 g × 29.1/100 + CABBAGE_BOILED: 150 g × 7.61/100 + CHAYOTE_FRESH: 100 g × 4.6/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.72,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + SOYBEAN_DRY: 30 g × 18.4/100 + CABBAGE_BOILED: 150 g × 0.33/100 + CHAYOTE_FRESH: 100 g × 0.1/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.2,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + SOYBEAN_DRY: 30 g × 4.5/100 + CABBAGE_BOILED: 150 g × 1.74/100 + CHAYOTE_FRESH: 100 g × 1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 51.74,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + SOYBEAN_DRY: 30 g × 2/100 + CABBAGE_BOILED: 150 g × 30.76/100 + CHAYOTE_FRESH: 100 g × 2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "4ee26ffb-268c-5104-b59d-2be1da9ed871",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "PEANUT_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 583,
-            "protein_g": 27.5,
-            "carbohydrate_g": 18,
-            "fat_g": 44.5,
-            "fiber_g": 2.5,
-            "sodium_mg": 4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SESAME_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3020",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 582,
-            "protein_g": 20.1,
-            "carbohydrate_g": 21.1,
-            "fat_g": 46.4,
-            "fiber_g": 3.5,
-            "sodium_mg": 11
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "WATER_SPINACH_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 3.2,
-            "carbohydrate_g": 3.26,
-            "fat_g": 0.24,
-            "fiber_g": 1,
-            "sodium_mg": 37.4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 443.65,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 346/100 + PEANUT_DRY: 25 g × 583/100 + SESAME_DRY: 5 g × 582/100 + WATER_SPINACH_FRESH: 150 g × 28/100 + TOMATO_FRESH: 80 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 17.9,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 7.9/100 + PEANUT_DRY: 25 g × 27.5/100 + SESAME_DRY: 5 g × 20.1/100 + WATER_SPINACH_FRESH: 150 g × 3.2/100 + TOMATO_FRESH: 80 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 60.04,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 76.3/100 + PEANUT_DRY: 25 g × 18/100 + SESAME_DRY: 5 g × 21.1/100 + WATER_SPINACH_FRESH: 150 g × 3.26/100 + TOMATO_FRESH: 80 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 14.59,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 1/100 + PEANUT_DRY: 25 g × 44.5/100 + SESAME_DRY: 5 g × 46.4/100 + WATER_SPINACH_FRESH: 150 g × 0.24/100 + TOMATO_FRESH: 80 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 3.18,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 0.4/100 + PEANUT_DRY: 25 g × 2.5/100 + SESAME_DRY: 5 g × 3.5/100 + WATER_SPINACH_FRESH: 150 g × 1/100 + TOMATO_FRESH: 80 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 70.41,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 60 g × 5/100 + PEANUT_DRY: 25 g × 4/100 + SESAME_DRY: 5 g × 11/100 + WATER_SPINACH_FRESH: 150 g × 37.4/100 + TOMATO_FRESH: 80 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "d26315f7-3aca-583c-a840-8218a76c44a0",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOFU_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "WATER_SPINACH_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 3.2,
-            "carbohydrate_g": 3.26,
-            "fat_g": 0.24,
-            "fiber_g": 1,
-            "sodium_mg": 37.4
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CHAYOTE_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4098",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 23,
-            "protein_g": 0.8,
-            "carbohydrate_g": 4.6,
-            "fat_g": 0.1,
-            "fiber_g": 1,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 336.0,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + TOFU_BOILED: 100 g × 98/100 + WATER_SPINACH_FRESH: 150 g × 28/100 + CHAYOTE_FRESH: 100 g × 23/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 20.56,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + TOFU_BOILED: 100 g × 11.01/100 + WATER_SPINACH_FRESH: 150 g × 3.2/100 + CHAYOTE_FRESH: 100 g × 0.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 48.75,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + TOFU_BOILED: 100 g × 1.11/100 + WATER_SPINACH_FRESH: 150 g × 3.26/100 + CHAYOTE_FRESH: 100 g × 4.6/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.41,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + TOFU_BOILED: 100 g × 5.45/100 + WATER_SPINACH_FRESH: 150 g × 0.24/100 + CHAYOTE_FRESH: 100 g × 0.1/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 3.1,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + TOFU_BOILED: 100 g × 0.4/100 + WATER_SPINACH_FRESH: 150 g × 1/100 + CHAYOTE_FRESH: 100 g × 1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 67.67,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + TOFU_BOILED: 100 g × 7.07/100 + WATER_SPINACH_FRESH: 150 g × 37.4/100 + CHAYOTE_FRESH: 100 g × 2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "762238ef-653e-5e41-be7a-2b0a64261669",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "MUNG_BEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3010",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 23.4,
-            "carbohydrate_g": 57.8,
-            "fat_g": 2.4,
-            "fiber_g": 4.7,
-            "sodium_mg": 6
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOMATO_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 24,
-            "protein_g": 0.6,
-            "carbohydrate_g": 4.77,
-            "fat_g": 0.23,
-            "fiber_g": 0.8,
-            "sodium_mg": 12.2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 338.0,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + MUNG_BEAN_DRY: 30 g × 346/100 + BOK_CHOY_BOILED: 150 g × 28/100 + TOMATO_FRESH: 80 g × 24/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 13.8,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + MUNG_BEAN_DRY: 30 g × 23.4/100 + BOK_CHOY_BOILED: 150 g × 1.57/100 + TOMATO_FRESH: 80 g × 0.6/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 66.72,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + MUNG_BEAN_DRY: 30 g × 57.8/100 + BOK_CHOY_BOILED: 150 g × 4.94/100 + TOMATO_FRESH: 80 g × 4.77/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 1.73,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + MUNG_BEAN_DRY: 30 g × 2.4/100 + BOK_CHOY_BOILED: 150 g × 0.22/100 + TOMATO_FRESH: 80 g × 0.23/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.28,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + MUNG_BEAN_DRY: 30 g × 4.7/100 + BOK_CHOY_BOILED: 150 g × 2.02/100 + TOMATO_FRESH: 80 g × 0.8/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 56.2,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + MUNG_BEAN_DRY: 30 g × 6/100 + BOK_CHOY_BOILED: 150 g × 28.09/100 + TOMATO_FRESH: 80 g × 12.2/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "004e9a1d-bdf2-5da4-b72c-ca482fb45602",
-      "ingredients": [
-        {
-          "ingredientCode": "SWEET_POTATO_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2008002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 122,
-            "protein_g": 0.78,
-            "carbohydrate_g": 29.22,
-            "fat_g": 0.2,
-            "fiber_g": 1.27,
-            "sodium_mg": 30.39
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "TOFU_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 98,
-            "protein_g": 11.01,
-            "carbohydrate_g": 1.11,
-            "fat_g": 5.45,
-            "fiber_g": 0.4,
-            "sodium_mg": 7.07
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "CABBAGE_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4010002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 41,
-            "protein_g": 1.96,
-            "carbohydrate_g": 7.61,
-            "fat_g": 0.33,
-            "fiber_g": 1.74,
-            "sodium_mg": 30.76
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 464.5,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 122/100 + TOFU_BOILED: 100 g × 98/100 + CABBAGE_BOILED: 150 g × 41/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 15.9,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 0.78/100 + TOFU_BOILED: 100 g × 11.01/100 + CABBAGE_BOILED: 150 g × 1.96/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 85.58,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 29.22/100 + TOFU_BOILED: 100 g × 1.11/100 + CABBAGE_BOILED: 150 g × 7.61/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.44,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 0.2/100 + TOFU_BOILED: 100 g × 5.45/100 + CABBAGE_BOILED: 150 g × 0.33/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 6.18,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 1.27/100 + TOFU_BOILED: 100 g × 0.4/100 + CABBAGE_BOILED: 150 g × 1.74/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 129.18,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "SWEET_POTATO_BOILED: 250 g × 30.39/100 + TOFU_BOILED: 100 g × 7.07/100 + CABBAGE_BOILED: 150 g × 30.76/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
-      ]
-    },
-    {
-      "recipeVersionId": "42563a76-05c0-5e1c-a305-f2eb40cd34a3",
-      "ingredients": [
-        {
-          "ingredientCode": "RICE_WHITE_RAW",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 346,
-            "protein_g": 7.9,
-            "carbohydrate_g": 76.3,
-            "fat_g": 1,
-            "fiber_g": 0.4,
-            "sodium_mg": 5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "SOYBEAN_DRY",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3007",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 418,
-            "protein_g": 34,
-            "carbohydrate_g": 29.1,
-            "fat_g": 18.4,
-            "fiber_g": 4.5,
-            "sodium_mg": 2
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "BOK_CHOY_BOILED",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015002",
-          "amountBasis": "cooked",
-          "nutrientsPer100G": {
-            "energy_kcal": 28,
-            "protein_g": 1.57,
-            "carbohydrate_g": 4.94,
-            "fat_g": 0.22,
-            "fiber_g": 2.02,
-            "sodium_mg": 28.09
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        },
-        {
-          "ingredientCode": "ONION_FRESH",
-          "sourceId": "VIETNAM_FOOD_COMPOSITION_2017",
-          "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039",
-          "amountBasis": "raw",
-          "nutrientsPer100G": {
-            "energy_kcal": 45,
-            "protein_g": 1.8,
-            "carbohydrate_g": 9.29,
-            "fat_g": 0.11,
-            "fiber_g": 1.1,
-            "sodium_mg": 7.5
-          },
-          "ediblePortionFactor": 1,
-          "yieldFactor": 1
-        }
-      ],
-      "nutrients": [
-        {
-          "key": "energy_kcal",
-          "value": 362.9,
-          "unit": "kcal",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 346/100 + SOYBEAN_DRY: 30 g × 418/100 + BOK_CHOY_BOILED: 150 g × 28/100 + ONION_FRESH: 50 g × 45/100"
-        },
-        {
-          "key": "protein_g",
-          "value": 17.4,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 7.9/100 + SOYBEAN_DRY: 30 g × 34/100 + BOK_CHOY_BOILED: 150 g × 1.57/100 + ONION_FRESH: 50 g × 1.8/100"
-        },
-        {
-          "key": "carbohydrate_g",
-          "value": 58.94,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 76.3/100 + SOYBEAN_DRY: 30 g × 29.1/100 + BOK_CHOY_BOILED: 150 g × 4.94/100 + ONION_FRESH: 50 g × 9.29/100"
-        },
-        {
-          "key": "fat_g",
-          "value": 6.4,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 1/100 + SOYBEAN_DRY: 30 g × 18.4/100 + BOK_CHOY_BOILED: 150 g × 0.22/100 + ONION_FRESH: 50 g × 0.11/100"
-        },
-        {
-          "key": "fiber_g",
-          "value": 5.13,
-          "unit": "g",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 0.4/100 + SOYBEAN_DRY: 30 g × 4.5/100 + BOK_CHOY_BOILED: 150 g × 2.02/100 + ONION_FRESH: 50 g × 1.1/100"
-        },
-        {
-          "key": "sodium_mg",
-          "value": 48.98,
-          "unit": "mg",
-          "method": "ingredient_sum_per_100g",
-          "sourceIds": [
-            "VIETNAM_FOOD_COMPOSITION_2017"
-          ],
-          "calculation": "RICE_WHITE_RAW: 50 g × 5/100 + SOYBEAN_DRY: 30 g × 2/100 + BOK_CHOY_BOILED: 150 g × 28.09/100 + ONION_FRESH: 50 g × 7.5/100"
-        }
-      ],
-      "unresolvedItems": [
-        "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
-        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1."
+        "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1.",
+        "Đây là món từ thực đơn tham khảo trong sách; các giá trị trống được ghim về 0 theo PINNED_ZERO_NUTRIENTS và dầu ml đang dùng lượng số làm đại diện kỹ thuật để thử local."
       ]
     }
   ],

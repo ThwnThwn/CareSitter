@@ -8,15 +8,10 @@ class CatalogScreenBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.comfortable, vertical: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.comfortable),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primaryDark, AppColors.primary],
-        ),
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         children: [
@@ -25,7 +20,7 @@ class CatalogScreenBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tư vấn miễn phí',
+                  'Chưa biết chọn gói nào?',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: AppFontSizes.s16,
@@ -35,7 +30,7 @@ class CatalogScreenBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Được hỗ trợ chọn dịch vụ phù hợp',
+                  'CareSitter hỗ trợ gia đình chọn dịch vụ phù hợp với nhu cầu sinh hoạt.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontSize: AppFontSizes.s12,
@@ -43,7 +38,6 @@ class CatalogScreenBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.compact),
-                // Call button
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.inset, vertical: AppSpacing.sm),
@@ -61,7 +55,7 @@ class CatalogScreenBanner extends StatelessWidget {
                       ),
                       SizedBox(width: 5),
                       Text(
-                        'Gọi ngay: 1800 6789',
+                        'Tư vấn miễn phí: 1800 6789',
                         style: TextStyle(
                           color: AppColors.primary,
                           fontSize: AppFontSizes.s12,
@@ -75,7 +69,19 @@ class CatalogScreenBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.compact),
-          const Text('🏡', style: TextStyle(fontSize: AppFontSizes.s44)),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.support_agent_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
         ],
       ),
     );
