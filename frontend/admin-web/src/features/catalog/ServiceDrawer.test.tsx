@@ -1,7 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import type { CatalogService } from '../../types';
 import { ServiceDrawer } from './ServiceDrawer';
+
+const mocks = vi.hoisted(() => ({ savePricingRule: vi.fn() }));
+
+vi.mock('./catalogApi', () => ({
+  saveCatalogService: vi.fn(),
+  savePricingRule: (...args: unknown[]) => mocks.savePricingRule(...args),
+}));
 
 vi.mock('../../adminMetadata', () => ({
   useAdminMetadata: () => ({
@@ -47,4 +54,21 @@ it('keeps pricing effective date pickers at minute precision', () => {
   expect(effectiveFrom.step).toBe('60');
   expect(effectiveFrom.value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
   expect(effectiveTo.step).toBe('60');
+});
+
+it('submits the same minute precision shown in the effective date field', async () => {
+  mocks.savePricingRule.mockResolvedValue(undefined);
+  render(<ServiceDrawer service={service} onClose={vi.fn()} onChanged={vi.fn()} />);
+
+  const effectiveFrom = screen.getByLabelText('Hiệu lực từ') as HTMLInputElement;
+  fireEvent.change(screen.getByLabelText('Tên bảng giá'), {
+    target: { value: 'Giá chuẩn' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm bảng giá' }));
+
+  await waitFor(() => expect(mocks.savePricingRule).toHaveBeenCalledOnce());
+  const payload = mocks.savePricingRule.mock.calls[0][2] as { effectiveFrom: string };
+  expect(new Date(payload.effectiveFrom).getSeconds()).toBe(0);
+  expect(new Date(payload.effectiveFrom).getMilliseconds()).toBe(0);
+  expect(effectiveFrom.value).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
 });

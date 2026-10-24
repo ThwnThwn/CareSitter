@@ -9,6 +9,10 @@ export function toDateTimeInput(value: string | Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${fraction}`;
 }
 
+export function toMinuteDateTimeInput(value: string | Date) {
+  return toDateTimeInput(value).slice(0, 16);
+}
+
 export function fromDateTimeInput(value: string) {
   if (!value) throw new Error('Vui lòng nhập thời điểm hiệu lực.');
   const date = new Date(value);

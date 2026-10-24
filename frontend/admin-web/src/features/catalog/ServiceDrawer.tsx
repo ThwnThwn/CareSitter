@@ -199,7 +199,7 @@ export function ServiceDrawer({
                   type="datetime-local"
                   step="60"
                   required
-                  value={priceForm.effectiveFrom.slice(0, 16)}
+                  value={priceForm.effectiveFrom}
                   onChange={(e) => setPriceForm({ ...priceForm, effectiveFrom: e.target.value })}
                 />
               </label>
@@ -208,7 +208,7 @@ export function ServiceDrawer({
                 <input
                   type="datetime-local"
                   step="60"
-                  value={priceForm.effectiveTo.slice(0, 16)}
+                  value={priceForm.effectiveTo}
                   onChange={(e) => setPriceForm({ ...priceForm, effectiveTo: e.target.value })}
                 />
               </label>
