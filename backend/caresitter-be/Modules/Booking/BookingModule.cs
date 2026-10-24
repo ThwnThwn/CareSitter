@@ -123,6 +123,7 @@ public sealed class BookingModule : IModule
         services.AddHostedService<BookingChatReportWorker>();
         services.AddHostedService<BookingChatRetentionWorker>();
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
+        services.AddScoped<IServiceChecklistReader, ServiceChecklistReader>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
         services.AddScoped<ILiveLocationStore, LiveLocationStore>();

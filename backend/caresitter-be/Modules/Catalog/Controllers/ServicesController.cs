@@ -1,3 +1,4 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog.Application;
 using CareSitter.Modules.Catalog.Application.Commands.QuoteService;
 using MediatR;
@@ -15,10 +16,12 @@ namespace CareSitter.Modules.Catalog.Controllers;
 public sealed class ServicesController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IServiceChecklistReader _checklistReader;
 
-    public ServicesController(IMediator mediator)
+    public ServicesController(IMediator mediator, IServiceChecklistReader checklistReader)
     {
         _mediator = mediator;
+        _checklistReader = checklistReader;
     }
 
     /// <summary>Lấy dịch vụ đang hoạt động, sắp xếp theo thời lượng gợi ý rồi theo tên.</summary>
@@ -37,6 +40,17 @@ public sealed class ServicesController : ControllerBase
     {
         var item = await _mediator.Send(new GetActiveServiceQuery(id), ct);
         return item is null ? NotFound() : Ok(item);
+    }
+
+    /// <summary>Lấy checklist đang hoạt động của một dịch vụ công khai.</summary>
+    [HttpGet("{id:guid}/checklist-templates")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ListChecklist(Guid id, CancellationToken ct)
+    {
+        var service = await _mediator.Send(new GetActiveServiceQuery(id), ct);
+        if (service is null) return NotFound();
+        return Ok(await _checklistReader.ListActiveAsync(id, ct));
     }
 
     /// <summary>

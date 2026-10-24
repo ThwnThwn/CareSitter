@@ -1,16 +1,32 @@
-import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/catalog/data/models/service_checklist_item_model.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:caresitter_customer/features/catalog/presentation/models/service_detail_profile.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/service_booking_bar.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/service_detail_sections.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class ServiceDetailContent extends StatelessWidget {
-  const ServiceDetailContent({super.key, required this.service});
+  const ServiceDetailContent({
+    super.key,
+    required this.service,
+    required this.checklistItems,
+    required this.checklistLoading,
+    required this.onBack,
+    required this.onShare,
+    required this.onBook,
+    required this.onRetryChecklist,
+    this.checklistError,
+  });
 
   final ServiceModel service;
+  final List<ServiceChecklistItemModel> checklistItems;
+  final bool checklistLoading;
+  final String? checklistError;
+  final VoidCallback onBack;
+  final VoidCallback onShare;
+  final VoidCallback onBook;
+  final VoidCallback onRetryChecklist;
 
   @override
   Widget build(BuildContext context) {
@@ -19,21 +35,41 @@ class ServiceDetailContent extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          ServiceDetailHero(profile: profile),
+          _ServiceDetailHero(
+            profile: profile,
+            onBack: onBack,
+            onShare: onShare,
+          ),
           SliverToBoxAdapter(
-            child: ServiceDetailBody(service: service, profile: profile),
+            child: _ServiceDetailBody(
+              service: service,
+              profile: profile,
+              checklistItems: checklistItems,
+              checklistLoading: checklistLoading,
+              checklistError: checklistError,
+              onRetryChecklist: onRetryChecklist,
+            ),
           ),
         ],
       ),
-      bottomNavigationBar: ServiceBookingBar(service: service),
+      bottomNavigationBar: ServiceBookingBar(
+        service: service,
+        onBook: onBook,
+      ),
     );
   }
 }
 
-class ServiceDetailHero extends StatelessWidget {
-  const ServiceDetailHero({super.key, required this.profile});
+class _ServiceDetailHero extends StatelessWidget {
+  const _ServiceDetailHero({
+    required this.profile,
+    required this.onBack,
+    required this.onShare,
+  });
 
   final ServiceDetailProfile profile;
+  final VoidCallback onBack;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) => SliverAppBar(
@@ -48,9 +84,7 @@ class ServiceDetailHero extends StatelessWidget {
           child: _HeaderIconButton(
             tooltip: 'Quay lại',
             icon: Icons.arrow_back_rounded,
-            onPressed: () => context.canPop()
-                ? context.pop()
-                : context.go(AppRoutes.catalog),
+            onPressed: onBack,
           ),
         ),
         title: const _HeroTitle(),
@@ -59,11 +93,7 @@ class ServiceDetailHero extends StatelessWidget {
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: _HeaderIconButton(
               tooltip: 'Chia sẻ dịch vụ',
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đã sẵn sàng để chia sẻ dịch vụ.'),
-                ),
-              ),
+              onPressed: onShare,
               icon: Icons.ios_share_rounded,
             ),
           ),
@@ -170,15 +200,22 @@ class _HeaderIconButton extends StatelessWidget {
       );
 }
 
-class ServiceDetailBody extends StatelessWidget {
-  const ServiceDetailBody({
-    super.key,
+class _ServiceDetailBody extends StatelessWidget {
+  const _ServiceDetailBody({
     required this.service,
     required this.profile,
+    required this.checklistItems,
+    required this.checklistLoading,
+    required this.checklistError,
+    required this.onRetryChecklist,
   });
 
   final ServiceModel service;
   final ServiceDetailProfile profile;
+  final List<ServiceChecklistItemModel> checklistItems;
+  final bool checklistLoading;
+  final String? checklistError;
+  final VoidCallback onRetryChecklist;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -191,81 +228,15 @@ class ServiceDetailBody extends StatelessWidget {
               AppSpacing.md,
               120 + MediaQuery.paddingOf(context).bottom,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const ServiceTypeBadge(),
-                const SizedBox(height: AppSpacing.compact),
-                _ServiceIntroduction(service: service, profile: profile),
-                const SizedBox(height: AppSpacing.md),
-                ServiceFacts(service: service),
-                const SizedBox(height: AppSpacing.xl),
-                const _TimelineHeading(),
-                const SizedBox(height: AppSpacing.md),
-                ServiceTimeline(items: profile.timeline),
-                const SizedBox(height: AppSpacing.lg),
-                IncludedTasks(tasks: profile.tasks),
-                const SizedBox(height: AppSpacing.lg),
-                const SafetyCommitment(),
-              ],
+            child: ServiceDetailSections(
+              service: service,
+              profile: profile,
+              checklistItems: checklistItems,
+              checklistLoading: checklistLoading,
+              checklistError: checklistError,
+              onRetryChecklist: onRetryChecklist,
             ),
           ),
         ),
-      );
-}
-
-class _ServiceIntroduction extends StatelessWidget {
-  const _ServiceIntroduction({required this.service, required this.profile});
-
-  final ServiceModel service;
-  final ServiceDetailProfile profile;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            service.name,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  height: 1.2,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            service.description?.trim().isNotEmpty == true
-                ? service.description!.trim()
-                : profile.summary,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.55,
-                ),
-          ),
-        ],
-      );
-}
-
-class _TimelineHeading extends StatelessWidget {
-  const _TimelineHeading();
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Một ca chăm sóc diễn ra như thế nào?',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Lịch trình được thống nhất với gia đình và linh hoạt theo nhu cầu thực tế.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-          ),
-        ],
       );
 }

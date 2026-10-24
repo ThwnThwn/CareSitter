@@ -1,58 +1,137 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/features/catalog/data/models/service_checklist_item_model.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:caresitter_customer/features/catalog/presentation/models/service_detail_profile.dart';
+import 'package:caresitter_customer/features/catalog/presentation/widgets/service_checklist_section.dart';
 import 'package:flutter/material.dart';
 
-class ServiceTypeBadge extends StatelessWidget {
-  const ServiceTypeBadge({super.key});
+class ServiceDetailSections extends StatelessWidget {
+  const ServiceDetailSections({
+    super.key,
+    required this.service,
+    required this.profile,
+    required this.checklistItems,
+    required this.checklistLoading,
+    required this.onRetryChecklist,
+    this.checklistError,
+  });
+
+  final ServiceModel service;
+  final ServiceDetailProfile profile;
+  final List<ServiceChecklistItemModel> checklistItems;
+  final bool checklistLoading;
+  final String? checklistError;
+  final VoidCallback onRetryChecklist;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _ServiceTypeBadge(),
+          const SizedBox(height: AppSpacing.compact),
+          _ServiceIntroduction(service: service, profile: profile),
+          const SizedBox(height: AppSpacing.md),
+          _ServiceFacts(service: service),
+          const SizedBox(height: AppSpacing.xl),
+          ServiceChecklistSection(
+            items: checklistItems,
+            loading: checklistLoading,
+            error: checklistError,
+            onRetry: onRetryChecklist,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const _SafetyCommitment(),
+        ],
+      );
+}
+
+class _ServiceTypeBadge extends StatelessWidget {
+  const _ServiceTypeBadge();
 
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.compact,
-          vertical: AppSpacing.tight,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: AppColors.primaryContainer,
           borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: const Text(
-          'Chăm sóc phi y tế tại nhà',
+          'CHĂM SÓC PHI Y TẾ',
           style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
+            color: AppColors.primaryDark,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.45,
           ),
         ),
       );
 }
 
-class ServiceFacts extends StatelessWidget {
-  const ServiceFacts({super.key, required this.service});
+class _ServiceIntroduction extends StatelessWidget {
+  const _ServiceIntroduction({required this.service, required this.profile});
+
+  final ServiceModel service;
+  final ServiceDetailProfile profile;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            service.name,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            service.description?.trim().isNotEmpty == true
+                ? service.description!.trim()
+                : profile.summary,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.55,
+                ),
+          ),
+        ],
+      );
+}
+
+class _ServiceFacts extends StatelessWidget {
+  const _ServiceFacts({required this.service});
 
   final ServiceModel service;
 
   @override
-  Widget build(BuildContext context) {
-    final hours = service.defaultDurationMinutes / 60;
-    final duration = hours == hours.roundToDouble()
-        ? '${hours.toInt()} giờ'
-        : '${service.defaultDurationMinutes} phút';
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: [
-        _FactChip(icon: Icons.schedule_rounded, label: 'Ca từ $duration'),
-        const _FactChip(
-          icon: Icons.verified_user_outlined,
-          label: 'Caregiver đã xác minh',
-        ),
-        const _FactChip(
-          icon: Icons.receipt_long_outlined,
-          label: 'Có nhật ký chăm sóc',
-        ),
-      ],
-    );
+  Widget build(BuildContext context) => Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: [
+          _FactChip(
+            icon: Icons.schedule_rounded,
+            label: _durationLabel(service.defaultDurationMinutes),
+          ),
+          const _FactChip(
+            icon: Icons.verified_user_outlined,
+            label: 'Caregiver đã xác minh',
+          ),
+          const _FactChip(
+            icon: Icons.assignment_turned_in_outlined,
+            label: 'Có nhật ký chăm sóc',
+          ),
+        ],
+      );
+
+  static String _durationLabel(int minutes) {
+    if (minutes <= 0) return 'Thời lượng linh hoạt';
+    final hours = minutes / 60;
+    return hours == hours.roundToDouble()
+        ? '${hours.toInt()} giờ gợi ý'
+        : '${hours.toStringAsFixed(1)} giờ gợi ý';
   }
 }
 
@@ -91,161 +170,8 @@ class _FactChip extends StatelessWidget {
       );
 }
 
-class ServiceTimeline extends StatelessWidget {
-  const ServiceTimeline({super.key, required this.items});
-
-  final List<ServiceDetailTimelineEntry> items;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          for (final entry in items.indexed)
-            _TimelineItem(
-              item: entry.$2,
-              isLast: entry.$1 == items.length - 1,
-            ),
-        ],
-      );
-}
-
-class _TimelineItem extends StatelessWidget {
-  const _TimelineItem({required this.item, required this.isLast});
-
-  final ServiceDetailTimelineEntry item;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) => IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _TimelineRail(item: item, isLast: isLast),
-            const SizedBox(width: AppSpacing.compact),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      item.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _TimelineRail extends StatelessWidget {
-  const _TimelineRail({required this.item, required this.isLast});
-
-  final ServiceDetailTimelineEntry item;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 36,
-        child: Column(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primaryContainer,
-              ),
-              child: Icon(item.icon, size: 17, color: AppColors.primary),
-            ),
-            if (!isLast)
-              const Expanded(
-                child: VerticalDivider(
-                  color: AppColors.border,
-                  thickness: 1.5,
-                  width: 1.5,
-                ),
-              ),
-          ],
-        ),
-      );
-}
-
-class IncludedTasks extends StatelessWidget {
-  const IncludedTasks({super.key, required this.tasks});
-
-  final List<String> tasks;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Công việc có trong gói',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.compact),
-              for (final task in tasks) _IncludedTaskRow(task: task),
-            ],
-          ),
-        ),
-      );
-}
-
-class _IncludedTaskRow extends StatelessWidget {
-  const _IncludedTaskRow({required this.task});
-
-  final String task;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.tight),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              size: 20,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: AppSpacing.control),
-            Expanded(
-              child: Text(
-                task,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      height: 1.45,
-                    ),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class SafetyCommitment extends StatelessWidget {
-  const SafetyCommitment({super.key});
+class _SafetyCommitment extends StatelessWidget {
+  const _SafetyCommitment();
 
   @override
   Widget build(BuildContext context) => Container(

@@ -1,19 +1,22 @@
-import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 class ServiceBookingBar extends StatelessWidget {
-  const ServiceBookingBar({super.key, required this.service});
+  const ServiceBookingBar({
+    super.key,
+    required this.service,
+    required this.onBook,
+  });
 
   final ServiceModel service;
+  final VoidCallback onBook;
 
   @override
   Widget build(BuildContext context) {
     final price = service.baseHourlyPrice > 0
-        ? '${NumberFormat.decimalPattern('vi').format(service.baseHourlyPrice)}đ/giờ'
+        ? '${formatVnd(service.baseHourlyPrice)}/giờ'
         : 'Xem giá khi đặt lịch';
     return SafeArea(
       top: false,
@@ -36,9 +39,7 @@ class ServiceBookingBar extends StatelessWidget {
               SizedBox(
                 width: 172,
                 child: FilledButton.icon(
-                  onPressed: () => context.push(
-                    AppRoutes.bookingNewWith(serviceId: service.id),
-                  ),
+                  onPressed: onBook,
                   icon: const Icon(Icons.arrow_forward_rounded, size: 20),
                   label: const Text('Đặt lịch ngay'),
                 ),
