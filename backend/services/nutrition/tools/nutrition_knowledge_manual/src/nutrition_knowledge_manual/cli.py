@@ -23,7 +23,7 @@ from .release import prepare_release
 from .retrieval_cli import dispatch_retrieval_command, register_retrieval_commands
 from .rights import resolve_source
 from .seed_chunks import seed_local_chunks
-from .seed_postgres import seed_postgres_chunks
+from .seed_postgres import seed_postgres_chunks, verify_postgres_chunks
 from .source_reference_release import build_source_reference_evidence, prepare_source_reference_bundle
 
 
@@ -53,13 +53,16 @@ def parser() -> argparse.ArgumentParser:
     seed.add_argument("--chunks", type=Path, required=True)
     seed.add_argument("--report", type=Path, required=True)
     seed.add_argument("--database", type=Path, required=True)
-    seed_postgres = commands.add_parser("seed-postgres-chunks")
-    seed_postgres.add_argument("--manifest", type=Path, required=True)
-    seed_postgres.add_argument("--source-id", required=True)
-    seed_postgres.add_argument("--chunks", type=Path, required=True)
-    seed_postgres.add_argument("--report", type=Path, required=True)
-    seed_postgres.add_argument("--container", required=True)
-    seed_postgres.add_argument("--database-user", required=True)
+    for command in ("seed-postgres-chunks", "verify-postgres-chunks"):
+        postgres = commands.add_parser(command)
+        postgres.add_argument("--manifest", type=Path, required=True)
+        postgres.add_argument("--source-id", required=True)
+        postgres.add_argument("--chunks", type=Path, required=True)
+        postgres.add_argument("--report", type=Path, required=True)
+        postgres.add_argument("--container", required=True)
+        postgres.add_argument("--database-user", required=True)
+        if command == "verify-postgres-chunks":
+            postgres.add_argument("--output-report", type=Path)
     build = commands.add_parser("build-candidates")
     build.add_argument("--manifest", type=Path, required=True)
     build.add_argument("--source-id", required=True)
@@ -181,16 +184,20 @@ def dispatch(args: argparse.Namespace) -> dict:
             source=source, chunks_path=args.chunks, report_path=args.report,
             database_path=args.database,
         )
-    if args.command == "seed-postgres-chunks":
+    if args.command in {"seed-postgres-chunks", "verify-postgres-chunks"}:
         source, source_path = resolve_source(
             workspace=workspace, manifest_path=args.manifest, source_id=args.source_id
         )
         if source_path.suffix.lower() != ".pdf":
-            raise ManualGraphError("seed-postgres-chunks requires a PDF source")
-        return seed_postgres_chunks(
+            raise ManualGraphError(f"{args.command} requires a PDF source")
+        operation = seed_postgres_chunks if args.command == "seed-postgres-chunks" else verify_postgres_chunks
+        result = operation(
             source=source, chunks_path=args.chunks, report_path=args.report,
             container=args.container, database_user=args.database_user,
         )
+        if args.command == "verify-postgres-chunks" and args.output_report:
+            write_json(args.output_report, result)
+        return result
     if args.command == "build-candidates":
         source, source_path = resolve_source(workspace=workspace, manifest_path=args.manifest, source_id=args.source_id)
         result = build_candidate_graph(load_json(source_path), source)

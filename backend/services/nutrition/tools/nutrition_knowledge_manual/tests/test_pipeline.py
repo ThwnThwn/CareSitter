@@ -131,11 +131,15 @@ class ManualGraphPipelineTests(unittest.TestCase):
             target_tokens=120, maximum_tokens=180, overlap_tokens=20,
         )
         script = build_seed_sql(source=source, chunks=chunks, chunks_sha256="b" * 64)
-        self.assertIn("'O''Reilly'", script)
+        source_data = script.split("COPY knowledge_import_source(payload) FROM STDIN WITH (FORMAT csv);\n", 1)[1]
+        source_data = source_data.split("\\.\n", 1)[0]
+        source_rows = list(csv.reader(io.StringIO(source_data)))
+        self.assertEqual(source["title"], json.loads(source_rows[0][0])["title"])
         copy_data = script.split("COPY knowledge_import(payload) FROM STDIN WITH (FORMAT csv);\n", 1)[1]
         copy_data = copy_data.split("\\.\n", 1)[0]
         decoded = list(csv.reader(io.StringIO(copy_data)))
-        self.assertEqual(chunks, [json.loads(row[0]) for row in decoded])
+        self.assertEqual([chunk["text"] for chunk in chunks], [json.loads(row[0])["content"] for row in decoded])
+        self.assertEqual([chunk["headings"] for chunk in chunks], [json.loads(row[0])["headings"] for row in decoded])
 
     def test_html_extraction_keeps_content_and_drops_navigation_and_scripts(self):
         blocks = extract_html_blocks("""
