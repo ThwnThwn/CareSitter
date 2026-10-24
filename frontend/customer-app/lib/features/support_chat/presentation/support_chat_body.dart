@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
-import 'package:caresitter_customer/features/support_chat/data/support_chat_repository.dart';
+import 'package:caresitter_customer/features/support_chat/data/models/support_conversation_model.dart';
+import 'package:caresitter_customer/features/support_chat/data/models/support_message_model.dart';
 import 'package:caresitter_customer/features/support_chat/presentation/support_chat_controller.dart';
 import 'package:flutter/material.dart';
 
