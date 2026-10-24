@@ -238,14 +238,14 @@ function Get-DataSignature {
 
     $sql = @"
 SELECT json_build_object(
-  'users', (SELECT count(*) FROM identity.users),
-  'services', (SELECT count(*) FROM catalog.service_types),
-  'addresses', (SELECT count(*) FROM catalog.addresses),
-  'beneficiaries', (SELECT count(*) FROM people.beneficiaries),
-  'caregivers', (SELECT count(*) FROM people.caregiver_profiles),
-  'wallets', (SELECT count(*) FROM payments.wallet_accounts),
-  'bookings', (SELECT count(*) FROM booking.bookings),
-  'disputes', (SELECT count(*) FROM support.disputes)
+  'users', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM identity.users),
+  'services', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM catalog.service_types),
+  'addresses', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM catalog.addresses),
+  'beneficiaries', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM people.beneficiaries),
+  'caregivers', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM people.caregiver_profiles),
+  'wallets', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM payments.wallet_accounts),
+  'bookings', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM booking.bookings),
+  'disputes', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM support.disputes)
 )::text;
 "@
     return Invoke-PsqlScalar `
@@ -261,20 +261,25 @@ function Assert-ProtectedDataPreserved {
         [Parameter(Mandatory)][string]$After
     )
 
-    $beforeCounts = $Before | ConvertFrom-Json
-    $afterCounts = $After | ConvertFrom-Json
+    $beforeRows = $Before | ConvertFrom-Json
+    $afterRows = $After | ConvertFrom-Json
 
-    foreach ($property in $beforeCounts.PSObject.Properties) {
+    foreach ($property in $beforeRows.PSObject.Properties) {
         $name = $property.Name
-        $afterProperty = $afterCounts.PSObject.Properties[$name]
+        $afterProperty = $afterRows.PSObject.Properties[$name]
         if ($null -eq $afterProperty) {
             throw "Legacy upgrade data signature is missing '$name'."
         }
 
-        $beforeCount = [long]$property.Value
-        $afterCount = [long]$afterProperty.Value
-        if ($afterCount -lt $beforeCount) {
-            throw "Legacy upgrade removed protected seed rows from '$name'. Before: $beforeCount; after: $afterCount"
+        $afterIds = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal)
+        foreach ($id in @($afterProperty.Value)) {
+            $null = $afterIds.Add([string]$id)
+        }
+        foreach ($id in @($property.Value)) {
+            if (-not $afterIds.Contains([string]$id)) {
+                throw "Legacy upgrade removed protected seed row '$id' from '$name'."
+            }
         }
     }
 }

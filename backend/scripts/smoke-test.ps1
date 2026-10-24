@@ -57,6 +57,9 @@ function Assert-RoleLogin {
     }
     catch {
         $details = $_.Exception.Message
+        if (-not [string]::IsNullOrWhiteSpace($_.ErrorDetails.Message)) {
+            $details = "$details Response: $($_.ErrorDetails.Message)"
+        }
         if ($null -ne $_.Exception.Response) {
             try {
                 $stream = $_.Exception.Response.GetResponseStream()
@@ -95,6 +98,22 @@ Write-Host "PASS  Service catalog contains $(@($services).Count) item(s)"
 
 $swagger = Invoke-RestMethod -Uri "$base/swagger/v1/swagger.json"
 $paths = @($swagger.paths.PSObject.Properties.Name)
+$checklistPath = '/api/v1/services/{id}/checklist-templates'
+if ($paths -notcontains $checklistPath) {
+    throw "Public service checklist route is missing from Swagger: $checklistPath"
+}
+
+$serviceId = @($services)[0].id
+if ([string]::IsNullOrWhiteSpace([string]$serviceId)) {
+    throw 'The first public service does not expose an ID.'
+}
+Assert-Status -Name 'Public service detail' -Uri "$base/api/v1/services/$serviceId"
+$checklist = Invoke-RestMethod -Uri "$base/api/v1/services/$serviceId/checklist-templates"
+if (@($checklist).Count -lt 1) {
+    throw 'The first public service has no active checklist templates.'
+}
+Write-Host "PASS  Public service checklist contains $(@($checklist).Count) item(s)"
+
 if ($paths -contains '/api/v1/bookings/{id}/confirm-payment') {
     throw 'Unsafe direct payment confirmation endpoint is still exposed.'
 }
