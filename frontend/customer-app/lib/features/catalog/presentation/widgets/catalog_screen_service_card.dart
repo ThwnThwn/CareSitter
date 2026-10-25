@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/catalog/presentation/widgets/catalog_service_card_colors_service_content.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
@@ -23,7 +24,7 @@ class CatalogScreenServiceCard extends StatelessWidget {
           service: service,
           formatVnd: formatVnd,
           callbackAction1: () =>
-              context.push('/booking/new?serviceId=${service.id}')),
+              context.push(AppRoutes.serviceDetail(service.id))),
     );
   }
 }

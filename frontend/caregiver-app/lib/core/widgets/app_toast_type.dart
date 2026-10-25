@@ -1,1 +1,1 @@
-enum AppToastType { success, error, loading }
+enum AppToastType { success, error, info }

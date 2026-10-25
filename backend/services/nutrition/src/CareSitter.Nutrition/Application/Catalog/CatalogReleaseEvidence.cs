@@ -11,7 +11,9 @@ public sealed record CatalogReleaseEvidence(
     CatalogRuleEvidence[] Rules,
     CatalogClinicalReview? ClinicalReview,
     string? ReleaseProfile = null,
-    CatalogKnowledgeReview? KnowledgeReview = null);
+    CatalogKnowledgeReview? KnowledgeReview = null,
+    CatalogSourcePublicationReview? SourcePublication = null,
+    CatalogReleaseAuthorization? ReleaseAuthorization = null);
 
 public sealed record CatalogRecipeEvidence(
     Guid RecipeVersionId,
@@ -62,7 +64,25 @@ public sealed record CatalogKnowledgeReview(
     int RejectedCount,
     CatalogKnowledgeSourceReview[] Sources,
     string[] ClinicalReviewerIds,
+    string Decision,
+    string[]? ReleaseAuthorityIds = null);
+
+public sealed record CatalogSourcePublicationReview(
+    string SourceId,
+    string SourceRevisionId,
+    string DocumentSha256,
+    string Organization,
+    int PublicationYear,
+    DateTimeOffset VerifiedAt,
     string Decision);
+
+public sealed record CatalogReleaseAuthorization(
+    string AuthorizationId,
+    string AuthorityType,
+    string AuthorizedBy,
+    DateTimeOffset AuthorizedAt,
+    string Decision,
+    string? Notes);
 
 public sealed record CatalogKnowledgeSourceReview(
     string SourceRevisionId,

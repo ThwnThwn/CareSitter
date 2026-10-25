@@ -4,6 +4,7 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import '../controllers/schedule_selectors.dart';
 import '../widgets/schedule_header.dart';
 import '../widgets/schedule_date_selector.dart';
+import '../widgets/schedule_daily_summary.dart';
 import '../widgets/schedule_timeline.dart';
 
 class ScheduleScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   void _scrollToCurrentHour() {
     if (!mounted) return;
     final now = DateTime.now();
-    final targetOffset = now.hour.clamp(0, 23) * 80.0;
+    final targetOffset =
+        (now.hour.clamp(0, 23) * ScheduleTimeline.hourExtent - 72)
+            .clamp(0.0, double.infinity);
     if (_timelineScrollController.hasClients) {
       _timelineScrollController.animateTo(
         targetOffset,
@@ -92,20 +95,21 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: AppColors.background,
         body: Column(children: [
-          ScheduleHeader(
-            pickDate: _pickDate,
-            selectedDate: _selectedDate,
-            isMonthView: _isMonthView,
-            previousPeriod: _previousPeriod,
-            nextPeriod: _nextPeriod,
-          ),
+          const ScheduleHeader(),
           ScheduleDateSelector(
             isMonthView: _isMonthView,
             selectedDate: _selectedDate,
             weekStart: _weekStart,
+            previousPeriod: _previousPeriod,
+            nextPeriod: _nextPeriod,
+            toggleMonthView: _toggleMonthView,
             onSelectDate: _selectCalendarDate,
           ),
           const SizedBox(height: AppSpacing.xs),
+          ScheduleDailySummary(
+            selectedDate: _selectedDate,
+            shifts: ref.watch(dayShiftsProvider(_selectedDate)),
+          ),
           Expanded(
               child: ScheduleTimeline(
             timelineScrollController: _timelineScrollController,
@@ -125,23 +129,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: AppColors.primary,
-            onPrimary: Colors.white,
-            surface: AppColors.cardBackground,
-          ),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null && mounted) _selectDate(picked);
+  void _toggleMonthView() {
+    setState(() => _isMonthView = !_isMonthView);
   }
 }

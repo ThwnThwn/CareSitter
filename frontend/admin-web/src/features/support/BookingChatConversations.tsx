@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { DetailList, EmptyState, ErrorBanner, LoadingTable, PageHeader, formatDate, shortId } from '../../components/Common';
 import type { BookingChatAdminActivity, BookingChatAdminDetail, BookingChatAdminFilter, BookingChatAdminItem, BookingChatAdminMessage } from '../../types';
 import { bookingChatAdminApi } from './bookingChatAdminApi';
@@ -176,7 +177,9 @@ export function BookingChatConversations() {
 
   return <>
     <PageHeader title="Booking Chat" description="Xem theo quyền quản trị, xử lý report, khóa chat và kiểm tra audit log."
-      actions={<button className="secondary" disabled={loading || busy} onClick={() => void load(currentCursor)}>Làm mới</button>} />
+      actions={<button className="secondary" disabled={loading || busy} onClick={() => void load(currentCursor)}>
+        <RefreshCw size={16} /> Làm mới
+      </button>} />
     {error && <ErrorBanner message={error} onRetry={() => void load(currentCursor)} />}
     <div className="filter-bar filter-grid booking-chat-filters">
       <label>Report<select value={filterDraft.reported} onChange={(event) => setFilterDraft((value) => ({ ...value, reported: event.target.value }))}>
@@ -192,7 +195,7 @@ export function BookingChatConversations() {
       <label>User ID<input value={filterDraft.userId} onChange={(event) => setFilterDraft((value) => ({ ...value, userId: event.target.value }))} /></label>
       <label>Từ ngày<input type="datetime-local" value={filterDraft.from} onChange={(event) => setFilterDraft((value) => ({ ...value, from: event.target.value }))} /></label>
       <label>Đến ngày<input type="datetime-local" value={filterDraft.to} onChange={(event) => setFilterDraft((value) => ({ ...value, to: event.target.value }))} /></label>
-      <button className="primary align-start" disabled={loading} onClick={applyFilters}>Áp dụng bộ lọc</button>
+      <button className="primary filter-submit" disabled={loading} onClick={applyFilters}>Áp dụng bộ lọc</button>
     </div>
     <section className="data-panel booking-chat-access" aria-labelledby="booking-chat-access-title">
       <div className="panel-heading">

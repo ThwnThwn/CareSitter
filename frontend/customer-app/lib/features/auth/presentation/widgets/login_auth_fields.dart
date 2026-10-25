@@ -73,7 +73,7 @@ class LoginAuthFields extends StatelessWidget {
               LoginHeroInputField(
                 controller: emailCtrl,
                 label: 'Email hoặc Số điện thoại',
-                hint: 'nhapten@email.com',
+                hint: 'Nhập tài khoản của bạn',
                 icon: Icons.mail_outline_rounded,
                 keyboardType: TextInputType.text,
                 validator: AuthValidators.loginEmail,

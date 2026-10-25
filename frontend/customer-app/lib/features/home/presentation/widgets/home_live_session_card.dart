@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class HomeLiveSessionCard extends StatelessWidget {
   const HomeLiveSessionCard(
@@ -41,8 +42,8 @@ class HomeLiveSessionCard extends StatelessWidget {
     return HomeHoverButton(
       onTap: () => context.push(
         isTracking
-            ? '/bookings/${booking.id}/tracking'
-            : '/bookings/${booking.id}',
+            ? AppRoutes.bookingTracking(booking.id)
+            : AppRoutes.bookingDetail(booking.id),
       ),
       child: HomeLiveSessionLayout(
           isOngoing: isOngoing,

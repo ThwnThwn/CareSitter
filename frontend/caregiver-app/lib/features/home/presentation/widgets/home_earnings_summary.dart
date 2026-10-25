@@ -37,7 +37,7 @@ class HomeEarningsSummary extends StatelessWidget {
             style: GoogleFonts.beVietnamPro(
               fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w500,
-              color: AppColors.secondary,
+              color: AppColors.primary,
             ),
           ),
         ],

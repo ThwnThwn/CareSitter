@@ -39,8 +39,12 @@ public sealed class ServiceType : Entity
     {
         if (string.IsNullOrWhiteSpace(code))
             return Error.Validation("service_type.code", "Mã dịch vụ là bắt buộc.");
+        if (code.Trim().Length > 100)
+            return Error.Validation("service_type.code", "Mã dịch vụ tối đa 100 ký tự.");
         if (string.IsNullOrWhiteSpace(name))
             return Error.Validation("service_type.name", "Tên dịch vụ là bắt buộc.");
+        if (name.Trim().Length > 255)
+            return Error.Validation("service_type.name", "Tên dịch vụ tối đa 255 ký tự.");
         if (defaultDurationMinutes is < 15 or > 1440)
             return Error.Validation("service_type.default_duration_minutes", "Thời lượng mặc định phải từ 15 đến 1.440 phút.");
 
@@ -60,14 +64,9 @@ public sealed class ServiceType : Entity
         int defaultDurationMinutes = 60,
         bool isActive = true)
     {
-        if (string.IsNullOrWhiteSpace(code))
-            return Error.Validation("service_type.code", "code la bat buoc.");
-        if (string.IsNullOrWhiteSpace(name))
-            return Error.Validation("service_type.name", "name la bat buoc.");
-        if (defaultDurationMinutes <= 0)
-            return Error.Validation("service_type.default_duration_minutes", "default_duration_minutes phai > 0.");
-
-        return new ServiceType(Guid.NewGuid(), code.Trim().ToUpperInvariant(), name.Trim(),
-            string.IsNullOrWhiteSpace(description) ? null : description.Trim(), defaultDurationMinutes, isActive);
+        var service = new ServiceType(Guid.NewGuid(), string.Empty, string.Empty,
+            null, 60, isActive);
+        var validation = service.Update(code, name, description, defaultDurationMinutes);
+        return validation.IsFailure ? validation.Error : service;
     }
 }

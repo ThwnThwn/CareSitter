@@ -10,18 +10,40 @@ class CatalogServiceCardColorsServicePanelBody extends StatelessWidget {
   final ServiceModel service;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: colors.bg,
-          borderRadius: BorderRadius.circular(AppRadius.control),
-        ),
-        child: Center(
-          child: Text(
-            service.icon,
-            style: const TextStyle(fontSize: AppFontSizes.s22),
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: SizedBox(
+          width: 104,
+          height: 132,
+          child: Image.asset(
+            _imageAssetFor(service.code),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => ColoredBox(
+              color: colors.bg,
+              child: Center(
+                child: Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: colors.fg,
+                  size: AppFontSizes.s32,
+                ),
+              ),
+            ),
           ),
         ),
       );
+
+  String _imageAssetFor(String code) {
+    final normalized = code.toUpperCase();
+    if (normalized.contains('NONMED_COMPANION') ||
+        normalized.contains('DONGHANH')) {
+      return 'assets/images/service-companion.jpg';
+    }
+    if (normalized.contains('NONMED_ESSENTIAL')) {
+      return 'assets/images/service-essential.jpg';
+    }
+    if (normalized.contains('NONMED_NIGHT') || normalized.contains('DEM')) {
+      return 'assets/images/service-night.jpg';
+    }
+    return 'assets/images/service-day.jpg';
+  }
 }

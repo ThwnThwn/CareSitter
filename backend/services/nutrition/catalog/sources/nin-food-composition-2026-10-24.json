@@ -1,0 +1,2046 @@
+{
+  "schemaVersion": 1,
+  "sourceTitle": "Giá trị dinh dưỡng thực phẩm",
+  "organization": "Viện Dinh dưỡng",
+  "sourcePage": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham",
+  "apiTemplate": "https://viendinhduong.vn/api/fe/foodNatunal/getPageFoodData?page=1&pageSize=50&name={}",
+  "retrievedOn": "2026-10-24",
+  "basis": "Giá trị trên 100 g phần ăn được theo mục thực phẩm được chọn.",
+  "normalizationNotes": {
+    "pinnedZeroNutrients": {
+      "AROMATIC_HERBS_FRESH": [
+        "fat_g"
+      ],
+      "BEEF_LEAN_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "BITTER_MELON_FRESH": [
+        "fat_g"
+      ],
+      "CHICKEN_EGG_RAW": [
+        "fiber_g"
+      ],
+      "CHICKEN_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "DRAGON_FRUIT_FRESH": [
+        "fat_g",
+        "sodium_mg"
+      ],
+      "DUCK_RAW": [
+        "carbohydrate_g",
+        "fiber_g",
+        "sodium_mg"
+      ],
+      "FERMENTED_SOYBEAN_RICE": [
+        "fiber_g",
+        "sodium_mg"
+      ],
+      "GLASS_NOODLE_DRY": [
+        "sodium_mg"
+      ],
+      "GOBY_RAW": [
+        "carbohydrate_g",
+        "fiber_g",
+        "sodium_mg"
+      ],
+      "GRASS_CARP_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "MALABAR_SPINACH_FRESH": [
+        "fat_g"
+      ],
+      "MANDARIN_FRESH": [
+        "fat_g"
+      ],
+      "MANGO_RIPE_FRESH": [
+        "fiber_g"
+      ],
+      "PEANUT_OIL": [
+        "carbohydrate_g",
+        "fiber_g",
+        "protein_g",
+        "sodium_mg"
+      ],
+      "POMELO_FRESH": [
+        "fat_g"
+      ],
+      "PORK_LEAN_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "PORK_RIB_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "RAMBUTAN_FRESH": [
+        "fat_g"
+      ],
+      "RICE_NOODLE_READY": [
+        "fiber_g"
+      ],
+      "SAUROPUS_FRESH": [
+        "fat_g"
+      ],
+      "SCALLION_FRESH": [
+        "fat_g"
+      ],
+      "SEA_SHRIMP_RAW": [
+        "fiber_g"
+      ],
+      "SHIITAKE_DRY": [
+        "sodium_mg"
+      ],
+      "TILAPIA_RAW": [
+        "carbohydrate_g",
+        "fiber_g",
+        "sodium_mg"
+      ],
+      "VEAL_LEAN_RAW": [
+        "carbohydrate_g",
+        "fiber_g"
+      ],
+      "WINTER_MELON_FRESH": [
+        "fat_g"
+      ]
+    },
+    "scope": "Chỉ dùng cho local demo kiểm tra luồng AI; giá trị nguồn thiếu được ghim 0, không được phát hành khi chưa data review."
+  },
+  "foods": [
+    {
+      "conceptCode": "APPLE_FRESH",
+      "ninCode": "5051",
+      "nameVi": "Táo tây, tươi",
+      "nameEn": "Apple, common, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 50,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.5,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 11.71,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.09,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 15.2,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5051"
+    },
+    {
+      "conceptCode": "AROMATIC_HERBS_FRESH",
+      "ninCode": "4094",
+      "nameVi": "Rau thơm, tươi",
+      "nameEn": "Mint leaves, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 30,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 5.4,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 3,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 6.3,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4094"
+    },
+    {
+      "conceptCode": "BEEF_LEAN_RAW",
+      "ninCode": "7003",
+      "nameVi": "Thịt bò, loại I, tươi",
+      "nameEn": "Beef, meat, grade I, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 118,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 21,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 3.8,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 83,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7003"
+    },
+    {
+      "conceptCode": "BITTER_MELON_FRESH",
+      "ninCode": "4055",
+      "nameVi": "Mướp đắng, tươi",
+      "nameEn": "Balsam-pear,  Bitter gourd, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 20,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 4.1,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.1,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4055"
+    },
+    {
+      "conceptCode": "BOK_CHOY_FRESH",
+      "ninCode": "4015",
+      "nameVi": "Cải thìa (cải trắng), tươi",
+      "nameEn": "Chinese cabbage, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 24,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.4,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 4.26,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.14,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.8,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 25,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4015"
+    },
+    {
+      "conceptCode": "CHICKEN_EGG_RAW",
+      "ninCode": "9001",
+      "nameVi": "Trứng gà ta",
+      "nameEn": "Hen egg (Raw, whole)",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 150,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 12.96,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 1.25,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 10.33,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 158,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 9001"
+    },
+    {
+      "conceptCode": "CHICKEN_RAW",
+      "ninCode": "7013",
+      "nameVi": "Thịt gà ta, tươi",
+      "nameEn": "Chicken, average meat, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 199,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 20.3,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 13.1,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 70,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7013"
+    },
+    {
+      "conceptCode": "CHILI_SAUCE",
+      "ninCode": "13021",
+      "nameVi": "Tương ớt",
+      "nameEn": "Chili sauce ",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 41,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.5,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 8.5,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.5,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 25,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13021"
+    },
+    {
+      "conceptCode": "DRAGON_FRUIT_FRESH",
+      "ninCode": "5044",
+      "nameVi": "Quả thanh long, tươi",
+      "nameEn": "Dragon's eyes fruit, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 47,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.3,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 10.5,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.8,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5044"
+    },
+    {
+      "conceptCode": "DUCK_RAW",
+      "ninCode": "7090",
+      "nameVi": "Thịt ngan, tươi",
+      "nameEn": "Goose, average meat, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 288,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 17.05,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 24.45,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7090"
+    },
+    {
+      "conceptCode": "FERMENTED_SOYBEAN_RICE",
+      "ninCode": "13020",
+      "nameVi": "Tương nếp",
+      "nameEn": "Soybean sauce with glutinous rice",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 86,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 4.3,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 15.7,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.7,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13020"
+    },
+    {
+      "conceptCode": "GARLIC_FRESH",
+      "ninCode": "4103",
+      "nameVi": "Tỏi ta, tươi",
+      "nameEn": "Garlic bulbs, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 126,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 24.65,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.35,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 18,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4103"
+    },
+    {
+      "conceptCode": "GINGER_FRESH",
+      "ninCode": "13003",
+      "nameVi": "Gừng tươi",
+      "nameEn": "Ginger root fresh",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 41,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.4,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 8.59,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.51,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 3.3,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 7,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 13003"
+    },
+    {
+      "conceptCode": "GLASS_NOODLE_DRY",
+      "ninCode": "2015",
+      "nameVi": "Miến dong, khô",
+      "nameEn": "Vermicelli from arrow root, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 338,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 83.7,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.1,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 2015"
+    },
+    {
+      "conceptCode": "GOBY_RAW",
+      "ninCode": "8001",
+      "nameVi": "Cá bống, tươi",
+      "nameEn": "Fish, goby, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 70,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 15.8,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.8,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8001"
+    },
+    {
+      "conceptCode": "GRASS_CARP_RAW",
+      "ninCode": "8029",
+      "nameVi": "Cá trắm cỏ, tươi",
+      "nameEn": "Fish, grass carp, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 91,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 17,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 2.6,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 26,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8029"
+    },
+    {
+      "conceptCode": "GREEN_BEANS_BOILED",
+      "ninCode": "4029002",
+      "nameVi": "Đậu cô ve, luộc",
+      "nameEn": "Bean common string, boiled",
+      "basis": "cooked",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 85,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 5.38,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 15.38,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.22,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.08,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 102.9,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4029002"
+    },
+    {
+      "conceptCode": "MALABAR_SPINACH_FRESH",
+      "ninCode": "4080",
+      "nameVi": "Rau mồng tơi, tươi",
+      "nameEn": "Malabar, Ceylon spinach, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 24,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.9,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 2.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 37.5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4080"
+    },
+    {
+      "conceptCode": "MANDARIN_FRESH",
+      "ninCode": "5047",
+      "nameVi": "Quít, tươi",
+      "nameEn": "Tangerine; Orange; Mandarin, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 40,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.8,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 9.2,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 3.6,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5047"
+    },
+    {
+      "conceptCode": "MANGO_RIPE_FRESH",
+      "ninCode": "5055",
+      "nameVi": "Xoài chín, tươi",
+      "nameEn": "Mango, common, ripe, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 69,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 15.9,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.3,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 2.1,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5055"
+    },
+    {
+      "conceptCode": "MUSTARD_GREENS_FRESH",
+      "ninCode": "4016",
+      "nameVi": "Cải xanh, tươi",
+      "nameEn": "Mustard greens,   raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 23,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.7,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.76,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.14,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.8,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 28.6,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4016"
+    },
+    {
+      "conceptCode": "MUSTARD_STEM_BOILED",
+      "ninCode": "4134002",
+      "nameVi": "Cải ngồng, luộc",
+      "nameEn": "Brassica, Cabbage/mustard, boiled",
+      "basis": "cooked",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 18,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 2.32,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.21,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.06,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 69.15,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4134002"
+    },
+    {
+      "conceptCode": "ONION_FRESH",
+      "ninCode": "4039",
+      "nameVi": "Hành tây, tươi",
+      "nameEn": "Onion, common, garden, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 45,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.8,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 9.29,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.11,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.1,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 7.5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4039"
+    },
+    {
+      "conceptCode": "ORANGE_FRESH",
+      "ninCode": "5002",
+      "nameVi": "Cam, tươi",
+      "nameEn": "Orange, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 43,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 9.74,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.06,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.4,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 3.5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5002"
+    },
+    {
+      "conceptCode": "PEANUT_DRY",
+      "ninCode": "3017",
+      "nameVi": "Lạc hạt, khô",
+      "nameEn": "Peanut, dried",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 583,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 27.5,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 18,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 44.5,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 2.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 4,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3017"
+    },
+    {
+      "conceptCode": "PEANUT_OIL",
+      "ninCode": "6011",
+      "nameVi": "Dầu lạc",
+      "nameEn": "Oil, peanut, salad or cooking",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 900,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 100,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 6011"
+    },
+    {
+      "conceptCode": "POMELO_FRESH",
+      "ninCode": "5001",
+      "nameVi": "Bưởi, tươi",
+      "nameEn": "Pomelo, Pummelo; Shaddock, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 33,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 8,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.7,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 2.6,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5001"
+    },
+    {
+      "conceptCode": "PORK_LEAN_RAW",
+      "ninCode": "7017",
+      "nameVi": "Thịt lợn, nạc, tươi",
+      "nameEn": "Pork, lean meat, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 139,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 19,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 7,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 76,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7017"
+    },
+    {
+      "conceptCode": "PORK_RIB_RAW",
+      "ninCode": "7053",
+      "nameVi": "Sườn lợn, tươi",
+      "nameEn": "Pork, ribs, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 187,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 17.9,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 12.8,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 60,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7053"
+    },
+    {
+      "conceptCode": "RAMBUTAN_FRESH",
+      "ninCode": "5004",
+      "nameVi": "Chôm chôm, tươi",
+      "nameEn": "Rambutan, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 77,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.5,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 17.7,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.3,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 94,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5004"
+    },
+    {
+      "conceptCode": "RICE_NOODLE_READY",
+      "ninCode": "1013",
+      "nameVi": "Bánh phở",
+      "nameEn": "Rice noodles, raw",
+      "basis": "cooked",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 146,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 3.2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 31.2,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 3,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1013"
+    },
+    {
+      "conceptCode": "RICE_WHITE_RAW",
+      "ninCode": "1004",
+      "nameVi": "Gạo, trắng, tẻ, xát máy, sống",
+      "nameEn": "Rice, white, polished, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 346,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 7.9,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 76.3,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 1,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.4,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 1004"
+    },
+    {
+      "conceptCode": "SAUROPUS_FRESH",
+      "ninCode": "4086",
+      "nameVi": "Rau ngót, tươi",
+      "nameEn": "Sauropus, sp. Leaves, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 45,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 5.3,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 5.9,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 2.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 24.5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4086"
+    },
+    {
+      "conceptCode": "SCALLION_FRESH",
+      "ninCode": "4038",
+      "nameVi": "Hành lá (hành hoa), tươi",
+      "nameEn": "Onion, leave, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 26,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.3,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 5.2,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 16,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4038"
+    },
+    {
+      "conceptCode": "SEA_SHRIMP_RAW",
+      "ninCode": "8051",
+      "nameVi": "Tôm biển, tươi",
+      "nameEn": "Shrimp, sea water, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 82,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 17.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.9,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 148,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8051"
+    },
+    {
+      "conceptCode": "SHIITAKE_DRY",
+      "ninCode": "4126",
+      "nameVi": "Nấm hương, khô",
+      "nameEn": "Mushroom, shiitake, dried",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 342,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 36,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 40.5,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 4,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 17,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4126"
+    },
+    {
+      "conceptCode": "SWEET_POTATO_LEAVES_FRESH",
+      "ninCode": "4076",
+      "nameVi": "Rau khoai lang, tươi",
+      "nameEn": "Sweet potato leaves, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 28,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 2.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.99,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.21,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1.4,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 19.01,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4076"
+    },
+    {
+      "conceptCode": "TILAPIA_RAW",
+      "ninCode": "8024",
+      "nameVi": "Cá rô phi, tươi",
+      "nameEn": "Fish, tilapia, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 100,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 19.7,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 2.3,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 0,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 8024"
+    },
+    {
+      "conceptCode": "TOFU_BOILED",
+      "ninCode": "3025002",
+      "nameVi": "Đậu phụ luộc",
+      "nameEn": "Tofu, boiled ",
+      "basis": "cooked",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 98,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 11.01,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 1.11,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 5.45,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.4,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 7.07,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 3025002"
+    },
+    {
+      "conceptCode": "TOMATO_FRESH",
+      "ninCode": "4005",
+      "nameVi": "Quả cà chua, tươi",
+      "nameEn": "Tomato, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 24,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 4.77,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.23,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.8,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 12.2,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4005"
+    },
+    {
+      "conceptCode": "VEAL_LEAN_RAW",
+      "ninCode": "7002",
+      "nameVi": "Thịt bê, nạc, tươi",
+      "nameEn": "Veal, lean meat only, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 85,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 20,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.5,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 80,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 7002"
+    },
+    {
+      "conceptCode": "WATERCRESS_FRESH",
+      "ninCode": "4014",
+      "nameVi": "Cải soong, tươi",
+      "nameEn": "Water cress, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 22,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 2.1,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.33,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.07,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 2,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 85.2,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4014"
+    },
+    {
+      "conceptCode": "WATERMELON_FRESH",
+      "ninCode": "5011",
+      "nameVi": "Dưa hấu, tươi",
+      "nameEn": "Watermelon, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 18,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 1.2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 2.8,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.2,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 0.5,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 4.5,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 5011"
+    },
+    {
+      "conceptCode": "WATER_SPINACH_FRESH",
+      "ninCode": "4083",
+      "nameVi": "Rau muống,  tươi",
+      "nameEn": "Water spinach, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 28,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 3.2,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.26,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.24,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 37.4,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4083"
+    },
+    {
+      "conceptCode": "WINTER_MELON_FRESH",
+      "ninCode": "4002",
+      "nameVi": "Quả bí đao (bí xanh), tươi",
+      "nameEn": "Asgourd, winter melon, raw",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 16,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 0.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 3.4,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 1,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 12.73,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4002"
+    },
+    {
+      "conceptCode": "WOOD_EAR_DRY",
+      "ninCode": "4125",
+      "nameVi": "Mộc nhĩ, khô",
+      "nameEn": "Jew's ear, Wood-ear, Tender variety, dried",
+      "basis": "raw",
+      "perAmount": 100,
+      "perUnit": "g",
+      "nutrients": {
+        "energy_kcal": {
+          "value": 332,
+          "unit": "kcal",
+          "sourceKey": "energy"
+        },
+        "protein_g": {
+          "value": 10.6,
+          "unit": "g",
+          "sourceKey": "protein"
+        },
+        "carbohydrate_g": {
+          "value": 72,
+          "unit": "g",
+          "sourceKey": "carbohydrate-by-difference"
+        },
+        "fat_g": {
+          "value": 0.2,
+          "unit": "g",
+          "sourceKey": "total-lipid-fat"
+        },
+        "fiber_g": {
+          "value": 7,
+          "unit": "g",
+          "sourceKey": "fibre-total-dietary"
+        },
+        "sodium_mg": {
+          "value": 70,
+          "unit": "mg",
+          "sourceKey": "na"
+        }
+      },
+      "sourceLocator": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham; mã thực phẩm 4125"
+    }
+  ]
+}

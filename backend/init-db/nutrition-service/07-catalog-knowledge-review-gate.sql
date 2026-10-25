@@ -5,9 +5,13 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,nutrition AS $$
 DECLARE
  review jsonb;
  clinical_reviewer_id text;
+ release_authority_id text;
+ release_profile text;
 BEGIN
  review:=NEW.evidence->'knowledgeReview';
  clinical_reviewer_id:=trim(coalesce(NEW.evidence->'clinicalReview'->>'reviewerId',''));
+ release_authority_id:=trim(coalesce(NEW.evidence->'releaseAuthorization'->>'authorizationId',''));
+ release_profile:=coalesce(NEW.evidence->>'releaseProfile','adult_condition_v1');
  IF review IS NULL OR jsonb_typeof(review)<>'object'
     OR coalesce(review->>'schemaVersion','')<>'1'
     OR coalesce(review->>'decision','')<>'approved'
@@ -26,10 +30,16 @@ BEGIN
          OR coalesce(source->>'rightsStatus','')<>'permitted')
     OR (SELECT count(*) FROM jsonb_array_elements(review->'sources')) <>
        (SELECT count(DISTINCT source->>'sourceRevisionId') FROM jsonb_array_elements(review->'sources') source)
-    OR coalesce(jsonb_typeof(review->'clinicalReviewerIds'),'')<>'array'
-    OR jsonb_array_length(review->'clinicalReviewerIds')=0
-    OR clinical_reviewer_id=''
-    OR NOT review->'clinicalReviewerIds' ? clinical_reviewer_id THEN
+    OR (release_profile='adult_baseline_source_reference_v1' AND (
+      coalesce(jsonb_typeof(review->'releaseAuthorityIds'),'')<>'array'
+      OR jsonb_array_length(review->'releaseAuthorityIds')=0
+      OR release_authority_id=''
+      OR NOT review->'releaseAuthorityIds' ? release_authority_id))
+    OR (release_profile<>'adult_baseline_source_reference_v1' AND (
+      coalesce(jsonb_typeof(review->'clinicalReviewerIds'),'')<>'array'
+      OR jsonb_array_length(review->'clinicalReviewerIds')=0
+      OR clinical_reviewer_id=''
+      OR NOT review->'clinicalReviewerIds' ? clinical_reviewer_id)) THEN
   RAISE EXCEPTION 'Complete permitted knowledge review evidence is required' USING ERRCODE='22023';
  END IF;
  RETURN NEW;

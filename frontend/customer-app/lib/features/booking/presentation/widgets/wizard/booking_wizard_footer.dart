@@ -19,44 +19,53 @@ class BookingWizardFooter extends ConsumerWidget {
     final ready = ref.watch(wizardCanContinueProvider(args));
     final enabled = !flow.submitting && !flow.uncertain;
     final isLastStep = flow.step == 5;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
-        AppSpacing.compact,
         AppSpacing.md,
-        AppSpacing.compact + MediaQuery.of(context).padding.bottom,
+        AppSpacing.md,
+        safeBottom > AppSpacing.md ? safeBottom : AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: AppColors.cardBackground.withValues(alpha: 0.98),
+        border: const Border(top: BorderSide(color: AppColors.divider)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Row(children: [
-        if (flow.step > 0) ...[
-          _BackButton(
-            enabled: enabled,
-            onPressed: ref.read(bookingWizardProvider(args).notifier).previous,
-          ),
-          const SizedBox(width: AppSpacing.compact),
-        ],
-        Expanded(
-          child: _ContinueButton(
-            enabled: enabled && ready,
-            submitting: flow.submitting,
-            submitLabel: flow.submitLabel,
-            isLastStep: isLastStep,
-            onPressed: isLastStep
-                ? onSubmit
-                : ref.read(bookingWizardProvider(args).notifier).next,
-          ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints:
+              const BoxConstraints(maxWidth: AppLayout.authFormMaxWidth),
+          child: Row(children: [
+            if (flow.step > 0) ...[
+              _BackButton(
+                enabled: enabled,
+                onPressed:
+                    ref.read(bookingWizardProvider(args).notifier).previous,
+              ),
+              const SizedBox(width: AppSpacing.compact),
+            ],
+            Expanded(
+              child: _ContinueButton(
+                enabled: enabled && ready,
+                submitting: flow.submitting,
+                submitLabel: flow.submitLabel,
+                isLastStep: isLastStep,
+                onPressed: isLastStep
+                    ? onSubmit
+                    : ref.read(bookingWizardProvider(args).notifier).next,
+              ),
+            ),
+          ]),
         ),
-      ]),
+      ),
     );
   }
 }
@@ -70,9 +79,9 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.surfaceVariant,
-      borderRadius: BorderRadius.circular(AppRadius.card),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: enabled ? onPressed : null,
         child: Tooltip(
           message: 'Quay lại bước trước',
@@ -107,8 +116,13 @@ class _ContinueButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration:
+          reduceMotion ? Duration.zero : const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
       constraints: const BoxConstraints(minHeight: 52),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -116,7 +130,7 @@ class _ContinueButton extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: AppColors.primary.withValues(alpha: 0.25),
-                  blurRadius: 12,
+                  blurRadius: 8,
                   offset: const Offset(0, 4),
                 )
               ]
@@ -130,9 +144,11 @@ class _ContinueButton extends StatelessWidget {
           disabledForegroundColor: AppColors.textHint,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.card),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           minimumSize: const Size(double.infinity, 52),
+          animationDuration:
+              reduceMotion ? Duration.zero : const Duration(milliseconds: 150),
         ),
         onPressed: enabled ? onPressed : null,
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [

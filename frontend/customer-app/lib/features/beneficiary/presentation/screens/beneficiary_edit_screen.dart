@@ -7,6 +7,7 @@ import '../controllers/beneficiary_form_controller.dart';
 
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_contact_entry.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/widgets/birth_date_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -64,7 +65,8 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     _bindController();
     _loadProfile(ref.read(beneficiaryStoreProvider));
     ref.listenManual(beneficiaryStoreProvider, (_, profiles) {
-      if (_loadedProfileId != widget.id && profiles.any((b) => b.id == widget.id)) {
+      if (_loadedProfileId != widget.id &&
+          profiles.any((b) => b.id == widget.id)) {
         setState(() => _loadProfile(profiles));
       }
     });
@@ -109,8 +111,8 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
       }
     }
   }
@@ -132,13 +134,13 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
     );
     if (!mounted) return;
     if (result is BeneficiaryFormMessage) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message), backgroundColor: AppColors.error));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result.message), backgroundColor: AppColors.error));
     } else if (result is BeneficiaryFormSaved) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Đã cập nhật hồ sơ người thân.'),
           backgroundColor: AppColors.success));
-      popOrGo(context, fallbackRoute: '/beneficiaries/${widget.id}');
+      popOrGo(context, fallbackRoute: AppRoutes.beneficiaryDetail(widget.id));
     }
   }
 
@@ -159,5 +161,4 @@ class _BeneficiaryEditScreenState extends ConsumerState<BeneficiaryEditScreen> {
       hasChanges: () => _formState != _initialFormState,
     );
   }
-
 }

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class HomeAppointmentCard extends StatelessWidget {
   const HomeAppointmentCard(
@@ -72,12 +73,13 @@ class HomeAppointmentCard extends StatelessWidget {
     return HomeHoverButton(
       onTap: () => context.push(
         isOngoing
-            ? '/bookings/${booking.id}/tracking'
-            : '/bookings/${booking.id}',
+            ? AppRoutes.bookingTracking(booking.id)
+            : AppRoutes.bookingDetail(booking.id),
       ),
       child: HomeAppointmentDetails(
           appointmentDetails: appointmentDetails,
           initials: initials,
+          avatarUrl: booking.caregiverAvatar,
           compactLayout: compactLayout,
           statusBadge: statusBadge),
     );

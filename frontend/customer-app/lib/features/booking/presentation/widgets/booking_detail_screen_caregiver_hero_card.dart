@@ -4,7 +4,8 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
 class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
-  const BookingDetailScreenCaregiverHeroCard({super.key, required this.booking});
+  const BookingDetailScreenCaregiverHeroCard(
+      {super.key, required this.booking});
   final BookingModel booking;
   @override
   Widget build(BuildContext context) {
@@ -13,44 +14,49 @@ class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.comfortable),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: AppColors.border,
-          width: 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 10,
-            offset: Offset(0, 3),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Caregiver đồng hành',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
           ),
+          const SizedBox(height: AppSpacing.inset),
+          BookingCaregiverContent(
+              avatarUrl: avatarUrl,
+              booking: booking,
+              caregiverName: caregiverName,
+              callbackAction1: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đang mở trò chuyện với $caregiverName...'),
+                    backgroundColor: AppColors.primary,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              callbackAction2: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content:
+                        Text('Đang chuẩn bị cuộc gọi với $caregiverName...'),
+                    backgroundColor: AppColors.primary,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }),
         ],
       ),
-      child: BookingCaregiverContent(
-          avatarUrl: avatarUrl,
-          booking: booking,
-          caregiverName: caregiverName,
-          callbackAction1: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('💬 Nhắn tin cho $caregiverName...'),
-                backgroundColor: AppColors.primary,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          },
-          callbackAction2: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('📞 Gọi cho $caregiverName...'),
-                backgroundColor: AppColors.primary,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_model.dart';
@@ -15,7 +16,7 @@ Future<void> showShiftExtensionSheet(
     builder: (_) => ShiftExtensionSheet(booking: booking),
   );
   if (contactSupport == true && context.mounted) {
-    context.push('/settings/support');
+    context.push(AppRoutes.support);
   }
 }
 

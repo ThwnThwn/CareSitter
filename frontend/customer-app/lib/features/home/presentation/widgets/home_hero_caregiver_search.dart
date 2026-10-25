@@ -37,15 +37,6 @@ class HomeHeroCaregiverSearch extends StatelessWidget {
               color: AppColors.textSecondary,
               size: 20,
             ),
-            suffixIcon: IconButton(
-              tooltip: 'Mở bộ lọc chăm sóc viên',
-              onPressed: openCaregiverSearch,
-              icon: const Icon(
-                Icons.tune_rounded,
-                color: AppColors.textSecondary,
-                size: 18,
-              ),
-            ),
             filled: true,
             fillColor: Colors.white,
             isDense: true,

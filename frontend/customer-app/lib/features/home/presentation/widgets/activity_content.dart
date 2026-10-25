@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -21,7 +22,7 @@ class ActivityContent extends StatelessWidget {
         ),
         actions: [
           TextButton.icon(
-            onPressed: () => context.go('/bookings'),
+            onPressed: () => context.go(AppRoutes.bookings),
             icon: const Icon(Icons.history_rounded,
                 color: AppColors.primary, size: 18),
             label: const Text(

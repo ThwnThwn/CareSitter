@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/home/presentation/widgets/home_near
 import 'package:caresitter_customer/features/home/presentation/widgets/home_nearby_caregiver_location.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/address_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -25,7 +26,7 @@ class HomeCaregiverSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HomeNearbyCaregiverHeader(
-            callbackAction1: () => context.go('/caregivers')),
+            callbackAction1: () => context.go(AppRoutes.caregivers)),
         const SizedBox(height: AppSpacing.inset),
         HomeNearbyCaregiverLocation(
             ref: ref,

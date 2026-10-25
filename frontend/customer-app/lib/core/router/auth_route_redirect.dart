@@ -1,3 +1,5 @@
+import 'app_routes.dart';
+
 /// Wait for persisted authentication before resolving an external return route.
 Future<String?> authSessionRouteRedirect({
   required String location,
@@ -22,23 +24,25 @@ String? authRouteRedirect({
   required bool isAuthenticated,
 }) {
   final uri = Uri.parse(location);
-  final isAuthRoute = uri.path.startsWith('/auth');
-  final isBrandIntroRoute = uri.path == '/brand-intro';
+  final isAuthRoute = uri.path.startsWith(AppRoutes.auth);
+  final isBrandIntroRoute = uri.path == AppRoutes.brandIntro;
 
   if (!isAuthenticated && (!isAuthRoute || isBrandIntroRoute)) {
     if (_isPaymentReturn(uri)) {
-      return Uri(path: '/auth/login', queryParameters: {
-        'returnTo': uri.toString(),
+      return Uri(path: AppRoutes.login, queryParameters: {
+        'return-to': uri.toString(),
       }).toString();
     }
-    return '/auth/login';
+    return AppRoutes.login;
   }
   if (isAuthenticated && isAuthRoute) {
-    final returnTo = Uri.tryParse(uri.queryParameters['returnTo'] ?? '');
+    final returnTo = Uri.tryParse(
+      uri.queryParameters['return-to'] ?? uri.queryParameters['returnTo'] ?? '',
+    );
     if (returnTo != null && _isPaymentReturn(returnTo)) {
       return returnTo.toString();
     }
-    return '/brand-intro';
+    return AppRoutes.brandIntro;
   }
   return null;
 }
@@ -47,4 +51,4 @@ bool _isPaymentReturn(Uri uri) =>
     !uri.hasScheme &&
     !uri.hasAuthority &&
     !uri.hasFragment &&
-    uri.path == '/payment-result';
+    uri.path == AppRoutes.paymentResult;

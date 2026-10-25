@@ -4,6 +4,7 @@ import 'package:caresitter_customer/features/home/presentation/widgets/home_hero
 import 'package:caresitter_customer/features/home/presentation/widgets/home_hero_caregiver_count.dart';
 import 'package:caresitter_customer/features/home/presentation/widgets/home_hero_image.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -23,7 +24,7 @@ class HomeHeroBanner extends StatelessWidget {
     final stats = HomeHeroCaregiverCount(isNarrow: isNarrow);
     final callToAction = HomeHeroBookingButton(
         isNarrow: isNarrow,
-        callbackAction1: () => context.push('/booking/new'));
+        callbackAction1: () => context.push(AppRoutes.bookingNew));
     return SizedBox(
       key: const Key('home-hero-banner'),
       height: heroHeight,

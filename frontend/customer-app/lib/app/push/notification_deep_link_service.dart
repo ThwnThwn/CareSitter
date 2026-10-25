@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/app/router/app_router.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/core/widgets/app_messenger.dart';
@@ -39,21 +40,21 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
 
     if (supplied != null) return supplied;
     if (bookingId == null) {
-      if (type == 'PAYMENT') return '/bookings';
-      if (type == 'SUPPORT_CHAT') return '/settings/support/chat';
-      if (type == 'SUPPORT') return '/settings/support';
-      return type.isEmpty ? null : '/notifications';
+      if (type == 'PAYMENT') return AppRoutes.bookings;
+      if (type == 'SUPPORT_CHAT') return AppRoutes.supportChat;
+      if (type == 'SUPPORT') return AppRoutes.support;
+      return type.isEmpty ? null : AppRoutes.notifications;
     }
 
-    if (type == 'BOOKING_CHAT') return '/bookings/$bookingId/chat';
+    if (type == 'BOOKING_CHAT') return AppRoutes.bookingChat(bookingId);
 
     if (type == 'SOS' ||
         status == 'en_route' ||
         status == 'in_progress' ||
         status == 'checked_in') {
-      return '/bookings/$bookingId/tracking';
+      return AppRoutes.bookingTracking(bookingId);
     }
-    return '/bookings/$bookingId';
+    return AppRoutes.bookingDetail(bookingId);
   }
 
   @override
@@ -157,16 +158,21 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
         (uri.scheme.isEmpty ||
             uri.scheme == 'caresitter' ||
             uri.scheme == 'caresitter-customer') &&
-        (route == '/payment-result' || uri.path == '/payment-result')) {
-      final bookingId = _safeId(uri.queryParameters['bookingId']);
+        (route == AppRoutes.paymentResult ||
+            uri.path == AppRoutes.paymentResult)) {
+      final bookingId = _safeId(
+        uri.queryParameters['booking-id'] ?? uri.queryParameters['bookingId'],
+      );
       if (bookingId == null) return null;
-      final intentId = _safeId(uri.queryParameters['intentId']);
-      return Uri(path: '/payment-result', queryParameters: {
-        'bookingId': bookingId,
-        if (intentId != null) 'intentId': intentId,
-        // Callback chỉ mở màn hình. Backend quyết định kết quả tài chính.
-        'result': 'pending',
-      }).toString();
+      final intentId = _safeId(
+        uri.queryParameters['intent-id'] ?? uri.queryParameters['intentId'],
+      );
+      // Callback chỉ mở màn hình. Backend quyết định kết quả tài chính.
+      return AppRoutes.bookingDetailPaymentResult(
+        bookingId: bookingId,
+        intentId: intentId,
+        result: 'pending',
+      );
     }
 
     final patterns = [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import '../controllers/beneficiary_form_controller.dart';
@@ -31,8 +32,9 @@ class BeneficiaryProfileForm extends ConsumerWidget {
     final draft = ref.watch(beneficiaryFormControllerProvider(profileId));
     return DiscardChangesGuard(
       hasChanges: hasChanges,
-      fallbackRoute:
-          profileId == null ? '/beneficiaries' : '/beneficiaries/$profileId',
+      fallbackRoute: profileId == null
+          ? AppRoutes.beneficiaries
+          : AppRoutes.beneficiaryDetail(profileId!),
       builder: (context, requestExit) => Scaffold(
         backgroundColor: AppColors.background,
         appBar: BeneficiaryProfileAppBar(
@@ -53,13 +55,16 @@ class BeneficiaryProfileForm extends ConsumerWidget {
                     pickImage: onPickAvatar,
                     editing: profileId != null),
                 const SizedBox(height: AppSpacing.wide),
-                BeneficiaryBasicInformation(profileId: profileId, fields: fields),
-                BeneficiaryCareInformation(profileId: profileId, fields: fields),
+                BeneficiaryBasicInformation(
+                    profileId: profileId, fields: fields),
+                BeneficiaryCareInformation(
+                    profileId: profileId, fields: fields),
                 BeneficiaryEmergencyContactsEditor(contacts: fields.contacts),
                 const SizedBox(height: AppSpacing.xl),
                 ElevatedButton(
                   onPressed: draft.saving ? null : onSave,
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
+                  style:
+                      ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                   child: draft.saving
                       ? const CircularProgressIndicator()
                       : Text(profileId == null

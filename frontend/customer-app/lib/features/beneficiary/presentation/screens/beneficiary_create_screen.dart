@@ -8,6 +8,7 @@ import 'package:caresitter_customer/features/beneficiary/presentation/widgets/be
 
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/widgets/birth_date_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -128,7 +129,7 @@ class _BeneficiaryCreateScreenState extends ConsumerState<BeneficiaryCreateScree
       if (context.canPop()) {
         context.pop(result.id);
       } else {
-        context.go('/beneficiaries');
+        context.go(AppRoutes.beneficiaries);
       }
     }
   }

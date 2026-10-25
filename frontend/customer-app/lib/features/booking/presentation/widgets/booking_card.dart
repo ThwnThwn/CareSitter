@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import '../controllers/booking_controller.dart';
@@ -21,7 +22,7 @@ class BookingCard extends StatelessWidget {
     final status = booking.presentationStatusAt(now);
     final appearance = BookingStatusPresentation.forBooking(booking, now: now);
     return GestureDetector(
-      onTap: () => context.push('/bookings/${booking.id}'),
+      onTap: () => context.push(AppRoutes.bookingDetail(booking.id)),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
@@ -52,7 +53,7 @@ class BookingCard extends StatelessWidget {
               if (status == 'completed' && !booking.isReviewed)
                 BookingListBookingCardFields(
                     callbackAction1: () =>
-                        context.push('/bookings/${booking.id}/review')),
+                        context.push(AppRoutes.bookingReview(booking.id))),
             ]),
           ),
         ]),

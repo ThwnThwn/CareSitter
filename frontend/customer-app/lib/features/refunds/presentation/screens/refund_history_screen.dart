@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,7 +20,7 @@ class RefundHistoryScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Lịch sử hoàn tiền'),
-        leading: const AppBackButton(fallbackRoute: '/settings'),
+        leading: const AppBackButton(fallbackRoute: AppRoutes.settings),
       ),
       body: refunds.when(
         loading: () => const _RefundLoading(),
@@ -44,7 +45,7 @@ class RefundHistoryScreen extends ConsumerWidget {
                   RefundCard(
                     refund: items[index],
                     onRetry: refresh,
-                    onSupport: () => context.push('/settings/support'),
+                    onSupport: () => context.push(AppRoutes.support),
                   ),
                   if (index != items.length - 1)
                     const SizedBox(height: AppSpacing.compact),

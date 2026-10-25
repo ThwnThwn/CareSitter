@@ -49,24 +49,26 @@ class BookingProgressSteps extends StatelessWidget {
                     iconColor = AppColors.textSecondary;
                   }
 
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      BookingProgressStepIcon(
-                          circleBg: circleBg,
-                          border: border,
-                          isActive: isActive,
-                          isPassed: isPassed,
-                          steps: steps,
-                          idx: idx,
-                          iconColor: iconColor),
-                      const SizedBox(height: AppSpacing.tight),
-                      BookingProgressStepLabel(
-                          steps: steps,
-                          idx: idx,
-                          isActive: isActive,
-                          isPassed: isPassed),
-                    ],
+                  return Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        BookingProgressStepIcon(
+                            circleBg: circleBg,
+                            border: border,
+                            isActive: isActive,
+                            isPassed: isPassed,
+                            steps: steps,
+                            idx: idx,
+                            iconColor: iconColor),
+                        const SizedBox(height: AppSpacing.tight),
+                        BookingProgressStepLabel(
+                            steps: steps,
+                            idx: idx,
+                            isActive: isActive,
+                            isPassed: isPassed),
+                      ],
+                    ),
                   );
                 }),
               ),

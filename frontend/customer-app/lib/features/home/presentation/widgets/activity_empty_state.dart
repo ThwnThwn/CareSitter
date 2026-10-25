@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -33,7 +34,7 @@ class ActivityEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
-              onPressed: () => context.push('/booking/new'),
+              onPressed: () => context.push(AppRoutes.bookingNew),
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Đặt lịch ngay'),
               style: ElevatedButton.styleFrom(

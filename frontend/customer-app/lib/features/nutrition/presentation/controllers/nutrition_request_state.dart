@@ -5,10 +5,17 @@ class NutritionRequestState {
       this.healthRevision = 0,
       this.resourceId,
       this.loading = false,
+      this.restoringPlan = false,
       this.error,
-      this.recommendationsEnabled = false});
+      this.recommendationsEnabled = false,
+      this.selectedDate,
+      this.dateLoading = false,
+      this.dateError});
   final String beneficiaryId;
   final int healthRevision;
   final String? resourceId, error;
-  final bool loading, recommendationsEnabled;
+  final DateTime? selectedDate;
+  final String? dateError;
+  final bool dateLoading;
+  final bool loading, restoringPlan, recommendationsEnabled;
 }

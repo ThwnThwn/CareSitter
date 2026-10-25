@@ -9,6 +9,7 @@ import 'booking_financial_summary.dart';
 import 'booking_detail_screen_progress_tracker.dart';
 import 'booking_detail_screen_waiting_caregiver_card.dart';
 import 'booking_detail_screen_caregiver_hero_card.dart';
+import 'booking_detail_hero.dart';
 
 class BookingDetailContent extends StatelessWidget {
   const BookingDetailContent(
@@ -30,27 +31,51 @@ class BookingDetailContent extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
               AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xxl),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            FadeSlideStaggered(
-                index: 0,
-                child: BookingDetailScreenProgressTracker(
-                    statusConfig: statusConfig, booking: booking)),
-            const SizedBox(height: AppSpacing.md),
-            FadeSlideStaggered(
-                index: 1,
-                child: statusConfig.isWaitingCaregiver
-                    ? const BookingDetailScreenWaitingCaregiverCard()
-                    : BookingDetailScreenCaregiverHeroCard(booking: booking)),
-            const SizedBox(height: AppSpacing.md),
-            BookingAppointmentSummary(booking: booking),
-            const SizedBox(height: AppSpacing.compact),
-            BookingPaymentSummary(booking: booking),
-            if (booking.presentationStatusAt(DateTime.now()) == 'completed')
-              BookingFinancialSummary(booking: booking),
-            const SizedBox(height: AppSpacing.lg),
-            actions,
-            const SizedBox(height: AppSpacing.xl),
-          ]),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FadeSlideStaggered(
+                    index: 0,
+                    child: BookingDetailHero(
+                      booking: booking,
+                      statusConfig: statusConfig,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  FadeSlideStaggered(
+                    index: 1,
+                    child: BookingDetailScreenProgressTracker(
+                      statusConfig: statusConfig,
+                      booking: booking,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  FadeSlideStaggered(
+                    index: 2,
+                    child: statusConfig.isWaitingCaregiver
+                        ? const BookingDetailScreenWaitingCaregiverCard()
+                        : BookingDetailScreenCaregiverHeroCard(
+                            booking: booking,
+                          ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  BookingAppointmentSummary(booking: booking),
+                  const SizedBox(height: AppSpacing.compact),
+                  BookingPaymentSummary(booking: booking),
+                  if (booking.presentationStatusAt(DateTime.now()) ==
+                      'completed')
+                    BookingFinancialSummary(booking: booking),
+                  const SizedBox(height: AppSpacing.lg),
+                  actions,
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+              ),
+            ),
+          ),
         ),
       );
 }

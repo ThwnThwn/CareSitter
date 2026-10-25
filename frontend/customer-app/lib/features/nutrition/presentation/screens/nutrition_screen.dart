@@ -1,22 +1,24 @@
-import '../widgets/nutrition_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
+
 import '../controllers/nutrition_controller.dart';
-import '../widgets/nutrition_health_form.dart';
-import '../widgets/nutrition_patient_intro.dart';
-import '../widgets/nutrition_personalization_requirement.dart';
-import '../widgets/nutrition_result.dart';
+import '../widgets/nutrition_plan_history_sheet.dart';
+import 'nutrition_screen_actions.dart';
+import 'nutrition_screen_page.dart';
+import 'nutrition_screen_page_actions.dart';
+import 'nutrition_screen_page_state.dart';
 
 class NutritionScreen extends ConsumerStatefulWidget {
   const NutritionScreen({
     super.key,
     required this.beneficiaryId,
     this.beneficiaryName,
+    this.onChangeBeneficiary,
   });
 
   final String beneficiaryId;
   final String? beneficiaryName;
+  final VoidCallback? onChangeBeneficiary;
   @override
   ConsumerState<NutritionScreen> createState() => _NutritionScreenState();
 }
@@ -25,6 +27,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     with WidgetsBindingObserver {
   bool _dirty = false;
   bool _historyLoading = false;
+  bool _editingProfile = false;
   VoidCallback? _closeSheet;
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     if (oldWidget.beneficiaryId != widget.beneficiaryId) {
       _closeSheet?.call();
       _dirty = false;
+      _editingProfile = false;
     }
   }
 
@@ -60,139 +64,144 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
   }
 
   @override
-  Widget build(BuildContext context) => _content(context);
-
-  Widget _content(BuildContext context) {
+  Widget build(BuildContext context) {
+    _listenForStateChanges();
     final flow = ref.watch(nutritionFlowProvider(widget.beneficiaryId));
     final session = ref.watch(nutritionSessionProvider);
+    final controller =
+        ref.read(nutritionControllerProvider(widget.beneficiaryId).notifier);
+    return _buildScreen(flow, session, controller);
+  }
+
+  void _listenForStateChanges() {
     ref.listen(nutritionSessionProvider, (_, __) {
       _closeSheet?.call();
-      setState(() => _dirty = false);
+      setState(() {
+        _dirty = false;
+      });
     });
     ref.listen(
         nutritionFlowProvider(widget.beneficiaryId)
             .select((s) => s.health?.revision), (old, next) {
       if (next != null && next != old) setState(() => _dirty = false);
     });
-    final controller =
-        ref.read(nutritionControllerProvider(widget.beneficiaryId).notifier);
-    final health = flow.health;
-    final readiness = flow.readiness;
-    return Scaffold(
-        appBar: AppBar(title: const Text('Gợi ý thực đơn')),
-        body: health == null
-            ? NutritionEmptyState(flow: flow, onReload: controller.load)
-            : ListView(
-                padding: const EdgeInsets.all(AppSpacing.section),
-                children: [
-                    // ── Patient intro: badge + têu đề bold ──
-                    NutritionPatientIntro(name: widget.beneficiaryName),
-                    if (flow.error != null)
-                      Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.compact),
-                          child: Text(flow.error!,
-                              style: const TextStyle(color: AppColors.error))),
-                    if (flow.loading) const LinearProgressIndicator(),
-                    const SizedBox(height: AppSpacing.lg),
-                    NutritionHealthForm(
-                        key: ValueKey(
-                            'health-${widget.beneficiaryId}-${health.revision}-$session'),
-                        health: health,
-                        enabled: !flow.loading,
-                        onDirtyChanged: (v) => setState(() => _dirty = v),
-                        onSave: (changes) {
-                          if (changes.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Chưa có thông tin thay đổi.')));
-                            return;
-                          }
-                          controller.saveHealth(changes);
-                        }),
-                    const SizedBox(height: AppSpacing.compact),
-                    NutritionPersonalizationRequirement(readiness: readiness),
-                    const SizedBox(height: AppSpacing.compact),
-                    if (_dirty)
-                      const Text(
-                          'Lưu phần thông tin đã cập nhật trước khi kiểm tra và xem gợi ý.'),
-                    FilledButton.icon(
-                        onPressed:
-                            flow.loading || _dirty ? null : controller.assess,
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                        label: const Text('Kiểm tra thông tin'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                          elevation: flow.loading || _dirty ? 0 : 6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.control),
-                          ),
-                        )),
-                    TextButton(
-                        onPressed: flow.loading || _dirty || _historyLoading
-                            ? null
-                            : () => _history(controller),
-                        child: _historyLoading
-                            ? const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                    SizedBox.square(
-                                        dimension: 16,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2)),
-                                    SizedBox(width: AppSpacing.sm),
-                                    Text('Đang mở thực đơn...')
-                                  ])
-                            : const Text('Xem thực đơn đã lưu')),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (flow.resource != null && !_dirty)
-                      NutritionResult(
-                          flow: flow,
-                          controller: controller,
-                          onReplace: (type) => _replace(controller, type)),
-                  ]));
+    ref.listen(
+        nutritionFlowProvider(widget.beneficiaryId)
+            .select((flow) => flow.resource?.status), (old, next) {
+      if (next == 'saved' && old != 'saved') {
+        final controller = ref
+            .read(nutritionControllerProvider(widget.beneficiaryId).notifier);
+        controller.adoptResourceDate();
+        setState(() {
+          _editingProfile = false;
+        });
+      }
+    });
   }
+
+  Widget _buildScreen(
+    NutritionFlow flow,
+    int session,
+    NutritionFlowController controller,
+  ) {
+    final health = flow.health;
+    final resourceDate = DateTime.tryParse(
+      flow.resource?.result.plannedDate ?? '',
+    );
+    final selectedDate = flow.selectedDate ??
+        (resourceDate == null
+            ? DateUtils.dateOnly(DateTime.now())
+            : DateUtils.dateOnly(resourceDate));
+    final hasPlanForSelectedDate = flow.resource != null &&
+        (resourceDate == null ||
+            DateUtils.isSameDay(resourceDate, selectedDate));
+    final dateError =
+        flow.dateError ?? (!hasPlanForSelectedDate ? flow.error : null);
+    final editing = !flow.restoringPlan && (_editingProfile || health == null);
+    return NutritionScreenPage(
+      controller: controller,
+      state: _pageState(flow, session, selectedDate, hasPlanForSelectedDate,
+          dateError, editing),
+      actions: _pageActions(flow, controller, selectedDate),
+    );
+  }
+
+  NutritionScreenPageState _pageState(
+    NutritionFlow flow,
+    int session,
+    DateTime selectedDate,
+    bool hasPlanForSelectedDate,
+    String? dateError,
+    bool editing,
+  ) =>
+      NutritionScreenPageState(
+        beneficiaryId: widget.beneficiaryId,
+        beneficiaryName: widget.beneficiaryName,
+        session: session,
+        flow: flow,
+        health: flow.health,
+        editing: editing,
+        dirty: _dirty,
+        selectedDate: selectedDate,
+        hasPlanForSelectedDate: hasPlanForSelectedDate,
+        isLoadingSelectedDate: flow.dateLoading,
+        dateError: dateError,
+        canReturnToMenu:
+            _editingProfile && flow.health != null && !_dirty && !flow.loading,
+        canReturnToBeneficiaries:
+            widget.onChangeBeneficiary != null && !_dirty && !flow.loading,
+        canEdit: flow.health != null && !_editingProfile && !flow.loading,
+        canOpenHistory: flow.health != null &&
+            !_dirty &&
+            !flow.loading &&
+            !_historyLoading &&
+            !flow.dateLoading,
+        canChangeBeneficiary:
+            widget.onChangeBeneficiary != null && !_dirty && !flow.loading,
+      );
+
+  NutritionScreenPageActions _pageActions(
+    NutritionFlow flow,
+    NutritionFlowController controller,
+    DateTime selectedDate,
+  ) =>
+      NutritionScreenPageActions(
+        onReturnToMenu: () => setState(() => _editingProfile = false),
+        onReturnToBeneficiaries: widget.onChangeBeneficiary ?? () {},
+        onEdit: () => setState(() => _editingProfile = true),
+        onOpenHistory: () => _history(controller),
+        onChangeBeneficiary: widget.onChangeBeneficiary ?? () {},
+        onReload: controller.load,
+        onDirtyChanged: (value) => setState(() => _dirty = value),
+        onSave: (changes) =>
+            NutritionScreenActions.saveHealth(context, controller, changes),
+        onAssess: () {
+          controller.selectDate(selectedDate);
+          controller.assess();
+        },
+        onReplace: (type) => _replace(controller, type),
+        onDateSelected: flow.loading || flow.dateLoading
+            ? null
+            : (date) => _openPlanForDate(controller, date),
+        onRetryDate: flow.loading || flow.dateLoading
+            ? null
+            : () => _openPlanForDate(controller, selectedDate),
+        onEditProfile: () => setState(() => _editingProfile = true),
+      );
 
   Future<void> _replace(NutritionFlowController c, String mealType) async {
     final beneficiary = widget.beneficiaryId;
     final session = ref.read(nutritionSessionProvider);
-    final options = await c.options(mealType);
-    if (!mounted ||
-        beneficiary != widget.beneficiaryId ||
-        options == null ||
-        ref.read(nutritionSessionProvider) != session) {
-      return;
-    }
-    final chosen = await _sheet(
-        builder: (context) => SafeArea(
-            child: SizedBox(
-                height: MediaQuery.sizeOf(context).height * .6,
-                child: options.isEmpty
-                    ? const Center(
-                        child: Padding(
-                            padding: EdgeInsets.all(AppSpacing.lg),
-                            child: Text(
-                                'Chưa có món thay thế đáp ứng các yêu cầu của thực đơn.')))
-                    : ListView(children: [
-                        const ListTile(title: Text('Món thay thế phù hợp')),
-                        for (final recipe in options)
-                          ListTile(
-                              title: Text(recipe.name),
-                              subtitle:
-                                  Text('Khẩu phần: ${recipe.servings} phần'),
-                              onTap: () =>
-                                  Navigator.pop(context, recipe.versionId))
-                      ]))));
-    if (mounted &&
-        beneficiary == widget.beneficiaryId &&
-        chosen != null &&
-        ref.read(nutritionSessionProvider) == session) {
-      await c.replace(chosen, mealType);
-    }
+    await NutritionScreenActions.replaceMeal(
+      context: context,
+      controller: c,
+      mealType: mealType,
+      isCurrent: () =>
+          mounted &&
+          beneficiary == widget.beneficiaryId &&
+          ref.read(nutritionSessionProvider) == session,
+      onCloseSheetChanged: (close) => _closeSheet = close,
+    );
   }
 
   Future<void> _history(NutritionFlowController c) async {
@@ -208,47 +217,47 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
           ref.read(nutritionSessionProvider) != session) {
         return;
       }
-      final chosen = await _sheet(
-          builder: (context) => SafeArea(
-              child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height * .6,
-                  child: plans.isEmpty
-                      ? const Center(child: Text('Chưa có thực đơn đã lưu.'))
-                      : ListView(children: [
-                          const ListTile(
-                              title: Text('Thực đơn đã lưu gần đây')),
-                          for (final plan in plans)
-                            ListTile(
-                                title: Text('Ngày ${plan.plannedDate}'),
-                                subtitle: Text(plan.status == 'stale'
-                                    ? 'Cần kiểm tra lại thông tin'
-                                    : 'Đã lưu'),
-                                onTap: () => Navigator.pop(context, plan.id))
-                        ]))));
+      final chosen = await NutritionScreenActions.showSheet<String>(
+        context: context,
+        onCloseSheetChanged: (close) => _closeSheet = close,
+        builder: (_) => NutritionPlanHistorySheet(plans: plans),
+      );
       if (mounted &&
           beneficiary == widget.beneficiaryId &&
           chosen != null &&
           ref.read(nutritionSessionProvider) == session) {
         await c.openPlan(chosen);
+        if (!mounted ||
+            beneficiary != widget.beneficiaryId ||
+            ref.read(nutritionSessionProvider) != session) {
+          return;
+        }
+        final openedResource = c.view.resource;
+        final plannedDate = openedResource?.id == chosen
+            ? DateTime.tryParse(openedResource!.result.plannedDate ?? '')
+            : null;
+        if (plannedDate != null) c.adoptResourceDate();
+        setState(() {
+          _editingProfile = false;
+        });
       }
     } finally {
       if (mounted) setState(() => _historyLoading = false);
     }
   }
 
-  Future<String?> _sheet({required WidgetBuilder builder}) async {
-    try {
-      return await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          builder: (sheetContext) {
-            _closeSheet = () {
-              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-            };
-            return builder(sheetContext);
-          });
-    } finally {
-      _closeSheet = null;
+  Future<void> _openPlanForDate(
+    NutritionFlowController controller,
+    DateTime date,
+  ) async {
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
+    final opened = await controller.openPlanForDate(date);
+    if (opened &&
+        mounted &&
+        beneficiary == widget.beneficiaryId &&
+        ref.read(nutritionSessionProvider) == session) {
+      setState(() => _editingProfile = false);
     }
   }
 }

@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/settings/presentation/controllers/profile_controller.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -43,10 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openCaregiverSearch([String? value]) {
     final query = (value ?? _caregiverSearchController.text).trim();
-    final location = Uri(
-      path: '/caregivers',
-      queryParameters: query.isEmpty ? null : {'q': query},
-    ).toString();
+    final location = AppRoutes.caregiversSearch(query: query);
     context.push(location);
   }
 

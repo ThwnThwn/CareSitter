@@ -16,7 +16,7 @@ from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 
 
-RETRIEVED_ON = "2026-10-16"
+RETRIEVED_ON = "2026-10-23"
 BOOK_SHA256 = "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737"
 PACKAGE_KEY = "adult-hypertension-p2-technical-draft"
 NAMESPACE = uuid.UUID("da02b691-8293-40ed-8ed0-791825c1a62f")
@@ -44,19 +44,43 @@ NUTRIENT_KEYS = {
 
 FOODS = {
     "RICE_WHITE_RAW": ("gạo", "1004", "raw"),
-    "MUNG_BEAN_DRY": ("đậu xanh hạt", "3010", "raw"),
-    "SWEET_POTATO_BOILED": ("khoai lang", "2008002", "cooked"),
     "TOFU_BOILED": ("đậu phụ", "3025002", "cooked"),
-    "BOK_CHOY_BOILED": ("cải thìa", "4015002", "cooked"),
-    "SOYBEAN_DRY": ("đậu tương", "3007", "raw"),
-    "PEANUT_DRY": ("lạc hạt", "3017", "raw"),
-    "SESAME_DRY": ("vừng", "3020", "raw"),
     "TOMATO_FRESH": ("cà chua", "4005", "raw"),
     "WATER_SPINACH_FRESH": ("rau muống", "4083", "raw"),
-    "CABBAGE_BOILED": ("cải bắp", "4010002", "cooked"),
-    "CHAYOTE_FRESH": ("su su", "4098", "raw"),
-    "ONION_FRESH": ("hành tây", "4039", "raw"),
+    # Ingredients from the hypertension reference menu on printed page 142.
+    "RICE_NOODLE_READY": ("bánh phở", "1013", "cooked"),
+    "BEEF_LEAN_RAW": ("thịt bò", "7003", "raw"),
+    "SCALLION_FRESH": ("hành lá", "4038", "raw"),
+    "PORK_LEAN_RAW": ("thịt lợn nạc", "7017", "raw"),
+    "BOK_CHOY_FRESH": ("cải thìa", "4015", "raw"),
+    "MALABAR_SPINACH_FRESH": ("mồng tơi", "4080", "raw"),
+    "POMELO_FRESH": ("bưởi", "5001", "raw"),
+    "PEANUT_OIL": ("dầu lạc", "6011", "raw"),
+    "GRASS_CARP_RAW": ("cá trắm", "8029", "raw"),
+    "CHICKEN_EGG_RAW": ("trứng gà", "9001", "raw"),
+    "SAUROPUS_FRESH": ("rau ngót", "4086", "raw"),
+    "MANDARIN_FRESH": ("quít", "5047", "raw"),
 }
+
+# The NIN lookup leaves structurally absent or trace nutrients blank for several
+# animal foods, oils, vegetables and fruits. Local-demo calculations use zero for
+# only these pinned fields and keep the normalization explicit in the source
+# snapshot. The candidate remains blocked from release until data review.
+PINNED_ZERO_NUTRIENTS = {
+    "RICE_NOODLE_READY": {"fiber_g"},
+    "BEEF_LEAN_RAW": {"carbohydrate_g", "fiber_g"},
+    "SCALLION_FRESH": {"fat_g"},
+    "PORK_LEAN_RAW": {"carbohydrate_g", "fiber_g"},
+    "MALABAR_SPINACH_FRESH": {"fat_g"},
+    "POMELO_FRESH": {"fat_g"},
+    "PEANUT_OIL": {"protein_g", "carbohydrate_g", "fiber_g", "sodium_mg"},
+    "GRASS_CARP_RAW": {"carbohydrate_g", "fiber_g"},
+    "CHICKEN_EGG_RAW": {"fiber_g"},
+    "SAUROPUS_FRESH": {"fat_g"},
+    "MANDARIN_FRESH": {"fat_g"},
+}
+
+ANIMAL_INGREDIENTS = {"BEEF_LEAN_RAW", "PORK_LEAN_RAW", "GRASS_CARP_RAW", "CHICKEN_EGG_RAW"}
 
 # These concepts let structured profiles resolve common older-adult conditions.
 # Only HYPERTENSION has a candidate rule. Every other condition remains unsupported
@@ -76,34 +100,39 @@ SEEDED_CONDITIONS = [
 ]
 
 RECIPES = [
-    ("breakfast", "Cháo gạo tẻ đậu xanh", [("RICE_WHITE_RAW", 50), ("MUNG_BEAN_DRY", 20)]),
-    ("breakfast", "Khoai lang luộc với đậu phụ và cải thìa", [("SWEET_POTATO_BOILED", 200), ("TOFU_BOILED", 60), ("BOK_CHOY_BOILED", 100)]),
-    ("breakfast", "Cháo gạo tẻ đậu tương", [("RICE_WHITE_RAW", 50), ("SOYBEAN_DRY", 20)]),
-    ("breakfast", "Cơm mềm lạc vừng và cà chua", [("RICE_WHITE_RAW", 50), ("PEANUT_DRY", 15), ("SESAME_DRY", 5), ("TOMATO_FRESH", 100)]),
-    ("lunch", "Cơm đậu phụ, cải thìa và cà chua", [("RICE_WHITE_RAW", 60), ("TOFU_BOILED", 100), ("BOK_CHOY_BOILED", 200), ("TOMATO_FRESH", 50)]),
-    ("lunch", "Cơm đậu xanh, bắp cải và su su", [("RICE_WHITE_RAW", 60), ("MUNG_BEAN_DRY", 30), ("CABBAGE_BOILED", 150), ("CHAYOTE_FRESH", 100)]),
-    ("lunch", "Cơm đậu tương, rau muống và hành tây", [("RICE_WHITE_RAW", 60), ("SOYBEAN_DRY", 30), ("WATER_SPINACH_FRESH", 200), ("ONION_FRESH", 50)]),
-    ("lunch", "Cơm lạc vừng, cải thìa và su su", [("RICE_WHITE_RAW", 60), ("PEANUT_DRY", 25), ("SESAME_DRY", 5), ("BOK_CHOY_BOILED", 150), ("CHAYOTE_FRESH", 100)]),
-    ("dinner", "Cơm đậu phụ, bắp cải và su su", [("RICE_WHITE_RAW", 50), ("TOFU_BOILED", 100), ("CABBAGE_BOILED", 150), ("CHAYOTE_FRESH", 100)]),
-    ("dinner", "Cơm đậu xanh, rau muống và cà chua", [("RICE_WHITE_RAW", 50), ("MUNG_BEAN_DRY", 30), ("WATER_SPINACH_FRESH", 200), ("TOMATO_FRESH", 50)]),
-    ("dinner", "Khoai lang, đậu tương và cải thìa", [("SWEET_POTATO_BOILED", 250), ("SOYBEAN_DRY", 30), ("BOK_CHOY_BOILED", 150)]),
-    ("dinner", "Cơm lạc vừng, bắp cải và hành tây", [("RICE_WHITE_RAW", 50), ("PEANUT_DRY", 25), ("SESAME_DRY", 5), ("CABBAGE_BOILED", 150), ("ONION_FRESH", 50)]),
-    # Local-demo expansion: these combinations use only the same pinned food
-    # snapshot and calculation contract as the original twelve recipes. They are
-    # still technical candidates and do not bypass data or clinical review.
-    ("breakfast", "Cháo gạo tẻ đậu phụ và cà chua", [("RICE_WHITE_RAW", 50), ("TOFU_BOILED", 80), ("TOMATO_FRESH", 80)]),
-    ("breakfast", "Khoai lang luộc với đậu xanh", [("SWEET_POTATO_BOILED", 180), ("MUNG_BEAN_DRY", 25)]),
-    ("breakfast", "Cháo gạo tẻ lạc vừng", [("RICE_WHITE_RAW", 45), ("PEANUT_DRY", 15), ("SESAME_DRY", 5)]),
-    ("breakfast", "Khoai lang, đậu tương và bắp cải", [("SWEET_POTATO_BOILED", 180), ("SOYBEAN_DRY", 20), ("CABBAGE_BOILED", 100)]),
-    ("lunch", "Cơm đậu phụ, rau muống và cà chua", [("RICE_WHITE_RAW", 60), ("TOFU_BOILED", 100), ("WATER_SPINACH_FRESH", 150), ("TOMATO_FRESH", 80)]),
-    ("lunch", "Cơm đậu xanh, cải thìa và hành tây", [("RICE_WHITE_RAW", 60), ("MUNG_BEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("ONION_FRESH", 50)]),
-    ("lunch", "Cơm đậu tương, bắp cải và su su", [("RICE_WHITE_RAW", 60), ("SOYBEAN_DRY", 30), ("CABBAGE_BOILED", 150), ("CHAYOTE_FRESH", 100)]),
-    ("lunch", "Cơm lạc vừng, rau muống và cà chua", [("RICE_WHITE_RAW", 60), ("PEANUT_DRY", 25), ("SESAME_DRY", 5), ("WATER_SPINACH_FRESH", 150), ("TOMATO_FRESH", 80)]),
-    ("dinner", "Cơm đậu phụ, rau muống và su su", [("RICE_WHITE_RAW", 50), ("TOFU_BOILED", 100), ("WATER_SPINACH_FRESH", 150), ("CHAYOTE_FRESH", 100)]),
-    ("dinner", "Cơm đậu xanh, cải thìa và cà chua", [("RICE_WHITE_RAW", 50), ("MUNG_BEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("TOMATO_FRESH", 80)]),
-    ("dinner", "Khoai lang, đậu phụ và bắp cải", [("SWEET_POTATO_BOILED", 250), ("TOFU_BOILED", 100), ("CABBAGE_BOILED", 150)]),
-    ("dinner", "Cơm đậu tương, cải thìa và hành tây", [("RICE_WHITE_RAW", 50), ("SOYBEAN_DRY", 30), ("BOK_CHOY_BOILED", 150), ("ONION_FRESH", 50)]),
+    # Exact main-meal groupings from Dinh dưỡng lâm sàng (2019), printed page
+    # 142. This is intentionally the complete recipe scope for the current
+    # knowledge test. The 15:00 milk is a snack and is not forced into the
+    # three-meal product contract (breakfast/lunch/dinner).
+    ("breakfast", "Phở thịt bò", [
+        ("RICE_NOODLE_READY", 150), ("BEEF_LEAN_RAW", 35), ("SCALLION_FRESH", 10),
+    ]),
+    ("lunch", "Cơm thịt lợn rang, đậu phụ và rau", [
+        ("RICE_WHITE_RAW", 60), ("PORK_LEAN_RAW", 50), ("TOFU_BOILED", 30),
+        ("BOK_CHOY_FRESH", 200), ("PEANUT_OIL", 7), ("MALABAR_SPINACH_FRESH", 50),
+        ("POMELO_FRESH", 200),
+    ]),
+    ("dinner", "Cơm cá trắm sốt cà chua, trứng và rau", [
+        ("RICE_WHITE_RAW", 60), ("GRASS_CARP_RAW", 70), ("TOMATO_FRESH", 30),
+        ("PEANUT_OIL", 10), ("CHICKEN_EGG_RAW", 25), ("WATER_SPINACH_FRESH", 200),
+        ("SAUROPUS_FRESH", 50), ("MANDARIN_FRESH", 120),
+    ]),
 ]
+
+BOOK_MENU_PREPARATION = {
+    "Phở thịt bò": [
+        "Trụng bánh phở, làm chín thịt bò, thêm hành lá và chan nước dùng.",
+        "Sách ghi nước dùng có tỷ lệ muối 1 g/100 ml nhưng không nêu lượng nước dùng của một khẩu phần; không tự suy diễn lượng này trong phép tính dinh dưỡng.",
+    ],
+    "Cơm thịt lợn rang, đậu phụ và rau": [
+        "Nấu 60 g gạo thành khoảng 120 g cơm; rang 50 g thịt lợn nạc và trần 30 g đậu phụ.",
+        "Xào 200 g cải thìa với 7 ml dầu ăn, nấu canh từ 50 g rau mồng tơi và dùng kèm 200 g bưởi.",
+    ],
+    "Cơm cá trắm sốt cà chua, trứng và rau": [
+        "Nấu 60 g gạo thành khoảng 120 g cơm; rán 70 g cá trắm với 10 ml dầu ăn rồi sốt cùng 30 g cà chua; luộc 25 g trứng gà.",
+        "Luộc 200 g rau muống, nấu canh từ 50 g rau ngót và dùng kèm 120 g quýt.",
+    ],
+}
 
 
 def stable_id(kind: str, key: str) -> str:
@@ -128,7 +157,9 @@ def normalized_food(concept_code: str, query: str, expected_code: str, basis: st
     for output_key, (source_key, unit) in NUTRIENT_KEYS.items():
         value = food.get(source_key) if source_key == "energy" else raw_nutrients.get(source_key, {}).get("value")
         if value is None:
-            raise RuntimeError(f"NIN entry {expected_code} is missing required nutrient {source_key}")
+            if output_key not in PINNED_ZERO_NUTRIENTS.get(concept_code, set()):
+                raise RuntimeError(f"NIN entry {expected_code} is missing required nutrient {source_key}")
+            value = 0
         nutrients[output_key] = {"value": value, "unit": unit, "sourceKey": source_key}
     return {
         "conceptCode": concept_code,
@@ -151,6 +182,10 @@ def allergens(ingredient_codes: list[str]) -> list[str]:
         result.append("PEANUT")
     if "SESAME_DRY" in ingredient_codes:
         result.append("SESAME")
+    if "GRASS_CARP_RAW" in ingredient_codes:
+        result.append("FISH")
+    if "CHICKEN_EGG_RAW" in ingredient_codes:
+        result.append("EGG")
     return result
 
 
@@ -180,6 +215,7 @@ def build_recipe(food_by_code: dict[str, dict], meal_type: str, name: str, items
             totals[nutrient_key] += contribution
             formulas[nutrient_key].append(f"{code}: {amount} g × {per_100}/100")
     rounded = {key: float(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)) for key, value in totals.items()}
+    is_book_menu = name in BOOK_MENU_PREPARATION
     recipe = {
         "recipeId": recipe_id,
         "version": 1,
@@ -193,13 +229,13 @@ def build_recipe(food_by_code: dict[str, dict], meal_type: str, name: str, items
             "ingredients": ingredients,
             "allergens": allergens([code for code, _ in items]),
             "nutrients": rounded,
-            "preparationSteps": [
+            "preparationSteps": BOOK_MENU_PREPARATION.get(name, [
                 "Sơ chế nguyên liệu, nấu chín hoàn toàn theo dạng món trong tên bữa.",
                 "Không thêm muối, nước mắm, nước tương, hạt nêm hoặc nước chấm vào bản công thức kỹ thuật này.",
-            ],
+            ]),
             "sources": ["VIEN_DINH_DUONG_2019", "VIETNAM_FOOD_COMPOSITION_2017"],
             "allergenDataComplete": True,
-            "dietaryPatterns": ["vegetarian"],
+            "dietaryPatterns": [] if any(code in ANIMAL_INGREDIENTS for code, _ in items) else ["vegetarian"],
         },
     }
     nutrient_evidence = [{
@@ -217,6 +253,7 @@ def build_recipe(food_by_code: dict[str, dict], meal_type: str, name: str, items
         "unresolvedItems": [
             "Công thức phối hợp từ nhóm món Việt Nam mới là bản nháp kỹ thuật; cần chuyên gia dinh dưỡng duyệt khẩu phần và cách chế biến.",
             "Chưa xác nhận hệ số hao hụt khi nấu cho toàn bộ công thức; số liệu dùng đúng basis của từng mục thực phẩm và hệ số 1.",
+            *(["Đây là món từ thực đơn tham khảo trong sách; các giá trị trống được ghim về 0 theo PINNED_ZERO_NUTRIENTS và dầu ml đang dùng lượng số làm đại diện kỹ thuật để thử local."] if is_book_menu else []),
         ],
     }
     return recipe, evidence
@@ -245,9 +282,13 @@ def main() -> None:
         "apiTemplate": API,
         "retrievedOn": RETRIEVED_ON,
         "basis": "Giá trị trên 100 g phần ăn được theo mục thực phẩm được chọn.",
+        "normalizationNotes": {
+            "pinnedZeroNutrients": {key: sorted(value) for key, value in PINNED_ZERO_NUTRIENTS.items()},
+            "scope": "Chỉ dùng cho local demo; mọi giá trị ghim về 0 vẫn chờ data review trước khi phát hành.",
+        },
         "foods": list(food_by_code.values()),
     }
-    source_path = sources / "nin-food-composition-2026-10-16.json"
+    source_path = sources / "nin-food-composition-2026-10-23.json"
     write_json(source_path, source_snapshot)
 
     recipes, recipe_evidence = [], []
@@ -264,6 +305,8 @@ def main() -> None:
         {"code": "SOY", "kind": "food_allergy", "aliases": ["Đậu nành", "Đậu tương", "Đậu phụ"], "version": 1},
         {"code": "PEANUT", "kind": "food_allergy", "aliases": ["Lạc", "Đậu phộng"], "version": 1},
         {"code": "SESAME", "kind": "food_allergy", "aliases": ["Vừng", "Mè"], "version": 1},
+        {"code": "FISH", "kind": "food_allergy", "aliases": ["Cá"], "version": 1},
+        {"code": "EGG", "kind": "food_allergy", "aliases": ["Trứng", "Trứng gà"], "version": 1},
     ] + [{"code": code, "kind": "ingredient", "aliases": [food["nameVi"]], "version": 1} for code, food in food_by_code.items()]
     bundle = {
         "schemaVersion": 1,
@@ -299,7 +342,7 @@ def main() -> None:
                 "chapter": "Các mục thực phẩm được chụp trong source snapshot",
                 "printedPages": None,
                 "pdfPages": None,
-                "locator": "Mã thực phẩm và sáu chỉ số trên 100 g trong catalog/sources/nin-food-composition-2026-10-16.json",
+                "locator": "Mã thực phẩm và sáu chỉ số trên 100 g trong catalog/sources/nin-food-composition-2026-10-23.json",
                 "reference": SOURCE_PAGE,
                 "verifiedOn": RETRIEVED_ON,
                 "fileSha256": None,

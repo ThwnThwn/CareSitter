@@ -1,28 +1,55 @@
-import 'package:caregiver_app/core/widgets/app_toast_type.dart';
-export 'package:caregiver_app/core/widgets/app_toast_type.dart';
-import 'package:caregiver_app/core/widgets/toast_message_content.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:caregiver_app/core/widgets/app_messenger.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_messenger.dart';
+import 'package:caregiver_app/core/widgets/app_toast_type.dart';
+import 'package:caregiver_app/core/widgets/toast_message_content.dart';
 
-/// Toast nổi dùng cho các thao tác quan trọng; mỗi lần hiển thị thay thế toast trước đó.
+export 'package:caregiver_app/core/widgets/app_toast_type.dart';
+
+/// Toast nổi cho phản hồi thao tác. Mỗi toast mới thay thế toast trước đó.
 final class AppToast {
   static OverlayEntry? _entry;
   static Timer? _dismissTimer;
 
-  static void loading(BuildContext context, String message) => _show(context,
-      message: message,
-      type: AppToastType.loading,
-      duration: const Duration(days: 1));
-  static void success(BuildContext context, String message) =>
-      _show(context, message: message, type: AppToastType.success);
-  static void error(BuildContext context, String message) => _show(context,
-      message: message,
-      type: AppToastType.error,
-      duration: const Duration(seconds: 5));
+  static void info(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) =>
+      _show(
+        context,
+        title: title ?? 'Đang xử lý',
+        message: message,
+        type: AppToastType.info,
+        duration: const Duration(days: 1),
+      );
+
+  /// Giữ tương thích các luồng cũ trong khi dùng giao diện toast thông tin.
+  static void loading(BuildContext context, String message) =>
+      info(context, message);
+
+  static void success(BuildContext context, String message) => _show(
+        context,
+        title: message,
+        type: AppToastType.success,
+      );
+
+  static void error(
+    BuildContext context,
+    String message, {
+    String? title,
+  }) =>
+      _show(
+        context,
+        title: title ?? message,
+        message: title == null ? null : message,
+        type: AppToastType.error,
+        duration: const Duration(seconds: 5),
+      );
+
   static void dismiss(BuildContext context) {
     _dismissTimer?.cancel();
     _entry?.remove();
@@ -33,30 +60,26 @@ final class AppToast {
   static ScaffoldMessengerState? _messengerFor(BuildContext context) =>
       appMessengerKey.currentState ?? ScaffoldMessenger.maybeOf(context);
 
-  static void _show(BuildContext context,
-      {required String message,
-      required AppToastType type,
-      Duration duration = const Duration(seconds: 4)}) {
-    final (icon, accent, surface) = switch (type) {
-      AppToastType.success => (
-          Icons.check_circle_rounded,
-          AppColors.success,
-          AppColors.successLight
-        ),
-      AppToastType.error => (
-          Icons.error_rounded,
-          AppColors.error,
-          AppColors.error.withValues(alpha: .10)
-        ),
-      AppToastType.loading => (
-          Icons.hourglass_top_rounded,
-          AppColors.primary,
-          AppColors.primary.withValues(alpha: .10)
-        ),
+  static void _show(
+    BuildContext context, {
+    required String title,
+    String? message,
+    required AppToastType type,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    final (icon, accent) = switch (type) {
+      AppToastType.success => (Icons.check_rounded, AppColors.success),
+      AppToastType.error => (Icons.close_rounded, AppColors.error),
+      AppToastType.info => (Icons.info_rounded, AppColors.info),
     };
     dismiss(context);
-    final overlayContext = appMessengerKey.currentContext ?? context;
-    final overlay = Overlay.maybeOf(overlayContext, rootOverlay: true);
+    final overlay = Overlay.maybeOf(context, rootOverlay: true) ??
+        (appMessengerKey.currentContext == null
+            ? null
+            : Overlay.maybeOf(
+                appMessengerKey.currentContext!,
+                rootOverlay: true,
+              ));
     if (overlay == null) return;
 
     late final OverlayEntry entry;
@@ -65,14 +88,17 @@ final class AppToast {
         final reducedMotion =
             MediaQuery.maybeOf(overlayContext)?.disableAnimations ?? false;
         return Positioned(
-          top: MediaQuery.of(overlayContext).padding.top + 12,
-          left: 16,
-          right: 16,
+          top: MediaQuery.of(overlayContext).padding.top +
+              kToolbarHeight +
+              AppSpacing.compact,
+          left: AppSpacing.md,
+          right: AppSpacing.md,
           child: Semantics(
             liveRegion: true,
             child: TweenAnimationBuilder<double>(
-              duration:
-                  reducedMotion ? Duration.zero : const Duration(milliseconds: 220),
+              duration: reducedMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               tween: Tween(begin: 0, end: 1),
               builder: (context, value, child) => Opacity(
@@ -82,13 +108,21 @@ final class AppToast {
                   child: child,
                 ),
               ),
-              child: ToastMessageContent(
-                  surface: surface,
-                  accent: accent,
-                  type: type,
-                  icon: icon,
-                  message: message,
-                  callbackAction1: () => _remove(entry)),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: ToastMessageContent(
+                    surface: AppColors.surface,
+                    accent: accent,
+                    type: type,
+                    icon: icon,
+                    title: title,
+                    message: message,
+                    callbackAction1: () => _remove(entry),
+                  ),
+                ),
+              ),
             ),
           ),
         );

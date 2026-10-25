@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -37,7 +38,7 @@ class SettingsFlatHeader extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           IconButton(
-            onPressed: () => context.push('/settings/profile/edit'),
+            onPressed: () => context.push(AppRoutes.profileEdit),
             tooltip: 'Cài đặt hồ sơ',
             style: IconButton.styleFrom(
               backgroundColor: AppColors.background,

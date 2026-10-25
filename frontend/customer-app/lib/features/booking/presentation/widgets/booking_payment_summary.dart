@@ -24,17 +24,23 @@ class BookingPaymentSummary extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tổng cộng',
-                      style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSizes.s15,
-                          fontWeight: FontWeight.w700)),
-                  Text(
-                    '${formatVnd(booking.totalPrice, suffix: '')}đ',
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppFontSizes.s18,
-                        fontWeight: FontWeight.w800),
+                  const Expanded(
+                    child: Text('Tổng cộng',
+                        style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: AppFontSizes.s15,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      '${formatVnd(booking.totalPrice, suffix: '')}đ',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: AppFontSizes.s18,
+                          fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),

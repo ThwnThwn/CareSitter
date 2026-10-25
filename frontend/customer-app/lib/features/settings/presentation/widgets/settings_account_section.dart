@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 import 'settings_section.dart';
 import 'settings_settings_item.dart';
 
 /// Section "Tài khoản" theo Stitch:
-/// Gồm Thông tin cá nhân, Cài đặt thông báo, Ví CareSitter (kèm badge số dư) và Địa chỉ đã lưu.
+/// Gồm Thông tin cá nhân, Cài đặt thông báo, Ví CareSitter và Địa chỉ đã lưu.
 class SettingsAccountSection extends StatelessWidget {
   const SettingsAccountSection({super.key});
 
@@ -23,7 +24,7 @@ class SettingsAccountSection extends StatelessWidget {
             iconColor: AppColors.primary,
             title: 'Thông tin cá nhân',
             subtitle: 'Tên, số điện thoại, ngày sinh',
-            onTap: () => context.push('/settings/profile/edit'),
+            onTap: () => context.push(AppRoutes.profileEdit),
           ),
           SettingsSettingsItem(
             icon: Icons.notifications_outlined,
@@ -31,7 +32,7 @@ class SettingsAccountSection extends StatelessWidget {
             iconColor: const Color(0xFF0F766E),
             title: 'Cài đặt thông báo',
             subtitle: 'Lịch hẹn, thanh toán và cập nhật dịch vụ',
-            onTap: () => context.push('/settings/notifications'),
+            onTap: () => context.push(AppRoutes.notificationSettings),
           ),
           SettingsSettingsItem(
             icon: Icons.account_balance_wallet_outlined,
@@ -39,34 +40,7 @@ class SettingsAccountSection extends StatelessWidget {
             iconColor: AppColors.primary,
             title: 'Ví CareSitter',
             subtitle: 'Số dư ví và lịch sử hoàn tiền',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD1FAE5), // emerald-100
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    '0đ',
-                    style: TextStyle(
-                      color: Color(0xFF065F46), // emerald-800
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textHint,
-                  size: 20,
-                ),
-              ],
-            ),
-            onTap: () => context.push('/wallet'),
+            onTap: () => context.push(AppRoutes.wallet),
           ),
           SettingsSettingsItem(
             icon: Icons.location_on_outlined,
@@ -75,7 +49,7 @@ class SettingsAccountSection extends StatelessWidget {
             title: 'Địa chỉ đã lưu',
             subtitle: 'Địa chỉ nhận dịch vụ chăm sóc tại nhà',
             showDivider: false,
-            onTap: () => context.push('/settings/addresses'),
+            onTap: () => context.push(AppRoutes.addresses),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -29,7 +30,7 @@ class ShiftTrackingScreenNotLiveScaffold extends StatelessWidget {
                 fontSize: AppFontSizes.s16,
                 fontWeight: FontWeight.w700)),
         leading: const AppBackButton(
-          fallbackRoute: '/bookings',
+          fallbackRoute: AppRoutes.bookings,
           color: AppColors.textPrimary,
         ),
       ),
@@ -60,8 +61,8 @@ class ShiftTrackingScreenNotLiveScaffold extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               ElevatedButton(
-                onPressed: () =>
-                    popOrGo(context, fallbackRoute: '/bookings/${bk.id}'),
+                onPressed: () => popOrGo(context,
+                    fallbackRoute: AppRoutes.bookingDetail(bk.id)),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(

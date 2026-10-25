@@ -38,8 +38,13 @@ var healthParserBaseUrl = builder.Configuration["HealthParser:BaseUrl"] ??
                               ? "https://generativelanguage.googleapis.com/v1beta/"
                               : "https://api.openai.com/v1/");
 
+var apiPort = builder.Configuration.GetValue("AppHost:ApiPort", 5033);
+var apiListenUrl = $"http://0.0.0.0:{apiPort}";
 var api = builder.AddProject<Projects.CareSitter_ApiHost>("api", launchProfileName: null)
-    .WithHttpEndpoint(port: builder.Configuration.GetValue("AppHost:ApiPort", 5033), name: "http", isProxied: false)
+    .WithHttpEndpoint(port: apiPort, name: "http", isProxied: false)
+    // The local ngrok container reaches the host through host.docker.internal,
+    // so Kestrel must also listen outside the loopback interface.
+    .WithEnvironment("Kestrel__Endpoints__Http__Url", apiListenUrl)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
     .WithEnvironment("CARESITTER_ENV_FILE", apiEnvFile)
     .WithEnvironment("ConnectionStrings__CareSitter", coreConnection)
@@ -123,6 +128,8 @@ else
             "/docker-entrypoint-initdb.d/07-catalog-knowledge-review-gate.sql", isReadOnly: true)
         .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/08-local-demo-catalog.sql"),
             "/docker-entrypoint-initdb.d/08-local-demo-catalog.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/09-knowledge-chunks.sql"),
+            "/docker-entrypoint-initdb.d/09-knowledge-chunks.sql", isReadOnly: true)
         .WithDataVolume(builder.Configuration["AppHost:NutritionDataVolume"] ?? "caresitter-apphost-nutrition");
     var nutritionDatabase = postgres.AddDatabase("nutrition-store", databaseName: "nutrition");
     nutrition

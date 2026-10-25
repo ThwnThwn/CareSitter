@@ -2,6 +2,7 @@ import 'location_selector_content.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class LocationSelector extends StatelessWidget {
   const LocationSelector(
@@ -32,12 +33,10 @@ class LocationSelector extends StatelessWidget {
                   onRetry();
                   return;
                 }
-                final route =
-                    Uri(path: '/settings/addresses', queryParameters: {
-                  'select': '1',
-                  if (selectedId != null) 'selected': selectedId!,
-                });
-                final selected = await context.push<String>(route.toString());
+                final route = AppRoutes.addressesSelect(
+                  selectedId: selectedId,
+                );
+                final selected = await context.push<String>(route);
                 if (!context.mounted || selected == null) return;
                 onSelected(selected);
               },

@@ -1,7 +1,5 @@
-import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class ShellScaffold extends StatelessWidget {
@@ -9,16 +7,19 @@ class ShellScaffold extends StatelessWidget {
   const ShellScaffold({super.key, required this.child});
 
   static const _tabs = [
-    _NavItem(icon: Icons.home_rounded, label: 'Trang chủ', path: '/home'),
+    _NavItem(icon: Icons.home_outlined, label: 'Trang chủ', path: '/home'),
     _NavItem(
-        icon: Icons.work_history_rounded,
+        icon: Icons.work_history_outlined,
         label: 'Ca làm việc',
         path: '/shifts'),
     _NavItem(
-        icon: Icons.calendar_month_rounded,
+        icon: Icons.calendar_month_outlined,
         label: 'Lịch trình',
         path: '/schedule'),
-    _NavItem(icon: Icons.person_rounded, label: 'Cài đặt', path: '/settings'),
+    _NavItem(
+        icon: Icons.person_outline_rounded,
+        label: 'Cài đặt',
+        path: '/settings'),
   ];
 
   int _selectedIndex(BuildContext context) {
@@ -37,23 +38,34 @@ class ShellScaffold extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          boxShadow: AppShadows.bottomBar,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xxl),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_tabs.length, (i) {
-                final selected = i == idx;
-                return Expanded(
-                  child: _NavBarItem(
-                    item: _tabs[i],
-                    isSelected: selected,
-                    onTap: () => context.go(_tabs[i].path),
-                  ),
-                );
-              }),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: List.generate(_tabs.length, (i) {
+                  final selected = i == idx;
+                  return Expanded(
+                    child: _NavBarItem(
+                      item: _tabs[i],
+                      isSelected: selected,
+                      onTap: () => context.go(_tabs[i].path),
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
         ),
@@ -87,48 +99,41 @@ class _NavBarItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            height: 3,
-            width: isSelected ? 24 : 0,
-            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.s2),
-            ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.tight),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primary.withValues(alpha: 0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
+          SizedBox(
+            width: 32,
+            height: 28,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                padding: isSelected ? const EdgeInsets.all(4) : EdgeInsets.zero,
+                decoration: isSelected
+                    ? BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        borderRadius: BorderRadius.circular(AppRadius.compact),
+                      )
+                    : null,
+                child: Icon(
                   item.icon,
                   color: isSelected ? AppColors.primary : AppColors.textHint,
-                  size: 24,
+                  size: isSelected ? 20 : 24,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: AppFontSizes.s10,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                    color: isSelected ? AppColors.primary : AppColors.textHint,
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.tiny),
+          Text(
+            item.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? AppColors.primary : AppColors.textHint,
+              fontSize: 10,
+              height: 1.1,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ],

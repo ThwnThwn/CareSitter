@@ -10,6 +10,16 @@ void main() {
     expect(_shift('confirmed').canAccept, isFalse);
   });
 
+  test('caregiver cannot receive an offer after the shift has ended', () {
+    final now = DateTime(2026, 10, 23, 20);
+    final expiredShift = _shift(
+      'open',
+      scheduledEnd: DateTime(2026, 9, 26, 16),
+    );
+
+    expect(expiredShift.canAcceptAt(now), isFalse);
+  });
+
   test('check-in is enabled only after caregiver starts travelling', () {
     expect(_shift('confirmed').canCheckIn, isFalse);
     expect(_shift('caregiver_en_route').canCheckIn, isTrue);
@@ -35,7 +45,8 @@ void main() {
     expect(withoutEvidence.canUploadEvidence, isTrue);
     expect(withoutEvidence.canComplete, isFalse);
     expect(withEvidence.canComplete, isTrue);
-    expect(withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
+    expect(
+        withEvidence.copyWith(status: 'COMPLETED').canUploadEvidence, isFalse);
   });
 
   test('checkout request is enabled only during an active shift', () {
@@ -45,12 +56,13 @@ void main() {
   });
 }
 
-ShiftModel _shift(String status) => ShiftModel(
+ShiftModel _shift(String status, {DateTime? scheduledEnd}) => ShiftModel(
       id: 'booking-1',
       beneficiaryName: 'Nguyễn Văn A',
       caregiverName: 'Caregiver',
       caregiverAvatar: 'CG',
       serviceName: 'Chăm sóc tại nhà',
+      scheduledEnd: scheduledEnd,
       status: status,
       totalPrice: 200000,
       address: 'TP.HCM',

@@ -2,6 +2,7 @@ import 'package:caresitter_customer/features/auth/presentation/widgets/password_
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import '../widgets/password_recovery_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/password_recovery_controller.dart';
@@ -86,7 +87,7 @@ class _PasswordRecoveryScreenState
           onSubmit: _submit,
           onStartOver: _startOver,
           onTogglePassword: () => setState(() => _hidden = !_hidden),
-          onSignIn: () => context.go('/auth/login')),
+          onSignIn: () => context.go(AppRoutes.login)),
     );
   }
 }

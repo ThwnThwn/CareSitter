@@ -78,10 +78,10 @@ RETURNS void AS $$
 BEGIN
   UPDATE people.caregiver_profiles c SET
     rating_count = (
-      SELECT count(*) FROM reviews r WHERE r.caregiver_id = p_caregiver_id
+      SELECT count(*) FROM support.reviews r WHERE r.caregiver_id = p_caregiver_id
     ),
     rating_avg = COALESCE((
-      SELECT round(avg(r.rating), 2) FROM reviews r WHERE r.caregiver_id = p_caregiver_id
+      SELECT round(avg(r.rating), 2) FROM support.reviews r WHERE r.caregiver_id = p_caregiver_id
     ), 0)
   WHERE c.id = p_caregiver_id;
 END;
@@ -91,15 +91,15 @@ CREATE OR REPLACE FUNCTION sync_caregiver_rating()
 RETURNS trigger AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    PERFORM refresh_caregiver_rating(OLD.caregiver_id);
+    PERFORM support.refresh_caregiver_rating(OLD.caregiver_id);
     RETURN OLD;
   END IF;
 
   IF TG_OP = 'UPDATE' AND OLD.caregiver_id IS DISTINCT FROM NEW.caregiver_id THEN
-    PERFORM refresh_caregiver_rating(OLD.caregiver_id);
+    PERFORM support.refresh_caregiver_rating(OLD.caregiver_id);
   END IF;
 
-  PERFORM refresh_caregiver_rating(NEW.caregiver_id);
+  PERFORM support.refresh_caregiver_rating(NEW.caregiver_id);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

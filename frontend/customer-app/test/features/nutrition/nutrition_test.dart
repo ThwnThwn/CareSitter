@@ -16,6 +16,7 @@ import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutr
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_health_form.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_status_field.dart';
 import 'package:caresitter_customer/features/nutrition/domain/nutrition_personalization_rules.dart';
+import 'package:caresitter_customer/features/nutrition/domain/nutrition_assessment_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,33 @@ Future<void> settle() async {
 }
 
 void main() {
+  test('assessment start policy allows only actionable failed retries', () {
+    expect(
+        NutritionAssessmentRules.canStart(
+            loading: false,
+            restoringPlan: false,
+            resourceStatus: 'failed',
+            retryable: true,
+            retryAllowed: true),
+        isTrue);
+    expect(
+        NutritionAssessmentRules.canStart(
+            loading: false,
+            restoringPlan: false,
+            resourceStatus: 'failed',
+            retryable: true,
+            retryAllowed: false),
+        isFalse);
+    expect(
+        NutritionAssessmentRules.canStart(
+            loading: true,
+            restoringPlan: false,
+            resourceStatus: null,
+            retryable: false,
+            retryAllowed: false),
+        isFalse);
+  });
+
   testWidgets('status field falls back to the first declared option',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
@@ -136,6 +164,7 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
+    await _openProfileEditor(tester);
     final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     expect(tester.widget<FilledButton>(check).onPressed, isNotNull);
@@ -154,6 +183,7 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
+    await _openProfileEditor(tester);
     final section = find.text('Thuốc và nhu cầu ăn uống');
     await Scrollable.ensureVisible(
       tester.element(section),
@@ -372,6 +402,7 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
+    await _openProfileEditor(tester);
     final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
@@ -440,6 +471,33 @@ void main() {
     await request;
   });
 
+  test('selected plan date and request state belong to the flow controller',
+      () async {
+    final date = DateTime(2026, 11, 3);
+    final plan = NutritionResourceModel.fromJson(_resource('saved', {
+      'decision': {'state': 'suggested'},
+      'plannedDate': '2026-11-03',
+      'meals': [],
+    }));
+    final pendingPlans = Completer<List<MealPlanSummaryModel>>();
+    final repository = _Repository()..openedPlans[plan.id] = plan;
+    final c = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(c.dispose);
+    await settle();
+    repository.plansPending = pendingPlans;
+
+    final request = c.openPlanForDate(date);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.view.selectedDate, date);
+    expect(c.view.dateLoading, isTrue);
+
+    pendingPlans.complete([MealPlanSummaryModel.fromJson(plan.toJson())]);
+    expect(await request, isTrue);
+    expect(c.view.dateLoading, isFalse);
+    expect(c.view.dateError, isNull);
+    expect(c.view.resource?.id, plan.id);
+  });
+
   test('profile or catalog conflict marks previous recommendation stale',
       () async {
     final repository = _Repository();
@@ -500,6 +558,9 @@ void main() {
                   child: child!),
               home: const NutritionScreen(beneficiaryId: 'first'))));
       await tester.pumpAndSettle();
+      await _openProfileEditor(tester);
+      await tester.scrollUntilVisible(find.text('Dị ứng thực phẩm'), 150,
+          scrollable: find.byType(Scrollable).first);
       expect(find.text('Dị ứng thực phẩm'), findsOneWidget);
       final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
       await tester.scrollUntilVisible(check, 250);
@@ -535,6 +596,7 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
+    await _openProfileEditor(tester);
     final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
@@ -545,6 +607,40 @@ void main() {
     expect(find.textContaining('Chưa tìm được món đáp ứng các yêu cầu'),
         findsOneWidget);
     expect(find.text('Chưa có dữ liệu thực đơn để gợi ý'), findsNothing);
+  });
+
+  testWidgets('nutrition calendar remains selectable without a saved plan',
+      (tester) async {
+    final repository = _Repository();
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nutritionRepositoryProvider.overrideWithValue(repository),
+          authStateProvider.overrideWith(_Auth.new),
+          beneficiaryStoreProvider.overrideWith(_Beneficiaries.new),
+        ],
+        child:
+            const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lịch thực đơn'), findsOneWidget);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final selectedDate = today.weekday == DateTime.sunday
+        ? today.subtract(const Duration(days: 1))
+        : today.add(const Duration(days: 1));
+    final day = find.text('${selectedDate.day}').last;
+    await tester.ensureVisible(day);
+    await tester.tap(day);
+    await tester.pumpAndSettle();
+
+    final dateLabel =
+        '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}';
+    expect(find.text('Chưa có thực đơn cho ngày $dateLabel'), findsOneWidget);
+    expect(
+        find.text(
+            'Dùng hồ sơ hiện có để tạo thực đơn hoặc chọn một ngày khác.'),
+        findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
@@ -560,6 +656,7 @@ void main() {
         child:
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
+    await _openProfileEditor(tester);
     final notesSection = find.text('Lưu ý và hướng dẫn hiện có');
     await Scrollable.ensureVisible(tester.element(notesSection),
         alignment: 0.5);
@@ -598,6 +695,14 @@ void main() {
   });
 }
 
+Future<void> _openProfileEditor(WidgetTester tester) async {
+  final editButton = find.byTooltip('Cập nhật thông tin dinh dưỡng');
+  if (editButton.evaluate().isNotEmpty) {
+    await tester.tap(editButton);
+    await tester.pumpAndSettle();
+  }
+}
+
 Map<String, dynamic> _resource(String status, Map<String, dynamic> data) =>
     {'id': 'resource', 'status': status, 'healthRevision': 7, 'data': data};
 AppApiException _error(int status, {String? code}) => AppApiException(
@@ -621,6 +726,7 @@ class _Repository extends NutritionRepository {
   Map<String, dynamic>? healthOverride;
   Completer<Map<String, dynamic>>? pending;
   Completer<List<MealPlanSummaryModel>>? plansPending;
+  final openedPlans = <String, NutritionResourceModel>{};
   final writes = <({String route, Map<String, dynamic> data})>[];
   final tokens = <ApiCancellation>[];
   final patches = <Map<String, dynamic>>[];
@@ -646,6 +752,16 @@ class _Repository extends NutritionRepository {
     return plansPending == null
         ? const <MealPlanSummaryModel>[]
         : await plansPending!.future;
+  }
+
+  @override
+  Future<NutritionResourceModel> read(
+      String id, String route, ApiCancellation token) async {
+    if (route.startsWith('meal-plans/')) {
+      final plan = openedPlans[route.substring('meal-plans/'.length)];
+      if (plan != null) return plan;
+    }
+    throw StateError('Unexpected read: $route');
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -29,7 +30,8 @@ class CaregiverProfileBottomBar extends StatelessWidget {
       ],
     );
     final action = ElevatedButton(
-      onPressed: caregiver.isOnline ? () => context.push('/booking/new') : null,
+      onPressed:
+          caregiver.isOnline ? () => context.push(AppRoutes.bookingNew) : null,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(

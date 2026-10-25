@@ -85,8 +85,7 @@ class EarningsController extends StateNotifier<EarningsState> {
     final transactions = completed.map((booking) {
       final amount = _earningOf(booking);
       return EarningTransaction(
-        title:
-            'Thanh toán ca ${_shortId(booking.id)} (${booking.beneficiaryName})',
+        title: 'Thanh toán ca (${booking.beneficiaryName})',
         date: _formatDate(booking.scheduledStart),
         amount:
             '+ ${formatVnd(amount, separator: ',', suffix: '', round: true)} đ',
@@ -102,10 +101,10 @@ class EarningsController extends StateNotifier<EarningsState> {
     );
   }
 
-  void addEarning(double amount, String bookingId, String beneficiaryName) {
+  void addEarning(double amount, String beneficiaryName) {
     if (!mounted) return;
     final newTransaction = EarningTransaction(
-      title: 'Thanh toán ca ${_shortId(bookingId)} ($beneficiaryName)',
+      title: 'Thanh toán ca ($beneficiaryName)',
       date: 'Hôm nay',
       amount:
           '+ ${formatVnd(amount, separator: ',', suffix: '', round: true)} đ',
@@ -210,8 +209,6 @@ class EarningsController extends StateNotifier<EarningsState> {
 
   static String _formatDate(DateTime? value) =>
       value == null ? 'Chưa rõ ngày' : formatDate(value, padded: true);
-
-  static String _shortId(String id) => id.length > 8 ? id.substring(0, 8) : id;
 }
 
 final earningsProvider =

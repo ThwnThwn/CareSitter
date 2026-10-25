@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useAdminMetadata } from '../../adminMetadata';
 import { CatalogService, PricingRule } from '../../types';
-import { fromDateTimeInput, toDateTimeInput } from '../../operations';
+import { fromDateTimeInput, toMinuteDateTimeInput } from '../../operations';
 import { saveCatalogService, savePricingRule } from './catalogApi';
 
 export function useServiceEditor(service: CatalogService | null, onChanged: () => void) {
@@ -9,7 +9,7 @@ export function useServiceEditor(service: CatalogService | null, onChanged: () =
   const createServiceForm = () => ({ code: '', name: '', description: '', ...defaults.service });
   const createPriceForm = () => ({
     ...defaults.pricingRule,
-    effectiveFrom: toDateTimeInput(new Date()),
+    effectiveFrom: toMinuteDateTimeInput(new Date()),
     effectiveTo: '',
   });
   const [form, setForm] = useState(() =>
@@ -36,8 +36,8 @@ export function useServiceEditor(service: CatalogService | null, onChanged: () =
       holidayMultiplier: rule.holidayMultiplier,
       platformFeePercent: rule.platformFeePercent,
       disputeWindowHours: rule.disputeWindowHours,
-      effectiveFrom: toDateTimeInput(rule.effectiveFrom),
-      effectiveTo: rule.effectiveTo ? toDateTimeInput(rule.effectiveTo) : '',
+      effectiveFrom: toMinuteDateTimeInput(rule.effectiveFrom),
+      effectiveTo: rule.effectiveTo ? toMinuteDateTimeInput(rule.effectiveTo) : '',
       isActive: rule.isActive,
     });
   }

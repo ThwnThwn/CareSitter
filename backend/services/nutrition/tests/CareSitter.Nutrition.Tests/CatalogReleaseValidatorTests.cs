@@ -26,6 +26,84 @@ public sealed class CatalogReleaseValidatorTests
     }
 
     [Fact]
+    public void Published_source_reference_baseline_uses_product_owner_authorization_without_fake_clinical_review()
+    {
+        var (bundle, evidence) = Package();
+        bundle = bundle with
+        {
+            SupportedScopes = [bundle.SupportedScopes[0] with { ConditionCodes = [] }],
+            Rules = []
+        };
+        const string authorityId = "product-owner-release-2026-10-24";
+        evidence = evidence with
+        {
+            ReleaseProfile = CatalogReleaseValidator.SourceReferenceReleaseProfile,
+            Rules = [],
+            ClinicalReview = null,
+            SourcePublication = new(
+                "VIEN_DINH_DUONG_2019",
+                "VIEN_DINH_DUONG_2019@sha256:abea34b8",
+                "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+                "Viện Dinh dưỡng",
+                2019,
+                new DateTimeOffset(2026, 10, 24, 8, 0, 0, TimeSpan.FromHours(7)),
+                "verified"),
+            ReleaseAuthorization = new(
+                authorityId,
+                "product_owner",
+                "project-owner",
+                new DateTimeOffset(2026, 10, 24, 8, 5, 0, TimeSpan.FromHours(7)),
+                "approved",
+                "Release as published-source reference content for adult baseline only."),
+            KnowledgeReview = evidence.KnowledgeReview! with
+            {
+                ClinicalReviewerIds = [],
+                ReleaseAuthorityIds = [authorityId]
+            }
+        };
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.True(result.IsReleaseReady, string.Join(Environment.NewLine, result.Issues.Select(x => $"{x.Path}: {x.Code}")));
+        Assert.DoesNotContain(result.Issues, issue => issue.Code == "clinical_review_required");
+    }
+
+    [Fact]
+    public void Published_source_reference_baseline_cannot_skip_product_owner_authorization()
+    {
+        var (bundle, evidence) = Package();
+        bundle = bundle with
+        {
+            SupportedScopes = [bundle.SupportedScopes[0] with { ConditionCodes = [] }],
+            Rules = []
+        };
+        evidence = evidence with
+        {
+            ReleaseProfile = CatalogReleaseValidator.SourceReferenceReleaseProfile,
+            Rules = [],
+            ClinicalReview = null,
+            SourcePublication = new(
+                "VIEN_DINH_DUONG_2019",
+                "VIEN_DINH_DUONG_2019@sha256:abea34b8",
+                "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+                "Viện Dinh dưỡng",
+                2019,
+                new DateTimeOffset(2026, 10, 24, 8, 0, 0, TimeSpan.FromHours(7)),
+                "verified"),
+            ReleaseAuthorization = null,
+            KnowledgeReview = evidence.KnowledgeReview! with
+            {
+                ClinicalReviewerIds = [],
+                ReleaseAuthorityIds = []
+            }
+        };
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.Contains(result.Issues, issue => issue.Code == "release_authorization_required");
+    }
+
+    [Fact]
     public void Baseline_profile_cannot_smuggle_a_disease_rule_or_scope()
     {
         var (bundle, evidence) = Package();

@@ -58,7 +58,7 @@ void main() {
     final login = await authSessionRouteRedirect(
         location: paymentReturn,
         isAuthenticated: Future.error(StateError('storage')));
-    expect(Uri.parse(login!).queryParameters['returnTo'], paymentReturn);
+    expect(Uri.parse(login!).queryParameters['return-to'], paymentReturn);
   });
 
   test('sign-in ignores external or unrelated return destinations', () {
@@ -99,5 +99,18 @@ void main() {
       authRouteRedirect(location: '/home', isAuthenticated: true),
       isNull,
     );
+  });
+
+  test('booking and beneficiary deep links require an authenticated session',
+      () {
+    for (final path in [
+      '/bookings/new?service-id=service-1',
+      '/beneficiaries/new',
+      '/bookings/booking-1',
+    ]) {
+      expect(authRouteRedirect(location: path, isAuthenticated: false),
+          '/auth/login');
+      expect(authRouteRedirect(location: path, isAuthenticated: true), isNull);
+    }
   });
 }

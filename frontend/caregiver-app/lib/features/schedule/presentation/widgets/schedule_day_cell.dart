@@ -39,28 +39,25 @@ class ScheduleDayCell extends ConsumerWidget {
           width: chipWidth == double.infinity ? null : chipWidth,
           margin: compact
               ? EdgeInsets.zero
-              : const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              : const EdgeInsets.symmetric(horizontal: AppSpacing.micro),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary
-                : isCurrentDay
-                    ? AppColors.primaryContainer
-                    : Colors.transparent,
+            color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(
-                compact ? AppRadius.compact : AppRadius.xxl),
+                compact ? AppRadius.compact : AppRadius.control),
             border: Border.all(
               color: isSelected
                   ? AppColors.primary
                   : isCurrentDay
-                      ? AppColors.primaryLight
+                      ? AppColors.primary
                       : AppColors.border,
-              width: isSelected ? 2 : 1,
+              width: isSelected || isCurrentDay ? 1.5 : 1,
             ),
           ),
           child: ScheduleDayLabel(
               date: date,
               compact: compact,
               isSelected: isSelected,
+              isCurrentDay: isCurrentDay,
               dayName: dayName,
               hasShifts: hasShifts),
         ),

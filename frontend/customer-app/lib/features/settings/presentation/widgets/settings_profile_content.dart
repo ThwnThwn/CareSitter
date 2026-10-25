@@ -9,15 +9,11 @@ import 'package:caresitter_customer/features/settings/presentation/controllers/p
 class SettingsProfileContent extends StatelessWidget {
   const SettingsProfileContent(
       {super.key,
-      required this.hasAvatar,
       required this.profile,
-      required this.initials,
       required this.bookingCount,
       required this.totalSpent,
       required this.onEditProfile});
-  final bool hasAvatar;
   final UserProfile profile;
-  final String initials;
   final int bookingCount;
   final double totalSpent;
   final VoidCallback onEditProfile;
@@ -26,10 +22,7 @@ class SettingsProfileContent extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         children: [
           SettingsProfileIdentity(
-              hasAvatar: hasAvatar,
-              profile: profile,
-              initials: initials,
-              onEditProfile: onEditProfile),
+              profile: profile, onEditProfile: onEditProfile),
           const SizedBox(height: AppSpacing.compact),
           Text(profile.name.isNotEmpty ? profile.name : 'Người dùng',
               style: const TextStyle(

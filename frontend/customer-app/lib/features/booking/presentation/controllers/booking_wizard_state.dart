@@ -1,6 +1,10 @@
 import '../../data/repositories/booking_repository.dart' show BookingDraft;
 
-typedef BookingWizardArgs = ({String? serviceId, String? beneficiaryId});
+typedef BookingWizardArgs = ({
+  String? serviceId,
+  String? beneficiaryId,
+  String? caregiverId,
+});
 const _unchanged = Object();
 
 class BookingWizardState {

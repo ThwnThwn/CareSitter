@@ -3,6 +3,7 @@ import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/profile/data/models/caregiver_profile_model.dart';
@@ -65,25 +66,19 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
     String? dateOfBirth,
   }) async {
     if (!mounted) return false;
-    try {
-      await _repository.updateProfile(
-        fullName: fullName,
-        bio: bio,
-        yearsOfExperience: yearsOfExperience,
-        skills: skills,
-        serviceCity: serviceCity,
-        serviceDistrict: serviceDistrict,
-        gender: gender,
-        dateOfBirth: dateOfBirth,
-      );
-      if (!mounted) return false;
-      await refresh();
-      return mounted;
-    } catch (error) {
-      // ignore: avoid_print
-      print('[ProfileController] Lỗi cập nhật hồ sơ: $error');
-      return false;
-    }
+    await _repository.updateProfile(
+      fullName: fullName,
+      bio: bio,
+      yearsOfExperience: yearsOfExperience,
+      skills: skills,
+      serviceCity: serviceCity,
+      serviceDistrict: serviceDistrict,
+      gender: gender,
+      dateOfBirth: dateOfBirth,
+    );
+    if (!mounted) return false;
+    await refresh();
+    return mounted;
   }
 
   Future<void> toggleAvailability() async {
@@ -100,7 +95,7 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
     }
   }
 
-  Future<bool> uploadAvatar(File imageFile) async {
+  Future<bool> uploadAvatar(XFile imageFile) async {
     if (!mounted) return false;
     if (_ref.read(caregiverAvatarUploadingProvider)) return false;
     _ref.read(caregiverAvatarUploadingProvider.notifier).state = true;
@@ -110,8 +105,6 @@ class ProfileController extends StateNotifier<CaregiverProfileModel> {
       if (!mounted) return false;
       if (success) await refresh();
       return mounted && success;
-    } catch (_) {
-      return false;
     } finally {
       if (mounted) {
         _ref.read(caregiverAvatarUploadingProvider.notifier).state = false;

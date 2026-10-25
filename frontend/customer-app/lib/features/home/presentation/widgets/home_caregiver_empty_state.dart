@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/features/home/presentation/widgets/home_hover_button.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -10,7 +11,7 @@ class HomeCaregiverEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return HomeHoverButton(
-      onTap: () => context.go('/caregivers'),
+      onTap: () => context.go(AppRoutes.caregivers),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.section),

@@ -58,13 +58,13 @@ void main() {
           'deepLink':
               'caresitter-customer:/payment-result?bookingId=booking-123&intentId=intent-123&result=success&redirect=https://evil.example'
         }),
-        '/payment-result?bookingId=booking-123&intentId=intent-123&result=pending');
+        '/payment-result?booking-id=booking-123&intent-id=intent-123&result=pending');
     expect(
         service.resolveRoute({
           'deepLink':
               'caresitter-customer://payment-result?bookingId=booking-123'
         }),
-        '/payment-result?bookingId=booking-123&result=pending');
+        '/payment-result?booking-id=booking-123&result=pending');
     expect(
         service.resolveRoute({
           'deepLink':

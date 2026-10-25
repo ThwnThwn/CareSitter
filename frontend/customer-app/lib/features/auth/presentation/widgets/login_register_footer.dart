@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/login_hero_tokens.dart';
@@ -34,7 +35,7 @@ class LoginRegisterFooter extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: enabled ? () => context.push('/auth/register') : null,
+            onPressed: enabled ? () => context.push(AppRoutes.register) : null,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.tight),
               minimumSize: Size.zero,

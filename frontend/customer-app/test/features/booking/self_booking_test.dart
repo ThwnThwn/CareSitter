@@ -276,7 +276,11 @@ void main() {
     ]);
     addTearDown(container.dispose);
     await container.read(authStateProvider.future);
-    const args = (serviceId: 'service', beneficiaryId: null);
+    const args = (
+      serviceId: 'service',
+      beneficiaryId: null,
+      caregiverId: null,
+    );
     final sub = container.listen(bookingWizardProvider(args), (_, __) {});
     addTearDown(sub.close);
     await container.read(serviceStoreProvider.future);

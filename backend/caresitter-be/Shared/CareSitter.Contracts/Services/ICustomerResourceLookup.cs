@@ -33,6 +33,7 @@ public sealed record PeopleDisplaySummary(
     string? Gender = null,
     string? Relationship = null,
     string? Condition = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? AvatarUrl = null);
 public sealed record AddressDisplaySummary(Guid Id, string FullAddress);
 public sealed record ServiceDisplaySummary(Guid Id, string Name, string? Description = null);

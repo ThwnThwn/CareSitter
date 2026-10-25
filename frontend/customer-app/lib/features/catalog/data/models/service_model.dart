@@ -20,16 +20,20 @@ class ServiceModel {
 
   /// Icon tương ứng với code gói
   String get icon {
+    if (code.contains('NONMED_ESSENTIAL')) return '🧺';
+    if (code.contains('NONMED_COMPANION')) return '🤝';
+    if (code.contains('NONMED_DAY')) return '☀️';
+    if (code.contains('NONMED_NIGHT')) return '🌙';
     if (code.contains('DUONG')) return '🌱';
     if (code.contains('AN')) return '🌿';
     if (code.contains('TAM')) return '🌸';
     if (code.contains('PHUCHOI')) return '🍀';
     if (code.contains('DONGHANH')) return '🌻';
     if (code.contains('DEM')) return '🌙';
-    return '🏥';
+    return '🫶';
   }
 
-  String get category => 'Gói Genki';
+  String get category => 'Chăm sóc phi y tế';
 
   double get pricePerHour {
     return baseHourlyPrice.toDouble();

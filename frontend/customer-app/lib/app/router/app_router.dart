@@ -17,6 +17,7 @@ import 'package:caresitter_customer/features/beneficiary/presentation/screens/be
 import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
 import 'package:caresitter_customer/app/screens/nutrition_detail_entry_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
+import 'package:caresitter_customer/features/catalog/presentation/screens/service_detail_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_detail_screen.dart';
@@ -42,6 +43,8 @@ import 'package:caresitter_customer/features/beneficiary/presentation/screens/be
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/router/auth_route_redirect.dart';
 import 'package:caresitter_customer/app/router/shell_scaffold.dart';
+import 'package:caresitter_customer/app/screens/not_found_screen.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -127,7 +130,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: AppRoutes.home,
+    errorBuilder: (context, state) => const NotFoundScreen(),
     refreshListenable: refreshSignal,
     redirect: (context, state) => authSessionRouteRedirect(
       location: state.uri.toString(),
@@ -137,46 +141,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ),
     routes: [
       GoRoute(
-          path: '/auth/forgot-password',
+        path: AppRoutes.root,
+        redirect: (_, __) => AppRoutes.home,
+      ),
+      GoRoute(
+          path: AppRoutes.forgotPassword,
           builder: (ctx, state) => const PasswordRecoveryScreen()),
       GoRoute(
-          path: '/settings/recovery-email',
+          path: AppRoutes.recoveryEmail,
           builder: (ctx, state) => const RecoveryEmailScreen()),
       // ── Auth Routes ─────────────────────────────
       GoRoute(
-        path: '/auth/login',
+        path: AppRoutes.login,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const LoginScreen(),
         ),
       ),
       GoRoute(
-        path: '/auth/register',
+        path: AppRoutes.register,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const RegisterScreen(),
         ),
       ),
       GoRoute(
-        path: '/auth/email',
+        path: AppRoutes.email,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const EmailInputScreen(),
         ),
       ),
       GoRoute(
-        path: '/auth/phone',
-        redirect: (ctx, state) => '/auth/email',
+        path: AppRoutes.legacyAuthPhone,
+        redirect: (ctx, state) => AppRoutes.email,
       ),
       GoRoute(
-        path: '/auth/otp',
+        path: AppRoutes.otp,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: OtpVerifyScreen(email: state.extra as String? ?? ''),
         ),
       ),
       GoRoute(
-        path: '/brand-intro',
+        path: AppRoutes.brandIntro,
         pageBuilder: (ctx, state) => NoTransitionPage(
           key: state.pageKey,
           child: const BrandIntroScreen(),
@@ -189,28 +197,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state, child) => ShellScaffold(child: child),
         routes: [
           GoRoute(
-            path: '/home',
+            path: AppRoutes.home,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const HomeScreen(),
             ),
           ),
           GoRoute(
-            path: '/bookings',
+            path: AppRoutes.bookings,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const BookingListScreen(),
             ),
           ),
           GoRoute(
-            path: '/nutrition',
+            path: AppRoutes.nutrition,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const NutritionEntryScreen(),
             ),
           ),
           GoRoute(
-            path: '/caregivers',
+            path: AppRoutes.caregivers,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: CaregiverListScreen(
@@ -219,21 +227,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/beneficiaries',
+            path: AppRoutes.beneficiaries,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const BeneficiaryListScreen(),
             ),
           ),
           GoRoute(
-            path: '/tracking',
+            path: AppRoutes.tracking,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const ActivityScreen(),
             ),
           ),
           GoRoute(
-            path: '/settings',
+            path: AppRoutes.settings,
             pageBuilder: (ctx, state) => _grabTabPage(
               pageKey: state.pageKey,
               child: const SettingsScreen(),
@@ -244,16 +252,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // ── Beneficiary ──────────────────────────────
       GoRoute(
+        path: AppRoutes.beneficiaryNew,
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/beneficiaries/create',
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const BeneficiaryCreateScreen(),
         ),
       ),
       GoRoute(
+        path: AppRoutes.legacyBeneficiaryCreate,
+        redirect: (_, __) => AppRoutes.beneficiaryNew,
+      ),
+      GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/beneficiaries/:id',
+        path: '${AppRoutes.beneficiaries}/:id',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: BeneficiaryDetailScreen(id: state.pathParameters['id']!),
@@ -263,17 +275,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Catalog ──────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/catalog',
+        path: AppRoutes.catalog,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const CatalogScreen(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${AppRoutes.catalog}/:id',
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: ServiceDetailScreen(serviceId: state.pathParameters['id']!),
         ),
       ),
 
       // ── Notifications ─────────────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/notifications',
+        path: AppRoutes.notifications,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const NotificationsScreen(),
@@ -282,24 +302,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // ── Booking ──────────────────────────────────
       GoRoute(
+        path: AppRoutes.bookingNew,
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/booking/new',
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: BookingWizardScreen(
-            initialServiceId: state.uri.queryParameters['serviceId'],
-            initialBeneficiaryId: state.uri.queryParameters['beneficiaryId'],
+            initialServiceId: state.uri.queryParameters['service-id'] ??
+                state.uri.queryParameters['serviceId'],
+            initialBeneficiaryId: state.uri.queryParameters['beneficiary-id'] ??
+                state.uri.queryParameters['beneficiaryId'],
+            initialCaregiverId: state.uri.queryParameters['caregiver-id'] ??
+                state.uri.queryParameters['caregiverId'],
           ),
         ),
       ),
       GoRoute(
+        path: AppRoutes.legacyBookingNew,
+        redirect: (_, state) => AppRoutes.bookingNewFromLegacy(state.uri),
+      ),
+      GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/payment-result',
+        path: AppRoutes.paymentResult,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: PaymentResultScreen(
-            bookingId: state.uri.queryParameters['bookingId'],
-            intentId: state.uri.queryParameters['intentId'],
+            bookingId: state.uri.queryParameters['booking-id'] ??
+                state.uri.queryParameters['bookingId'],
+            intentId: state.uri.queryParameters['intent-id'] ??
+                state.uri.queryParameters['intentId'],
             result: state.uri.queryParameters['result'] ?? 'failed',
           ),
         ),
@@ -307,7 +337,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Shift Tracking ───────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id/tracking',
+        path: '${AppRoutes.bookings}/:id/tracking',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: ShiftTrackingScreen(bookingId: state.pathParameters['id']!),
@@ -315,7 +345,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id/timeline',
+        path: '${AppRoutes.bookings}/:id/timeline',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: CareTimelineScreen(bookingId: state.pathParameters['id']!),
@@ -325,7 +355,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Review & Dispute ─────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id/review',
+        path: '${AppRoutes.bookings}/:id/review',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: ReviewScreen(bookingId: state.pathParameters['id']!),
@@ -335,7 +365,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // -- Booking Chat --
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id/chat',
+        path: '${AppRoutes.bookings}/:id/chat',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: BookingChatScreen(
@@ -346,7 +376,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id/dispute',
+        path: '${AppRoutes.bookings}/:id/dispute',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: DisputeScreen(bookingId: state.pathParameters['id']!),
@@ -356,7 +386,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Booking (generic :id — đặt SAU các sub-route cụ thể) ────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/bookings/:id',
+        path: '${AppRoutes.bookings}/:id',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: BookingDetailScreen(id: state.pathParameters['id']!),
@@ -366,7 +396,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Caregiver ────────────────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/caregivers/:id',
+        path: '${AppRoutes.caregivers}/:id',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: CaregiverProfileScreen(id: state.pathParameters['id']!),
@@ -376,7 +406,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Settings Sub-screens ─────────────────────
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/profile/edit',
+        path: AppRoutes.profileEdit,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const ProfileEditScreen(),
@@ -384,7 +414,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/wallet',
+        path: AppRoutes.wallet,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const WalletScreen(),
@@ -392,18 +422,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/addresses',
+        path: AppRoutes.addresses,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: SavedAddressesScreen(
             selectionMode: state.uri.queryParameters['select'] == '1',
-            selectedAddressId: state.uri.queryParameters['selected'],
+            selectedAddressId: state.uri.queryParameters['selected-id'] ??
+                state.uri.queryParameters['selected'],
           ),
         ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/password',
+        path: AppRoutes.password,
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: const ChangePasswordScreen(),
@@ -411,7 +442,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/notifications',
+        path: AppRoutes.notificationSettings,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const NotificationSettingsScreen(),
@@ -419,7 +450,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/faq',
+        path: AppRoutes.faq,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const FaqScreen(),
@@ -427,7 +458,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/refunds',
+        path: AppRoutes.refunds,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const RefundHistoryScreen(),
@@ -435,7 +466,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/support',
+        path: AppRoutes.support,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const SupportScreen(),
@@ -443,7 +474,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/settings/support/chat',
+        path: AppRoutes.supportChat,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: const SupportChatScreen(),
@@ -451,7 +482,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/beneficiaries/:id/edit',
+        path: '${AppRoutes.beneficiaries}/:id/edit',
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: BeneficiaryEditScreen(id: state.pathParameters['id']!),
@@ -459,7 +490,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/beneficiaries/:id/nutrition',
+        path: '${AppRoutes.beneficiaries}/:id/nutrition',
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: NutritionDetailEntryScreen(

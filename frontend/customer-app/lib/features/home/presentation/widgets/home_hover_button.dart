@@ -68,22 +68,25 @@ class _HomeHoverButtonState extends State<HomeHoverButton> {
               scale: reduceMotion ? 1 : (pressed ? 0.98 : (active ? 1.015 : 1)),
               duration: duration,
               curve: Curves.easeOutQuart,
-              child: AnimatedContainer(
-                duration: duration,
-                curve: Curves.easeOutQuart,
-                foregroundDecoration: BoxDecoration(
-                  borderRadius: widget.borderRadius,
-                  color: Colors.black.withValues(
-                    alpha: pressed ? 0.09 : (active ? 0.045 : 0),
+              child: ClipRRect(
+                borderRadius: widget.borderRadius,
+                child: AnimatedContainer(
+                  duration: duration,
+                  curve: Curves.easeOutQuart,
+                  foregroundDecoration: BoxDecoration(
+                    borderRadius: widget.borderRadius,
+                    color: Colors.black.withValues(
+                      alpha: pressed ? 0.09 : (active ? 0.045 : 0),
+                    ),
+                    border: Border.all(
+                      color: enabled && _focused
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
                   ),
-                  border: Border.all(
-                    color: enabled && _focused
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
-                  ),
+                  child: widget.child,
                 ),
-                child: widget.child,
               ),
             ),
           ),

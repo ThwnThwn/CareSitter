@@ -30,7 +30,7 @@ it('shows a recoverable service load failure instead of an endless spinner', asy
   }));
   render(<ServicesPage />);
   await userEvent.click(screen.getByRole('tab', { name: 'Checklist dịch vụ' }));
-  expect(await screen.findByText('service offline')).toBeTruthy();
+  expect(await screen.findByText('Hệ thống đang gặp sự cố. Vui lòng thử lại sau.')).toBeTruthy();
   expect(screen.queryByLabelText('Đang tải dữ liệu')).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: /Thử lại/ }));
   expect(await screen.findByText('Chưa có gói dịch vụ')).toBeTruthy();

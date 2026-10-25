@@ -15,11 +15,16 @@ from .catalog_review import (
 )
 from .chunk_pdf import chunk_pdf_source
 from .chunk_html import chunk_html_source
+from .dish_index import validate_dish_index
 from .graph import build_candidate_graph
 from .jsonio import file_sha256, load_json, write_json
 from .review import append_decision, empty_decision_ledger, materialize_reviewed_graph
 from .release import prepare_release
+from .retrieval_cli import dispatch_retrieval_command, register_retrieval_commands
 from .rights import resolve_source
+from .seed_chunks import seed_local_chunks
+from .seed_postgres import seed_postgres_chunks, verify_postgres_chunks
+from .source_reference_release import build_source_reference_evidence, prepare_source_reference_bundle
 
 
 def parser() -> argparse.ArgumentParser:
@@ -42,6 +47,22 @@ def parser() -> argparse.ArgumentParser:
     chunk_html.add_argument("--target-tokens", type=int, default=450)
     chunk_html.add_argument("--maximum-tokens", type=int, default=700)
     chunk_html.add_argument("--overlap-tokens", type=int, default=60)
+    seed = commands.add_parser("seed-local-chunks")
+    seed.add_argument("--manifest", type=Path, required=True)
+    seed.add_argument("--source-id", required=True)
+    seed.add_argument("--chunks", type=Path, required=True)
+    seed.add_argument("--report", type=Path, required=True)
+    seed.add_argument("--database", type=Path, required=True)
+    for command in ("seed-postgres-chunks", "verify-postgres-chunks"):
+        postgres = commands.add_parser(command)
+        postgres.add_argument("--manifest", type=Path, required=True)
+        postgres.add_argument("--source-id", required=True)
+        postgres.add_argument("--chunks", type=Path, required=True)
+        postgres.add_argument("--report", type=Path, required=True)
+        postgres.add_argument("--container", required=True)
+        postgres.add_argument("--database-user", required=True)
+        if command == "verify-postgres-chunks":
+            postgres.add_argument("--output-report", type=Path)
     build = commands.add_parser("build-candidates")
     build.add_argument("--manifest", type=Path, required=True)
     build.add_argument("--source-id", required=True)
@@ -108,6 +129,19 @@ def parser() -> argparse.ArgumentParser:
     review_status.add_argument("--candidate-manifest", type=Path, required=True)
     review_status.add_argument("--candidate-evidence", type=Path, required=True)
     review_status.add_argument("--ledger", type=Path, required=True)
+    dish_index = commands.add_parser("validate-dish-index")
+    dish_index.add_argument("--index", type=Path, required=True)
+    source_reference = commands.add_parser("build-source-reference-release")
+    source_reference.add_argument("--bundle", type=Path, required=True)
+    source_reference.add_argument("--food-snapshot", type=Path, required=True)
+    source_reference.add_argument("--source-index", type=Path, required=True)
+    source_reference.add_argument("--authorization-id", required=True)
+    source_reference.add_argument("--authorized-by", required=True)
+    source_reference.add_argument("--authorized-at", required=True)
+    source_reference.add_argument("--notes", required=True)
+    source_reference.add_argument("--package-key", required=True)
+    source_reference.add_argument("--output-dir", type=Path, required=True)
+    register_retrieval_commands(commands)
     return root
 
 
@@ -124,6 +158,10 @@ def main(argv: list[str] | None = None) -> int:
 
 def dispatch(args: argparse.Namespace) -> dict:
     workspace = args.workspace.resolve()
+    retrieval_handled, retrieval_result = dispatch_retrieval_command(args, workspace)
+    if retrieval_handled:
+        assert retrieval_result is not None
+        return retrieval_result
     if args.command == "chunk-pdf":
         return chunk_pdf_source(
             workspace=workspace, manifest_path=args.manifest, source_id=args.source_id,
@@ -136,6 +174,30 @@ def dispatch(args: argparse.Namespace) -> dict:
             output_path=args.output, report_path=args.report, target_tokens=args.target_tokens,
             maximum_tokens=args.maximum_tokens, overlap_tokens=args.overlap_tokens
         )
+    if args.command == "seed-local-chunks":
+        source, source_path = resolve_source(
+            workspace=workspace, manifest_path=args.manifest, source_id=args.source_id
+        )
+        if source_path.suffix.lower() != ".pdf":
+            raise ManualGraphError("seed-local-chunks requires a PDF source")
+        return seed_local_chunks(
+            source=source, chunks_path=args.chunks, report_path=args.report,
+            database_path=args.database,
+        )
+    if args.command in {"seed-postgres-chunks", "verify-postgres-chunks"}:
+        source, source_path = resolve_source(
+            workspace=workspace, manifest_path=args.manifest, source_id=args.source_id
+        )
+        if source_path.suffix.lower() != ".pdf":
+            raise ManualGraphError(f"{args.command} requires a PDF source")
+        operation = seed_postgres_chunks if args.command == "seed-postgres-chunks" else verify_postgres_chunks
+        result = operation(
+            source=source, chunks_path=args.chunks, report_path=args.report,
+            container=args.container, database_user=args.database_user,
+        )
+        if args.command == "verify-postgres-chunks" and args.output_report:
+            write_json(args.output_report, result)
+        return result
     if args.command == "build-candidates":
         source, source_path = resolve_source(workspace=workspace, manifest_path=args.manifest, source_id=args.source_id)
         result = build_candidate_graph(load_json(source_path), source)
@@ -241,6 +303,40 @@ def dispatch(args: argparse.Namespace) -> dict:
             candidate_evidence=load_json(args.candidate_evidence),
             ledger=load_json(args.ledger),
         )
+    if args.command == "validate-dish-index":
+        return validate_dish_index(load_json(args.index), workspace)
+    if args.command == "build-source-reference-release":
+        source_bundle = load_json(args.bundle)
+        food_snapshot = load_json(args.food_snapshot)
+        bundle = prepare_source_reference_bundle(
+            source_bundle=source_bundle,
+            package_key=args.package_key,
+            food_snapshot=food_snapshot,
+        )
+        bundle_path = args.output_dir / f"{args.package_key}.release.bundle.json"
+        evidence_path = args.output_dir / f"{args.package_key}.release.evidence.json"
+        write_json(bundle_path, bundle)
+        evidence = build_source_reference_evidence(
+            bundle=bundle,
+            bundle_path=bundle_path,
+            food_snapshot=food_snapshot,
+            source_index=load_json(args.source_index),
+            authorization_id=args.authorization_id,
+            authorized_by=args.authorized_by,
+            authorized_at=args.authorized_at,
+            notes=args.notes,
+        )
+        write_json(evidence_path, evidence)
+        return {
+            "status": "source_reference_release_ready",
+            "package_key": evidence["packageKey"],
+            "bundle_file_sha256": evidence["bundleFileSha256"],
+            "authorization_id": evidence["releaseAuthorization"]["authorizationId"],
+            "outputs": {
+                "bundle": str(bundle_path.resolve()),
+                "evidence": str(evidence_path.resolve()),
+            },
+        }
     graph = load_json(args.graph)
     if args.command == "init-review":
         result = empty_decision_ledger(graph)

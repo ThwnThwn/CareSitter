@@ -50,6 +50,13 @@ describe('session handling', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>app</html>')));
     await expect(api('/data')).rejects.toThrow('không hợp lệ');
   });
+  it('replaces generic server errors with an actionable Vietnamese message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(
+      { detail: 'An error occurred while processing your request.' },
+      { status: 500 },
+    )));
+    await expect(api('/services')).rejects.toThrow('Hệ thống đang gặp sự cố. Vui lòng thử lại sau.');
+  });
 });
 
 describe('private KYC media', () => {

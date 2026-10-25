@@ -23,6 +23,12 @@ class HomeEarningsBars extends StatelessWidget {
                     .ceilToDouble(),
             barTouchData: BarTouchData(
               touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => AppColors.primaryDark,
+                tooltipRoundedRadius: AppRadius.tight,
+                tooltipPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.compact,
+                  vertical: AppSpacing.tight,
+                ),
                 getTooltipItem: _tooltipFor,
               ),
             ),
@@ -59,7 +65,7 @@ class HomeEarningsBars extends StatelessWidget {
                     toY: earningsData[i],
                     color: isToday
                         ? AppColors.primary
-                        : AppColors.surfaceContainerHigh,
+                        : AppColors.primary.withValues(alpha: 0.32),
                     width: 24,
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(AppRadius.tight)),
@@ -77,5 +83,5 @@ class HomeEarningsBars extends StatelessWidget {
           GoogleFonts.beVietnamPro(
               fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary));
+              color: AppColors.onPrimary));
 }

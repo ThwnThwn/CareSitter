@@ -3,6 +3,15 @@ import 'package:caregiver_app/core/theme/app_colors.dart';
 
 /// Shadow presets dùng chung toàn app.
 class AppShadows {
+  /// Low elevation used by dense list cards.
+  static List<BoxShadow> get subtle => [
+        const BoxShadow(
+          color: AppColors.shadow,
+          blurRadius: 8,
+          offset: Offset(0, 2),
+        ),
+      ];
+
   /// Level 1: Resting cards
   static List<BoxShadow> get card => [
         const BoxShadow(

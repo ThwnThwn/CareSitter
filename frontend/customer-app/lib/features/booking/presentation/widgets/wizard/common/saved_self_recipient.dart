@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -13,7 +14,7 @@ class SavedSelfRecipient extends ConsumerWidget {
     final profile = selected.profile;
     ref.read(beneficiaryStoreProvider.notifier).acceptSaved(profile);
     final user = ref.read(authStateProvider).valueOrNull?.userId;
-    await context.push('/beneficiaries/${profile.id}/edit');
+    await context.push(AppRoutes.beneficiaryEdit(profile.id));
     if (!context.mounted ||
         ref.read(authStateProvider).valueOrNull?.userId != user) {
       return;

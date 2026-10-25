@@ -1,0 +1,1487 @@
+{
+  "citations": [
+    {
+      "chapter": "Dinh dưỡng điều trị bệnh tăng huyết áp",
+      "edition": "2019",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+      "id": "BOOK_2019_HTN_P143",
+      "locator": "Bảng thực đơn tham khảo 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": "143",
+      "printedPages": "142",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "title": "Dinh dưỡng lâm sàng",
+      "verifiedOn": "2026-10-24",
+      "year": 2019
+    },
+    {
+      "chapter": "Dinh dưỡng điều trị thừa cân, béo phì",
+      "edition": "2019",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+      "id": "BOOK_2019_OBESITY_P273",
+      "locator": "Bảng thực đơn tham khảo 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": "273",
+      "printedPages": "272",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "title": "Dinh dưỡng lâm sàng",
+      "verifiedOn": "2026-10-24",
+      "year": 2019
+    },
+    {
+      "chapter": "Phòng và điều trị loãng xương",
+      "edition": "2019",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+      "id": "BOOK_2019_OSTEOPOROSIS_P286",
+      "locator": "Bảng thực đơn tham khảo; dòng bữa sáng Phở gà.",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": "286",
+      "printedPages": "285",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "title": "Dinh dưỡng lâm sàng",
+      "verifiedOn": "2026-10-24",
+      "year": 2019
+    },
+    {
+      "chapter": "Dinh dưỡng cho bệnh nhân trước và sau phẫu thuật",
+      "edition": "2019",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+      "id": "BOOK_2019_POSTOP_P370",
+      "locator": "Bảng thực đơn giai đoạn phục hồi 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": "370",
+      "printedPages": "369",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "title": "Dinh dưỡng lâm sàng",
+      "verifiedOn": "2026-10-24",
+      "year": 2019
+    },
+    {
+      "chapter": "Dinh dưỡng điều trị bệnh thận mạn",
+      "edition": "2019",
+      "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+      "id": "BOOK_2019_CKD_P219_220",
+      "locator": "Bảng thực đơn CKD giai đoạn 1-2.",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": "219-220",
+      "printedPages": "218-219",
+      "reference": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+      "title": "Dinh dưỡng lâm sàng",
+      "verifiedOn": "2026-10-24",
+      "year": 2019
+    },
+    {
+      "chapter": "Các mục thực phẩm được chụp trong source snapshot",
+      "edition": "2017",
+      "fileSha256": null,
+      "id": "VIETNAM_FOOD_COMPOSITION_2017",
+      "locator": "Mã thực phẩm và sáu chỉ số trên 100 g trong catalog/sources/nin-food-composition-2026-10-24.json",
+      "organization": "Viện Dinh dưỡng",
+      "pdfPages": null,
+      "printedPages": null,
+      "reference": "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham",
+      "title": "Bảng thành phần thực phẩm Việt Nam 2017 - công cụ tra cứu trực tuyến",
+      "verifiedOn": "2026-10-24",
+      "year": 2017
+    }
+  ],
+  "concepts": [
+    {
+      "aliases": [
+        "Đậu nành",
+        "Đậu tương",
+        "Đậu phụ"
+      ],
+      "code": "SOY",
+      "kind": "food_allergy",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Lạc",
+        "Đậu phộng"
+      ],
+      "code": "PEANUT",
+      "kind": "food_allergy",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cá"
+      ],
+      "code": "FISH",
+      "kind": "food_allergy",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Trứng",
+        "Trứng gà"
+      ],
+      "code": "EGG",
+      "kind": "food_allergy",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Tôm",
+        "Giáp xác"
+      ],
+      "code": "CRUSTACEAN",
+      "kind": "food_allergy",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Táo tây, tươi"
+      ],
+      "code": "APPLE_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Rau thơm, tươi"
+      ],
+      "code": "AROMATIC_HERBS_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Thịt bò, loại I, tươi"
+      ],
+      "code": "BEEF_LEAN_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Mướp đắng, tươi"
+      ],
+      "code": "BITTER_MELON_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cải thìa (cải trắng), tươi"
+      ],
+      "code": "BOK_CHOY_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Trứng gà ta"
+      ],
+      "code": "CHICKEN_EGG_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Thịt gà ta, tươi"
+      ],
+      "code": "CHICKEN_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Tương ớt"
+      ],
+      "code": "CHILI_SAUCE",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Quả thanh long, tươi"
+      ],
+      "code": "DRAGON_FRUIT_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Thịt ngan, tươi"
+      ],
+      "code": "DUCK_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Tương nếp"
+      ],
+      "code": "FERMENTED_SOYBEAN_RICE",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Tỏi ta, tươi"
+      ],
+      "code": "GARLIC_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Gừng tươi"
+      ],
+      "code": "GINGER_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Miến dong, khô"
+      ],
+      "code": "GLASS_NOODLE_DRY",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cá bống, tươi"
+      ],
+      "code": "GOBY_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cá trắm cỏ, tươi"
+      ],
+      "code": "GRASS_CARP_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Đậu cô ve, luộc"
+      ],
+      "code": "GREEN_BEANS_BOILED",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Rau mồng tơi, tươi"
+      ],
+      "code": "MALABAR_SPINACH_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Quít, tươi"
+      ],
+      "code": "MANDARIN_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Xoài chín, tươi"
+      ],
+      "code": "MANGO_RIPE_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cải xanh, tươi"
+      ],
+      "code": "MUSTARD_GREENS_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cải ngồng, luộc"
+      ],
+      "code": "MUSTARD_STEM_BOILED",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Hành tây, tươi"
+      ],
+      "code": "ONION_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cam, tươi"
+      ],
+      "code": "ORANGE_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Lạc hạt, khô"
+      ],
+      "code": "PEANUT_DRY",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Dầu lạc"
+      ],
+      "code": "PEANUT_OIL",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Bưởi, tươi"
+      ],
+      "code": "POMELO_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Thịt lợn, nạc, tươi"
+      ],
+      "code": "PORK_LEAN_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Sườn lợn, tươi"
+      ],
+      "code": "PORK_RIB_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Chôm chôm, tươi"
+      ],
+      "code": "RAMBUTAN_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Bánh phở"
+      ],
+      "code": "RICE_NOODLE_READY",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Gạo, trắng, tẻ, xát máy, sống"
+      ],
+      "code": "RICE_WHITE_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Rau ngót, tươi"
+      ],
+      "code": "SAUROPUS_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Hành lá (hành hoa), tươi"
+      ],
+      "code": "SCALLION_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Tôm biển, tươi"
+      ],
+      "code": "SEA_SHRIMP_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Nấm hương, khô"
+      ],
+      "code": "SHIITAKE_DRY",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Rau khoai lang, tươi"
+      ],
+      "code": "SWEET_POTATO_LEAVES_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cá rô phi, tươi"
+      ],
+      "code": "TILAPIA_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Đậu phụ luộc"
+      ],
+      "code": "TOFU_BOILED",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Quả cà chua, tươi"
+      ],
+      "code": "TOMATO_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Thịt bê, nạc, tươi"
+      ],
+      "code": "VEAL_LEAN_RAW",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Cải soong, tươi"
+      ],
+      "code": "WATERCRESS_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Dưa hấu, tươi"
+      ],
+      "code": "WATERMELON_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Rau muống,  tươi"
+      ],
+      "code": "WATER_SPINACH_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    },
+    {
+      "aliases": [
+        "Quả bí đao (bí xanh), tươi"
+      ],
+      "code": "WINTER_MELON_FRESH",
+      "kind": "ingredient",
+      "version": 1
+    }
+  ],
+  "packageKey": "adult-baseline-book-reference-v1",
+  "recipes": [
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ phở thịt bò",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 150,
+            "basis": "cooked",
+            "code": "RICE_NOODLE_READY",
+            "name": "Bánh phở",
+            "unit": "g"
+          },
+          {
+            "amount": 35,
+            "basis": "raw",
+            "code": "BEEF_LEAN_RAW",
+            "name": "Thịt bò, loại I, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Phở thịt bò · thực đơn mẫu trang 143",
+        "nutrients": {
+          "carbohydrate_g": 47.32,
+          "energy_kcal": 262.9,
+          "fat_g": 2.68,
+          "fiber_g": 0.09,
+          "protein_g": 12.28,
+          "sodium_mg": 35.15
+        },
+        "preparationSteps": [
+          "Trụng bánh phở, làm chín thịt bò và thêm hành lá theo định lượng của thực đơn mẫu.",
+          "Nước dùng và muối được sách nêu nhưng không có lượng nước dùng mỗi khẩu phần nên không cộng vào giá trị dinh dưỡng ước tính."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_HTN_P143",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "34a33263-bd12-5f9b-8765-5bd8a17b2a0e"
+      },
+      "recipeId": "5a65deb8-eae6-5d0c-b3e0-5c9f9062e681",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cháo thịt",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 40,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu ăn",
+            "unit": "ml"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cháo thịt · thực đơn mẫu trang 273",
+        "nutrients": {
+          "carbohydrate_g": 38.41,
+          "energy_kcal": 274.9,
+          "fat_g": 8.3,
+          "fiber_g": 0.24,
+          "protein_g": 11.62,
+          "sodium_mg": 33.7
+        },
+        "preparationSteps": [
+          "Nấu cháo từ gạo tẻ, thịt lợn nạc và hành lá; thêm dầu ăn theo định lượng của sách.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_OBESITY_P273",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "bfa06fc6-2372-539e-88e6-effca0601559"
+      },
+      "recipeId": "92ee5fe2-38ed-5371-8c07-252ea07ae35f",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ phở gà",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "CHICKEN_RAW",
+            "name": "Thịt gà ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150,
+            "basis": "cooked",
+            "code": "RICE_NOODLE_READY",
+            "name": "Bánh phở",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Phở gà · thực đơn mẫu trang 286",
+        "nutrients": {
+          "carbohydrate_g": 46.8,
+          "energy_kcal": 318.5,
+          "fat_g": 7.9,
+          "fiber_g": 0,
+          "protein_g": 14.95,
+          "sodium_mg": 39.5
+        },
+        "preparationSteps": [
+          "Làm chín thịt gà và dùng cùng bánh phở theo định lượng của thực đơn mẫu.",
+          "Hành lá, rau thơm và nước dùng không có định lượng nên không cộng vào giá trị dinh dưỡng ước tính."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_OSTEOPOROSIS_P286",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "5fd8eaae-bd3b-5e62-92ff-7c11da06ac33"
+      },
+      "recipeId": "d8afcd45-1938-5b19-ba0c-a8a336a2a8c2",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "PEANUT"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ miến ngan trộn",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "GLASS_NOODLE_DRY",
+            "name": "Miến dong, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 20,
+            "basis": "raw",
+            "code": "DUCK_RAW",
+            "name": "Thịt ngan, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "PEANUT_DRY",
+            "name": "Lạc hạt, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "AROMATIC_HERBS_FRESH",
+            "name": "Rau thơm, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Miến ngan trộn · thực đơn mẫu trang 219",
+        "nutrients": {
+          "carbohydrate_g": 44.19,
+          "energy_kcal": 287.9,
+          "fat_g": 9.39,
+          "fiber_g": 1.3,
+          "protein_g": 6.66,
+          "sodium_mg": 1.03
+        },
+        "preparationSteps": [
+          "Làm chín miến và thịt ngan, trộn cùng lạc hạt và rau thơm theo định lượng của sách.",
+          "Sữa chuyên biệt đi kèm trong thực đơn CKD không thuộc món miến và không được cộng vào giá trị dinh dưỡng ước tính."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_CKD_P219_220",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "b0128004-869e-5a0a-9160-cc92063b0d7b"
+      },
+      "recipeId": "ee01df50-50c7-592b-8caa-c5676db75be5",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "SOY"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 60,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 30,
+            "basis": "cooked",
+            "code": "TOFU_BOILED",
+            "name": "Đậu phụ luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "BOK_CHOY_FRESH",
+            "name": "Cải thìa (cải trắng), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 7,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu ăn",
+            "unit": "ml"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "MALABAR_SPINACH_FRESH",
+            "name": "Rau mồng tơi, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "POMELO_FRESH",
+            "name": "Bưởi, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · thịt lợn rang · đậu phụ · cải thìa",
+        "nutrients": {
+          "carbohydrate_g": 72.58,
+          "energy_kcal": 495.5,
+          "fat_g": 13.02,
+          "fiber_g": 6.61,
+          "protein_g": 21.74,
+          "sodium_mg": 117.07
+        },
+        "preparationSteps": [
+          "Nấu cơm, rang thịt lợn, trần đậu phụ, xào cải thìa, nấu canh mồng tơi và dùng kèm bưởi.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_HTN_P143",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "2af6a2cd-3ece-5fba-8e84-7e9ac16e07d2"
+      },
+      "recipeId": "0847660b-8abc-5b1b-8273-c61ecdad8ee3",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "PEANUT",
+          "SOY"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 75,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "VEAL_LEAN_RAW",
+            "name": "Thịt bê, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "GINGER_FRESH",
+            "name": "Gừng tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "FERMENTED_SOYBEAN_RICE",
+            "name": "Tương nếp",
+            "unit": "g"
+          },
+          {
+            "amount": 20,
+            "basis": "raw",
+            "code": "PEANUT_DRY",
+            "name": "Lạc hạt, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 2.5,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu cho lạc rang",
+            "unit": "ml"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "SWEET_POTATO_LEAVES_FRESH",
+            "name": "Rau khoai lang, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 7,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu cho rau xào",
+            "unit": "ml"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "SAUROPUS_FRESH",
+            "name": "Rau ngót, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "ORANGE_FRESH",
+            "name": "Cam, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · bê hấp gừng · lạc rang · rau khoai lang",
+        "nutrients": {
+          "carbohydrate_g": 92.45,
+          "energy_kcal": 674.95,
+          "fat_g": 20,
+          "fiber_g": 7.82,
+          "protein_g": 31.31,
+          "sodium_mg": 102.17
+        },
+        "preparationSteps": [
+          "Nấu cơm; hấp thịt bê với gừng; dùng tương nếp; rang lạc; xào rau khoai lang; nấu canh rau ngót và dùng kèm cam.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_OBESITY_P273",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "62661b9c-098b-5ccd-a4f2-5d44b5b31cd5"
+      },
+      "recipeId": "7a5e67fc-86bb-55ca-bf5d-1fad01e8091d",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "FISH"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 130,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 40,
+            "basis": "raw",
+            "code": "PORK_RIB_RAW",
+            "name": "Sườn lợn, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 60,
+            "basis": "raw",
+            "code": "TILAPIA_RAW",
+            "name": "Cá rô phi, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu thực vật",
+            "unit": "ml"
+          },
+          {
+            "amount": 120,
+            "basis": "cooked",
+            "code": "MUSTARD_STEM_BOILED",
+            "name": "Cải ngồng, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "WINTER_MELON_FRESH",
+            "name": "Quả bí đao (bí xanh), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 100,
+            "basis": "raw",
+            "code": "WATERMELON_FRESH",
+            "name": "Dưa hấu, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · sườn chua ngọt · cá rô phi · cải ngồng",
+        "nutrients": {
+          "carbohydrate_g": 106.47,
+          "energy_kcal": 684.15,
+          "fat_g": 13.6,
+          "fiber_g": 2.79,
+          "protein_g": 33.62,
+          "sodium_mg": 128.14
+        },
+        "preparationSteps": [
+          "Nấu cơm; làm sườn xào chua ngọt; rán cá rô phi; luộc cải ngồng; nấu canh bí xanh với thịt và dùng kèm dưa hấu.",
+          "Sách không nêu lượng sốt chua ngọt; giá trị dinh dưỡng ước tính chỉ cộng các nguyên liệu có định lượng."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_POSTOP_P370",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "08d91c19-86b0-5e61-9290-49a2837ab4a3"
+      },
+      "recipeId": "f059a086-2eb6-53a5-948d-a08331864584",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "FISH"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 75,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 40,
+            "basis": "raw",
+            "code": "GOBY_RAW",
+            "name": "Cá bống, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 20,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150,
+            "basis": "raw",
+            "code": "BOK_CHOY_FRESH",
+            "name": "Cải thìa (cải trắng), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu ăn",
+            "unit": "ml"
+          },
+          {
+            "amount": 80,
+            "basis": "raw",
+            "code": "MANGO_RIPE_FRESH",
+            "name": "Xoài chín, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · cá bống · thịt băm · cải chíp",
+        "nutrients": {
+          "carbohydrate_g": 77.57,
+          "energy_kcal": 502.8,
+          "fat_g": 12.94,
+          "fiber_g": 3.08,
+          "protein_g": 18.92,
+          "sodium_mg": 59.03
+        },
+        "preparationSteps": [
+          "Nấu cơm; rán cá bống; làm thịt băm; xào cải chíp với tỏi và dùng kèm xoài chín.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và không thay thế hướng dẫn cho người bệnh thận."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_CKD_P219_220",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "9c0e9d96-6211-5b79-b728-4583d56986ba"
+      },
+      "recipeId": "9e2a2a0c-a012-5823-b318-f516dc66aadc",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG",
+          "FISH"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 60,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 70,
+            "basis": "raw",
+            "code": "GRASS_CARP_RAW",
+            "name": "Cá trắm cỏ, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 30,
+            "basis": "raw",
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu ăn",
+            "unit": "ml"
+          },
+          {
+            "amount": 25,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "WATER_SPINACH_FRESH",
+            "name": "Rau muống,  tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "SAUROPUS_FRESH",
+            "name": "Rau ngót, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 120,
+            "basis": "raw",
+            "code": "MANDARIN_FRESH",
+            "name": "Quít, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · cá trắm sốt cà chua · trứng · rau",
+        "nutrients": {
+          "carbohydrate_g": 68.03,
+          "energy_kcal": 532.5,
+          "fat_g": 15.55,
+          "fiber_g": 4.45,
+          "protein_g": 30.07,
+          "sodium_mg": 155.73
+        },
+        "preparationSteps": [
+          "Nấu cơm; rán cá trắm và sốt cà chua; luộc trứng, rau muống; nấu canh rau ngót và dùng kèm quýt.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_HTN_P143",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "1d1f754f-8a57-5162-939a-b44894425b2e"
+      },
+      "recipeId": "334fe1eb-5317-5943-9eee-15ecbcd16424",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CRUSTACEAN"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 60,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "SEA_SHRIMP_RAW",
+            "name": "Tôm biển, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "CHILI_SAUCE",
+            "name": "Tương ớt",
+            "unit": "g"
+          },
+          {
+            "amount": 5,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu chiên tôm",
+            "unit": "ml"
+          },
+          {
+            "amount": 40,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 200,
+            "basis": "raw",
+            "code": "WATERCRESS_FRESH",
+            "name": "Cải soong, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 7,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu xào rau",
+            "unit": "ml"
+          },
+          {
+            "amount": 50,
+            "basis": "raw",
+            "code": "MUSTARD_GREENS_FRESH",
+            "name": "Cải xanh, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150,
+            "basis": "raw",
+            "code": "RAMBUTAN_FRESH",
+            "name": "Chôm chôm, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · tôm biển · thịt băm · cải soong",
+        "nutrients": {
+          "carbohydrate_g": 81.74,
+          "energy_kcal": 585.25,
+          "fat_g": 16.08,
+          "fiber_g": 7.14,
+          "protein_g": 28.46,
+          "sodium_mg": 434.35
+        },
+        "preparationSteps": [
+          "Nấu cơm; chiên tôm biển, dùng cùng tương ớt; rang thịt băm; xào cải soong; nấu canh cải và dùng kèm chôm chôm.",
+          "Giá trị dinh dưỡng ước tính 1 ml dầu như 1 g và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_OBESITY_P273",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "9678e2b2-265b-554d-8c32-14c3ed3563d4"
+      },
+      "recipeId": "a17b48af-c73b-5b69-96ba-1e0110d311f0",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 75,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 40,
+            "basis": "raw",
+            "code": "CHICKEN_RAW",
+            "name": "Thịt gà ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 3,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 2,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu ăn",
+            "unit": "g"
+          },
+          {
+            "amount": 80,
+            "basis": "raw",
+            "code": "BITTER_MELON_FRESH",
+            "name": "Mướp đắng, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 30,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 2,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 120,
+            "basis": "cooked",
+            "code": "GREEN_BEANS_BOILED",
+            "name": "Đậu cô ve, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 150,
+            "basis": "raw",
+            "code": "APPLE_FRESH",
+            "name": "Táo tây, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · gà om nấm · mướp đắng nhồi thịt · đậu cô ve",
+        "nutrients": {
+          "carbohydrate_g": 98.55,
+          "energy_kcal": 608.9,
+          "fat_g": 10.69,
+          "fiber_g": 4.23,
+          "protein_g": 29.47,
+          "sodium_mg": 204.83
+        },
+        "preparationSteps": [
+          "Nấu cơm; om thịt gà với nấm; nhồi mướp đắng bằng thịt nạc và nấm; luộc đậu cô ve; dùng kèm táo.",
+          "Mộc nhĩ được sách nêu nhưng không có định lượng nên không cộng vào giá trị dinh dưỡng ước tính."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_POSTOP_P370",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "11d4fb6b-e523-5728-9765-e90f604a8bab"
+      },
+      "recipeId": "a97b12f2-3322-519c-89cc-f47892369e44",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh minh hoạ cơm",
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "ingredients": [
+          {
+            "amount": 75,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 20,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 10,
+            "basis": "raw",
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 2,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu cho thịt sốt",
+            "unit": "ml"
+          },
+          {
+            "amount": 30,
+            "basis": "raw",
+            "code": "BEEF_LEAN_RAW",
+            "name": "Thịt bò, loại I, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 80,
+            "basis": "raw",
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 7,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu cho thịt bò xào",
+            "unit": "ml"
+          },
+          {
+            "amount": 150,
+            "basis": "raw",
+            "code": "WINTER_MELON_FRESH",
+            "name": "Quả bí đao (bí xanh), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150,
+            "basis": "raw",
+            "code": "DRAGON_FRUIT_FRESH",
+            "name": "Quả thanh long, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · lợn sốt cà chua · bò xào hành tây · bí xanh",
+        "nutrients": {
+          "carbohydrate_g": 85.98,
+          "energy_kcal": 536.6,
+          "fat_g": 12.4,
+          "fiber_g": 5.46,
+          "protein_g": 20.38,
+          "sodium_mg": 70.16
+        },
+        "preparationSteps": [
+          "Nấu cơm; làm thịt lợn sốt cà chua; xào thịt bò với hành tây; luộc bí xanh và dùng kèm thanh long.",
+          "Định lượng thanh long trong sách tính cả vỏ; giá trị dinh dưỡng ước tính dùng giá trị phần ăn được và dùng tham khảo, không phải chỉ định điều trị."
+        ],
+        "servings": 1,
+        "sources": [
+          "BOOK_2019_CKD_P219_220",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "8f82fd2f-e2f4-5f15-9a8a-8df7d4b67a78"
+      },
+      "recipeId": "5f4af012-3afc-5d81-8933-b2479576b093",
+      "version": 1
+    }
+  ],
+  "rules": [],
+  "schemaVersion": 1,
+  "supportedScopes": [
+    {
+      "blockedSpecialNeeds": [
+        "KIDNEY_DISEASE",
+        "DYSPHAGIA",
+        "TUBE_FEEDING",
+        "FLUID_RESTRICTION",
+        "ELECTROLYTE_RESTRICTION"
+      ],
+      "code": "adult-baseline-v1",
+      "conditionCodes": [],
+      "medicationPolicy": "reported_none_only",
+      "population": "adult"
+    }
+  ]
+}

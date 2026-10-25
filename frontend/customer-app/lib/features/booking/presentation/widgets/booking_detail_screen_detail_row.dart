@@ -16,8 +16,16 @@ class BookingDetailScreenDetailRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.primary),
-        const SizedBox(width: AppSpacing.control),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(AppRadius.compact),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.primary),
+        ),
+        const SizedBox(width: AppSpacing.compact),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +39,8 @@ class BookingDetailScreenDetailRow extends StatelessWidget {
                   style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: AppFontSizes.s13,
-                      fontWeight: FontWeight.w500)),
+                      fontWeight: FontWeight.w600,
+                      height: 1.35)),
             ],
           ),
         ),

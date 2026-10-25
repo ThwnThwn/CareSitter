@@ -14,70 +14,85 @@ class BookingCaregiverContactActions extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         children: [
           Expanded(
-            child: InkWell(
+            child: _ContactActionButton(
               onTap: callbackAction1,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.chat_bubble_outline,
-                        size: 17, color: AppColors.primary),
-                    SizedBox(width: AppSpacing.tight),
-                    Text(
-                      'Nhắn tin',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppFontSizes.s13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              icon: Icons.chat_bubble_outline,
+              label: 'Nhắn tin',
+              foreground: AppColors.primary,
+              background: AppColors.primaryContainer,
             ),
           ),
           const SizedBox(width: AppSpacing.control),
           Expanded(
-            child: InkWell(
+            child: _ContactActionButton(
               onTap: callbackAction2,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  boxShadow: [
+              icon: Icons.call,
+              label: 'Gọi điện',
+              foreground: Colors.white,
+              background: AppColors.primary,
+              elevated: true,
+            ),
+          ),
+        ],
+      );
+}
+
+class _ContactActionButton extends StatelessWidget {
+  const _ContactActionButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.foreground,
+    required this.background,
+    this.elevated = false,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final Color foreground;
+  final Color background;
+  final bool elevated;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            boxShadow: elevated
+                ? [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.2),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.call, size: 17, color: Colors.white),
-                    SizedBox(width: AppSpacing.tight),
-                    Text(
-                      'Gọi trực tiếp',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppFontSizes.s13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 17, color: foreground),
+              const SizedBox(width: AppSpacing.tight),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: AppFontSizes.s13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       );
 }

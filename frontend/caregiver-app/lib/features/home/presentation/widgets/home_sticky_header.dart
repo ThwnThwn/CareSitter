@@ -20,7 +20,6 @@ class HomeStickyHeader extends ConsumerWidget {
                 ? auth!.phone!.trim()
                 : 'Caregiver';
     final greetingName = _shortName(displayName);
-    final initials = _initials(displayName);
 
     return SliverAppBar(
       pinned: true,
@@ -35,7 +34,7 @@ class HomeStickyHeader extends ConsumerWidget {
       title: Row(
         children: [
           // Avatar + online dot
-          HomeAvatar(initials: initials),
+          HomeAvatar(profile: profile),
           const SizedBox(width: AppSpacing.compact),
           // Name + status toggle
           HomeGreeting(greetingName: greetingName, profile: profile),
@@ -53,19 +52,5 @@ class HomeStickyHeader extends ConsumerWidget {
     final parts =
         displayName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
     return parts.isEmpty ? 'Caregiver' : parts.last;
-  }
-
-  String _initials(String displayName) {
-    final parts = displayName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList(growable: false);
-    if (parts.isEmpty) return 'CG';
-    if (parts.length == 1) {
-      return parts.first.characters.first.toUpperCase();
-    }
-    return '${parts.first.characters.first}${parts.last.characters.first}'
-        .toUpperCase();
   }
 }

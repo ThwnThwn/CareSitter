@@ -18,7 +18,8 @@ void main() {
   });
 
   const scenarios = [
-    _Scenario('confirmed', 'Chờ ghép CSV', caregiverId: null, expectWaiting: true),
+    _Scenario('confirmed', 'Chờ ghép CSV',
+        caregiverId: null, expectWaiting: true),
     _Scenario('confirmed', 'Đã xác nhận'),
     _Scenario('caregiver_accepted', 'Đã nhận ca', caregiverId: null),
     _Scenario('pending_payment', 'Chờ thanh toán'),
@@ -85,7 +86,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       final detailLabel = find.descendant(
-        of: find.byType(AppBar),
+        of: find.byKey(const Key('booking-detail-hero')),
         matching: find.text(scenario.label),
       );
       expect(detailLabel, findsOneWidget);

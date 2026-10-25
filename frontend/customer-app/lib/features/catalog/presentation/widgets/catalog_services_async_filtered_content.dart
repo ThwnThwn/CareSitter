@@ -2,6 +2,7 @@ import 'package:caresitter_customer/features/catalog/presentation/widgets/catalo
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
@@ -45,7 +46,7 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
               ),
             ),
             centerTitle: true,
-            leading: AppBackButton(fallbackRoute: '/home'),
+            leading: AppBackButton(fallbackRoute: AppRoutes.home),
           ),
 
           SliverPadding(
@@ -70,21 +71,7 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
                 // ── Section Title ──────────────────────────────────────────
                 const FadeSlideStaggered(
                   index: 2,
-                  child: Row(
-                    children: [
-                      Text(
-                        'Dịch vụ chăm sóc',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSizes.s17,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.tight),
-                      Text('🩺', style: TextStyle(fontSize: AppFontSizes.s15)),
-                    ],
-                  ),
+                  child: _CatalogSectionIntro(),
                 ),
                 const SizedBox(height: AppSpacing.compact),
 
@@ -94,6 +81,35 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
                     filterServices: filtered,
                     buildServiceCard: buildServiceCard),
               ]),
+            ),
+          ),
+        ],
+      );
+}
+
+class _CatalogSectionIntro extends StatelessWidget {
+  const _CatalogSectionIntro();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dịch vụ chăm sóc tại nhà',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: AppFontSizes.s17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.1,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            'Chọn gói phi y tế phù hợp với thời gian và nhu cầu của gia đình.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppFontSizes.s12,
+              height: 1.4,
             ),
           ),
         ],

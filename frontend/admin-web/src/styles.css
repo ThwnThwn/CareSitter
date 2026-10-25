@@ -44,7 +44,7 @@ a { color: var(--green); }
 .skip-link:focus { top: 12px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 
-.primary, .secondary, .danger {
+.primary, .secondary, button.danger {
   min-height: 42px; border: 0; border-radius: 9px; padding: 0 16px; display: inline-flex; align-items: center;
   justify-content: center; gap: 8px; font-weight: 700; font-size: 13px; transition: background .18s ease-out, color .18s ease-out, transform .12s ease-out;
 }
@@ -52,9 +52,9 @@ a { color: var(--green); }
 .primary:hover { background: var(--green-dark); }
 .secondary { border: 1px solid #cad9d2; color: var(--ink); background: #fff; }
 .secondary:hover { background: #f1f7f4; }
-.danger { border: 1px solid #efb8b3; color: var(--red); background: #fff8f7; }
-.danger:hover { background: var(--red-soft); }
-.primary:active, .secondary:active, .danger:active { transform: translateY(1px); }
+button.danger { border: 1px solid #efb8b3; color: var(--red); background: #fff8f7; }
+button.danger:hover { background: var(--red-soft); }
+.primary:active, .secondary:active, button.danger:active { transform: translateY(1px); }
 .align-start { align-self: flex-start; }
 .text-button, .row-action { border: 0; color: var(--green); background: transparent; display: inline-flex; align-items: center; gap: 5px; padding: 7px 0; font-weight: 700; font-size: 12px; white-space: nowrap; }
 .row-action:hover, .text-button:hover { color: var(--green-dark); text-decoration: underline; text-underline-offset: 3px; }
@@ -153,7 +153,14 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
 .filter-bar > label:not(.search-field) { min-width: 180px; }
 .filter-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 220px)); }
 .filter-grid.user-filters { grid-template-columns: minmax(250px, 1fr) minmax(150px, 220px) minmax(150px, 220px); }
-.filter-grid.booking-chat-filters { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.filter-grid.booking-chat-filters {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  column-gap: 12px;
+  row-gap: 14px;
+}
+.filter-bar.booking-chat-filters > label:not(.search-field) { min-width: 0; }
+.booking-chat-filters > label > input,
+.booking-chat-filters > label > select { min-width: 0; max-width: 100%; }
 .search-field { min-width: min(100%, 320px); border: 1px solid #cbd9d3; border-radius: 9px; padding: 0 11px; display: flex; align-items: center; gap: 8px; color: var(--muted); background: #fff; }
 .search-field:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(11,107,87,.12); }
 .search-field input { min-height: 40px; border: 0; padding: 0; box-shadow: none; background: transparent; }
@@ -206,6 +213,10 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
 .tabs button:hover { color: var(--ink); }
 .tabs button.active { border-bottom-color: var(--green); color: var(--green); }
 .tabs button span { min-width: 20px; padding: 2px 5px; border-radius: 999px; background: #edf3f0; font-size: 9px; }
+
+.support-tab-content { padding-top: 24px; }
+.support-tab-content .page-actions { align-self: center; }
+.booking-chat-filters .filter-submit { min-width: 180px; align-self: end; }
 
 .drawer-backdrop { position: fixed; z-index: var(--z-backdrop); inset: 0; background: rgba(8,42,35,.42); display: flex; justify-content: flex-end; }
 .drawer { z-index: var(--z-drawer); width: min(100%, 590px); height: 100%; background: #fbfdfc; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; animation: drawer-in .2s cubic-bezier(.22,.75,.18,1); }
@@ -337,6 +348,8 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
   .toolbar .search-field { flex: 1 1 220px; }
   .filter-grid, .filter-grid.user-filters { grid-template-columns: 1fr; }
   .filter-bar > label, .filter-bar > label:not(.search-field), .search-field { width: 100%; min-width: 0; }
+  .support-tab-content { padding-top: 20px; }
+  .booking-chat-filters .filter-submit { width: 100%; min-width: 0; }
   .operational-summary { display: none; }
   .drawer { width: 100%; }
   .drawer-head, .drawer-body, .drawer-footer { padding-left: 16px; padding-right: 16px; }

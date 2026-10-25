@@ -3,23 +3,27 @@ import 'package:caresitter_customer/app/router/shell_nav_item.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 class ShellScaffold extends StatelessWidget {
   final Widget child;
   const ShellScaffold({super.key, required this.child});
 
   static const _tabs = [
-    ShellNavItem(icon: Icons.home_outlined, label: 'Trang chủ', path: '/home'),
+    ShellNavItem(
+        icon: Icons.home_outlined, label: 'Trang chủ', path: AppRoutes.home),
     ShellNavItem(
         icon: Icons.calendar_month_outlined,
         label: 'Lịch hẹn',
-        path: '/bookings'),
+        path: AppRoutes.bookings),
     ShellNavItem(
         icon: Icons.restaurant_menu_outlined,
         label: 'Thực đơn',
-        path: '/nutrition'),
+        path: AppRoutes.nutrition),
     ShellNavItem(
-        icon: Icons.person_outline_rounded, label: 'Hồ sơ', path: '/settings'),
+        icon: Icons.person_outline_rounded,
+        label: 'Hồ sơ',
+        path: AppRoutes.settings),
   ];
 
   int _selectedIndex(BuildContext context) {
@@ -51,7 +55,7 @@ class ShellScaffold extends StatelessWidget {
         selectedIndex: idx,
         tabs: _tabs,
         onTabSelected: (i) => context.go(_tabs[i].path),
-        onCreateBooking: () => context.push('/booking/new'),
+        onCreateBooking: () => context.push(AppRoutes.bookingNew),
       ),
     );
   }

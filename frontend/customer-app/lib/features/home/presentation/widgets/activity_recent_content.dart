@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'activity_section_heading.dart';
 import 'activity_recent_row.dart';
 import 'package:go_router/go_router.dart';
@@ -53,7 +54,7 @@ class ActivityRecentContent extends StatelessWidget {
             // Xem lịch sử link
             Center(
               child: TextButton.icon(
-                onPressed: () => context.push('/bookings'),
+                onPressed: () => context.push(AppRoutes.bookings),
                 icon: const Text(
                   'Xem lịch sử',
                   style: TextStyle(

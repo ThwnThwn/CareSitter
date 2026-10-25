@@ -27,15 +27,17 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
         var seed = await GetSeedAsync();
         var start = DateTimeOffset.UtcNow.AddDays(3);
         var end = start.AddHours(2);
+        var firstBookingId = Guid.NewGuid();
+        var secondBookingId = Guid.NewGuid();
 
         var results = await RunConcurrentAsync(
-            () => InsertBookingAsync(seed, Guid.NewGuid(), "PENDING_PAYMENT", start, end),
-            () => InsertBookingAsync(seed, Guid.NewGuid(), "PENDING_PAYMENT",
+            () => InsertBookingAsync(seed, firstBookingId, "PENDING_PAYMENT", start, end),
+            () => InsertBookingAsync(seed, secondBookingId, "PENDING_PAYMENT",
                 start.AddMinutes(15), end.AddMinutes(15)));
 
         Assert.Contains("OK", results);
         Assert.Contains(PostgresErrorCodes.ExclusionViolation, results);
-        Assert.Equal(1, await CountBookingsAsync(seed.BeneficiaryId));
+        Assert.Equal(1, await CountBookingsAsync(firstBookingId, secondBookingId));
     }
 
     [PostgresFact]
@@ -483,13 +485,14 @@ public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
         await command.ExecuteNonQueryAsync();
     }
 
-    private async Task<long> CountBookingsAsync(Guid beneficiaryId)
+    private async Task<long> CountBookingsAsync(Guid firstBookingId, Guid secondBookingId)
     {
         await using var connection = await _database.OpenConnectionAsync();
         await using var command = new NpgsqlCommand(
-            "SELECT count(*) FROM booking.bookings WHERE beneficiary_id = @beneficiary_id",
+            "SELECT count(*) FROM booking.bookings WHERE id IN (@first_booking_id, @second_booking_id)",
             connection);
-        command.Parameters.AddWithValue("beneficiary_id", beneficiaryId);
+        command.Parameters.AddWithValue("first_booking_id", firstBookingId);
+        command.Parameters.AddWithValue("second_booking_id", secondBookingId);
         return (long)(await command.ExecuteScalarAsync() ?? 0L);
     }
 

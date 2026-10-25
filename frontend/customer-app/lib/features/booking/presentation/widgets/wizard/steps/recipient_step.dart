@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,7 @@ class RecipientStep extends ConsumerWidget {
   final BookingWizardArgs args;
   Future<void> _add(BuildContext context, WidgetRef ref) async {
     final user = ref.read(authStateProvider).valueOrNull?.userId;
-    final id = await context.push<String>('/beneficiaries/create');
+    final id = await context.push<String>(AppRoutes.beneficiaryNew);
     if (!context.mounted ||
         ref.read(authStateProvider).valueOrNull?.userId != user ||
         id == null) {

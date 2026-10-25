@@ -2,9 +2,14 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class NutritionPatientIntro extends StatelessWidget {
-  const NutritionPatientIntro({super.key, this.name});
+  const NutritionPatientIntro({
+    super.key,
+    this.name,
+    required this.editing,
+  });
 
   final String? name;
+  final bool editing;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -23,7 +28,7 @@ class NutritionPatientIntro extends StatelessWidget {
               ),
             ),
             child: Text(
-              'Hồ sơ dinh dưỡng',
+              editing ? 'Hồ sơ dinh dưỡng' : 'Thực đơn cá nhân hóa',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -32,7 +37,13 @@ class NutritionPatientIntro extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            name == null ? 'Hồ sơ đang chọn' : 'Thực đơn cho $name',
+            editing
+                ? name == null
+                    ? 'Cập nhật thông tin'
+                    : 'Cập nhật thông tin cho $name'
+                : name == null
+                    ? 'Thực đơn đang chọn'
+                    : 'Thực đơn cho $name',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -41,8 +52,9 @@ class NutritionPatientIntro extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Kiểm tra thông tin sức khỏe trước khi xem gợi ý. '
-            'Thông tin do bạn và gia đình cung cấp.',
+            editing
+                ? 'Kiểm tra và lưu những thay đổi về sức khỏe hoặc nhu cầu ăn uống.'
+                : 'Các món được gợi ý theo thông tin đã lưu. Cập nhật hồ sơ khi tình trạng sức khỏe thay đổi.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.5,

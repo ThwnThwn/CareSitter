@@ -26,10 +26,13 @@ class LoginIdentifierField extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         decoration: InputDecoration(
+          filled: true,
+          fillColor: AppColors.surface,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
           labelText: usePassword ? 'Email hoặc Số điện thoại' : 'Email',
           hintText: usePassword
-              ? 'bichngoc@example.com hoặc 0912333444'
-              : 'bichngoc@example.com',
+              ? 'Nhập email hoặc số điện thoại của bạn'
+              : 'Nhập email của bạn',
           prefixIcon: Icon(
             usePassword ? Icons.person_outline : Icons.email_outlined,
             color: AppColors.primary,

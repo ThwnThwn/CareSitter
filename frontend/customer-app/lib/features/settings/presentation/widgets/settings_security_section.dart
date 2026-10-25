@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'settings_section.dart';
 import 'settings_settings_item.dart';
@@ -19,7 +20,7 @@ class SettingsSecuritySection extends StatelessWidget {
           iconColor: const Color(0xFF4F46E5), // indigo-600
           title: 'Email khôi phục',
           subtitle: 'Xác minh hoặc đổi email đăng nhập',
-          onTap: () => context.push('/settings/recovery-email'),
+          onTap: () => context.push(AppRoutes.recoveryEmail),
         ),
         SettingsSettingsItem(
           icon: Icons.lock_outline,
@@ -28,7 +29,7 @@ class SettingsSecuritySection extends StatelessWidget {
           title: 'Đổi mật khẩu',
           subtitle: 'Cập nhật mật khẩu bảo vệ tài khoản',
           showDivider: false,
-          onTap: () => context.push('/settings/password'),
+          onTap: () => context.push(AppRoutes.password),
         ),
       ],
     );

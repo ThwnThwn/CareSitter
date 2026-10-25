@@ -8,7 +8,7 @@ import { BookingChatConversations } from '../features/support/BookingChatConvers
 export function SupportPage() {
   const [tab, setTab] = useState('tickets');
   return (
-    <>
+    <section className="support-page">
       <Tabs
         value={tab}
         onChange={setTab}
@@ -19,8 +19,10 @@ export function SupportPage() {
           { value: 'booking-chat', label: 'Booking Chat' },
         ]}
       />
-      {tab === 'tickets' ? <SupportTickets /> : tab === 'consultations' ? <ConsultationInbox /> :
-        tab === 'chat' ? <SupportConversations /> : <BookingChatConversations />}
-    </>
+      <div className="support-tab-content" role="tabpanel">
+        {tab === 'tickets' ? <SupportTickets /> : tab === 'consultations' ? <ConsultationInbox /> :
+          tab === 'chat' ? <SupportConversations /> : <BookingChatConversations />}
+      </div>
+    </section>
   );
 }

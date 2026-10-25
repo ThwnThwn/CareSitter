@@ -1,0 +1,2951 @@
+{
+  "candidateOrigin": {
+    "authority": "untrusted_candidate_only",
+    "kind": "ai_assisted_inventory",
+    "note": "Danh sách 81 nhóm do Gemini tổng hợp; PDF nguồn mới là bằng chứng có thẩm quyền.",
+    "receivedOn": "2026-10-24"
+  },
+  "entries": [
+    {
+      "aliases": [
+        "Phở bò"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Phở bò",
+      "evidenceQuotes": [
+        "Phở thịt bò:"
+      ],
+      "id": "clinical-nutrition-2019-dish-001",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        143
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        86,
+        143,
+        159,
+        189,
+        255,
+        389,
+        396,
+        419,
+        428,
+        429,
+        457,
+        469
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "COPD",
+        "DYSLIPIDEMIA",
+        "GENERAL_ADULT_MENU",
+        "GESTATIONAL_DIABETES",
+        "GOUT",
+        "HYPERTENSION",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "structured_demo",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [
+        "34a33263-bd12-5f9b-8765-5bd8a17b2a0e"
+      ],
+      "reviewNote": "Đã cấu trúc thành recipe local demo; vẫn cần duyệt chuyên môn trước production.",
+      "sourceTitles": [
+        "Phở thịt bò"
+      ],
+      "verificationStatus": "structured",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "noodle_staple",
+      "displayName": "Phở gà",
+      "evidenceQuotes": [
+        "Bữa sáng: Phở gà"
+      ],
+      "id": "clinical-nutrition-2019-dish-002",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        286
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        86,
+        286,
+        303,
+        418
+      ],
+      "populationContexts": [
+        "CANCER",
+        "GENERAL_ADULT_MENU",
+        "ORGAN_TRANSPLANT",
+        "OSTEOPOROSIS"
+      ],
+      "promotionDecision": "structured_demo",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [
+        "5fd8eaae-bd3b-5e62-92ff-7c11da06ac33"
+      ],
+      "reviewNote": "Đã cấu trúc thành recipe local demo; vẫn cần duyệt chuyên môn trước production.",
+      "sourceTitles": [
+        "Phở gà"
+      ],
+      "verificationStatus": "structured",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Phở thịt nạc heo"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Phở thịt nạc heo",
+      "evidenceQuotes": [
+        "Phở thịt nạc"
+      ],
+      "id": "clinical-nutrition-2019-dish-003",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        463
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        463
+      ],
+      "populationContexts": [
+        "PREGNANCY_TOXEMIA"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Phở thịt nạc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bún mọc dọc mùng"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Bún mọc dọc mùng",
+      "evidenceQuotes": [
+        "Bún mọc:",
+        "Bún 185g, thịt lợn nạc 40g, dọc mùng 40g, hành lá 5g"
+      ],
+      "id": "clinical-nutrition-2019-dish-004",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        207
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        207,
+        246,
+        338
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "IBD",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Bún mọc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "noodle_staple",
+      "displayName": "Bún thịt gà",
+      "evidenceQuotes": [
+        "Bún thịt gà",
+        "Bún thịt gà:"
+      ],
+      "id": "clinical-nutrition-2019-dish-005",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        463,
+        468
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        463,
+        468
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "PREGNANCY_TOXEMIA"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Bún thịt gà"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "noodle_staple",
+      "displayName": "Bún bò",
+      "evidenceQuotes": [
+        "Phở bò 300 ml: Cháo thịt 300 ml: Bún bò 300 ml :"
+      ],
+      "id": "clinical-nutrition-2019-dish-006",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        428
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        428
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Bún bò"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "noodle_staple",
+      "displayName": "Bún thịt chân giò mọc",
+      "evidenceQuotes": [
+        "Bún thịt chân giò, mọc"
+      ],
+      "id": "clinical-nutrition-2019-dish-007",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        370
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        370
+      ],
+      "populationContexts": [
+        "POSTOPERATIVE_GI"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Bún thịt chân giò mọc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "noodle_staple",
+      "displayName": "Miến ngan trộn",
+      "evidenceQuotes": [
+        "Miến ngan trộn"
+      ],
+      "id": "clinical-nutrition-2019-dish-008",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        219
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        219,
+        220
+      ],
+      "populationContexts": [
+        "CKD"
+      ],
+      "promotionDecision": "structured_demo",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [
+        "b0128004-869e-5a0a-9160-cc92063b0d7b"
+      ],
+      "reviewNote": "Đã cấu trúc thành recipe local demo; vẫn cần duyệt chuyên môn trước production.",
+      "sourceTitles": [
+        "Miến ngan trộn"
+      ],
+      "verificationStatus": "structured",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Miến xào bò nấm hương thập cẩm"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Miến xào bò nấm hương thập cẩm",
+      "evidenceQuotes": [
+        "Miến dong 75g, thịt bò 30g, hành tây 80g, cà rốt 70g, nấm hương 3g,"
+      ],
+      "id": "clinical-nutrition-2019-dish-009",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        220
+      ],
+      "nameFidelity": "descriptive",
+      "pdfPagesClaimed": [
+        220,
+        227
+      ],
+      "populationContexts": [
+        "ACUTE_GLOMERULONEPHRITIS",
+        "CKD"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Miến xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Miến cá rô đồng rau cần"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Miến cá rô đồng rau cần",
+      "evidenceQuotes": [
+        "Miến cá rô đồng",
+        "Miến dong 50g, cá rô đồng 25g, dầu ăn 5ml, thìa là 5g, rau"
+      ],
+      "id": "clinical-nutrition-2019-dish-010",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        227
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        227
+      ],
+      "populationContexts": [
+        "ACUTE_GLOMERULONEPHRITIS"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Miến cá rô đồng"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bánh cuốn chả nạc / giò lụa"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Bánh cuốn chả nạc / giò lụa",
+      "evidenceQuotes": [
+        "Giò lụa 30g Dầu 7g"
+      ],
+      "id": "clinical-nutrition-2019-dish-011",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        419
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        396,
+        419,
+        429
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "giò lụa"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Xôi đỗ xanh"
+      ],
+      "category": "noodle_staple",
+      "displayName": "Xôi đỗ xanh",
+      "evidenceQuotes": [
+        "Thứ 2, Thứ 5 Xôi đẫu xanh Cơm: Gạo tẻ 150g Cơm: Gạo 150g"
+      ],
+      "id": "clinical-nutrition-2019-dish-012",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        419
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        419
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Xôi đậu xanh"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cháo thịt lợn nạc băm hành lá"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Cháo thịt lợn nạc băm hành lá",
+      "evidenceQuotes": [
+        "Cháo thịt:"
+      ],
+      "id": "clinical-nutrition-2019-dish-013",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        273
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        273,
+        418,
+        428,
+        429
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "structured_demo",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [
+        "bfa06fc6-2372-539e-88e6-effca0601559"
+      ],
+      "reviewNote": "Đã cấu trúc thành recipe local demo; vẫn cần duyệt chuyên môn trước production.",
+      "sourceTitles": [
+        "Cháo thịt"
+      ],
+      "verificationStatus": "structured",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cháo gà đậu xanh dầu vừng"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Cháo gà đậu xanh dầu vừng",
+      "evidenceQuotes": [
+        "Cháo gà",
+        "Bữa trưa Gạo tẻ 40gr, thịt gà 25gr, đậu xanh 7gr, dầu vừng 7mL"
+      ],
+      "id": "clinical-nutrition-2019-dish-014",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        178
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        178,
+        189,
+        396
+      ],
+      "populationContexts": [
+        "COPD",
+        "ORGAN_TRANSPLANT",
+        "STROKE"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cháo gà"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cháo cá quả đậu xanh"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Cháo cá quả đậu xanh",
+      "evidenceQuotes": [
+        "Cháo cá",
+        "Gạo tẻ 40gr, cá quả 30gr, đậu xanh 7gr, dầu vừng 7mL"
+      ],
+      "id": "clinical-nutrition-2019-dish-015",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        178
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        178
+      ],
+      "populationContexts": [
+        "STROKE"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cháo cá"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cháo thập cẩm thịt gà/heo rau củ"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Cháo thập cẩm thịt gà/heo rau củ",
+      "evidenceQuotes": [
+        "11 giờ Súp thịt 100 ml: Cháo thập cẩm 300ml: Cơm 300 g"
+      ],
+      "id": "clinical-nutrition-2019-dish-016",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        389,
+        397
+      ],
+      "nameFidelity": "descriptive",
+      "pdfPagesClaimed": [
+        389,
+        397
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cháo thập cẩm"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bột tôm bí xanh (trẻ nhỏ)"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Bột tôm bí xanh (trẻ nhỏ)",
+      "evidenceQuotes": [
+        "Bột tôm: 2/3 bát ăn cơm"
+      ],
+      "id": "clinical-nutrition-2019-dish-017",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        478
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        478
+      ],
+      "populationContexts": [
+        "PEDIATRIC_RICKETS"
+      ],
+      "promotionDecision": "reference_only_blocked_population",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Bột tôm"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bột thịt gà rau dền (trẻ nhỏ)"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Bột thịt gà rau dền (trẻ nhỏ)",
+      "evidenceQuotes": [
+        "Bột thịt gà: 2/3 bát ăn cơm"
+      ],
+      "id": "clinical-nutrition-2019-dish-018",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        478
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        478
+      ],
+      "populationContexts": [
+        "PEDIATRIC_RICKETS"
+      ],
+      "promotionDecision": "reference_only_blocked_population",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Bột thịt gà"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Súp thịt tự chế từ bột gạo, thịt nạc, nước giá đỗ"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Súp thịt tự chế từ bột gạo, thịt nạc, nước giá đỗ",
+      "evidenceQuotes": [
+        "Công thức súp chế biến từ sản phẩm tự nhiên"
+      ],
+      "id": "clinical-nutrition-2019-dish-019",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        114
+      ],
+      "nameFidelity": "descriptive",
+      "pdfPagesClaimed": [
+        114,
+        389,
+        397
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "TUBE_FEEDING"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Công thức súp chế biến từ sản phẩm tự nhiên"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Súp ăn qua ống thông cho bệnh nhân bỏng"
+      ],
+      "category": "porridge_medical_feed",
+      "displayName": "Súp ăn qua ống thông cho bệnh nhân bỏng",
+      "evidenceQuotes": [
+        "+ 7 giờ: súp ăn qua ống thông 400ml gồm:"
+      ],
+      "id": "clinical-nutrition-2019-dish-020",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        428
+      ],
+      "nameFidelity": "descriptive",
+      "pdfPagesClaimed": [
+        428
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "reference_only_blocked_special_need",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Súp ăn qua ống thông"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Thịt lợn luộc",
+      "evidenceQuotes": [
+        "Thịt lợn luộc: thịt lợn nạc 50gr",
+        "Cơm, thịt lợn luộc, đậu phụ sốt, bí xanh luộc, nước rau",
+        "Thịt lợn luộc:"
+      ],
+      "id": "clinical-nutrition-2019-dish-021",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        189,
+        463,
+        468
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        189,
+        418,
+        428,
+        429,
+        463,
+        468
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "COPD",
+        "ORGAN_TRANSPLANT",
+        "PREGNANCY_TOXEMIA",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt lợn luộc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt lợn rang / rim mặn"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt lợn rang / rim mặn",
+      "evidenceQuotes": [
+        "Thịt lợn rang: Thịt lợn nạc 50g"
+      ],
+      "id": "clinical-nutrition-2019-dish-022",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        143,
+        159
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        286,
+        417,
+        419,
+        463
+      ],
+      "populationContexts": [
+        "DYSLIPIDEMIA",
+        "HYPERTENSION",
+        "ORGAN_TRANSPLANT",
+        "OSTEOPOROSIS",
+        "PREGNANCY_TOXEMIA"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt lợn rang"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt lợn băm rim tiêu / rim cà chua"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt lợn băm rim tiêu / rim cà chua",
+      "evidenceQuotes": [
+        "11 giờ Thịt băm: Thịt lợn nạc 20g",
+        "Thịt băm rim: Thịt nạc vai 20g",
+        "Bữa tối: Cơm, canh cá rô rau cải, bắp cải luộc, thịt băm rim"
+      ],
+      "id": "clinical-nutrition-2019-dish-023",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        219,
+        246,
+        286
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        207,
+        219,
+        246,
+        273,
+        286,
+        338
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY",
+        "ALZHEIMER_OR_INFECTION",
+        "CKD",
+        "IBD",
+        "OSTEOPOROSIS",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Thịt băm",
+        "Thịt băm rim",
+        "Thịt băm rim cà chua"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt lợn sốt cà chua"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt lợn sốt cà chua",
+      "evidenceQuotes": [
+        "Thịt lợn xốt cà chua: Thịt lợn 20g, cà chua 10g, dầu ăn 2ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-024",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        220
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        220,
+        458
+      ],
+      "populationContexts": [
+        "CKD",
+        "GESTATIONAL_DIABETES"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Thịt lợn xốt cà chua"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Chả lá lốt",
+      "evidenceQuotes": [
+        "Chả lá lốt 2c Thịt bò 30g Tôm rang 20g",
+        "Bột gạo 20g 300ml: Chả lá lốt 2C",
+        "Chả lá lốt 3 chiếc: Sấn mông luộc 100 g Cá rán 200 g",
+        "Thịt gà rang Chả lá lốt 5 chiếc Lợn nạc luộc 200g"
+      ],
+      "id": "clinical-nutrition-2019-dish-025",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        396,
+        397,
+        428,
+        429,
+        464
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        389,
+        396,
+        397,
+        418,
+        419,
+        428,
+        429,
+        464
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "PREGNANCY_TOXEMIA",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Chả lá lốt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Chả xương xông",
+      "evidenceQuotes": [
+        "Cá quả hoặc trê dim 70g Thịt lợn sấn kho tầu Chả xương xông 2c"
+      ],
+      "id": "clinical-nutrition-2019-dish-026",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        396
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        396
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Chả xương xông"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Nem rán (chả giò)"
+      ],
+      "category": "main_dish",
+      "displayName": "Nem rán (chả giò)",
+      "evidenceQuotes": [
+        "Thịt lợn nạc 90g làm chả lá nốt 3 cái + nem rán 2 cái",
+        "Xương sườn 20g Thịt nạc 40g Thịt nạc 50g làm nem rán"
+      ],
+      "id": "clinical-nutrition-2019-dish-027",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        418,
+        419
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        418,
+        419
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Nem rán"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Sườn xào chua ngọt / Sườn rim"
+      ],
+      "category": "main_dish",
+      "displayName": "Sườn xào chua ngọt / Sườn rim",
+      "evidenceQuotes": [
+        "Sườn xào chua ngọt: Sườn lợn (bỏ xương) 40g",
+        "- Sườn rim cà chua:"
+      ],
+      "id": "clinical-nutrition-2019-dish-028",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        370,
+        469
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        255,
+        370,
+        429,
+        469
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "GOUT",
+        "POSTOPERATIVE_GI",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Sườn xào chua ngọt",
+        "Sườn rim"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Mọc sốt cà chua"
+      ],
+      "category": "main_dish",
+      "displayName": "Mọc sốt cà chua",
+      "evidenceQuotes": [
+        "Mọc xốt: 3 viên ( 45g thịt)"
+      ],
+      "id": "clinical-nutrition-2019-dish-029",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        463
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        463
+      ],
+      "populationContexts": [
+        "PREGNANCY_TOXEMIA"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Mọc xốt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Mướp đắng nhồi thịt nấm hương"
+      ],
+      "category": "main_dish",
+      "displayName": "Mướp đắng nhồi thịt nấm hương",
+      "evidenceQuotes": [
+        "Mướp đắng nhồi thịt: Mướp đắng 80g, thịt nạc vai 30g, mộc nhĩ,"
+      ],
+      "id": "clinical-nutrition-2019-dish-030",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        370
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        370
+      ],
+      "populationContexts": [
+        "POSTOPERATIVE_GI"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Mướp đắng nhồi thịt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt lợn xá xíu"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt lợn xá xíu",
+      "evidenceQuotes": [
+        "Dầu 10 g Giá xào 200 g Nạc vai xá xíu 50 g"
+      ],
+      "id": "clinical-nutrition-2019-dish-031",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        428
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        428,
+        429
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Nạc vai xá xíu"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Thịt lợn giả bò",
+      "evidenceQuotes": [
+        "Gạo nếp 50g Thịt lợn giả bò 50g Thịt gà 100g"
+      ],
+      "id": "clinical-nutrition-2019-dish-032",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        419
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        419
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt lợn giả bò"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Thịt bò xào cần tỏi",
+      "evidenceQuotes": [
+        "Gạo tẻ 100g Thịt bò xào cần tỏi Thịt sấn luộc 50g",
+        "- Dấm 10ml Nạc vai xá xíu: Thịt bò xào cần tỏi"
+      ],
+      "id": "clinical-nutrition-2019-dish-033",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        396,
+        429
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        396,
+        419,
+        429
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt bò xào cần tỏi"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Thịt bò xào hành tây",
+      "evidenceQuotes": [
+        "18 giờ Thịt bò xào hành tây: Thịt bò 30g, hành tây 80g, dầu ăn 7ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-034",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        220
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        220
+      ],
+      "populationContexts": [
+        "CKD"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt bò xào hành tây"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt bê hấp gừng tương nếp"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt bê hấp gừng tương nếp",
+      "evidenceQuotes": [
+        "Thịt bê hấp gừng:",
+        "Thịt bê nạc 50g, gừng 5g, tương nếp 5g"
+      ],
+      "id": "clinical-nutrition-2019-dish-035",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        273
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        273
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Thịt bê hấp gừng"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Thịt gà luộc / rang gừng / om nấm"
+      ],
+      "category": "main_dish",
+      "displayName": "Thịt gà luộc / rang gừng / om nấm",
+      "evidenceQuotes": [
+        "- Thịt gà luộc:",
+        "Thịt gà om nấm: Thịt gà 40g, nấm hương khô 3g, dầu ăn 2g, gia vị",
+        "- Đậu phụ om nấm:"
+      ],
+      "id": "clinical-nutrition-2019-dish-036",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        370,
+        469
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        227,
+        370,
+        417,
+        428,
+        429,
+        469
+      ],
+      "populationContexts": [
+        "ACUTE_GLOMERULONEPHRITIS",
+        "CHILD_OBESITY",
+        "ORGAN_TRANSPLANT",
+        "POSTOPERATIVE_GI",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Thịt gà luộc",
+        "om nấm"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cá trắm kho nhạt / kho tương"
+      ],
+      "category": "main_dish",
+      "displayName": "Cá trắm kho nhạt / kho tương",
+      "evidenceQuotes": [
+        "Cơm, cá trắm kho nhạt, mọc sốt, rau luộc",
+        "Cá trắm kho tương:",
+        "Cá trắm kho tương: Cá trắm 70g, dầu ăn 3ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-037",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        208,
+        246,
+        338,
+        463
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        208,
+        246,
+        338,
+        458,
+        463
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "GESTATIONAL_DIABETES",
+        "IBD",
+        "PREGNANCY_TOXEMIA",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Cá trắm kho nhạt",
+        "kho tương"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Cá trắm rán sốt cà chua",
+      "evidenceQuotes": [
+        "Cá trắm rán sốt cà chua: Cá trắm 50g, cà chua 30g, dầu ăn 10ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-038",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        234
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        234
+      ],
+      "populationContexts": [
+        "DYSLIPIDEMIA",
+        "HYPERTENSION",
+        "NEPHROTIC_SYNDROME"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Cá trắm rán sốt cà chua"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cá trắm om dọc mùng"
+      ],
+      "category": "main_dish",
+      "displayName": "Cá trắm om dọc mùng",
+      "evidenceQuotes": [
+        "Cá om dọc mùng:",
+        "- Cá trắm: 60g"
+      ],
+      "id": "clinical-nutrition-2019-dish-039",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        303
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        303
+      ],
+      "populationContexts": [
+        "CANCER"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cá om dọc mùng"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cá rô phi rán / lọc thịt rán"
+      ],
+      "category": "main_dish",
+      "displayName": "Cá rô phi rán / lọc thịt rán",
+      "evidenceQuotes": [
+        "Cá rô phi rán: Cá rô phi 60g, dầu thực vật 5ml",
+        "Cá rô phi lọc thịt rán:"
+      ],
+      "id": "clinical-nutrition-2019-dish-040",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        255,
+        370
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        255,
+        370
+      ],
+      "populationContexts": [
+        "GOUT",
+        "POSTOPERATIVE_GI"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Cá rô phi rán",
+        "lọc thịt rán"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Cá bống rán giòn",
+      "evidenceQuotes": [
+        "Cá bống rán giòn: 40g"
+      ],
+      "id": "clinical-nutrition-2019-dish-041",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        219,
+        220
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        219,
+        220
+      ],
+      "populationContexts": [
+        "CKD"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Cá bống rán giòn"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cá quả / cá trê rim gừng riềng"
+      ],
+      "category": "main_dish",
+      "displayName": "Cá quả / cá trê rim gừng riềng",
+      "evidenceQuotes": [
+        "Cá quả hoặc trê dim 70g Thịt lợn sấn kho tầu Chả xương xông 2c",
+        "Thịt nạc 30g Gạo tẻ 30g Cá quả hoặc cá trê"
+      ],
+      "id": "clinical-nutrition-2019-dish-042",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        396,
+        397
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        396,
+        397
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Cá quả"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cá chép rán giòn / Canh chua cá chép"
+      ],
+      "category": "main_dish",
+      "displayName": "Cá chép rán giòn / Canh chua cá chép",
+      "evidenceQuotes": [
+        "Thịt nạc 25 g Thịt lợn nạc 80 g Cá chép rán 70 g",
+        "Sườn sào chua ngọt: Canh chua cá: Đậu kho thịt:"
+      ],
+      "id": "clinical-nutrition-2019-dish-043",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        389,
+        429
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        389,
+        429
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cá chép rán",
+        "Canh chua cá"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Tôm đồng rang cả vỏ"
+      ],
+      "category": "main_dish",
+      "displayName": "Tôm đồng rang cả vỏ",
+      "evidenceQuotes": [
+        "Bữa trưa: Cơm, tôm đồng rang, canh rau ngót, rau muống",
+        "Tôm đồng: 60g"
+      ],
+      "id": "clinical-nutrition-2019-dish-044",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        286
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        234,
+        286,
+        458
+      ],
+      "populationContexts": [
+        "GESTATIONAL_DIABETES",
+        "NEPHROTIC_SYNDROME",
+        "OSTEOPOROSIS"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Tôm đồng rang"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Tôm biển chiên giòn / hấp sả"
+      ],
+      "category": "main_dish",
+      "displayName": "Tôm biển chiên giòn / hấp sả",
+      "evidenceQuotes": [
+        "11 giờ Tôm biển chiên:",
+        "Tôm biển hấp"
+      ],
+      "id": "clinical-nutrition-2019-dish-045",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        207,
+        468
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        207,
+        246,
+        273,
+        338,
+        418,
+        419,
+        468
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY",
+        "ALZHEIMER_OR_INFECTION",
+        "CHILD_OBESITY",
+        "IBD",
+        "ORGAN_TRANSPLANT",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "partial",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Tôm biển chiên",
+        "Tôm biển hấp"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Mực tươi xào"
+      ],
+      "category": "main_dish",
+      "displayName": "Mực tươi xào",
+      "evidenceQuotes": [
+        "Thịt gà ta 100g đổi mực xào"
+      ],
+      "id": "clinical-nutrition-2019-dish-046",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        418
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        418
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Mực xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Đậu phụ luộc / trần"
+      ],
+      "category": "main_dish",
+      "displayName": "Đậu phụ luộc / trần",
+      "evidenceQuotes": [
+        "Đậu phụ luộc: 1 bìa",
+        "Cơm, thịt nạc rim, giò tai, đậu phụ luộc, rau xào",
+        "Đậu phụ trần: Đậu phụ 30g",
+        "phân Trans dưới 1% và tồng lượng cholesterol/ ngày dưới 300mg"
+      ],
+      "id": "clinical-nutrition-2019-dish-047",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        143,
+        159,
+        208,
+        246,
+        338,
+        458,
+        463
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        208,
+        234,
+        246,
+        338,
+        458,
+        463
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "DYSLIPIDEMIA",
+        "GESTATIONAL_DIABETES",
+        "HYPERTENSION",
+        "IBD",
+        "NEPHROTIC_SYNDROME",
+        "PREGNANCY_TOXEMIA",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Đậu phụ luộc",
+        "trần"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Đậu phụ rán giòn / sốt cà chua"
+      ],
+      "category": "main_dish",
+      "displayName": "Đậu phụ rán giòn / sốt cà chua",
+      "evidenceQuotes": [
+        "Đậu phụ rán sốt cà chua (55g)",
+        "Đậu phụ rán Dầu 10g Đậu rán sốt cà chua"
+      ],
+      "id": "clinical-nutrition-2019-dish-048",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        396,
+        429
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        255,
+        396,
+        429,
+        464
+      ],
+      "populationContexts": [
+        "GOUT",
+        "ORGAN_TRANSPLANT",
+        "PREGNANCY_TOXEMIA",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "sốt cà chua"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Đậu phụ nhồi thịt sốt cà chua",
+      "evidenceQuotes": [
+        "Đậu phụ nhồi thịt sốt cà chua:"
+      ],
+      "id": "clinical-nutrition-2019-dish-049",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        303
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        303
+      ],
+      "populationContexts": [
+        "CANCER"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Đậu phụ nhồi thịt sốt cà chua"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Đậu phụ om nấm hương"
+      ],
+      "category": "main_dish",
+      "displayName": "Đậu phụ om nấm hương",
+      "evidenceQuotes": [
+        "- Đậu phụ om nấm:",
+        "Nấm hương: 10gr"
+      ],
+      "id": "clinical-nutrition-2019-dish-050",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        469
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        469
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Đậu phụ om nấm"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Đậu kho thịt nạc"
+      ],
+      "category": "main_dish",
+      "displayName": "Đậu kho thịt nạc",
+      "evidenceQuotes": [
+        "Sườn sào chua ngọt: Canh chua cá: Đậu kho thịt:",
+        "- Đường kính 10g Dầu 10g Nạc vai 50g"
+      ],
+      "id": "clinical-nutrition-2019-dish-051",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        429
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        429
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Đậu kho thịt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Trứng gà luộc",
+      "evidenceQuotes": [
+        "Trứng gà luộc: (½ quả trứng) Trứng gà 25g",
+        "14 giờ: sữa chua vinamilk 1 hộp + Na 100g + trứng gà luộc 1 quả.",
+        "Trứng gà luộc 2 quả Trứng gà luộc 2 quả Trứng gà luộc 2 quả",
+        "11 giờ - Trứng gà luộc: 1 quả"
+      ],
+      "id": "clinical-nutrition-2019-dish-052",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        143,
+        159,
+        418,
+        429,
+        469
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        418,
+        429,
+        469
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "DYSLIPIDEMIA",
+        "HYPERTENSION",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Trứng gà luộc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Trứng gà ốp lết / rán"
+      ],
+      "category": "main_dish",
+      "displayName": "Trứng gà ốp lết / rán",
+      "evidenceQuotes": [
+        "Trứng rán: ½ quả",
+        "Dầu 7g Trứng gà ốp 1 quả"
+      ],
+      "id": "clinical-nutrition-2019-dish-053",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        189,
+        396
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        189,
+        396,
+        419,
+        429
+      ],
+      "populationContexts": [
+        "COPD",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Trứng gà ốp",
+        "Trứng rán"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Mướp đắng xào trứng gà"
+      ],
+      "category": "main_dish",
+      "displayName": "Mướp đắng xào trứng gà",
+      "evidenceQuotes": [
+        "Mướp đắng xào trứng:",
+        "Mướp đắng 200g, trứng gà 20g (nửa quả), dầu ăn 7ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-054",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        255
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        255
+      ],
+      "populationContexts": [
+        "GOUT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Mướp đắng xào trứng"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "main_dish",
+      "displayName": "Trứng vịt lộn",
+      "evidenceQuotes": [
+        "Sữa 50ml Sữa 100ml Bánh trứng 2 cái Trứng vịt lộn đổi",
+        "9 giờ Sữa 200 ml Trứng vịt lộn 2 quả Sữa 200 ml",
+        "9 giờ Nho 400g Na 400g Trứng vịt lộn 2 quả 120g"
+      ],
+      "id": "clinical-nutrition-2019-dish-055",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        397,
+        428,
+        429
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        389,
+        397,
+        428,
+        429
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Trứng vịt lộn"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh rau ngót nấu thịt nạc / nấu tôm"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh rau ngót nấu thịt nạc / nấu tôm",
+      "evidenceQuotes": [
+        "Canh rau ngót thịt 50g Thịt lợn nạc 30g",
+        "Canh rau ngót nấu - Đậu phụ 100g,"
+      ],
+      "id": "clinical-nutrition-2019-dish-056",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        396,
+        429
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        234,
+        255,
+        273,
+        286,
+        389,
+        396,
+        397,
+        418,
+        419,
+        429
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY",
+        "DYSLIPIDEMIA",
+        "GOUT",
+        "HYPERTENSION",
+        "NEPHROTIC_SYNDROME",
+        "ORGAN_TRANSPLANT",
+        "OSTEOPOROSIS",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh rau ngót thịt",
+        "Canh rau ngót nấu tôm"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh bí xanh nấu tôm / nấu thịt"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh bí xanh nấu tôm / nấu thịt",
+      "evidenceQuotes": [
+        "Canh bí xanh nấu thịt: Bí xanh 50g, thịt nạc vai 5g"
+      ],
+      "id": "clinical-nutrition-2019-dish-057",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        370
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        189,
+        208,
+        246,
+        338,
+        370
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "COPD",
+        "IBD",
+        "POSTOPERATIVE_GI",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "nấu thịt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "soup_vegetable",
+      "displayName": "Canh mồng tơi",
+      "evidenceQuotes": [
+        "Canh mồng tơi: Rau mồng tơi 50g",
+        "Canh mồng tơi:",
+        "Canh mồng tơi: Mồng tơi 50g"
+      ],
+      "id": "clinical-nutrition-2019-dish-058",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        143,
+        159,
+        208,
+        246,
+        338
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        208,
+        246,
+        338,
+        417,
+        418
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "DYSLIPIDEMIA",
+        "HYPERTENSION",
+        "IBD",
+        "ORGAN_TRANSPLANT",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Canh mồng tơi"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh cải xanh cá rô đồng"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh cải xanh cá rô đồng",
+      "evidenceQuotes": [
+        "Bữa tối: Cơm, canh cá rô rau cải, bắp cải luộc, thịt băm rim"
+      ],
+      "id": "clinical-nutrition-2019-dish-059",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        286
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        286
+      ],
+      "populationContexts": [
+        "OSTEOPOROSIS"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh cá rô rau cải"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh cải xanh thịt băm / canh suông"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh cải xanh thịt băm / canh suông",
+      "evidenceQuotes": [
+        "Canh cải xanh:",
+        "Cải xanh 50g"
+      ],
+      "id": "clinical-nutrition-2019-dish-060",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        255
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        255,
+        273,
+        396,
+        428,
+        468,
+        469
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY",
+        "CHILD_OBESITY",
+        "GOUT",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh cải xanh"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh mướp hương thịt băm"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh mướp hương thịt băm",
+      "evidenceQuotes": [
+        "Canh mướp 100g + thịt lợn nạc xay 10g"
+      ],
+      "id": "clinical-nutrition-2019-dish-061",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        418
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        418,
+        419
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh mướp"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh rau dền đỏ"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh rau dền đỏ",
+      "evidenceQuotes": [
+        "Canh rau giền: Rau giền 50g"
+      ],
+      "id": "clinical-nutrition-2019-dish-062",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        234
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        234
+      ],
+      "populationContexts": [
+        "NEPHROTIC_SYNDROME"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh rau giền"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Canh rau cần cà chua"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Canh rau cần cà chua",
+      "evidenceQuotes": [
+        "- Tôm nõn khô 20g Canh rau cần 250g",
+        "- Cà chua 50g, Dầu 7g"
+      ],
+      "id": "clinical-nutrition-2019-dish-063",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        429
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        429
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Canh rau cần"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Rau muống luộc / dầm chanh / sấu"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Rau muống luộc / dầm chanh / sấu",
+      "evidenceQuotes": [
+        "Rau muống luộc: Rau muống 200g",
+        "Khoai tây 30 g Rau muống luộc 200 g",
+        "Khoai tây 30g Rau muống luộc",
+        "Gà luộc 200 g Dầu 10 g Rau muống luộc 200 g"
+      ],
+      "id": "clinical-nutrition-2019-dish-064",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        143,
+        159,
+        389,
+        397,
+        428,
+        429
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        389,
+        396,
+        397,
+        428,
+        429
+      ],
+      "populationContexts": [
+        "DYSLIPIDEMIA",
+        "HYPERTENSION",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Rau muống luộc",
+        "sấu"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Rau muống xào tỏi / nộm lạc"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Rau muống xào tỏi / nộm lạc",
+      "evidenceQuotes": [
+        "Rau muống xào tỏi: 150g (1 miệng bát con)"
+      ],
+      "id": "clinical-nutrition-2019-dish-065",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        286
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        286,
+        396,
+        468
+      ],
+      "populationContexts": [
+        "CHILD_OBESITY",
+        "ORGAN_TRANSPLANT",
+        "OSTEOPOROSIS"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Rau muống xào tỏi"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bắp cải luộc / xào"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Bắp cải luộc / xào",
+      "evidenceQuotes": [
+        "Bữa tối: Cơm, canh cá rô rau cải, bắp cải luộc, thịt băm rim",
+        "Rau ngót 50g Bắp cải luộc 100g Dò lụa 20g",
+        "Bắp cải xào: 50gr",
+        "Su su xào:"
+      ],
+      "id": "clinical-nutrition-2019-dish-066",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        189,
+        208,
+        246,
+        286,
+        338,
+        396,
+        429,
+        464
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        189,
+        208,
+        246,
+        286,
+        338,
+        396,
+        429,
+        464
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "COPD",
+        "IBD",
+        "ORGAN_TRANSPLANT",
+        "OSTEOPOROSIS",
+        "PREGNANCY_TOXEMIA",
+        "SEVERE_BURN",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Bắp cải luộc",
+        "xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Rau cải thìa (cải chíp) xào tỏi"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Rau cải thìa (cải chíp) xào tỏi",
+      "evidenceQuotes": [
+        "Cải thìa xào: Rau cải thìa 200g, dầu ăn 7ml",
+        "Cải chíp xào tỏi: Rau cải 150g, tỏi 5g, dầu ăn 10ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-067",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        143,
+        219
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        143,
+        159,
+        219,
+        220,
+        227
+      ],
+      "populationContexts": [
+        "ACUTE_GLOMERULONEPHRITIS",
+        "CKD",
+        "DYSLIPIDEMIA",
+        "HYPERTENSION"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cải thìa xào",
+        "Cải chíp xào tỏi"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Su su luộc chấm muối lạc vừng / Su su xào"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Su su luộc chấm muối lạc vừng / Su su xào",
+      "evidenceQuotes": [
+        "Su su luộc chấm muối lạc/vừng",
+        "Su su xào:",
+        "Su su xào: Su su 200g"
+      ],
+      "id": "clinical-nutrition-2019-dish-068",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        208,
+        246,
+        255,
+        303,
+        338
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        208,
+        246,
+        255,
+        303,
+        338,
+        468
+      ],
+      "populationContexts": [
+        "ALZHEIMER_OR_INFECTION",
+        "CANCER",
+        "CHILD_OBESITY",
+        "GOUT",
+        "IBD",
+        "TYPE2_DIABETES"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Su su luộc chấm muối lạc vừng",
+        "Su su xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bí xanh luộc / xào"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Bí xanh luộc / xào",
+      "evidenceQuotes": [
+        "Bí xanh luộc: Bí xanh 150g",
+        "18 giờ Bí xanh luộc: Bí xanh 200g",
+        "Dầu 7g Bí xanh luộc 100g",
+        "18 giờ Thịt bò xào hành tây: Thịt bò 30g, hành tây 80g, dầu ăn 7ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-069",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        220,
+        234,
+        419,
+        429,
+        464
+      ],
+      "nameFidelity": "grouped",
+      "pdfPagesClaimed": [
+        220,
+        234,
+        419,
+        429,
+        464
+      ],
+      "populationContexts": [
+        "CKD",
+        "NEPHROTIC_SYNDROME",
+        "ORGAN_TRANSPLANT",
+        "PREGNANCY_TOXEMIA",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Bí xanh luộc",
+        "xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "soup_vegetable",
+      "displayName": "Ngồng cải luộc",
+      "evidenceQuotes": [
+        "Ngồng cải luộc: 150g"
+      ],
+      "id": "clinical-nutrition-2019-dish-070",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        303
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        303,
+        370
+      ],
+      "populationContexts": [
+        "CANCER",
+        "POSTOPERATIVE_GI"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Ngồng cải luộc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Rau khoai lang xào tỏi"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Rau khoai lang xào tỏi",
+      "evidenceQuotes": [
+        "Rau khoai lang xào:",
+        "Rau khoai lang 200g, dầu ăn 7ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-071",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        273
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        273
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Rau khoai lang xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Cải xoong xào tỏi"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Cải xoong xào tỏi",
+      "evidenceQuotes": [
+        "Cải soong xào:",
+        "Cải soong 200g, dầu ăn 7ml"
+      ],
+      "id": "clinical-nutrition-2019-dish-072",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        273
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        273
+      ],
+      "populationContexts": [
+        "ADULT_OBESITY"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Cải soong xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "soup_vegetable",
+      "displayName": "Đậu cô ve luộc",
+      "evidenceQuotes": [
+        "Đậu cô ve luộc: 120g"
+      ],
+      "id": "clinical-nutrition-2019-dish-073",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        370
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        370
+      ],
+      "populationContexts": [
+        "POSTOPERATIVE_GI"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Đã đối chiếu nguyên cụm tên với bản OCR của đúng PDF đã khóa SHA-256.",
+      "sourceTitles": [
+        "Đậu cô ve luộc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [],
+      "category": "soup_vegetable",
+      "displayName": "Su hào luộc",
+      "evidenceQuotes": [
+        "Canh mướp: Mướp 100g Su hào 100g luộc"
+      ],
+      "id": "clinical-nutrition-2019-dish-074",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        419
+      ],
+      "nameFidelity": "exact",
+      "pdfPagesClaimed": [
+        419
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Su hào luộc"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Giá đỗ xào"
+      ],
+      "category": "soup_vegetable",
+      "displayName": "Giá đỗ xào",
+      "evidenceQuotes": [
+        "Dầu 10 g Giá xào 200 g Nạc vai xá xíu 50 g"
+      ],
+      "id": "clinical-nutrition-2019-dish-075",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        428
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        428
+      ],
+      "populationContexts": [
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Giá xào"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Chè đậu đen nấu bột sắn dây"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Chè đậu đen nấu bột sắn dây",
+      "evidenceQuotes": [
+        "15 giờ Chè đậu đen: Đậu đen 10g, bột sắn 10g, đường kính 20g"
+      ],
+      "id": "clinical-nutrition-2019-dish-076",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        219,
+        220,
+        227
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        219,
+        220,
+        227
+      ],
+      "populationContexts": [
+        "ACUTE_GLOMERULONEPHRITIS",
+        "CKD"
+      ],
+      "promotionDecision": "reference_only_blocked_condition",
+      "quantityStatus": "complete",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Chè đậu đen"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Sinh tố xoài sữa đặc"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Sinh tố xoài sữa đặc",
+      "evidenceQuotes": [
+        "Sinh tố xoài:",
+        "- Sữa đặc có đường: 20g"
+      ],
+      "id": "clinical-nutrition-2019-dish-077",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        303
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        303
+      ],
+      "populationContexts": [
+        "CANCER"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Sinh tố xoài"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Nước cam tươi vắt"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Nước cam tươi vắt",
+      "evidenceQuotes": [
+        "400ml và nước cam vắt 50ml bơm sau khi ăn (không cho lẫn vào dung dịch súp trên"
+      ],
+      "id": "clinical-nutrition-2019-dish-078",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        428
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        189,
+        414,
+        428,
+        429
+      ],
+      "populationContexts": [
+        "COPD",
+        "ORGAN_TRANSPLANT",
+        "SEVERE_BURN"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Nước cam vắt"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Nước xoài / dứa xay"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Nước xoài / dứa xay",
+      "evidenceQuotes": [
+        "Nước quả 50ml Nước quả 100ml Sữa chua Dưa hấu 200 g",
+        "Cam 100g Xoài hoặc dứa Vinamil 1 cốc đổi chuối 1 qủa"
+      ],
+      "id": "clinical-nutrition-2019-dish-079",
+      "itemType": "dish_group",
+      "matchedPdfPages": [
+        397
+      ],
+      "nameFidelity": "descriptive",
+      "pdfPagesClaimed": [
+        397
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_split",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Nước quả"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Khoai lang luộc"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Khoai lang luộc",
+      "evidenceQuotes": [
+        "15 giờ Khoai lang: 100g (nửa củ)"
+      ],
+      "id": "clinical-nutrition-2019-dish-080",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        255
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        255
+      ],
+      "populationContexts": [
+        "GOUT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Khoai lang"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    },
+    {
+      "aliases": [
+        "Bánh trứng tươi"
+      ],
+      "category": "snack_beverage",
+      "displayName": "Bánh trứng tươi",
+      "evidenceQuotes": [
+        "Cam 1quả : 150g Hồng xiêm 200g Bánh trứng 1 chiếc"
+      ],
+      "id": "clinical-nutrition-2019-dish-081",
+      "itemType": "dish",
+      "matchedPdfPages": [
+        396
+      ],
+      "nameFidelity": "normalized",
+      "pdfPagesClaimed": [
+        396,
+        397
+      ],
+      "populationContexts": [
+        "ORGAN_TRANSPLANT"
+      ],
+      "promotionDecision": "needs_quantity_review",
+      "quantityStatus": "unknown",
+      "recipeVersionIds": [],
+      "reviewNote": "Tên hiển thị là diễn giải/ghép nhóm; sourceTitles giữ tên nhìn thấy trong sách.",
+      "sourceTitles": [
+        "Bánh trứng"
+      ],
+      "verificationStatus": "source_verified",
+      "verifiedOn": "2026-10-24"
+    }
+  ],
+  "expectedEntryCount": 81,
+  "indexKey": "clinical-nutrition-2019-dish-index-v1",
+  "linkedCatalog": {
+    "fileSha256": "BA347FC53401405EE1AB45D6AD511F5E57843C829F8A1395C1F8363C10F5EDF0",
+    "packageKey": "adult-baseline-p2a-v1",
+    "path": "backend/services/nutrition/catalog/drafts/adult-baseline-book-demo.bundle.json",
+    "recipeVersionIds": [
+      "34a33263-bd12-5f9b-8765-5bd8a17b2a0e",
+      "bfa06fc6-2372-539e-88e6-effca0601559",
+      "5fd8eaae-bd3b-5e62-92ff-7c11da06ac33",
+      "b0128004-869e-5a0a-9160-cc92063b0d7b",
+      "2af6a2cd-3ece-5fba-8e84-7e9ac16e07d2",
+      "62661b9c-098b-5ccd-a4f2-5d44b5b31cd5",
+      "08d91c19-86b0-5e61-9290-49a2837ab4a3",
+      "9c0e9d96-6211-5b79-b728-4583d56986ba",
+      "1d1f754f-8a57-5162-939a-b44894425b2e",
+      "9678e2b2-265b-554d-8c32-14c3ed3563d4",
+      "11d4fb6b-e523-5728-9765-e90f604a8bab",
+      "8f82fd2f-e2f4-5f15-9a8a-8df7d4b67a78"
+    ]
+  },
+  "schemaVersion": 1,
+  "source": {
+    "editionYear": 2019,
+    "extractedTextPath": "tmp/pdfs/dinh-duong-lam-sang-pages.txt",
+    "fileSha256": "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
+    "organization": "Viện Dinh dưỡng",
+    "pageCount": 545,
+    "path": "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
+    "title": "Dinh dưỡng lâm sàng"
+  },
+  "status": "candidate"
+}

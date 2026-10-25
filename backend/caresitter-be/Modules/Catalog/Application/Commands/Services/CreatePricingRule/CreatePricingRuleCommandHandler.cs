@@ -22,11 +22,6 @@ internal sealed class CreatePricingRuleCommandHandler(
             createdByAdminId: currentUser.UserId);
         if (created.IsFailure) return created.Error;
 
-        var validation = created.Value.Update(request.Name, request.BaseHourlyPrice,
-            request.NightMultiplier, request.HolidayMultiplier, request.PlatformFeePercent,
-            request.DisputeWindowHours, request.EffectiveFrom, request.EffectiveTo);
-        if (validation.IsFailure) return validation.Error;
-
         repository.Add(created.Value);
         await repository.SaveChangesAsync(ct);
         var response = CatalogAdminMapper.ToResponse(created.Value);

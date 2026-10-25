@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/verified_beneficiary_address_picker_address_picker_button.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,11 +19,8 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
   final ValueChanged<AddressModel> onChanged;
 
   Future<void> _openSelector(BuildContext context, WidgetRef ref) async {
-    final selectedParam = selectedAddressId == null
-        ? ''
-        : '&selected=${Uri.encodeComponent(selectedAddressId!)}';
     final selectedId = await context
-        .push<String>('/settings/addresses?select=1$selectedParam');
+        .push<String>(AppRoutes.addressesSelect(selectedId: selectedAddressId));
     if (!context.mounted || selectedId == null || selectedId.isEmpty) return;
 
     final addresses = await ref.refresh(addressStoreProvider.future);

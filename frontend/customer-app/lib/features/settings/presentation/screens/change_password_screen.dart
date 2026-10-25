@@ -2,6 +2,7 @@ import '../widgets/change_password_form.dart';
 import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -87,13 +88,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     return DiscardChangesGuard(
       hasChanges: () => _hasUnsavedChanges,
-      fallbackRoute: '/settings',
+      fallbackRoute: AppRoutes.settings,
       builder: (context, requestExit) => Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Đổi mật khẩu'),
           leading: AppBackButton(
-            fallbackRoute: '/settings',
+            fallbackRoute: AppRoutes.settings,
             onPressed: requestExit,
           ),
         ),

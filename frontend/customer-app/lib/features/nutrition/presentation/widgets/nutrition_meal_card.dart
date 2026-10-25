@@ -2,6 +2,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_meal_model.dart';
 import 'package:flutter/material.dart';
 
+import '../models/nutrition_meal_presentation.dart';
 import 'nutrition_meal_details.dart';
 
 /// Card hiển thị một bữa ăn theo layout compact: section header (meal type)
@@ -51,43 +52,57 @@ class _MealCompactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: AppSpacing.section,
-        right: AppSpacing.section,
-        bottom: AppSpacing.sm,
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CompactMealRow(meal: meal),
-          if (canReplace)
-            Padding(
-              padding: const EdgeInsets.only(
-                left: _CompactMealRow._thumbSize + AppSpacing.compact,
-                top: AppSpacing.xs,
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.compact),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: const Border.fromBorderSide(
+                BorderSide(color: AppColors.border),
               ),
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CompactMealRow(meal: meal),
+                if (canReplace)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: _CompactMealRow._thumbSize + AppSpacing.compact,
+                      top: AppSpacing.xs,
+                    ),
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: loading ? null : onReplace,
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                      label: const Text('Chọn món thay thế'),
+                    ),
                   ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: _CompactMealRow._thumbSize + AppSpacing.compact,
+                  ),
+                  child: Theme(
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: NutritionMealDetails(meal: meal),
+                    ),
+                  ),
                 ),
-                onPressed: loading ? null : onReplace,
-                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                label: const Text('Chọn món thay thế'),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: _CompactMealRow._thumbSize + AppSpacing.compact,
-            ),
-            child: Theme(
-              data:
-                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: NutritionMealDetails(meal: meal),
+              ],
             ),
           ),
         ],
@@ -105,7 +120,7 @@ class _CompactMealRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final metadata = _MealMetadataExt.forType(meal.mealType);
+    final metadata = NutritionMealPresentation.forType(meal.mealType);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -135,7 +150,7 @@ class _CompactMealRow extends StatelessWidget {
               if (meal.servings != null) ...[
                 const SizedBox(height: 2),
                 Text(
-                  '${nutritionDisplayNumber(meal.servings!)} phần',
+                  '${nutritionDisplayNumber(meal.servings!)} phần${_energyLabel(meal)}',
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
               ],
@@ -145,13 +160,18 @@ class _CompactMealRow extends StatelessWidget {
       ],
     );
   }
+
+  String _energyLabel(NutritionMealModel meal) {
+    final energy = meal.energyKcal;
+    return energy == null ? '' : ' • ${nutritionDisplayNumber(energy)} kcal';
+  }
 }
 
 class _MealThumbnail extends StatelessWidget {
   const _MealThumbnail({required this.meal, required this.metadata});
 
   final NutritionMealModel meal;
-  final _MealMetadataExt metadata;
+  final NutritionMealPresentation metadata;
 
   @override
   Widget build(BuildContext context) {
@@ -186,22 +206,4 @@ class _MealThumbnail extends StatelessWidget {
         ? value
         : null;
   }
-}
-
-// ── Metadata helper (tách khỏi nutrition_meal_overview để tránh import vòng) ─
-
-class _MealMetadataExt {
-  const _MealMetadataExt(this.label, this.icon, this.imageAsset);
-  final String label;
-  final IconData icon;
-  final String imageAsset;
-
-  static _MealMetadataExt forType(String type) => switch (type) {
-        'lunch' => const _MealMetadataExt('Bữa trưa', Icons.wb_sunny_outlined,
-            'assets/images/nutrition-lunch-illustration.jpg'),
-        'dinner' => const _MealMetadataExt('Bữa tối', Icons.nightlight_round,
-            'assets/images/nutrition-dinner-illustration.jpg'),
-        _ => const _MealMetadataExt('Bữa sáng', Icons.wb_twilight_outlined,
-            'assets/images/nutrition-breakfast-illustration.jpg'),
-      };
 }

@@ -23,7 +23,7 @@ class BookingEnRouteActions extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onTrack,
               icon: const Icon(Icons.my_location_rounded),
-              label: const Text('Xem vị trí trực tiếp 🚗'),
+              label: const Text('Xem vị trí trực tiếp'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
                 backgroundColor: AppColors.warning,

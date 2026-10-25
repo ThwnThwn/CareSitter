@@ -238,14 +238,14 @@ function Get-DataSignature {
 
     $sql = @"
 SELECT json_build_object(
-  'users', (SELECT count(*) FROM identity.users),
-  'services', (SELECT count(*) FROM catalog.service_types),
-  'addresses', (SELECT count(*) FROM catalog.addresses),
-  'beneficiaries', (SELECT count(*) FROM people.beneficiaries),
-  'caregivers', (SELECT count(*) FROM people.caregiver_profiles),
-  'wallets', (SELECT count(*) FROM payments.wallet_accounts),
-  'bookings', (SELECT count(*) FROM booking.bookings),
-  'disputes', (SELECT count(*) FROM support.disputes)
+  'users', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM identity.users),
+  'services', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM catalog.service_types),
+  'addresses', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM catalog.addresses),
+  'beneficiaries', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM people.beneficiaries),
+  'caregivers', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM people.caregiver_profiles),
+  'wallets', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM payments.wallet_accounts),
+  'bookings', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM booking.bookings),
+  'disputes', (SELECT coalesce(json_agg(id::text ORDER BY id::text), '[]'::json) FROM support.disputes)
 )::text;
 "@
     return Invoke-PsqlScalar `
@@ -253,6 +253,35 @@ SELECT json_build_object(
         -DatabaseUser $Database.User `
         -DatabaseName $Database.Database `
         -Sql $sql
+}
+
+function Assert-ProtectedDataPreserved {
+    param(
+        [Parameter(Mandatory)][string]$Before,
+        [Parameter(Mandatory)][string]$After
+    )
+
+    $beforeRows = $Before | ConvertFrom-Json
+    $afterRows = $After | ConvertFrom-Json
+
+    foreach ($property in $beforeRows.PSObject.Properties) {
+        $name = $property.Name
+        $afterProperty = $afterRows.PSObject.Properties[$name]
+        if ($null -eq $afterProperty) {
+            throw "Legacy upgrade data signature is missing '$name'."
+        }
+
+        $afterIds = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal)
+        foreach ($id in @($afterProperty.Value)) {
+            $null = $afterIds.Add([string]$id)
+        }
+        foreach ($id in @($property.Value)) {
+            if (-not $afterIds.Contains([string]$id)) {
+                throw "Legacy upgrade removed protected seed row '$id' from '$name'."
+            }
+        }
+    }
 }
 
 function Initialize-SeedAccounts {
@@ -401,9 +430,7 @@ function Test-LegacyUpgrade {
         -MigrationPath $legacyDirectory
 
     $after = Get-DataSignature -Database $legacyDatabase
-    if ($before -ne $after) {
-        throw "Legacy upgrade changed protected seed-row counts. Before: $before; after: $after"
-    }
+    Assert-ProtectedDataPreserved -Before $before -After $after
     Assert-Phase7Schema -Database $legacyDatabase
 
     # Checksum-based replay must not reapply SQL or change protected row counts.

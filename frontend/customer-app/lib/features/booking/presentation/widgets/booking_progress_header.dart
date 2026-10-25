@@ -9,8 +9,11 @@ class BookingProgressHeader extends StatelessWidget {
   final String shortId;
 
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget build(BuildContext context) => Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
         children: [
           const Text(
             'Tiến trình dịch vụ',
@@ -24,6 +27,9 @@ class BookingProgressHeader extends StatelessWidget {
             onTap: callbackAction1,
             borderRadius: BorderRadius.circular(AppRadius.tight),
             child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width - 70,
+              ),
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
               decoration: BoxDecoration(
@@ -33,12 +39,16 @@ class BookingProgressHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Mã ca: #$shortId',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: AppFontSizes.s12,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      'Mã ca: #$shortId',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: AppFontSizes.s12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xs),

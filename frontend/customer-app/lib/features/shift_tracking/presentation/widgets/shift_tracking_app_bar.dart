@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_app_bar_title.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_app_bar_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -31,7 +32,7 @@ class ShiftTrackingAppBar extends StatelessWidget
               ],
             ),
             child: const AppBackButton(
-              fallbackRoute: '/bookings',
+              fallbackRoute: AppRoutes.bookings,
               color: AppColors.textPrimary,
             ),
           ),

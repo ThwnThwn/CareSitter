@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 
 /// Dropdown field theo Stitch design:
@@ -167,47 +168,25 @@ class _StatusDropdown extends StatelessWidget {
           highlightColor: Colors.transparent,
           splashColor: AppColors.primaryContainer,
         ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            isDense: true,
-            itemHeight: 48,
-            menuMaxHeight: 288,
-            elevation: 6,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            dropdownColor: AppColors.cardBackground,
-            focusColor: Colors.transparent,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 20,
-              color: AppColors.textSecondary,
-            ),
-            selectedItemBuilder: (_) => options.values
-                .map((label) => Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(label, overflow: TextOverflow.ellipsis),
-                    ))
-                .toList(),
-            items: options.entries
-                .map((entry) => DropdownMenuItem(
-                      value: entry.key,
-                      child: _DropdownOption(
-                        label: entry.value,
-                        selected: entry.key == value,
-                      ),
-                    ))
-                .toList(),
-            onChanged: enabled
-                ? (next) {
-                    if (next != null) onChanged(next);
-                  }
-                : null,
-          ),
+        child: AppDropdownField<String>(
+          initialValue: value,
+          isExpanded: true,
+          selectedItemBuilder: (_) => options.values
+              .map((label) => Text(label, overflow: TextOverflow.ellipsis))
+              .toList(),
+          items: options.entries
+              .map((entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: _DropdownOption(
+                      label: entry.value,
+                      selected: entry.key == value,
+                    ),
+                  ))
+              .toList(),
+          enabled: enabled,
+          onChanged: (next) {
+            if (next != null) onChanged(next);
+          },
         ),
       );
 }
@@ -233,7 +212,9 @@ class _DropdownOption extends StatelessWidget {
                 label,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
               ),

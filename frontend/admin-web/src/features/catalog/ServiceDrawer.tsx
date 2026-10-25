@@ -192,16 +192,12 @@ export function ServiceDrawer({
                 />
               </label>
             </div>
-            <p>
-              Thời gian theo múi giờ trình duyệt: {Intl.DateTimeFormat().resolvedOptions().timeZone}
-              .
-            </p>
             <div className="form-columns">
               <label>
                 Hiệu lực từ
                 <input
                   type="datetime-local"
-                  step="0.001"
+                  step="60"
                   required
                   value={priceForm.effectiveFrom}
                   onChange={(e) => setPriceForm({ ...priceForm, effectiveFrom: e.target.value })}
@@ -211,12 +207,16 @@ export function ServiceDrawer({
                 Hiệu lực đến
                 <input
                   type="datetime-local"
-                  step="0.001"
+                  step="60"
                   value={priceForm.effectiveTo}
                   onChange={(e) => setPriceForm({ ...priceForm, effectiveTo: e.target.value })}
                 />
               </label>
             </div>
+            <p className="form-help">
+              Ngày giờ theo múi giờ thiết bị ({Intl.DateTimeFormat().resolvedOptions().timeZone}),
+              chính xác đến phút. Có thể để trống ngày kết thúc.
+            </p>
             <div className="form-columns">
               <label>
                 Thời hạn khiếu nại (giờ)

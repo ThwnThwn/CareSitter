@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -85,7 +86,7 @@ class _ShiftTrackingScreenState extends ConsumerState<ShiftTrackingScreen>
     return ShiftTrackingContent(
       bk: bk,
       location: location,
-      onViewTimeline: () => context.push('/bookings/$bookingId/timeline'),
+      onViewTimeline: () => context.push(AppRoutes.bookingTimeline(bookingId)),
       onExtendShift: () => showShiftExtensionSheet(context, bk),
     );
   }

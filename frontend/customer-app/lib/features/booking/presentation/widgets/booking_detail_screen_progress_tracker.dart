@@ -27,21 +27,11 @@ class BookingDetailScreenProgressTracker extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.comfortable),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: AppColors.border,
-          width: 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: AppColors.border),
       ),
       child: BookingProgressContent(
           shortId: shortId,
@@ -51,7 +41,7 @@ class BookingDetailScreenProgressTracker extends StatelessWidget {
             Clipboard.setData(ClipboardData(text: booking.id));
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('📋 Đã sao chép mã đặt lịch'),
+                content: Text('Đã sao chép mã đặt lịch'),
                 duration: Duration(seconds: 1),
               ),
             );

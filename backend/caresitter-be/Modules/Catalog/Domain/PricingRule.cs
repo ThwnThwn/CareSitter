@@ -73,6 +73,8 @@ public sealed class PricingRule : Entity
     {
         if (string.IsNullOrWhiteSpace(name))
             return Error.Validation("pricing_rule.name", "Tên bảng giá là bắt buộc.");
+        if (name.Trim().Length > 255)
+            return Error.Validation("pricing_rule.name", "Tên bảng giá tối đa 255 ký tự.");
         if (baseHourlyPrice < 0)
             return Error.Validation("pricing_rule.base_hourly_price", "Giá theo giờ không được âm.");
         if (nightMultiplier is < 1 or > 10 || holidayMultiplier is < 1 or > 10)
@@ -112,16 +114,15 @@ public sealed class PricingRule : Entity
         bool isActive = true,
         Guid? createdByAdminId = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            return Error.Validation("pricing_rule.name", "name la bat buoc.");
         if (serviceTypeId == Guid.Empty)
-            return Error.Validation("pricing_rule.service_type_id", "service_type_id la bat buoc.");
-        if (baseHourlyPrice < 0)
-            return Error.Validation("pricing_rule.base_hourly_price", "base_hourly_price không được am.");
+            return Error.Validation("pricing_rule.service_type_id", "Dịch vụ là bắt buộc.");
 
-        return new PricingRule(Guid.NewGuid(), name, serviceTypeId, baseHourlyPrice,
+        var rule = new PricingRule(Guid.NewGuid(), string.Empty, serviceTypeId, 0,
             nightMultiplier, holidayMultiplier, platformFeePercent, disputeWindowHours,
             holidays, cancellationPolicy, effectiveFrom ?? DateTimeOffset.UtcNow, effectiveTo,
             isActive, createdByAdminId);
+        var validation = rule.Update(name, baseHourlyPrice, nightMultiplier, holidayMultiplier,
+            platformFeePercent, disputeWindowHours, rule.EffectiveFrom, effectiveTo);
+        return validation.IsFailure ? validation.Error : rule;
     }
 }

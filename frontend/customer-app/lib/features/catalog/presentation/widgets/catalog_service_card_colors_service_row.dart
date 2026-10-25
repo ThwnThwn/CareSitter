@@ -5,62 +5,61 @@ import 'package:caresitter_customer/features/catalog/data/models/service_model.d
 
 class CatalogServiceCardColorsServiceRow extends StatelessWidget {
   const CatalogServiceCardColorsServiceRow(
-      {super.key,
-      required this.colors,
-      required this.service,
-      required this.formatVnd});
-  final ({Color bg, Color fg}) colors;
+      {super.key, required this.service, required this.formatVnd});
   final ServiceModel service;
   final String Function(int) formatVnd;
 
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          // Price pill
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 9, vertical: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: colors.bg,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-            ),
-            child: Text(
-              service.baseHourlyPrice > 0
-                  ? '${formatVnd(service.baseHourlyPrice)}/giờ'
-                  : 'Liên hệ',
-              style: TextStyle(
-                color: colors.fg,
-                fontSize: AppFontSizes.s11,
-                fontWeight: FontWeight.w700,
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  service.baseHourlyPrice > 0
+                      ? '${formatVnd(service.baseHourlyPrice)}/giờ'
+                      : 'Liên hệ',
+                  style: const TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: AppFontSizes.s13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.micro),
+                Text(
+                  'Ca từ ${_durationLabel(service.defaultDurationMinutes)}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppFontSizes.s10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            '• tối thiểu ${service.defaultDurationMinutes ~/ 60}h',
-            style: const TextStyle(
-              color: AppColors.textHint,
-              fontSize: AppFontSizes.s11,
-            ),
-          ),
-          const Spacer(),
-          // Compact CTA
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.compact, vertical: AppSpacing.tight),
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: const Icon(
+              Icons.arrow_forward_rounded,
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-            ),
-            child: const Text(
-              'Đặt ngay',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: AppFontSizes.s11,
-                fontWeight: FontWeight.w700,
-              ),
+              size: 19,
+              semanticLabel: 'Xem chi tiết',
             ),
           ),
         ],
       );
+
+  String _durationLabel(int minutes) {
+    if (minutes < 60) return '$minutes phút';
+    final hours = minutes ~/ 60;
+    final remaining = minutes % 60;
+    if (remaining == 0) return '$hours giờ';
+    return '$hours giờ $remaining phút';
+  }
 }

@@ -2,7 +2,10 @@ import 'package:caresitter_customer/features/beneficiary/presentation/widgets/be
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_list_groups.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/beneficiary_list_card_summary.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
+import 'package:caresitter_customer/core/widgets/app_avatar_image_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -67,7 +70,7 @@ class BeneficiaryListScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
-              onPressed: () => context.push('/beneficiaries/create'),
+              onPressed: () => context.push(AppRoutes.beneficiaryNew),
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Thêm người thân ngay'),
               style: ElevatedButton.styleFrom(
@@ -93,12 +96,17 @@ class BeneficiaryListScreen extends ConsumerWidget {
         : b.careLevel == 'Trung bình'
             ? AppColors.warning
             : AppColors.success;
+    final hasAvatar = b.avatarPath?.trim().isNotEmpty == true;
+    final defaultAvatarPath = defaultAvatarAssetForGender(
+      age: b.age,
+      gender: b.gender,
+    );
 
     return Material(
       color: AppColors.cardBackground,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
-        onTap: () => context.push('/beneficiaries/${b.id}'),
+        onTap: () => context.push(AppRoutes.beneficiaryDetail(b.id)),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -124,14 +132,20 @@ class BeneficiaryListScreen extends ConsumerWidget {
                 child: CircleAvatar(
                   radius: 24,
                   backgroundColor: AppColors.primaryContainer,
-                  child: Text(
-                    b.avatarInitial,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: AppFontSizes.s13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  backgroundImage: hasAvatar
+                      ? appAvatarImageProvider(b.avatarPath!)
+                      : defaultAvatarPath == null
+                          ? null
+                          : AssetImage(defaultAvatarPath),
+                  onBackgroundImageError: hasAvatar || defaultAvatarPath != null
+                      ? (_, __) {}
+                      : null,
+                  child: !hasAvatar && defaultAvatarPath == null
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          color: AppColors.primary,
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(width: AppSpacing.compact),

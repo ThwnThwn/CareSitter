@@ -16,3 +16,20 @@ final nutritionEntryProvider = FutureProvider.autoDispose<bool>((ref) async {
     return false;
   }
 });
+
+final nutritionSelectedBeneficiaryProvider = StateNotifierProvider.autoDispose<
+    NutritionSelectedBeneficiaryController,
+    AsyncValue<String?>>((ref) => NutritionSelectedBeneficiaryController());
+
+class NutritionSelectedBeneficiaryController
+    extends StateNotifier<AsyncValue<String?>> {
+  NutritionSelectedBeneficiaryController() : super(const AsyncData(null));
+
+  void select(String beneficiaryId) {
+    state = AsyncData(beneficiaryId);
+  }
+
+  void clear() {
+    state = const AsyncData(null);
+  }
+}

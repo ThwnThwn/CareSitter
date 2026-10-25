@@ -60,3 +60,6 @@
 \ir modules/support/48-notification-type-after-support-chat.sql
 \ir modules/booking/49-booking-create-idempotency.sql
 \ir modules/booking/50-booking-domain-outbox.sql
+\ir modules/catalog/51-non-medical-demo-services.sql
+\ir modules/support/52-rating-trigger-hardening.sql
+\ir modules/shared/53-caregiver-dashboard-demo.sql

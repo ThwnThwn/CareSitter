@@ -26,6 +26,11 @@ class NutritionMealModel {
           .toList();
   Map<String, dynamic>? get nutrients =>
       _json['nutrients'] is Map ? nutritionJsonMap(_json['nutrients']) : null;
+  num? get energyKcal {
+    final value = nutrients?['energy_kcal'];
+    return value is num ? value : null;
+  }
+
   Map<String, dynamic> toJson() => Map.of(_json);
 
   String? _optionalString(String key) {

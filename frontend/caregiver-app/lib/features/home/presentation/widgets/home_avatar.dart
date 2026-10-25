@@ -1,11 +1,12 @@
-import 'package:caregiver_app/core/theme/app_font_sizes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:caregiver_app/core/utils/default_avatar.dart';
+import 'package:caregiver_app/features/profile/data/models/caregiver_profile_model.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeAvatar extends StatelessWidget {
-  const HomeAvatar({super.key, required this.initials});
-  final String initials;
+  const HomeAvatar({super.key, required this.profile});
+  final CaregiverProfileModel profile;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -20,14 +21,17 @@ class HomeAvatar extends StatelessWidget {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: AppColors.primaryContainer,
-              child: Text(
-                initials,
-                style: GoogleFonts.beVietnamPro(
-                  fontSize: AppFontSizes.s14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
+              backgroundImage: (profile.avatarUrl?.trim().isNotEmpty == true
+                  ? ResizeImage(
+                      CachedNetworkImageProvider(profile.avatarUrl!),
+                      width: 128,
+                    )
+                  : AssetImage(defaultAvatarAsset(
+                      dateOfBirth: profile.parsedDateOfBirth,
+                      gender: profile.gender,
+                      seed: profile.userId,
+                    ))) as ImageProvider<Object>,
+              onBackgroundImageError: (_, __) {},
             ),
           ),
           Positioned(

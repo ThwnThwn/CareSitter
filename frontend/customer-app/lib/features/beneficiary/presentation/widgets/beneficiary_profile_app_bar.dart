@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -21,11 +22,12 @@ class BeneficiaryProfileAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) => AppBar(
-        title:
-            Text(profileId == null ? 'Thêm người được hỗ trợ' : 'Chỉnh sửa hồ sơ'),
+        title: Text(
+            profileId == null ? 'Thêm người được hỗ trợ' : 'Chỉnh sửa hồ sơ'),
         leading: AppCloseButton(
-          fallbackRoute:
-              profileId == null ? '/beneficiaries' : '/beneficiaries/$profileId',
+          fallbackRoute: profileId == null
+              ? AppRoutes.beneficiaries
+              : AppRoutes.beneficiaryDetail(profileId!),
           onPressed: onExit,
         ),
         actions: [

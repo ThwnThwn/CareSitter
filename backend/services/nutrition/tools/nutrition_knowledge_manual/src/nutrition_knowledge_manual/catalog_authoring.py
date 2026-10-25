@@ -372,7 +372,12 @@ def _prepare_recipe(
         if source not in citations:
             raise ManualGraphError(f"recipe source {source} does not exist in citations")
 
-    dietary_patterns = _nonempty_text_array(payload.get("dietaryPatterns"), "dietaryPatterns")
+    dietary_patterns_value = payload.get("dietaryPatterns")
+    if not isinstance(dietary_patterns_value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in dietary_patterns_value
+    ):
+        raise ManualGraphError("dietaryPatterns must be an array of non-empty strings")
+    dietary_patterns = [item.strip() for item in dietary_patterns_value]
     if len(set(dietary_patterns)) != len(dietary_patterns):
         raise ManualGraphError("dietaryPatterns cannot contain duplicates")
     unsupported_patterns = sorted(set(dietary_patterns) - SUPPORTED_DIETARY_PATTERNS)

@@ -14,11 +14,13 @@ class ShiftDetailChecklistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasTasks = booking.tasks.isNotEmpty;
+    final hasNotes = _hasMeaningfulNotes(beneficiary.notes);
     final completedCount =
         hasTasks ? booking.tasks.where((t) => t.isCompleted).length : 0;
     final total = hasTasks ? booking.tasks.length : 0;
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -42,8 +44,7 @@ class ShiftDetailChecklistCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: AppSpacing.control),
                   child: ShiftChecklistTask(task: task),
                 )),
-          if (beneficiary.notes.isNotEmpty &&
-              beneficiary.notes != 'Chưa có ghi chú') ...[
+          if (hasNotes) ...[
             const Divider(height: 20, color: AppColors.border),
             ShiftChecklistNotes(beneficiary: beneficiary),
           ],
@@ -51,4 +52,16 @@ class ShiftDetailChecklistCard extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _hasMeaningfulNotes(String notes) {
+  final normalized = notes.trim().toLowerCase();
+  return normalized.isNotEmpty &&
+      !const {
+        'không có',
+        'khong co',
+        'chưa có ghi chú',
+        'none',
+        'n/a',
+      }.contains(normalized);
 }

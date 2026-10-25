@@ -41,9 +41,11 @@ ShiftModel mapShiftFromApi(Map<String, dynamic> json) {
   DateTime? checkoutRequestedAt;
   if (json['checkoutPendingReviewAt'] != null) {
     checkoutRequestedAt =
-        DateTime.tryParse(json['checkoutPendingReviewAt'].toString())?.toLocal();
+        DateTime.tryParse(json['checkoutPendingReviewAt'].toString())
+            ?.toLocal();
   } else if (json['actualEnd'] != null) {
-    checkoutRequestedAt = DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
+    checkoutRequestedAt =
+        DateTime.tryParse(json['actualEnd'].toString())?.toLocal();
   }
 
   DateTime? completedAt;
@@ -72,7 +74,8 @@ ShiftModel mapShiftFromApi(Map<String, dynamic> json) {
     ),
     caregiverId: json['caregiverId']?.toString(),
     caregiverName: _displayText(json['caregiverName'], fallback: 'Caregiver'),
-    caregiverAvatar: _initials(_displayText(json['caregiverName'], fallback: 'CG')),
+    caregiverAvatar:
+        _initials(_displayText(json['caregiverName'], fallback: 'CG')),
     serviceId: json['serviceTypeId']?.toString(),
     serviceName: _displayText(
       json['serviceName'],
@@ -101,6 +104,8 @@ ShiftModel mapShiftFromApi(Map<String, dynamic> json) {
     checkoutRequestedAt: checkoutRequestedAt,
     completedAt: completedAt,
     beneficiaryAge: beneficiaryAge,
+    beneficiaryGender: _nullableDisplayText(json['beneficiaryGender']),
+    beneficiaryAvatarUrl: _nullableDisplayText(json['beneficiaryAvatarUrl']),
     beneficiaryRelationship: beneficiaryRelationship,
     beneficiaryCondition: beneficiaryCondition,
     beneficiaryNotes: beneficiaryNotes,
@@ -128,8 +133,11 @@ String _shortIdLabel(String label, Object? rawId) {
 }
 
 String _initials(String name) {
-  final parts =
-      name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return 'CG';
   if (parts.length == 1) {
     final take = parts.first.length < 2 ? parts.first.length : 2;

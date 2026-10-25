@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentPricingRule, disputeAllocation, fromDateTimeInput, toDateTimeInput } from './operations';
+import { currentPricingRule, disputeAllocation, fromDateTimeInput, toDateTimeInput, toMinuteDateTimeInput } from './operations';
 import type { PricingRule } from './types';
 
 describe('pricing time round-trip', () => {
@@ -11,6 +11,11 @@ describe('pricing time round-trip', () => {
   it('rejects missing/invalid effective dates', () => {
     expect(() => fromDateTimeInput('')).toThrow();
     expect(() => fromDateTimeInput('not-a-date')).toThrow();
+  });
+  it('normalizes minute input without hidden seconds', () => {
+    expect(toMinuteDateTimeInput('2026-10-24T09:50:24.825+07:00')).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
+    );
   });
   it('selects the latest eligible rule, excluding future, expired and disabled rules', () => {
     const rule = (id: string, from: string, to?: string, active = true) => ({ id, effectiveFrom: from, effectiveTo: to, isActive: active } as PricingRule);

@@ -9,7 +9,9 @@ namespace CareSitter.Modules.People.Infrastructure;
 /// quyền sở hữu và tính khả dụng của Caregiver/Beneficiary xuyên module.
 /// Được inject vào BookingModule, BookingsController và các Application Handlers.
 /// </summary>
-internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupService
+internal sealed class PeopleLookupService(
+    PeopleDbContext db,
+    IUserProfileReader userProfiles) : IPeopleLookupService
 {
     /// <summary>
     /// Kiểm tra xem một người thân (Beneficiary) có thuộc về
@@ -118,6 +120,7 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
                 x.FullName,
                 x.DateOfBirth,
                 x.Gender,
+                x.AvatarUrl,
                 x.RelationshipToCustomer,
                 x.MobilityNote,
                 x.GeneralNote,
@@ -151,17 +154,23 @@ internal sealed class PeopleLookupService(PeopleDbContext db) : IPeopleLookupSer
             beneficiary.Gender,
             beneficiary.RelationshipToCustomer,
             condition,
-            notes);
+            notes,
+            beneficiary.AvatarUrl);
     }
 
     public async Task<PeopleDisplaySummary?> GetCaregiverDisplayAsync(Guid caregiverId, CancellationToken ct = default)
     {
         var caregiver = await db.CaregiverProfiles.AsNoTracking()
             .Where(x => x.Id == caregiverId && x.DeletedAt == null)
-            .Select(x => new { x.Id, x.FullName })
+            .Select(x => new { x.Id, x.UserId, x.FullName })
             .SingleOrDefaultAsync(ct);
-        return caregiver is null || string.IsNullOrWhiteSpace(caregiver.FullName)
-            ? null
-            : new PeopleDisplaySummary(caregiver.Id, caregiver.FullName);
+        if (caregiver is null || string.IsNullOrWhiteSpace(caregiver.FullName))
+            return null;
+
+        var avatarUrl = await userProfiles.GetAvatarUrlAsync(caregiver.UserId, ct);
+        return new PeopleDisplaySummary(
+            caregiver.Id,
+            caregiver.FullName,
+            AvatarUrl: avatarUrl);
     }
 }

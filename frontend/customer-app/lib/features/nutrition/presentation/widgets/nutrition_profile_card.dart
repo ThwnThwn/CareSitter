@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:caresitter_customer/core/widgets/app_avatar_image_provider.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +20,10 @@ class NutritionProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final avatarPath = profile.avatarPath;
     final hasAvatar = avatarPath != null && avatarPath.isNotEmpty;
+    final defaultAvatarPath = defaultAvatarAssetForGender(
+      age: profile.age,
+      gender: profile.gender,
+    );
     return Semantics(
       button: true,
       label: 'Xem hồ sơ dinh dưỡng của ${profile.name}',
@@ -35,18 +40,20 @@ class NutritionProfileCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.primaryContainer,
-                  backgroundImage:
-                      hasAvatar ? appAvatarImageProvider(avatarPath) : null,
-                  child: hasAvatar
-                      ? null
-                      : Text(
-                          profile.avatarInitial,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: AppFontSizes.s17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                  backgroundImage: hasAvatar
+                      ? appAvatarImageProvider(avatarPath)
+                      : defaultAvatarPath == null
+                          ? null
+                          : AssetImage(defaultAvatarPath),
+                  onBackgroundImageError: hasAvatar || defaultAvatarPath != null
+                      ? (_, __) {}
+                      : null,
+                  child: !hasAvatar && defaultAvatarPath == null
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          color: AppColors.primary,
+                        )
+                      : null,
                 ),
                 const SizedBox(width: AppSpacing.compact),
                 Expanded(child: _ProfileDetails(profile: profile)),

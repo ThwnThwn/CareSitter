@@ -7,6 +7,7 @@ import 'package:caresitter_customer/features/review/presentation/widgets/review_
 import 'package:caresitter_customer/features/review/presentation/widgets/review_comment_ctrl_rating_content.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -61,7 +62,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               appBar: AppBar(
                 title: const Text('Đánh giá dịch vụ'),
                 leading: AppBackButton(
-                  fallbackRoute: '/bookings',
+                  fallbackRoute: AppRoutes.bookings,
                   onPressed: requestExit,
                 ),
               ),
@@ -140,7 +141,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           );
       if (mounted) {
         setState(() => _isSubmitting = false);
-        popOrGo(context, fallbackRoute: '/bookings');
+        popOrGo(context, fallbackRoute: AppRoutes.bookings);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Cảm ơn bạn đã gửi đánh giá dịch vụ!'),

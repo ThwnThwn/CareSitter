@@ -6,6 +6,7 @@ import 'package:caresitter_customer/features/wallet/presentation/widgets/wallet_
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -21,7 +22,7 @@ class WalletScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Ví CareSitter'),
-        leading: const AppBackButton(fallbackRoute: '/settings'),
+        leading: const AppBackButton(fallbackRoute: AppRoutes.settings),
       ),
       body: wallet.when(
         loading: () => const Center(child: CircularProgressIndicator()),

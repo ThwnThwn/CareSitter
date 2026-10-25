@@ -7,6 +7,8 @@ class NutritionProfileItem {
     required this.avatarInitial,
     required this.supportingText,
     this.avatarPath,
+    this.age,
+    this.gender,
   });
 
   final String id;
@@ -16,4 +18,6 @@ class NutritionProfileItem {
   final String avatarInitial;
   final String supportingText;
   final String? avatarPath;
+  final int? age;
+  final String? gender;
 }

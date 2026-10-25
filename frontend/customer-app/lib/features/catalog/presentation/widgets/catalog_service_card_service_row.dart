@@ -8,21 +8,9 @@ class CatalogServiceCardServiceRow extends StatelessWidget {
   final ServiceModel service;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              service.name,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: AppFontSizes.s14,
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(
                 horizontal: 7, vertical: AppSpacing.tiny),
@@ -37,6 +25,18 @@ class CatalogServiceCardServiceRow extends StatelessWidget {
                 fontSize: AppFontSizes.s9,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.tight),
+          Text(
+            service.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: AppFontSizes.s14,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
             ),
           ),
         ],

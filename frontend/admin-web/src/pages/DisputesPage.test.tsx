@@ -50,7 +50,7 @@ it('never offers financial actions when booking financial data cannot be loaded'
   const fetch = mockRequests(true);
   render(<DisputesPage />);
   await userEvent.click(await screen.findByRole('button', { name: 'Xem hồ sơ' }));
-  expect(await screen.findByText('Không đọc được escrow')).toBeTruthy();
+  expect(await screen.findByText('Hệ thống đang gặp sự cố. Vui lòng thử lại sau.')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Ghi nhận phán quyết' })).toBeNull();
   expect(fetch.mock.calls.some(([, init]) => init.method === 'POST')).toBe(false);
 });

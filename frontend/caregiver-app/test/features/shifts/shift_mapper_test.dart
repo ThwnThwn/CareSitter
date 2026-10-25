@@ -29,4 +29,18 @@ void main() {
     expect(shift.offerId, 'offer');
     expect(shift.offerExpiresAt, isNotNull);
   });
+
+  test('beneficiary avatar metadata is preserved for shift presentation', () {
+    final shift = mapShiftFromApi({
+      'id': 'booking',
+      'beneficiaryName': 'Trần Thị Loan',
+      'beneficiaryAge': 67,
+      'beneficiaryGender': 'female',
+      'beneficiaryAvatarUrl': ' https://cdn.example/loan.jpg ',
+    });
+
+    expect(shift.beneficiaryAge, 67);
+    expect(shift.beneficiaryGender, 'female');
+    expect(shift.beneficiaryAvatarUrl, 'https://cdn.example/loan.jpg');
+  });
 }

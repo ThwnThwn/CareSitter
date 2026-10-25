@@ -60,6 +60,8 @@ class CaregiverProfileModel {
 
   bool get isOnline => availabilityStatus == 'ONLINE';
   bool get isApproved => kycStatus == 'APPROVED';
+  DateTime? get parsedDateOfBirth =>
+      dateOfBirth == null ? null : DateTime.tryParse(dateOfBirth!);
 
   String get displayName =>
       fullName?.isNotEmpty == true ? fullName! : 'Caregiver';

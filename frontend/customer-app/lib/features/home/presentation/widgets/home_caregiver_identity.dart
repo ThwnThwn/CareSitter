@@ -1,4 +1,4 @@
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/utils/default_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/caregiver/data/models/caregiver_model.dart';
@@ -13,14 +13,7 @@ class HomeCaregiverIdentity extends StatelessWidget {
           CircleAvatar(
             radius: 26,
             backgroundColor: AppColors.primaryContainer,
-            child: Text(
-              c.initials,
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: AppFontSizes.s15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            backgroundImage: AssetImage(defaultAvatarAsset(seed: c.initials)),
           ),
           const Spacer(),
           if (c.isOnline)

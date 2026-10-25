@@ -10,7 +10,8 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
     {
         var items = await db.ServiceTypes.AsNoTracking()
             .Where(x => x.IsActive)
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.DefaultDurationMinutes)
+            .ThenBy(x => x.Name)
             .Select(x => new
             {
                 x.Id,
@@ -85,9 +86,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
         CancellationToken ct = default)
     {
         var services = await db.ServiceTypes.AsNoTracking().OrderBy(x => x.Name).ToListAsync(ct);
-        var serviceIds = services.Select(x => x.Id).ToArray();
         var prices = await db.PricingRules.AsNoTracking()
-            .Where(x => serviceIds.Contains(x.ServiceTypeId))
             .OrderByDescending(x => x.EffectiveFrom)
             .ToListAsync(ct);
 
@@ -96,5 +95,23 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks,
             prices.Where(x => x.ServiceTypeId == service.Id)
                 .Select(CatalogAdminMapper.ToResponse).ToArray())).ToArray();
+    }
+
+    public async Task<AdminServiceResponse?> GetAdminServiceAsync(
+        Guid serviceId, CancellationToken ct = default)
+    {
+        var service = await db.ServiceTypes.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == serviceId, ct);
+        if (service is null) return null;
+
+        var prices = await db.PricingRules.AsNoTracking()
+            .Where(x => x.ServiceTypeId == serviceId)
+            .OrderByDescending(x => x.EffectiveFrom)
+            .ToListAsync(ct);
+
+        return new AdminServiceResponse(
+            service.Id, service.Code, service.Name, service.Description,
+            service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks,
+            prices.Select(CatalogAdminMapper.ToResponse).ToArray());
     }
 }

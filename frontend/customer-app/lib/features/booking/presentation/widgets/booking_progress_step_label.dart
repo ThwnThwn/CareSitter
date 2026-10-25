@@ -17,6 +17,9 @@ class BookingProgressStepLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         steps[idx]['title'] as String,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: AppFontSizes.s11,
           fontWeight: isActive

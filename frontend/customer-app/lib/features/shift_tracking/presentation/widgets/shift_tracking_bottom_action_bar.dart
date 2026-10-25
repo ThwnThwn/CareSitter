@@ -3,6 +3,7 @@ import 'package:caresitter_customer/features/shift_tracking/presentation/widgets
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_bottom_action_bar_fields_inner.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
@@ -37,7 +38,7 @@ class ShiftTrackingBottomActionBar extends ConsumerWidget {
         child: ShiftTrackingBottomActionBarFieldsBody(
             callbackAction1: () => _confirmComplete(context, ref, bk),
             callbackAction2: () =>
-                context.push('/bookings/$bookingId/dispute')),
+                context.push(AppRoutes.bookingDispute(bookingId))),
       );
     }
 
@@ -132,7 +133,7 @@ class ShiftTrackingBottomActionBar extends ConsumerWidget {
                 if (!context.mounted) return;
                 AppToast.success(
                     context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
-                popOrGo(context, fallbackRoute: '/bookings');
+                popOrGo(context, fallbackRoute: AppRoutes.bookings);
               } catch (_) {
                 if (!context.mounted) return;
                 AppToast.error(
