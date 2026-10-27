@@ -184,12 +184,20 @@ def _visible_case_fingerprints(evaluations: list[dict[str, Any]]) -> set[str]:
     return result
 
 
-def _case_fingerprint(case: dict[str, Any]) -> str:
-    return content_sha256({
+def case_fingerprint(case: dict[str, Any], source_revision_id: str | None = None) -> str:
+    """Fingerprint a case; the visible registry binds the source revision, holdout sealing does not."""
+    payload = {
         "question": _question_key(case["question"]),
         "answerability": case["answerability"],
         "relevant_chunk_ids": sorted(case["relevant_chunk_ids"]),
-    })
+    }
+    if source_revision_id is not None:
+        payload["source_revision_id"] = source_revision_id
+    return content_sha256(payload)
+
+
+def _case_fingerprint(case: dict[str, Any]) -> str:
+    return case_fingerprint(case)
 
 
 def _question_key(question: str) -> str:

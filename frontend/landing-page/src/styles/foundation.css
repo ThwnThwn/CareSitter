@@ -121,20 +121,23 @@ html.lenis {
 
 .display {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: 0;
+  font-kerning: normal;
+  font-weight: 430;
+  letter-spacing: -0.025em;
   margin: 0;
+  text-rendering: optimizeLegibility;
   text-wrap: balance;
 }
 
 .display em {
   display: block;
   font-weight: 400;
+  letter-spacing: -0.035em;
 }
 
 .display--hero {
-  font-size: clamp(3.35rem, 6.1vw, 5.75rem);
-  line-height: 1.06;
+  font-size: clamp(3.35rem, 5.4vw, 5.2rem);
+  line-height: 1.03;
 }
 
 .display--section {

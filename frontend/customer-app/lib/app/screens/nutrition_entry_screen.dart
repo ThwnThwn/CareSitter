@@ -28,7 +28,16 @@ class NutritionEntryScreen extends ConsumerWidget {
     if (selected.isLoading && beneficiaries.isNotEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: const Text('Thực đơn dinh dưỡng')),
+        appBar: AppBar(
+          title: const Text('Thực đơn dinh dưỡng'),
+          actions: [
+            IconButton(
+              tooltip: 'Tra cứu tài liệu dinh dưỡng',
+              onPressed: () => context.push(AppRoutes.nutritionKnowledge),
+              icon: const Icon(Icons.menu_book_outlined),
+            ),
+          ],
+        ),
         body: const Center(
           child: CircularProgressIndicator(
             semanticsLabel: 'Đang mở thực đơn gần nhất',
@@ -64,7 +73,16 @@ class NutritionEntryScreen extends ConsumerWidget {
         .toList(growable: false);
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Thực đơn dinh dưỡng')),
+      appBar: AppBar(
+        title: const Text('Thực đơn dinh dưỡng'),
+        actions: [
+          IconButton(
+            tooltip: 'Tra cứu tài liệu dinh dưỡng',
+            onPressed: () => context.push(AppRoutes.nutritionKnowledge),
+            icon: const Icon(Icons.menu_book_outlined),
+          ),
+        ],
+      ),
       body: NutritionEntryBody(
         profiles: profiles,
         isLoading: loadState.isLoading || selected.isLoading,

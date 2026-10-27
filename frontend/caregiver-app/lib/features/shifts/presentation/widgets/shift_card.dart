@@ -5,6 +5,7 @@ import 'package:caregiver_app/features/shifts/presentation/widgets/shift_card_sc
 import 'package:flutter/material.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
 class ShiftCard extends StatelessWidget {
@@ -68,11 +69,10 @@ class ShiftCard extends StatelessWidget {
                           await onDecline!();
                         } catch (error) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Chưa từ chối được ca: $error'),
-                                backgroundColor: AppColors.error,
-                              ),
+                            AppToast.error(
+                              context,
+                              error.toString(),
+                              title: 'Chưa từ chối được ca',
                             );
                           }
                         }

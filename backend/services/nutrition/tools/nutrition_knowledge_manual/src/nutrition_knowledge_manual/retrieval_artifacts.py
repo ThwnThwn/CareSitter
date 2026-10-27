@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import uuid
 from typing import Any
 
 from .errors import ManualGraphError
@@ -39,6 +40,22 @@ def write_once(path: Path, value: dict) -> None:
             os.fsync(stream.fileno())
     except FileExistsError:
         raise ManualGraphError("artifact already exists; holdout may already be consumed") from None
+
+
+def write_once_atomic(path: Path, value: dict) -> None:
+    """Publish a complete new artifact without exposing a partially written final path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        with temporary.open("xb") as stream:
+            stream.write(serialized_json_bytes(value))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, path)
+    except FileExistsError:
+        raise ManualGraphError("artifact already exists; use a new revision") from None
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def code_identity() -> dict:

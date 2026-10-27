@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import '../widgets/registration_form.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -16,11 +17,10 @@ class RegisterScreen extends StatelessWidget {
         body: SafeArea(
             top: false,
             child: RegistrationForm(onRegistered: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Đăng ký thành công. Bạn có thể đăng nhập ngay.'),
-                backgroundColor: AppColors.success,
-                behavior: SnackBarBehavior.floating,
-              ));
+              AppToast.success(
+                context,
+                'Đăng ký thành công. Bạn có thể đăng nhập ngay.',
+              );
               context.go('/auth/phone');
             })),
       );

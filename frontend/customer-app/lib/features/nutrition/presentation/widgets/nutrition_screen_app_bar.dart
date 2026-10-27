@@ -1,5 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 
 enum NutritionScreenMenuAction { history, changeBeneficiary }
 
@@ -54,6 +56,11 @@ class NutritionScreenAppBar extends StatelessWidget
                 )
               : null,
       actions: [
+        IconButton(
+          tooltip: 'Tra cứu tài liệu dinh dưỡng',
+          onPressed: () => context.push(AppRoutes.nutritionKnowledge),
+          icon: const Icon(Icons.menu_book_outlined),
+        ),
         if (canEdit)
           IconButton(
             tooltip: 'Cập nhật thông tin dinh dưỡng',

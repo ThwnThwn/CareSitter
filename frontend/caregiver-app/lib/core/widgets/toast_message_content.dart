@@ -13,6 +13,8 @@ class ToastMessageContent extends StatelessWidget {
     required this.icon,
     required this.title,
     this.message,
+    this.actionLabel,
+    this.onAction,
     required this.callbackAction1,
   });
 
@@ -22,6 +24,8 @@ class ToastMessageContent extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   final VoidCallback callbackAction1;
 
   @override
@@ -52,7 +56,13 @@ class ToastMessageContent extends StatelessWidget {
               _ToastLeading(accent: accent, icon: icon),
               const SizedBox(width: AppSpacing.compact),
               Expanded(
-                child: _ToastCopy(title: title, message: message),
+                child: _ToastCopy(
+                  title: title,
+                  message: message,
+                  actionLabel: actionLabel,
+                  onAction: onAction,
+                  accent: accent,
+                ),
               ),
               IconButton(
                 onPressed: callbackAction1,
@@ -94,10 +104,19 @@ class _ToastLeading extends StatelessWidget {
 }
 
 class _ToastCopy extends StatelessWidget {
-  const _ToastCopy({required this.title, this.message});
+  const _ToastCopy({
+    required this.title,
+    this.message,
+    this.actionLabel,
+    this.onAction,
+    required this.accent,
+  });
 
   final String title;
   final String? message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -125,6 +144,23 @@ class _ToastCopy extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
+              ),
+            ],
+            if (actionLabel case final label?) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: accent,
+                  minimumSize: const Size(0, AppSpacing.s40),
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: AppFontSizes.s13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: Text(label),
               ),
             ],
           ],

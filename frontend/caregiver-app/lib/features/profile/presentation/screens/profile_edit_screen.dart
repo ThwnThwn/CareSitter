@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
@@ -78,18 +79,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       if (!mounted) return;
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã cập nhật ảnh đại diện thành công'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppToast.success(context, 'Đã cập nhật ảnh đại diện thành công');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tải ảnh thất bại. Vui lòng thử lại.'),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          'Vui lòng thử lại.',
+          title: 'Tải ảnh thất bại',
         );
       }
     } catch (e) {
@@ -97,11 +92,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       final message = e is AppException
           ? e.message
           : 'Không thể đọc hoặc tải ảnh. Vui lòng chọn ảnh khác.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-        ),
+      AppToast.error(
+        context,
+        message,
+        title: 'Chưa thể cập nhật ảnh',
       );
     }
   }
@@ -154,13 +148,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       if (!mounted) return;
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã cập nhật thông tin cá nhân thành công'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppToast.success(context, 'Đã cập nhật thông tin cá nhân thành công');
         Navigator.pop(context);
       }
     } catch (error) {
@@ -168,12 +156,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       final message = error is AppException
           ? error.message
           : 'Không thể cập nhật hồ sơ. Vui lòng thử lại.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppToast.error(
+        context,
+        message,
+        title: 'Chưa thể cập nhật hồ sơ',
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);

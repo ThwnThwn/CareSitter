@@ -102,110 +102,242 @@
   margin-top: 0.18rem;
 }
 
-.hero-collage {
-  height: 650px;
+.hero-journey {
+  height: 610px;
+  isolation: isolate;
   position: relative;
 }
 
-/* Independent translate keeps pointer depth separate from Anime.js entrances. */
-.hero-collage > * {
-  translate: calc(var(--hero-pointer-x, 0px) * var(--hero-depth, 1))
-    calc(var(--hero-pointer-y, 0px) * var(--hero-depth, 1));
-  transition: translate 800ms cubic-bezier(0.16, 1, 0.3, 1);
+.hero-journey [data-journey-layer] {
+  will-change: transform;
 }
 
-.hero-collage__main { --hero-depth: 0.35; }
-.hero-collage__portrait { --hero-depth: 0.8; }
-.hero-collage__seal { --hero-depth: 1; }
-.hero-collage__caption { --hero-depth: 1.2; }
-
-.hero-collage figure {
+.hero-journey__photo {
+  border-radius: var(--radius);
+  height: 78%;
   margin: 0;
   overflow: hidden;
   position: absolute;
+  right: 2%;
+  top: 10%;
+  width: 86%;
+  z-index: 1;
 }
 
-.hero-collage figure img {
-  object-fit: cover;
-}
-
-.hero-collage__main {
-  border-radius: var(--radius);
-  height: 82%;
-  left: 0;
-  top: 8%;
-  width: 78%;
-}
-
-.hero-collage__main::after {
-  background: linear-gradient(180deg, transparent 55%, rgba(10, 52, 40, 0.38));
+.hero-journey__photo::after {
+  background: linear-gradient(
+    180deg,
+    transparent 62%,
+    color-mix(in srgb, var(--green-dark) 17%, transparent)
+  );
   content: "";
   inset: 0;
   pointer-events: none;
   position: absolute;
 }
 
-.hero-collage__portrait {
-  border: 6px solid var(--paper);
-  border-radius: 50%;
-  height: 176px;
-  right: 0;
-  top: 0;
-  width: 176px;
+.hero-journey__photo img {
+  object-fit: cover;
+  object-position: 50% 50%;
+  transform: scale(1.015);
 }
 
-.hero-collage__caption,
-.hero-collage__seal {
+.hero-journey__portrait {
+  border: 5px solid var(--paper);
+  border-radius: 50%;
+  height: 132px;
+  left: 17%;
+  overflow: visible;
+  position: absolute;
+  top: 1%;
+  width: 132px;
+  z-index: 7;
+}
+
+.hero-journey__portrait > img {
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.hero-journey__portrait > span {
+  align-items: center;
+  background: var(--green);
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  bottom: 2px;
+  color: var(--white);
+  display: flex;
+  height: 30px;
+  justify-content: center;
+  position: absolute;
+  right: -3px;
+  width: 30px;
+  z-index: 1;
+}
+
+.hero-journey__path {
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  z-index: 4;
+}
+
+.hero-journey__path path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.hero-journey__path-shadow {
+  stroke: var(--paper);
+  stroke-width: 7;
+}
+
+.hero-journey__path-line {
+  stroke: var(--green);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  stroke-width: 2.25;
+}
+
+.hero-journey__path circle {
+  fill: var(--green);
+  stroke: var(--paper);
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.hero-journey__steps {
+  inset: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 8;
+}
+
+.hero-journey__step {
+  align-items: center;
+  background: color-mix(in srgb, var(--white) 94%, var(--lime));
   border-radius: var(--radius);
+  box-shadow: 0 5px 8px color-mix(in srgb, var(--green-dark) 12%, transparent);
+  color: var(--green-dark);
+  display: flex;
+  gap: 0.85rem;
+  min-width: 250px;
+  padding: 0.95rem 1.05rem;
+  pointer-events: auto;
   position: absolute;
 }
 
-.hero-collage__caption {
-  background: var(--green-dark);
-  bottom: 3%;
-  color: var(--white);
+.hero-journey__step::after {
+  background: var(--green);
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  content: "";
+  height: 15px;
+  position: absolute;
+  width: 15px;
+}
+
+.hero-journey__step > span:last-child {
   display: flex;
   flex-direction: column;
-  padding: 1.2rem 1.35rem;
-  right: 0;
-  width: min(290px, 58%);
+  min-width: 0;
 }
 
-.hero-collage__caption span {
-  color: var(--lime);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.hero-journey__step strong {
+  font-size: 0.93rem;
+  line-height: 1.25;
 }
 
-.hero-collage__caption strong {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  margin: 0.45rem 0 0.15rem;
+.hero-journey__step small {
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.35;
+  margin-top: 0.26rem;
 }
 
-.hero-collage__caption small {
-  color: color-mix(in oklch, var(--white) 74%, transparent);
-}
-
-.hero-collage__seal {
+.hero-journey__step-icon {
   align-items: center;
-  background: var(--lime);
+  color: var(--green);
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.hero-journey__step--verified {
+  left: 33%;
+  top: 3%;
+}
+
+.hero-journey__step--verified::after {
+  left: -8px;
+  top: 33px;
+}
+
+.hero-journey__step--arrived {
+  right: -5%;
+  top: 27%;
+}
+
+.hero-journey__step--arrived::after,
+.hero-journey__step--notified::after {
+  left: 16px;
+  top: -8px;
+}
+
+.hero-journey__step--notified {
+  right: -7%;
+  top: 57%;
+}
+
+.hero-journey__resolution {
+  align-items: center;
+  background: color-mix(in srgb, var(--white) 95%, var(--lime));
+  border-radius: var(--radius);
+  bottom: 0;
+  box-shadow: 0 5px 8px color-mix(in srgb, var(--green-dark) 10%, transparent);
   color: var(--green-dark);
   display: flex;
+  font-size: 0.84rem;
+  font-weight: 600;
   gap: 0.75rem;
-  left: -1.5rem;
+  line-height: 1.4;
   padding: 0.85rem 1rem;
-  top: 17%;
+  position: absolute;
+  right: -4%;
+  width: min(420px, 67%);
+  z-index: 9;
 }
 
-.hero-collage__seal span {
+.hero-journey__resolution > span {
+  align-items: center;
+  background: var(--green);
+  border-radius: 50%;
+  color: var(--white);
   display: flex;
-  flex-direction: column;
-  font-size: 0.68rem;
+  flex: 0 0 32px;
+  height: 32px;
+  justify-content: center;
 }
 
-.hero-collage__seal strong {
-  font-size: 0.82rem;
+@media (hover: hover) and (pointer: fine) {
+  .hero-journey__step,
+  .hero-journey__resolution {
+    transition:
+      box-shadow 260ms var(--ease-out),
+      scale 260ms var(--ease-out);
+  }
+
+  .hero-journey__step:hover,
+  .hero-journey__resolution:hover {
+    box-shadow: 0 8px 8px color-mix(in srgb, var(--green-dark) 16%, transparent);
+    scale: 1.025;
+  }
 }

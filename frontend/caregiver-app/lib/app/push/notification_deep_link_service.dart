@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
@@ -10,6 +9,7 @@ import 'package:caregiver_app/app/router/app_router.dart';
 
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
 import 'package:caregiver_app/core/widgets/app_messenger.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 
 NotificationDeepLinkService createNotificationDeepLinkService(Ref ref) {
   final service = AppNotificationDeepLinkService(ref);
@@ -92,20 +92,15 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     required Map<String, dynamic> data,
     String? deliveryId,
   }) {
-    final messenger = appMessengerKey.currentState;
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(body.isEmpty ? title : '$title\n$body'),
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: 'Xem',
-            onPressed: () => handle(data, deliveryId: deliveryId),
-          ),
-        ),
-      );
+    final context = appMessengerKey.currentContext;
+    if (context == null) return;
+    AppToast.info(
+      context,
+      body.isEmpty ? 'Mở thông báo để xem chi tiết.' : body,
+      title: title,
+      actionLabel: 'Xem',
+      onAction: () => handle(data, deliveryId: deliveryId),
+    );
   }
 
   Future<void> _listenForNativeLinks() async {

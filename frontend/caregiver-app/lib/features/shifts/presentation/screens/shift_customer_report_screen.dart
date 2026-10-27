@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/report/report_sliver_app_bar.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/report/report_caregiver_card.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/report/report_timeline.dart';
@@ -53,15 +54,7 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
   }
 
   void _onShare() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('📤 Đã sao chép link báo cáo'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md)),
-      ),
-    );
+    AppToast.success(context, 'Đã sao chép link báo cáo');
   }
 
   @override

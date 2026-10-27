@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/earnings/presentation/controllers/earnings_controller.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 
@@ -91,14 +92,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .read(offerActionControllerProvider.notifier)
         .run(bookingId, action);
     if (!context.mounted || result == OfferActionResult.ignored) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(result == OfferActionResult.success
-          ? successMessage
-          : 'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.'),
-      backgroundColor: result == OfferActionResult.success
-          ? AppColors.success
-          : AppColors.error,
-    ));
+    if (result == OfferActionResult.success) {
+      AppToast.success(context, successMessage);
+    } else {
+      AppToast.error(
+        context,
+        'Ca vừa thay đổi hoặc bạn đang trùng lịch. Vui lòng thử lại.',
+        title: 'Chưa thể cập nhật ca',
+      );
+    }
   }
 
   Future<String?> _selectDeclineReason(BuildContext context) {

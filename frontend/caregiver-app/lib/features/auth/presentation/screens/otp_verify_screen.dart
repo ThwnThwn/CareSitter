@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/otp_verify_controller.dart';
 
 class OtpVerifyScreen extends ConsumerStatefulWidget {
@@ -87,11 +88,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isVerifying = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Xác thực OTP thất bại: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          e.toString(),
+          title: 'Xác thực OTP thất bại',
         );
       }
     }
@@ -105,11 +105,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
       if (mounted) _startCountdown();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể gửi lại OTP: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          e.toString(),
+          title: 'Không thể gửi lại OTP',
         );
       }
     } finally {

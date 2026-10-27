@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
+import { Be_Vietnam_Pro, IBM_Plex_Mono, Noto_Serif_Display } from "next/font/google";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -9,7 +9,7 @@ const beVietnamPro = Be_Vietnam_Pro({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
+const notoSerifDisplay = Noto_Serif_Display({
   weight: "variable",
   style: ["normal", "italic"],
   subsets: ["latin", "latin-ext", "vietnamese"],
@@ -61,7 +61,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${beVietnamPro.variable} ${sourceSerif.variable} ${ibmPlexMono.variable}`}
+      className={`${beVietnamPro.variable} ${notoSerifDisplay.variable} ${ibmPlexMono.variable}`}
     >
       <body>{children}</body>
     </html>

@@ -6,6 +6,7 @@ void main() {
     expect(AppRoutes.root, '/');
     expect(AppRoutes.bookingNew, '/bookings/new');
     expect(AppRoutes.beneficiaryNew, '/beneficiaries/new');
+    expect(AppRoutes.nutritionKnowledge, '/nutrition/knowledge');
     expect(AppRoutes.bookingDetail('booking-1'), '/bookings/booking-1');
     expect(AppRoutes.serviceDetail('service-1'), '/catalog/service-1');
     expect(

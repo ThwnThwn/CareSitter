@@ -12,6 +12,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/auth/presentation/controllers/login_controller.dart';
 import 'package:caresitter_customer/features/auth/domain/auth_validators.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/auth_error_banner.dart';
+import 'package:flutter/foundation.dart';
 
 class LoginAuthFields extends StatelessWidget {
   const LoginAuthFields(
@@ -78,7 +79,11 @@ class LoginAuthFields extends StatelessWidget {
                 keyboardType: TextInputType.text,
                 validator: AuthValidators.loginEmail,
                 textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.username],
+                // Disable browser autofill for both login fields on Web: Edge
+                // can keep Flutter's hidden username input focused after moving
+                // to the password field, making edits appear frozen.
+                autofillHints:
+                    kIsWeb ? null : const [AutofillHints.username],
                 enabled: !loginState.isLoading,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -90,7 +95,8 @@ class LoginAuthFields extends StatelessWidget {
                 obscureText: obscurePass,
                 validator: AuthValidators.loginPassword,
                 textInputAction: TextInputAction.done,
-                autofillHints: const [AutofillHints.password],
+                autofillHints:
+                    kIsWeb ? null : const [AutofillHints.password],
                 enabled: !loginState.isLoading,
                 onFieldSubmitted: (_) => login(),
                 suffixIcon: IconButton(

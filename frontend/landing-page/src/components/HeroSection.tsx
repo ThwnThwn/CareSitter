@@ -2,7 +2,14 @@
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
-import { ArrowDownRight, ArrowUpRight, ShieldCheck } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BellRing,
+  Check,
+  MapPinCheck,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useHeroCollageMotion } from "./useHeroCollageMotion";
 import CareAssistant from "./CareAssistant";
@@ -113,42 +120,122 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <div className="hero-collage" aria-label="CareSitter trong một ca chăm sóc">
-          <figure className="hero-collage__main">
+        <div
+          className="hero-journey"
+          aria-label="Ba tín hiệu an tâm trong một ca chăm sóc CareSitter"
+        >
+          <figure
+            className="hero-journey__photo"
+            data-journey-layer
+            data-depth="0.35"
+          >
             <Image
-              alt="Người chăm sóc đồng hành cùng một gia đình trong không gian ấm cúng"
+              alt="Caregiver trò chuyện cùng người cao tuổi và gia đình trong không gian ấm cúng"
               fill
               loading="eager"
               fetchPriority="high"
-              sizes="(max-width: 900px) 100vw, 46vw"
+              sizes="(max-width: 820px) 94vw, 52vw"
               src="/images/app-hero.jpg"
             />
           </figure>
 
-          <figure className="hero-collage__portrait">
+          <div
+            className="hero-journey__portrait"
+            data-journey-layer
+            data-depth="0.9"
+          >
             <Image
-              alt="Chân dung caregiver Hải Đường"
+              alt="Caregiver Hải Đường đã được xác minh"
               fill
               loading="eager"
-              sizes="180px"
+              sizes="(max-width: 620px) 92px, 132px"
               src="/images/caregiver-1.jpg"
             />
-          </figure>
-
-          <div className="hero-collage__caption">
-            <span>Hôm nay • Quận 7</span>
-            <strong>Caregiver đến đúng giờ</strong>
-            <small>Gia đình đã nhận thông báo</small>
-          </div>
-
-          <div className="hero-collage__seal" aria-label="Hồ sơ đã xác minh">
-            <ShieldCheck size={22} aria-hidden="true" />
-            <span>
-              <strong>Đã xác minh</strong>
-              Hồ sơ &amp; danh tính
+            <span aria-hidden="true">
+              <Check size={15} strokeWidth={3} />
             </span>
           </div>
 
+          <svg
+            aria-hidden="true"
+            className="hero-journey__path"
+            data-journey-layer
+            data-depth="0.58"
+            preserveAspectRatio="none"
+            viewBox="0 0 760 610"
+          >
+            <path
+              className="hero-journey__path-shadow"
+              d="M285 62 C460 48 570 78 620 160 C660 226 626 278 676 334 C727 392 724 470 642 535"
+            />
+            <path
+              className="hero-journey__path-line"
+              d="M285 62 C460 48 570 78 620 160 C660 226 626 278 676 334 C727 392 724 470 642 535"
+              pathLength="1"
+            />
+            <circle cx="285" cy="62" r="7" />
+            <circle cx="620" cy="160" r="7" />
+            <circle cx="676" cy="334" r="7" />
+          </svg>
+
+          <ol className="hero-journey__steps">
+            <li
+              className="hero-journey__step hero-journey__step--verified"
+              data-journey-card
+              data-journey-layer
+              data-depth="1"
+            >
+              <span className="hero-journey__step-icon">
+                <ShieldCheck size={24} aria-hidden="true" />
+              </span>
+              <span>
+                <strong>Hồ sơ đã xác minh</strong>
+                <small>Danh tính đã được đối chiếu</small>
+              </span>
+            </li>
+
+            <li
+              className="hero-journey__step hero-journey__step--arrived"
+              data-journey-card
+              data-journey-layer
+              data-depth="1.1"
+            >
+              <span className="hero-journey__step-icon">
+                <MapPinCheck size={24} aria-hidden="true" />
+              </span>
+              <span>
+                <strong>Caregiver đã đến</strong>
+                <small>GPS xác nhận lúc 08:02</small>
+              </span>
+            </li>
+
+            <li
+              className="hero-journey__step hero-journey__step--notified"
+              data-journey-card
+              data-journey-layer
+              data-depth="1.18"
+            >
+              <span className="hero-journey__step-icon">
+                <BellRing size={24} aria-hidden="true" />
+              </span>
+              <span>
+                <strong>Gia đình đã nhận cập nhật</strong>
+                <small>Thông báo được gửi ngay</small>
+              </span>
+            </li>
+          </ol>
+
+          <div
+            className="hero-journey__resolution"
+            data-journey-card
+            data-journey-layer
+            data-depth="0.92"
+          >
+            <span aria-hidden="true">
+              <Check size={18} strokeWidth={3} />
+            </span>
+            Bạn luôn biết ca chăm sóc đang diễn ra thế nào.
+          </div>
         </div>
       </div>
     </section>
