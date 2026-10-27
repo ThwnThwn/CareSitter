@@ -16,6 +16,7 @@ from nutrition_knowledge_manual.errors import ManualGraphError
 from nutrition_knowledge_manual.jsonio import content_sha256, file_sha256
 from nutrition_knowledge_manual.retrieval_eval import run_retrieval_eval
 from nutrition_knowledge_manual.retrieval_review import (
+    _evidence_preview,
     build_retrieval_review_packet,
     empty_retrieval_review,
     record_retrieval_case_review,
@@ -25,6 +26,22 @@ from nutrition_knowledge_manual.retrieval_review import (
 
 
 class RetrievalReviewTests(unittest.TestCase):
+    def test_evidence_preview_starts_at_relevant_heading(self):
+        text = (
+            "Nội dung DEXA không liên quan. " * 12
+            + "\n\n4. Các chỉ số sinh hóa, xét nghiệm\n\n"
+            + "4.1 Cân bằng nitơ\n\nHệ số là 6.25g nitơ cho 1 gram protein."
+        )
+        question = (
+            "Ở trang 58, trong mục “4. Các chỉ số sinh hóa, xét nghiệm — "
+            "4.1 Cân bằng nitơ”, số liệu “1 gram” mô tả chỉ số nào?"
+        )
+
+        preview = _evidence_preview(text=text, question=question, limit=160)
+
+        self.assertTrue(preview.startswith("4.1 Cân bằng nitơ"))
+        self.assertIn("1 gram", preview)
+
     def test_ledger_is_stale_when_a_question_or_corpus_freeze_changes(self):
         with tempfile.TemporaryDirectory() as folder:
             fixture = _Fixture(Path(folder))

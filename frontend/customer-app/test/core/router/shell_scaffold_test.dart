@@ -1,12 +1,81 @@
+import 'dart:ui' as ui;
+
+import 'package:caresitter_customer/app/router/shell_nav_item.dart';
 import 'package:caresitter_customer/app/router/shell_scaffold.dart';
+import 'package:caresitter_customer/app/router/shell_stitch_bottom_bar.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  testWidgets('bottom safe area keeps the navigation surface color',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.padding = const FakeViewPadding(bottom: 34);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetPadding);
+
+    final boundaryKey = GlobalKey();
+    const tabs = [
+      ShellNavItem(icon: Icons.home_outlined, label: 'Trang chủ', path: '/'),
+      ShellNavItem(
+          icon: Icons.calendar_month_outlined,
+          label: 'Lịch hẹn',
+          path: '/bookings'),
+      ShellNavItem(
+          icon: Icons.restaurant_menu_outlined,
+          label: 'Thực đơn',
+          path: '/nutrition'),
+      ShellNavItem(
+          icon: Icons.person_outline_rounded,
+          label: 'Hồ sơ',
+          path: '/settings'),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: RepaintBoundary(
+          key: boundaryKey,
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            bottomNavigationBar: ShellStitchBottomBar(
+              selectedIndex: 0,
+              tabs: tabs,
+              onTabSelected: (_) {},
+              onCreateBooking: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final pixelColor = await tester.runAsync(() async {
+      final boundary = boundaryKey.currentContext!.findRenderObject()!
+          as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 1);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final rgba = bytes!.buffer.asUint8List();
+      final pixelOffset =
+          ((image.height - 10) * image.width + image.width ~/ 2) * 4;
+      return Color.fromARGB(
+        rgba[pixelOffset + 3],
+        rgba[pixelOffset],
+        rgba[pixelOffset + 1],
+        rgba[pixelOffset + 2],
+      );
+    });
+
+    expect(pixelColor, AppColors.surface);
+  });
+
   testWidgets('center booking action stays inside the navigation bar',
       (tester) async {
     tester.view.devicePixelRatio = 1;
@@ -50,7 +119,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final barRect = tester.getRect(find.byType(BottomAppBar));
+    final barRect = tester.getRect(find.byType(ShellStitchBottomBar));
     final bodyRect = tester.getRect(find.byKey(const ValueKey('home-body')));
     final addRect = tester.getRect(find.byIcon(Icons.add_rounded));
 

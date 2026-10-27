@@ -20,6 +20,10 @@ HEADING_NUMBER_PATTERN = re.compile(
 )
 PRINTED_PAGE_PATTERN = re.compile(r"(?:^|\s)(\d{1,4})(?:\s|$)")
 BOOK_HEADER_PATTERN = re.compile(r"^(?:DINH DƯỠNG LÂM SÀNG\s*\d*|\d+\s*DINH DƯỠNG LÂM SÀNG)$", re.IGNORECASE)
+BOOK_HEADER_PAGE_PATTERN = re.compile(
+    r"^(?:DINH DƯỠNG LÂM SÀNG\s*(\d{1,4})|(\d{1,4})\s*DINH DƯỠNG LÂM SÀNG)$",
+    re.IGNORECASE,
+)
 
 
 def lexical_tokens(text: str) -> list[str]:
@@ -38,7 +42,10 @@ def _is_heading(text: str) -> bool:
         return False
     letters = [character for character in stripped if character.isalpha()]
     uppercase_ratio = sum(character.isupper() for character in letters) / max(1, len(letters))
-    return HEADING_NUMBER_PATTERN.match(stripped) is not None or (len(letters) >= 4 and uppercase_ratio >= 0.72)
+    numbered = HEADING_NUMBER_PATTERN.match(stripped) is not None
+    if numbered and len(stripped.split()) > 12:
+        return False
+    return numbered or (len(letters) >= 4 and uppercase_ratio >= 0.72)
 
 
 def _is_table_block(lines: list[str]) -> bool:
@@ -50,12 +57,60 @@ def _is_table_block(lines: list[str]) -> bool:
 
 
 def _printed_page_label(lines: list[str]) -> str | None:
+    return _printed_page_candidate(lines)[0]
+
+
+def _printed_page_candidate(lines: list[str]) -> tuple[str | None, bool]:
+    for line in lines:
+        match = BOOK_HEADER_PAGE_PATTERN.fullmatch(re.sub(r"\s+", " ", line.strip()))
+        if match:
+            return match.group(1) or match.group(2), True
     candidates = [line.strip() for line in lines[:3] + lines[-3:] if line.strip()]
     for line in reversed(candidates):
         matches = PRINTED_PAGE_PATTERN.findall(line)
         if matches:
-            return matches[-1]
-    return None
+            return matches[-1], False
+    return None, False
+
+
+def _dominant_printed_page_offset(
+    labels: list[tuple[int, str | None, bool]],
+) -> int | None:
+    offsets = [
+        int(label) - pdf_page
+        for pdf_page, label, from_book_header in labels
+        if from_book_header and label is not None and label.isdigit()
+    ]
+    if len(offsets) < 3:
+        return None
+    offset, count = Counter(offsets).most_common(1)[0]
+    return offset if count >= 3 else None
+
+
+def _reconcile_printed_page_label(
+    *, pdf_page: int, printed_page: str | None,
+    from_book_header: bool, dominant_offset: int | None,
+) -> str | None:
+    if (
+        from_book_header
+        or dominant_offset is None
+        or printed_page is None
+        or not printed_page.isdigit()
+    ):
+        return printed_page
+    expected = pdf_page + dominant_offset
+    return str(expected) if expected > 0 else printed_page
+
+
+def _is_publisher_matter(text: str) -> bool:
+    normalized = normalize_text(text).upper()
+    if "NHÀ XUẤT BẢN" not in normalized:
+        return False
+    markers = (
+        "ĐỊA CHỈ", "EMAIL", "ĐIỆN THOẠI", "MÃ ISBN",
+        "QUYẾT ĐỊNH XUẤT BẢN", "NỘP LƯU CHIỂU",
+    )
+    return sum(marker in normalized for marker in markers) >= 2
 
 
 def _page_blocks(layout_text: str) -> tuple[list[dict[str, str]], str | None]:
@@ -222,6 +277,10 @@ def chunk_page(
     )
     for ordinal, record in enumerate(result, start=1):
         record["chunk_ordinal_on_page"] = ordinal
+    if _is_publisher_matter(layout_text):
+        for record in result:
+            record["index_eligible"] = False
+            record["review_status"] = "manual_review_required"
     return result, printed_page
 
 
@@ -249,13 +308,27 @@ def chunk_pdf_source(
     printed_page_count = 0
     with pdfplumber.open(pdf_path) as document:
         page_count = len(document.pages)
-        for page_number, page in enumerate(document.pages, start=1):
-            layout_text = page.extract_text(layout=True) or ""
+        page_texts = [page.extract_text(layout=True) or "" for page in document.pages]
+        page_labels = [
+            (page_number, *_printed_page_candidate(normalize_text(layout_text).splitlines()))
+            for page_number, layout_text in enumerate(page_texts, start=1)
+        ]
+        dominant_offset = _dominant_printed_page_offset(page_labels)
+        for page_number, layout_text in enumerate(page_texts, start=1):
             page_chunks, printed_page = chunk_page(
                 source=source, pdf_page=page_number, layout_text=layout_text,
                 target_tokens=target_tokens, maximum_tokens=maximum_tokens,
                 overlap_tokens=overlap_tokens
             )
+            _, _, from_book_header = page_labels[page_number - 1]
+            printed_page = _reconcile_printed_page_label(
+                pdf_page=page_number,
+                printed_page=printed_page,
+                from_book_header=from_book_header,
+                dominant_offset=dominant_offset,
+            )
+            for record in page_chunks:
+                record["printed_page"] = printed_page
             if printed_page:
                 printed_page_count += 1
             if not page_chunks:

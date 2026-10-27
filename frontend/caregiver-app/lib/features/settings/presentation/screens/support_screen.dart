@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key});
@@ -50,17 +51,18 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       _titleController.clear();
       _descController.clear();
       setState(() => _attachments.clear());
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.ticketId == null
-              ? 'Yêu cầu hỗ trợ đã được gửi.'
-              : 'Đã gửi yêu cầu hỗ trợ. Mã: ${result.ticketId!}'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating));
+      AppToast.success(
+        context,
+        result.ticketId == null
+            ? 'Yêu cầu hỗ trợ đã được gửi.'
+            : 'Đã gửi yêu cầu hỗ trợ. Mã: ${result.ticketId!}',
+      );
     } else if (result is SupportFailed) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating));
+      AppToast.error(
+        context,
+        result.message,
+        title: 'Chưa thể gửi yêu cầu hỗ trợ',
+      );
     }
   }
 

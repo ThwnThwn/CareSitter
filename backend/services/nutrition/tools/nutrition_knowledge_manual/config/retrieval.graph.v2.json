@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "keyword_minimum_score": 0.0,
+  "vector_minimum_score": 0.5,
+  "rrf_k": 60,
+  "fusion_candidates": 20,
+  "graph_hops": 2,
+  "graph_max_nodes": 200,
+  "graph_max_edges": 500,
+  "graph_support_weight": 1.0,
+  "graph_hop_decay": 0.8
+}

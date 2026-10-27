@@ -49,6 +49,15 @@ builder.Services.AddOptions<NutritionGatewayOptions>().Bind(builder.Configuratio
         "NutritionGateway requires an internal gRPC endpoint, service credential and a bounded timeout.")
     .ValidateOnStart();
 builder.Services.AddSingleton<INutritionGateway, NutritionGrpcGateway>();
+builder.Services.AddOptions<NutritionKnowledgeOptions>()
+    .Bind(builder.Configuration.GetSection("NutritionKnowledge"))
+    .Validate(options => !options.Enabled ||
+        (builder.Environment.IsDevelopment() &&
+         Path.IsPathFullyQualified(options.CorpusPath) &&
+         options.CorpusSha256.Length == 64),
+        "NutritionKnowledge requires Development, an absolute corpus path and SHA-256 digest when enabled.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<NutritionKnowledgeSearch>();
 // Network contracts remain independent of the existing in-process MediatR events.
 builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
 {

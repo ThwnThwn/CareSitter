@@ -18,6 +18,7 @@ class AppRoutes {
   static const bookingNew = '/bookings/new';
   static const legacyBookingNew = '/booking/new';
   static const nutrition = '/nutrition';
+  static const nutritionKnowledge = '/nutrition/knowledge';
   static const caregivers = '/caregivers';
   static const beneficiaries = '/beneficiaries';
   static const beneficiaryNew = '/beneficiaries/new';

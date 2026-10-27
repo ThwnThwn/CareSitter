@@ -1,5 +1,6 @@
 """Synthetic deterministic vectors validate mechanics, never clinical quality."""
 import copy
+import json
 from pathlib import Path
 import tempfile
 import unicodedata
@@ -7,11 +8,14 @@ import unittest
 from unittest.mock import patch
 
 from test_retrieval_review import _Fixture
+from test_reviewed_graph_retrieval import approve_graph
 from nutrition_knowledge_manual.embedding_index import build_embedding_index, validate_embedding_index
 from nutrition_knowledge_manual.errors import ManualGraphError
 from nutrition_knowledge_manual.ollama_encoder import OllamaEncoder
 from nutrition_knowledge_manual.retrieval_artifacts import sign
 from nutrition_knowledge_manual.retrieval_eval import load_retrieval_chunks
+from nutrition_knowledge_manual.retrieval_graph import build_graph_candidate, materialize_graph
+from nutrition_knowledge_manual.retrieval_suite import create_suite
 from nutrition_knowledge_manual.retrievers import EmbeddingRetriever, HybridRetriever, KeywordRetriever
 
 
@@ -95,6 +99,30 @@ class EmbeddingRetrieverTests(unittest.TestCase):
         with patch.object(OllamaEncoder, "_request", return_value={"models": []}):
             with self.assertRaisesRegex(ManualGraphError, "digest"):
                 OllamaEncoder("http://127.0.0.1:11434", "a" * 64)
+
+    def test_versioned_suite_binds_and_applies_graph_fusion_parameters(self):
+        config_path = Path(__file__).resolve().parents[1] / "config/retrieval.graph.v2.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config.update(graph_support_weight=0.0, graph_hop_decay=0.5)
+        candidate = build_graph_candidate(self.chunks, self.freeze)
+        ledger = approve_graph(candidate, self.freeze)
+        graph = materialize_graph(candidate, self.freeze, ledger)
+        _, suite, bindings = create_suite(chunks_path=self.fixture.chunks_path, corpus_freeze=self.freeze,
+            config=config, encoder=self.encoder, index=self.build(), candidate=candidate, ledger=ledger, graph=graph)
+        self.assertEqual(config, bindings["config"])
+        hits = suite["graph"].search("Dinh dưỡng")
+        self.assertTrue(hits)
+        self.assertEqual(0.0, hits[0]["provenance"]["support_weight"])
+        self.assertEqual(0.5, hits[0]["provenance"]["hop_decay"])
+        legacy = {k: v for k, v in config.items() if k not in {"graph_support_weight", "graph_hop_decay"}}
+        legacy["schema_version"] = 1
+        _, legacy_suite, _ = create_suite(chunks_path=self.fixture.chunks_path, corpus_freeze=self.freeze,
+                                          config=legacy)
+        self.assertTrue(legacy_suite["keyword"].search("Dinh dưỡng"))
+        for override in ({"graph_support_weight": -1}, {"graph_hop_decay": True}, {"schema_version": []}):
+            with self.subTest(override=override), self.assertRaises(ManualGraphError):
+                create_suite(chunks_path=self.fixture.chunks_path, corpus_freeze=self.freeze,
+                             config=config | override)
 
 
 if __name__ == "__main__":

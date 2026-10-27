@@ -8,7 +8,8 @@ from test_retrieval_review import _Fixture
 from nutrition_knowledge_manual.errors import ManualGraphError
 from nutrition_knowledge_manual.jsonio import content_sha256
 from nutrition_knowledge_manual.retrieval_artifacts import local_path, sign
-from nutrition_knowledge_manual.retrieval_benchmark import benchmark, metrics, STRATEGIES
+from nutrition_knowledge_manual.retrieval_benchmark import (benchmark, hard_gate_failures,
+    metrics, STRATEGIES)
 from nutrition_knowledge_manual.retrieval_eval import load_retrieval_chunks
 from nutrition_knowledge_manual.retrieval_release import (consume_holdout, freeze_benchmark,
     graph_gate, release_manifest, seal_for_benchmark, validate_report)
@@ -142,6 +143,21 @@ class ReleasePipelineTests(unittest.TestCase):
         result = metrics([row])
         self.assertEqual(.5, result["recall_at_5"])
         self.assertIsNone(result["abstention_accuracy"])
+
+    def test_edition_conflict_group_uses_abstention_when_no_answer_is_possible(self):
+        entry = copy.deepcopy(self.report["strategies"]["keyword"])
+        entry["by_tag"]["edition_conflict"] = {
+            "case_count": 8, "answerable_case_count": 0, "insufficient_evidence_count": 8,
+            "recall_at_5": None, "abstention_accuracy": 1.0,
+        }
+        self.assertEqual([], hard_gate_failures(entry, "visible"))
+        entry["by_tag"]["edition_conflict"]["abstention_accuracy"] = .75
+        self.assertIn("visible.risk_group_abstention_below_gate:edition_conflict",
+                      hard_gate_failures(entry, "visible"))
+        entry["by_tag"]["edition_conflict"].update(
+            answerable_case_count=1, recall_at_5=.5, abstention_accuracy=1.0)
+        self.assertIn("visible.risk_group_below_gate:edition_conflict",
+                      hard_gate_failures(entry, "visible"))
 
     def test_artifact_paths_cannot_escape_local_boundary(self):
         with self.assertRaises(ManualGraphError):

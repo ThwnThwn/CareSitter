@@ -1,133 +1,117 @@
 "use client";
 
-import { animate, type JSAnimation } from "animejs";
-import { useEffect, type RefObject } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import type { RefObject } from "react";
 
-/** A once-only photo entrance, with small independent movements for its layers. */
+gsap.registerPlugin(useGSAP);
+
+/** Choreographs the reassurance journey and adds restrained pointer depth. */
 export function useHeroCollageMotion(heroRef: RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const collage = heroRef.current?.querySelector<HTMLElement>(".hero-collage");
-    if (!collage) return;
+  useGSAP(
+    () => {
+      const hero = heroRef.current;
+      const journey = hero?.querySelector<HTMLElement>(".hero-journey");
+      if (!hero || !journey) return;
 
-    const photo = collage.querySelector<HTMLImageElement>(".hero-collage__main img");
-    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const animations = new Set<JSAnimation>();
-    let inView = !("IntersectionObserver" in window);
-    let entered = false;
-    let pointerFrame = 0;
-    let pointerX = 0;
-    let pointerY = 0;
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (reducedMotion.matches) return;
 
-    const canMove = () => inView && !document.hidden;
-    const resetPointer = () => {
-      window.cancelAnimationFrame(pointerFrame);
-      pointerFrame = 0;
-      collage.style.removeProperty("--hero-pointer-x");
-      collage.style.removeProperty("--hero-pointer-y");
-    };
+      const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+      const photo = journey.querySelector<HTMLElement>(".hero-journey__photo img");
+      const portrait = journey.querySelector<HTMLElement>(".hero-journey__portrait");
+      const line = journey.querySelector<SVGPathElement>(".hero-journey__path-line");
+      const layers = gsap.utils.toArray<HTMLElement>("[data-journey-layer]", journey);
+      const cards = gsap.utils.toArray<HTMLElement>("[data-journey-card]", journey);
 
-    const enter = () => {
-      entered = true;
-      const compact = window.matchMedia("(max-width: 820px)").matches;
-      const amplitude = compact ? 0.55 : 1;
-      const layers = [
-        { name: "main", x: 0, y: 36, angle: -1.2, delay: 120, drift: 0 },
-        { name: "portrait", x: 22, y: -18, angle: 4, delay: 260, drift: -6 },
-        { name: "seal", x: -24, y: 8, angle: -2, delay: 430, drift: -4 },
-        { name: "caption", x: 18, y: 26, angle: 2, delay: 570, drift: 5 },
-      ];
+      gsap.set(line, { strokeDashoffset: 1 });
 
-      layers.forEach((layer, index) => {
-        const element = collage.querySelector<HTMLElement>(`.hero-collage__${layer.name}`);
-        if (!element) return;
-        const entrance = animate(element, {
-          translateX: [layer.x * amplitude, 0],
-          translateY: [layer.y * amplitude, 0],
-          rotate: [layer.angle * amplitude, 0],
-          scale: [0.97, 1],
-          duration: 1100,
-          delay: layer.delay,
-          ease: "outExpo",
-          onComplete: (animation) => {
-            animations.delete(animation);
-            animation.revert();
-            if (!layer.drift) return;
-            const drift = animate(element, {
-              translateY: [0, layer.drift * amplitude],
-              duration: 2900 + index * 450,
-              alternate: true,
-              loop: true,
-              ease: "inOutSine",
-              autoplay: canMove(),
-            });
-            animations.add(drift);
+      const entrance = gsap.timeline({ defaults: { ease: "power3.out" } });
+      entrance
+        .fromTo(
+          photo,
+          { autoAlpha: 0, scale: 1.065 },
+          { autoAlpha: 1, duration: 1.15, scale: 1.015 },
+        )
+        .fromTo(
+          portrait,
+          { autoAlpha: 0, y: -28 },
+          { autoAlpha: 1, duration: 0.72, y: 0 },
+          0.18,
+        )
+        .to(line, { duration: 1.35, ease: "power2.inOut", strokeDashoffset: 0 }, 0.42)
+        .fromTo(
+          cards,
+          { autoAlpha: 0, x: 18, y: 12 },
+          {
+            autoAlpha: 1,
+            duration: 0.62,
+            stagger: 0.2,
+            x: 0,
+            y: 0,
           },
+          0.58,
+        );
+
+      const layerMotion = layers.map((layer) => {
+        const depth = Number(layer.dataset.depth ?? 1);
+        return {
+          xTo: gsap.quickTo(layer, "x", { duration: 0.65, ease: "power3.out" }),
+          yTo: gsap.quickTo(layer, "y", { duration: 0.65, ease: "power3.out" }),
+          depth,
+        };
+      });
+
+      const resetPointer = () => {
+        layerMotion.forEach(({ xTo, yTo }) => {
+          xTo(0);
+          yTo(0);
         });
-        animations.add(entrance);
-      });
+      };
 
-      if (photo) {
-        const focus = animate(photo, {
-          scale: [1.045, 1],
-          duration: 1700,
-          ease: "outQuint",
-          onComplete: (animation) => {
-            animations.delete(animation);
-            animation.revert();
-          },
+      const onPointerMove = (event: PointerEvent) => {
+        if (!finePointer.matches || event.pointerType === "touch") return;
+        const bounds = journey.getBoundingClientRect();
+        const x = gsap.utils.clamp(-1, 1, (event.clientX - bounds.left) / bounds.width * 2 - 1);
+        const y = gsap.utils.clamp(-1, 1, (event.clientY - bounds.top) / bounds.height * 2 - 1);
+
+        layerMotion.forEach(({ xTo, yTo, depth }) => {
+          xTo(x * depth * 5.5);
+          yTo(y * depth * 4.5);
         });
-        animations.add(focus);
-      }
-    };
+      };
 
-    const sync = () => {
-      if (canMove() && !entered && (!photo || photo.complete)) enter();
-      animations.forEach((animation) => {
-        if (canMove()) animation.resume();
-        else animation.pause();
-      });
-      if (!canMove() || !finePointer.matches) resetPointer();
-    };
+      const photoScaleTo = photo
+        ? gsap.quickTo(photo, "scale", { duration: 0.45, ease: "power2.out" })
+        : null;
+      let scrollFrame = 0;
 
-    const observer = "IntersectionObserver" in window
-      ? new IntersectionObserver(([entry]) => {
-          inView = entry.isIntersecting;
-          sync();
-        }, { threshold: 0.08 })
-      : null;
+      const syncScroll = () => {
+        scrollFrame = 0;
+        if (!photoScaleTo) return;
+        const bounds = journey.getBoundingClientRect();
+        const progress = gsap.utils.clamp(0, 1, -bounds.top / Math.max(bounds.height, 1));
+        photoScaleTo(1.015 + progress * 0.045);
+      };
 
-    const onPointerMove = (event: PointerEvent) => {
-      if (!canMove() || !finePointer.matches || event.pointerType === "touch") return;
-      const bounds = collage.getBoundingClientRect();
-      pointerX = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / bounds.width * 2 - 1)) * 7;
-      pointerY = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / bounds.height * 2 - 1)) * 7;
-      if (pointerFrame) return;
-      pointerFrame = window.requestAnimationFrame(() => {
-        collage.style.setProperty("--hero-pointer-x", `${pointerX.toFixed(2)}px`);
-        collage.style.setProperty("--hero-pointer-y", `${pointerY.toFixed(2)}px`);
-        pointerFrame = 0;
-      });
-    };
+      const onScroll = () => {
+        if (scrollFrame) return;
+        scrollFrame = window.requestAnimationFrame(syncScroll);
+      };
 
-    observer?.observe(collage);
-    photo?.addEventListener("load", sync);
-    photo?.addEventListener("error", sync);
-    collage.addEventListener("pointermove", onPointerMove, { passive: true });
-    collage.addEventListener("pointerleave", resetPointer);
-    document.addEventListener("visibilitychange", sync);
-    finePointer.addEventListener("change", sync);
-    sync();
+      journey.addEventListener("pointermove", onPointerMove, { passive: true });
+      journey.addEventListener("pointerleave", resetPointer);
+      finePointer.addEventListener("change", resetPointer);
+      window.addEventListener("scroll", onScroll, { passive: true });
 
-    return () => {
-      observer?.disconnect();
-      photo?.removeEventListener("load", sync);
-      photo?.removeEventListener("error", sync);
-      collage.removeEventListener("pointermove", onPointerMove);
-      collage.removeEventListener("pointerleave", resetPointer);
-      document.removeEventListener("visibilitychange", sync);
-      finePointer.removeEventListener("change", sync);
-      animations.forEach((animation) => animation.revert());
-      resetPointer();
-    };
-  }, [heroRef]);
+      return () => {
+        journey.removeEventListener("pointermove", onPointerMove);
+        journey.removeEventListener("pointerleave", resetPointer);
+        finePointer.removeEventListener("change", resetPointer);
+        window.removeEventListener("scroll", onScroll);
+        window.cancelAnimationFrame(scrollFrame);
+      };
+    },
+    { scope: heroRef },
+  );
 }

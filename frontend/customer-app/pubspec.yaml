@@ -111,3 +111,5 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/InterVariable.ttf
+xcross:
+  bundle_id: original

@@ -12,6 +12,7 @@ import 'package:caregiver_app/core/error/failure.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
 
 class DocumentUploadScreen extends ConsumerStatefulWidget {
@@ -83,11 +84,11 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
   }
 
   void _showMessage(String message, bool error) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: error ? AppColors.error : AppColors.success,
-      behavior: SnackBarBehavior.floating,
-    ));
+    if (error) {
+      AppToast.error(context, message, title: 'Chưa thể gửi hồ sơ');
+    } else {
+      AppToast.success(context, message);
+    }
   }
 
   @override

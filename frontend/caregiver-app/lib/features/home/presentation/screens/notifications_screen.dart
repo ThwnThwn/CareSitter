@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/home/presentation/controllers/notifications_controller.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -21,13 +22,7 @@ class NotificationsScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: NotificationsAppBar(callbackAction1: () {
         notifier.markAllAsRead();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã đánh dấu đọc toàn bộ thông báo'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppToast.success(context, 'Đã đánh dấu đọc toàn bộ thông báo');
       }),
       body: list.isEmpty
           ? const NotificationsEmptyState()

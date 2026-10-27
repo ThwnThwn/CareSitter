@@ -16,6 +16,7 @@ import 'package:caresitter_customer/features/beneficiary/presentation/screens/be
 import 'package:caresitter_customer/features/beneficiary/presentation/screens/beneficiary_detail_screen.dart';
 import 'package:caresitter_customer/app/screens/nutrition_entry_screen.dart';
 import 'package:caresitter_customer/app/screens/nutrition_detail_entry_screen.dart';
+import 'package:caresitter_customer/features/nutrition/presentation/screens/nutrition_knowledge_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/catalog_screen.dart';
 import 'package:caresitter_customer/features/catalog/presentation/screens/service_detail_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
@@ -486,6 +487,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _modalPage(
           pageKey: state.pageKey,
           child: BeneficiaryEditScreen(id: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.nutritionKnowledge,
+        pageBuilder: (ctx, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: const NutritionKnowledgeScreen(),
         ),
       ),
       GoRoute(

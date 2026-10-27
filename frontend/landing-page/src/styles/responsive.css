@@ -57,10 +57,10 @@
   }
 
   .hero__grid {
-    grid-template-columns: minmax(0, 1fr) minmax(350px, 0.8fr);
+    grid-template-columns: minmax(0, 0.92fr) minmax(430px, 1.08fr);
   }
 
-  .hero-collage {
+  .hero-journey {
     height: 560px;
   }
 
@@ -139,13 +139,17 @@
     max-width: 760px;
   }
 
-  .hero-collage {
-    height: min(690px, 92vw);
+  .hero-journey {
+    height: min(650px, 88vw);
     margin-top: 1rem;
+    margin-inline: auto;
+    max-width: 720px;
+    width: 100%;
   }
 
-  .hero-collage__main {
-    width: 82%;
+  .hero-journey__photo {
+    right: 3%;
+    width: 84%;
   }
 
   .stats-strip__grid {
@@ -240,29 +244,90 @@
     align-items: flex-start;
   }
 
-  .hero-collage {
-    height: 125vw;
-    max-height: 610px;
+  .hero-journey {
+    height: 650px;
+    max-height: none;
   }
 
-  .hero-collage__main {
-    height: 74%;
-    width: 88%;
+  .hero-journey__photo {
+    height: 54%;
+    right: 0;
+    top: 3%;
+    width: 96%;
   }
 
-  .hero-collage__portrait {
-    height: 128px;
-    width: 128px;
+  .hero-journey__portrait {
+    height: 94px;
+    left: 2%;
+    top: -1%;
+    width: 94px;
   }
 
-  .hero-collage__caption {
-    bottom: 1%;
-    width: 75%;
+  .hero-journey__portrait > span {
+    height: 26px;
+    width: 26px;
   }
 
-  .hero-collage__seal {
-    left: -0.4rem;
-    top: 13%;
+  .hero-journey__path {
+    display: none;
+  }
+
+  .hero-journey__steps {
+    bottom: 74px;
+    display: grid;
+    gap: 0.5rem;
+    inset-inline: 0;
+    padding-left: 1.6rem;
+    top: auto;
+  }
+
+  .hero-journey__steps::before {
+    background: var(--green);
+    border-radius: 999px;
+    bottom: 1.4rem;
+    content: "";
+    left: 0.43rem;
+    opacity: 0.5;
+    position: absolute;
+    top: 1.4rem;
+    width: 2px;
+  }
+
+  .hero-journey__step {
+    border: 1px solid color-mix(in srgb, var(--green) 18%, var(--line));
+    box-shadow: none;
+    min-width: 0;
+    padding: 0.72rem 0.8rem;
+    position: relative;
+    width: 100%;
+  }
+
+  .hero-journey__step::after {
+    height: 11px;
+    left: -1.58rem;
+    top: calc(50% - 5px);
+    width: 11px;
+  }
+
+  .hero-journey__step--verified,
+  .hero-journey__step--arrived,
+  .hero-journey__step--notified {
+    inset: auto;
+  }
+
+  .hero-journey__step strong {
+    font-size: 0.82rem;
+  }
+
+  .hero-journey__step small {
+    font-size: 0.68rem;
+  }
+
+  .hero-journey__resolution {
+    bottom: 0;
+    font-size: 0.76rem;
+    right: 0;
+    width: 100%;
   }
 
   .stat {
@@ -431,7 +496,16 @@
   }
 
   .hero__copy[data-hero-entered] > * {
-    animation-duration: var(--hero-duration) !important;
+    animation: none !important;
+  }
+
+  .hero-journey [data-journey-layer] {
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .hero-journey__path-line {
+    stroke-dashoffset: 0 !important;
   }
 
   /* The requested reference navigation remains animated with page motion. */

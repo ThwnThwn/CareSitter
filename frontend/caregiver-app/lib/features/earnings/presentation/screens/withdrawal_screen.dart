@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/earnings/presentation/controllers/earnings_controller.dart';
 import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_balance_card.dart';
 import 'package:caregiver_app/features/earnings/presentation/widgets/withdrawal_bank_form.dart';
@@ -64,22 +65,19 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
         onDismiss: () => Navigator.pop(context),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(switch (result) {
-            WithdrawalResult.belowMinimum =>
-              'Số tiền rút tối thiểu là 100,000 đ',
-            WithdrawalResult.insufficientBalance => 'Số dư khả dụng không đủ',
-            WithdrawalResult.unknown =>
-              'Chưa xác định được kết quả rút tiền. Giữ nguyên thông tin và thử lại để kiểm tra.',
-            WithdrawalResult.changedPayload =>
-              'Đang có yêu cầu rút tiền chưa rõ kết quả. Giữ nguyên thông tin của yêu cầu đó để thử lại.',
-            _ =>
-              'Yêu cầu rút tiền chưa được chấp nhận. Vui lòng kiểm tra lại thông tin.',
-          }),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppToast.error(
+        context,
+        switch (result) {
+          WithdrawalResult.belowMinimum => 'Số tiền rút tối thiểu là 100,000 đ',
+          WithdrawalResult.insufficientBalance => 'Số dư khả dụng không đủ',
+          WithdrawalResult.unknown =>
+            'Chưa xác định được kết quả rút tiền. Giữ nguyên thông tin và thử lại để kiểm tra.',
+          WithdrawalResult.changedPayload =>
+            'Đang có yêu cầu rút tiền chưa rõ kết quả. Giữ nguyên thông tin của yêu cầu đó để thử lại.',
+          _ =>
+            'Yêu cầu rút tiền chưa được chấp nhận. Vui lòng kiểm tra lại thông tin.',
+        },
+        title: 'Chưa thể gửi yêu cầu rút tiền',
       );
     }
   }

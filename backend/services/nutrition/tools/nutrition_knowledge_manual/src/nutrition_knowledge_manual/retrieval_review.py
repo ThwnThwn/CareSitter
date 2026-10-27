@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any
 
 from .corpus_freeze import (
@@ -17,6 +18,34 @@ from .retrieval_contract import validate_answerability_and_citations
 
 DATA_REVIEW_ROLES = {"data_steward"}
 CLINICAL_REVIEW_ROLES = {"dietitian", "physician"}
+_QUOTED_TEXT = re.compile(r"[“\"]([^”\"]+)[”\"]")
+_HEADING_PREFIX = re.compile(r"^(?:[IVXLCDM]+|\d+(?:\.\d+)*)\.?\s+", re.IGNORECASE)
+
+
+def _evidence_preview(*, text: str, question: str, limit: int) -> str:
+    """Select a bounded excerpt around the most specific cited heading in the question."""
+    candidates: list[str] = []
+    for quoted in _QUOTED_TEXT.findall(question):
+        candidates.extend(part.strip() for part in re.split(r"\s+[—–]\s+", quoted) if part.strip())
+        candidates.append(quoted.strip())
+
+    folded = text.casefold()
+    matches: list[tuple[tuple[int, int, int], int]] = []
+    for candidate in candidates:
+        position = folded.find(candidate.casefold())
+        if position < 0:
+            continue
+        prefix = _HEADING_PREFIX.match(candidate)
+        depth = len(prefix.group(0).strip().rstrip(".").split(".")) if prefix else 0
+        matches.append(((depth, int(any(char.isalpha() for char in candidate)), len(candidate)), position))
+
+    start = max(matches, default=((0, 0, 0), 0))[1]
+    end = min(len(text), start + limit)
+    if end < len(text):
+        word_boundary = text.rfind(" ", start, end)
+        if word_boundary > start:
+            end = word_boundary
+    return text[start:end].strip()
 
 
 def empty_retrieval_review(*, cases: dict[str, Any], corpus_freeze: dict[str, Any]) -> dict[str, Any]:
@@ -177,7 +206,9 @@ def build_retrieval_review_packet(
             chunk = chunks.get(chunk_id)
             if chunk is None:
                 raise ManualGraphError(f"review packet cites unknown or ineligible chunk: {chunk_id}")
-            preview = chunk["text"][:preview_characters]
+            preview = _evidence_preview(
+                text=chunk["text"], question=case["question"], limit=preview_characters,
+            )
             citations.append({
                 "chunk_id": chunk_id,
                 "text_sha256": chunk["text_sha256"],

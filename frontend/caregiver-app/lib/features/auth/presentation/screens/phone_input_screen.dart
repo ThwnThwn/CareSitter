@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
@@ -47,11 +48,10 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          title: 'Đăng nhập chưa thành công',
         );
       }
     } finally {
@@ -68,11 +68,10 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       if (mounted) context.push('/auth/otp', extra: email);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          e.toString(),
+          title: 'Chưa thể gửi OTP',
         );
       }
     } finally {

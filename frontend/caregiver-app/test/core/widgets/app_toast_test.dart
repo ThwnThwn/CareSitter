@@ -97,4 +97,38 @@ void main() {
 
     AppToast.dismiss(pageContext);
   });
+
+  testWidgets('action toast invokes its callback and dismisses itself',
+      (tester) async {
+    late BuildContext pageContext;
+    var actionInvoked = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              pageContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    AppToast.info(
+      pageContext,
+      'Bạn có một thông báo mới.',
+      title: 'Ca làm việc vừa cập nhật',
+      actionLabel: 'Xem',
+      onAction: () => actionInvoked = true,
+    );
+    await tester.pump();
+
+    expect(find.text('Xem'), findsOneWidget);
+    await tester.tap(find.text('Xem'));
+    await tester.pump();
+
+    expect(actionInvoked, isTrue);
+    expect(find.byType(ToastMessageContent), findsNothing);
+  });
 }

@@ -137,6 +137,12 @@ def hard_gate_failures(report: dict, prefix: str) -> list[str]:
         group = report["by_tag"].get(tag)
         if group is None:
             failures.append(f"{prefix}.missing_tag:{tag}")
-        elif tag != "insufficient_evidence" and (group["recall_at_5"] is None or group["recall_at_5"] < .80):
-            failures.append(f"{prefix}.risk_group_below_gate:{tag}")
+        elif tag != "insufficient_evidence":
+            if (group["answerable_case_count"] > 0
+                    and (group["recall_at_5"] is None or group["recall_at_5"] < .80)):
+                failures.append(f"{prefix}.risk_group_below_gate:{tag}")
+            if (group["insufficient_evidence_count"] > 0
+                    and (group["abstention_accuracy"] is None
+                         or group["abstention_accuracy"] < .90)):
+                failures.append(f"{prefix}.risk_group_abstention_below_gate:{tag}")
     return failures

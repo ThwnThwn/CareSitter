@@ -16,7 +16,12 @@ WORKSPACE = ROOT.parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from nutrition_knowledge_manual.errors import ManualGraphError
-from nutrition_knowledge_manual.chunk_pdf import chunk_page
+from nutrition_knowledge_manual.chunk_pdf import (
+    _dominant_printed_page_offset,
+    _is_heading,
+    _reconcile_printed_page_label,
+    chunk_page,
+)
 from nutrition_knowledge_manual.chunk_html import extract_html_blocks
 from nutrition_knowledge_manual.graph import build_candidate_graph
 from nutrition_knowledge_manual.jsonio import content_sha256, file_sha256, load_json
@@ -66,6 +71,71 @@ class ManualGraphPipelineTests(unittest.TestCase):
         self.assertTrue(all(item["pdf_page"] == 20 for item in first))
         self.assertTrue(all(item["token_count"] <= 180 for item in first))
         self.assertTrue(all(unicodedata.is_normalized("NFC", item["text"]) for item in first))
+
+    def test_printed_page_prefers_book_header_over_stray_footer_number(self):
+        source = {"source_id": "book", "revision_id": "book@1", "sha256": "a" * 64}
+        layout = (
+            "TỔ CHỨC HOẠT ĐỘNG KHOA DINH DƯỠNG\n\n"
+            + "Nội dung dinh dưỡng lâm sàng. " * 40
+            + "\n126 DINH DƯỠNG LÂM SÀNG\n"
+            + "Nội dung tiếp tục. " * 20
+            + "\n132\n"
+        )
+
+        _, printed_page = chunk_page(
+            source=source, pdf_page=127, layout_text=layout,
+            target_tokens=120, maximum_tokens=180, overlap_tokens=20,
+        )
+
+        self.assertEqual("126", printed_page)
+
+    def test_low_confidence_page_number_uses_dominant_book_offset(self):
+        labels = [
+            (178, "177", True),
+            (179, "178", True),
+            (180, "182", False),
+            (181, "180", True),
+        ]
+
+        offset = _dominant_printed_page_offset(labels)
+        printed_page = _reconcile_printed_page_label(
+            pdf_page=180,
+            printed_page="182",
+            from_book_header=False,
+            dominant_offset=offset,
+        )
+
+        self.assertEqual(-1, offset)
+        self.assertEqual("179", printed_page)
+
+    def test_publisher_matter_is_not_index_eligible(self):
+        source = {"source_id": "book", "revision_id": "book@1", "sha256": "a" * 64}
+        layout = (
+            "NHÀ XUẤT BẢN Y HỌC\n\n"
+            "Địa chỉ: Số 352 Đội Cấn - Ba Đình - Hà Nội\n\n"
+            "Email: publisher@example.com Điện thoại: 04. 3762 5934\n\n"
+            "Quyết định xuất bản số 357/QĐ-XBYH.\n\n"
+            "Mã ISBN: 978-604-66-3500-0\n\n"
+            + "Thông tin in ấn và lưu chiểu. " * 50
+        )
+
+        chunks, _ = chunk_page(
+            source=source,
+            pdf_page=545,
+            layout_text=layout,
+            target_tokens=120,
+            maximum_tokens=180,
+            overlap_tokens=20,
+        )
+
+        self.assertTrue(chunks)
+        self.assertTrue(all(not item["index_eligible"] for item in chunks))
+        self.assertTrue(all(item["review_status"] == "manual_review_required" for item in chunks))
+
+    def test_long_numbered_body_sentence_is_not_a_heading(self):
+        self.assertFalse(_is_heading(
+            "1.1 Viêm gan virut cấp là một bệnh truyền nhiễm cấp tính thường gặp do các virut viêm gan gây ra."
+        ))
 
     def test_local_chunk_seed_is_idempotent_and_keeps_review_gate(self):
         source = {"source_id": "book", "revision_id": "book@1", "sha256": "a" * 64}
