@@ -29,6 +29,17 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         return result.ToActionResult(this);
     }
 
+    [HttpGet("messages/resume")]
+    public async Task<IActionResult> ResumeMessagesAsync(
+        Guid bookingId,
+        [FromQuery] Guid anchorMessageId,
+        [FromQuery] string direction,
+        [FromQuery] long scopeVersion,
+        [FromQuery] int limit = 50,
+        CancellationToken ct = default) =>
+        (await chat.ResumeMessagesAsync(bookingId, anchorMessageId, direction,
+            scopeVersion, limit, ct)).ToActionResult(this);
+
     [HttpPost("messages")]
     [RequestSizeLimit(16 * 1024)]
     public async Task<IActionResult> Send(
@@ -77,4 +88,11 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         Guid reportId,
         CancellationToken ct) =>
         (await chat.GetReportAsync(bookingId, reportId, ct)).ToActionResult(this);
+
+    [HttpPut("block")]
+    public async Task<IActionResult> SetBlock(
+        Guid bookingId,
+        [FromBody] BookingChatBlockRequest request,
+        CancellationToken ct) =>
+        (await chat.SetBlockAsync(bookingId, request, ct)).ToActionResult(this);
 }

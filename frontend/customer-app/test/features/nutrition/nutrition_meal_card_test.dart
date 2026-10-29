@@ -27,6 +27,8 @@ void main() {
                   'basis': 'raw',
                 },
               ],
+              'sourceRecipeNote':
+                  'Sách không đề cập công thức chế biến chi tiết.',
               'preparationSteps': ['Nấu chín hoàn toàn'],
               'nutrients': {
                 'energy_kcal': 270.6,
@@ -59,6 +61,7 @@ void main() {
 
     expect(find.text('Thành phần'), findsOneWidget);
     expect(find.textContaining('Gạo tẻ: 50 g'), findsOneWidget);
+    expect(find.textContaining('Sách không đề cập công thức'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

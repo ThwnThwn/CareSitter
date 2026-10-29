@@ -1,0 +1,59 @@
+name: caresitter-app
+
+services:
+  api:
+    image: caresitter-api:demo
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ${CARESITTER_ENV_FILE:-.env.split}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:?Set APP_ENVIRONMENT in the split environment}
+      ASPNETCORE_URLS: http://+:8080
+      HANGFIRE_USE_POSTGRES: "true"
+      Proxy__KnownProxies__0: ${PROXY_IP:-172.30.90.10}
+      Proxy__ForwardLimit: "1"
+    volumes:
+      - ./secrets:/run/secrets:ro
+    networks: [edge]
+    mem_limit: 640m
+
+  admin:
+    image: caresitter-admin:demo
+    build:
+      context: ../frontend/admin-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks: [edge]
+    mem_limit: 128m
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile.demo-ip:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - admin
+    networks:
+      edge:
+        ipv4_address: ${PROXY_IP:-172.30.90.10}
+    mem_limit: 128m
+
+networks:
+  edge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.30.90.0/24}
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -46,6 +46,7 @@ appsettings.*.Local.json.tmp
 firebase-service-account*.json
 deploy/secrets/
 deploy/backups/
+/deploy/runtime/
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 **/macos/Runner/GoogleService-Info.plist

@@ -1,5 +1,5 @@
 FROM postgres:16
 RUN apt-get update && apt-get install -y --no-install-recommends age curl jq openssl \
     && rm -rf /var/lib/apt/lists/*
-COPY common.sh migrate.sh backup.sh restore-check.sh smoke.sh /ops/
+COPY common.sh migrate.sh backup.sh restore-check.sh smoke.sh seed-demo-catalog.sh /ops/
 ENTRYPOINT ["sh"]

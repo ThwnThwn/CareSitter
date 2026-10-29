@@ -5,8 +5,9 @@ import 'package:caresitter_customer/features/booking/presentation/controllers/bo
 
 class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
   const BookingDetailScreenCaregiverHeroCard(
-      {super.key, required this.booking});
+      {super.key, required this.booking, required this.onChat});
   final BookingModel booking;
+  final VoidCallback onChat;
   @override
   Widget build(BuildContext context) {
     final caregiverName = booking.caregiverName ?? 'Chăm sóc viên';
@@ -36,15 +37,7 @@ class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
               avatarUrl: avatarUrl,
               booking: booking,
               caregiverName: caregiverName,
-              callbackAction1: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Đang mở trò chuyện với $caregiverName...'),
-                    backgroundColor: AppColors.primary,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
+              callbackAction1: onChat,
               callbackAction2: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

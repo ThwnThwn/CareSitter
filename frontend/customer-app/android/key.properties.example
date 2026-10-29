@@ -1,0 +1,6 @@
+# Copy this file to key.properties. Never commit key.properties or the keystore.
+# storeFile is resolved from android/app, so ../upload-keystore.jks points to android/upload-keystore.jks.
+storeFile=../upload-keystore.jks
+storePassword=replace-with-upload-keystore-password
+keyAlias=upload
+keyPassword=replace-with-upload-key-password

@@ -81,6 +81,13 @@ class _FakeRepository implements BookingChatRepositoryPort {
       String bookingId, String epochId, String lastReadMessageId) async {}
 
   @override
+  Future<void> reportMessage(
+      String bookingId, String messageId, String reason) async {}
+
+  @override
+  Future<void> setBlocked(String bookingId, bool blocked) async {}
+
+  @override
   Future<String> sendQuick(String bookingId, String epochId, String templateKey,
           int templateVersion, String idempotencyKey,
           {Map<String, String>? params}) async =>

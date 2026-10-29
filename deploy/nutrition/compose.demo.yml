@@ -1,0 +1,74 @@
+services:
+  nutrition-smoke:
+    environment:
+      EXPECT_NUTRITION_DEMO_FEATURES: "true"
+
+  nutrition-demo-catalog:
+    build:
+      context: ./nutrition
+      dockerfile: Dockerfile.ops
+    profiles: [nutrition-demo-seed]
+    restart: "no"
+    environment:
+      PGHOST: nutrition-db
+      PGDATABASE: nutrition
+      PGUSER: postgres
+      PGPASSWORD_FILE: /run/secrets/nutrition_db_admin
+      NUTRITION_DEMO_CATALOG_PATH: /demo/catalog.bundle.json
+      NUTRITION_DEMO_CATALOG_SHA256: ${NUTRITION_DEMO_CATALOG_SHA256:?Set catalog SHA-256 in deploy/nutrition.demo.env}
+      NUTRITION_DEMO_EXPECTED_RECIPES: ${NUTRITION_DEMO_EXPECTED_RECIPES:-60}
+      NUTRITION_DEMO_PACKAGE_KEY: ${NUTRITION_DEMO_PACKAGE_KEY:-adult-baseline-p2a-v1-local-demo}
+    secrets: [nutrition_db_admin]
+    volumes:
+      - ./runtime/nutrition/catalog.import.bundle.json:/demo/catalog.bundle.json:ro
+    entrypoint: [sh, /ops/seed-demo-catalog.sh]
+    depends_on:
+      nutrition-db:
+        condition: service_healthy
+    networks: [nutrition-data]
+
+  nutrition:
+    environment:
+      Nutrition__Enabled: "true"
+      Nutrition__AssessmentsEnabled: "true"
+      Nutrition__RecommendationsEnabled: "true"
+      NutritionCatalog__LocalDemoEnabled: "true"
+      NutritionCatalog__LocalDemoPackageKey: ${NUTRITION_DEMO_PACKAGE_KEY:-adult-baseline-p2a-v1-local-demo}
+      HealthParser__Enabled: "true"
+      HealthParser__Provider: Gemini
+      HealthParser__Model: ${NUTRITION_GEMINI_MODEL:-gemini-3.5-flash-lite}
+      HealthParser__BaseUrl: ${NUTRITION_GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/}
+      HealthParser__ApiKey: ""
+      HealthParser__ApiKeyFile: /run/secrets/nutrition_gemini_key
+      HealthParser__DataProcessingApproved: "true"
+      MealGrounding__Enabled: "true"
+      MealGrounding__Mode: owner_authorized_graph_demo
+      MealGrounding__DemoGraphPath: /demo/graph.candidate.json
+      MealGrounding__DemoGraphSha256: ${NUTRITION_DEMO_GRAPH_SHA256:?Set graph SHA-256 in deploy/nutrition.demo.env}
+      MealGrounding__DemoAuthorizationPath: /demo/retrieval-authorization.json
+      MealGrounding__DemoAuthorizationSha256: ${NUTRITION_DEMO_AUTHORIZATION_SHA256:?Set authorization SHA-256 in deploy/nutrition.demo.env}
+      MealGrounding__CorpusPath: /demo/corpus.jsonl
+      MealGrounding__CorpusSha256: ${NUTRITION_DEMO_CORPUS_SHA256:?Set corpus SHA-256 in deploy/nutrition.demo.env}
+      MealGrounding__TopK: ${NUTRITION_DEMO_GROUNDING_TOP_K:-5}
+      MealRanking__Enabled: "true"
+      MealRanking__Model: ${NUTRITION_GEMINI_MODEL:-gemini-3.5-flash-lite}
+      MealRanking__BaseUrl: ${NUTRITION_GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/}
+      MealRanking__ApiKey: ""
+      MealRanking__ApiKeyFile: /run/secrets/nutrition_gemini_key
+      MealRanking__DataProcessingApproved: "true"
+      MealRanking__TimeoutSeconds: ${NUTRITION_MEAL_RANKING_TIMEOUT_SECONDS:-20}
+      MealRanking__MaxOutputTokens: ${NUTRITION_MEAL_RANKING_MAX_OUTPUT_TOKENS:-1536}
+      MealRanking__MaxAttempts: ${NUTRITION_MEAL_RANKING_MAX_ATTEMPTS:-2}
+      MealRanking__MaxConcurrency: ${NUTRITION_MEAL_RANKING_MAX_CONCURRENCY:-4}
+      MealRanking__DailyBudget: ${NUTRITION_MEAL_RANKING_DAILY_BUDGET:-1000}
+      MealRanking__MaxResponseBytes: ${NUTRITION_MEAL_RANKING_MAX_RESPONSE_BYTES:-131072}
+      MealRanking__MaxCandidateSets: ${NUTRITION_MEAL_RANKING_MAX_CANDIDATE_SETS:-12}
+    secrets: [nutrition_gemini_key]
+    volumes:
+      - ./runtime/nutrition/retrieval-authorization.json:/demo/retrieval-authorization.json:ro
+      - ./runtime/nutrition/corpus.jsonl:/demo/corpus.jsonl:ro
+      - ./runtime/nutrition/graph.candidate.json:/demo/graph.candidate.json:ro
+
+secrets:
+  nutrition_gemini_key:
+    file: ./secrets/nutrition/gemini-api-key

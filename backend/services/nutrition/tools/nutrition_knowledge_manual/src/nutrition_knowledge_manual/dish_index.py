@@ -71,6 +71,11 @@ def validate_dish_index(index: dict, workspace: Path) -> dict:
     expected_count = index.get("expectedEntryCount")
     if expected_count != len(entries):
         issues.append(f"expectedEntryCount {expected_count!r} does not match {len(entries)} entries")
+    reference_only_note = index.get("referenceOnlyRecipeNote")
+    if not _text(reference_only_note) or "Sách không đề cập công thức" not in reference_only_note:
+        issues.append(
+            "referenceOnlyRecipeNote must disclose that the book does not provide a cooking recipe"
+        )
 
     ids: set[str] = set()
     names: set[str] = set()
@@ -169,6 +174,10 @@ def validate_dish_index(index: dict, workspace: Path) -> dict:
         "promotion_counts": dict(sorted(promotion_counts.items())),
         "linked_catalog_recipe_count": catalog_recipe_count,
         "linked_entry_recipe_count": len(referenced_recipe_ids),
+        "reference_only_entry_count": sum(
+            1 for entry in entries if isinstance(entry, dict) and not entry.get("recipeVersionIds")
+        ),
+        "reference_only_recipe_note": reference_only_note,
         "production_publishable": False,
     }
 

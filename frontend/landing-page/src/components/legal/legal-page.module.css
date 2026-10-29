@@ -1,0 +1,250 @@
+.page {
+  background: var(--paper);
+  min-height: 100vh;
+}
+
+.header {
+  align-items: center;
+  background: color-mix(in oklch, var(--paper) 94%, transparent);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  margin-inline: auto;
+  max-width: 1240px;
+  min-height: 76px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.brand,
+.back {
+  align-items: center;
+  display: inline-flex;
+}
+
+.brand {
+  gap: 0.7rem;
+}
+
+.brand > span:last-child {
+  display: grid;
+}
+
+.brand strong {
+  font-size: 1rem;
+}
+
+.brand small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.mark {
+  align-items: center;
+  background: var(--green);
+  border-radius: 50%;
+  color: var(--white);
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.back {
+  color: var(--green);
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 0.45rem;
+}
+
+.shell {
+  display: grid;
+  gap: clamp(2rem, 6vw, 5.5rem);
+  grid-template-columns: minmax(180px, 240px) minmax(0, 760px);
+  justify-content: center;
+  margin-inline: auto;
+  max-width: 1240px;
+  padding: clamp(3rem, 7vw, 6.5rem) 24px 5rem;
+}
+
+.toc {
+  align-self: start;
+  position: sticky;
+  top: 112px;
+}
+
+.toc p,
+.updated {
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.toc nav {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.toc a {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.toc a:hover,
+.toc a:focus-visible {
+  color: var(--green);
+}
+
+.article {
+  min-width: 0;
+}
+
+.intro {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.intro h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.7rem, 6vw, 4.8rem);
+  font-weight: 430;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+  margin: 1rem 0 1.35rem;
+  text-wrap: balance;
+}
+
+.intro > p:not(.updated) {
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.75;
+  margin: 0;
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+
+.article section {
+  scroll-margin-top: 108px;
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.article h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
+  font-weight: 480;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+
+.article h3 {
+  font-size: 1rem;
+  margin: 1.8rem 0 0.6rem;
+}
+
+.article section p,
+.article section li {
+  color: #3e4e59;
+  line-height: 1.75;
+  max-width: 72ch;
+}
+
+.article section p {
+  margin: 0.8rem 0;
+}
+
+.article ul,
+.article ol {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  padding-left: 1.25rem;
+}
+
+.article section a,
+.footer a {
+  color: var(--green);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.action {
+  align-items: center;
+  background: var(--green);
+  border-radius: 999px;
+  color: var(--white);
+  display: inline-flex;
+  font-weight: 700;
+  gap: 0.55rem;
+  margin-top: 1.6rem;
+  min-height: 50px;
+  padding: 0.8rem 1.2rem;
+}
+
+.action:hover,
+.action:focus-visible {
+  background: var(--green-hover);
+}
+
+.note {
+  background: var(--paper-deep);
+  border-radius: 14px;
+  color: var(--green-dark);
+  margin: 1.3rem 0;
+  padding: 1rem 1.1rem;
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  margin-top: 4rem;
+  padding-top: 2rem;
+}
+
+.footer div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.2rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 760px) {
+  .header {
+    min-height: 68px;
+    padding-inline: 18px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .shell {
+    display: block;
+    padding-inline: 20px;
+  }
+
+  .toc {
+    display: none;
+  }
+
+  .intro h1 {
+    font-size: clamp(2.45rem, 13vw, 3.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    scroll-behavior: auto;
+  }
+}

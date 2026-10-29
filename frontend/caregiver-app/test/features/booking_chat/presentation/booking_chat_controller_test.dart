@@ -227,6 +227,19 @@ void main() {
     expect(controller.state.error, contains('offline'));
     controller.dispose();
   });
+
+  test('updates the user block state through the repository', () async {
+    final repository = _FakeRepository();
+    final controller = BookingChatController(
+        bookingId: 'booking',
+        repository: repository,
+        realtime: _FakeRealtime());
+    await _settle();
+
+    expect(await controller.setBlocked(true), isTrue);
+    expect(repository.blockChanges, [('booking', true)]);
+    controller.dispose();
+  });
 }
 
 Future<void> _settle() => Future<void>.delayed(Duration.zero);
@@ -283,6 +296,7 @@ class _FakeRepository implements BookingChatRepositoryPort {
   int metadataCalls = 0;
   Object? metadataError;
   final List<String?> beforeCursors = [];
+  final List<(String, bool)> blockChanges = [];
   final List<String?> afterCursors = [];
   List<BookingChatPage> afterPages = [];
   final List<(String, String, String)> reads = [];
@@ -316,6 +330,15 @@ class _FakeRepository implements BookingChatRepositoryPort {
   Future<void> markRead(
           String bookingId, String epochId, String lastReadMessageId) async =>
       reads.add((bookingId, epochId, lastReadMessageId));
+
+  @override
+  Future<void> reportMessage(
+      String bookingId, String messageId, String reason) async {}
+
+  @override
+  Future<void> setBlocked(String bookingId, bool blocked) async =>
+      blockChanges.add((bookingId, blocked));
+
   @override
   Future<String> sendText(String bookingId, String epochId, String text,
       String idempotencyKey) async {

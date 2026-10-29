@@ -129,14 +129,8 @@ internal sealed class GeminiHealthDescriptionParser(HttpClient http, IOptions<He
             generationConfig = new
             {
                 maxOutputTokens = _options.MaxOutputTokens,
-                responseFormat = new
-                {
-                    text = new
-                    {
-                        mimeType = "APPLICATION_JSON",
-                        schema = OpenAiHealthParserContract.Schema
-                    }
-                }
+                responseMimeType = "application/json",
+                responseJsonSchema = OpenAiHealthParserContract.Schema
             }
         }, NutritionJson.Options);
 

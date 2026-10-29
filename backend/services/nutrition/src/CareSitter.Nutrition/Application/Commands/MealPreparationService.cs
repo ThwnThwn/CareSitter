@@ -53,6 +53,19 @@ internal sealed record MealPreparation(Guid AssessmentId, DateOnly PlannedDate, 
         if (Eligibility.State != "eligible") return new(1, AssessmentId, PlannedDate, [], [], Eligibility);
         var decision = NutritionDecision.Create(meals is not null ? "suggested" : Recipes.Length == 0 ? "no_content" : "no_match",
             meals is not null ? [] : [Recipes.Length == 0 ? "catalog_unavailable" : "constraints_not_matched"]);
-        return new(1, AssessmentId, PlannedDate, meals ?? [], ActiveRules, decision, CatalogRevision);
+        var payload = new MealPayload(1, AssessmentId, PlannedDate, meals ?? [], ActiveRules, decision, CatalogRevision);
+        if (meals is null || Previous?.RecommendationTrace is not { } trace) return payload;
+        if (Previous.Meals.Select(meal => meal.VersionId).SequenceEqual(meals.Select(meal => meal.VersionId)))
+            return payload with { RecommendationTrace = trace };
+        // A manual replacement keeps the demo disclosure, but prior AI evidence no longer describes this menu.
+        return payload with
+        {
+            RecommendationTrace = trace with
+            {
+                Strategy = "rule_manual_replacement", UsedAi = false, Model = null, PromptVersion = null,
+                Evidence = [], Explanations = [], GroundingRevision = null,
+                Warnings = trace.Warnings.Append("meal_replaced_by_user").Distinct(StringComparer.Ordinal).ToArray()
+            }
+        };
     }
 }

@@ -27,7 +27,8 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
   const BookingDetailScreen({super.key, required this.id});
 
   @override
-  ConsumerState<BookingDetailScreen> createState() => _BookingDetailScreenState();
+  ConsumerState<BookingDetailScreen> createState() =>
+      _BookingDetailScreenState();
 }
 
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
@@ -36,15 +37,18 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final matches = ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
+    final matches =
+        ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
     if (matches.isEmpty) {
       return const BookingDetailMissingState();
     }
     final booking = matches.first;
     final now = DateTime.now();
     final status = booking.presentationStatusAt(now);
-    final statusConfig = BookingStatusPresentation.forBooking(booking, now: now);
+    final statusConfig =
+        BookingStatusPresentation.forBooking(booking, now: now);
     final isWaitingCaregiver = statusConfig.isWaitingCaregiver;
+    void openChat() => context.push(AppRoutes.bookingChat(booking.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -57,6 +61,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         booking: booking,
         statusConfig: statusConfig,
         onRefresh: () => ref.read(bookingStoreProvider.notifier).refresh(),
+        onChat: openChat,
         actions: BookingStatusActions(
           booking: booking,
           status: status,
@@ -76,7 +81,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           onDispute: () => context.push(AppRoutes.bookingDispute(booking.id)),
           onReview: () => context.push(AppRoutes.bookingReview(booking.id)),
           onRebook: () => context.push(AppRoutes.bookingNew),
-          onChat: () => context.push(AppRoutes.bookingChat(booking.id)),
+          onChat: openChat,
         ),
       ),
     );
@@ -131,12 +136,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.xl)),
         title: const BookingDetailShowCompleteShiftDialogRow(),
-        content: BookingDetailShowCompleteShiftDialogBookingFields(booking: booking),
+        content:
+            BookingDetailShowCompleteShiftDialogBookingFields(booking: booking),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
-            child:
-                const Text('Chưa', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Chưa',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           BookingDetailShowCompleteShiftDialogContentInner(
               callbackAction1: () async {
@@ -147,7 +153,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   .read(bookingStoreProvider.notifier)
                   .confirmCompleted(booking.id);
               if (!context.mounted) return;
-              AppToast.success(context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
+              AppToast.success(
+                  context, 'Ca chăm sóc đã được xác nhận hoàn tất.');
             } catch (_) {
               if (!context.mounted) return;
               AppToast.error(
@@ -192,8 +199,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => BookingDetailShowMoreOptionsCtxStatusContent(
-          ctx: ctx, status: status, confirmCancel: _confirmCancel, booking: booking),
+          ctx: ctx,
+          status: status,
+          confirmCancel: _confirmCancel,
+          booking: booking),
     );
   }
 }
-

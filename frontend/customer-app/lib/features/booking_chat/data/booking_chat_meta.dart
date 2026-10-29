@@ -15,6 +15,8 @@ class BookingChatMeta {
     required this.lastReadSequence,
     required this.otherPartyLastReadSequence,
     required this.unreadCount,
+    this.isBlockedByMe = false,
+    this.isBlockedByOther = false,
     required this.changeVersion,
     required this.scopeVersion,
     required this.quickTemplates,
@@ -33,6 +35,8 @@ class BookingChatMeta {
   final int lastReadSequence;
   final int otherPartyLastReadSequence;
   final int unreadCount;
+  final bool isBlockedByMe;
+  final bool isBlockedByOther;
   final int changeVersion;
   final int scopeVersion;
   final List<BookingChatTemplate> quickTemplates;
@@ -40,6 +44,14 @@ class BookingChatMeta {
   bool get isOpen => state == 'open' || state == 'post_shift_grace';
   bool get isReadOnly => !canSend;
   bool get hasChat => conversationId != null;
+  String get readOnlyMessage => switch (readOnlyReason) {
+        'blocked_by_you' =>
+          'Bạn đã chặn người này. Bỏ chặn để tiếp tục nhắn tin.',
+        'blocked_by_other' =>
+          'Người này hiện không nhận tin nhắn từ bạn.',
+        'none' || '' => '',
+        _ => readOnlyReason,
+      };
 
   factory BookingChatMeta.fromJson(Map<String, dynamic> json) =>
       BookingChatMeta(
@@ -57,6 +69,8 @@ class BookingChatMeta {
         otherPartyLastReadSequence:
             (json['otherPartyLastReadSequence'] as num?)?.toInt() ?? 0,
         unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+        isBlockedByMe: json['isBlockedByMe'] == true,
+        isBlockedByOther: json['isBlockedByOther'] == true,
         changeVersion: (json['changeVersion'] as num?)?.toInt() ?? 0,
         scopeVersion: (json['scopeVersion'] as num?)?.toInt() ?? 0,
         quickTemplates: _parseTemplates(json['quickTemplates']),

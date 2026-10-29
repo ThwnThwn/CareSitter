@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function activeUser() {
+      return signedIn() &&
+        request.auth.token.careSessionExpiresAtMs is int &&
+        request.time < timestamp.value(request.auth.token.careSessionExpiresAtMs) &&
+        exists(/databases/$(database)/documents/chatUserAccess/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/chatUserAccess/$(request.auth.uid)).data.active == true;
+    }
+
+    function activeAdmin() {
+      return get(/databases/$(database)/documents/chatUserAccess/$(request.auth.uid))
+        .data.activeAdmin == true;
+    }
+
+    function activeCaregiver() {
+      return get(/databases/$(database)/documents/chatUserAccess/$(request.auth.uid))
+        .data.activeCaregiver == true;
+    }
+
+    function hasEpochMembership(conversationId, epochId) {
+      return exists(/databases/$(database)/documents/chatConversations/$(conversationId)
+        /epochs/$(epochId)/members/$(request.auth.uid));
+    }
+
+    function canReadEpoch(conversationId, epochId) {
+      let chat = get(/databases/$(database)/documents/chatConversations/$(conversationId)).data;
+      let member = get(/databases/$(database)/documents/chatConversations/$(conversationId)
+        /epochs/$(epochId)/members/$(request.auth.uid)).data;
+      return activeUser() && chat.readEnabled == true &&
+        (chat.type != 'BOOKING' || chat.retainedUntil == null ||
+         request.time < chat.retainedUntil) &&
+        hasEpochMembership(conversationId, epochId) && (
+          (chat.type == 'BOOKING' &&
+            ((member.role == 'CUSTOMER' && chat.ownerUserId == request.auth.uid) ||
+             (member.role == 'CAREGIVER' && activeCaregiver() &&
+              chat.caregiverUserId == request.auth.uid &&
+              chat.activeEpochId == epochId))) ||
+          (chat.type == 'SUPPORT' && chat.activeEpochId == epochId &&
+            ((member.role == 'OWNER' && chat.ownerUserId == request.auth.uid) ||
+             (member.role == 'ADMIN' && chat.assignedAdminId == request.auth.uid &&
+              activeAdmin())))
+        );
+    }
+
+    match /chatUserAccess/{userId} {
+      allow read, write: if false;
+    }
+
+    match /chatConversations/{conversationId} {
+      allow get: if activeUser() && resource.data.readEnabled == true &&
+        (resource.data.type != 'BOOKING' || resource.data.retainedUntil == null ||
+         request.time < resource.data.retainedUntil) &&
+        (resource.data.ownerUserId == request.auth.uid ||
+         (resource.data.type == 'BOOKING' &&
+          resource.data.caregiverUserId == request.auth.uid && activeCaregiver()) ||
+         (resource.data.type == 'SUPPORT' &&
+          resource.data.assignedAdminId == request.auth.uid && activeAdmin()));
+      allow list, create, update, delete: if false;
+
+      match /epochs/{epochId} {
+        allow get: if canReadEpoch(conversationId, epochId);
+        allow list, create, update, delete: if false;
+
+        match /members/{userId} {
+          allow read, write: if false;
+        }
+
+        match /messages/{messageId} {
+          allow get: if canReadEpoch(conversationId, epochId);
+          allow list: if canReadEpoch(conversationId, epochId) &&
+            request.query.limit != null && request.query.limit > 0 &&
+            request.query.limit <= 100;
+          allow create, update, delete: if false;
+        }
+      }
+    }
+  }
+}

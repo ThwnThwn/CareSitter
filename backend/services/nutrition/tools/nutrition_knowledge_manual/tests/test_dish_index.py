@@ -38,6 +38,8 @@ class DishIndexTests(unittest.TestCase):
         }, result["category_counts"])
         self.assertEqual(12, result["linked_catalog_recipe_count"])
         self.assertEqual(4, result["linked_entry_recipe_count"])
+        self.assertEqual(77, result["reference_only_entry_count"])
+        self.assertIn("Sách không đề cập công thức", result["reference_only_recipe_note"])
         self.assertEqual({"complete": 8, "partial": 1, "unknown": 72}, result["quantity_counts"])
         self.assertEqual(50, result["promotion_counts"]["needs_quantity_review"])
         self.assertEqual(23, result["promotion_counts"]["needs_split"])
@@ -69,6 +71,13 @@ class DishIndexTests(unittest.TestCase):
         index["linkedCatalog"]["fileSha256"] = "f" * 64
 
         with self.assertRaisesRegex(ManualGraphError, "fileSha256 does not match"):
+            validate_dish_index(index, WORKSPACE)
+
+    def test_reference_only_items_require_an_explicit_missing_recipe_note(self):
+        index = deepcopy(load_json(INDEX_PATH))
+        index["referenceOnlyRecipeNote"] = "Chỉ dùng để tham khảo."
+
+        with self.assertRaisesRegex(ManualGraphError, "book does not provide a cooking recipe"):
             validate_dish_index(index, WORKSPACE)
 
 

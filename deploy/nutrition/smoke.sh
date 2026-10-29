@@ -32,6 +32,8 @@ curl_check 200 'Public API readiness' "$public_url/health/ready"
 curl_check 401 'Unauthenticated Nutrition access rejected' "$public_url/api/v1/nutrition/capabilities"
 curl_check 204 'Internal Identity session over HTTPS' --cacert /run/secrets/internal_ca \
     --header "@$work_dir/customer.headers" 'https://api:8443/api/v1/auth/session'
+curl_check 200 'Internal Nutrition readiness over TLS/HTTP2' --http2 --cacert /run/secrets/internal_ca \
+    'https://nutrition:8443/health/ready'
 curl_check 200 'Internal People profile over HTTPS' --cacert /run/secrets/internal_ca \
     --header "@$work_dir/people.headers" "https://api:8443/internal/v1/nutrition/owners/$owner/beneficiaries/$beneficiary/health-profile"
 jq -e --arg id "$beneficiary" '.beneficiaryId == $id and .revision >= 1' "$work_dir/response" >/dev/null || fail 'People profile response does not match its scope/revision.'
@@ -45,4 +47,11 @@ tr -d '\r' < "$work_dir/grpc.headers" > "$work_dir/grpc.clean"
 grep -Eq '^HTTP/2 200' "$work_dir/grpc.clean" && grep -Eiq '^grpc-status: 0$' "$work_dir/grpc.clean" || fail 'gRPC did not complete successfully over HTTP/2.'
 curl_check 200 'Public REST to Nutrition gRPC' --header "@$work_dir/customer.headers" "$public_url/api/v1/nutrition/capabilities"
 jq -e 'has("enabled") and has("assessmentsEnabled") and has("recommendationsEnabled") and has("freeTextParserReady")' "$work_dir/response" >/dev/null || fail 'Public Nutrition capabilities contract is incomplete.'
+if [ "${EXPECT_NUTRITION_DEMO_FEATURES:-false}" = true ]; then
+    jq -e '.enabled == true and .assessmentsEnabled == true and .recommendationsEnabled == true and .freeTextParserReady == true' \
+        "$work_dir/response" >/dev/null || fail 'Demo Nutrition capabilities are not enabled.'
+fi
+curl_check 200 'Owned Nutrition meal plans' --header "@$work_dir/customer.headers" \
+    "$public_url/api/v1/beneficiaries/$beneficiary/meal-plans"
+jq -e 'type == "array"' "$work_dir/response" >/dev/null || fail 'Nutrition meal plans response is not an array.'
 echo 'Nutrition connectivity smoke checks passed. Feature availability still depends on its flags and reviewed catalog.'

@@ -48,7 +48,7 @@ internal sealed class BookingChatService(
             return new BookingChatMetadataResponse(
                 _options.Enabled, bookingId, null, null, 0, 0,
                 ToApi(unavailable.State), false, false, ToApi(unavailable.Reason),
-                now, null, 0, 0, 0, []);
+                now, null, 0, 0, 0, false, false, []);
         }
 
         var epoch = await db.BookingChatEpochs.AsNoTracking()
@@ -67,12 +67,14 @@ internal sealed class BookingChatService(
                 _options.Enabled, bookingId, conversation.Id, epoch?.Id,
                 conversation.ScopeVersion, conversation.ChangeVersion,
                 ToApi(decision.State), false, false, ToApi(decision.Reason),
-                now, conversation.WriteClosesAt, 0, 0, 0, []);
+                now, conversation.WriteClosesAt, 0, 0, 0, false, false, []);
         }
 
         var lastRead = 0L;
         var otherRead = 0L;
         var unread = 0;
+        var isBlockedByMe = false;
+        var isBlockedByOther = false;
         if (epoch is not null)
         {
             lastRead = await db.BookingChatReadCursors.AsNoTracking()
@@ -90,21 +92,46 @@ internal sealed class BookingChatService(
                 .CountAsync(x => x.ConversationId == conversation.Id && x.EpochId == epoch.Id &&
                     x.Sequence > lastRead && x.SenderUserId != null &&
                     x.SenderUserId != userId, ct);
+            isBlockedByMe = await db.BookingChatUserBlocks.AsNoTracking().AnyAsync(x =>
+                x.ConversationId == conversation.Id && x.BlockerUserId == userId &&
+                x.BlockedUserId == otherUserId && x.UnblockedAt == null, ct);
+            isBlockedByOther = await db.BookingChatUserBlocks.AsNoTracking().AnyAsync(x =>
+                x.ConversationId == conversation.Id && x.BlockerUserId == otherUserId &&
+                x.BlockedUserId == userId && x.UnblockedAt == null, ct);
         }
 
-        var canSend = _options.Enabled && decision.CanSend && epoch is not null;
+        var canSend = _options.Enabled && decision.CanSend && epoch is not null &&
+            !isBlockedByMe && !isBlockedByOther;
+        var readOnlyReason = canSend
+            ? "none"
+            : isBlockedByMe
+                ? "blocked_by_you"
+                : isBlockedByOther
+                    ? "blocked_by_other"
+                    : ToApi(decision.Reason);
         return new BookingChatMetadataResponse(
             _options.Enabled, bookingId, conversation.Id, epoch?.Id,
             conversation.ScopeVersion, conversation.ChangeVersion,
-            ToApi(decision.State), decision.CanRead, canSend,
-            canSend ? "none" : ToApi(decision.Reason), now,
+            ToApi(decision.State), decision.CanRead, canSend, readOnlyReason, now,
             conversation.WriteClosesAt, lastRead, otherRead, unread,
+            isBlockedByMe, isBlockedByOther,
             canSend ? GetTemplates(access.Role, booking.Status) : []);
     }
 
-    public async Task<Result<BookingChatMessagesResponse>> GetMessagesAsync(
+    public Task<Result<BookingChatMessagesResponse>> GetMessagesAsync(
         Guid bookingId, string? afterCursor, string? beforeCursor, int limit,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        GetMessagesCoreAsync(bookingId, afterCursor, beforeCursor, limit, null, ct);
+
+    public Task<Result<BookingChatMessagesResponse>> ResumeMessagesAsync(
+        Guid bookingId, Guid anchorMessageId, string direction, long scopeVersion,
+        int limit, CancellationToken ct = default) =>
+        GetMessagesCoreAsync(bookingId, null, null, limit,
+            new(anchorMessageId, direction, scopeVersion), ct);
+
+    private async Task<Result<BookingChatMessagesResponse>> GetMessagesCoreAsync(
+        Guid bookingId, string? afterCursor, string? beforeCursor, int limit,
+        ResumeAnchor? resume, CancellationToken ct)
     {
         if (currentUser.UserId is not { } userId)
             return BookingChatErrors.Unauthenticated();
@@ -115,6 +142,9 @@ internal sealed class BookingChatService(
             return BookingChatErrors.InvalidRequest("Không dùng đồng thời afterCursor và beforeCursor.");
         if (limit is < 1 or > MaxPageSize)
             return BookingChatErrors.InvalidRequest("limit phải nằm trong khoảng 1-100.");
+        if (resume is not null && (resume.Direction is not ("after" or "before") ||
+            resume.ScopeVersion < 1 || resume.MessageId == Guid.Empty))
+            return BookingChatErrors.CursorInvalid();
 
         var booking = await db.Bookings.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == bookingId, ct);
@@ -133,7 +163,7 @@ internal sealed class BookingChatService(
             (currentEpoch is null || currentEpoch.CaregiverUserId != userId))
             return BookingChatErrors.NotFound();
 
-        var direction = beforeCursor is null ? "after" : "before";
+        var direction = resume?.Direction ?? (beforeCursor is null ? "after" : "before");
         CursorPayload? cursor = null;
         if (afterCursor is not null || beforeCursor is not null)
         {
@@ -151,6 +181,18 @@ internal sealed class BookingChatService(
             allowed = allowed.Where(x => x.EpochId == currentEpoch!.Id);
 
         var allowedHigh = await allowed.Select(x => (long?)x.Sequence).MaxAsync(ct) ?? 0;
+        if (resume is not null)
+        {
+            if (resume.ScopeVersion != conversation.ScopeVersion)
+                return BookingChatErrors.ScopeChanged();
+            // Resolve the anchor only inside the caller's currently allowed epoch.
+            // Raw Firestore positions never bypass the protected API cursor scope.
+            var position = await allowed.Where(x => x.Id == resume.MessageId)
+                .Select(x => (long?)x.Sequence).SingleOrDefaultAsync(ct);
+            if (position is null) return BookingChatErrors.CursorInvalid();
+            cursor = new(conversation.Id, userId, conversation.ScopeVersion,
+                direction, position.Value, allowedHigh);
+        }
         var upperBound = cursor?.UpperBound ?? allowedHigh;
         if (direction == "after" && cursor is not null && cursor.Position >= cursor.UpperBound)
             upperBound = allowedHigh;
@@ -241,6 +283,12 @@ internal sealed class BookingChatService(
 
         if (request.ExpectedEpochId != epoch.Id)
             return BookingChatErrors.ScopeChanged();
+        var otherUserId = access.Role == "CUSTOMER" ? epoch.CaregiverUserId : booking.CustomerId;
+        var blocked = await db.BookingChatUserBlocks.AsNoTracking().AnyAsync(x =>
+            x.ConversationId == conversation.Id && x.UnblockedAt == null &&
+            ((x.BlockerUserId == userId && x.BlockedUserId == otherUserId) ||
+             (x.BlockerUserId == otherUserId && x.BlockedUserId == userId)), ct);
+        if (blocked) return BookingChatErrors.Blocked();
         var now = DateTimeOffset.UtcNow;
         var lifecycle = BookingChatLifecyclePolicy.Evaluate(new(
             booking.Status, true, booking.CaregiverId is not null, now,
@@ -427,6 +475,79 @@ internal sealed class BookingChatService(
                 report.Id, report.Status, report.SupportTicketId);
     }
 
+    public async Task<Result<BookingChatBlockResponse>> SetBlockAsync(
+        Guid bookingId, BookingChatBlockRequest request, CancellationToken ct = default)
+    {
+        if (currentUser.UserId is not { } userId)
+            return BookingChatErrors.Unauthenticated();
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (booking is null) return BookingChatErrors.NotFound();
+        var access = await ResolveAccessAsync(booking, userId, ct);
+        if (access is null) return BookingChatErrors.NotFound();
+
+        var conversation = await db.BookingChatConversations.FromSqlInterpolated(
+            $"SELECT * FROM booking.booking_chat_conversations WHERE booking_id = {bookingId} FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (conversation is null) return BookingChatErrors.NotReady();
+        if (conversation.PurgedAt is not null) return BookingChatErrors.Purged();
+        var epoch = await db.BookingChatEpochs.FromSqlInterpolated(
+            $"SELECT * FROM booking.booking_chat_epochs WHERE conversation_id = {conversation.Id} AND ended_at IS NULL FOR UPDATE")
+            .SingleOrDefaultAsync(ct);
+        if (epoch is null) return BookingChatErrors.NotReady();
+        if (access.Role == "CAREGIVER" && epoch.CaregiverUserId != userId)
+            return BookingChatErrors.NotFound();
+
+        var otherUserId = access.Role == "CUSTOMER" ? epoch.CaregiverUserId : booking.CustomerId;
+        var block = await db.BookingChatUserBlocks.SingleOrDefaultAsync(x =>
+            x.ConversationId == conversation.Id && x.BlockerUserId == userId &&
+            x.BlockedUserId == otherUserId, ct);
+        var now = DateTimeOffset.UtcNow;
+        bool changed;
+        if (request.Blocked)
+        {
+            if (block is null)
+            {
+                block = BookingChatUserBlock.Create(
+                    conversation.Id, userId, otherUserId, now);
+                db.BookingChatUserBlocks.Add(block);
+                changed = true;
+            }
+            else
+            {
+                changed = block.Block(now);
+            }
+        }
+        else
+        {
+            changed = block?.Unblock(now) == true;
+        }
+
+        if (changed)
+        {
+            var version = conversation.AdvanceChangeVersion(now);
+            db.BookingChatActivityEvents.Add(BookingChatActivityEvent.Create(
+                conversation.Id, userId,
+                request.Blocked ? "USER_BLOCKED" : "USER_UNBLOCKED", null, now));
+            db.BookingChatOutbox.AddRange(
+                BookingChatOutboxEvent.Create(conversation.Id, epoch.Id, booking.CustomerId,
+                    null, "USER_BLOCK_CHANGED", version, now),
+                BookingChatOutboxEvent.Create(conversation.Id, epoch.Id, epoch.CaregiverUserId,
+                    null, "USER_BLOCK_CHANGED", version, now));
+            await db.SaveChangesAsync(ct);
+        }
+
+        await tx.CommitAsync(ct);
+        var isBlockedByMe = request.Blocked && block is { UnblockedAt: null };
+        return new BookingChatBlockResponse(
+            isBlockedByMe,
+            changed,
+            isBlockedByMe ? block!.BlockedAt : null);
+    }
+
     private async Task<ChatAccess?> ResolveAccessAsync(
         Domain.Booking booking, Guid userId, CancellationToken ct)
     {
@@ -609,6 +730,7 @@ internal sealed class BookingChatService(
         string? TemplateKey,
         int? TemplateVersion,
         string? TemplateParamsJson);
+    private sealed record ResumeAnchor(Guid MessageId, string Direction, long ScopeVersion);
     private sealed record CursorPayload(
         Guid ConversationId,
         Guid UserId,

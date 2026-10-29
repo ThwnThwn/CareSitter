@@ -72,4 +72,3 @@ maps.local.json
 .env
 .env.local
 !.env.example
-!.env

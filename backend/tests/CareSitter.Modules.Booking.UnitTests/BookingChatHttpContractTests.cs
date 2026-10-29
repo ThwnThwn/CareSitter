@@ -26,4 +26,16 @@ public sealed class BookingChatHttpContractTests
 
         Assert.Equal("messages/{messageId:guid}/reports", route);
     }
+
+    [Fact]
+    public void User_block_mutation_uses_put()
+    {
+        var method = typeof(BookingChatController)
+            .GetMethod(nameof(BookingChatController.SetBlock))!;
+        var route = Assert.Single(method.GetCustomAttributes(typeof(HttpPutAttribute), false)
+            .Cast<HttpPutAttribute>()).Template;
+
+        Assert.Equal("block", route);
+        Assert.Empty(method.GetCustomAttributes(typeof(HttpPostAttribute), false));
+    }
 }

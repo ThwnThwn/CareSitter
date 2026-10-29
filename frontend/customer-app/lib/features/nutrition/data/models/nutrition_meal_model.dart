@@ -11,6 +11,7 @@ class NutritionMealModel {
   String get recipeVersionId => _json['recipeVersionId']?.toString() ?? '';
   String? get imageUrl => _optionalString('imageUrl');
   String? get imageAlt => _optionalString('imageAlt');
+  String? get sourceRecipeNote => _optionalString('sourceRecipeNote');
   num? get servings =>
       _json['servings'] is num ? _json['servings'] as num : null;
   List<MealIngredientModel> get ingredients =>

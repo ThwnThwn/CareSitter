@@ -141,6 +141,49 @@ public sealed class BookingChatActivityEvent
         new(conversationId, actorUserId, action, reason, now);
 }
 
+public sealed class BookingChatUserBlock
+{
+    private BookingChatUserBlock() { }
+
+    private BookingChatUserBlock(Guid conversationId, Guid blockerUserId,
+        Guid blockedUserId, DateTimeOffset now)
+    {
+        ConversationId = conversationId;
+        BlockerUserId = blockerUserId;
+        BlockedUserId = blockedUserId;
+        BlockedAt = now;
+    }
+
+    public Guid ConversationId { get; private set; }
+    public Guid BlockerUserId { get; private set; }
+    public Guid BlockedUserId { get; private set; }
+    public DateTimeOffset BlockedAt { get; private set; }
+    public DateTimeOffset? UnblockedAt { get; private set; }
+
+    public static BookingChatUserBlock Create(Guid conversationId, Guid blockerUserId,
+        Guid blockedUserId, DateTimeOffset now)
+    {
+        if (blockerUserId == blockedUserId)
+            throw new ArgumentException("A user cannot block themselves.", nameof(blockedUserId));
+        return new(conversationId, blockerUserId, blockedUserId, now);
+    }
+
+    public bool Block(DateTimeOffset now)
+    {
+        if (UnblockedAt is null) return false;
+        BlockedAt = now;
+        UnblockedAt = null;
+        return true;
+    }
+
+    public bool Unblock(DateTimeOffset now)
+    {
+        if (UnblockedAt is not null) return false;
+        UnblockedAt = now;
+        return true;
+    }
+}
+
 public sealed class BookingChatReport
 {
     private BookingChatReport() { }

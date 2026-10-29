@@ -68,12 +68,35 @@ class SourceReferenceReleaseTests(unittest.TestCase):
             evidence["knowledgeReview"]["releaseAuthorityIds"],
         )
 
+    def test_release_preserves_missing_book_recipe_disclosure(self) -> None:
+        release = prepare_source_reference_bundle(
+            source_bundle=load_json(self.bundle_path),
+            package_key="adult-baseline-book-reference-v1",
+            food_snapshot=load_json(self.snapshot_path),
+        )
+
+        self.assertTrue(all(
+            "Sách không đề cập công thức" in recipe["payload"]["sourceRecipeNote"]
+            for recipe in release["recipes"]
+        ))
+
     def test_rejects_disease_rules_even_with_product_owner_authorization(self) -> None:
         bundle = load_json(self.bundle_path)
         bundle["rules"] = [{"ruleId": "not-allowed"}]
 
         with self.assertRaisesRegex(ManualGraphError, "cannot contain disease rules"):
             self._build(bundle)
+
+    def test_rejects_release_without_missing_book_recipe_disclosure(self) -> None:
+        bundle = load_json(self.bundle_path)
+        bundle["recipes"][0]["payload"].pop("sourceRecipeNote")
+
+        with self.assertRaisesRegex(ManualGraphError, "sourceRecipeNote"):
+            prepare_source_reference_bundle(
+                source_bundle=bundle,
+                package_key="adult-baseline-book-reference-v1",
+                food_snapshot=load_json(self.snapshot_path),
+            )
 
 
 if __name__ == "__main__":

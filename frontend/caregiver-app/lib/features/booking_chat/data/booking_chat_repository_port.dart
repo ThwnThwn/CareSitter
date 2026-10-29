@@ -28,4 +28,10 @@ abstract interface class BookingChatRepositoryPort {
     String epochId,
     String lastReadMessageId,
   );
+  Future<void> reportMessage(
+    String bookingId,
+    String messageId,
+    String reason,
+  );
+  Future<void> setBlocked(String bookingId, bool blocked);
 }

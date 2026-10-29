@@ -1,9 +1,13 @@
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/features/support_chat/data/support_chat_repository.dart';
 import 'package:caregiver_app/features/support_chat/presentation/support_chat_controller.dart';
+import 'package:caregiver_app/features/support_chat/presentation/widgets/support_chat_composer.dart';
+import 'package:caregiver_app/features/support_chat/presentation/widgets/support_chat_layout.dart';
+import 'package:caregiver_app/features/support_chat/presentation/widgets/support_chat_loading.dart';
+import 'package:caregiver_app/features/support_chat/presentation/widgets/support_chat_thread.dart';
+import 'package:caregiver_app/features/support_chat/presentation/widgets/support_conversation_form.dart';
 import 'package:flutter/material.dart';
 
-class SupportChatContent extends StatelessWidget {
+class SupportChatContent extends StatefulWidget {
   const SupportChatContent({
     super.key,
     required this.state,
@@ -22,221 +26,219 @@ class SupportChatContent extends StatelessWidget {
   final TextEditingController firstMessageController;
   final TextEditingController draftController;
   final VoidCallback onRefresh;
-  final Future<void> Function() onSend;
+  final VoidCallback onSend;
   final VoidCallback onCreate;
 
   @override
-  Widget build(BuildContext context) {
-    if (state.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (!state.enabled) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.section),
-          child: Text(
-            'Chat hỗ trợ hiện chưa mở. Vui lòng quay lại trang hỗ trợ.',
-          ),
-        ),
-      );
-    }
-    final conversation = state.conversation;
-    return ListView(
-      controller: scrollController,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        if (state.error case final error?)
-          _SupportErrorCard(error: error, onRetry: onRefresh),
-        if (conversation != null)
-          _ConversationSummary(
-            conversation: conversation,
-            messages: state.messages,
-          ),
-        if (conversation != null && !conversation.isClosed)
-          _MessageComposer(
-            controller: draftController,
-            busy: state.busy,
-            onSend: onSend,
-          ),
-        if (conversation == null || conversation.isClosed)
-          _ConversationRequestForm(
-            showClosedNotice: conversation?.isClosed == true,
-            subjectController: subjectController,
-            firstMessageController: firstMessageController,
-            busy: state.busy,
-            onCreate: onCreate,
-          ),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'Chat hỗ trợ không thay thế dịch vụ cấp cứu hoặc tư vấn y tế.',
-        ),
-      ],
-    );
-  }
+  State<SupportChatContent> createState() => _SupportChatContentState();
 }
 
-class _SupportErrorCard extends StatelessWidget {
-  const _SupportErrorCard({required this.error, required this.onRetry});
+class _SupportChatContentState extends State<SupportChatContent> {
+  bool _creatingNew = false;
 
-  final String error;
-  final VoidCallback onRetry;
+  @override
+  void didUpdateWidget(covariant SupportChatContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.conversation?.id != widget.state.conversation?.id) {
+      _creatingNew = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(error, style: const TextStyle(color: AppColors.error)),
-            TextButton(onPressed: onRetry, child: const Text('Thử lại')),
-          ],
-        ),
+    final chat = widget.state;
+    if (chat.loading) return const SupportChatLoading();
+    if (!chat.enabled) {
+      return _UnavailableChat(error: chat.error, onRetry: widget.onRefresh);
+    }
+    final conversation = chat.conversation;
+    final creating = conversation == null || _creatingNew;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: SupportChatLayout.maxWidth),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final compact = constraints.maxHeight < 400 ||
+              MediaQuery.viewInsetsOf(context).bottom > 0;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (chat.error != null)
+                _ChatError(message: chat.error!, onRetry: widget.onRefresh),
+              if (!creating && !compact) _Topic(subject: conversation.subject),
+              Expanded(
+                child: creating
+                    ? SupportConversationForm(
+                        subjectController: widget.subjectController,
+                        firstMessageController: widget.firstMessageController,
+                        busy: chat.busy,
+                        onCreate: widget.onCreate,
+                        onCancel: conversation == null
+                            ? null
+                            : () => setState(() => _creatingNew = false))
+                    : SupportChatThread(
+                        messages: chat.messages,
+                        scrollController: widget.scrollController),
+              ),
+              _ChatFooter(
+                compact: compact,
+                child: creating
+                    ? null
+                    : conversation.isClosed
+                        ? _ClosedConversation(
+                            onCreate: () => setState(() => _creatingNew = true))
+                        : SupportChatComposer(
+                            controller: widget.draftController,
+                            busy: chat.busy,
+                            onSend: widget.onSend),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
 }
 
-class _ConversationSummary extends StatelessWidget {
-  const _ConversationSummary({
-    required this.conversation,
-    required this.messages,
-  });
-
-  final SupportConversation conversation;
-  final List<SupportMessage> messages;
-
+class _Topic extends StatelessWidget {
+  const _Topic({required this.subject});
+  final String subject;
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          conversation.subject,
-          style: Theme.of(context).textTheme.titleLarge,
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md, AppSpacing.compact, AppSpacing.md, AppSpacing.xs),
+        child: Row(
+          children: [
+            const Icon(Icons.chat_bubble_outline_rounded,
+                size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Tooltip(
+                message: subject,
+                excludeFromSemantics: true,
+                child: Text(subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall),
+              ),
+            ),
+          ],
         ),
-        Text(_statusText),
-        const SizedBox(height: AppSpacing.md),
-        if (messages.isEmpty)
-          const Text('Đang tải tin nhắn…')
-        else
-          for (final message in messages) _SupportMessageCard(message: message),
-      ],
-    );
-  }
-
-  String get _statusText {
-    if (conversation.isClosed) return 'Đã kết thúc';
-    return conversation.status == 'NEW' ? 'Đang chờ tiếp nhận' : 'Đang xử lý';
-  }
+      );
 }
 
-class _SupportMessageCard extends StatelessWidget {
-  const _SupportMessageCard({required this.message});
-
-  final SupportMessage message;
+class _ChatFooter extends StatelessWidget {
+  const _ChatFooter({required this.compact, required this.child});
+  final bool compact;
+  final Widget? child;
 
   @override
-  Widget build(BuildContext context) {
-    final fromAdmin = message.senderRole == 'ADMIN';
-    return Align(
-      alignment: fromAdmin ? Alignment.centerLeft : Alignment.centerRight,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: SafeArea(
+          top: false,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                fromAdmin ? 'CareSitter' : 'Bạn',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(message.body),
+              if (child != null) child!,
+              if (!compact)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.md,
+                      AppSpacing.xs, AppSpacing.md, AppSpacing.compact),
+                  child: Text(
+                    'Chat hỗ trợ không thay thế dịch vụ cấp cứu hoặc tư vấn y tế.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
-class _MessageComposer extends StatelessWidget {
-  const _MessageComposer({
-    required this.controller,
-    required this.busy,
-    required this.onSend,
-  });
-
-  final TextEditingController controller;
-  final bool busy;
-  final Future<void> Function() onSend;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextField(
-          controller: controller,
-          minLines: 1,
-          maxLines: 4,
-          maxLength: 2000,
-          decoration: const InputDecoration(labelText: 'Nhập tin nhắn'),
-        ),
-        FilledButton(
-          onPressed: busy ? null : onSend,
-          child: const Text('Gửi tin nhắn'),
-        ),
-      ],
-    );
-  }
-}
-
-class _ConversationRequestForm extends StatelessWidget {
-  const _ConversationRequestForm({
-    required this.showClosedNotice,
-    required this.subjectController,
-    required this.firstMessageController,
-    required this.busy,
-    required this.onCreate,
-  });
-
-  final bool showClosedNotice;
-  final TextEditingController subjectController;
-  final TextEditingController firstMessageController;
-  final bool busy;
+class _ClosedConversation extends StatelessWidget {
+  const _ClosedConversation({required this.onCreate});
   final VoidCallback onCreate;
-
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (showClosedNotice)
-          const Padding(
-            padding: EdgeInsets.only(bottom: AppSpacing.md),
-            child: Text(
-              'Hội thoại trước chỉ đọc. Bạn có thể gửi yêu cầu mới.',
-            ),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Hội thoại đã kết thúc và hiện chỉ có thể xem lại.',
+                textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add_comment_outlined),
+                label: const Text('Gửi yêu cầu mới')),
+          ],
+        ),
+      );
+}
+
+class _ChatError extends StatelessWidget {
+  const _ChatError({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Material(
+        color: AppColors.errorLight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(message,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.error)),
+              ),
+              TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+            ],
           ),
-        TextField(
-          controller: subjectController,
-          maxLength: 255,
-          decoration: const InputDecoration(labelText: 'Chủ đề cần hỗ trợ'),
         ),
-        TextField(
-          controller: firstMessageController,
-          minLines: 3,
-          maxLines: 6,
-          maxLength: 2000,
-          decoration: const InputDecoration(labelText: 'Nội dung yêu cầu'),
+      );
+}
+
+class _UnavailableChat extends StatelessWidget {
+  const _UnavailableChat({required this.error, required this.onRetry});
+  final String? error;
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.chat_bubble_outline_rounded,
+                  size: 48, color: AppColors.primary),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                  error == null
+                      ? 'Chat hỗ trợ hiện chưa mở'
+                      : 'Chưa kết nối được cuộc trò chuyện',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              Text(error ?? 'Vui lòng quay lại trang hỗ trợ hoặc thử lại sau.',
+                  textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.md),
+              TextButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Thử lại')),
+            ],
+          ),
         ),
-        FilledButton(
-          onPressed: busy ? null : onCreate,
-          child: const Text('Bắt đầu hội thoại'),
-        ),
-      ],
-    );
-  }
+      );
 }

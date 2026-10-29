@@ -12,9 +12,9 @@ const footerGroups = [
   {
     title: "Hỗ trợ",
     links: [
-      ["Trung tâm trợ giúp", "#"],
-      ["Tiêu chuẩn an toàn", "#"],
-      ["Liên hệ CareSitter", "#"],
+      ["Chính sách quyền riêng tư", "/privacy"],
+      ["Điều khoản dịch vụ", "/terms"],
+      ["Xóa tài khoản", "/account-deletion"],
     ],
   },
 ];

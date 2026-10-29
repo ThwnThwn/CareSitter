@@ -105,7 +105,16 @@ builder.Services.AddSingleton<IValidateOptions<HealthParserOptions>, HealthParse
 builder.Services.AddOptions<HealthParserOptions>()
     .Bind(builder.Configuration.GetSection(HealthParserOptions.SectionName))
     .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<MealGroundingOptions>, MealGroundingOptionsValidator>();
+builder.Services.AddOptions<MealGroundingOptions>()
+    .Bind(builder.Configuration.GetSection(MealGroundingOptions.SectionName))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<MealRankingOptions>, MealRankingOptionsValidator>();
+builder.Services.AddOptions<MealRankingOptions>()
+    .Bind(builder.Configuration.GetSection(MealRankingOptions.SectionName))
+    .ValidateOnStart();
 builder.Services.AddSingleton<HealthParserRuntimeGuard>();
+builder.Services.AddSingleton<MealRankingRuntimeGuard>();
 builder.Services.AddScoped<UnconfiguredHealthParser>();
 builder.Services.AddHttpClient<OpenAiHealthDescriptionParser>((services, client) =>
 {
@@ -130,6 +139,33 @@ builder.Services.AddScoped<IHealthDescriptionParser>(services =>
 builder.Services.AddScoped<AssessmentProcessor>();
 builder.Services.AddScoped<NutritionWriteScope>();
 builder.Services.AddScoped<MealPreparationService>();
+builder.Services.AddScoped<UnavailableMealKnowledgeRetriever>();
+builder.Services.AddScoped<ReleasedGraphMealKnowledgeRetriever>();
+builder.Services.AddScoped<OwnerAuthorizedCorpusMealKnowledgeRetriever>();
+builder.Services.AddScoped<OwnerAuthorizedGraphMealKnowledgeRetriever>();
+builder.Services.AddScoped<IMealKnowledgeRetriever>(services =>
+{
+    var options = services.GetRequiredService<IOptions<MealGroundingOptions>>().Value;
+    if (!options.Enabled) return services.GetRequiredService<UnavailableMealKnowledgeRetriever>();
+    return options.Mode switch
+    {
+        MealGroundingOptions.OwnerAuthorizedCorpusDemoMode => services.GetRequiredService<OwnerAuthorizedCorpusMealKnowledgeRetriever>(),
+        MealGroundingOptions.OwnerAuthorizedGraphDemoMode => services.GetRequiredService<OwnerAuthorizedGraphMealKnowledgeRetriever>(),
+        _ => services.GetRequiredService<ReleasedGraphMealKnowledgeRetriever>()
+    };
+});
+builder.Services.AddScoped<UnavailableMealCandidateRanker>();
+builder.Services.AddHttpClient<GeminiMealCandidateRanker>((services, client) =>
+{
+    var options = services.GetRequiredService<IOptions<MealRankingOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + '/');
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
+builder.Services.AddScoped<IMealCandidateRanker>(services =>
+    services.GetRequiredService<IOptions<MealRankingOptions>>().Value.Enabled
+        ? services.GetRequiredService<GeminiMealCandidateRanker>()
+        : services.GetRequiredService<UnavailableMealCandidateRanker>());
+builder.Services.AddScoped<IMealRecommendationEngine, MealRecommendationEngine>();
 builder.Services.AddHttpClient<IPeopleHealthClient, PeopleHealthClient>(client =>
 {
     client.BaseAddress = new Uri(peopleUrl.TrimEnd('/') + '/');

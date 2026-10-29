@@ -29,6 +29,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Features;
 using CareSitter.Messaging.Kafka;
 using CareSitter.ApiHost.Nutrition;
+using CareSitter.ApiHost.ChatFirestore;
 
 // Nap file .env (neu co) thanh bien moi truong TRUOC khi build configuration.
 // TraversePath() tim .env tu thu muc hien tai len cac thu muc cha (repo root).
@@ -49,6 +50,10 @@ builder.Services.AddOptions<NutritionGatewayOptions>().Bind(builder.Configuratio
         "NutritionGateway requires an internal gRPC endpoint, service credential and a bounded timeout.")
     .ValidateOnStart();
 builder.Services.AddSingleton<INutritionGateway, NutritionGrpcGateway>();
+builder.Services.AddHttpClient<NutritionReadinessHealthCheck>()
+    .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
+        InternalCertificateTrust.CreateHandler(serviceProvider
+            .GetRequiredService<IOptions<NutritionGatewayOptions>>().Value.TrustedRootCertificatePath));
 builder.Services.AddOptions<NutritionKnowledgeOptions>()
     .Bind(builder.Configuration.GetSection("NutritionKnowledge"))
     .Validate(options => !options.Enabled ||
@@ -58,6 +63,21 @@ builder.Services.AddOptions<NutritionKnowledgeOptions>()
         "NutritionKnowledge requires Development, an absolute corpus path and SHA-256 digest when enabled.")
     .ValidateOnStart();
 builder.Services.AddSingleton<NutritionKnowledgeSearch>();
+builder.Services.AddOptions<ChatFirestoreOptions>()
+    .Bind(builder.Configuration.GetSection("ChatFirestore"))
+    .Validate(options => !options.ClientReadEnabled || options.ProjectionEnabled,
+        "ChatFirestore client reads require projection to be enabled.")
+    .Validate(options => !options.ProjectionEnabled ||
+        (!string.IsNullOrWhiteSpace(options.ProjectId) &&
+         (!options.UseEmulator ||
+          !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST")))),
+        "ChatFirestore requires a project ID and an emulator host when using the emulator.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<ChatFirestoreClient>();
+builder.Services.AddHostedService<ChatFirestoreProjectionWorker>();
+builder.Services.AddScoped<ChatFirestoreReconciler>();
+builder.Services.AddScoped<ChatFirestoreReconcileJob>();
+builder.Services.AddScoped<ChatFirestoreAccessGate>();
 // Network contracts remain independent of the existing in-process MediatR events.
 builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
 {
@@ -233,7 +253,8 @@ builder.Services.AddHealthChecks()
         {
             return HealthCheckResult.Unhealthy("Redis is unavailable.", ex);
         }
-    }, timeout: TimeSpan.FromSeconds(5));
+    }, timeout: TimeSpan.FromSeconds(5))
+    .AddCheck<NutritionReadinessHealthCheck>("nutrition", timeout: TimeSpan.FromSeconds(5));
 
 // --- Module discovery: quet tat ca IModule trong cac assembly module ---
 var moduleAssemblies = new[]
@@ -540,6 +561,14 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 // Every instance writes the same stable recurring IDs into the shared PostgreSQL
 // store; Hangfire's distributed lock prevents duplicate scheduling across servers.
 RecurringJob.RemoveIfExists("expire-pending-payments");
+if (app.Configuration.GetValue<bool>("ChatFirestore:ProjectionEnabled") &&
+    app.Configuration.GetValue("ChatFirestore:ReconcileEnabled", true))
+    RecurringJob.AddOrUpdate<ChatFirestoreReconcileJob>(
+        recurringJobId: "reconcile-chat-firestore",
+        methodCall: job => job.RunAsync(CancellationToken.None),
+        cronExpression: "*/15 * * * *", queue: "default");
+else
+    RecurringJob.RemoveIfExists("reconcile-chat-firestore");
 RecurringJob.AddOrUpdate<CareSitter.Modules.Booking.Infrastructure.LiveLocationCleanupJob>(
     recurringJobId: "cleanup-live-locations", methodCall: job => job.RunAsync(CancellationToken.None),
     cronExpression: "*/5 * * * *", queue: "booking");

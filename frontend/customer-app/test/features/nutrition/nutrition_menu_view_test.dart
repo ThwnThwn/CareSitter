@@ -120,7 +120,7 @@ void main() {
             selectedDate: DateTime(2026, 10, 23),
             hasPlanForSelectedDate: false,
             result: const SizedBox.shrink(),
-            onEditProfile: () {},
+            onCreatePlan: () {},
           ),
         ),
       ),

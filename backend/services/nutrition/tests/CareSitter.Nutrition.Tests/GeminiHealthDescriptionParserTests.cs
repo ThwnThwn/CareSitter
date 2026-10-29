@@ -32,10 +32,10 @@ public sealed class GeminiHealthDescriptionParserTests
         Assert.Equal(options.ApiKey, handler.ApiKey);
         using var body = JsonDocument.Parse(Assert.IsType<string>(handler.Body));
         Assert.False(body.RootElement.GetProperty("store").GetBoolean());
-        Assert.Equal("APPLICATION_JSON", body.RootElement.GetProperty("generationConfig")
-            .GetProperty("responseFormat").GetProperty("text").GetProperty("mimeType").GetString());
+        Assert.Equal("application/json", body.RootElement.GetProperty("generationConfig")
+            .GetProperty("responseMimeType").GetString());
         Assert.Equal(JsonValueKind.Object, body.RootElement.GetProperty("generationConfig")
-            .GetProperty("responseFormat").GetProperty("text").GetProperty("schema").ValueKind);
+            .GetProperty("responseJsonSchema").ValueKind);
         var input = JsonDocument.Parse(body.RootElement.GetProperty("contents")[0]
             .GetProperty("parts")[0].GetProperty("text").GetString()!);
         Assert.Equal(HealthKnowledgeGraphRetriever.Strategy,
@@ -81,6 +81,50 @@ public sealed class GeminiHealthDescriptionParserTests
 
         Assert.Equal("nutrition.ai_refused", error.Code);
         Assert.False(error.Retryable);
+    }
+
+    [Fact]
+    public async Task Unique_exact_quote_repairs_model_offset_before_validation()
+    {
+        var expected = Result();
+        var wrongOffset = expected with
+        {
+            Facts = [expected.Facts[0] with { StartOffset = 0, EndOffset = 3 }]
+        };
+        var handler = new RecordingHandler(SuccessResponse(wrongOffset));
+        var options = EnabledOptions();
+        using var client = new HttpClient(handler) { BaseAddress = new Uri(options.EffectiveBaseUrl) };
+        using var guard = new HealthParserRuntimeGuard(options, TimeProvider.System);
+        var parser = new GeminiHealthDescriptionParser(client, Options.Create(options), guard,
+            NullLogger<GeminiHealthDescriptionParser>.Instance);
+
+        var parsed = await parser.ParseAsync(Request(), default);
+
+        Assert.Equal(expected.Facts[0].StartOffset, parsed.Facts[0].StartOffset);
+        Assert.Equal(expected.Facts[0].EndOffset, parsed.Facts[0].EndOffset);
+        Assert.True(HealthParseResultValidator.TryValidate(Request(), parsed, out _));
+    }
+
+    [Fact]
+    public async Task Wrong_offset_with_repeated_quote_is_rejected_as_ambiguous()
+    {
+        const string repeated = "tăng huyết áp; tăng huyết áp";
+        var sources = new Dictionary<string, string> { ["note"] = repeated };
+        var request = new HealthParseRequest(1, 7, sources, Concepts,
+            HealthKnowledgeGraphRetriever.Retrieve(7, sources, Concepts, []));
+        var output = new HealthParseResult(1, 7,
+            [new("condition", "HYPERTENSION", "Tăng huyết áp", "present", "current", "note",
+                "tăng huyết áp", "beneficiary", 1, 2)], [], []);
+        var handler = new RecordingHandler(SuccessResponse(output));
+        var options = EnabledOptions();
+        using var client = new HttpClient(handler) { BaseAddress = new Uri(options.EffectiveBaseUrl) };
+        using var guard = new HealthParserRuntimeGuard(options, TimeProvider.System);
+        var parser = new GeminiHealthDescriptionParser(client, Options.Create(options), guard,
+            NullLogger<GeminiHealthDescriptionParser>.Instance);
+
+        var error = await Assert.ThrowsAsync<HealthParserException>(() => parser.ParseAsync(request, default));
+
+        Assert.Equal("nutrition.ai_invalid_output", error.Code);
     }
 
     [Fact]

@@ -76,12 +76,27 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: deploy/chat-firestore/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Install Firestore emulator dependencies
+        working-directory: deploy/chat-firestore
+        run: npm ci
+      - name: Test Firestore security rules
+        working-directory: deploy/chat-firestore
+        run: npm run test:rules
       - name: Native process shutdown and log-drain regression
         shell: pwsh
         run: ./backend/scripts/test-phase7-process.ps1
       - name: Clean migration, legacy upgrade, smoke and full backend tests
         shell: pwsh
-        run: ./backend/scripts/test-phase7.ps1 -Repeat 2 -SkipFrontend -ArtifactsDirectory backend/artifacts/ci-baseline
+        run: npm exec --prefix deploy/chat-firestore -- firebase emulators:exec --config deploy/chat-firestore/firebase.json --only firestore --project demo-caresitter-chat "pwsh ./backend/scripts/test-phase7.ps1 -Repeat 2 -SkipFrontend -ArtifactsDirectory backend/artifacts/ci-baseline"
       - name: Preserve backend acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,7 +124,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.4'
+          flutter-version: '3.47.7'
           channel: stable
           cache: true
       - run: flutter pub get

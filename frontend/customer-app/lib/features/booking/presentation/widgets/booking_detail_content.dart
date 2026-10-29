@@ -17,10 +17,12 @@ class BookingDetailContent extends StatelessWidget {
       required this.booking,
       required this.statusConfig,
       required this.onRefresh,
+      required this.onChat,
       required this.actions});
   final BookingModel booking;
   final BookingStatusPresentation statusConfig;
   final Future<void> Function() onRefresh;
+  final VoidCallback onChat;
   final Widget actions;
 
   @override
@@ -60,6 +62,7 @@ class BookingDetailContent extends StatelessWidget {
                         ? const BookingDetailScreenWaitingCaregiverCard()
                         : BookingDetailScreenCaregiverHeroCard(
                             booking: booking,
+                            onChat: onChat,
                           ),
                   ),
                   const SizedBox(height: AppSpacing.md),

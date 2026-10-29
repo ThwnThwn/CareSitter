@@ -654,7 +654,19 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
     private async Task<BookingEntity> SeedBookingAsync(BookingDbContext db, string status)
     {
         var id = Guid.NewGuid();
+        var beneficiaryId = Guid.NewGuid();
         await using var connection = await _database.OpenConnectionAsync();
+        await using (var beneficiary = new NpgsqlCommand("""
+            INSERT INTO people.beneficiaries (id, customer_id, full_name, relationship_to_customer)
+            SELECT @id, customer_id, 'Integration test beneficiary', 'Fixture'
+            FROM people.beneficiaries
+            ORDER BY id
+            LIMIT 1
+            """, connection))
+        {
+            beneficiary.Parameters.AddWithValue("id", beneficiaryId);
+            Assert.Equal(1, await beneficiary.ExecuteNonQueryAsync());
+        }
         await using var command = new NpgsqlCommand("""
             INSERT INTO booking.bookings (
                 id, customer_id, beneficiary_id, address_id, service_type_id, caregiver_id,
@@ -668,9 +680,11 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
             JOIN catalog.addresses address ON address.owner_user_id = beneficiary.customer_id
             CROSS JOIN LATERAL (SELECT id FROM catalog.service_types ORDER BY id LIMIT 1) service
             CROSS JOIN LATERAL (SELECT id FROM people.caregiver_profiles ORDER BY id LIMIT 1) caregiver
-            ORDER BY beneficiary.id, address.id LIMIT 1
+            WHERE beneficiary.id = @beneficiary_id
+            ORDER BY address.id LIMIT 1
             """, connection);
         command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("beneficiary_id", beneficiaryId);
         command.Parameters.AddWithValue("status", status);
         Assert.Equal(1, await command.ExecuteNonQueryAsync());
         return await db.Bookings.SingleAsync(x => x.Id == id);

@@ -1,0 +1,89 @@
+name: caresitter-data
+
+x-postgis: &postgis
+  image: caresitter-postgis:16
+  build:
+    context: ./postgis
+    dockerfile: Dockerfile
+
+services:
+  db:
+    <<: *postgis
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=50
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in the split environment}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the split environment}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the split environment}
+    ports:
+      - "${DATA_BIND_IP:?Set DATA_BIND_IP to this VM private IPv4}:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [data]
+    mem_limit: 640m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the split environment}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the split environment}
+    command:
+      - sh
+      - -c
+      - >-
+        exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+        --maxmemory 128mb --maxmemory-policy noeviction
+    ports:
+      - "${DATA_BIND_IP:?Set DATA_BIND_IP to this VM private IPv4}:6379:6379"
+    volumes:
+      - redisdata:/data
+    networks: [data]
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  migrate:
+    <<: *postgis
+    profiles: [migrate]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB in the split environment}
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER in the split environment}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the split environment}
+      ALLOW_DESTRUCTIVE_MIGRATIONS: ${ALLOW_DESTRUCTIVE_MIGRATIONS:-false}
+    volumes:
+      - ../backend/init-db:/sql:ro
+      - ./migrate.sh:/migrate.sh:ro
+    entrypoint: ["sh", "/migrate.sh"]
+    networks: [data]
+    mem_limit: 640m
+
+networks:
+  data:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
