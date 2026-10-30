@@ -2,6 +2,7 @@ import 'nutrition_json.dart';
 import 'nutrition_decision_model.dart';
 import 'nutrition_fact_model.dart';
 import 'nutrition_meal_model.dart';
+import 'nutrition_recommendation_trace_model.dart';
 
 /// Truy cập có kiểu cho các trường đã biết; toJson giữ nguyên phần mở rộng.
 class NutritionResultModel {
@@ -18,6 +19,18 @@ class NutritionResultModel {
       .toList();
   bool get retryable => _json['retryable'] == true;
   String? get errorCode => _json['errorCode']?.toString();
+  String? get assessmentId {
+    final value = _json['assessmentId']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
   String? get plannedDate => _json['plannedDate']?.toString();
+  NutritionRecommendationTraceModel? get recommendationTrace {
+    final value = _json['recommendationTrace'];
+    return value is Map
+        ? NutritionRecommendationTraceModel.fromJson(nutritionJsonMap(value))
+        : null;
+  }
+
   Map<String, dynamic> toJson() => Map.of(_json);
 }

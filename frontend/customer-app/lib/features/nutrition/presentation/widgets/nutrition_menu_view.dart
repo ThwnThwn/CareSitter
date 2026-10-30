@@ -20,7 +20,7 @@ class NutritionMenuView extends StatelessWidget {
     this.isLoadingSelectedDate = false,
     this.dateError,
     this.onRetryDate,
-    this.onEditProfile,
+    this.onCreatePlan,
   });
 
   final String? beneficiaryName;
@@ -32,7 +32,7 @@ class NutritionMenuView extends StatelessWidget {
   final bool isLoadingSelectedDate;
   final String? dateError;
   final VoidCallback? onRetryDate;
-  final VoidCallback? onEditProfile;
+  final VoidCallback? onCreatePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +74,7 @@ class NutritionMenuView extends StatelessWidget {
           const SizedBox(height: AppSpacing.compact),
           _NoPlanNotice(
             date: selectedDate,
-            onEditProfile: onEditProfile,
+            onCreatePlan: onCreatePlan,
           ),
         ],
         if (flow.loading && !isLoadingSelectedDate) ...[
@@ -91,10 +91,10 @@ class NutritionMenuView extends StatelessWidget {
 }
 
 class _NoPlanNotice extends StatelessWidget {
-  const _NoPlanNotice({required this.date, required this.onEditProfile});
+  const _NoPlanNotice({required this.date, required this.onCreatePlan});
 
   final DateTime? date;
-  final VoidCallback? onEditProfile;
+  final VoidCallback? onCreatePlan;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -132,10 +132,10 @@ class _NoPlanNotice extends StatelessWidget {
                           color: AppColors.textPrimary,
                         ),
                   ),
-                  if (onEditProfile != null) ...[
+                  if (onCreatePlan != null) ...[
                     const SizedBox(height: AppSpacing.xs),
                     TextButton.icon(
-                      onPressed: onEditProfile,
+                      onPressed: onCreatePlan,
                       icon: const Icon(Icons.add_rounded, size: 18),
                       label: const Text('Tạo thực đơn cho ngày này'),
                       style: TextButton.styleFrom(

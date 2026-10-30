@@ -373,6 +373,11 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        },
+        "sourceRecipeNote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
         }
       }
     },

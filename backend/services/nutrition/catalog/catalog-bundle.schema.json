@@ -79,7 +79,8 @@
         "allergenDataComplete": { "const": true },
         "dietaryPatterns": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
         "imageUrl": { "type": "string", "format": "uri", "pattern": "^https://", "maxLength": 2048 },
-        "imageAlt": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "imageAlt": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "sourceRecipeNote": { "type": "string", "minLength": 1, "maxLength": 500 }
       }
     },
     "recipeVersion": {

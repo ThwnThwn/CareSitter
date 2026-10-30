@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import 'package:caregiver_app/features/booking_chat/data/booking_chat_repository.dart';
 import 'package:caregiver_app/features/booking_chat/presentation/booking_chat_controller.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 part 'booking_chat_screen_actions.dart';
+part 'booking_chat_screen_header.dart';
 part 'booking_chat_screen_widgets.dart';
 
 // ---------------------------------------------------------------------------
@@ -120,45 +122,22 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        titleSpacing: 0,
-        leading: const BackButton(color: AppColors.textPrimary),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.bookingTitle ?? 'Nhắn tin',
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary),
-            ),
-            if (chat.meta != null)
-              Text(
-                _stateLabel(chat.meta!.state),
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
-              ),
-          ],
+      appBar: _BookingChatAppBar(
+        title: widget.bookingTitle ?? 'Nhắn tin',
+        status: chat.meta == null ? null : _stateLabel(chat.meta!.state),
+        unreadCount: chat.meta?.unreadCount,
+        blocked: chat.meta?.isBlockedByMe ?? false,
+        showSafetyMenu: chat.meta?.hasChat == true,
+        onReportUser: () => unawaited(_reportUser(chat)),
+        onToggleBlocked: () => unawaited(
+          _setBlocked(!(chat.meta?.isBlockedByMe ?? false)),
         ),
-        actions: [
-          if (chat.meta?.unreadCount != null && chat.meta!.unreadCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Badge(
-                label: Text('${chat.meta!.unreadCount}'),
-                child: const Icon(Icons.mark_chat_unread_outlined,
-                    color: AppColors.primary),
-              ),
-            ),
-        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(child: _buildBody(chat)),
+            _buildBlockNotice(chat),
             if (chat.canSend) _buildInputBar(chat),
           ],
         ),
@@ -181,7 +160,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
       return AppEmptyState(
         icon: Icons.lock_outline_rounded,
         title: 'Không thể đọc tin nhắn',
-        message: chat.meta?.readOnlyReason ?? '',
+        message: chat.meta?.readOnlyMessage ?? '',
       );
     }
     if (chat.messages.isEmpty) {
@@ -221,7 +200,12 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
         return Column(
           children: [
             if (showDate) _DateDivider(date: msg.createdAt),
-            _MessageBubble(message: msg, readByOther: readByOther),
+            _MessageBubble(
+              message: msg,
+              readByOther: readByOther,
+              onReport:
+                  msg.isMine || msg.isSystem ? null : () => _reportMessage(msg),
+            ),
           ],
         );
       },

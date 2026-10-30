@@ -1,5 +1,109 @@
 part of 'booking_chat_screen.dart';
 
+class _BookingChatAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _BookingChatAppBar({
+    required this.title,
+    required this.meta,
+    required this.onRefresh,
+    required this.onReportUser,
+    required this.onToggleBlocked,
+  });
+
+  final String title;
+  final BookingChatMeta? meta;
+  final VoidCallback onRefresh;
+  final VoidCallback onReportUser;
+  final VoidCallback onToggleBlocked;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      centerTitle: false,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (meta != null)
+            _ChatStatusChip(
+              state: meta!.state,
+              writeClosesAt: meta!.writeClosesAt,
+            ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Làm mới',
+          icon: const Icon(Icons.refresh_rounded, size: 20),
+          onPressed: onRefresh,
+        ),
+        if (meta?.hasChat == true)
+          _BookingChatSafetyMenu(
+            blocked: meta!.isBlockedByMe,
+            onReportUser: onReportUser,
+            onToggleBlocked: onToggleBlocked,
+          ),
+      ],
+    );
+  }
+}
+
+class _BookingChatSafetyMenu extends StatelessWidget {
+  const _BookingChatSafetyMenu({
+    required this.blocked,
+    required this.onReportUser,
+    required this.onToggleBlocked,
+  });
+
+  final bool blocked;
+  final VoidCallback onReportUser;
+  final VoidCallback onToggleBlocked;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Tùy chọn an toàn',
+      onSelected: (action) =>
+          action == 'report_user' ? onReportUser() : onToggleBlocked(),
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'report_user',
+          child: Row(
+            children: [
+              Icon(Icons.report_outlined),
+              SizedBox(width: 12),
+              Text('Báo cáo người dùng'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'toggle_block',
+          child: Row(
+            children: [
+              Icon(blocked ? Icons.lock_open_rounded : Icons.block_rounded),
+              const SizedBox(width: 12),
+              Text(blocked ? 'Bỏ chặn người này' : 'Chặn người này'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ChatStatusChip extends StatelessWidget {
   const _ChatStatusChip({required this.state, this.writeClosesAt});
   final String state;

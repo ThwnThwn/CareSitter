@@ -1,21 +1,21 @@
 {
-  "bundleFileSha256": "d924322df87f7eda293ac05d7c2cdb77a4322dfbad22f1926574043d55e167e8",
+  "bundleFileSha256": "5a0b7999e63c6060e9c6a8882fcd97d8408bbf3d0927080fb5418c1efa6d94a4",
   "calculationBasis": "Published-source reference estimates. Sum ingredient grams against the pinned Viện Dinh dưỡng food-composition snapshot with identity edible/yield factors; source-missing nutrient fields use the snapshot's documented zero normalization. Not a disease-treatment prescription.",
   "clinicalReview": null,
   "contentStatus": "review_ready",
   "knowledgeReview": {
     "approvedCount": 12,
     "candidateCount": 12,
-    "candidateGraphSha256": "896107ccd073b62b6f4534ef4d841535d2955b46badefe365c1620f7fecbdb84",
+    "candidateGraphSha256": "319514ab64cde4fb75567f93f56a6e0bacee18de51225a4682b6b5b873a2fab9",
     "clinicalReviewerIds": [],
     "decision": "approved",
-    "decisionLedgerSha256": "5c7933d9de870f457bb0759a34e30d66ad8f2a968a2e9a000f6e77a0b839c27f",
+    "decisionLedgerSha256": "9cdce83b10e057784ca232f525462f143cdf1d9e7fe6d33f7f1f26cc1d0a8fc2",
     "pendingCount": 0,
     "rejectedCount": 0,
     "releaseAuthorityIds": [
-      "project-owner-source-reference-20261024"
+      "project-owner-source-reference-disclosure-20261028"
     ],
-    "reviewedGraphSha256": "29cb9b5fca7110d765c7782fec41c5ba7cf3e2f021bab2a1a4a9ee160bc0ebda",
+    "reviewedGraphSha256": "9716eb97f7c3dcfc4bf3995469cf3971897e1747ae8edb46ed87130996ba2bb2",
     "schemaVersion": 1,
     "sources": [
       {
@@ -2225,11 +2225,11 @@
   ],
   "releaseAuthorization": {
     "authorityType": "product_owner",
-    "authorizationId": "project-owner-source-reference-20261024",
-    "authorizedAt": "2026-10-24T07:50:00+07:00",
+    "authorizationId": "project-owner-source-reference-disclosure-20261028",
+    "authorizedAt": "2026-10-28T12:30:05+07:00",
     "authorizedBy": "CareSitter project owner (direct user authorization)",
     "decision": "approved",
-    "notes": "User directly authorized release of published-book reference menus for adult baseline without a second clinical-review claim; disease conditions and special feeding needs remain blocked."
+    "notes": "Chủ dự án yêu cầu tiếp tục phát hành source-reference baseline và ghi rõ Sách không đề cập công thức đối với nội dung không có hướng dẫn chế biến; không tuyên bố review lâm sàng độc lập."
   },
   "releaseProfile": "adult_baseline_source_reference_v1",
   "requiredNutrients": [
@@ -2249,6 +2249,6 @@
     "publicationYear": 2019,
     "sourceId": "BOOK_2019_CKD_P219_220",
     "sourceRevisionId": "BOOK_2019_CKD_P219_220@sha256:abea34b8a6a63e9eabd25f57141c18ba6ac31012c1d4a8dcc15f9ba68dc7f737",
-    "verifiedAt": "2026-10-24T07:50:00+07:00"
+    "verifiedAt": "2026-10-28T12:30:05+07:00"
   }
 }

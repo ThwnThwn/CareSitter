@@ -37,6 +37,9 @@ var healthParserBaseUrl = builder.Configuration["HealthParser:BaseUrl"] ??
                           (healthParserIsGemini
                               ? "https://generativelanguage.googleapis.com/v1beta/"
                               : "https://api.openai.com/v1/");
+var mealRankingModel = builder.Configuration["MealRanking:Model"] ?? "gemini-3.5-flash-lite";
+var mealRankingBaseUrl = builder.Configuration["MealRanking:BaseUrl"] ??
+                         "https://generativelanguage.googleapis.com/v1beta/";
 
 var apiPort = builder.Configuration.GetValue("AppHost:ApiPort", 5033);
 var apiListenUrl = $"http://0.0.0.0:{apiPort}";
@@ -72,6 +75,30 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("Nutrition__RecommendationsEnabled", builder.Configuration.GetValue("Nutrition:RecommendationsEnabled", false).ToString())
     .WithEnvironment("NutritionCatalog__LocalDemoEnabled", builder.Configuration.GetValue("NutritionCatalog:LocalDemoEnabled", false).ToString())
     .WithEnvironment("NutritionCatalog__LocalDemoPackageKey", builder.Configuration["NutritionCatalog:LocalDemoPackageKey"] ?? "adult-baseline-p2a-v1-local-demo")
+    .WithEnvironment("MealGrounding__Enabled", builder.Configuration.GetValue("MealGrounding:Enabled", false).ToString())
+    .WithEnvironment("MealGrounding__Mode", builder.Configuration["MealGrounding:Mode"] ?? "released_graph")
+    .WithEnvironment("MealGrounding__ManifestPath", builder.Configuration["MealGrounding:ManifestPath"] ?? "")
+    .WithEnvironment("MealGrounding__ManifestSha256", builder.Configuration["MealGrounding:ManifestSha256"] ?? "")
+    .WithEnvironment("MealGrounding__ReviewedGraphPath", builder.Configuration["MealGrounding:ReviewedGraphPath"] ?? "")
+    .WithEnvironment("MealGrounding__ReviewedGraphSha256", builder.Configuration["MealGrounding:ReviewedGraphSha256"] ?? "")
+    .WithEnvironment("MealGrounding__DemoGraphPath", builder.Configuration["MealGrounding:DemoGraphPath"] ?? "")
+    .WithEnvironment("MealGrounding__DemoGraphSha256", builder.Configuration["MealGrounding:DemoGraphSha256"] ?? "")
+    .WithEnvironment("MealGrounding__DemoAuthorizationPath", builder.Configuration["MealGrounding:DemoAuthorizationPath"] ?? "")
+    .WithEnvironment("MealGrounding__DemoAuthorizationSha256", builder.Configuration["MealGrounding:DemoAuthorizationSha256"] ?? "")
+    .WithEnvironment("MealGrounding__CorpusPath", builder.Configuration["MealGrounding:CorpusPath"] ?? "")
+    .WithEnvironment("MealGrounding__CorpusSha256", builder.Configuration["MealGrounding:CorpusSha256"] ?? "")
+    .WithEnvironment("MealGrounding__TopK", builder.Configuration.GetValue("MealGrounding:TopK", 5).ToString())
+    .WithEnvironment("MealRanking__Enabled", builder.Configuration.GetValue("MealRanking:Enabled", false).ToString())
+    .WithEnvironment("MealRanking__Model", mealRankingModel)
+    .WithEnvironment("MealRanking__BaseUrl", mealRankingBaseUrl)
+    .WithEnvironment("MealRanking__DataProcessingApproved", builder.Configuration.GetValue("MealRanking:DataProcessingApproved", false).ToString())
+    .WithEnvironment("MealRanking__TimeoutSeconds", builder.Configuration.GetValue("MealRanking:TimeoutSeconds", 20).ToString())
+    .WithEnvironment("MealRanking__MaxOutputTokens", builder.Configuration.GetValue("MealRanking:MaxOutputTokens", 1536).ToString())
+    .WithEnvironment("MealRanking__MaxAttempts", builder.Configuration.GetValue("MealRanking:MaxAttempts", 2).ToString())
+    .WithEnvironment("MealRanking__MaxConcurrency", builder.Configuration.GetValue("MealRanking:MaxConcurrency", 4).ToString())
+    .WithEnvironment("MealRanking__DailyBudget", builder.Configuration.GetValue("MealRanking:DailyBudget", 1000).ToString())
+    .WithEnvironment("MealRanking__MaxResponseBytes", builder.Configuration.GetValue("MealRanking:MaxResponseBytes", 131072).ToString())
+    .WithEnvironment("MealRanking__MaxCandidateSets", builder.Configuration.GetValue("MealRanking:MaxCandidateSets", 12).ToString())
     .WithEnvironment("HealthParser__Enabled", builder.Configuration.GetValue("HealthParser:Enabled", false).ToString())
     .WithEnvironment("HealthParser__Provider", healthParserProvider)
     .WithEnvironment("HealthParser__Model", healthParserModel)
@@ -145,6 +172,16 @@ if (builder.Configuration.GetValue<bool>("HealthParser:Enabled"))
         : "nutrition-openai-api-key";
     nutrition.WithEnvironment("HealthParser__ApiKey",
         Secret(healthParserSecretName, Required("HealthParser:ApiKey")));
+}
+
+if (builder.Configuration.GetValue<bool>("MealRanking:Enabled"))
+{
+    var mealRankingApiKey = builder.Configuration["MealRanking:ApiKey"];
+    if (string.IsNullOrWhiteSpace(mealRankingApiKey) && healthParserIsGemini)
+        mealRankingApiKey = builder.Configuration["HealthParser:ApiKey"];
+    nutrition.WithEnvironment("MealRanking__ApiKey",
+        Secret("nutrition-meal-ranking-gemini-api-key", mealRankingApiKey ??
+            throw new InvalidOperationException("Missing MealRanking:ApiKey (or Gemini HealthParser:ApiKey fallback).")));
 }
 
 nutrition.WithEnvironment("Kestrel__Endpoints__Http__Url", nutrition.GetEndpoint("http"));

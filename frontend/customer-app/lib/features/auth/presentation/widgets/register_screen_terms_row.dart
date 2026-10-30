@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/config/legal_links.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 
@@ -27,39 +28,72 @@ class RegisterScreenTermsRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.control),
-          Expanded(
-            child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tôi đồng ý với các quy định của CareSitter:',
+                  style: TextStyle(
                     fontSize: AppFontSizes.s13,
                     color: AppColors.textSecondary,
-                    height: 1.4),
-                children: [
-                  TextSpan(text: 'Tôi đồng ý với '),
-                  TextSpan(
-                    text: 'Điều khoản sử dụng',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                    ),
+                    height: 1.4,
                   ),
-                  TextSpan(text: ' và '),
-                  TextSpan(
-                    text: 'Chính sách bảo mật',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
+                ),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.xs,
+                  children: [
+                    _LegalTextButton(
+                      label: 'Điều khoản dịch vụ',
+                      open: LegalLinks.openTerms,
                     ),
-                  ),
-                  TextSpan(text: ' của CareSitter'),
-                ],
-              ),
+                    Text('và',
+                        style: TextStyle(
+                            fontSize: AppFontSizes.s13,
+                            color: AppColors.textSecondary)),
+                    _LegalTextButton(
+                      label: 'Chính sách quyền riêng tư',
+                      open: LegalLinks.openPrivacy,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _LegalTextButton extends StatelessWidget {
+  const _LegalTextButton({required this.label, required this.open});
+
+  final String label;
+  final Future<bool> Function() open;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+        onPressed: () async {
+          final opened = await open();
+          if (!opened && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Chưa cấu hình đường dẫn chính sách.')),
+            );
+          }
+        },
+        style: TextButton.styleFrom(
+          minimumSize: const Size(0, 0),
+          padding: EdgeInsets.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: const TextStyle(
+            fontSize: AppFontSizes.s13,
+            fontWeight: FontWeight.w600,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+        child: Text(label),
+      );
 }

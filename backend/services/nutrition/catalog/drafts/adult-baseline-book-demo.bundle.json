@@ -552,6 +552,7 @@
           "fiber_g": 0.09,
           "sodium_mg": 35.15
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Trụng bánh phở, làm chín thịt bò và thêm hành lá theo định lượng của thực đơn mẫu.",
           "Nước dùng và muối được sách nêu nhưng không có lượng nước dùng mỗi khẩu phần nên không cộng vào số liệu demo."
@@ -613,6 +614,7 @@
           "fiber_g": 0.24,
           "sodium_mg": 33.7
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cháo từ gạo tẻ, thịt lợn nạc và hành lá; thêm dầu ăn theo định lượng của sách.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
@@ -660,6 +662,7 @@
           "fiber_g": 0.0,
           "sodium_mg": 39.5
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Làm chín thịt gà và dùng cùng bánh phở theo định lượng của thực đơn mẫu.",
           "Hành lá, rau thơm và nước dùng không có định lượng nên không cộng vào số liệu demo."
@@ -723,6 +726,7 @@
           "fiber_g": 1.3,
           "sodium_mg": 1.03
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Làm chín miến và thịt ngan, trộn cùng lạc hạt và rau thơm theo định lượng của sách.",
           "Sữa chuyên biệt đi kèm trong thực đơn CKD không thuộc món miến và không được cộng vào số liệu demo."
@@ -807,6 +811,7 @@
           "fiber_g": 6.61,
           "sodium_mg": 117.07
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm, rang thịt lợn, trần đậu phụ, xào cải thìa, nấu canh mồng tơi và dùng kèm bưởi.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
@@ -913,6 +918,7 @@
           "fiber_g": 7.81,
           "sodium_mg": 102.17
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; hấp thịt bê với gừng; dùng tương nếp; rang lạc; xào rau khoai lang; nấu canh rau ngót và dùng kèm cam.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
@@ -1004,6 +1010,7 @@
           "fiber_g": 2.79,
           "sodium_mg": 128.14
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; làm sườn xào chua ngọt; rán cá rô phi; luộc cải ngồng; nấu canh bí xanh với thịt và dùng kèm dưa hấu.",
           "Sách không nêu lượng sốt chua ngọt; số liệu demo chỉ cộng các nguyên liệu có định lượng."
@@ -1088,6 +1095,7 @@
           "fiber_g": 3.08,
           "sodium_mg": 59.03
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; rán cá bống; làm thịt băm; xào cải chíp với tỏi và dùng kèm xoài chín.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và không thay thế hướng dẫn cho người bệnh thận."
@@ -1180,6 +1188,7 @@
           "fiber_g": 4.45,
           "sodium_mg": 155.73
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; rán cá trắm và sốt cà chua; luộc trứng, rau muống; nấu canh rau ngót và dùng kèm quýt.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
@@ -1278,6 +1287,7 @@
           "fiber_g": 7.14,
           "sodium_mg": 434.35
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; chiên tôm biển, dùng cùng tương ớt; rang thịt băm; xào cải soong; nấu canh cải và dùng kèm chôm chôm.",
           "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
@@ -1374,6 +1384,7 @@
           "fiber_g": 4.23,
           "sodium_mg": 204.83
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; om thịt gà với nấm; nhồi mướp đắng bằng thịt nạc và nấm; luộc đậu cô ve; dùng kèm táo.",
           "Mộc nhĩ được sách nêu nhưng không có định lượng nên không cộng vào số liệu demo."
@@ -1470,6 +1481,7 @@
           "fiber_g": 5.46,
           "sodium_mg": 70.16
         },
+        "sourceRecipeNote": "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
         "preparationSteps": [
           "Nấu cơm; làm thịt lợn sốt cà chua; xào thịt bò với hành tây; luộc bí xanh và dùng kèm thanh long.",
           "Định lượng thanh long trong sách tính cả vỏ; số liệu demo dùng giá trị phần ăn được và phải được data review."

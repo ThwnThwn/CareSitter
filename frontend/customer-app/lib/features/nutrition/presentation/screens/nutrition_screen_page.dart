@@ -92,7 +92,7 @@ class NutritionScreenPage extends StatelessWidget {
       isLoadingSelectedDate: state.isLoadingSelectedDate,
       dateError: state.dateError,
       onRetryDate: actions.onRetryDate,
-      onEditProfile: actions.onEditProfile,
+      onCreatePlan: actions.onCreatePlan,
       onDateSelected: actions.onDateSelected,
       result: menuResult,
     );

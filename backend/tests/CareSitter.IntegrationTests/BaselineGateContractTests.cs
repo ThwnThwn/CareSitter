@@ -35,6 +35,28 @@ public sealed class BaselineGateContractTests
     }
 
     [Fact]
+    public void Ci_runs_firestore_rules_and_backend_gate_inside_emulator_lifecycle()
+    {
+        var workflow = Read(".github/workflows/ci.yml");
+        Assert.Contains("distribution: 'temurin'", workflow);
+        Assert.Contains("java-version: '21'", workflow);
+        Assert.Contains("node-version: '24.19.0'", workflow);
+        Assert.Contains("cache-dependency-path: deploy/chat-firestore/package-lock.json", workflow);
+        Assert.Contains("working-directory: deploy/chat-firestore", workflow);
+        Assert.Contains("npm ci", workflow);
+        Assert.Contains("npm run test:rules", workflow);
+        Assert.Contains(
+            "npm exec --prefix deploy/chat-firestore -- firebase emulators:exec " +
+            "--config deploy/chat-firestore/firebase.json --only firestore " +
+            "--project demo-caresitter-chat",
+            workflow);
+        Assert.Contains(
+            "pwsh ./backend/scripts/test-phase7.ps1 -Repeat 2 -SkipFrontend " +
+            "-ArtifactsDirectory backend/artifacts/ci-baseline",
+            workflow);
+    }
+
+    [Fact]
     public void Local_baseline_uses_disposable_services_and_includes_admin_tests_and_schema_44()
     {
         var runner = Read("backend/scripts/test-phase7.ps1");

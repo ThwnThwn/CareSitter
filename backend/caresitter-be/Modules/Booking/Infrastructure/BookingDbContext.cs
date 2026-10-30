@@ -31,6 +31,7 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<BookingChatOutboxEvent> BookingChatOutbox => Set<BookingChatOutboxEvent>();
     public DbSet<BookingChatActivityEvent> BookingChatActivityEvents => Set<BookingChatActivityEvent>();
     public DbSet<BookingChatReport> BookingChatReports => Set<BookingChatReport>();
+    public DbSet<BookingChatUserBlock> BookingChatUserBlocks => Set<BookingChatUserBlock>();
     public DbSet<BookingDomainOutboxEvent> BookingDomainOutbox => Set<BookingDomainOutboxEvent>();
     internal DbSet<BookingCreationRequest> BookingCreationRequests => Set<BookingCreationRequest>();
 
@@ -45,6 +46,7 @@ public sealed class BookingDbContext : ModuleDbContext
         modelBuilder.ApplyConfiguration(new BookingChatOutboxConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatActivityEventConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatReportConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingChatUserBlockConfiguration());
         modelBuilder.ApplyConfiguration(new BookingDomainOutboxConfiguration());
 
         modelBuilder.Entity<BookingCreationRequest>(b =>

@@ -186,8 +186,24 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
         onRetryDate: flow.loading || flow.dateLoading
             ? null
             : () => _openPlanForDate(controller, selectedDate),
-        onEditProfile: () => setState(() => _editingProfile = true),
+        onCreatePlan: () => _createPlan(controller, selectedDate),
       );
+
+  Future<void> _createPlan(
+    NutritionFlowController controller,
+    DateTime selectedDate,
+  ) async {
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
+    final created =
+        await controller.recommendForDateUsingConfirmedHealth(selectedDate);
+    if (!mounted ||
+        beneficiary != widget.beneficiaryId ||
+        ref.read(nutritionSessionProvider) != session) {
+      return;
+    }
+    if (!created) setState(() => _editingProfile = true);
+  }
 
   Future<void> _replace(NutritionFlowController c, String mealType) async {
     final beneficiary = widget.beneficiaryId;

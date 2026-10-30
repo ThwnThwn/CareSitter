@@ -40,9 +40,14 @@ class _DateDivider extends StatelessWidget {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.readByOther});
+  const _MessageBubble({
+    required this.message,
+    required this.readByOther,
+    this.onReport,
+  });
   final BookingChatMessage message;
   final bool readByOther;
+  final VoidCallback? onReport;
 
   @override
   Widget build(BuildContext context) => _content(context);
@@ -119,6 +124,19 @@ class _MessageBubble extends StatelessWidget {
                       color: readByOther
                           ? AppColors.accent
                           : Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ] else if (onReport != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Báo cáo tin nhắn',
+                      onPressed: onReport,
+                      icon: const Icon(Icons.flag_outlined),
+                      iconSize: 15,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 28, minHeight: 28),
+                      color: AppColors.textSecondary,
                     ),
                   ],
                 ],

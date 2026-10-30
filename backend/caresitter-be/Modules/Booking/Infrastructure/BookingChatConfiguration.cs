@@ -77,6 +77,26 @@ internal sealed class BookingChatReportConfiguration : IEntityTypeConfiguration<
     }
 }
 
+internal sealed class BookingChatUserBlockConfiguration
+    : IEntityTypeConfiguration<BookingChatUserBlock>
+{
+    public void Configure(EntityTypeBuilder<BookingChatUserBlock> b)
+    {
+        b.ToTable("booking_chat_user_blocks", BookingDbContext.SchemaName);
+        b.HasKey(x => new { x.ConversationId, x.BlockerUserId, x.BlockedUserId });
+        b.Property(x => x.ConversationId).HasColumnName("conversation_id");
+        b.Property(x => x.BlockerUserId).HasColumnName("blocker_user_id");
+        b.Property(x => x.BlockedUserId).HasColumnName("blocked_user_id");
+        b.Property(x => x.BlockedAt).HasColumnName("blocked_at");
+        b.Property(x => x.UnblockedAt).HasColumnName("unblocked_at");
+        b.HasOne<BookingChatConversation>().WithMany()
+            .HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(x => new { x.ConversationId, x.BlockedUserId })
+            .HasFilter("unblocked_at IS NULL")
+            .HasDatabaseName("ix_booking_chat_user_blocks_active_target");
+    }
+}
+
 internal sealed class BookingChatEpochConfiguration : IEntityTypeConfiguration<BookingChatEpoch>
 {
     public void Configure(EntityTypeBuilder<BookingChatEpoch> b)

@@ -75,4 +75,8 @@ chmod 600 "$secret_dir/ca-key.pem" "$recovery_dir/age-identity"
 for name in db-admin-password db-app-password gateway-key people-key tls-password ca.pem api.pfx nutrition.pfx backup-recipient; do
     chmod 444 "$secret_dir/$name"
 done
+if [ -e "$secret_dir/gemini-api-key" ]; then
+    read_secret "$secret_dir/gemini-api-key" >/dev/null
+    chmod 444 "$secret_dir/gemini-api-key"
+fi
 echo 'Nutrition secrets prepared. Existing credentials and certificates were preserved.'

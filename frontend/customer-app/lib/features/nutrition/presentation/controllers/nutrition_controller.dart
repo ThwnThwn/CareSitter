@@ -207,6 +207,31 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   Future<void> recommend({required DateTime plannedDate}) => _withResource(() =>
       _actions.recommend(view.resource!.id, revision, _token,
           plannedDate: plannedDate));
+
+  Future<bool> recommendForDateUsingConfirmedHealth(
+      DateTime plannedDate) async {
+    if (!mounted || view.loading || view.restoringPlan || revision == 0) {
+      return false;
+    }
+    final current = view.resource;
+    if (current == null || current.healthRevision != revision) return false;
+    final assessmentId = current.status == 'confirmed'
+        ? current.id
+        : current.result.assessmentId;
+    if (assessmentId == null || assessmentId.isEmpty) return false;
+    await _withResource(() => _actions.recommend(
+          assessmentId,
+          revision,
+          _token,
+          plannedDate: plannedDate,
+        ));
+    final result = view.resource;
+    final resultDate = DateTime.tryParse(result?.result.plannedDate ?? '');
+    return view.error == null &&
+        result?.status == 'suggested' &&
+        _sameDate(resultDate, _dateOnly(plannedDate));
+  }
+
   Future<void> reassess() async {
     if (!mounted || view.loading || view.restoringPlan) return;
     final refresh = load(restorePlan: false);

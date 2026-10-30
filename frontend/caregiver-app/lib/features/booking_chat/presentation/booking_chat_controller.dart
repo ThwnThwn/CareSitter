@@ -315,6 +315,36 @@ class BookingChatController extends StateNotifier<BookingChatState> {
     }
   }
 
+  Future<bool> reportMessage(String messageId, String reason) async {
+    final clean = reason.trim();
+    if (state.busy || messageId.isEmpty || clean.isEmpty) return false;
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      await repository.reportMessage(bookingId, messageId, clean);
+      return true;
+    } catch (error) {
+      if (mounted) state = state.copyWith(error: error.toString());
+      return false;
+    } finally {
+      if (mounted) state = state.copyWith(busy: false);
+    }
+  }
+
+  Future<bool> setBlocked(bool blocked) async {
+    if (state.busy || state.meta?.hasChat != true) return false;
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      await repository.setBlocked(bookingId, blocked);
+      await refresh();
+      return true;
+    } catch (error) {
+      if (mounted) state = state.copyWith(error: error.toString());
+      return false;
+    } finally {
+      if (mounted) state = state.copyWith(busy: false);
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();

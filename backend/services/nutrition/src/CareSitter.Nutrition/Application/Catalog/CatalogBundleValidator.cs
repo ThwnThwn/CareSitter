@@ -147,6 +147,16 @@ public static class CatalogBundleValidator
         else foreach (var nutrient in recipe.Nutrients)
             if (string.IsNullOrWhiteSpace(nutrient.Key) || nutrient.Value < 0) add(path + ".payload.nutrients", "invalid", "Nutrient names must be non-empty and values cannot be negative.");
         if (recipe.PreparationSteps is not { Length: > 0 } || recipe.PreparationSteps.Any(string.IsNullOrWhiteSpace)) add(path + ".payload.preparationSteps", "required", "Preparation steps are required.");
+        var requiresSourceRecipeDisclosure = (recipe.Sources ?? []).Any(source =>
+            source.StartsWith("BOOK_2019_", StringComparison.Ordinal) ||
+            source == "CARESITTER_VARIETY_ADAPTATION_V2");
+        if (requiresSourceRecipeDisclosure &&
+            (string.IsNullOrWhiteSpace(recipe.SourceRecipeNote) ||
+             !recipe.SourceRecipeNote.Contains("Sách không đề cập công thức", StringComparison.Ordinal)))
+            add(path + ".payload.sourceRecipeNote", "required",
+                "Book-derived and CareSitter-adapted recipes must disclose when the book does not provide a cooking recipe.");
+        else if (recipe.SourceRecipeNote?.Length > 500)
+            add(path + ".payload.sourceRecipeNote", "length", "Source recipe note cannot exceed 500 characters.");
         ValidateImage(recipe, path + ".payload", add);
         ValidateSources(recipe.Sources, path + ".payload.sources", citations, add);
     }

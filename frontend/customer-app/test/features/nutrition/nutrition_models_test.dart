@@ -39,6 +39,8 @@ void main() {
             'imageUrl':
                 'https://res.cloudinary.com/demo/image/upload/lunch.jpg',
             'imageAlt': 'Ảnh món ăn cho bữa trưa',
+            'sourceRecipeNote':
+                'Sách không đề cập công thức chế biến chi tiết.',
             'servings': 1,
             'nutrients': {'energy_kcal': 412.5},
             'ingredients': [
@@ -80,6 +82,8 @@ void main() {
     expect(resource.result.meals.single.imageUrl,
         'https://res.cloudinary.com/demo/image/upload/lunch.jpg');
     expect(resource.result.meals.single.imageAlt, 'Ảnh món ăn cho bữa trưa');
+    expect(resource.result.meals.single.sourceRecipeNote,
+        'Sách không đề cập công thức chế biến chi tiết.');
     expect(resource.result.meals.single.energyKcal, 412.5);
     expect(resource.result.meals.single.sourceDetails.single.title,
         'Dinh dưỡng lâm sàng');
@@ -150,5 +154,52 @@ void main() {
     expect(
         NutritionErrorCopy.failedAssessment(NutritionErrorCodes.aiUnavailable),
         contains('Không kết nối được dịch vụ AI'));
+  });
+
+  test('recommendation trace is optional and parses grounding audit fields',
+      () {
+    final legacy = NutritionResourceModel.fromJson({
+      'id': 'legacy',
+      'status': 'saved',
+      'data': {'meals': <Object>[]}
+    });
+    final grounded = NutritionResourceModel.fromJson({
+      'id': 'grounded',
+      'status': 'suggested',
+      'data': {
+        'meals': <Object>[],
+        'recommendationTrace': {
+          'strategy': 'graph_grounded_ai_ranked',
+          'usedAi': true,
+          'model': 'gemini-3.5-flash-lite',
+          'promptVersion': 'meal-ranker-v1',
+          'groundingRevision': 'freeze-v1',
+          'groundingStrategy': 'graph',
+          'warnings': <String>[],
+          'evidence': [
+            {
+              'id': 'chunk-1',
+              'title': 'Chế độ ăn',
+              'reference': 'Viện Dinh dưỡng, trang 34',
+              'locator': 'pdf-page:35'
+            }
+          ],
+          'explanations': [
+            {
+              'recipeVersionId': 'recipe-1',
+              'summary': 'Phù hợp giới hạn natri.',
+              'evidenceIds': ['chunk-1']
+            }
+          ]
+        }
+      }
+    });
+
+    expect(legacy.result.recommendationTrace, isNull);
+    expect(grounded.result.recommendationTrace?.usedAi, isTrue);
+    expect(grounded.result.recommendationTrace?.isGrounded, isTrue);
+    expect(grounded.result.recommendationTrace?.evidence.single.id, 'chunk-1');
+    expect(grounded.result.recommendationTrace?.explanations.single.summary,
+        'Phù hợp giới hạn natri.');
   });
 }

@@ -119,6 +119,7 @@ class NutritionFlowRepository extends NutritionRepository {
     } else if (route == 'meal-recommendations') {
       response =
           resource('recommendation-${_responses.length}', 'suggested', data: {
+        'assessmentId': data['assessmentId'],
         'plannedDate': data['plannedDate'] ?? '2026-01-01',
         'meals': [meal('breakfast', 'Cháo yến mạch')],
       });

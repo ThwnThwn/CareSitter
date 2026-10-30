@@ -203,6 +203,27 @@ void main() {
     expect(repository.saved, isNotNull);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'a confirmed health assessment is reused when creating another day',
+      (tester) async {
+    final repository = NutritionFlowRepository();
+    await _mount(tester, repository, width: 390);
+    await _assess(tester);
+    await _press(tester, 'Thông tin đúng, tiếp tục');
+    await _press(tester, 'Xem gợi ý thực đơn');
+    await _press(tester, 'Lưu thực đơn');
+    final originalAssessmentId = repository.saved!.payload['assessmentId'];
+
+    final selectedDate = await _selectAnotherDay(tester);
+    await _press(tester, 'Tạo thực đơn cho ngày này');
+
+    expect(find.text('Kiểm tra thông tin'), findsNothing);
+    expect(repository.writes.last.route, 'meal-recommendations');
+    expect(repository.writes.last.data['assessmentId'], originalAssessmentId);
+    expect(repository.writes.last.data['plannedDate'], _apiDate(selectedDate));
+    expect(find.text('Lưu thực đơn'), findsOneWidget);
+  });
 }
 
 Future<void> _mount(WidgetTester tester, NutritionFlowRepository repository,

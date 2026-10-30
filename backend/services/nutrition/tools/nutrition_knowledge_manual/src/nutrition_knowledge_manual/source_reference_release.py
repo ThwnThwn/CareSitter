@@ -26,6 +26,7 @@ REQUIRED_BLOCKS = {
     "FLUID_RESTRICTION",
     "ELECTROLYTE_RESTRICTION",
 }
+MISSING_RECIPE_DISCLOSURE = "Sách không đề cập công thức"
 
 
 def prepare_source_reference_bundle(
@@ -45,6 +46,11 @@ def prepare_source_reference_bundle(
         payload = version.get("payload") if isinstance(version, dict) else None
         if not isinstance(payload, dict):
             raise ManualGraphError("every recipe version requires a payload")
+        recipe_note = _required_text(payload.get("sourceRecipeNote"), "recipe sourceRecipeNote")
+        if MISSING_RECIPE_DISCLOSURE not in recipe_note:
+            raise ManualGraphError(
+                "source-reference recipes must disclose that the book does not provide a cooking recipe"
+            )
         ingredients = payload.get("ingredients") or []
         nutrients = payload.get("nutrients")
         if not isinstance(nutrients, dict):

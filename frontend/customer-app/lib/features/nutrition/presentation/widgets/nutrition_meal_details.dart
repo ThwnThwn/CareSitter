@@ -52,6 +52,10 @@ class _DetailsContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             const Text('Cách chế biến'),
             const SizedBox(height: AppSpacing.xs),
+            if (meal.sourceRecipeNote != null) ...[
+              _SourceRecipeNote(note: meal.sourceRecipeNote!),
+              const SizedBox(height: AppSpacing.xs),
+            ],
             Text(
               meal.preparationSteps.join('; '),
               style: Theme.of(context).textTheme.bodySmall,
@@ -64,6 +68,41 @@ class _DetailsContent extends StatelessWidget {
             sources: meal.sourceDetails,
           ),
         ],
+      );
+}
+
+class _SourceRecipeNote extends StatelessWidget {
+  const _SourceRecipeNote({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.primaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.compact),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.menu_book_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                note,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+              ),
+            ),
+          ],
+        ),
       );
 }
 

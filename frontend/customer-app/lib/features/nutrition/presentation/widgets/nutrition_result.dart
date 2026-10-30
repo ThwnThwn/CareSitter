@@ -1,5 +1,6 @@
 import 'nutrition_facts.dart';
 import 'nutrition_meal_card.dart';
+import 'nutrition_recommendation_context.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
@@ -90,6 +91,13 @@ class NutritionResult extends StatelessWidget {
     }
     if (state != 'stale') {
       final meals = data.meals;
+      final trace = data.recommendationTrace;
+      if (meals.isNotEmpty && trace != null) {
+        widgets.add(NutritionRecommendationContext(
+          trace: trace,
+          meals: meals,
+        ));
+      }
       for (int i = 0; i < meals.length; i++) {
         final meal = meals[i];
         // Divider nhẹ giữa các section bữa ăn (trừ section đầu tiên)

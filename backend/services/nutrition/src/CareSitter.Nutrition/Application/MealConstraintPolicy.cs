@@ -50,6 +50,14 @@ public static class MealConstraintPolicy
     public static Recipe[]? Choose(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain")
     {
+        return CandidateSets(recipes, facts, rules, dietaryPattern, nutritionGoal, 1).FirstOrDefault();
+    }
+
+    public static Recipe[][] CandidateSets(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
+        IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain",
+        int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null)
+    {
+        if (maximum < 1) throw new ArgumentOutOfRangeException(nameof(maximum));
         // Bounded catalog avoids unbounded combinations. No constraint is dropped to find a result.
         var usable = recipes.Where(ValidRecipe).ToArray();
         var candidates = new List<Recipe[]>();
@@ -57,18 +65,30 @@ public static class MealConstraintPolicy
             foreach (var b in usable.Where(r => r.MealType == "lunch").Take(30))
                 foreach (var c in usable.Where(r => r.MealType == "dinner").Take(30))
                     if (Matches([a, b, c], facts, rules, dietaryPattern)) candidates.Add([a, b, c]);
-        if (candidates.Count == 0) return null;
+        if (candidates.Count == 0) return [];
+        // Apply variety before the shortlist: otherwise all twelve sets can repeat yesterday's meals.
+        // Never relax allergies, dietary pattern or nutrient constraints to achieve variety.
+        if (recentMeals is { Count: > 0 })
+        {
+            var recentIds = recentMeals.Select(meal => meal.VersionId).ToHashSet();
+            var recentNames = recentMeals.Select(meal => CanonicalName(meal.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            int Repeats(Recipe[] set) => set.Count(meal => recentIds.Contains(meal.VersionId) ||
+                recentNames.Contains(CanonicalName(meal.Name)));
+            var minimumRepeats = candidates.Min(Repeats);
+            candidates = candidates.Where(set => Repeats(set) == minimumRepeats).ToList();
+        }
         var ranked = candidates
-            .Select((meals, index) => new { Meals = meals, Energy = TotalEnergy(meals), Index = index })
+            .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals), index))
             .Where(value => value.Energy is not null)
             .ToArray();
-        if (ranked.Length == 0) return candidates[0];
-        return nutritionGoal switch
+        if (ranked.Length == 0) return candidates.Take(maximum).ToArray();
+        var ordered = nutritionGoal switch
         {
-            "lose" => ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index).First().Meals,
-            "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index).First().Meals,
-            _ => ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index).ElementAt(ranked.Length / 2).Meals
+            "lose" => ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index),
+            "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index),
+            _ => OrderAroundMedian(ranked)
         };
+        return ordered.Take(maximum).Select(value => value.Meals).ToArray();
     }
 
     public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal)
@@ -107,4 +127,18 @@ public static class MealConstraintPolicy
 
     private static decimal? Energy(Recipe recipe) =>
         recipe.Nutrients.TryGetValue("energy_kcal", out var value) && value is >= 0 ? value : null;
+
+    private static IOrderedEnumerable<RankedCandidate> OrderAroundMedian(RankedCandidate[] ranked)
+    {
+        var sorted = ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index).ToArray();
+        var baseline = sorted[sorted.Length / 2];
+        var median = baseline.Energy!.Value;
+        return ranked.OrderBy(value => value.Index == baseline.Index ? 0 : 1)
+            .ThenBy(value => Math.Abs(value.Energy!.Value - median)).ThenBy(value => value.Index);
+    }
+
+    private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy, int Index);
+
+    private static string CanonicalName(string name) => name.Trim().StartsWith("[DEMO]", StringComparison.OrdinalIgnoreCase)
+        ? name.Trim()[6..].Trim() : name.Trim();
 }

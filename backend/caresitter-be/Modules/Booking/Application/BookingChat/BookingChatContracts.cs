@@ -24,6 +24,8 @@ public sealed record BookingChatMetadataResponse(
     long LastReadSequence,
     long OtherPartyLastReadSequence,
     int UnreadCount,
+    bool IsBlockedByMe,
+    bool IsBlockedByOther,
     IReadOnlyList<BookingChatTemplateResponse> QuickTemplates);
 
 public sealed record BookingChatMessageResponse(
@@ -72,6 +74,13 @@ public sealed record BookingChatReportResponse(
     string Status,
     Guid? SupportTicketId);
 
+public sealed record BookingChatBlockRequest(bool Blocked);
+
+public sealed record BookingChatBlockResponse(
+    bool IsBlockedByMe,
+    bool Changed,
+    DateTimeOffset? BlockedAt);
+
 public interface IBookingChatService
 {
     Task<Result<BookingChatMetadataResponse>> GetMetadataAsync(
@@ -80,6 +89,10 @@ public interface IBookingChatService
     Task<Result<BookingChatMessagesResponse>> GetMessagesAsync(
         Guid bookingId, string? afterCursor, string? beforeCursor, int limit,
         CancellationToken ct = default);
+
+    Task<Result<BookingChatMessagesResponse>> ResumeMessagesAsync(
+        Guid bookingId, Guid anchorMessageId, string direction, long scopeVersion,
+        int limit, CancellationToken ct = default);
 
     Task<Result<BookingChatMessageResponse>> SendAsync(
         Guid bookingId, Guid idempotencyKey, BookingChatSendRequest request,
@@ -94,6 +107,9 @@ public interface IBookingChatService
 
     Task<Result<BookingChatReportResponse>> GetReportAsync(
         Guid bookingId, Guid reportId, CancellationToken ct = default);
+
+    Task<Result<BookingChatBlockResponse>> SetBlockAsync(
+        Guid bookingId, BookingChatBlockRequest request, CancellationToken ct = default);
 }
 
 internal static class BookingChatErrors
@@ -136,4 +152,8 @@ internal static class BookingChatErrors
 
     public static Error AlreadyReported() =>
         Error.Conflict("booking.chat.already_reported", "Bạn đã báo cáo tin nhắn này.");
+
+    public static Error Blocked() =>
+        Error.Conflict("booking.chat.blocked",
+            "Không thể gửi tin nhắn khi một trong hai bên đang chặn cuộc trò chuyện.");
 }

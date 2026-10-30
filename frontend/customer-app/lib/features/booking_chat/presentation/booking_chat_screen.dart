@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 part 'booking_chat_screen_actions.dart';
+part 'booking_chat_screen_body.dart';
 part 'booking_chat_screen_controls.dart';
 part 'booking_chat_screen_messages.dart';
 
@@ -49,10 +50,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
       _markReadAtBottom();
       // Load more khi scroll đến đầu (extentBefore nhỏ)
       if (_scrollController.position.extentBefore < 120 && !_loadingMore) {
-        _loadingMore = true;
-        _ctrl.loadMore().whenComplete(() {
-          if (mounted) setState(() => _loadingMore = false);
-        });
+        _loadMore();
       }
     });
   }
@@ -94,6 +92,14 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     });
   }
 
+  void _loadMore() {
+    if (_loadingMore) return;
+    setState(() => _loadingMore = true);
+    _ctrl.loadMore().whenComplete(() {
+      if (mounted) setState(() => _loadingMore = false);
+    });
+  }
+
   bool _mustClearDraft(BookingChatState? previous, BookingChatState next) {
     final previousMeta = previous?.meta;
     final nextMeta = next.meta;
@@ -123,128 +129,38 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.bookingTitle ?? 'Nhắn tin',
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary),
-            ),
-            if (chat.meta != null)
-              _ChatStatusChip(
-                  state: chat.meta!.state,
-                  writeClosesAt: chat.meta!.writeClosesAt),
-          ],
+      appBar: _BookingChatAppBar(
+        title: widget.bookingTitle ?? 'Nhắn tin',
+        meta: chat.meta,
+        onRefresh: _ctrl.refresh,
+        onReportUser: () => unawaited(_reportUser(chat)),
+        onToggleBlocked: () => unawaited(
+          _setBlocked(!(chat.meta?.isBlockedByMe ?? false)),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Làm mới',
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () => _ctrl.refresh(),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(child: _buildBody(chat)),
+            Expanded(
+              child: _BookingChatBody(
+                chat: chat,
+                scrollController: _scrollController,
+                loadingMore: _loadingMore,
+                onLoadMore: _loadMore,
+                onReportMessage: _reportMessage,
+              ),
+            ),
             if (chat.error != null)
               _ErrorBanner(
                 message: chat.error!,
                 onDismiss: () => _ctrl.refresh(),
               ),
+            _buildBlockNotice(chat),
             _buildQuickTemplates(chat),
             _buildInputBar(chat),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBody(BookingChatState chat) {
-    if (chat.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (!chat.featureEnabled) {
-      return const _EmptyState(
-        icon: Icons.chat_bubble_outline_rounded,
-        title: 'Chat chưa được bật',
-        subtitle:
-            'Tính năng nhắn tin theo lịch đang trong giai đoạn thử nghiệm.',
-      );
-    }
-    if (!chat.canRead && chat.meta?.state == 'unavailable') {
-      return const _EmptyState(
-        icon: Icons.hourglass_top_rounded,
-        title: 'Chat sẽ mở sau khi caregiver nhận lịch',
-        subtitle: 'Bạn có thể nhắn tin ngay khi caregiver xác nhận lịch hẹn.',
-      );
-    }
-    if (!chat.canRead) {
-      return _EmptyState(
-        icon: Icons.lock_outline_rounded,
-        title: 'Chat đã kết thúc',
-        subtitle: chat.meta?.readOnlyReason ?? '',
-      );
-    }
-    if (chat.messages.isEmpty) {
-      return const _EmptyState(
-        icon: Icons.waving_hand_rounded,
-        title: 'Bắt đầu cuộc trò chuyện',
-        subtitle: 'Gửi lời chào hoặc dùng tin nhắn nhanh bên dưới.',
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: chat.messages.length + (chat.hasMoreBefore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (chat.hasMoreBefore && index == 0) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: _loadingMore
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : TextButton(
-                      onPressed: () {
-                        if (_loadingMore) return;
-                        _loadingMore = true;
-                        _ctrl.loadMore().whenComplete(() {
-                          if (mounted) setState(() => _loadingMore = false);
-                        });
-                      },
-                      child: const Text('Xem tin cũ hơn'),
-                    ),
-            ),
-          );
-        }
-        final msgIndex = chat.hasMoreBefore ? index - 1 : index;
-        final message = chat.messages[msgIndex];
-        final showDateDivider = msgIndex == 0 ||
-            !_sameDay(chat.messages[msgIndex - 1].createdAt, message.createdAt);
-        return Column(
-          children: [
-            if (showDateDivider) _DateDivider(date: message.createdAt),
-            _MessageBubble(
-              message: message,
-              readByOther: message.isMine &&
-                  message.sequence <=
-                      (chat.meta?.otherPartyLastReadSequence ?? 0),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -268,8 +184,8 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
                 counterText: '',
                 hintText: canSend
                     ? 'Nhập tin nhắn…'
-                    : chat.meta?.readOnlyReason.isNotEmpty == true
-                        ? chat.meta!.readOnlyReason
+                    : chat.meta?.readOnlyMessage.isNotEmpty == true
+                        ? chat.meta!.readOnlyMessage
                         : 'Chat đã đóng',
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -294,7 +210,4 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
       ),
     );
   }
-
-  bool _sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 }

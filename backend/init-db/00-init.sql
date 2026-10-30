@@ -63,3 +63,6 @@
 \ir modules/catalog/51-non-medical-demo-services.sql
 \ir modules/support/52-rating-trigger-hardening.sql
 \ir modules/shared/53-caregiver-dashboard-demo.sql
+\ir modules/shared/54-chat-firestore-projection-outbox.sql
+\ir modules/booking/55-booking-chat-user-blocks.sql
+\ir modules/catalog/56-align-home-care-service-catalog.sql

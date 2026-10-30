@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.Text;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Application.Catalog;
 using Npgsql;
@@ -21,6 +22,7 @@ static async Task<int> RunAsync(string[] arguments)
             "import" when arguments.Length == 3 && arguments[2] == "--dry-run" =>
                 await ImportDryRunAsync(arguments[1]),
             "import" when arguments.Length == 3 => await ImportAsync(arguments[1], arguments[2]),
+            "prepare-demo" when arguments.Length == 3 => await PrepareLocalDemoAsync(arguments[1], arguments[2]),
             "import-demo" when arguments.Length == 2 => await ImportLocalDemoAsync(arguments[1]),
             "review" when arguments.Length == 5 => await ReviewAsync(arguments[1], arguments[2], arguments[3], arguments[4]),
             "publish" when arguments.Length == 3 => await TransitionAsync("publish_catalog_bundle", arguments[1], arguments[2]),
@@ -168,6 +170,30 @@ static async Task<int> ImportLocalDemoAsync(string bundlePath)
     return 0;
 }
 
+static async Task<int> PrepareLocalDemoAsync(string bundlePath, string outputPath)
+{
+    var (source, _) = await ReadAndValidateAsync(bundlePath);
+    var prepared = CatalogLocalDemoPolicy.Prepare(source);
+    if (!prepared.IsValid)
+    {
+        Write(new { ok = false, localDemo = true, issues = prepared.Issues });
+        return 2;
+    }
+    var output = new FileInfo(Path.GetFullPath(outputPath));
+    if (output.Directory is null || !output.Directory.Exists)
+        throw new CatalogToolException("Prepared demo output directory was not found.", 2);
+    await File.WriteAllTextAsync(output.FullName, NutritionJson.Write(prepared.Bundle!), new UTF8Encoding(false));
+    Write(new
+    {
+        ok = true,
+        localDemo = true,
+        packageKey = prepared.Bundle!.PackageKey,
+        recipes = prepared.Bundle.Recipes.Length,
+        output = output.FullName
+    });
+    return 0;
+}
+
 static async Task<int> TransitionAsync(string function, string idText, string digest)
 {
     if (!Guid.TryParse(idText, out var id) || id == Guid.Empty) throw new CatalogToolException("Package ID must be a non-empty UUID.", 2);
@@ -233,7 +259,7 @@ static void Write<T>(T value) => Console.WriteLine(JsonSerializer.Serialize(valu
 
 static int Usage()
 {
-    Console.Error.WriteLine("Usage: catalog-tool validate <bundle.json> | release-check <bundle.json> <evidence.json> | import <bundle.json> --dry-run | import <bundle.json> <evidence.json> | import-demo <bundle.json> | review <package-id> <digest> <bundle.json> <evidence.json> | publish <package-id> <digest> | retire <package-id> <reason>");
+    Console.Error.WriteLine("Usage: catalog-tool validate <bundle.json> | release-check <bundle.json> <evidence.json> | import <bundle.json> --dry-run | import <bundle.json> <evidence.json> | prepare-demo <bundle.json> <output.json> | import-demo <bundle.json> | review <package-id> <digest> <bundle.json> <evidence.json> | publish <package-id> <digest> | retire <package-id> <reason>");
     return 1;
 }
 

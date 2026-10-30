@@ -36,5 +36,5 @@ for name in api nutrition; do
     openssl verify -purpose sslserver -verify_hostname "$name" -CAfile "$secret_dir/ca.pem" "$work_dir/$name.pem" >/dev/null 2>&1 || fail 'An internal TLS certificate does not match its CA/hostname/purpose.'
     openssl x509 -in "$work_dir/$name.pem" -checkend 604800 -noout >/dev/null || fail 'An internal TLS certificate expires within seven days; renew it before deployment.'
 done
-sh "$script_dir/compose.sh" --profile nutrition-migrate --profile nutrition-ops --profile nutrition-smoke config --quiet
+sh "$script_dir/compose.sh" --profile baseline-legacy --profile nutrition-migrate --profile nutrition-ops --profile nutrition-smoke config --quiet
 echo 'Nutrition deployment preflight passed. Runtime checks still require the target host.'
