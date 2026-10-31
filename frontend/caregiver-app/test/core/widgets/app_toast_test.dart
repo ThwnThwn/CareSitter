@@ -131,4 +131,20 @@ void main() {
     expect(actionInvoked, isTrue);
     expect(find.byType(ToastMessageContent), findsNothing);
   });
+
+  testWidgets('information toast closes after four seconds', (tester) async {
+    late BuildContext pageContext;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(builder: (context) {
+        pageContext = context;
+        return const Scaffold();
+      }),
+    ));
+
+    AppToast.info(pageContext, 'Bạn có 1 tin nhắn mới');
+    await tester.pump();
+    expect(find.byType(ToastMessageContent), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(ToastMessageContent), findsNothing);
+  });
 }

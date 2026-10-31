@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/core/widgets/notification_bell_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -31,35 +32,9 @@ class BookingListTopPaddingUnreadCountContent extends StatelessWidget {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => context.push(AppRoutes.notifications),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.background,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: AppColors.textSecondary,
-                        size: 22,
-                      ),
-                    ),
-                    if (unreadCount > 0)
-                      const Positioned(
-                        right: 6,
-                        top: 6,
-                        child: CircleAvatar(
-                          radius: 4,
-                          backgroundColor: AppColors.error,
-                        ),
-                      ),
-                  ],
-                ),
+              NotificationBellButton(
+                unreadCount: unreadCount,
+                onPressed: () => context.push(AppRoutes.notifications),
               ),
             ],
           ),

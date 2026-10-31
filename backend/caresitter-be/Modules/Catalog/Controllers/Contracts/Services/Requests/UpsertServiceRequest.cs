@@ -6,5 +6,6 @@ public sealed record UpsertServiceRequest(
     string Code,
     string Name,
     string? Description,
+    string? ImageUrl,
     int DefaultDurationMinutes = 60,
     bool IsActive = true);

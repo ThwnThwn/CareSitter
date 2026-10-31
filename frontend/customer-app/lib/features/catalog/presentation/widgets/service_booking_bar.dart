@@ -15,9 +15,11 @@ class ServiceBookingBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = service.baseHourlyPrice > 0
-        ? '${formatVnd(service.baseHourlyPrice)}/giờ'
-        : 'Xem giá khi đặt lịch';
+    final price = service.minimumPlanPrice > 0
+        ? '${formatVnd(service.minimumPlanPrice)}/buổi'
+        : service.baseHourlyPrice > 0
+            ? '${formatVnd(service.baseHourlyPrice)}/giờ'
+            : 'Xem giá khi đặt lịch';
     return SafeArea(
       top: false,
       child: DecoratedBox(

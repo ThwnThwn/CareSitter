@@ -1,5 +1,6 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+import 'package:caresitter_customer/core/widgets/service_image.dart';
 import 'package:caresitter_customer/features/booking/presentation/models/service_option_style.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:flutter/material.dart';
@@ -95,21 +96,56 @@ class _ServiceOptionContent extends StatelessWidget {
   final Duration transitionDuration;
 
   @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 310;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ServiceImage(
+                code: service.code,
+                imageUrl: service.imageUrl,
+                width: compact ? 82 : 104,
+                height: compact ? 112 : 132,
+                fallbackBackground: option.iconBackground,
+                fallbackForeground: option.iconForeground,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _ServiceSummary(
+                  service: service,
+                  option: option,
+                  selected: selected,
+                  transitionDuration: transitionDuration,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+}
+
+class _ServiceSummary extends StatelessWidget {
+  const _ServiceSummary({
+    required this.service,
+    required this.option,
+    required this.selected,
+    required this.transitionDuration,
+  });
+
+  final ServiceModel service;
+  final ServiceOptionStyle option;
+  final bool selected;
+  final Duration transitionDuration;
+
+  @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ServiceIcon(option: option),
-              const SizedBox(width: AppSpacing.inset),
-              Expanded(
-                child: _ServiceSummary(
-                  option: option,
-                  pricePerHour: service.pricePerHour,
-                  defaultDurationMinutes: service.defaultDurationMinutes,
-                ),
-              ),
+              Expanded(child: _ServiceTitle(option: option)),
               const SizedBox(width: AppSpacing.sm),
               _SelectionIndicator(
                 selected: selected,
@@ -117,63 +153,14 @@ class _ServiceOptionContent extends StatelessWidget {
               ),
             ],
           ),
-          if (service.description?.trim().isNotEmpty == true) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Padding(
-              padding: const EdgeInsets.only(left: 60),
-              child: Text(
-                service.description!.trim(),
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
-        ],
-      );
-}
-
-class _ServiceIcon extends StatelessWidget {
-  const _ServiceIcon({required this.option});
-
-  final ServiceOptionStyle option;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: option.iconBackground,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        alignment: Alignment.center,
-        child: Icon(option.icon, size: 24, color: option.iconForeground),
-      );
-}
-
-class _ServiceSummary extends StatelessWidget {
-  const _ServiceSummary({
-    required this.option,
-    required this.pricePerHour,
-    required this.defaultDurationMinutes,
-  });
-
-  final ServiceOptionStyle option;
-  final double pricePerHour;
-  final int defaultDurationMinutes;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ServiceTitle(option: option),
           const SizedBox(height: AppSpacing.xs),
-          _ServicePrice(pricePerHour: pricePerHour),
+          _ServicePrice(
+            minimumPlanPrice: service.minimumPlanPrice,
+            pricePerHour: service.pricePerHour,
+          ),
           const SizedBox(height: AppSpacing.micro),
           Text(
-            'Thời lượng gợi ý: ${_formatDuration(defaultDurationMinutes)}',
+            'Thời lượng gợi ý: ${_formatDuration(service.defaultDurationMinutes)}',
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 11,
@@ -181,6 +168,17 @@ class _ServiceSummary extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+          if (service.description?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              service.description!.trim(),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ],
         ],
       );
 
@@ -225,8 +223,12 @@ class _ServiceTitle extends StatelessWidget {
 }
 
 class _ServicePrice extends StatelessWidget {
-  const _ServicePrice({required this.pricePerHour});
+  const _ServicePrice({
+    required this.minimumPlanPrice,
+    required this.pricePerHour,
+  });
 
+  final int minimumPlanPrice;
   final double pricePerHour;
 
   @override
@@ -235,7 +237,9 @@ class _ServicePrice extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.end,
         children: [
           Text(
-            formatVnd(pricePerHour),
+            minimumPlanPrice > 0
+                ? formatVnd(minimumPlanPrice)
+                : formatVnd(pricePerHour),
             style: const TextStyle(
               color: AppColors.primary,
               fontSize: 16,
@@ -243,9 +247,9 @@ class _ServicePrice extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const Text(
-            '/giờ',
-            style: TextStyle(
+          Text(
+            minimumPlanPrice > 0 ? '/buổi' : '/giờ',
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
               height: 1.5,

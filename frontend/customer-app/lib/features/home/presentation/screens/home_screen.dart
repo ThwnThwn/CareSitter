@@ -52,12 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final bookings = ref.watch(bookingStoreProvider);
     final profile = ref.watch(profileStoreProvider);
-    final unreadCount = ref
-            .watch(notificationsProvider)
-            .valueOrNull
-            ?.where((notification) => !notification.isRead)
-            .length ??
-        0;
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
     final topPadding = MediaQuery.of(context).padding.top;
 
     // Chỉ hiện booking thật từ store: ưu tiên ca đang diễn ra,

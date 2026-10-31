@@ -2,7 +2,10 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:caresitter_customer/features/home/presentation/models/home_service_accent.dart';
 import 'package:caresitter_customer/features/home/presentation/widgets/home_service_card.dart';
+import 'package:caresitter_customer/features/home/presentation/widgets/home_services_section.dart';
+import 'package:caresitter_customer/features/catalog/presentation/controllers/service_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _services = <ServiceModel>[
@@ -36,6 +39,24 @@ const _services = <ServiceModel>[
   ),
 ];
 
+const _allServices = <ServiceModel>[
+  ..._services,
+  ServiceModel(
+    id: 'rehab',
+    code: 'THAN_TRI',
+    name: 'Phục hồi Thân Trí',
+    defaultDurationMinutes: 90,
+    baseHourlyPrice: 200000,
+  ),
+  ServiceModel(
+    id: 'nursing',
+    code: 'AN_KHANG',
+    name: 'Điều dưỡng An Khang',
+    defaultDurationMinutes: 120,
+    baseHourlyPrice: 220000,
+  ),
+];
+
 const _expectedAssets = <String, String>{
   'NONMED_COMPANION': 'assets/images/service-companion.jpg',
   'NONMED_ESSENTIAL': 'assets/images/service-essential.jpg',
@@ -44,6 +65,40 @@ const _expectedAssets = <String, String>{
 };
 
 void main() {
+  testWidgets('featured section exposes every service and reports real count',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [serviceStoreProvider.overrideWith(_AllServices.new)],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: HomeServicesSection(
+              serviceAccent: (_) => const HomeServiceAccent(
+                AppColors.primary,
+                AppColors.primaryContainer,
+              ),
+              buildServiceCard: (service, _) => SizedBox(
+                width: 156,
+                child: Text(service.name),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('6 gói chăm sóc tại nhà dành cho gia đình'),
+      findsOneWidget,
+    );
+    for (final service in _allServices) {
+      expect(find.text(service.name), findsOneWidget);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('featured cards show four images, seeded ratings and real prices',
       (tester) async {
     tester.view.devicePixelRatio = 1;
@@ -135,4 +190,9 @@ void main() {
     expect(clip.borderRadius, BorderRadius.circular(AppRadius.lg));
     expect(clip.clipBehavior, Clip.antiAlias);
   });
+}
+
+class _AllServices extends ServiceStore {
+  @override
+  Future<List<ServiceModel>> build() async => _allServices;
 }

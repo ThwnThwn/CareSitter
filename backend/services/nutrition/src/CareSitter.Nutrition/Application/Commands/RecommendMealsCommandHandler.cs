@@ -24,7 +24,7 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
         {
             var history = await session.PlansAsync(request.BeneficiaryId, ct);
             var recentMeals = history.Select(plan => NutritionJson.Read<MealPayload>(plan.Payload))
-                .Where(plan => plan.PlannedDate <= meal.PlannedDate &&
+                .Where(plan => plan.PlannedDate < meal.PlannedDate &&
                     plan.PlannedDate >= meal.PlannedDate.AddDays(-7))
                 .GroupBy(plan => plan.PlannedDate)
                 .Select(group => group.First())

@@ -8,12 +8,14 @@ class BookingRealtimeController {
       required this.active,
       required this.sync,
       required this.refreshNotifications,
+      required this.refreshChatNotifications,
       required this.reloadTasks,
       required this.onTask,
       required this.announceAccepted});
   final CareSignalRService Function() hub;
   final bool Function() active;
   final Future<void> Function() sync, refreshNotifications;
+  final Future<void> Function() refreshChatNotifications;
   final void Function() reloadTasks;
   final void Function(Map<String, dynamic>) onTask;
   final void Function(String, String) announceAccepted;
@@ -46,6 +48,9 @@ class BookingRealtimeController {
         }),
         signalR.onTaskUpdated.listen((event) {
           if (_current) onTask(event);
+        }),
+        signalR.bookingChatStream.listen((_) {
+          if (_current) unawaited(refreshChatNotifications());
         }),
       ]);
       unawaited(sync());

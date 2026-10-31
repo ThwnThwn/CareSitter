@@ -16,7 +16,7 @@ internal sealed class CreateServiceCommandHandler(
             return Error.Conflict("catalog.service.code_exists", "Mã dịch vụ đã tồn tại.");
 
         var created = ServiceType.Create(code, request.Name, request.Description,
-            request.DefaultDurationMinutes, request.IsActive);
+            request.DefaultDurationMinutes, request.IsActive, request.ImageUrl);
         if (created.IsFailure) return created.Error;
 
         repository.Add(created.Value);

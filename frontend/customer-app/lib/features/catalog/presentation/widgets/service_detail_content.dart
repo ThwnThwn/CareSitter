@@ -36,6 +36,7 @@ class ServiceDetailContent extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           _ServiceDetailHero(
+            service: service,
             profile: profile,
             onBack: onBack,
             onShare: onShare,
@@ -62,11 +63,13 @@ class ServiceDetailContent extends StatelessWidget {
 
 class _ServiceDetailHero extends StatelessWidget {
   const _ServiceDetailHero({
+    required this.service,
     required this.profile,
     required this.onBack,
     required this.onShare,
   });
 
+  final ServiceModel service;
   final ServiceDetailProfile profile;
   final VoidCallback onBack;
   final VoidCallback onShare;
@@ -99,7 +102,7 @@ class _ServiceDetailHero extends StatelessWidget {
           ),
         ],
         flexibleSpace: FlexibleSpaceBar(
-          background: _HeroImage(profile: profile),
+          background: _HeroImage(service: service, profile: profile),
         ),
       );
 }
@@ -129,26 +132,16 @@ class _HeroTitle extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.profile});
+  const _HeroImage({required this.service, required this.profile});
 
+  final ServiceModel service;
   final ServiceDetailProfile profile;
 
   @override
   Widget build(BuildContext context) => Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            profile.imageAsset,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const ColoredBox(
-              color: AppColors.primaryContainer,
-              child: Icon(
-                Icons.volunteer_activism_rounded,
-                size: 72,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
+          _ServiceHeroImageSource(service: service, profile: profile),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -172,6 +165,39 @@ class _HeroImage extends StatelessWidget {
             ),
           ),
         ],
+      );
+}
+
+class _ServiceHeroImageSource extends StatelessWidget {
+  const _ServiceHeroImageSource({required this.service, required this.profile});
+
+  final ServiceModel service;
+  final ServiceDetailProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = service.imageUrl?.trim() ?? '';
+    if (imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _assetImage(),
+      );
+    }
+    return _assetImage();
+  }
+
+  Widget _assetImage() => Image.asset(
+        profile.imageAsset,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: AppColors.primaryContainer,
+          child: Icon(
+            Icons.volunteer_activism_rounded,
+            size: 72,
+            color: AppColors.primary,
+          ),
+        ),
       );
 }
 

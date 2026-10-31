@@ -71,6 +71,8 @@ class BookingStore extends Notifier<List<BookingModel>> {
         active: () => cache.active && _identity.$2,
         sync: sync.requestSync,
         refreshNotifications: _refreshNotifications,
+        refreshChatNotifications: () =>
+            ref.read(notificationsProvider.notifier).refreshForNewChat(),
         reloadTasks: tasks.reloadActive,
         onTask: tasks.acceptEvent,
         announceAccepted: _announceAccepted);

@@ -22,20 +22,49 @@ class CaregiverApp extends ConsumerStatefulWidget {
 
 class _CaregiverAppState extends ConsumerState<CaregiverApp>
     with WidgetsBindingObserver {
+  StreamSubscription<String>? _chatSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     ref.read(notificationDeepLinkServiceProvider);
+    _chatSubscription =
+        ref.read(careSignalRProvider).bookingChatStream.listen((_) {
+      unawaited(_announceNewChat());
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+      unawaited(
+          ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
     });
   }
 
   @override
   void dispose() {
+    _chatSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _announceNewChat() async {
+    if (!mounted || ref.read(authStateProvider).value?.isAuthenticated != true) {
+      return;
+    }
+    final newMessages =
+        await ref.read(notificationsProvider.notifier).refreshForNewChat();
+    if (!mounted) return;
+    for (final notification in newMessages) {
+      ref.read(notificationDeepLinkServiceProvider).showForeground(
+            title: 'Bạn có 1 tin nhắn mới',
+            body: notification.body,
+            data: {
+              'type': notification.type,
+              if (notification.deepLink != null)
+                'deepLink': notification.deepLink!,
+            },
+            deliveryId: 'notification:${notification.id}',
+          );
+    }
   }
 
   @override
@@ -63,8 +92,9 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
     ref.listen(authStateProvider, (_, next) {
       final isAuthenticated = next.value?.isAuthenticated ?? false;
       if (isAuthenticated) {
-        unawaited(
-            ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+        unawaited(ref
+            .read(pushNotificationServiceProvider)
+            .syncTokenForCurrentUser());
         unawaited(ref.read(careSignalRProvider).connect());
         unawaited(ref.read(notificationDeepLinkServiceProvider).flushPending());
       }

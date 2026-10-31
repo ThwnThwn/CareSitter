@@ -8,5 +8,6 @@ public sealed record CreateServiceCommand(
     string Code,
     string Name,
     string? Description,
+    string? ImageUrl,
     int DefaultDurationMinutes,
     bool IsActive) : IRequest<Result<AdminServiceResponse>>;

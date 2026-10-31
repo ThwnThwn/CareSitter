@@ -16,12 +16,14 @@ public sealed class ServiceType : Entity
         string code,
         string name,
         string? description,
+        string? imageUrl,
         int defaultDurationMinutes,
         bool isActive) : base(id)
     {
         Code = code;
         Name = name;
         Description = description;
+        ImageUrl = imageUrl;
         DefaultDurationMinutes = defaultDurationMinutes;
         IsActive = isActive;
     }
@@ -29,13 +31,18 @@ public sealed class ServiceType : Entity
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
+    public string? ImageUrl { get; private set; }
     public int DefaultDurationMinutes { get; private set; }
     public bool IsActive { get; private set; }
     public bool AllowAdHocTasks { get; private set; }
 
     public void SetAllowAdHocTasks(bool allowAdHocTasks) => AllowAdHocTasks = allowAdHocTasks;
 
-    public Result Update(string code, string name, string? description, int defaultDurationMinutes)
+    public Result Update(string code, string name, string? description, int defaultDurationMinutes) =>
+        Update(code, name, description, ImageUrl, defaultDurationMinutes);
+
+    public Result Update(string code, string name, string? description, string? imageUrl,
+        int defaultDurationMinutes)
     {
         if (string.IsNullOrWhiteSpace(code))
             return Error.Validation("service_type.code", "Mã dịch vụ là bắt buộc.");
@@ -48,9 +55,17 @@ public sealed class ServiceType : Entity
         if (defaultDurationMinutes is < 15 or > 1440)
             return Error.Validation("service_type.default_duration_minutes", "Thời lượng mặc định phải từ 15 đến 1.440 phút.");
 
+        var normalizedImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+        if (normalizedImageUrl is not null &&
+            (normalizedImageUrl.Length > 2048 ||
+             !Uri.TryCreate(normalizedImageUrl, UriKind.Absolute, out var imageUri) ||
+             imageUri.Scheme is not ("http" or "https")))
+            return Error.Validation("service_type.image_url", "URL ảnh dịch vụ không hợp lệ.");
+
         Code = code.Trim().ToUpperInvariant();
         Name = name.Trim();
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        ImageUrl = normalizedImageUrl;
         DefaultDurationMinutes = defaultDurationMinutes;
         return Result.Success();
     }
@@ -62,11 +77,12 @@ public sealed class ServiceType : Entity
         string name,
         string? description = null,
         int defaultDurationMinutes = 60,
-        bool isActive = true)
+        bool isActive = true,
+        string? imageUrl = null)
     {
         var service = new ServiceType(Guid.NewGuid(), string.Empty, string.Empty,
-            null, 60, isActive);
-        var validation = service.Update(code, name, description, defaultDurationMinutes);
+            null, null, 60, isActive);
+        var validation = service.Update(code, name, description, imageUrl, defaultDurationMinutes);
         return validation.IsFailure ? validation.Error : service;
     }
 }

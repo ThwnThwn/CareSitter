@@ -19,7 +19,8 @@ internal sealed class UpdateServiceCommandHandler(
             return Error.Conflict("catalog.service.code_exists", "Mã dịch vụ đã tồn tại.");
 
         var before = CatalogAdminMapper.ToResponse(service);
-        var updated = service.Update(code, request.Name, request.Description, request.DefaultDurationMinutes);
+        var updated = service.Update(code, request.Name, request.Description, request.ImageUrl,
+            request.DefaultDurationMinutes);
         if (updated.IsFailure) return updated.Error;
         service.SetActive(request.IsActive);
         await repository.SaveChangesAsync(ct);

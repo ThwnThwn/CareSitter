@@ -31,17 +31,48 @@ class _Repository implements HomeRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-AppNotificationModel notification(String id, {bool read = false}) =>
+AppNotificationModel notification(String id,
+        {bool read = false, String type = 'system'}) =>
     AppNotificationModel(
         id: id,
         title: 'Title',
         body: 'Body',
         createdAt: DateTime.utc(2026, 10, 12),
-        type: 'system',
+        type: type,
         isRead: read);
 Future<void> flush() => Future<void>.delayed(Duration.zero);
 
 void main() {
+  test('chat signal returns only newly arrived unread chat notifications',
+      () async {
+    final repository = _Repository();
+    final container = ProviderContainer(overrides: [
+      authStateProvider.overrideWith(_Auth.new),
+      homeRepositoryProvider.overrideWithValue(repository),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(authStateProvider.future);
+    final controller = container.read(notificationsProvider.notifier);
+    repository.loads.first
+        .complete([notification('old', type: 'BOOKING_CHAT')]);
+    await flush();
+
+    final loading = controller.refreshForNewChat();
+    repository.loads.last.complete([
+      notification('new', type: 'BOOKING_CHAT'),
+      notification('system'),
+      notification('old', type: 'BOOKING_CHAT'),
+    ]);
+    expect((await loading).map((item) => item.id), ['new']);
+
+    final repeated = controller.refreshForNewChat();
+    repository.loads.last.complete([
+      notification('new', type: 'BOOKING_CHAT'),
+      notification('system'),
+      notification('old', type: 'BOOKING_CHAT'),
+    ]);
+    expect(await repeated, isEmpty);
+  });
   test('old notification response cannot populate a different account',
       () async {
     final repository = _Repository();

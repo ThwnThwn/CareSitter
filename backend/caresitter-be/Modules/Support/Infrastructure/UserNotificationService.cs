@@ -34,6 +34,12 @@ internal sealed class UserNotificationService(
             ["type"] = normalized.Type
         };
 
+        if (!normalized.SendPush)
+        {
+            await PersistInboxOnlyAsync(normalized, payload, ct);
+            return;
+        }
+
         if (messaging is { Enabled: true, NotificationsEnabled: true })
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -155,5 +161,40 @@ internal sealed class UserNotificationService(
                     .SetProperty(x => x.LastError, exception.GetType().Name), ct);
             throw;
         }
+    }
+
+    private async Task PersistInboxOnlyAsync(
+        UserNotificationMessage message,
+        IReadOnlyDictionary<string, string> payload,
+        CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var eventId = message.EventId!.Value;
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({eventId.ToString()}, 0))", ct);
+
+        var eventIdText = eventId.ToString();
+        var exists = await db.Notifications.FromSqlInterpolated($$"""
+            SELECT *
+            FROM support.notifications
+            WHERE user_id = {{message.UserId}}
+              AND data ->> 'eventId' = {{eventIdText}}
+            LIMIT 1
+            """).AsNoTracking().AnyAsync(ct);
+        if (!exists)
+        {
+            var notification = Notification.Create(
+                message.UserId,
+                message.Type,
+                message.Title,
+                message.Body,
+                JsonSerializer.Serialize(payload));
+            if (notification.IsFailure)
+                throw new InvalidOperationException("Invalid notification request.");
+            db.Notifications.Add(notification.Value);
+            await db.SaveChangesAsync(ct);
+        }
+
+        await transaction.CommitAsync(ct);
     }
 }

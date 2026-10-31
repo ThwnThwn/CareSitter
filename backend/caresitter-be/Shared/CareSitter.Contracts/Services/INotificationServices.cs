@@ -7,7 +7,8 @@ public sealed record UserNotificationMessage(
     string? Body = null,
     IReadOnlyDictionary<string, string>? Data = null,
     Guid? EventId = null,
-    DateTimeOffset? OccurredAt = null);
+    DateTimeOffset? OccurredAt = null,
+    bool SendPush = true);
 
 public interface IUserNotificationService
 {

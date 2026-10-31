@@ -26,9 +26,11 @@ class HomeServiceCard extends StatelessWidget {
     final borderRadius = BorderRadius.circular(AppRadius.lg);
     final imageAsset = _imageAssetFor(service.code);
     final ratingLabel = _ratingFor(service.code).toStringAsFixed(1);
-    final priceLabel = service.baseHourlyPrice > 0
-        ? 'Từ ${formatVnd(service.baseHourlyPrice)}/giờ'
-        : _durationLabel(service.defaultDurationMinutes);
+    final priceLabel = service.minimumPlanPrice > 0
+        ? 'Từ ${formatVnd(service.minimumPlanPrice)}/buổi'
+        : service.baseHourlyPrice > 0
+            ? 'Từ ${formatVnd(service.baseHourlyPrice)}/giờ'
+            : _durationLabel(service.defaultDurationMinutes);
 
     return _HomeServiceCardSurface(
       semanticsLabel: '${service.name}, $ratingLabel sao, $priceLabel, '
@@ -37,6 +39,7 @@ class HomeServiceCard extends StatelessWidget {
       height: 168 + (textScale - 1) * 32,
       borderRadius: borderRadius,
       imageAsset: imageAsset,
+      imageUrl: service.imageUrl,
       imageKey: Key('home-service-image-${service.code}'),
       accent: accent,
       ratingLabel: ratingLabel,
@@ -57,6 +60,12 @@ class HomeServiceCard extends StatelessWidget {
       return 'assets/images/service-essential.jpg';
     }
     if (normalized.contains('NONMED_NIGHT') || normalized.contains('DEM')) {
+      return 'assets/images/service-night.jpg';
+    }
+    if (normalized.contains('THAN_TRI')) {
+      return 'assets/images/service-essential.jpg';
+    }
+    if (normalized.contains('AN_KHANG')) {
       return 'assets/images/service-night.jpg';
     }
     return 'assets/images/service-day.jpg';
@@ -91,6 +100,7 @@ class _HomeServiceCardSurface extends StatelessWidget {
     required this.height,
     required this.borderRadius,
     required this.imageAsset,
+    required this.imageUrl,
     required this.imageKey,
     required this.accent,
     required this.ratingLabel,
@@ -105,6 +115,7 @@ class _HomeServiceCardSurface extends StatelessWidget {
   final double height;
   final BorderRadius borderRadius;
   final String imageAsset;
+  final String? imageUrl;
   final Key imageKey;
   final HomeServiceAccent accent;
   final String ratingLabel;
@@ -127,11 +138,11 @@ class _HomeServiceCardSurface extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  imageAsset,
-                  key: imageKey,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _ImageFallback(accent: accent),
+                _HomeServiceImage(
+                  imageUrl: imageUrl,
+                  imageAsset: imageAsset,
+                  imageKey: imageKey,
+                  accent: accent,
                 ),
                 const _ServiceCardScrim(),
                 Positioned(
@@ -153,6 +164,41 @@ class _HomeServiceCardSurface extends StatelessWidget {
             ),
           ),
         ),
+      );
+}
+
+class _HomeServiceImage extends StatelessWidget {
+  const _HomeServiceImage({
+    required this.imageUrl,
+    required this.imageAsset,
+    required this.imageKey,
+    required this.accent,
+  });
+
+  final String? imageUrl;
+  final String imageAsset;
+  final Key imageKey;
+  final HomeServiceAccent accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl?.trim() ?? '';
+    if (url.isNotEmpty) {
+      return Image.network(
+        url,
+        key: imageKey,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _assetImage(),
+      );
+    }
+    return _assetImage();
+  }
+
+  Widget _assetImage() => Image.asset(
+        imageAsset,
+        key: imageKey,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _ImageFallback(accent: accent),
       );
 }
 
