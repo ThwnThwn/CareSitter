@@ -8,9 +8,17 @@ import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
 class ShiftDetailChecklistCard extends StatelessWidget {
   const ShiftDetailChecklistCard(
-      {super.key, required this.booking, required this.beneficiary});
+      {super.key,
+      required this.booking,
+      required this.beneficiary,
+      this.loading = false,
+      this.hasError = false,
+      this.onRetry});
   final ShiftModel booking;
   final ShiftBeneficiaryModel beneficiary;
+  final bool loading;
+  final bool hasError;
+  final VoidCallback? onRetry;
   @override
   Widget build(BuildContext context) {
     final hasTasks = booking.tasks.isNotEmpty;
@@ -35,7 +43,14 @@ class ShiftDetailChecklistCard extends StatelessWidget {
                 total: total, completedCount: completedCount),
             const SizedBox(height: AppSpacing.compact),
           ],
-          if (!hasTasks)
+          if (!hasTasks && loading)
+            const Text('Đang tải checklist công việc…')
+          else if (!hasTasks && hasError)
+            Row(children: [
+              const Expanded(child: Text('Chưa tải được checklist công việc.')),
+              TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+            ])
+          else if (!hasTasks)
             const Text('Không có checklist công việc đặc biệt.',
                 style: TextStyle(
                     fontSize: AppFontSizes.s14, color: AppColors.textSecondary))

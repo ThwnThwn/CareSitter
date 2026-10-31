@@ -41,4 +41,33 @@ void main() {
     expect(find.text('không có'), findsNothing);
     expect(find.byType(Divider), findsNothing);
   });
+
+  testWidgets('loading and error do not claim a checklist is empty',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: ShiftDetailChecklistCard(
+          booking: _booking,
+          beneficiary: _beneficiary,
+          loading: true,
+        ),
+      ),
+    ));
+    expect(find.text('Đang tải checklist công việc…'), findsOneWidget);
+    expect(find.text('Không có checklist công việc đặc biệt.'), findsNothing);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: ShiftDetailChecklistCard(
+          booking: _booking,
+          beneficiary: _beneficiary,
+          hasError: true,
+          onRetry: () {},
+        ),
+      ),
+    ));
+    expect(find.text('Chưa tải được checklist công việc.'), findsOneWidget);
+    expect(find.text('Thử lại'), findsOneWidget);
+    expect(find.text('Không có checklist công việc đặc biệt.'), findsNothing);
+  });
 }

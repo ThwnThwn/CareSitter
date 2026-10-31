@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/screens/shift_tracking_screen.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_extension_sheet.dart';
@@ -9,6 +10,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('en-route contact and message actions open booking chat',
+      (tester) async {
+    final router = GoRouter(routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, __) => const ShiftTrackingScreen(bookingId: _bookingId),
+      ),
+      GoRoute(
+        path: AppRoutes.bookingChat(_bookingId),
+        builder: (_, __) => const Scaffold(body: Text('Booking chat opened')),
+      ),
+    ]);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [bookingStoreProvider.overrideWith(_EnRouteBookingStore.new)],
+      child:
+          MaterialApp.router(routerConfig: router, theme: AppTheme.lightTheme),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    await tester.tap(find.text('Liên hệ'));
+    await tester.pumpAndSettle();
+    expect(find.text('Booking chat opened'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Gửi tin nhắn'));
+    await tester.pumpAndSettle();
+    expect(find.text('Booking chat opened'), findsOneWidget);
+  });
+
   testWidgets(
       'extension estimates hours and opens support without a fake success',
       (tester) async {

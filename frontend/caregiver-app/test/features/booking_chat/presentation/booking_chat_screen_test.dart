@@ -9,6 +9,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('quick suggestion has room for larger text', (tester) async {
+    final repository = _FakeRepository()
+      ..meta = _meta(quickTemplates: const [
+        BookingChatTemplate(
+            key: 'caregiver.arrived', version: 1, body: 'Tôi đã đến nơi'),
+      ]);
+    final controller = BookingChatController(
+      bookingId: 'booking',
+      repository: repository,
+      realtime: _FakeRealtime(),
+    );
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        bookingChatControllerProvider
+            .overrideWith((ref, bookingId) => controller),
+      ],
+      child: const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: BookingChatScreen(bookingId: 'booking'),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    final label = find.text('Tôi đã đến nơi');
+    final chip = find.ancestor(
+        of: label, matching: find.byType(GestureDetector));
+    expect(chip, findsOneWidget);
+    expect(tester.getSize(chip).height, greaterThanOrEqualTo(44));
+    expect(tester.getRect(chip).contains(tester.getRect(label).bottomRight),
+        isTrue);
+  });
+
   testWidgets('clears the draft when read access is revoked', (tester) async {
     final repository = _FakeRepository();
     final controller = BookingChatController(
@@ -46,6 +81,7 @@ BookingChatMeta _meta({
   bool canRead = true,
   bool canSend = true,
   int scopeVersion = 1,
+  List<BookingChatTemplate> quickTemplates = const [],
 }) =>
     BookingChatMeta(
       featureEnabled: true,
@@ -62,7 +98,7 @@ BookingChatMeta _meta({
       unreadCount: 0,
       changeVersion: 1,
       scopeVersion: scopeVersion,
-      quickTemplates: const [],
+      quickTemplates: quickTemplates,
     );
 
 class _FakeRepository implements BookingChatRepositoryPort {

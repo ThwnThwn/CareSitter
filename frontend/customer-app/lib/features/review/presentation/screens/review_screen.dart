@@ -11,6 +11,8 @@ import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
+import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 
@@ -141,22 +143,17 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           );
       if (mounted) {
         setState(() => _isSubmitting = false);
+        AppToast.success(context, 'Đã gửi đánh giá dịch vụ');
         popOrGo(context, fallbackRoute: AppRoutes.bookings);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Cảm ơn bạn đã gửi đánh giá dịch vụ!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi gửi đánh giá: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        AppToast.error(
+          context,
+          e is AppApiException
+              ? e.message
+              : 'Không thể gửi đánh giá. Vui lòng thử lại.',
         );
       }
     }

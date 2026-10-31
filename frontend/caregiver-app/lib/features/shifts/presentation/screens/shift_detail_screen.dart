@@ -5,7 +5,9 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import '../../data/models/shift_model.dart';
 import '../controllers/shift_action_policy.dart';
+import '../controllers/shift_detail_tasks_provider.dart';
 import '../controllers/shift_list_controller.dart';
+import '../widgets/shift_detail_active_action.dart';
 import '../widgets/shift_detail_app_bar.dart';
 import '../widgets/shift_detail_missing_app_bar.dart';
 import '../widgets/shift_detail_body.dart';
@@ -36,13 +38,31 @@ class ShiftDetailScreen extends ConsumerWidget {
         ),
       );
     }
+    final tasks = booking.status == 'in_progress'
+        ? ref.watch(shiftDetailTasksProvider(id))
+        : null;
+    final loadedTasks = tasks?.valueOrNull;
+    final detailedBooking =
+        loadedTasks == null ? booking : booking.copyWith(tasks: loadedTasks);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const ShiftDetailAppBar(),
       body: Column(children: [
-        Expanded(child: ShiftDetailBody(booking: booking)),
+        Expanded(
+          child: ShiftDetailBody(
+            booking: detailedBooking,
+            tasksLoading: tasks?.isLoading ?? false,
+            tasksError: tasks?.hasError ?? false,
+            onRetryTasks: () => ref.invalidate(shiftDetailTasksProvider(id)),
+          ),
+        ),
         if (booking.canStartEnRoute)
           ShiftDetailStartTravelAction(booking: booking),
+        if (booking.status == 'in_progress')
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: ShiftDetailActiveAction(bookingId: booking.id),
+          ),
         if (booking.statusType.index >= ShiftStatus.confirmed.index &&
             booking.statusType != ShiftStatus.completed &&
             booking.statusType != ShiftStatus.cancelled)

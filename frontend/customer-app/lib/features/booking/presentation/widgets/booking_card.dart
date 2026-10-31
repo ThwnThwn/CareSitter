@@ -31,12 +31,15 @@ class BookingCard extends StatelessWidget {
           boxShadow: AppShadows.card,
         ),
         child: Stack(children: [
-          BookingListBookingCardBorderColorContent(borderColor: appearance.color),
+          BookingListBookingCardBorderColorContent(
+              borderColor: appearance.color),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.section, AppSpacing.md, AppSpacing.md, AppSpacing.md),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              BookingCardStatusHeader(statusConfig: appearance, booking: booking),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.section,
+                AppSpacing.md, AppSpacing.md, AppSpacing.md),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              BookingCardStatusHeader(
+                  statusConfig: appearance, booking: booking),
               const SizedBox(height: AppSpacing.compact),
               BookingListBookingCardBookingRowBody(booking: booking),
               const SizedBox(height: AppSpacing.xs),
@@ -49,7 +52,9 @@ class BookingCard extends StatelessWidget {
               BookingListBookingCardIsWaitingCaregiverBookingRow(
                   isWaitingCaregiver: appearance.isWaitingCaregiver,
                   booking: booking,
-                  status: status),
+                  status: status,
+                  onChat: () =>
+                      context.push(AppRoutes.bookingChat(booking.id))),
               if (status == 'completed' && !booking.isReviewed)
                 BookingListBookingCardFields(
                     callbackAction1: () =>

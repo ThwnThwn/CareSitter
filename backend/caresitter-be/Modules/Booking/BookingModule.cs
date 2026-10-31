@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using FluentValidation;
 using Microsoft.AspNetCore.DataProtection;
 using System.Reflection;
@@ -20,6 +21,22 @@ namespace CareSitter.Modules.Booking;
 public sealed class BookingModule : IModule
 {
     public string Name => "Booking";
+
+    /// <summary>
+    /// Chạy backfill có kiểm soát cho các booking cũ, thông qua store nội bộ của module.
+    /// Caller tạo scope và chỉ gọi khi chủ động chạy tác vụ bảo trì.
+    /// </summary>
+    public static async Task<(BookingChatBackfillResult Result, int Remaining)>
+        BackfillMissingChatConversationsAsync(IServiceProvider services, int batchSize,
+            CancellationToken ct = default)
+    {
+        if (!services.GetRequiredService<IOptions<BookingChatOptions>>().Value.Enabled)
+            throw new InvalidOperationException("Booking chat must be enabled before backfill.");
+        var store = services.GetRequiredService<IBookingChatBackfillStore>();
+        var result = await store.BackfillMissingConversationsAsync(batchSize, ct);
+        var remaining = await store.CountMissingConversationsAsync(ct);
+        return (result, remaining);
+    }
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {

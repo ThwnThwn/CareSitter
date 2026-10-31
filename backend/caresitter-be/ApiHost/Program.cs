@@ -39,7 +39,11 @@ if (string.IsNullOrWhiteSpace(apiEnvironmentFile)) DotNetEnv.Env.NoClobber().Tra
 else if (File.Exists(apiEnvironmentFile)) DotNetEnv.Env.NoClobber().Load(apiEnvironmentFile);
 else throw new InvalidOperationException("Configured CARESITTER_ENV_FILE does not exist.");
 
-var builder = WebApplication.CreateBuilder(args);
+var bookingChatBackfillRequested = args.Contains("--booking-chat-backfill", StringComparer.Ordinal);
+var hostArgs = bookingChatBackfillRequested
+    ? args.Where(arg => arg != "--booking-chat-backfill").ToArray()
+    : args;
+var builder = WebApplication.CreateBuilder(hostArgs);
 if (builder.Configuration.GetValue<bool>("SupportChat:PushEnabled") &&
     (!builder.Configuration.GetValue<bool>("KAFKA_ENABLED") ||
      !builder.Configuration.GetValue<bool>("KAFKA_FLOW_NOTIFICATIONS_ENABLED")))
@@ -448,6 +452,16 @@ builder.Services.AddHangfireServer(options =>
     options.Queues = new[] { "default", "booking" };
 });
 var app = builder.Build();
+
+if (bookingChatBackfillRequested)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var (result, remaining) = await BookingModule.BackfillMissingChatConversationsAsync(
+        scope.ServiceProvider, batchSize: 200);
+    Console.WriteLine($"Booking chat backfill: examined={result.Examined}, " +
+        $"created={result.ConversationsCreated}, remaining={remaining}");
+    return;
+}
 
 if (usePostgresHangfire)
 {

@@ -15,4 +15,11 @@ void main() {
             .urlTemplate,
         'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
   });
+  test('demo OSM Japan tile source ignores CARTO key', () {
+    const config = MapTileConfig(cartoApiKey: 'key', useOsmJapan: true);
+    expect(config.usesCarto, false);
+    expect(config.urlTemplate,
+        'https://tile.openstreetmap.jp/styles/osm-bright/{z}/{x}/{y}.png');
+    expect(config.subdomains, isEmpty);
+  });
 }

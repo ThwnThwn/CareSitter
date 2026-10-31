@@ -3,6 +3,7 @@ import 'package:caregiver_app/features/home/presentation/widgets/notification_bo
 import 'package:caregiver_app/features/home/presentation/widgets/notifications_app_bar.dart';
 import 'package:caregiver_app/features/home/presentation/widgets/notifications_empty_state.dart';
 import 'package:caregiver_app/features/home/presentation/widgets/notification_icon.dart';
+import 'package:caregiver_app/features/home/presentation/models/notification_visual.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/push/notification_deep_link_service.dart';
@@ -33,7 +34,8 @@ class NotificationsScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final notif = list[index];
                 final isRead = notif.isRead;
-                final iconData = _getIconForType(notif.type);
+                final visual =
+                    notificationVisualFor(notif.type, status: notif.status);
 
                 return Container(
                   color: isRead
@@ -44,7 +46,7 @@ class NotificationsScreen extends ConsumerWidget {
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                      leading: NotificationIcon(iconData: iconData),
+                      leading: NotificationIcon(visual: visual),
                       title: NotificationTitle(notif: notif, isRead: isRead),
                       subtitle: NotificationBody(notif: notif),
                       onTap: () {
@@ -61,44 +63,5 @@ class NotificationsScreen extends ConsumerWidget {
               },
             ),
     );
-  }
-
-  Map<String, dynamic> _getIconForType(String type) {
-    switch (type.toUpperCase()) {
-      case 'SHIFT':
-      case 'CARE_TIMELINE':
-        return {
-          'icon': Icons.directions_run_rounded,
-          'bg': AppColors.primaryContainer,
-          'color': AppColors.primary,
-        };
-      case 'BOOKING':
-      case 'BOOKING_OFFER':
-      case 'MATCHING_FAILED':
-        return {
-          'icon': Icons.calendar_month_rounded,
-          'bg': AppColors.secondaryContainer,
-          'color': AppColors.secondaryStrong,
-        };
-      case 'PAYMENT':
-      case 'PAYOUT':
-        return {
-          'icon': Icons.account_balance_wallet_rounded,
-          'bg': AppColors.infoLight,
-          'color': AppColors.info,
-        };
-      case 'SOS':
-        return {
-          'icon': Icons.sos_rounded,
-          'bg': AppColors.errorLight,
-          'color': AppColors.error,
-        };
-      default:
-        return {
-          'icon': Icons.notifications_rounded,
-          'bg': AppColors.surfaceVariant,
-          'color': AppColors.textSecondary,
-        };
-    }
   }
 }
