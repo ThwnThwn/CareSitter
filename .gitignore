@@ -17,6 +17,8 @@
 !/deploy/**
 !/frontend/
 !/frontend/**
+!/tools/
+!/tools/**
 # Chỉ theo dõi runbook/schema archive đã review; giữ docs cục bộ khác bị ignore.
 /backend/docs/*
 !/backend/docs/MIGRATIONS.md
@@ -89,6 +91,9 @@ Desktop.ini
 .playwright-mcp/
 **/*.local.json
 .codex-build/
+/tools/dev/devices.local.json
+/tools/dev/logs/
+/tools/dev/state/
 
 # =====================  BACKEND (.NET)  =====================
 [Bb]in/
