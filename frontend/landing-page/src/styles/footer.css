@@ -13,8 +13,7 @@
 }
 
 .brand-lockup--footer .brand-mark {
-  background: var(--lime);
-  color: var(--green-dark);
+  background: transparent;
 }
 
 .brand-lockup--footer small {

@@ -43,13 +43,19 @@
 
 .mark {
   align-items: center;
-  background: var(--green);
-  border-radius: 50%;
-  color: var(--white);
+  border-radius: 9px;
   display: inline-flex;
   height: 38px;
   justify-content: center;
+  overflow: hidden;
   width: 38px;
+}
+
+.mark img {
+  border-radius: 9px;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .back {

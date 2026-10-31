@@ -1,4 +1,4 @@
-import { Heart } from "lucide-react";
+import Image from "next/image";
 
 const footerGroups = [
   {
@@ -26,7 +26,12 @@ export default function Footer() {
         <div className="site-footer__brand">
           <a className="brand-lockup brand-lockup--footer" href="#hero">
             <span className="brand-mark" aria-hidden="true">
-              <Heart size={18} strokeWidth={2.2} />
+              <Image
+                src="/images/logo.png"
+                alt="CareSitter"
+                width={40}
+                height={40}
+              />
             </span>
             <span>
               <strong>CareSitter</strong>
