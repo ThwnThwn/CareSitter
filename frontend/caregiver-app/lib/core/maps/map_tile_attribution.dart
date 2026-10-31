@@ -19,6 +19,8 @@ class MapTileAttribution extends StatelessWidget {
                 'https://www.openstreetmap.org/copyright'),
             if (config.usesCarto)
               _source('© CARTO', 'https://carto.com/attribution/'),
+            if (config.useOsmJapan)
+              _source('© OpenStreetMap Japan', 'https://openstreetmap.jp/'),
           ]),
         ),
       );

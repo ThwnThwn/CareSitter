@@ -90,6 +90,19 @@ class ChatFirestoreReader {
         firebaseOptions.projectId.isEmpty) {
       throw StateError('Firebase chat is not configured.');
     }
+    final expectedPlatform = switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => 'ios',
+      TargetPlatform.android => 'android',
+      _ => null,
+    };
+    final appIdParts = firebaseOptions.appId.split(':');
+    if (!kIsWeb &&
+        expectedPlatform != null &&
+        (appIdParts.length < 4 || appIdParts[2] != expectedPlatform)) {
+      // Native Firebase aborts for a web/other-platform App ID.
+      // The repository can fall back to the authorized PostgreSQL API.
+      throw StateError('Firebase chat App ID does not match this platform.');
+    }
     final response =
         await _client.post<Map<String, dynamic>>('/chat/firestore-session');
     final data = response.data;

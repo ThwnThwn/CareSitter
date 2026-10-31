@@ -1,6 +1,7 @@
 
 
 
+import type { Metadata } from "next";
 import CaregiversSection from "@/components/CaregiversSection";
 import DownloadCTASection from "@/components/DownloadCTASection";
 import FeaturesSection from "@/components/FeaturesSection";
@@ -12,6 +13,10 @@ import ConsultationProvider from "@/features/consultation/ConsultationProvider";
 import ScrollMotion from "@/components/ScrollMotion";
 import StatsSection from "@/components/StatsSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function LandingPage() {
   return (

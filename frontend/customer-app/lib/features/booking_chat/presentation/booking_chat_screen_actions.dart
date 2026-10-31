@@ -139,10 +139,10 @@ extension on _BookingChatScreenState {
     final templates = chat.meta?.quickTemplates ?? const [];
     if (!chat.canSend || templates.isEmpty) return const SizedBox.shrink();
     return SizedBox(
-      height: 40,
+      height: 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         itemCount: templates.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {

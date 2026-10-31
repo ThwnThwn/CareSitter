@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Yêu cầu xóa tài khoản | CareSitter",
   description:
     "Hướng dẫn yêu cầu xóa tài khoản và dữ liệu CareSitter Customer hoặc CareSitter Caregiver mà không cần cài ứng dụng.",
+  alternates: { canonical: "/account-deletion" },
 };
 
 export default function AccountDeletionPage() {

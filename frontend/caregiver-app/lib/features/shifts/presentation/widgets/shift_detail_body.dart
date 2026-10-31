@@ -12,13 +12,21 @@ import 'shift_detail_checklist_card.dart';
 import 'shift_safety_card.dart';
 import 'shift_detail_offer_actions.dart';
 import 'shift_detail_en_route_banner.dart';
-import 'shift_detail_active_action.dart';
 import 'shift_detail_completed_card.dart';
 import 'shift_section_heading.dart';
 
 class ShiftDetailBody extends StatelessWidget {
-  const ShiftDetailBody({super.key, required this.booking});
+  const ShiftDetailBody({
+    super.key,
+    required this.booking,
+    this.tasksLoading = false,
+    this.tasksError = false,
+    this.onRetryTasks,
+  });
   final ShiftModel booking;
+  final bool tasksLoading;
+  final bool tasksError;
+  final VoidCallback? onRetryTasks;
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +51,18 @@ class ShiftDetailBody extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         const ShiftSectionHeading(title: 'Công việc cần làm'),
         const SizedBox(height: AppSpacing.sm),
-        ShiftDetailChecklistCard(booking: booking, beneficiary: beneficiary),
+        ShiftDetailChecklistCard(
+          booking: booking,
+          beneficiary: beneficiary,
+          loading: tasksLoading,
+          hasError: tasksError,
+          onRetry: onRetryTasks,
+        ),
         const SizedBox(height: AppSpacing.md),
         const ShiftSafetyCard(),
         const SizedBox(height: AppSpacing.md),
         if (booking.canAccept) ShiftDetailOfferActions(bookingId: booking.id),
         if (booking.canCheckIn) ShiftDetailEnRouteBanner(booking: booking),
-        if (booking.status == 'in_progress')
-          ShiftDetailActiveAction(bookingId: booking.id),
         if (booking.status == 'completed')
           ShiftDetailCompletedCard(booking: booking),
         const SizedBox(height: 80),

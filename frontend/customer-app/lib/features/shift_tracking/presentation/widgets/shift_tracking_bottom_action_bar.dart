@@ -76,14 +76,8 @@ class ShiftTrackingBottomActionBar extends ConsumerWidget {
           ],
         ),
         child: ShiftTrackingBottomActionBarFields(
-            callbackAction1: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content:
-                        Text('💬 Mở tin nhắn nhanh cho ${bk.caregiverName}...'),
-                    backgroundColor: AppColors.primary,
-                    duration: const Duration(seconds: 2),
-                  ),
-                ),
+            callbackAction1: () =>
+                context.push(AppRoutes.bookingChat(bookingId)),
             callbackAction2: () => ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content:

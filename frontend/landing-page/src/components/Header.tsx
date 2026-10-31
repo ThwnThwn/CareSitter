@@ -1,7 +1,8 @@
 "use client";
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
-import { Heart, Menu, X } from "lucide-react";
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const navItems = [
@@ -58,7 +59,13 @@ export default function Header() {
       <div className="site-header__inner shell">
         <a className="brand-lockup" href="#hero" aria-label="CareSitter — về đầu trang">
           <span className="brand-mark" aria-hidden="true">
-            <Heart size={18} strokeWidth={2.2} />
+            <Image
+              src="/images/logo.png"
+              alt="CareSitter"
+              width={40}
+              height={40}
+              priority
+            />
           </span>
           <span>
             <strong>CareSitter</strong>

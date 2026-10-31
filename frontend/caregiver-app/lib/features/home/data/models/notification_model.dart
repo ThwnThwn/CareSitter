@@ -8,6 +8,7 @@ class AppNotificationModel {
   final String type;
   final bool isRead;
   final String? deepLink;
+  final String? status;
 
   const AppNotificationModel({
     required this.id,
@@ -17,6 +18,7 @@ class AppNotificationModel {
     required this.type,
     required this.isRead,
     this.deepLink,
+    this.status,
   });
 
   factory AppNotificationModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class AppNotificationModel {
       type: json['type']?.toString() ?? 'system',
       isRead: json['readAt'] != null,
       deepLink: data['deepLink']?.toString(),
+      status: data['status']?.toString(),
     );
   }
 
@@ -42,6 +45,7 @@ class AppNotificationModel {
       type: type,
       isRead: isRead ?? this.isRead,
       deepLink: deepLink,
+      status: status,
     );
   }
 

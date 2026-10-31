@@ -1,5 +1,7 @@
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_caregiver_content.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 
@@ -29,14 +31,7 @@ class ShiftTrackingScreenCaregiverCard extends StatelessWidget {
           avatarText: avatarText,
           bk: bk,
           statusLabel: statusLabel,
-          callbackAction1: () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                      Text('💬 Kết nối liên hệ với ${bk.caregiverName}...'),
-                  backgroundColor: AppColors.primary,
-                  duration: const Duration(seconds: 2),
-                ),
-              ),
+          callbackAction1: () => context.push(AppRoutes.bookingChat(bk.id)),
           callbackAction2: () => ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content:

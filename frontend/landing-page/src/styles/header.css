@@ -37,13 +37,19 @@
 
 .brand-mark {
   align-items: center;
-  background: var(--green);
   border-radius: 9px;
-  color: var(--white);
   display: inline-flex;
   height: 40px;
   justify-content: center;
+  overflow: hidden;
   width: 40px;
+}
+
+.brand-mark img {
+  border-radius: 9px;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .brand-lockup > span:last-child {

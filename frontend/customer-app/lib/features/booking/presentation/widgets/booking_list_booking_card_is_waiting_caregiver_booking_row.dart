@@ -11,10 +11,12 @@ class BookingListBookingCardIsWaitingCaregiverBookingRow
       {super.key,
       required this.isWaitingCaregiver,
       required this.booking,
-      required this.status});
+      required this.status,
+      required this.onChat});
   final bool isWaitingCaregiver;
   final BookingModel booking;
   final String status;
+  final VoidCallback onChat;
   @override
   Widget build(BuildContext context) => Row(
         children: [
@@ -37,15 +39,19 @@ class BookingListBookingCardIsWaitingCaregiverBookingRow
           // Action buttons
           if (status == 'confirmed' ||
               status == 'caregiver_accepted' ||
-              status == 'pending') ...[
+              status == 'pending')
             BookingListActionIconButton(
               icon: Icons.call_outlined,
               onTap: () {},
             ),
-            const SizedBox(width: AppSpacing.tight),
+          if (status == 'caregiver_accepted' ||
+              status == 'caregiver_en_route' ||
+              status == 'in_progress') ...[
+            if (status == 'caregiver_accepted')
+              const SizedBox(width: AppSpacing.tight),
             BookingListActionIconButton(
               icon: Icons.chat_bubble_outline_rounded,
-              onTap: () {},
+              onTap: onChat,
             ),
           ],
         ],

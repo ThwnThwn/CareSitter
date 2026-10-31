@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Heart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import styles from "./legal-page.module.css";
 
 type LegalSection = {
@@ -28,7 +29,12 @@ export default function LegalPage({
       <header className={styles.header}>
         <Link className={styles.brand} href="/" aria-label="Về trang chủ CareSitter">
           <span className={styles.mark} aria-hidden="true">
-            <Heart size={18} strokeWidth={2.2} />
+            <Image
+              src="/images/logo.png"
+              alt="CareSitter"
+              width={38}
+              height={38}
+            />
           </span>
           <span>
             <strong>CareSitter</strong>

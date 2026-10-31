@@ -12,8 +12,10 @@ class NotificationsNotificationItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final icon = notificationsIconFor(notification.type);
-    final iconColor = notificationsIconColorFor(notification.type);
+    final status = notification.data['status']?.toString();
+    final icon = notificationsIconFor(notification.type, status: status);
+    final iconColor =
+        notificationsIconColorFor(notification.type, status: status);
     final route = notification.data['deepLink']?.toString();
     return InkWell(
       onTap: () async {

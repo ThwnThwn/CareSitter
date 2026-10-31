@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Chính sách quyền riêng tư | CareSitter",
   description:
     "Cách CareSitter thu thập, sử dụng, chia sẻ, bảo vệ và xóa dữ liệu của ứng dụng Customer và Caregiver.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

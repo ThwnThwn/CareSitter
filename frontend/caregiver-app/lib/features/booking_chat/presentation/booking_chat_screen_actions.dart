@@ -149,10 +149,10 @@ extension on _BookingChatScreenState {
         children: [
           if (templates.isNotEmpty)
             SizedBox(
-              height: 44,
+              height: 56,
               child: ListView.separated(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 scrollDirection: Axis.horizontal,
                 itemCount: templates.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),

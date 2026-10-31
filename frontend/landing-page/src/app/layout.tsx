@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, IBM_Plex_Mono, Noto_Serif_Display } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -25,6 +26,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "CareSitter — Người thân được chăm, bạn được an lòng",
   description:
     "Kết nối gia đình với người chăm sóc tại nhà đã được xác minh. Đặt ca minh bạch, theo dõi rõ ràng và hỗ trợ xuyên suốt.",
@@ -36,7 +38,6 @@ export const metadata: Metadata = {
     "caregiver Việt Nam",
   ],
   authors: [{ name: "CareSitter Team" }],
-  icons: { icon: "/favicon.ico" },
   openGraph: {
     title: "CareSitter — Người thân được chăm, bạn được an lòng",
     description:

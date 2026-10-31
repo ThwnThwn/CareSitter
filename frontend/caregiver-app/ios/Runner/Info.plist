@@ -9,7 +9,7 @@
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>Caregiver App</string>
+	<string>CareSitter Caregiver</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleURLTypes</key>
@@ -37,6 +37,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>CareSitter dùng camera để bạn chụp ảnh minh chứng công việc chăm sóc và ảnh xác nhận khi bắt đầu ca.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CareSitter cho phép bạn chọn ảnh từ thư viện để gửi minh chứng công việc chăm sóc.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>CareSitter dùng vị trí để chia sẻ hành trình đến ca với gia đình khi bạn mở ứng dụng và xác nhận check-in tại địa điểm chăm sóc.</string>
 	<key>UIApplicationSceneManifest</key>

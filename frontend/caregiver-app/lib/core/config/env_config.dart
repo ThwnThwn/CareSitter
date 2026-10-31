@@ -10,8 +10,11 @@ abstract final class EnvConfig {
   static const _mapProvider =
       String.fromEnvironment('MAP_PROVIDER', defaultValue: 'carto');
   static String get cartoApiKey => _cartoApiKey.trim();
-  static String get mapProvider =>
-      _mapProvider.trim().toLowerCase() == 'osm' ? 'osm' : 'carto';
+  static String get mapProvider => switch (_mapProvider.trim().toLowerCase()) {
+        'osm' => 'osm',
+        'osm_jp' => 'osm_jp',
+        _ => 'carto',
+      };
   static const String environmentName = String.fromEnvironment(
     'APP_ENV',
     defaultValue: 'development',

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Điều khoản dịch vụ | CareSitter",
   description:
     "Điều khoản sử dụng CareSitter Customer, CareSitter Caregiver và các kênh hỗ trợ liên quan.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {
