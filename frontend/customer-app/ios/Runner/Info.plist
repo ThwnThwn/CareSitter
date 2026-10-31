@@ -11,7 +11,7 @@
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>Caresitter Customer</string>
+	<string>CareSitter</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleURLTypes</key>
@@ -20,6 +20,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>caresitter-customer</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
 			</array>
 		</dict>
 	</array>
