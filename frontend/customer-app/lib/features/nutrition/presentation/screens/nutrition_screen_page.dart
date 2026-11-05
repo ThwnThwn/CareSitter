@@ -33,6 +33,7 @@ class NutritionScreenPage extends StatelessWidget {
             controller: controller,
             plannedDate: state.selectedDate,
             onReplace: actions.onReplace,
+            onConfirm: actions.onConfirm,
           );
     final menuResult = NutritionResult(
       flow: state.flow,
@@ -40,6 +41,7 @@ class NutritionScreenPage extends StatelessWidget {
       plannedDate: state.selectedDate,
       menuOnly: state.flow.resource?.status == 'saved',
       onReplace: actions.onReplace,
+      onConfirm: actions.onConfirm,
     );
     return Scaffold(
       appBar: _buildAppBar(),
@@ -93,6 +95,7 @@ class NutritionScreenPage extends StatelessWidget {
       dateError: state.dateError,
       onRetryDate: actions.onRetryDate,
       onCreatePlan: actions.onCreatePlan,
+      onCreateWeek: actions.onCreateWeek,
       onDateSelected: actions.onDateSelected,
       result: menuResult,
     );

@@ -10,7 +10,8 @@ public interface IMealRecommendationEngine
 
 public sealed record MealRecommendationRequest(long CatalogRevision, Recipe[] CandidateRecipes,
     IReadOnlyList<HealthFact> Facts, IReadOnlyList<DietaryRule> Rules,
-    string DietaryPattern, string NutritionGoal, Recipe[]? RecentMeals = null);
+    string DietaryPattern, string NutritionGoal, Recipe[]? RecentMeals = null,
+    Recipe[][]? PreviousMenus = null);
 
 public sealed record MealRecommendationResult(Recipe[]? Meals, MealRecommendationTrace Trace);
 

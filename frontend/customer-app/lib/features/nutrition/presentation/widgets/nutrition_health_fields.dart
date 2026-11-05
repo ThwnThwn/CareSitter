@@ -14,20 +14,45 @@ class NutritionHealthFields extends StatefulWidget {
       {super.key,
       required this.health,
       required this.enabled,
-      required this.onChanged});
+      required this.onChanged,
+      this.showErrors = false,
+      this.missingFields = const []});
+  final bool showErrors;
+  final List<String> missingFields;
 
   @override
-  State<NutritionHealthFields> createState() => _NutritionHealthFieldsState();
+  State<NutritionHealthFields> createState() => NutritionHealthFieldsState();
 }
 
-class _NutritionHealthFieldsState extends State<NutritionHealthFields>
+class NutritionHealthFieldsState extends State<NutritionHealthFields>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   final Map<String, dynamic> _profileChanges = {};
+  final ExpansibleController _expansion = ExpansibleController();
   late final Map<String, dynamic> _profile;
   final List<_MedicationDraft> _medications = [];
+  final Map<String, GlobalKey> _fieldKeys = {
+    'medicationsStatus': GlobalKey(),
+    'feedingRoute': GlobalKey(),
+    'swallowingStatus': GlobalKey(),
+    'fluidRestriction': GlobalKey(),
+    'electrolyteRestriction': GlobalKey(),
+  };
   bool _medicationsDirty = false, _legacyMedications = false;
+
+  @override
+  void didUpdateWidget(covariant NutritionHealthFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((widget.showErrors && !oldWidget.showErrors) ||
+        !_sameMissingFields(oldWidget.missingFields, widget.missingFields)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _hasAnyError && !_expansion.isExpanded) {
+          _expansion.expand();
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -45,6 +70,60 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
         _legacyMedications = true;
       }
     }
+    if (_hasAnyError) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_expansion.isExpanded) _expansion.expand();
+      });
+    }
+  }
+
+  bool _sameMissingFields(List<String> before, List<String> after) =>
+      before.length == after.length &&
+      before.asMap().entries.every((entry) => entry.value == after[entry.key]);
+
+  bool _isMissing(String field) => widget.missingFields.any((item) {
+        if (item == field || item.endsWith('/$field')) return true;
+        return field == 'medicationsStatus' &&
+            (item == 'medications' || item.startsWith('medications/'));
+      });
+
+  bool _isLocallyInvalid(String field) {
+    final current = _profileChanges[field] ?? _profile[field];
+    if (current == null || current == 'unknown') return true;
+    if (field != 'medicationsStatus') return false;
+    final hasMedication =
+        _medications.any((item) => item.name.text.trim().isNotEmpty) ||
+            _legacyMedications;
+    return (current == 'reported_present' && !hasMedication) ||
+        (current == 'reported_none' && hasMedication);
+  }
+
+  bool get _hasAnyError => _fieldKeys.keys.any(
+        (field) =>
+            _isMissing(field) ||
+            (widget.showErrors && _isLocallyInvalid(field)),
+      );
+
+  Future<void> revealFirstError() async {
+    final field = _fieldKeys.keys.cast<String?>().firstWhere(
+          (item) =>
+              item != null &&
+              (_isMissing(item) ||
+                  (widget.showErrors && _isLocallyInvalid(item))),
+          orElse: () => null,
+        );
+    if (field == null) return;
+    if (!_expansion.isExpanded) _expansion.expand();
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final target = _fieldKeys[field]?.currentContext;
+    if (target == null || !target.mounted) return;
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.18,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _emit() => widget.onChanged({
@@ -56,14 +135,33 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
 
   Widget _choice(String field, String label, Map<String, String> options) {
     final current = _profileChanges[field] ?? _profile[field];
+    final hasMedication =
+        _medications.any((m) => m.name.text.trim().isNotEmpty) ||
+            _legacyMedications;
+    final medicationConflict = field == 'medicationsStatus' &&
+        ((current == 'reported_present' && !hasMedication) ||
+            (current == 'reported_none' && hasMedication));
     return Padding(
+      key: _fieldKeys[field],
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: AppDropdownField<String>(
         key: ValueKey('nutrition-$field'),
         initialValue:
             options.containsKey(current) ? current as String : 'unknown',
         isExpanded: true,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+            labelText: label,
+            errorText: _isMissing(field) ||
+                    (widget.showErrors &&
+                        (current == null ||
+                            current == 'unknown' ||
+                            medicationConflict))
+                ? (medicationConflict
+                    ? 'Vui lòng làm rõ danh sách thuốc'
+                    : _isMissing(field)
+                        ? 'Vui lòng kiểm tra lại mục này'
+                        : 'Vui lòng xác nhận mục này')
+                : null),
         items: options.entries
             .map((e) => DropdownMenuItem(
                 value: e.key,
@@ -85,6 +183,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
     super.build(context);
     return NutritionExpansionCard(
       key: const ValueKey('nutrition-structured-fields'),
+      controller: _expansion,
       title: 'Thuốc và nhu cầu ăn uống',
       subtitle: 'Xác nhận từng mục; chọn Chưa rõ nếu chưa có thông tin.',
       children: [
@@ -154,7 +253,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
               decoration: const InputDecoration(
                   labelText: 'Tên thuốc theo thông tin hiện có'),
               onChanged: (_) {
-                _medicationsDirty = true;
+                setState(() => _medicationsDirty = true);
                 _emit();
               }),
           TextField(
@@ -206,6 +305,7 @@ class _NutritionHealthFieldsState extends State<NutritionHealthFields>
 
   @override
   void dispose() {
+    _expansion.dispose();
     for (final medication in _medications) {
       medication.dispose();
     }

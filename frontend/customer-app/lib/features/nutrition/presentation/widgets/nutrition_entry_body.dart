@@ -120,7 +120,7 @@ class _ProfilesList extends StatelessWidget {
                         onPressed: onClearQuery,
                         icon: const Icon(Icons.close_rounded),
                       ),
-                fillColor: AppColors.surface,
+                fillColor: AppColors.surfaceVariant,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

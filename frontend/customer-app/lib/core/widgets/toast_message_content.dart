@@ -1,106 +1,187 @@
 import 'package:flutter/material.dart';
+
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_toast_type.dart';
 
 class ToastMessageContent extends StatelessWidget {
-  const ToastMessageContent(
-      {super.key,
-      required this.reducedMotion,
-      required this.surface,
-      required this.accent,
-      required this.isLoading,
-      required this.icon,
-      required this.message,
-      required this.actionLabel,
-      required this.onAction,
-      required this.onDismiss,
-      required this.callbackAction1});
-  final bool reducedMotion;
+  const ToastMessageContent({
+    super.key,
+    required this.surface,
+    required this.accent,
+    required this.type,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.actionLabel,
+    this.onAction,
+    required this.callbackAction1,
+  });
+
   final Color surface;
   final Color accent;
-  final bool isLoading;
+  final AppToastType type;
   final IconData icon;
-  final String message;
+  final String title;
+  final String? message;
   final String? actionLabel;
-  final void Function()? onAction;
-  final void Function() onDismiss;
-  final void Function() callbackAction1;
+  final VoidCallback? onAction;
+  final VoidCallback callbackAction1;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        liveRegion: true,
-        child: TweenAnimationBuilder<double>(
-          duration:
-              reducedMotion ? Duration.zero : const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          tween: Tween(begin: 0, end: 1),
-          builder: (context, value, child) => Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(0, -24 * (1 - value)),
-              child: child,
-            ),
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.inset,
+            AppSpacing.compact,
+            AppSpacing.sm,
+            AppSpacing.compact,
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: accent.withValues(alpha: .24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(AppRadius.control),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .08),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
-              child: Row(
-                children: [
-                  if (isLoading)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: accent,
-                      ),
-                    )
-                  else
-                    Icon(icon, color: accent, size: 21),
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
-                    ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ToastLeading(
+                accent: accent,
+                icon: icon,
+                isLoading: type == AppToastType.loading,
+              ),
+              const SizedBox(width: AppSpacing.compact),
+              Expanded(
+                child: _ToastCopy(
+                  title: title,
+                  message: message,
+                  actionLabel: actionLabel,
+                  onAction: onAction,
+                  accent: accent,
+                ),
+              ),
+              IconButton(
+                onPressed: callbackAction1,
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                tooltip: 'Đóng',
+                constraints: const BoxConstraints.tightFor(
+                  width: AppSpacing.formBottom,
+                  height: AppSpacing.formBottom,
+                ),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _ToastLeading extends StatelessWidget {
+  const _ToastLeading({
+    required this.accent,
+    required this.icon,
+    required this.isLoading,
+  });
+
+  final Color accent;
+  final IconData icon;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: Container(
+          width: AppSpacing.lg,
+          height: AppSpacing.lg,
+          margin: const EdgeInsets.only(top: AppSpacing.micro),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+          child: isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onPrimary,
                   ),
-                  if (!isLoading && actionLabel != null && onAction != null)
-                    TextButton(
-                      onPressed: callbackAction1,
-                      child: Text(actionLabel!),
-                    ),
-                  if (!isLoading)
-                    IconButton(
-                      onPressed: onDismiss,
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      tooltip: 'Đóng',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                ],
+                )
+              : Icon(icon, color: AppColors.onPrimary, size: 16),
+        ),
+      );
+}
+
+class _ToastCopy extends StatelessWidget {
+  const _ToastCopy({
+    required this.title,
+    this.message,
+    this.actionLabel,
+    this.onAction,
+    required this.accent,
+  });
+
+  final String title;
+  final String? message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.micro),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppFontSizes.s15,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
               ),
             ),
-          ),
+            if (message case final description?) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppFontSizes.s13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (actionLabel case final label?) ...[
+              const SizedBox(height: AppSpacing.xs),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: accent,
+                  minimumSize: const Size(0, AppSpacing.formBottom),
+                  padding: EdgeInsets.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: AppFontSizes.s13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: Text(label),
+              ),
+            ],
+          ],
         ),
       );
 }

@@ -61,6 +61,13 @@ void main() {
 
     await tester.tap(find.text('23'));
     expect(selectedDate, DateTime(2026, 10, 23));
+
+    await tester.tap(find.text('Hôm nay'));
+    expect(DateUtils.isSameDay(selectedDate, DateTime.now()), isTrue);
+
+    await tester.tap(find.text('10/2026'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chọn ngày lập thực đơn'), findsOneWidget);
   });
 
   testWidgets('missing date plan shows an inline notice instead of old meals',

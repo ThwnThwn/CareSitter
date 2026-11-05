@@ -2,7 +2,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../models/nutrition_menu_overview_model.dart';
-import 'nutrition_week_strip.dart';
+import 'nutrition_calendar_section.dart';
 
 class NutritionMenuOverview extends StatelessWidget {
   const NutritionMenuOverview({
@@ -40,7 +40,7 @@ class NutritionMenuOverview extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               const Divider(height: 1),
               const SizedBox(height: AppSpacing.md),
-              _CalendarSection(
+              NutritionCalendarSection(
                 overview: overview,
                 onDateSelected: onDateSelected,
               ),
@@ -240,46 +240,5 @@ class _Metric extends StatelessWidget {
           ?.copyWith(
         color: emphasized ? AppColors.textPrimary : AppColors.textSecondary,
         fontWeight: emphasized ? FontWeight.w800 : null,
-      );
-}
-
-class _CalendarSection extends StatelessWidget {
-  const _CalendarSection({
-    required this.overview,
-    required this.onDateSelected,
-  });
-
-  final NutritionMenuOverviewModel overview;
-  final ValueChanged<DateTime>? onDateSelected;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Lịch thực đơn',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                '${overview.plannedDate.month}/${overview.plannedDate.year}',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          NutritionWeekStrip(
-            selected: overview.plannedDate,
-            onSelected: onDateSelected,
-          ),
-        ],
       );
 }

@@ -103,6 +103,7 @@
     }
   ],
   "concepts": [
+    {"aliases": ["Bệnh thận", "Bệnh thận mạn", "KIDNEY_DISEASE"], "code": "KIDNEY_DISEASE", "kind": "condition", "version": 1},
     {
       "code": "SOY",
       "kind": "food_allergy",
@@ -145,6 +146,24 @@
       "aliases": [
         "Tôm",
         "Giáp xác"
+      ],
+      "version": 1
+    },
+    {
+      "code": "BEEF",
+      "kind": "food_allergy",
+      "aliases": [
+        "Bò",
+        "Thịt bò"
+      ],
+      "version": 1
+    },
+    {
+      "code": "CHICKEN",
+      "kind": "food_allergy",
+      "aliases": [
+        "Gà",
+        "Thịt gà"
       ],
       "version": 1
     },
@@ -543,7 +562,9 @@
             "basis": "raw"
           }
         ],
-        "allergens": [],
+        "allergens": [
+          "BEEF"
+        ],
         "nutrients": {
           "energy_kcal": 262.9,
           "protein_g": 12.28,
@@ -599,13 +620,15 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu ăn",
+            "name": "Dầu lạc",
             "amount": 5,
             "unit": "ml",
             "basis": "raw"
           }
         ],
-        "allergens": [],
+        "allergens": [
+          "PEANUT"
+        ],
         "nutrients": {
           "energy_kcal": 274.9,
           "protein_g": 11.62,
@@ -653,7 +676,9 @@
             "basis": "cooked"
           }
         ],
-        "allergens": [],
+        "allergens": [
+          "CHICKEN"
+        ],
         "nutrients": {
           "energy_kcal": 318.5,
           "protein_g": 14.95,
@@ -780,7 +805,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu ăn",
+            "name": "Dầu lạc",
             "amount": 7,
             "unit": "ml",
             "basis": "raw"
@@ -801,6 +826,7 @@
           }
         ],
         "allergens": [
+          "PEANUT",
           "SOY"
         ],
         "nutrients": {
@@ -872,7 +898,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu cho lạc rang",
+            "name": "Dầu lạc cho lạc rang",
             "amount": 2.5,
             "unit": "ml",
             "basis": "raw"
@@ -886,7 +912,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu cho rau xào",
+            "name": "Dầu lạc cho rau xào",
             "amount": 7,
             "unit": "ml",
             "basis": "raw"
@@ -965,7 +991,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu thực vật",
+            "name": "Dầu lạc",
             "amount": 5,
             "unit": "ml",
             "basis": "raw"
@@ -1000,7 +1026,8 @@
           }
         ],
         "allergens": [
-          "FISH"
+          "FISH",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 684.15,
@@ -1019,7 +1046,7 @@
           "BOOK_2019_POSTOP_P370",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true,
+        "allergenDataComplete": false,
         "dietaryPatterns": []
       }
     },
@@ -1071,7 +1098,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu ăn",
+            "name": "Dầu lạc",
             "amount": 10,
             "unit": "ml",
             "basis": "raw"
@@ -1085,7 +1112,8 @@
           }
         ],
         "allergens": [
-          "FISH"
+          "FISH",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 502.8,
@@ -1142,7 +1170,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu ăn",
+            "name": "Dầu lạc",
             "amount": 10,
             "unit": "ml",
             "basis": "raw"
@@ -1178,7 +1206,8 @@
         ],
         "allergens": [
           "EGG",
-          "FISH"
+          "FISH",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 532.5,
@@ -1235,7 +1264,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu chiên tôm",
+            "name": "Dầu lạc",
             "amount": 5,
             "unit": "ml",
             "basis": "raw"
@@ -1256,7 +1285,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu xào rau",
+            "name": "Dầu lạc",
             "amount": 7,
             "unit": "ml",
             "basis": "raw"
@@ -1277,7 +1306,8 @@
           }
         ],
         "allergens": [
-          "CRUSTACEAN"
+          "CRUSTACEAN",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 585.25,
@@ -1334,7 +1364,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu ăn",
+            "name": "Dầu lạc",
             "amount": 2,
             "unit": "g",
             "basis": "raw"
@@ -1375,7 +1405,10 @@
             "basis": "raw"
           }
         ],
-        "allergens": [],
+        "allergens": [
+          "CHICKEN",
+          "PEANUT"
+        ],
         "nutrients": {
           "energy_kcal": 608.9,
           "protein_g": 29.47,
@@ -1393,7 +1426,7 @@
           "BOOK_2019_POSTOP_P370",
           "VIETNAM_FOOD_COMPOSITION_2017"
         ],
-        "allergenDataComplete": true,
+        "allergenDataComplete": false,
         "dietaryPatterns": []
       }
     },
@@ -1431,7 +1464,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu cho thịt sốt",
+            "name": "Dầu lạc",
             "amount": 2,
             "unit": "ml",
             "basis": "raw"
@@ -1452,7 +1485,7 @@
           },
           {
             "code": "PEANUT_OIL",
-            "name": "Dầu cho thịt bò xào",
+            "name": "Dầu lạc",
             "amount": 7,
             "unit": "ml",
             "basis": "raw"
@@ -1472,7 +1505,10 @@
             "basis": "raw"
           }
         ],
-        "allergens": [],
+        "allergens": [
+          "BEEF",
+          "PEANUT"
+        ],
         "nutrients": {
           "energy_kcal": 536.6,
           "protein_g": 20.38,

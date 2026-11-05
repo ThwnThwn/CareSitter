@@ -1,6 +1,7 @@
 import 'nutrition_facts.dart';
 import 'nutrition_meal_card.dart';
 import 'nutrition_recommendation_context.dart';
+import 'nutrition_week_progress_card.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
@@ -14,11 +15,13 @@ class NutritionResult extends StatelessWidget {
       required this.controller,
       required this.plannedDate,
       required this.onReplace,
+      required this.onConfirm,
       this.menuOnly = false});
   final NutritionFlow flow;
   final NutritionFlowController controller;
   final DateTime plannedDate;
   final ValueChanged<String> onReplace;
+  final VoidCallback onConfirm;
   final bool menuOnly;
   @override
   Widget build(BuildContext context) => Column(
@@ -31,6 +34,49 @@ class NutritionResult extends StatelessWidget {
     final decision = data.decision;
     final status = r.status;
     final state = status == 'stale' ? 'stale' : decision.state ?? status;
+    if (state == 'eligible' && flow.weekProgress != null) {
+      return [
+        NutritionWeekProgressCard(
+          completedDays: flow.weekProgress!,
+          decision: decision,
+          data: data,
+          health: flow.health,
+        ),
+      ];
+    }
+    if (state == 'stale') {
+      return [
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.warningLight,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.warning),
+          ),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                  child: Text('Thông tin đã thay đổi — cần kiểm tra lại',
+                      style: Theme.of(context).textTheme.titleSmall)),
+            ]),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+                'Hồ sơ chưa được cập nhật và kiểm tra xong. Hãy kiểm tra lại trước khi tạo thực đơn.'),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: flow.loading ? null : c.reassess,
+                child: const Text('Kiểm tra lại hồ sơ'),
+              ),
+            ),
+          ]),
+        ),
+      ];
+    }
     final title = <String, String>{
           'queued': 'Đang chờ phân tích',
           'processing': 'Đang phân tích thông tin',
@@ -52,7 +98,8 @@ class NutritionResult extends StatelessWidget {
       const SizedBox(height: AppSpacing.compact)
     ];
     if (!menuOnly) {
-      widgets.add(NutritionFacts(decision: decision, data: data, state: state));
+      widgets.add(NutritionFacts(
+          decision: decision, data: data, state: state, health: flow.health));
     }
     if (state == 'no_content') {
       widgets.add(const Text(
@@ -67,17 +114,22 @@ class NutritionResult extends StatelessWidget {
     }
     widgets.add(const SizedBox(height: AppSpacing.compact));
     if (state == 'awaiting_confirmation' && decision.allows('confirm')) {
-      widgets.add(FilledButton(
-          onPressed: flow.loading ? null : c.confirm,
-          child: const Text('Thông tin đúng, tiếp tục')));
+      widgets.add(SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+              onPressed: flow.loading ? null : onConfirm,
+              child: const Text('Thông tin đúng, tiếp tục'))));
     }
     if (state == 'eligible' &&
         flow.recommendationsEnabled &&
         decision.allows('recommend')) {
-      widgets.add(FilledButton(
-          onPressed:
-              flow.loading ? null : () => c.recommend(plannedDate: plannedDate),
-          child: const Text('Xem gợi ý thực đơn')));
+      widgets.add(SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+              onPressed: flow.loading
+                  ? null
+                  : () => c.recommend(plannedDate: plannedDate),
+              child: const Text('Xem gợi ý thực đơn'))));
     }
     if (state == 'stale') {
       widgets.add(FilledButton(

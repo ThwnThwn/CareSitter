@@ -8,7 +8,8 @@ class NutritionMealModel {
   final Map<String, dynamic> _json;
   String get name => _json['name']?.toString() ?? '';
   String get mealType => _json['mealType']?.toString() ?? '';
-  String get recipeVersionId => _json['recipeVersionId']?.toString() ?? '';
+  String get recipeVersionId =>
+      (_json['recipeVersionId'] ?? _json['versionId'])?.toString() ?? '';
   String? get imageUrl => _optionalString('imageUrl');
   String? get imageAlt => _optionalString('imageAlt');
   String? get sourceRecipeNote => _optionalString('sourceRecipeNote');

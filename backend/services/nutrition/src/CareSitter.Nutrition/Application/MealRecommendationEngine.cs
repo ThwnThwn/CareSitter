@@ -7,7 +7,8 @@ internal sealed class MealRecommendationEngine(IMealKnowledgeRetriever knowledge
     {
         ct.ThrowIfCancellationRequested();
         var candidateSets = MealConstraintPolicy.CandidateSets(request.CandidateRecipes, request.Facts, request.Rules,
-            request.DietaryPattern, request.NutritionGoal, recentMeals: request.RecentMeals);
+            request.DietaryPattern, request.NutritionGoal, recentMeals: request.RecentMeals,
+            previousMenus: request.PreviousMenus);
         var meals = candidateSets.FirstOrDefault();
         if (meals is null)
             return new MealRecommendationResult(null,

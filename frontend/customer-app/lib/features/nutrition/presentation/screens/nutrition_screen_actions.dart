@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +14,8 @@ class NutritionScreenActions {
     Map<String, dynamic> changes,
   ) {
     if (changes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(content: Text('Chưa có thông tin thay đổi.')),
       );
       return;

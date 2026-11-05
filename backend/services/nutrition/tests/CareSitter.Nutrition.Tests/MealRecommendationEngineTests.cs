@@ -43,6 +43,24 @@ public sealed class MealRecommendationEngineTests
     }
 
     [Fact]
+    public void A_new_day_uses_a_different_complete_menu_when_safe_choices_exist()
+    {
+        var breakfasts = Enumerable.Range(0, 2).Select(index => Recipe("breakfast", 100) with { Name = $"Breakfast {index}" }).ToArray();
+        var lunches = Enumerable.Range(0, 2).Select(index => Recipe("lunch", 200) with { Name = $"Lunch {index}" }).ToArray();
+        var dinners = Enumerable.Range(0, 2).Select(index => Recipe("dinner", 150) with { Name = $"Dinner {index}" }).ToArray();
+        var recipes = breakfasts.Concat(lunches).Concat(dinners).ToArray();
+        var previous = new List<Recipe[]>();
+        for (var day = 0; day < 7; day++)
+        {
+            var selected = Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [],
+                maximum: 1, previousMenus: previous));
+            Assert.DoesNotContain(previous, menu => menu.Select(meal => meal.VersionId)
+                .SequenceEqual(selected.Select(meal => meal.VersionId)));
+            previous.Add(selected);
+        }
+    }
+
+    [Fact]
     public async Task Baseline_returns_safe_catalog_ids_and_explicit_non_ai_trace()
     {
         var recipes = new[]
@@ -187,6 +205,7 @@ public sealed class MealRecommendationEngineTests
             new(7, recipes, [], [], "regular", "maintain"), CancellationToken.None);
 
         Assert.Equal(useAi, result.Trace.UsedAi);
+        Assert.Equal(useAi ? "graph_grounded_ai_ranked" : "graph_grounded_rule", result.Trace.Strategy);
         Assert.Equal(MealGroundingOptions.OwnerAuthorizedGraphDemoMode, result.Trace.GroundingStrategy);
         Assert.Contains("independent_clinical_review_not_claimed", result.Trace.Warnings);
         Assert.True(MealConstraintPolicy.Matches(result.Meals!, [], []));
