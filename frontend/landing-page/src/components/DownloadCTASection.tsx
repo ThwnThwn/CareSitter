@@ -1,5 +1,6 @@
 "use client";
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
+import Link from "next/link";
 
 import { ArrowUpRight, Smartphone } from "lucide-react";
 
@@ -8,6 +9,7 @@ export default function DownloadCTASection() {
   return (
     <section className="download-section" id="download">
       <div className="shell">
+        <div id="contact" />
         <div className="download-panel">
           <div className="download-panel__copy" data-scroll-reveal="card">
             <p className="section-label">Bắt đầu khi gia đình sẵn sàng</p>
@@ -19,7 +21,10 @@ export default function DownloadCTASection() {
               xem được lựa chọn và mức phí trước khi xác nhận.
             </p>
             <div className="download-panel__actions">
-              <button className="button button--light" onClick={() => onOpenBooking()}>
+              <button
+                className="button button--light"
+                onClick={() => onOpenBooking()}
+              >
                 Tư vấn ca đầu tiên
                 <ArrowUpRight size={18} aria-hidden="true" />
               </button>
@@ -46,6 +51,12 @@ export default function DownloadCTASection() {
             <p>Sắp có mặt trên iOS và Android</p>
           </div>
         </div>
+        <p className="download-caregiver-link">
+          Bạn muốn tham gia làm người chăm sóc?{" "}
+          <Link href="/tro-thanh-nguoi-cham-soc">
+            Tìm hiểu hành trình cùng CareSitter ↗
+          </Link>
+        </p>
       </div>
     </section>
   );

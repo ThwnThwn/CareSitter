@@ -2,17 +2,32 @@
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const navItems = [
-  { label: "Điểm khác biệt", href: "#features" },
-  { label: "Quy trình", href: "#how-it-works" },
-  { label: "Caregiver", href: "#caregivers" },
-  { label: "Câu chuyện", href: "#testimonials" },
+const familyNav = [
+  { label: "Về chúng tôi", href: "/#about" },
+  { label: "Điểm khác biệt", href: "/#features" },
+  { label: "Quy trình", href: "/#how-it-works" },
+  { label: "Dịch vụ", href: "/#services" },
+  { label: "Caregiver", href: "/#caregivers" },
+  { label: "Câu chuyện", href: "/#testimonials" },
+  { label: "Trở thành caregiver", href: "/tro-thanh-nguoi-cham-soc" },
+];
+const caregiverNav = [
+  { label: "Quyền lợi", href: "#quyen-loi" },
+  { label: "Hành trang", href: "#hanh-trang" },
+  { label: "Quy trình", href: "#quy-trinh" },
+  { label: "Câu hỏi", href: "#cau-hoi" },
 ];
 
-export default function Header() {
+export default function Header({
+  audience = "family",
+}: {
+  audience?: "family" | "caregiver";
+}) {
+  const navItems = audience === "caregiver" ? caregiverNav : familyNav;
   const onOpenBooking = useConsultation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -29,8 +44,15 @@ export default function Header() {
       frame = 0;
       const y = Math.max(0, window.scrollY);
       const delta = y - previousY;
-      const keyboardFocus = document.querySelector(".site-header :focus-visible");
-      if (menuOpen || keyboardFocus || document.body.style.overflow === "hidden" || y < 90) {
+      const keyboardFocus = document.querySelector(
+        ".site-header :focus-visible",
+      );
+      if (
+        menuOpen ||
+        keyboardFocus ||
+        document.body.style.overflow === "hidden" ||
+        y < 90
+      ) {
         setIsHidden(false);
         previousY = y;
         return;
@@ -57,7 +79,11 @@ export default function Header() {
       onFocusCapture={() => setIsHidden(false)}
     >
       <div className="site-header__inner shell">
-        <a className="brand-lockup" href="#hero" aria-label="CareSitter — về đầu trang">
+        <Link
+          className="brand-lockup"
+          href="/"
+          aria-label="CareSitter — về trang chủ"
+        >
           <span className="brand-mark" aria-hidden="true">
             <Image
               src="/images/logo.png"
@@ -71,21 +97,30 @@ export default function Header() {
             <strong>CareSitter</strong>
             <small>Chăm sóc gia đình</small>
           </span>
-        </a>
+        </Link>
 
         <nav className="desktop-nav" aria-label="Điều hướng chính">
           {navItems.map((item) => (
-            <a href={item.href} key={item.href}>
+            <Link href={item.href} key={item.href}>
               <span>{item.label}</span>
               <span className="desktop-nav__underline" aria-hidden="true" />
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="header-actions">
-          <button className="button button--compact" onClick={() => onOpenBooking()}>
-            Đăng ký tư vấn
-          </button>
+          {audience === "caregiver" ? (
+            <a className="button button--compact" href="#dang-ky">
+              Tìm hiểu tham gia
+            </a>
+          ) : (
+            <button
+              className="button button--compact"
+              onClick={() => onOpenBooking()}
+            >
+              Đăng ký tư vấn
+            </button>
+          )}
           <button
             className="menu-toggle"
             type="button"
@@ -106,7 +141,7 @@ export default function Header() {
       >
         <nav aria-label="Điều hướng trên điện thoại">
           {navItems.map((item) => (
-            <a
+            <Link
               href={item.href}
               key={item.href}
               onClick={() => setMenuOpen(false)}
@@ -115,17 +150,27 @@ export default function Header() {
                 <span>{item.label}</span>
                 <span className="mobile-nav__underline" aria-hidden="true" />
               </span>
-            </a>
+            </Link>
           ))}
-          <button
-            className="button button--primary button--wide"
-            onClick={() => {
-              setMenuOpen(false);
-              onOpenBooking();
-            }}
-          >
-            Đăng ký tư vấn
-          </button>
+          {audience === "caregiver" ? (
+            <a
+              className="button button--primary button--wide"
+              href="#dang-ky"
+              onClick={() => setMenuOpen(false)}
+            >
+              Tìm hiểu tham gia
+            </a>
+          ) : (
+            <button
+              className="button button--primary button--wide"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenBooking();
+              }}
+            >
+              Đăng ký tư vấn
+            </button>
+          )}
         </nav>
       </div>
     </header>
