@@ -24,7 +24,7 @@ const reviews = [
   },
   {
     quote:
-      "Caregiver đến đúng giờ, nói chuyện nhẹ nhàng và rất tôn trọng nếp sinh hoạt của bố tôi. Cả nhà yên tâm hơn hẳn.",
+      "Chăm sóc viên đến đúng giờ, nói chuyện nhẹ nhàng và rất tôn trọng nếp sinh hoạt của bố tôi. Cả nhà yên tâm hơn hẳn.",
     author: "Anh Dũng",
     relation: "Con trai của bác Minh",
     location: "Đà Nẵng",
@@ -32,7 +32,7 @@ const reviews = [
   },
   {
     quote:
-      "Từ buổi đầu làm quen đến mỗi lần bàn giao, mọi thông tin đều rõ ràng. Mẹ tôi cũng chủ động hỏi khi nào cô caregiver quay lại.",
+      "Từ buổi đầu làm quen đến mỗi lần bàn giao, mọi thông tin đều rõ ràng. Mẹ tôi cũng chủ động hỏi khi nào cô chăm sóc viên quay lại.",
     author: "Ngọc Mai",
     relation: "Gia đình cô Hạnh",
     location: "TP.HCM",
@@ -40,7 +40,7 @@ const reviews = [
   },
   {
     quote:
-      "Không chỉ hỗ trợ sinh hoạt, caregiver còn biết cách trò chuyện để ông vui hơn. Đó là điều ứng dụng hay lịch trình không thể hiện hết.",
+      "Không chỉ hỗ trợ sinh hoạt, chăm sóc viên còn biết cách trò chuyện để ông vui hơn. Đó là điều ứng dụng hay lịch trình không thể hiện hết.",
     author: "Tuấn Anh",
     relation: "Cháu của ông Phúc",
     location: "Hà Nội",
@@ -58,7 +58,7 @@ const compactReviews = [
   },
   {
     quote:
-      "Mẹ tôi hợp với caregiver ngay từ buổi đầu. Cách trò chuyện rất tự nhiên.",
+      "Mẹ tôi hợp với chăm sóc viên ngay từ buổi đầu. Cách trò chuyện rất tự nhiên.",
     author: "Hoàng Nam",
     context: "Gia đình tại Hà Nội",
     initials: "HN",

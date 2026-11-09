@@ -11,9 +11,8 @@ const familyNav = [
   { label: "Điểm khác biệt", href: "/#features" },
   { label: "Quy trình", href: "/#how-it-works" },
   { label: "Dịch vụ", href: "/#services" },
-  { label: "Caregiver", href: "/#caregivers" },
   { label: "Câu chuyện", href: "/#testimonials" },
-  { label: "Trở thành caregiver", href: "/tro-thanh-nguoi-cham-soc" },
+  { label: "Trở thành chăm sóc viên", href: "/tro-thanh-nguoi-cham-soc" },
 ];
 const caregiverNav = [
   { label: "Quyền lợi", href: "#quyen-loi" },

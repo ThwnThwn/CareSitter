@@ -54,7 +54,7 @@ export default function CaregiversSection() {
           <article className="caregiver-featured" data-scroll-reveal="card">
             <figure>
               <Image
-                alt="Caregiver Hải Đường"
+                alt="Chăm sóc viên Hải Đường"
                 fill
                 sizes="(max-width: 850px) 100vw, 47vw"
                 src="/images/caregiver-1.jpg"
@@ -99,7 +99,7 @@ export default function CaregiversSection() {
               >
                 <figure>
                   <Image
-                    alt={"Caregiver " + caregiver.name}
+                    alt={"Chăm sóc viên " + caregiver.name}
                     fill
                     sizes="160px"
                     src={caregiver.image}

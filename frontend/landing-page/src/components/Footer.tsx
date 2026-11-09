@@ -8,7 +8,7 @@ const footerGroups = [
       ["Dịch vụ chăm sóc", "/#services"],
       ["Điểm khác biệt", "/#features"],
       ["Quy trình", "/#how-it-works"],
-      ["Caregiver", "/#caregivers"],
+      ["Chăm sóc viên", "/#caregivers"],
       ["Về CareSitter", "/#about"],
       ["Trở thành người chăm sóc", "/tro-thanh-nguoi-cham-soc"],
     ],
