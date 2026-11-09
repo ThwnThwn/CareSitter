@@ -3,11 +3,7 @@
 import { useCallback, useState } from "react";
 import MotionWords from "./MotionWords";
 import { motion } from "framer-motion";
-import {
-  BadgeCheck,
-  Quote,
-  Star,
-} from "lucide-react";
+import { BadgeCheck, Quote, Star } from "lucide-react";
 
 const reviews = [
   {
@@ -54,37 +50,43 @@ const reviews = [
 
 const compactReviews = [
   {
-    quote: "Thông báo đúng lúc, lịch trình dễ theo dõi và không có khoản phí bất ngờ.",
+    quote:
+      "Thông báo đúng lúc, lịch trình dễ theo dõi và không có khoản phí bất ngờ.",
     author: "Phương Vy",
     context: "Gia đình tại TP.HCM",
     initials: "PV",
   },
   {
-    quote: "Mẹ tôi hợp với caregiver ngay từ buổi đầu. Cách trò chuyện rất tự nhiên.",
+    quote:
+      "Mẹ tôi hợp với caregiver ngay từ buổi đầu. Cách trò chuyện rất tự nhiên.",
     author: "Hoàng Nam",
     context: "Gia đình tại Hà Nội",
     initials: "HN",
   },
   {
-    quote: "Mỗi lần bàn giao đều rõ ràng nên anh chị em trong nhà cùng nắm được tình hình.",
+    quote:
+      "Mỗi lần bàn giao đều rõ ràng nên anh chị em trong nhà cùng nắm được tình hình.",
     author: "Thu Hà",
     context: "Gia đình tại Hải Phòng",
     initials: "TH",
   },
   {
-    quote: "Đổi lịch một lần nhưng được hỗ trợ rất nhanh, không làm gián đoạn ca chăm sóc.",
+    quote:
+      "Đổi lịch một lần nhưng được hỗ trợ rất nhanh, không làm gián đoạn ca chăm sóc.",
     author: "Quốc Bảo",
     context: "Gia đình tại Đà Nẵng",
     initials: "QB",
   },
   {
-    quote: "Bố vui hơn vì có người đồng hành đều đặn, còn tôi bớt cảm giác phải xoay xở một mình.",
+    quote:
+      "Bố vui hơn vì có người đồng hành đều đặn, còn tôi bớt cảm giác phải xoay xở một mình.",
     author: "Hà My",
     context: "Gia đình tại Bình Dương",
     initials: "HM",
   },
   {
-    quote: "Hồ sơ rõ ràng giúp gia đình chọn nhanh hơn mà vẫn cảm thấy mình đang quyết định kỹ.",
+    quote:
+      "Hồ sơ rõ ràng giúp gia đình chọn nhanh hơn mà vẫn cảm thấy mình đang quyết định kỹ.",
     author: "Đức Anh",
     context: "Gia đình tại TP.HCM",
     initials: "ĐA",
@@ -109,7 +111,9 @@ export default function TestimonialsSection() {
   }, []);
 
   const previous = useCallback(() => {
-    setActiveIndex((current) => (current - 1 + reviews.length) % reviews.length);
+    setActiveIndex(
+      (current) => (current - 1 + reviews.length) % reviews.length,
+    );
   }, []);
 
   const next = useCallback(() => {
@@ -124,22 +128,37 @@ export default function TestimonialsSection() {
             <p className="section-label section-label--ink">
               Câu chuyện từ gia đình
             </p>
-            <h2 className="display display--section" data-scroll-reveal="heading">
+            <h2
+              className="display display--section"
+              data-scroll-reveal="heading"
+            >
               <MotionWords>
-              Khi việc chăm sóc <em>trở nên nhẹ lòng.</em>
+                Khi việc chăm sóc <em>trở nên nhẹ lòng.</em>
               </MotionWords>
             </h2>
+            <p className="stories-example-note">
+              Các câu chuyện và đánh giá dưới đây minh họa những trải nghiệm mà
+              CareSitter hướng đến.
+            </p>
           </div>
 
-          <div className="stories-rating" aria-label="4,9 trên 5 sao">
+          <div
+            className="stories-rating"
+            aria-label="Minh họa đánh giá 4,9 trên 5 sao"
+          >
             <strong>4,9</strong>
             <div>
               <span className="stories-rating__stars" aria-hidden="true">
                 {[0, 1, 2, 3, 4].map((star) => (
-                  <Star fill="currentColor" key={star} size={15} strokeWidth={0} />
+                  <Star
+                    fill="currentColor"
+                    key={star}
+                    size={15}
+                    strokeWidth={0}
+                  />
                 ))}
               </span>
-              <span>từ hơn 12.000 lượt đánh giá</span>
+              <span>đánh giá minh họa</span>
             </div>
           </div>
         </header>
@@ -169,7 +188,11 @@ export default function TestimonialsSection() {
               const isNearby = Math.abs(position) <= 1;
 
               return (
-                <div className="review-carousel__slot" data-scroll-reveal="card" key={review.author}>
+                <div
+                  className="review-carousel__slot"
+                  data-scroll-reveal="card"
+                  key={review.author}
+                >
                   <motion.blockquote
                     animate={{
                       opacity: isActive ? 1 : isNearby ? 0.42 : 0,
@@ -183,7 +206,10 @@ export default function TestimonialsSection() {
                     transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <div className="review-card__topline">
-                      <span className="review-card__stars" aria-label="5 trên 5 sao">
+                      <span
+                        className="review-card__stars"
+                        aria-label="5 trên 5 sao"
+                      >
                         {[0, 1, 2, 3, 4].map((star) => (
                           <Star
                             aria-hidden="true"
@@ -232,7 +258,6 @@ export default function TestimonialsSection() {
                 />
               ))}
             </div>
-
           </div>
 
           <div className="review-marquee" data-scroll-reveal="card">
@@ -247,10 +272,20 @@ export default function TestimonialsSection() {
             >
               <div className="review-marquee__track">
                 {[false, true].map((isDuplicate) => (
-                  <ul aria-hidden={isDuplicate} className="review-marquee__group" key={String(isDuplicate)}>
+                  <ul
+                    aria-hidden={isDuplicate}
+                    className="review-marquee__group"
+                    key={String(isDuplicate)}
+                  >
                     {compactReviews.map((review) => (
-                      <li className="review-note" key={`${isDuplicate}-${review.author}`}>
-                        <span className="review-note__stars" aria-label="5 trên 5 sao">
+                      <li
+                        className="review-note"
+                        key={`${isDuplicate}-${review.author}`}
+                      >
+                        <span
+                          className="review-note__stars"
+                          aria-label="5 trên 5 sao"
+                        >
                           {[0, 1, 2, 3, 4].map((star) => (
                             <Star
                               aria-hidden="true"
@@ -278,8 +313,8 @@ export default function TestimonialsSection() {
           </div>
 
           <p className="sr-only" aria-live="polite">
-            Đánh giá {activeIndex + 1} trên {reviews.length}: {reviews[activeIndex].quote} —{" "}
-            {reviews[activeIndex].author}
+            Đánh giá {activeIndex + 1} trên {reviews.length}:{" "}
+            {reviews[activeIndex].quote} — {reviews[activeIndex].author}
           </p>
         </div>
       </div>

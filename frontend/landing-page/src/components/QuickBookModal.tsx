@@ -12,7 +12,9 @@ interface QuickBookModalProps {
 }
 
 export default function QuickBookModal({
-  isOpen, onClose, caregiverName = "Chuyên viên CareSitter",
+  isOpen,
+  onClose,
+  caregiverName = "",
   serviceCategory = "Chăm sóc người cao tuổi",
 }: QuickBookModalProps) {
   const [receipt, setReceipt] = useState<ConsultationReceipt | null>(null);
@@ -31,25 +33,62 @@ export default function QuickBookModal({
     };
   }, [isOpen]);
   if (!isOpen) return null;
-  return <dialog ref={dialog} className="booking-modal consultation-dialog"
-    aria-labelledby="booking-title" onCancel={onClose}>
-    <button aria-label="Đóng cửa sổ tư vấn" className="modal-close" onClick={onClose} type="button">
-      <X size={20} />
-    </button>
-    {receipt ? <div className="booking-success" aria-live="polite">
-      <span><Check size={30} aria-hidden="true" /></span>
-      <h2 id="booking-title">Đã lưu yêu cầu tư vấn</h2>
-      <p>CareSitter sẽ liên hệ theo số điện thoại bạn cung cấp để xác nhận nhu cầu.
-        Lịch chăm sóc sẽ được thống nhất sau khi tư vấn.</p>
-      <p className="consultation-reference">Mã yêu cầu: {receipt.id}</p>
-      <button className="button button--primary" onClick={onClose}>Hoàn tất</button>
-    </div> : <>
-      <header className="booking-modal__header">
-        <span><ShieldCheck size={16} aria-hidden="true" />Đăng ký tư vấn</span>
-        <h2 id="booking-title">Cho CareSitter biết gia đình cần gì</h2>
-        <p>Người chăm sóc bạn quan tâm: <strong>{caregiverName}</strong></p>
-      </header>
-      <ConsultationForm caregiverName={caregiverName} serviceCategory={serviceCategory} onSaved={setReceipt} />
-    </>}
-  </dialog>;
+  return (
+    <dialog
+      ref={dialog}
+      className="booking-modal consultation-dialog"
+      aria-labelledby="booking-title"
+      onCancel={onClose}
+    >
+      <button
+        aria-label="Đóng cửa sổ tư vấn"
+        className="modal-close"
+        onClick={onClose}
+        type="button"
+      >
+        <X size={20} />
+      </button>
+      {receipt ? (
+        <div className="booking-success" aria-live="polite">
+          <span>
+            <Check size={30} aria-hidden="true" />
+          </span>
+          <h2 id="booking-title">Đã lưu yêu cầu tư vấn</h2>
+          <p>
+            CareSitter sẽ liên hệ theo số điện thoại bạn cung cấp để xác nhận
+            nhu cầu. Lịch chăm sóc sẽ được thống nhất sau khi tư vấn.
+          </p>
+          <p className="consultation-reference">Mã yêu cầu: {receipt.id}</p>
+          <button className="button button--primary" onClick={onClose}>
+            Hoàn tất
+          </button>
+        </div>
+      ) : (
+        <>
+          <header className="booking-modal__header">
+            <span>
+              <ShieldCheck size={16} aria-hidden="true" />
+              Đăng ký tư vấn
+            </span>
+            <h2 id="booking-title">Cho CareSitter biết gia đình cần gì</h2>
+            {caregiverName ? (
+              <p>
+                Người chăm sóc bạn quan tâm <strong>{caregiverName}</strong>
+              </p>
+            ) : (
+              <p>
+                Chia sẻ nhu cầu, thời gian và khu vực để được tư vấn phương án
+                phù hợp.
+              </p>
+            )}
+          </header>
+          <ConsultationForm
+            caregiverName={caregiverName}
+            serviceCategory={serviceCategory}
+            onSaved={setReceipt}
+          />
+        </>
+      )}
+    </dialog>
+  );
 }

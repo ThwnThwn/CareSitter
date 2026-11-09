@@ -29,7 +29,7 @@ export default function HowItWorksSection() {
             <h2 className="display display--section" data-scroll-reveal="heading">
               <MotionWords>
               Từ nhu cầu đến ca chăm sóc
-              <em>trong vài phút.</em>
+              <em>với từng bước rõ ràng.</em>
               </MotionWords>
             </h2>
           </div>
@@ -54,7 +54,7 @@ export default function HowItWorksSection() {
 
           <div className="care-timeline" data-scroll-reveal="image" aria-label="Minh họa tiến trình một ca chăm sóc">
             <div className="care-timeline__top">
-              <span>Ca hôm nay</span>
+              <span>Minh họa một ca chăm sóc</span>
               <strong>14:00 — 18:00</strong>
             </div>
             <div className="care-timeline__person">
