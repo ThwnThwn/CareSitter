@@ -6,6 +6,7 @@
 # ---------- Chỉ theo dõi source chính ----------
 /*
 !/.gitignore
+!/.gitattributes
 !/.github/
 !/.github/**
 !/global.json
@@ -172,3 +173,6 @@ baocao/
 **/.kombai/
 **/jitter_preview.png
 **/landing_fullpage_sliding.png
+
+# Per-VM deployment state written by deploy/deploy.sh and deploy/rollback.sh
+deploy/.releases/

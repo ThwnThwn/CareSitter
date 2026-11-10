@@ -1,0 +1,78 @@
+name: Deploy
+
+# Staging: automatically after CI passes on main.
+# Production: manual only, and gated by the "production" GitHub Environment
+# (configure Required reviewers in Settings → Environments → production).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+      ref:
+        description: Commit SHA or tag to deploy (production should use a SHA that already ran on staging)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    name: Deploy to ${{ github.event.inputs.environment || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+      url: ${{ vars.APP_URL }}
+    env:
+      TARGET_REF: ${{ github.event.inputs.ref || github.event.workflow_run.head_sha }}
+    steps:
+      - name: Validate inputs and secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            eval "value=\${$name}"
+            [ -n "$value" ] || { echo "::error::Missing environment secret $name"; exit 1; }
+          done
+          printf '%s' "$TARGET_REF" | grep -Eq '^[A-Za-z0-9._/-]{1,100}$' ||
+            { echo '::error::ref contains unsupported characters'; exit 1; }
+
+      - name: Configure SSH (pinned host key, no TOFU)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
+
+      - name: Run deploy/deploy.sh on the VM
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/caresitter' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$DEPLOY_PATH' && sh deploy/deploy.sh '$TARGET_REF'"
+
+      - name: Public health check
+        if: vars.APP_URL != ''
+        run: curl -fsS --retry 5 --retry-delay 5 "${{ vars.APP_URL }}/health/ready"
