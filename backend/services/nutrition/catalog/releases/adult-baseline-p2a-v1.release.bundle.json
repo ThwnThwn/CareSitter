@@ -1,4 +1,4 @@
-﻿{
+{
     "schemaVersion":  1,
     "packageKey":  "adult-baseline-p2a-v1",
     "supportedScopes":  [
@@ -20,99 +20,99 @@
                         ],
     "citations":  [
                       {
-                          "chapter":  "Dinh dÆ°á»¡ng Ä‘iá»u trá»‹ bá»‡nh tÄƒng huyáº¿t Ã¡p",
+                          "chapter":  "Dinh dưỡng điều trị bệnh tăng huyết áp",
                           "edition":  "2019",
                           "fileSha256":  "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
                           "id":  "BOOK_2019_HTN_P143",
-                          "locator":  "Báº£ng thá»±c Ä‘Æ¡n tham kháº£o 7 giá», 11 giá», 15 giá» vÃ  18 giá».",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Bảng thực đơn tham khảo 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  "143",
                           "printedPages":  "142",
                           "reference":  "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
-                          "title":  "Dinh dÆ°á»¡ng lÃ¢m sÃ ng",
+                          "title":  "Dinh dưỡng lâm sàng",
                           "verifiedOn":  "2026-10-24",
                           "year":  2019
                       },
                       {
-                          "chapter":  "Dinh dÆ°á»¡ng Ä‘iá»u trá»‹ thá»«a cÃ¢n, bÃ©o phÃ¬",
+                          "chapter":  "Dinh dưỡng điều trị thừa cân, béo phì",
                           "edition":  "2019",
                           "fileSha256":  "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
                           "id":  "BOOK_2019_OBESITY_P273",
-                          "locator":  "Báº£ng thá»±c Ä‘Æ¡n tham kháº£o 7 giá», 11 giá», 15 giá» vÃ  18 giá».",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Bảng thực đơn tham khảo 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  "273",
                           "printedPages":  "272",
                           "reference":  "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
-                          "title":  "Dinh dÆ°á»¡ng lÃ¢m sÃ ng",
+                          "title":  "Dinh dưỡng lâm sàng",
                           "verifiedOn":  "2026-10-24",
                           "year":  2019
                       },
                       {
-                          "chapter":  "PhÃ²ng vÃ  Ä‘iá»u trá»‹ loÃ£ng xÆ°Æ¡ng",
+                          "chapter":  "Phòng và điều trị loãng xương",
                           "edition":  "2019",
                           "fileSha256":  "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
                           "id":  "BOOK_2019_OSTEOPOROSIS_P286",
-                          "locator":  "Báº£ng thá»±c Ä‘Æ¡n tham kháº£o; dÃ²ng bá»¯a sÃ¡ng Phá»Ÿ gÃ .",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Bảng thực đơn tham khảo; dòng bữa sáng Phở gà.",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  "286",
                           "printedPages":  "285",
                           "reference":  "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
-                          "title":  "Dinh dÆ°á»¡ng lÃ¢m sÃ ng",
+                          "title":  "Dinh dưỡng lâm sàng",
                           "verifiedOn":  "2026-10-24",
                           "year":  2019
                       },
                       {
-                          "chapter":  "Dinh dÆ°á»¡ng cho bá»‡nh nhÃ¢n trÆ°á»›c vÃ  sau pháº«u thuáº­t",
+                          "chapter":  "Dinh dưỡng cho bệnh nhân trước và sau phẫu thuật",
                           "edition":  "2019",
                           "fileSha256":  "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
                           "id":  "BOOK_2019_POSTOP_P370",
-                          "locator":  "Báº£ng thá»±c Ä‘Æ¡n giai Ä‘oáº¡n phá»¥c há»“i 7 giá», 11 giá», 15 giá» vÃ  18 giá».",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Bảng thực đơn giai đoạn phục hồi 7 giờ, 11 giờ, 15 giờ và 18 giờ.",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  "370",
                           "printedPages":  "369",
                           "reference":  "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
-                          "title":  "Dinh dÆ°á»¡ng lÃ¢m sÃ ng",
+                          "title":  "Dinh dưỡng lâm sàng",
                           "verifiedOn":  "2026-10-24",
                           "year":  2019
                       },
                       {
-                          "chapter":  "Dinh dÆ°á»¡ng Ä‘iá»u trá»‹ bá»‡nh tháº­n máº¡n",
+                          "chapter":  "Dinh dưỡng điều trị bệnh thận mạn",
                           "edition":  "2019",
                           "fileSha256":  "ABEA34B8A6A63E9EABD25F57141C18BA6AC31012C1D4A8DCC15F9BA68DC7F737",
                           "id":  "BOOK_2019_CKD_P219_220",
-                          "locator":  "Báº£ng thá»±c Ä‘Æ¡n CKD giai Ä‘oáº¡n 1-2.",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Bảng thực đơn CKD giai đoạn 1-2.",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  "219-220",
                           "printedPages":  "218-219",
                           "reference":  "book/Dinh_duong_lam_sang_Vien_Dinh_duong_2019.pdf",
-                          "title":  "Dinh dÆ°á»¡ng lÃ¢m sÃ ng",
+                          "title":  "Dinh dưỡng lâm sàng",
                           "verifiedOn":  "2026-10-24",
                           "year":  2019
                       },
                       {
-                          "chapter":  "CÃ¡c má»¥c thá»±c pháº©m Ä‘Æ°á»£c chá»¥p trong source snapshot",
+                          "chapter":  "Các mục thực phẩm được chụp trong source snapshot",
                           "edition":  "2017",
                           "fileSha256":  null,
                           "id":  "VIETNAM_FOOD_COMPOSITION_2017",
-                          "locator":  "MÃ£ thá»±c pháº©m vÃ  sÃ¡u chá»‰ sá»‘ trÃªn 100 g trong catalog/sources/nin-food-composition-2026-10-24.json",
-                          "organization":  "Viá»‡n Dinh dÆ°á»¡ng",
+                          "locator":  "Mã thực phẩm và sáu chỉ số trên 100 g trong catalog/sources/nin-food-composition-2026-10-24.json",
+                          "organization":  "Viện Dinh dưỡng",
                           "pdfPages":  null,
                           "printedPages":  null,
                           "reference":  "https://viendinhduong.vn/vi/cong-cu-va-tien-ich/gia-tri-dinh-duong-thuc-pham",
-                          "title":  "Báº£ng thÃ nh pháº§n thá»±c pháº©m Viá»‡t Nam 2017 - cÃ´ng cá»¥ tra cá»©u trá»±c tuyáº¿n",
+                          "title":  "Bảng thành phần thực phẩm Việt Nam 2017 - công cụ tra cứu trực tuyến",
                           "verifiedOn":  "2026-10-24",
                           "year":  2017
                       },
                       {
-                          "chapter":  "Bá»¯a Äƒn ngÆ°á»i lá»›n - catalog local",
+                          "chapter":  "Bữa ăn người lớn - catalog local",
                           "edition":  "2",
                           "id":  "CARESITTER_VARIETY_ADAPTATION_V2",
                           "locator":  "backend/scripts/build-nutrition-variety-catalog.ps1",
                           "organization":  "CareSitter",
                           "pdfPages":  null,
                           "printedPages":  null,
-                          "reference":  "CÃ´ng thá»©c Ä‘iá»u chá»‰nh cá»§a CareSitter; dÆ°á»¡ng cháº¥t Æ°á»›c tÃ­nh tá»« Ä‘á»‹nh lÆ°á»£ng vÃ  snapshot Viá»‡n Dinh dÆ°á»¡ng, khÃ´ng pháº£i thá»±c Ä‘Æ¡n nguyÃªn vÄƒn tá»« sÃ¡ch.",
-                          "title":  "CÃ´ng thá»©c phá»‘i há»£p CareSitter v2",
+                          "reference":  "Công thức điều chỉnh của CareSitter; dưỡng chất ước tính từ định lượng và snapshot Viện Dinh dưỡng, không phải thực đơn nguyên văn từ sách.",
+                          "title":  "Công thức phối hợp CareSitter v2",
                           "verifiedOn":  "2026-10-27",
                           "year":  2026
                       }
@@ -120,9 +120,9 @@
     "concepts":  [
                      {
                          "aliases":  [
-                                         "Äáº­u nÃ nh",
-                                         "Äáº­u tÆ°Æ¡ng",
-                                         "Äáº­u phá»¥"
+                                         "Đậu nành",
+                                         "Đậu tương",
+                                         "Đậu phụ"
                                      ],
                          "code":  "SOY",
                          "kind":  "food_allergy",
@@ -130,8 +130,8 @@
                      },
                      {
                          "aliases":  [
-                                         "Láº¡c",
-                                         "Äáº­u phá»™ng"
+                                         "Lạc",
+                                         "Đậu phộng"
                                      ],
                          "code":  "PEANUT",
                          "kind":  "food_allergy",
@@ -139,7 +139,7 @@
                      },
                      {
                          "aliases":  [
-                                         "CÃ¡"
+                                         "Cá"
                                      ],
                          "code":  "FISH",
                          "kind":  "food_allergy",
@@ -147,8 +147,8 @@
                      },
                      {
                          "aliases":  [
-                                         "Trá»©ng",
-                                         "Trá»©ng gÃ "
+                                         "Trứng",
+                                         "Trứng gà"
                                      ],
                          "code":  "EGG",
                          "kind":  "food_allergy",
@@ -156,8 +156,8 @@
                      },
                      {
                          "aliases":  [
-                                         "TÃ´m",
-                                         "GiÃ¡p xÃ¡c"
+                                         "Tôm",
+                                         "Giáp xác"
                                      ],
                          "code":  "CRUSTACEAN",
                          "kind":  "food_allergy",
@@ -165,7 +165,7 @@
                      },
                      {
                          "aliases":  [
-                                         "TÃ¡o tÃ¢y, tÆ°Æ¡i"
+                                         "Táo tây, tươi"
                                      ],
                          "code":  "APPLE_FRESH",
                          "kind":  "ingredient",
@@ -173,7 +173,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Rau thÆ¡m, tÆ°Æ¡i"
+                                         "Rau thơm, tươi"
                                      ],
                          "code":  "AROMATIC_HERBS_FRESH",
                          "kind":  "ingredient",
@@ -181,7 +181,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Thá»‹t bÃ², loáº¡i I, tÆ°Æ¡i"
+                                         "Thịt bò, loại I, tươi"
                                      ],
                          "code":  "BEEF_LEAN_RAW",
                          "kind":  "ingredient",
@@ -189,7 +189,7 @@
                      },
                      {
                          "aliases":  [
-                                         "MÆ°á»›p Ä‘áº¯ng, tÆ°Æ¡i"
+                                         "Mướp đắng, tươi"
                                      ],
                          "code":  "BITTER_MELON_FRESH",
                          "kind":  "ingredient",
@@ -197,7 +197,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Cáº£i thÃ¬a (cáº£i tráº¯ng), tÆ°Æ¡i"
+                                         "Cải thìa (cải trắng), tươi"
                                      ],
                          "code":  "BOK_CHOY_FRESH",
                          "kind":  "ingredient",
@@ -205,7 +205,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Trá»©ng gÃ  ta"
+                                         "Trứng gà ta"
                                      ],
                          "code":  "CHICKEN_EGG_RAW",
                          "kind":  "ingredient",
@@ -213,7 +213,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Thá»‹t gÃ  ta, tÆ°Æ¡i"
+                                         "Thịt gà ta, tươi"
                                      ],
                          "code":  "CHICKEN_RAW",
                          "kind":  "ingredient",
@@ -221,7 +221,7 @@
                      },
                      {
                          "aliases":  [
-                                         "TÆ°Æ¡ng á»›t"
+                                         "Tương ớt"
                                      ],
                          "code":  "CHILI_SAUCE",
                          "kind":  "ingredient",
@@ -229,7 +229,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Quáº£ thanh long, tÆ°Æ¡i"
+                                         "Quả thanh long, tươi"
                                      ],
                          "code":  "DRAGON_FRUIT_FRESH",
                          "kind":  "ingredient",
@@ -237,7 +237,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Thá»‹t ngan, tÆ°Æ¡i"
+                                         "Thịt ngan, tươi"
                                      ],
                          "code":  "DUCK_RAW",
                          "kind":  "ingredient",
@@ -245,7 +245,7 @@
                      },
                      {
                          "aliases":  [
-                                         "TÆ°Æ¡ng náº¿p"
+                                         "Tương nếp"
                                      ],
                          "code":  "FERMENTED_SOYBEAN_RICE",
                          "kind":  "ingredient",
@@ -253,7 +253,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Tá»i ta, tÆ°Æ¡i"
+                                         "Tỏi ta, tươi"
                                      ],
                          "code":  "GARLIC_FRESH",
                          "kind":  "ingredient",
@@ -261,7 +261,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Gá»«ng tÆ°Æ¡i"
+                                         "Gừng tươi"
                                      ],
                          "code":  "GINGER_FRESH",
                          "kind":  "ingredient",
@@ -269,7 +269,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Miáº¿n dong, khÃ´"
+                                         "Miến dong, khô"
                                      ],
                          "code":  "GLASS_NOODLE_DRY",
                          "kind":  "ingredient",
@@ -277,7 +277,7 @@
                      },
                      {
                          "aliases":  [
-                                         "CÃ¡ bá»‘ng, tÆ°Æ¡i"
+                                         "Cá bống, tươi"
                                      ],
                          "code":  "GOBY_RAW",
                          "kind":  "ingredient",
@@ -285,7 +285,7 @@
                      },
                      {
                          "aliases":  [
-                                         "CÃ¡ tráº¯m cá», tÆ°Æ¡i"
+                                         "Cá trắm cỏ, tươi"
                                      ],
                          "code":  "GRASS_CARP_RAW",
                          "kind":  "ingredient",
@@ -293,7 +293,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Äáº­u cÃ´ ve, luá»™c"
+                                         "Đậu cô ve, luộc"
                                      ],
                          "code":  "GREEN_BEANS_BOILED",
                          "kind":  "ingredient",
@@ -301,7 +301,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Rau má»“ng tÆ¡i, tÆ°Æ¡i"
+                                         "Rau mồng tơi, tươi"
                                      ],
                          "code":  "MALABAR_SPINACH_FRESH",
                          "kind":  "ingredient",
@@ -309,7 +309,7 @@
                      },
                      {
                          "aliases":  [
-                                         "QuÃ­t, tÆ°Æ¡i"
+                                         "Quít, tươi"
                                      ],
                          "code":  "MANDARIN_FRESH",
                          "kind":  "ingredient",
@@ -317,7 +317,7 @@
                      },
                      {
                          "aliases":  [
-                                         "XoÃ i chÃ­n, tÆ°Æ¡i"
+                                         "Xoài chín, tươi"
                                      ],
                          "code":  "MANGO_RIPE_FRESH",
                          "kind":  "ingredient",
@@ -325,7 +325,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Cáº£i xanh, tÆ°Æ¡i"
+                                         "Cải xanh, tươi"
                                      ],
                          "code":  "MUSTARD_GREENS_FRESH",
                          "kind":  "ingredient",
@@ -333,7 +333,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Cáº£i ngá»“ng, luá»™c"
+                                         "Cải ngồng, luộc"
                                      ],
                          "code":  "MUSTARD_STEM_BOILED",
                          "kind":  "ingredient",
@@ -341,7 +341,7 @@
                      },
                      {
                          "aliases":  [
-                                         "HÃ nh tÃ¢y, tÆ°Æ¡i"
+                                         "Hành tây, tươi"
                                      ],
                          "code":  "ONION_FRESH",
                          "kind":  "ingredient",
@@ -349,7 +349,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Cam, tÆ°Æ¡i"
+                                         "Cam, tươi"
                                      ],
                          "code":  "ORANGE_FRESH",
                          "kind":  "ingredient",
@@ -357,7 +357,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Láº¡c háº¡t, khÃ´"
+                                         "Lạc hạt, khô"
                                      ],
                          "code":  "PEANUT_DRY",
                          "kind":  "ingredient",
@@ -365,7 +365,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Dáº§u láº¡c"
+                                         "Dầu lạc"
                                      ],
                          "code":  "PEANUT_OIL",
                          "kind":  "ingredient",
@@ -373,7 +373,7 @@
                      },
                      {
                          "aliases":  [
-                                         "BÆ°á»Ÿi, tÆ°Æ¡i"
+                                         "Bưởi, tươi"
                                      ],
                          "code":  "POMELO_FRESH",
                          "kind":  "ingredient",
@@ -381,7 +381,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i"
+                                         "Thịt lợn, nạc, tươi"
                                      ],
                          "code":  "PORK_LEAN_RAW",
                          "kind":  "ingredient",
@@ -389,7 +389,7 @@
                      },
                      {
                          "aliases":  [
-                                         "SÆ°á»n lá»£n, tÆ°Æ¡i"
+                                         "Sườn lợn, tươi"
                                      ],
                          "code":  "PORK_RIB_RAW",
                          "kind":  "ingredient",
@@ -397,7 +397,7 @@
                      },
                      {
                          "aliases":  [
-                                         "ChÃ´m chÃ´m, tÆ°Æ¡i"
+                                         "Chôm chôm, tươi"
                                      ],
                          "code":  "RAMBUTAN_FRESH",
                          "kind":  "ingredient",
@@ -405,7 +405,7 @@
                      },
                      {
                          "aliases":  [
-                                         "BÃ¡nh phá»Ÿ"
+                                         "Bánh phở"
                                      ],
                          "code":  "RICE_NOODLE_READY",
                          "kind":  "ingredient",
@@ -413,7 +413,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng"
+                                         "Gạo, trắng, tẻ, xát máy, sống"
                                      ],
                          "code":  "RICE_WHITE_RAW",
                          "kind":  "ingredient",
@@ -421,7 +421,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Rau ngÃ³t, tÆ°Æ¡i"
+                                         "Rau ngót, tươi"
                                      ],
                          "code":  "SAUROPUS_FRESH",
                          "kind":  "ingredient",
@@ -429,7 +429,7 @@
                      },
                      {
                          "aliases":  [
-                                         "HÃ nh lÃ¡ (hÃ nh hoa), tÆ°Æ¡i"
+                                         "Hành lá (hành hoa), tươi"
                                      ],
                          "code":  "SCALLION_FRESH",
                          "kind":  "ingredient",
@@ -437,7 +437,7 @@
                      },
                      {
                          "aliases":  [
-                                         "TÃ´m biá»ƒn, tÆ°Æ¡i"
+                                         "Tôm biển, tươi"
                                      ],
                          "code":  "SEA_SHRIMP_RAW",
                          "kind":  "ingredient",
@@ -445,7 +445,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Náº¥m hÆ°Æ¡ng, khÃ´"
+                                         "Nấm hương, khô"
                                      ],
                          "code":  "SHIITAKE_DRY",
                          "kind":  "ingredient",
@@ -453,7 +453,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Rau khoai lang, tÆ°Æ¡i"
+                                         "Rau khoai lang, tươi"
                                      ],
                          "code":  "SWEET_POTATO_LEAVES_FRESH",
                          "kind":  "ingredient",
@@ -461,7 +461,7 @@
                      },
                      {
                          "aliases":  [
-                                         "CÃ¡ rÃ´ phi, tÆ°Æ¡i"
+                                         "Cá rô phi, tươi"
                                      ],
                          "code":  "TILAPIA_RAW",
                          "kind":  "ingredient",
@@ -469,7 +469,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Äáº­u phá»¥ luá»™c"
+                                         "Đậu phụ luộc"
                                      ],
                          "code":  "TOFU_BOILED",
                          "kind":  "ingredient",
@@ -477,7 +477,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Quáº£ cÃ  chua, tÆ°Æ¡i"
+                                         "Quả cà chua, tươi"
                                      ],
                          "code":  "TOMATO_FRESH",
                          "kind":  "ingredient",
@@ -485,7 +485,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Thá»‹t bÃª, náº¡c, tÆ°Æ¡i"
+                                         "Thịt bê, nạc, tươi"
                                      ],
                          "code":  "VEAL_LEAN_RAW",
                          "kind":  "ingredient",
@@ -493,7 +493,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Cáº£i soong, tÆ°Æ¡i"
+                                         "Cải soong, tươi"
                                      ],
                          "code":  "WATERCRESS_FRESH",
                          "kind":  "ingredient",
@@ -501,7 +501,7 @@
                      },
                      {
                          "aliases":  [
-                                         "DÆ°a háº¥u, tÆ°Æ¡i"
+                                         "Dưa hấu, tươi"
                                      ],
                          "code":  "WATERMELON_FRESH",
                          "kind":  "ingredient",
@@ -509,7 +509,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Rau muá»‘ng,  tÆ°Æ¡i"
+                                         "Rau muống,  tươi"
                                      ],
                          "code":  "WATER_SPINACH_FRESH",
                          "kind":  "ingredient",
@@ -517,7 +517,7 @@
                      },
                      {
                          "aliases":  [
-                                         "Quáº£ bÃ­ Ä‘ao (bÃ­ xanh), tÆ°Æ¡i"
+                                         "Quả bí đao (bí xanh), tươi"
                                      ],
                          "code":  "WINTER_MELON_FRESH",
                          "kind":  "ingredient",
@@ -534,33 +534,33 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ phá»Ÿ thá»‹t bÃ²",
+                                        "imageAlt":  "Ảnh minh hoạ phở thịt bò",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "cooked",
                                                                 "code":  "RICE_NOODLE_READY",
-                                                                "name":  "BÃ¡nh phá»Ÿ",
+                                                                "name":  "Bánh phở",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  35,
                                                                 "basis":  "raw",
                                                                 "code":  "BEEF_LEAN_RAW",
-                                                                "name":  "Thá»‹t bÃ², loáº¡i I, tÆ°Æ¡i",
+                                                                "name":  "Thịt bò, loại I, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "SCALLION_FRESH",
-                                                                "name":  "HÃ nh lÃ¡ (hÃ nh hoa), tÆ°Æ¡i",
+                                                                "name":  "Hành lá (hành hoa), tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "breakfast",
-                                        "name":  "Phá»Ÿ thá»‹t bÃ² Â· thá»±c Ä‘Æ¡n máº«u trang 143",
+                                        "name":  "Phở thịt bò · thực đơn mẫu trang 143",
                                         "nutrients":  {
                                                           "carbohydrate_g":  47.32,
                                                           "energy_kcal":  262.9,
@@ -570,11 +570,11 @@
                                                           "sodium_mg":  35.15
                                                       },
                                         "preparationSteps":  [
-                                                                 "Trá»¥ng bÃ¡nh phá»Ÿ, lÃ m chÃ­n thá»‹t bÃ² vÃ  thÃªm hÃ nh lÃ¡ theo Ä‘á»‹nh lÆ°á»£ng cá»§a thá»±c Ä‘Æ¡n máº«u.",
-                                                                 "NÆ°á»›c dÃ¹ng vÃ  muá»‘i Ä‘Æ°á»£c sÃ¡ch nÃªu nhÆ°ng khÃ´ng cÃ³ lÆ°á»£ng nÆ°á»›c dÃ¹ng má»—i kháº©u pháº§n nÃªn khÃ´ng cá»™ng vÃ o sá»‘ liá»‡u demo."
+                                                                 "Trụng bánh phở, làm chín thịt bò và thêm hành lá theo định lượng của thực đơn mẫu.",
+                                                                 "Nước dùng và muối được sách nêu nhưng không có lượng nước dùng mỗi khẩu phần nên không cộng vào số liệu demo."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_HTN_P143",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -593,40 +593,40 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ chÃ¡o thá»‹t",
+                                        "imageAlt":  "Ảnh minh hoạ cháo thịt",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  40,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "SCALLION_FRESH",
-                                                                "name":  "HÃ nh lÃ¡ (hÃ nh hoa), tÆ°Æ¡i",
+                                                                "name":  "Hành lá (hành hoa), tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u Äƒn",
+                                                                "name":  "Dầu ăn",
                                                                 "unit":  "ml"
                                                             }
                                                         ],
                                         "mealType":  "breakfast",
-                                        "name":  "ChÃ¡o thá»‹t Â· thá»±c Ä‘Æ¡n máº«u trang 273",
+                                        "name":  "Cháo thịt · thực đơn mẫu trang 273",
                                         "nutrients":  {
                                                           "carbohydrate_g":  38.41,
                                                           "energy_kcal":  274.9,
@@ -636,11 +636,11 @@
                                                           "sodium_mg":  33.7
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u chÃ¡o tá»« gáº¡o táº», thá»‹t lá»£n náº¡c vÃ  hÃ nh lÃ¡; thÃªm dáº§u Äƒn theo Ä‘á»‹nh lÆ°á»£ng cá»§a sÃ¡ch.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  pháº£i Ä‘Æ°á»£c data review trÆ°á»›c khi phÃ¡t hÃ nh."
+                                                                 "Nấu cháo từ gạo tẻ, thịt lợn nạc và hành lá; thêm dầu ăn theo định lượng của sách.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_OBESITY_P273",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -659,26 +659,26 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ phá»Ÿ gÃ ",
+                                        "imageAlt":  "Ảnh minh hoạ phở gà",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "CHICKEN_RAW",
-                                                                "name":  "Thá»‹t gÃ  ta, tÆ°Æ¡i",
+                                                                "name":  "Thịt gà ta, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "cooked",
                                                                 "code":  "RICE_NOODLE_READY",
-                                                                "name":  "BÃ¡nh phá»Ÿ",
+                                                                "name":  "Bánh phở",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "breakfast",
-                                        "name":  "Phá»Ÿ gÃ  Â· thá»±c Ä‘Æ¡n máº«u trang 286",
+                                        "name":  "Phở gà · thực đơn mẫu trang 286",
                                         "nutrients":  {
                                                           "carbohydrate_g":  46.8,
                                                           "energy_kcal":  318.5,
@@ -688,11 +688,11 @@
                                                           "sodium_mg":  39.5
                                                       },
                                         "preparationSteps":  [
-                                                                 "LÃ m chÃ­n thá»‹t gÃ  vÃ  dÃ¹ng cÃ¹ng bÃ¡nh phá»Ÿ theo Ä‘á»‹nh lÆ°á»£ng cá»§a thá»±c Ä‘Æ¡n máº«u.",
-                                                                 "HÃ nh lÃ¡, rau thÆ¡m vÃ  nÆ°á»›c dÃ¹ng khÃ´ng cÃ³ Ä‘á»‹nh lÆ°á»£ng nÃªn khÃ´ng cá»™ng vÃ o sá»‘ liá»‡u demo."
+                                                                 "Làm chín thịt gà và dùng cùng bánh phở theo định lượng của thực đơn mẫu.",
+                                                                 "Hành lá, rau thơm và nước dùng không có định lượng nên không cộng vào số liệu demo."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_OSTEOPOROSIS_P286",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -711,40 +711,40 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ miáº¿n ngan trá»™n",
+                                        "imageAlt":  "Ảnh minh hoạ miến ngan trộn",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "GLASS_NOODLE_DRY",
-                                                                "name":  "Miáº¿n dong, khÃ´",
+                                                                "name":  "Miến dong, khô",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  20,
                                                                 "basis":  "raw",
                                                                 "code":  "DUCK_RAW",
-                                                                "name":  "Thá»‹t ngan, tÆ°Æ¡i",
+                                                                "name":  "Thịt ngan, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_DRY",
-                                                                "name":  "Láº¡c háº¡t, khÃ´",
+                                                                "name":  "Lạc hạt, khô",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "AROMATIC_HERBS_FRESH",
-                                                                "name":  "Rau thÆ¡m, tÆ°Æ¡i",
+                                                                "name":  "Rau thơm, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "breakfast",
-                                        "name":  "Miáº¿n ngan trá»™n Â· thá»±c Ä‘Æ¡n máº«u trang 219",
+                                        "name":  "Miến ngan trộn · thực đơn mẫu trang 219",
                                         "nutrients":  {
                                                           "carbohydrate_g":  44.19,
                                                           "energy_kcal":  287.9,
@@ -754,11 +754,11 @@
                                                           "sodium_mg":  1.03
                                                       },
                                         "preparationSteps":  [
-                                                                 "LÃ m chÃ­n miáº¿n vÃ  thá»‹t ngan, trá»™n cÃ¹ng láº¡c háº¡t vÃ  rau thÆ¡m theo Ä‘á»‹nh lÆ°á»£ng cá»§a sÃ¡ch.",
-                                                                 "Sá»¯a chuyÃªn biá»‡t Ä‘i kÃ¨m trong thá»±c Ä‘Æ¡n CKD khÃ´ng thuá»™c mÃ³n miáº¿n vÃ  khÃ´ng Ä‘Æ°á»£c cá»™ng vÃ o sá»‘ liá»‡u demo."
+                                                                 "Làm chín miến và thịt ngan, trộn cùng lạc hạt và rau thơm theo định lượng của sách.",
+                                                                 "Sữa chuyên biệt đi kèm trong thực đơn CKD không thuộc món miến và không được cộng vào số liệu demo."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_CKD_P219_220",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -777,61 +777,61 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  60,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  30,
                                                                 "basis":  "cooked",
                                                                 "code":  "TOFU_BOILED",
-                                                                "name":  "Äáº­u phá»¥ luá»™c",
+                                                                "name":  "Đậu phụ luộc",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "BOK_CHOY_FRESH",
-                                                                "name":  "Cáº£i thÃ¬a (cáº£i tráº¯ng), tÆ°Æ¡i",
+                                                                "name":  "Cải thìa (cải trắng), tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  7,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u Äƒn",
+                                                                "name":  "Dầu ăn",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "MALABAR_SPINACH_FRESH",
-                                                                "name":  "Rau má»“ng tÆ¡i, tÆ°Æ¡i",
+                                                                "name":  "Rau mồng tơi, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "POMELO_FRESH",
-                                                                "name":  "BÆ°á»Ÿi, tÆ°Æ¡i",
+                                                                "name":  "Bưởi, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "lunch",
-                                        "name":  "CÆ¡m Â· thá»‹t lá»£n rang Â· Ä‘áº­u phá»¥ Â· cáº£i thÃ¬a",
+                                        "name":  "Cơm · thịt lợn rang · đậu phụ · cải thìa",
                                         "nutrients":  {
                                                           "carbohydrate_g":  72.58,
                                                           "energy_kcal":  495.5,
@@ -841,11 +841,11 @@
                                                           "sodium_mg":  117.07
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m, rang thá»‹t lá»£n, tráº§n Ä‘áº­u phá»¥, xÃ o cáº£i thÃ¬a, náº¥u canh má»“ng tÆ¡i vÃ  dÃ¹ng kÃ¨m bÆ°á»Ÿi.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  pháº£i Ä‘Æ°á»£c data review trÆ°á»›c khi phÃ¡t hÃ nh."
+                                                                 "Nấu cơm, rang thịt lợn, trần đậu phụ, xào cải thìa, nấu canh mồng tơi và dùng kèm bưởi.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_HTN_P143",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -865,82 +865,82 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  75,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "VEAL_LEAN_RAW",
-                                                                "name":  "Thá»‹t bÃª, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt bê, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "GINGER_FRESH",
-                                                                "name":  "Gá»«ng tÆ°Æ¡i",
+                                                                "name":  "Gừng tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "FERMENTED_SOYBEAN_RICE",
-                                                                "name":  "TÆ°Æ¡ng náº¿p",
+                                                                "name":  "Tương nếp",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  20,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_DRY",
-                                                                "name":  "Láº¡c háº¡t, khÃ´",
+                                                                "name":  "Lạc hạt, khô",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  2.5,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u cho láº¡c rang",
+                                                                "name":  "Dầu cho lạc rang",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "SWEET_POTATO_LEAVES_FRESH",
-                                                                "name":  "Rau khoai lang, tÆ°Æ¡i",
+                                                                "name":  "Rau khoai lang, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  7,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u cho rau xÃ o",
+                                                                "name":  "Dầu cho rau xào",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "SAUROPUS_FRESH",
-                                                                "name":  "Rau ngÃ³t, tÆ°Æ¡i",
+                                                                "name":  "Rau ngót, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "ORANGE_FRESH",
-                                                                "name":  "Cam, tÆ°Æ¡i",
+                                                                "name":  "Cam, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "lunch",
-                                        "name":  "CÆ¡m Â· bÃª háº¥p gá»«ng Â· láº¡c rang Â· rau khoai lang",
+                                        "name":  "Cơm · bê hấp gừng · lạc rang · rau khoai lang",
                                         "nutrients":  {
                                                           "carbohydrate_g":  92.45,
                                                           "energy_kcal":  674.95,
@@ -950,11 +950,11 @@
                                                           "sodium_mg":  102.17
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; háº¥p thá»‹t bÃª vá»›i gá»«ng; dÃ¹ng tÆ°Æ¡ng náº¿p; rang láº¡c; xÃ o rau khoai lang; náº¥u canh rau ngÃ³t vÃ  dÃ¹ng kÃ¨m cam.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  pháº£i Ä‘Æ°á»£c data review trÆ°á»›c khi phÃ¡t hÃ nh."
+                                                                 "Nấu cơm; hấp thịt bê với gừng; dùng tương nếp; rang lạc; xào rau khoai lang; nấu canh rau ngót và dùng kèm cam.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_OBESITY_P273",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -973,68 +973,68 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  130,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  40,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_RIB_RAW",
-                                                                "name":  "SÆ°á»n lá»£n, tÆ°Æ¡i",
+                                                                "name":  "Sườn lợn, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  60,
                                                                 "basis":  "raw",
                                                                 "code":  "TILAPIA_RAW",
-                                                                "name":  "CÃ¡ rÃ´ phi, tÆ°Æ¡i",
+                                                                "name":  "Cá rô phi, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u thá»±c váº­t",
+                                                                "name":  "Dầu thực vật",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  120,
                                                                 "basis":  "cooked",
                                                                 "code":  "MUSTARD_STEM_BOILED",
-                                                                "name":  "Cáº£i ngá»“ng, luá»™c",
+                                                                "name":  "Cải ngồng, luộc",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "WINTER_MELON_FRESH",
-                                                                "name":  "Quáº£ bÃ­ Ä‘ao (bÃ­ xanh), tÆ°Æ¡i",
+                                                                "name":  "Quả bí đao (bí xanh), tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  100,
                                                                 "basis":  "raw",
                                                                 "code":  "WATERMELON_FRESH",
-                                                                "name":  "DÆ°a háº¥u, tÆ°Æ¡i",
+                                                                "name":  "Dưa hấu, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "lunch",
-                                        "name":  "CÆ¡m Â· sÆ°á»n chua ngá»t Â· cÃ¡ rÃ´ phi Â· cáº£i ngá»“ng",
+                                        "name":  "Cơm · sườn chua ngọt · cá rô phi · cải ngồng",
                                         "nutrients":  {
                                                           "carbohydrate_g":  106.47,
                                                           "energy_kcal":  684.15,
@@ -1044,11 +1044,11 @@
                                                           "sodium_mg":  128.14
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; lÃ m sÆ°á»n xÃ o chua ngá»t; rÃ¡n cÃ¡ rÃ´ phi; luá»™c cáº£i ngá»“ng; náº¥u canh bÃ­ xanh vá»›i thá»‹t vÃ  dÃ¹ng kÃ¨m dÆ°a háº¥u.",
-                                                                 "SÃ¡ch khÃ´ng nÃªu lÆ°á»£ng sá»‘t chua ngá»t; sá»‘ liá»‡u demo chá»‰ cá»™ng cÃ¡c nguyÃªn liá»‡u cÃ³ Ä‘á»‹nh lÆ°á»£ng."
+                                                                 "Nấu cơm; làm sườn xào chua ngọt; rán cá rô phi; luộc cải ngồng; nấu canh bí xanh với thịt và dùng kèm dưa hấu.",
+                                                                 "Sách không nêu lượng sốt chua ngọt; số liệu demo chỉ cộng các nguyên liệu có định lượng."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_POSTOP_P370",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -1067,61 +1067,61 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  75,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  40,
                                                                 "basis":  "raw",
                                                                 "code":  "GOBY_RAW",
-                                                                "name":  "CÃ¡ bá»‘ng, tÆ°Æ¡i",
+                                                                "name":  "Cá bống, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  20,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "raw",
                                                                 "code":  "BOK_CHOY_FRESH",
-                                                                "name":  "Cáº£i thÃ¬a (cáº£i tráº¯ng), tÆ°Æ¡i",
+                                                                "name":  "Cải thìa (cải trắng), tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "GARLIC_FRESH",
-                                                                "name":  "Tá»i ta, tÆ°Æ¡i",
+                                                                "name":  "Tỏi ta, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u Äƒn",
+                                                                "name":  "Dầu ăn",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  80,
                                                                 "basis":  "raw",
                                                                 "code":  "MANGO_RIPE_FRESH",
-                                                                "name":  "XoÃ i chÃ­n, tÆ°Æ¡i",
+                                                                "name":  "Xoài chín, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "lunch",
-                                        "name":  "CÆ¡m Â· cÃ¡ bá»‘ng Â· thá»‹t bÄƒm Â· cáº£i chÃ­p",
+                                        "name":  "Cơm · cá bống · thịt băm · cải chíp",
                                         "nutrients":  {
                                                           "carbohydrate_g":  77.57,
                                                           "energy_kcal":  502.8,
@@ -1131,11 +1131,11 @@
                                                           "sodium_mg":  59.03
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; rÃ¡n cÃ¡ bá»‘ng; lÃ m thá»‹t bÄƒm; xÃ o cáº£i chÃ­p vá»›i tá»i vÃ  dÃ¹ng kÃ¨m xoÃ i chÃ­n.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  khÃ´ng thay tháº¿ hÆ°á»›ng dáº«n cho ngÆ°á»i bá»‡nh tháº­n."
+                                                                 "Nấu cơm; rán cá bống; làm thịt băm; xào cải chíp với tỏi và dùng kèm xoài chín.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và không thay thế hướng dẫn cho người bệnh thận."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_CKD_P219_220",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -1155,68 +1155,68 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  60,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  70,
                                                                 "basis":  "raw",
                                                                 "code":  "GRASS_CARP_RAW",
-                                                                "name":  "CÃ¡ tráº¯m cá», tÆ°Æ¡i",
+                                                                "name":  "Cá trắm cỏ, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  30,
                                                                 "basis":  "raw",
                                                                 "code":  "TOMATO_FRESH",
-                                                                "name":  "Quáº£ cÃ  chua, tÆ°Æ¡i",
+                                                                "name":  "Quả cà chua, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u Äƒn",
+                                                                "name":  "Dầu ăn",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  25,
                                                                 "basis":  "raw",
                                                                 "code":  "CHICKEN_EGG_RAW",
-                                                                "name":  "Trá»©ng gÃ  ta",
+                                                                "name":  "Trứng gà ta",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "WATER_SPINACH_FRESH",
-                                                                "name":  "Rau muá»‘ng,  tÆ°Æ¡i",
+                                                                "name":  "Rau muống,  tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "SAUROPUS_FRESH",
-                                                                "name":  "Rau ngÃ³t, tÆ°Æ¡i",
+                                                                "name":  "Rau ngót, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  120,
                                                                 "basis":  "raw",
                                                                 "code":  "MANDARIN_FRESH",
-                                                                "name":  "QuÃ­t, tÆ°Æ¡i",
+                                                                "name":  "Quít, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "dinner",
-                                        "name":  "CÆ¡m Â· cÃ¡ tráº¯m sá»‘t cÃ  chua Â· trá»©ng Â· rau",
+                                        "name":  "Cơm · cá trắm sốt cà chua · trứng · rau",
                                         "nutrients":  {
                                                           "carbohydrate_g":  68.03,
                                                           "energy_kcal":  532.5,
@@ -1226,11 +1226,11 @@
                                                           "sodium_mg":  155.73
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; rÃ¡n cÃ¡ tráº¯m vÃ  sá»‘t cÃ  chua; luá»™c trá»©ng, rau muá»‘ng; náº¥u canh rau ngÃ³t vÃ  dÃ¹ng kÃ¨m quÃ½t.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  pháº£i Ä‘Æ°á»£c data review trÆ°á»›c khi phÃ¡t hÃ nh."
+                                                                 "Nấu cơm; rán cá trắm và sốt cà chua; luộc trứng, rau muống; nấu canh rau ngót và dùng kèm quýt.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_HTN_P143",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -1249,75 +1249,75 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  60,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "SEA_SHRIMP_RAW",
-                                                                "name":  "TÃ´m biá»ƒn, tÆ°Æ¡i",
+                                                                "name":  "Tôm biển, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "CHILI_SAUCE",
-                                                                "name":  "TÆ°Æ¡ng á»›t",
+                                                                "name":  "Tương ớt",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  5,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u chiÃªn tÃ´m",
+                                                                "name":  "Dầu chiên tôm",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  40,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  200,
                                                                 "basis":  "raw",
                                                                 "code":  "WATERCRESS_FRESH",
-                                                                "name":  "Cáº£i soong, tÆ°Æ¡i",
+                                                                "name":  "Cải soong, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  7,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u xÃ o rau",
+                                                                "name":  "Dầu xào rau",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  50,
                                                                 "basis":  "raw",
                                                                 "code":  "MUSTARD_GREENS_FRESH",
-                                                                "name":  "Cáº£i xanh, tÆ°Æ¡i",
+                                                                "name":  "Cải xanh, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "raw",
                                                                 "code":  "RAMBUTAN_FRESH",
-                                                                "name":  "ChÃ´m chÃ´m, tÆ°Æ¡i",
+                                                                "name":  "Chôm chôm, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "dinner",
-                                        "name":  "CÆ¡m Â· tÃ´m biá»ƒn Â· thá»‹t bÄƒm Â· cáº£i soong",
+                                        "name":  "Cơm · tôm biển · thịt băm · cải soong",
                                         "nutrients":  {
                                                           "carbohydrate_g":  81.75,
                                                           "energy_kcal":  585.25,
@@ -1327,11 +1327,11 @@
                                                           "sodium_mg":  434.35
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; chiÃªn tÃ´m biá»ƒn, dÃ¹ng cÃ¹ng tÆ°Æ¡ng á»›t; rang thá»‹t bÄƒm; xÃ o cáº£i soong; náº¥u canh cáº£i vÃ  dÃ¹ng kÃ¨m chÃ´m chÃ´m.",
-                                                                 "Sá»‘ liá»‡u demo táº¡m tÃ­nh 1 ml dáº§u nhÆ° 1 g vÃ  pháº£i Ä‘Æ°á»£c data review trÆ°á»›c khi phÃ¡t hÃ nh."
+                                                                 "Nấu cơm; chiên tôm biển, dùng cùng tương ớt; rang thịt băm; xào cải soong; nấu canh cải và dùng kèm chôm chôm.",
+                                                                 "Số liệu demo tạm tính 1 ml dầu như 1 g và phải được data review trước khi phát hành."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_OBESITY_P273",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -1350,75 +1350,75 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  75,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  40,
                                                                 "basis":  "raw",
                                                                 "code":  "CHICKEN_RAW",
-                                                                "name":  "Thá»‹t gÃ  ta, tÆ°Æ¡i",
+                                                                "name":  "Thịt gà ta, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  3,
                                                                 "basis":  "raw",
                                                                 "code":  "SHIITAKE_DRY",
-                                                                "name":  "Náº¥m hÆ°Æ¡ng, khÃ´",
+                                                                "name":  "Nấm hương, khô",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  2,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u Äƒn",
+                                                                "name":  "Dầu ăn",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  80,
                                                                 "basis":  "raw",
                                                                 "code":  "BITTER_MELON_FRESH",
-                                                                "name":  "MÆ°á»›p Ä‘áº¯ng, tÆ°Æ¡i",
+                                                                "name":  "Mướp đắng, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  30,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  2,
                                                                 "basis":  "raw",
                                                                 "code":  "SHIITAKE_DRY",
-                                                                "name":  "Náº¥m hÆ°Æ¡ng, khÃ´",
+                                                                "name":  "Nấm hương, khô",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  120,
                                                                 "basis":  "cooked",
                                                                 "code":  "GREEN_BEANS_BOILED",
-                                                                "name":  "Äáº­u cÃ´ ve, luá»™c",
+                                                                "name":  "Đậu cô ve, luộc",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "raw",
                                                                 "code":  "APPLE_FRESH",
-                                                                "name":  "TÃ¡o tÃ¢y, tÆ°Æ¡i",
+                                                                "name":  "Táo tây, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "dinner",
-                                        "name":  "CÆ¡m Â· gÃ  om náº¥m Â· mÆ°á»›p Ä‘áº¯ng nhá»“i thá»‹t Â· Ä‘áº­u cÃ´ ve",
+                                        "name":  "Cơm · gà om nấm · mướp đắng nhồi thịt · đậu cô ve",
                                         "nutrients":  {
                                                           "carbohydrate_g":  98.55,
                                                           "energy_kcal":  608.9,
@@ -1428,11 +1428,11 @@
                                                           "sodium_mg":  204.83
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; om thá»‹t gÃ  vá»›i náº¥m; nhá»“i mÆ°á»›p Ä‘áº¯ng báº±ng thá»‹t náº¡c vÃ  náº¥m; luá»™c Ä‘áº­u cÃ´ ve; dÃ¹ng kÃ¨m tÃ¡o.",
-                                                                 "Má»™c nhÄ© Ä‘Æ°á»£c sÃ¡ch nÃªu nhÆ°ng khÃ´ng cÃ³ Ä‘á»‹nh lÆ°á»£ng nÃªn khÃ´ng cá»™ng vÃ o sá»‘ liá»‡u demo."
+                                                                 "Nấu cơm; om thịt gà với nấm; nhồi mướp đắng bằng thịt nạc và nấm; luộc đậu cô ve; dùng kèm táo.",
+                                                                 "Mộc nhĩ được sách nêu nhưng không có định lượng nên không cộng vào số liệu demo."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_POSTOP_P370",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
@@ -1451,75 +1451,75 @@
                                         "dietaryPatterns":  [
 
                                                             ],
-                                        "imageAlt":  "áº¢nh minh hoáº¡ cÆ¡m",
+                                        "imageAlt":  "Ảnh minh hoạ cơm",
                                         "imageUrl":  "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
                                         "ingredients":  [
                                                             {
                                                                 "amount":  75,
                                                                 "basis":  "raw",
                                                                 "code":  "RICE_WHITE_RAW",
-                                                                "name":  "Gáº¡o, tráº¯ng, táº», xÃ¡t mÃ¡y, sá»‘ng",
+                                                                "name":  "Gạo, trắng, tẻ, xát máy, sống",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  20,
                                                                 "basis":  "raw",
                                                                 "code":  "PORK_LEAN_RAW",
-                                                                "name":  "Thá»‹t lá»£n, náº¡c, tÆ°Æ¡i",
+                                                                "name":  "Thịt lợn, nạc, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  10,
                                                                 "basis":  "raw",
                                                                 "code":  "TOMATO_FRESH",
-                                                                "name":  "Quáº£ cÃ  chua, tÆ°Æ¡i",
+                                                                "name":  "Quả cà chua, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  2,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u cho thá»‹t sá»‘t",
+                                                                "name":  "Dầu cho thịt sốt",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  30,
                                                                 "basis":  "raw",
                                                                 "code":  "BEEF_LEAN_RAW",
-                                                                "name":  "Thá»‹t bÃ², loáº¡i I, tÆ°Æ¡i",
+                                                                "name":  "Thịt bò, loại I, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  80,
                                                                 "basis":  "raw",
                                                                 "code":  "ONION_FRESH",
-                                                                "name":  "HÃ nh tÃ¢y, tÆ°Æ¡i",
+                                                                "name":  "Hành tây, tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  7,
                                                                 "basis":  "raw",
                                                                 "code":  "PEANUT_OIL",
-                                                                "name":  "Dáº§u cho thá»‹t bÃ² xÃ o",
+                                                                "name":  "Dầu cho thịt bò xào",
                                                                 "unit":  "ml"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "raw",
                                                                 "code":  "WINTER_MELON_FRESH",
-                                                                "name":  "Quáº£ bÃ­ Ä‘ao (bÃ­ xanh), tÆ°Æ¡i",
+                                                                "name":  "Quả bí đao (bí xanh), tươi",
                                                                 "unit":  "g"
                                                             },
                                                             {
                                                                 "amount":  150,
                                                                 "basis":  "raw",
                                                                 "code":  "DRAGON_FRUIT_FRESH",
-                                                                "name":  "Quáº£ thanh long, tÆ°Æ¡i",
+                                                                "name":  "Quả thanh long, tươi",
                                                                 "unit":  "g"
                                                             }
                                                         ],
                                         "mealType":  "dinner",
-                                        "name":  "CÆ¡m Â· lá»£n sá»‘t cÃ  chua Â· bÃ² xÃ o hÃ nh tÃ¢y Â· bÃ­ xanh",
+                                        "name":  "Cơm · lợn sốt cà chua · bò xào hành tây · bí xanh",
                                         "nutrients":  {
                                                           "carbohydrate_g":  85.98,
                                                           "energy_kcal":  536.6,
@@ -1529,11 +1529,11 @@
                                                           "sodium_mg":  70.16
                                                       },
                                         "preparationSteps":  [
-                                                                 "Náº¥u cÆ¡m; lÃ m thá»‹t lá»£n sá»‘t cÃ  chua; xÃ o thá»‹t bÃ² vá»›i hÃ nh tÃ¢y; luá»™c bÃ­ xanh vÃ  dÃ¹ng kÃ¨m thanh long.",
-                                                                 "Äá»‹nh lÆ°á»£ng thanh long trong sÃ¡ch tÃ­nh cáº£ vá»; sá»‘ liá»‡u demo dÃ¹ng giÃ¡ trá»‹ pháº§n Äƒn Ä‘Æ°á»£c vÃ  pháº£i Ä‘Æ°á»£c data review."
+                                                                 "Nấu cơm; làm thịt lợn sốt cà chua; xào thịt bò với hành tây; luộc bí xanh và dùng kèm thanh long.",
+                                                                 "Định lượng thanh long trong sách tính cả vỏ; số liệu demo dùng giá trị phần ăn được và phải được data review."
                                                              ],
                                         "servings":  1,
-                                        "sourceRecipeNote":  "SÃ¡ch khÃ´ng Ä‘á» cáº­p cÃ´ng thá»©c cháº¿ biáº¿n chi tiáº¿t; dá»¯ liá»‡u mÃ³n chá»‰ dá»±a trÃªn tÃªn mÃ³n vÃ  Ä‘á»‹nh lÆ°á»£ng trong thá»±c Ä‘Æ¡n máº«u.",
+                                        "sourceRecipeNote":  "Sách không đề cập công thức chế biến chi tiết; dữ liệu món chỉ dựa trên tên món và định lượng trong thực đơn mẫu.",
                                         "sources":  [
                                                         "BOOK_2019_CKD_P219_220",
                                                         "VIETNAM_FOOD_COMPOSITION_2017"
