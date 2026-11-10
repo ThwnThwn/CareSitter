@@ -43,6 +43,78 @@ public sealed class MealRecommendationEngineTests
     }
 
     [Fact]
+    public void Yesterday_repeats_are_avoided_before_older_repeats()
+    {
+        Recipe[] Day(int index) => [Recipe("breakfast", 100) with { Name = $"B{index}" },
+            Recipe("lunch", 200) with { Name = $"L{index}" }, Recipe("dinner", 150) with { Name = $"D{index}" }];
+        var yesterday = Day(0);
+        var twoDaysAgo = Day(1);
+
+        // Every combination repeats three recent dishes; only the yesterday-free one may win.
+        var selected = Assert.Single(MealConstraintPolicy.CandidateSets([.. yesterday, .. twoDaysAgo], [], [],
+            maximum: 1, recentMeals: [.. yesterday, .. twoDaysAgo], yesterdayMeals: yesterday));
+
+        Assert.Equal(twoDaysAgo.Select(meal => meal.VersionId), selected.Select(meal => meal.VersionId));
+    }
+
+    [Fact]
+    public void Seeded_variety_is_stable_within_a_day_and_changes_across_days()
+    {
+        var recipes = new[] { "breakfast", "lunch", "dinner" }
+            .SelectMany(type => Enumerable.Range(0, 4).Select(index => Recipe(type, 200) with { Name = $"{type} {index}" }))
+            .ToArray();
+        Recipe[] Pick(string seed) => Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [],
+            maximum: 1, varietySeed: seed));
+        string Ids(Recipe[] menu) => string.Join("|", menu.Select(meal => meal.VersionId));
+
+        Assert.Equal(Ids(Pick("owner|2026-11-10|7")), Ids(Pick("owner|2026-11-10|7")));
+        var menus = Enumerable.Range(10, 10).Select(day => Ids(Pick($"owner|2026-11-{day}|7"))).ToHashSet();
+        Assert.True(menus.Count > 1, "A seeded shuffle must not return the same menu every day.");
+    }
+
+    [Fact]
+    public void A_week_of_seeded_menus_never_repeats_a_dish_from_the_day_before()
+    {
+        var recipes = new[] { "breakfast", "lunch", "dinner" }
+            .SelectMany(type => Enumerable.Range(0, 3).Select(index => Recipe(type, 200 + index) with { Name = $"{type} {index}" }))
+            .ToArray();
+        var history = new List<Recipe[]>();
+        for (var day = 1; day <= 14; day++)
+        {
+            var yesterday = history.LastOrDefault() ?? [];
+            var selected = Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [], maximum: 1,
+                recentMeals: history.TakeLast(3).SelectMany(menu => menu).ToArray(),
+                previousMenus: history.TakeLast(6).Reverse().ToArray(), yesterdayMeals: yesterday,
+                varietySeed: $"owner|2026-11-{day:00}|7"));
+            Assert.DoesNotContain(selected, meal => yesterday.Any(previous => previous.VersionId == meal.VersionId));
+            history.Add(selected);
+        }
+    }
+
+    [Fact]
+    public void Seeded_variety_never_picks_a_menu_outside_the_energy_band()
+    {
+        var recipes = new[]
+        {
+            Recipe("breakfast", 300), Recipe("breakfast", 310), Recipe("breakfast", 900),
+            Recipe("lunch", 500), Recipe("dinner", 500)
+        };
+        foreach (var goal in new[] { "lose", "maintain", "gain" })
+        {
+            var best = Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [], nutritionGoal: goal, maximum: 1));
+            var target = best.Sum(meal => meal.Nutrients["energy_kcal"]!.Value);
+            for (var day = 1; day <= 20; day++)
+            {
+                var selected = Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [], nutritionGoal: goal,
+                    maximum: 1, varietySeed: $"owner|2026-11-{day:00}|7"));
+                var energy = selected.Sum(meal => meal.Nutrients["energy_kcal"]!.Value);
+                Assert.True(Math.Abs(energy - target) <= target * MealConstraintPolicy.VarietyEnergyBand,
+                    $"{goal}: {energy} kcal is outside the band around {target} kcal.");
+            }
+        }
+    }
+
+    [Fact]
     public void A_new_day_uses_a_different_complete_menu_when_safe_choices_exist()
     {
         var breakfasts = Enumerable.Range(0, 2).Select(index => Recipe("breakfast", 100) with { Name = $"Breakfast {index}" }).ToArray();

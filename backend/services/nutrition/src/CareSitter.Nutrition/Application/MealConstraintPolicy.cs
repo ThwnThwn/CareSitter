@@ -83,7 +83,8 @@ public static class MealConstraintPolicy
     public static Recipe[][] CandidateSets(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain",
         int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null,
-        IReadOnlyList<Recipe[]>? previousMenus = null)
+        IReadOnlyList<Recipe[]>? previousMenus = null, IReadOnlyList<Recipe>? yesterdayMeals = null,
+        string? varietySeed = null)
     {
         if (maximum < 1) throw new ArgumentOutOfRangeException(nameof(maximum));
         // Bounded catalog avoids unbounded combinations. No constraint is dropped to find a result.
@@ -104,15 +105,14 @@ public static class MealConstraintPolicy
         }
         // Apply variety before the shortlist: otherwise all twelve sets can repeat yesterday's meals.
         // Never relax allergies, dietary pattern or nutrient constraints to achieve variety.
+        // Newer dishes weigh more than older ones: the fewest repeats of yesterday, then of the
+        // recent window, then of every remembered menu (up to six days).
+        if (yesterdayMeals is { Count: > 0 })
+            candidates = KeepFewestRepeats(candidates, yesterdayMeals);
         if (recentMeals is { Count: > 0 })
-        {
-            var recentIds = recentMeals.Select(meal => meal.VersionId).ToHashSet();
-            var recentNames = recentMeals.Select(meal => CanonicalName(meal.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            int Repeats(Recipe[] set) => set.Count(meal => recentIds.Contains(meal.VersionId) ||
-                recentNames.Contains(CanonicalName(meal.Name)));
-            var minimumRepeats = candidates.Min(Repeats);
-            candidates = candidates.Where(set => Repeats(set) == minimumRepeats).ToList();
-        }
+            candidates = KeepFewestRepeats(candidates, recentMeals);
+        if (previousMenus is { Count: > 0 })
+            candidates = KeepFewestRepeats(candidates, previousMenus.SelectMany(menu => menu).ToArray());
         var ranked = candidates
             .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals), index))
             .Where(value => value.Energy is not null)
@@ -124,8 +124,41 @@ public static class MealConstraintPolicy
             "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index),
             _ => OrderAroundMedian(ranked)
         };
-        return ordered.Take(maximum).Select(value => value.Meals).ToArray();
+        var final = varietySeed is null ? ordered.ToArray() : ShuffleEnergyBand(ordered.ToArray(), varietySeed);
+        return final.Take(maximum).Select(value => value.Meals).ToArray();
     }
+
+    // Menus whose total energy is within this fraction of the goal's target are treated as equally good.
+    internal const decimal VarietyEnergyBand = 0.10m;
+
+    private static List<Recipe[]> KeepFewestRepeats(List<Recipe[]> candidates, IReadOnlyList<Recipe> meals)
+    {
+        var ids = meals.Select(meal => meal.VersionId).ToHashSet();
+        var names = meals.Select(meal => CanonicalName(meal.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        int Repeats(Recipe[] set) => set.Count(meal => ids.Contains(meal.VersionId) ||
+            names.Contains(CanonicalName(meal.Name)));
+        var minimum = candidates.Min(Repeats);
+        return candidates.Where(set => Repeats(set) == minimum).ToList();
+    }
+
+    // Seeded shuffle of the menus closest to the goal. The first entry is the goal's best menu, so its
+    // energy is the target. The seed (beneficiary + date + catalog revision) changes the order every day
+    // while keeping a repeated request on the same day stable. SHA-256 keeps it identical across runtimes.
+    private static RankedCandidate[] ShuffleEnergyBand(RankedCandidate[] ordered, string seed)
+    {
+        if (ordered.Length < 2) return ordered;
+        var target = ordered[0].Energy!.Value;
+        var tolerance = Math.Abs(target) * VarietyEnergyBand;
+        bool InBand(RankedCandidate value) => Math.Abs(value.Energy!.Value - target) <= tolerance;
+        var band = ordered.Where(InBand)
+            .OrderBy(value => VarietyKey(seed, value.Meals), StringComparer.Ordinal)
+            .ToArray();
+        return [.. band, .. ordered.Where(value => !InBand(value))];
+    }
+
+    private static string VarietyKey(string seed, IEnumerable<Recipe> meals) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(seed + "\n" + MenuIds(meals))));
 
     public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal)
     {
