@@ -89,6 +89,21 @@ services:
       HealthParser__DailyBudget: ${NUTRITION_HEALTH_PARSER_DAILY_BUDGET:-1000}
       HealthParser__MaxInputCharacters: ${NUTRITION_HEALTH_PARSER_MAX_INPUT_CHARACTERS:-12000}
       HealthParser__MaxResponseBytes: ${NUTRITION_HEALTH_PARSER_MAX_RESPONSE_BYTES:-262144}
+      # Gemini re-ranks catalog candidates; it never adds dishes outside the published catalog.
+      MealRanking__Enabled: ${NUTRITION_MEAL_RANKING_ENABLED:-false}
+      MealRanking__Model: ${NUTRITION_MEAL_RANKING_MODEL:-gemini-3.5-flash-lite}
+      MealRanking__BaseUrl: ${NUTRITION_MEAL_RANKING_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/}
+      MealRanking__ApiKey: ${NUTRITION_MEAL_RANKING_API_KEY:-}
+      MealRanking__DataProcessingApproved: ${NUTRITION_MEAL_RANKING_DATA_PROCESSING_APPROVED:-false}
+      MealRanking__TimeoutSeconds: ${NUTRITION_MEAL_RANKING_TIMEOUT_SECONDS:-20}
+      MealRanking__MaxOutputTokens: ${NUTRITION_MEAL_RANKING_MAX_OUTPUT_TOKENS:-1536}
+      MealRanking__MaxAttempts: ${NUTRITION_MEAL_RANKING_MAX_ATTEMPTS:-2}
+      MealRanking__MaxConcurrency: ${NUTRITION_MEAL_RANKING_MAX_CONCURRENCY:-4}
+      MealRanking__DailyBudget: ${NUTRITION_MEAL_RANKING_DAILY_BUDGET:-1000}
+      MealRanking__MaxResponseBytes: ${NUTRITION_MEAL_RANKING_MAX_RESPONSE_BYTES:-131072}
+      MealRanking__MaxCandidateSets: ${NUTRITION_MEAL_RANKING_MAX_CANDIDATE_SETS:-12}
+      # Knowledge grounding stays off outside Development until a reviewed graph is released (G0 NO-GO).
+      MealGrounding__Enabled: "false"
     entrypoint: [sh, /nutrition-entrypoint.sh, nutrition]
     volumes:
       - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro
