@@ -64,7 +64,7 @@ export default function HeroSection() {
         <div className="hero__copy" data-hero-entrance="copy">
           <div className="hero__kicker">
             <ShieldCheck size={15} aria-hidden="true" />
-            Caregiver được xác minh trước khi nhận ca
+            Chăm sóc viên được xác minh trước khi nhận ca
           </div>
 
           <h1 className="display display--hero">
@@ -132,7 +132,7 @@ export default function HeroSection() {
           </div>
           <div className="hero-story__stage">
             <video
-              aria-label="Caregiver đã xác minh đến nhà, đồng hành cùng người cao tuổi và gửi cập nhật cho gia đình"
+              aria-label="Chăm sóc viên đã xác minh đến nhà, đồng hành cùng người cao tuổi và gửi cập nhật cho gia đình"
               autoPlay
               loop
               muted

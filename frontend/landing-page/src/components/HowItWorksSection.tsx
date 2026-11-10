@@ -10,7 +10,7 @@ const steps = [
   {
     number: "02",
     title: "Xem hồ sơ và lựa chọn",
-    text: "So sánh kinh nghiệm, kỹ năng, mức phí và đánh giá. Gia đình luôn là người quyết định caregiver nào sẽ nhận ca.",
+    text: "So sánh kinh nghiệm, kỹ năng, mức phí và đánh giá. Gia đình luôn là người quyết định chăm sóc viên nào sẽ nhận ca.",
   },
   {
     number: "03",
@@ -70,7 +70,7 @@ export default function HowItWorksSection() {
                 <CheckCircle2 size={18} aria-hidden="true" />
                 <div>
                   <strong>13:52</strong>
-                  <span>Caregiver đã đến điểm hẹn</span>
+                  <span>Chăm sóc viên đã đến điểm hẹn</span>
                 </div>
               </li>
               <li>

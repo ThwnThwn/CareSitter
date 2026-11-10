@@ -29,7 +29,7 @@ export default function DownloadCTASection() {
                 <ArrowUpRight size={18} aria-hidden="true" />
               </button>
               <a className="button button--ghost-light" href="#caregivers">
-                Xem caregiver
+                Xem chăm sóc viên
               </a>
             </div>
           </div>
