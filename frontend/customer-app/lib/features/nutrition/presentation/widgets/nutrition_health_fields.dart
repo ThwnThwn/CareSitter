@@ -2,7 +2,9 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 
+import '../models/nutrition_medication_draft.dart';
 import 'nutrition_expansion_card.dart';
+import 'nutrition_medication_editor.dart';
 
 /// Edits only the structured fields supplied by the customer; saved history stays on People.
 class NutritionHealthFields extends StatefulWidget {
@@ -31,7 +33,7 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
   final Map<String, dynamic> _profileChanges = {};
   final ExpansibleController _expansion = ExpansibleController();
   late final Map<String, dynamic> _profile;
-  final List<_MedicationDraft> _medications = [];
+  final List<NutritionMedicationDraft> _medications = [];
   final Map<String, GlobalKey> _fieldKeys = {
     'medicationsStatus': GlobalKey(),
     'feedingRoute': GlobalKey(),
@@ -64,8 +66,8 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
     final raw = widget.health['medications'];
     if (raw != null) {
       if (raw is List && raw.every((m) => m is Map && m['name'] is String)) {
-        _medications.addAll(raw
-            .map((m) => _MedicationDraft(Map<String, dynamic>.from(m as Map))));
+        _medications.addAll(raw.map((m) =>
+            NutritionMedicationDraft(Map<String, dynamic>.from(m as Map))));
       } else {
         _legacyMedications = true;
       }
@@ -208,7 +210,7 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
                     ? null
                     : () {
                         setState(() {
-                          _medications.add(_MedicationDraft(
+                          _medications.add(NutritionMedicationDraft(
                               {'name': '', 'is_active': true}));
                           _medicationsDirty = true;
                         });
@@ -240,67 +242,28 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
     );
   }
 
-  Widget _medication(_MedicationDraft medication, int index) => Padding(
+  Widget _medication(NutritionMedicationDraft medication, int index) =>
+      NutritionMedicationEditor(
         key: ObjectKey(medication),
-        padding: const EdgeInsets.only(bottom: AppSpacing.section),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Thuốc ${index + 1}',
-              style: Theme.of(context).textTheme.titleSmall),
-          TextField(
-              controller: medication.name,
-              enabled: widget.enabled,
-              maxLength: 200,
-              decoration: const InputDecoration(
-                  labelText: 'Tên thuốc theo thông tin hiện có'),
-              onChanged: (_) {
-                setState(() => _medicationsDirty = true);
-                _emit();
-              }),
-          TextField(
-              controller: medication.dosage,
-              enabled: widget.enabled,
-              maxLength: 1000,
-              decoration: const InputDecoration(
-                  labelText: 'Liều dùng đã được hướng dẫn (nếu có)'),
-              onChanged: (_) {
-                medication.dosageDirty = true;
-                _medicationsDirty = true;
-                _emit();
-              }),
-          AppDropdownField<String>(
-            initialValue: medication.active == null
-                ? 'unknown'
-                : medication.active!
-                    ? 'active'
-                    : 'inactive',
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Trạng thái sử dụng'),
-            items: const [
-              DropdownMenuItem(value: 'unknown', child: Text('Chưa rõ')),
-              DropdownMenuItem(value: 'active', child: Text('Đang dùng')),
-              DropdownMenuItem(value: 'inactive', child: Text('Đã ngừng dùng')),
-            ],
-            onChanged: !widget.enabled
-                ? null
-                : (v) {
-                    medication.active = v == 'unknown' ? null : v == 'active';
-                    _medicationsDirty = true;
-                    _emit();
-                  },
-          ),
-          TextButton(
-              onPressed: !widget.enabled
-                  ? null
-                  : () {
-                      setState(() {
-                        _medications.remove(medication);
-                        _medicationsDirty = true;
-                      });
-                      medication.dispose();
-                      _emit();
-                    },
-              child: const Text('Bỏ mục thuốc này')),
-        ]),
+        medication: medication,
+        index: index,
+        enabled: widget.enabled,
+        onNameChanged: () {
+          setState(() => _medicationsDirty = true);
+          _emit();
+        },
+        onChanged: () {
+          _medicationsDirty = true;
+          _emit();
+        },
+        onRemove: () {
+          setState(() {
+            _medications.remove(medication);
+            _medicationsDirty = true;
+          });
+          medication.dispose();
+          _emit();
+        },
       );
 
   @override
@@ -310,29 +273,5 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
       medication.dispose();
     }
     super.dispose();
-  }
-}
-
-class _MedicationDraft {
-  final Map<String, dynamic> original;
-  final TextEditingController name, dosage;
-  bool? active;
-  bool dosageDirty = false;
-  _MedicationDraft(this.original)
-      : name = TextEditingController(text: original['name'] as String),
-        dosage =
-            TextEditingController(text: original['dosage']?.toString() ?? ''),
-        active = original['is_active'] is bool
-            ? original['is_active'] as bool
-            : null;
-  Map<String, dynamic> value() => {
-        ...original,
-        'name': name.text.trim(),
-        if (dosageDirty) 'dosage': dosage.text.trim(),
-        if (active != null) 'is_active': active,
-      }..removeWhere((key, _) => key == 'is_active' && active == null);
-  void dispose() {
-    name.dispose();
-    dosage.dispose();
   }
 }

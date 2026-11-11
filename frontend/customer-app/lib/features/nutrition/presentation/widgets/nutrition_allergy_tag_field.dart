@@ -1,6 +1,8 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+import 'nutrition_allergy_tag_input.dart';
+
 class NutritionAllergyTagField extends StatefulWidget {
   const NutritionAllergyTagField({
     super.key,
@@ -144,73 +146,16 @@ class _NutritionAllergyTagFieldState extends State<NutritionAllergyTagField> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        AnimatedContainer(
-          key: const ValueKey('nutrition-allergies-field'),
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.compact,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppRadius.control),
-            border: Border.all(
-              color: hasError ? AppColors.error : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              for (final tag in _tags)
-                InputChip(
-                  label: Text(tag),
-                  onDeleted: widget.enabled ? () => _remove(tag) : null,
-                  deleteButtonTooltipMessage: 'Xoá $tag',
-                  deleteIcon: const Icon(Icons.close_rounded, size: 16),
-                  backgroundColor: AppColors.primaryContainer,
-                  labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w600,
-                      ),
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 190),
-                child: IntrinsicWidth(
-                  child: TextField(
-                    key: const ValueKey('nutrition-allergies-input'),
-                    controller: _input,
-                    focusNode: _focusNode,
-                    enabled: widget.enabled,
-                    maxLength: widget.maxLength,
-                    textInputAction: TextInputAction.done,
-                    onChanged: _handleInput,
-                    onSubmitted: _commitDraft,
-                    decoration: const InputDecoration(
-                      hintText: 'Nhập thực phẩm rồi nhấn Enter...',
-                      counterText: '',
-                      isDense: true,
-                      filled: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        NutritionAllergyTagInput(
+          tags: _tags,
+          input: _input,
+          focusNode: _focusNode,
+          enabled: widget.enabled,
+          hasError: hasError,
+          maxLength: widget.maxLength,
+          onChanged: _handleInput,
+          onSubmitted: _commitDraft,
+          onRemove: _remove,
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
 
 import '../controllers/nutrition_controller.dart';
-import '../widgets/nutrition_plan_history_sheet.dart';
 import 'nutrition_screen_actions.dart';
 import 'nutrition_screen_page.dart';
 import 'nutrition_screen_page_actions.dart';
@@ -213,75 +212,49 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
       );
 
   Future<void> _createWeek(
-      NutritionFlowController controller, DateTime selectedDate,
-      {bool confirmFirst = false}) async {
+    NutritionFlowController controller,
+    DateTime selectedDate, {
+    bool confirmFirst = false,
+  }) {
+    return NutritionScreenActions.createWeek(
+      context: context,
+      controller: controller,
+      selectedDate: selectedDate,
+      isCurrent: _captureScope(),
+      onNeedsProfile: () => setState(() => _editingProfile = true),
+      confirmFirst: confirmFirst,
+    );
+  }
+
+  bool Function() _captureScope() {
     final beneficiary = widget.beneficiaryId;
     final session = ref.read(nutritionSessionProvider);
-    if (confirmFirst) {
-      await controller.confirm();
-      if (!mounted ||
-          beneficiary != widget.beneficiaryId ||
-          ref.read(nutritionSessionProvider) != session) {
-        return;
-      }
-      final confirmed = controller.view.resource;
-      if (controller.view.error != null ||
-          confirmed?.status != 'confirmed' ||
-          confirmed?.result.decision.allows('recommend') != true) {
-        return;
-      }
-      AppToast.success(context, 'Lưu thông tin thành công');
-    }
-    final result = await controller.generateWeek(selectedDate);
-    if (!mounted ||
-        beneficiary != widget.beneficiaryId ||
-        ref.read(nutritionSessionProvider) != session) {
-      return;
-    }
-    if (result.needsProfile) {
-      setState(() => _editingProfile = true);
-      AppToast.error(context, result.error!);
-      return;
-    }
-    if (result.completed) {
-      AppToast.success(
-          context,
-          result.createdDays == 0
-              ? 'Đã có thực đơn cho đủ 7 ngày'
-              : 'Đã lưu thực đơn cho đủ 7 ngày');
-    } else {
-      AppToast.error(context,
-          '${result.error ?? 'Chưa hoàn tất tuần.'} Đã có ${result.createdDays + result.existingDays}/7 ngày.');
-    }
+    return () =>
+        mounted &&
+        beneficiary == widget.beneficiaryId &&
+        ref.read(nutritionSessionProvider) == session;
   }
 
   Future<void> _createPlan(
     NutritionFlowController controller,
     DateTime selectedDate,
   ) async {
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
+    final isCurrent = _captureScope();
     final created =
         await controller.recommendForDateUsingConfirmedHealth(selectedDate);
-    if (!mounted ||
-        beneficiary != widget.beneficiaryId ||
-        ref.read(nutritionSessionProvider) != session) {
+    if (!isCurrent()) {
       return;
     }
     if (!created) setState(() => _editingProfile = true);
   }
 
   Future<void> _replace(NutritionFlowController c, String mealType) async {
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
+    final isCurrent = _captureScope();
     await NutritionScreenActions.replaceMeal(
       context: context,
       controller: c,
       mealType: mealType,
-      isCurrent: () =>
-          mounted &&
-          beneficiary == widget.beneficiaryId &&
-          ref.read(nutritionSessionProvider) == session,
+      isCurrent: isCurrent,
       onCloseSheetChanged: (close) => _closeSheet = close,
     );
   }
@@ -289,40 +262,15 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
   Future<void> _history(NutritionFlowController c) async {
     if (_historyLoading) return;
     setState(() => _historyLoading = true);
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
+    final isCurrent = _captureScope();
     try {
-      final plans = await c.plans();
-      if (!mounted ||
-          beneficiary != widget.beneficiaryId ||
-          plans == null ||
-          ref.read(nutritionSessionProvider) != session) {
-        return;
-      }
-      final chosen = await NutritionScreenActions.showSheet<String>(
+      final opened = await NutritionScreenActions.openHistory(
         context: context,
+        controller: c,
+        isCurrent: isCurrent,
         onCloseSheetChanged: (close) => _closeSheet = close,
-        builder: (_) => NutritionPlanHistorySheet(plans: plans),
       );
-      if (mounted &&
-          beneficiary == widget.beneficiaryId &&
-          chosen != null &&
-          ref.read(nutritionSessionProvider) == session) {
-        await c.openPlan(chosen);
-        if (!mounted ||
-            beneficiary != widget.beneficiaryId ||
-            ref.read(nutritionSessionProvider) != session) {
-          return;
-        }
-        final openedResource = c.view.resource;
-        final plannedDate = openedResource?.id == chosen
-            ? DateTime.tryParse(openedResource!.result.plannedDate ?? '')
-            : null;
-        if (plannedDate != null) c.adoptResourceDate();
-        setState(() {
-          _editingProfile = false;
-        });
-      }
+      if (opened && isCurrent()) setState(() => _editingProfile = false);
     } finally {
       if (mounted) setState(() => _historyLoading = false);
     }
@@ -332,13 +280,9 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     NutritionFlowController controller,
     DateTime date,
   ) async {
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
+    final isCurrent = _captureScope();
     final opened = await controller.openPlanForDate(date);
-    if (opened &&
-        mounted &&
-        beneficiary == widget.beneficiaryId &&
-        ref.read(nutritionSessionProvider) == session) {
+    if (opened && isCurrent()) {
       setState(() => _editingProfile = false);
     }
   }
