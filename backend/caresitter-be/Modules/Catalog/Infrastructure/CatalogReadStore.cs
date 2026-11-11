@@ -18,6 +18,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
                 x.Code,
                 x.Name,
                 x.Description,
+                x.ImageUrl,
                 x.DefaultDurationMinutes,
                 x.AllowAdHocTasks,
                 Pricing = db.PricingRules.AsNoTracking()
@@ -29,10 +30,20 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             })
             .ToListAsync(ct);
 
+        var plans = await db.ServicePlans.AsNoTracking()
+            .Where(x => x.IsActive &&
+                db.ServiceTypes.Any(service => service.Id == x.ServiceTypeId && service.IsActive) &&
+                x.EffectiveFrom <= now && (x.EffectiveTo == null || x.EffectiveTo > now))
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.IncludedSessions)
+            .ToListAsync(ct);
+
         return items.Select(x => new ServiceCatalogResponse(
-            x.Id, x.Code, x.Name, x.Description, x.DefaultDurationMinutes,
+            x.Id, x.Code, x.Name, x.Description, x.ImageUrl, x.DefaultDurationMinutes,
             x.AllowAdHocTasks, x.Pricing?.BaseHourlyPrice ?? 0,
-            x.Pricing?.PlatformFeePercent ?? 0m)).ToArray();
+            x.Pricing?.PlatformFeePercent ?? 0m,
+            plans.Where(plan => plan.ServiceTypeId == x.Id)
+                .Select(CatalogAdminMapper.ToResponse).ToArray())).ToArray();
     }
 
     public async Task<ServiceCatalogResponse?> GetActiveServiceAsync(
@@ -46,6 +57,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
                 x.Code,
                 x.Name,
                 x.Description,
+                x.ImageUrl,
                 x.DefaultDurationMinutes,
                 x.AllowAdHocTasks
             })
@@ -59,9 +71,18 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             .Select(p => new { p.BaseHourlyPrice, p.PlatformFeePercent })
             .FirstOrDefaultAsync(ct);
 
+        var plans = await db.ServicePlans.AsNoTracking()
+            .Where(x => x.ServiceTypeId == serviceId && x.IsActive &&
+                x.EffectiveFrom <= now && (x.EffectiveTo == null || x.EffectiveTo > now))
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.IncludedSessions)
+            .ToListAsync(ct);
+
         return new ServiceCatalogResponse(item.Id, item.Code, item.Name, item.Description,
+            item.ImageUrl,
             item.DefaultDurationMinutes, item.AllowAdHocTasks,
-            pricing?.BaseHourlyPrice ?? 0, pricing?.PlatformFeePercent ?? 0m);
+            pricing?.BaseHourlyPrice ?? 0, pricing?.PlatformFeePercent ?? 0m,
+            plans.Select(CatalogAdminMapper.ToResponse).ToArray());
     }
 
     public async Task<IReadOnlyList<AddressResponse>> ListOwnedAddressesAsync(
@@ -89,11 +110,17 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
         var prices = await db.PricingRules.AsNoTracking()
             .OrderByDescending(x => x.EffectiveFrom)
             .ToListAsync(ct);
+        var plans = await db.ServicePlans.AsNoTracking()
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.IncludedSessions)
+            .ToListAsync(ct);
 
         return services.Select(service => new AdminServiceResponse(
-            service.Id, service.Code, service.Name, service.Description,
+            service.Id, service.Code, service.Name, service.Description, service.ImageUrl,
             service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks,
             prices.Where(x => x.ServiceTypeId == service.Id)
+                .Select(CatalogAdminMapper.ToResponse).ToArray(),
+            plans.Where(x => x.ServiceTypeId == service.Id)
                 .Select(CatalogAdminMapper.ToResponse).ToArray())).ToArray();
     }
 
@@ -108,10 +135,16 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             .Where(x => x.ServiceTypeId == serviceId)
             .OrderByDescending(x => x.EffectiveFrom)
             .ToListAsync(ct);
+        var plans = await db.ServicePlans.AsNoTracking()
+            .Where(x => x.ServiceTypeId == serviceId)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.IncludedSessions)
+            .ToListAsync(ct);
 
         return new AdminServiceResponse(
-            service.Id, service.Code, service.Name, service.Description,
+            service.Id, service.Code, service.Name, service.Description, service.ImageUrl,
             service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks,
-            prices.Select(CatalogAdminMapper.ToResponse).ToArray());
+            prices.Select(CatalogAdminMapper.ToResponse).ToArray(),
+            plans.Select(CatalogAdminMapper.ToResponse).ToArray());
     }
 }

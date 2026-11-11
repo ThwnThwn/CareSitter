@@ -294,15 +294,36 @@ export type PricingRule = {
   isActive: boolean;
 };
 
+export type ServicePlan = {
+  id: string;
+  serviceTypeId: string;
+  code: string;
+  name: string;
+  description?: string;
+  billingUnit: 'SESSION' | 'SESSION_PACKAGE';
+  durationMinutes: number;
+  includedSessions: number;
+  totalPrice: number;
+  validityDays?: number;
+  platformFeePercent: number;
+  disputeWindowHours: number;
+  sortOrder: number;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  isActive: boolean;
+};
+
 export type CatalogService = {
   id: string;
   code: string;
   name: string;
   description?: string;
+  imageUrl?: string;
   defaultDurationMinutes: number;
   isActive: boolean;
   allowAdHocTasks: boolean;
   pricingRules: PricingRule[];
+  plans?: ServicePlan[];
 };
 
 export type ChecklistTemplate = {

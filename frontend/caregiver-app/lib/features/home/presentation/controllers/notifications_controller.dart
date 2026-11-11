@@ -35,6 +35,23 @@ class NotificationsController
     }
   }
 
+  /// Returns chat notifications that arrived since the last loaded inbox.
+  Future<List<AppNotificationModel>> refreshForNewChat() async {
+    final hadInbox = _revision > 0;
+    final previousIds = state.map((notification) => notification.id).toSet();
+    final previousRevision = _revision;
+    await refresh();
+    if (!mounted || !hadInbox || _revision == previousRevision) return const [];
+    return state
+        .where((notification) =>
+            notification.id.isNotEmpty &&
+            !previousIds.contains(notification.id) &&
+            !notification.isRead &&
+            (notification.type == 'BOOKING_CHAT' ||
+                notification.type == 'SUPPORT_CHAT'))
+        .toList(growable: false);
+  }
+
   Future<void> markAllAsRead() async {
     if (!mounted) return;
     _generation++;

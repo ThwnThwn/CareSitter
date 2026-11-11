@@ -78,6 +78,8 @@ internal static class MediaEndpoints
             return Results.Forbid();
         if (folder is "beneficiary" or "beneficiaries" && !currentUser.IsInRole("CUSTOMER"))
             return Results.Forbid();
+        if (folder is "catalog" or "service" or "services" && !currentUser.IsInRole("ADMIN"))
+            return Results.Forbid();
 
         using var stream = file.OpenReadStream();
         if (folder == "kyc")
@@ -93,6 +95,7 @@ internal static class MediaEndpoints
             "checklist" or "checklists" => $"CareSitter/Checklist/{userId}",
             "beneficiary" or "beneficiaries" => $"CareSitter/Beneficiaries/{userId}",
             "support" => $"CareSitter/Support/{userId}",
+            "catalog" or "service" or "services" => "CareSitter/Catalog",
             _ => $"CareSitter/Uploads/{userId}",
         };
 

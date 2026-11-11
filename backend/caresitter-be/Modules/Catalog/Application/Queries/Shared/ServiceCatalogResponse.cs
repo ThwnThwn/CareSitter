@@ -7,7 +7,9 @@ public sealed record ServiceCatalogResponse(
     string Code,
     string Name,
     string? Description,
+    string? ImageUrl,
     int DefaultDurationMinutes,
     bool AllowAdHocTasks,
     long BaseHourlyPrice,
-    decimal PlatformFeePercent);
+    decimal PlatformFeePercent,
+    IReadOnlyList<ServicePlanResponse> Plans);

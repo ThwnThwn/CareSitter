@@ -14,7 +14,7 @@ namespace CareSitter.IntegrationTests;
 public sealed partial class BookingChatPaginationTests
 {
     [PostgresFact]
-    public async Task Push_disabled_still_dispatches_realtime_without_requesting_notification()
+    public async Task Push_disabled_still_creates_in_app_notification_and_dispatches_realtime()
     {
         await using var db = CreateDb();
         await ClearOutboxAsync(db);
@@ -37,7 +37,10 @@ public sealed partial class BookingChatPaginationTests
 
         Assert.Equal(1, await dispatcher.DispatchPendingAsync(20));
         Assert.Single(hub.Messages);
-        Assert.Empty(notifications.Attempts);
+        var notification = Assert.Single(notifications.Attempts);
+        Assert.Equal(seed.CaregiverUserId, notification.UserId);
+        Assert.Equal("BOOKING_CHAT", notification.Type);
+        Assert.False(notification.SendPush);
     }
 
     [PostgresFact]

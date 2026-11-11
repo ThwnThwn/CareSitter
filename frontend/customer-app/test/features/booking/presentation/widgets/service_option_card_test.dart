@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/service_image.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/wizard/service_option_card.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
 import 'package:flutter/material.dart';
@@ -53,7 +54,13 @@ void main() {
           expect(find.text('80.000đ'), findsOneWidget);
           expect(find.text('/giờ'), findsOneWidget);
           expect(find.text('Thời lượng gợi ý: 4 giờ'), findsOneWidget);
-          expect(find.byIcon(Icons.directions_walk_rounded), findsOneWidget);
+          final image = tester.widget<ServiceImage>(find.byType(ServiceImage));
+          expect(image.code, 'NONMED_COMPANION');
+          expect(image.width, width == 320 ? 82 : 104);
+          expect(
+            tester.getTopLeft(find.byType(ServiceImage)).dx,
+            lessThan(tester.getTopLeft(find.text('Đồng hành linh hoạt')).dx),
+          );
           expect(find.byIcon(Icons.check_rounded), findsOneWidget);
           expect(tester.takeException(), isNull);
 

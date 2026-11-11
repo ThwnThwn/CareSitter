@@ -9,5 +9,6 @@ public sealed record UpdateServiceCommand(
     string Code,
     string Name,
     string? Description,
+    string? ImageUrl,
     int DefaultDurationMinutes,
     bool IsActive) : IRequest<Result<AdminServiceResponse>>;

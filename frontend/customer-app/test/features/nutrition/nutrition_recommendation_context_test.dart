@@ -5,6 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('local demo meals retain disclosure without graph grounding',
+      (tester) async {
+    final trace = NutritionRecommendationTraceModel.fromJson({
+      'strategy': 'rule_baseline',
+      'usedAi': false,
+      'warnings': ['grounding_not_configured'],
+    });
+    final meal = NutritionMealModel.fromJson({
+      'name': '[DEMO] Cháo trứng',
+      'mealType': 'breakfast',
+    });
+    await tester.pumpWidget(MaterialApp(
+      home: NutritionRecommendationContext(trace: trace, meals: [meal]),
+    ));
+    expect(find.text('DEMO'), findsOneWidget);
+    expect(find.textContaining('Chưa kiểm duyệt lâm sàng'), findsOneWidget);
+    expect(find.text('DEMO · GraphRAG'), findsNothing);
+  });
+
   testWidgets('grounded AI recommendation explains its bounded role and source',
       (tester) async {
     final meal = NutritionMealModel.fromJson({

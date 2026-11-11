@@ -32,6 +32,10 @@ class ServiceDetailSections extends StatelessWidget {
           _ServiceIntroduction(service: service, profile: profile),
           const SizedBox(height: AppSpacing.md),
           _ServiceFacts(service: service),
+          if (service.activePlans.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
+            _ServicePlans(service: service),
+          ],
           const SizedBox(height: AppSpacing.xl),
           ServiceChecklistSection(
             items: checklistItems,
@@ -43,6 +47,81 @@ class ServiceDetailSections extends StatelessWidget {
           const _SafetyCommitment(),
         ],
       );
+}
+
+class _ServicePlans extends StatelessWidget {
+  const _ServicePlans({required this.service});
+
+  final ServiceModel service;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Phương án dịch vụ',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ...service.activePlans.map(
+            (plan) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.compact),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            plan.name,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: AppSpacing.micro),
+                          Text(
+                            '${plan.includedSessions} buổi · ${plan.durationMinutes} phút/buổi'
+                            '${plan.validityDays == null ? '' : ' · ${plan.validityDays} ngày'}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      _formatPrice(plan.totalPrice),
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+  static String _formatPrice(int value) {
+    final digits = value.toString();
+    final buffer = StringBuffer();
+    for (var index = 0; index < digits.length; index++) {
+      if (index > 0 && (digits.length - index) % 3 == 0) buffer.write('.');
+      buffer.write(digits[index]);
+    }
+    return '$bufferđ';
+  }
 }
 
 class _ServiceTypeBadge extends StatelessWidget {

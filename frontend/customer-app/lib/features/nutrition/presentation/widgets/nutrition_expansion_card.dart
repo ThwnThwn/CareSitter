@@ -7,11 +7,13 @@ class NutritionExpansionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.children,
+    this.controller,
   });
 
   final String title;
   final String subtitle;
   final List<Widget> children;
+  final ExpansibleController? controller;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -29,6 +31,7 @@ class NutritionExpansionCard extends StatelessWidget {
             splashColor: AppColors.primaryContainer,
           ),
           child: ExpansionTile(
+            controller: controller,
             tilePadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: AppSpacing.xs,

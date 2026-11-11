@@ -27,12 +27,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final unreadCount = ref
-            .watch(notificationsProvider)
-            .valueOrNull
-            ?.where((notification) => !notification.isRead)
-            .length ??
-        0;
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: NestedScrollView(
@@ -78,8 +73,12 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
               'crisis',
             ]),
             BookingList(statuses: ['completed']),
-            BookingList(
-                statuses: ['cancelled', 'matching_failed', 'disputed', 'refunded']),
+            BookingList(statuses: [
+              'cancelled',
+              'matching_failed',
+              'disputed',
+              'refunded'
+            ]),
           ],
         ),
       ),

@@ -62,6 +62,8 @@ export function CatalogManager() {
             <tbody>
               {services.map((service) => {
                 const activePrice = currentPricingRule(service.pricingRules || []);
+                const activePlans = (service.plans || []).filter((plan) => plan.isActive);
+                const planPrices = activePlans.map((plan) => plan.totalPrice);
                 return (
                   <tr key={service.id}>
                     <td>
@@ -71,11 +73,20 @@ export function CatalogManager() {
                     <td className="mono">{service.code}</td>
                     <td>{service.defaultDurationMinutes} phút</td>
                     <td>
-                      {activePrice
+                      {planPrices.length
+                        ? `${formatMoney(Math.min(...planPrices))} – ${formatMoney(Math.max(...planPrices))}`
+                        : activePrice
                         ? formatMoney(activePrice.baseHourlyPrice) + '/giờ'
                         : 'Chưa cấu hình'}
+                      {!!activePlans.length && <small>{activePlans.length} phương án theo buổi</small>}
                     </td>
-                    <td>{activePrice ? `${activePrice.platformFeePercent}%` : '—'}</td>
+                    <td>
+                      {activePlans.length
+                        ? `${activePlans[0].platformFeePercent}%`
+                        : activePrice
+                          ? `${activePrice.platformFeePercent}%`
+                          : '—'}
+                    </td>
                     <td>
                       <StatusChip value={service.isActive ? 'ACTIVE' : 'SUSPENDED'} />
                     </td>

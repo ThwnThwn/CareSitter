@@ -2,13 +2,13 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/health_profile_model.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/models/nutrition_flow_model.dart';
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import '../../../../core/utils/date_formatter.dart';
 
 import 'nutrition_health_form.dart';
 import 'nutrition_patient_intro.dart';
-import 'nutrition_personalization_requirement.dart';
 
-class NutritionProfileEditor extends StatelessWidget {
+class NutritionProfileEditor extends StatefulWidget {
   const NutritionProfileEditor({
     super.key,
     required this.beneficiaryId,
@@ -37,49 +37,87 @@ class NutritionProfileEditor extends StatelessWidget {
   final Widget? result;
 
   @override
+  State<NutritionProfileEditor> createState() => _NutritionProfileEditorState();
+}
+
+class _NutritionProfileEditorState extends State<NutritionProfileEditor> {
+  final _formKey = GlobalKey<NutritionHealthFormState>();
+
+  void _check() {
+    final readiness = _formKey.currentState?.validate();
+    if (readiness == null) return;
+    if (!readiness.isReady) {
+      AppToast.error(context, readiness.missingFields.first,
+          title: 'Vui lòng bổ sung thông tin');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _formKey.currentState?.revealFirstError();
+      });
+    } else if (widget.flow.canAssess || widget.dirty) {
+      widget.onSave(_formKey.currentState!.changes);
+    } else {
+      AppToast.info(context, 'Chưa thể kiểm tra thông tin. Vui lòng thử lại.');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(AppSpacing.section),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.section,
+          AppSpacing.section,
+          AppSpacing.section,
+          AppSpacing.hero + AppSpacing.xxl,
+        ),
         children: [
-          NutritionPatientIntro(name: beneficiaryName, editing: true),
+          NutritionPatientIntro(name: widget.beneficiaryName, editing: true),
           const SizedBox(height: AppSpacing.sm),
           Text(
-              'Tạo thực đơn cho ngày ${formatDate(plannedDate, padded: true)}'),
-          if (flow.error != null) ...[
+              'Tạo thực đơn cho ngày ${formatDate(widget.plannedDate, padded: true)}'),
+          if (widget.flow.error != null) ...[
             const SizedBox(height: AppSpacing.compact),
-            Text(flow.error!, style: const TextStyle(color: AppColors.error)),
+            Text(widget.flow.error!,
+                style: const TextStyle(color: AppColors.error)),
           ],
-          if (flow.loading) const LinearProgressIndicator(),
+          if (widget.flow.loading) const LinearProgressIndicator(),
           const SizedBox(height: AppSpacing.lg),
-          NutritionHealthForm(
-            key: ValueKey('health-$beneficiaryId-${health.revision}-$session'),
-            health: health,
-            enabled: !flow.loading,
-            onDirtyChanged: onDirtyChanged,
-            onSave: onSave,
-          ),
-          const SizedBox(height: AppSpacing.compact),
-          NutritionPersonalizationRequirement(readiness: flow.readiness),
-          const SizedBox(height: AppSpacing.compact),
-          if (dirty)
-            const Text(
-              'Lưu phần thông tin đã cập nhật trước khi kiểm tra và xem gợi ý.',
+          KeyedSubtree(
+            key: ValueKey(
+                'health-${widget.beneficiaryId}-${widget.health.revision}-${widget.session}'),
+            child: NutritionHealthForm(
+              key: _formKey,
+              health: widget.health,
+              missingFields: widget.dirty ||
+                      widget.flow.resource?.result.decision.state !=
+                          'needs_information'
+                  ? const []
+                  : widget.flow.resource!.result.decision.missingFields,
+              enabled: !widget.flow.loading,
+              onDirtyChanged: widget.onDirtyChanged,
+              onSave: widget.onSave,
+              showSaveButton: false,
             ),
-          FilledButton.icon(
-            onPressed: !flow.canAssess || dirty ? null : onAssess,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-            label: const Text('Kiểm tra thông tin'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: !flow.canAssess || dirty ? 0 : 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.control),
+          ),
+          if (widget.flow.weekProgress == null) ...[
+            const SizedBox(height: AppSpacing.compact),
+            FilledButton.icon(
+              onPressed: widget.flow.loading ||
+                      (!widget.flow.canAssess && !widget.dirty)
+                  ? null
+                  : _check,
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: const Text('Lưu và kiểm tra thông tin'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: widget.flow.loading ? 0 : 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.control),
+                ),
               ),
             ),
-          ),
-          if (result != null) ...[
+          ],
+          if (widget.result != null) ...[
             const SizedBox(height: AppSpacing.lg),
-            result!,
+            widget.result!,
           ],
         ],
       );

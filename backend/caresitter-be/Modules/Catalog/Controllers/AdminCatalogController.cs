@@ -33,6 +33,7 @@ public sealed class AdminCatalogController : ControllerBase
     {
         var result = await _mediator.Send(new CreateServiceCommand(
             request.Code, request.Name, request.Description,
+            request.ImageUrl,
             request.DefaultDurationMinutes, request.IsActive), ct);
         return result.ToActionResult(this,
             value => Created($"/api/v1/admin/catalog/services/{value.Id}", value));
@@ -44,6 +45,7 @@ public sealed class AdminCatalogController : ControllerBase
     {
         var result = await _mediator.Send(new UpdateServiceCommand(
             id, request.Code, request.Name, request.Description,
+            request.ImageUrl,
             request.DefaultDurationMinutes, request.IsActive), ct);
         return result.ToActionResult(this);
     }

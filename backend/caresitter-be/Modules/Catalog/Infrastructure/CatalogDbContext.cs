@@ -19,6 +19,7 @@ public sealed class CatalogDbContext : ModuleDbContext
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();
+    public DbSet<ServicePlan> ServicePlans => Set<ServicePlan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +86,7 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.Code).HasColumnName("code").HasMaxLength(100);
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
             b.Property(x => x.Description).HasColumnName("description");
+            b.Property(x => x.ImageUrl).HasColumnName("image_url");
             b.Property(x => x.DefaultDurationMinutes).HasColumnName("default_duration_minutes");
             b.Property(x => x.IsActive).HasColumnName("is_active");
             b.Property(x => x.AllowAdHocTasks).HasColumnName("allow_ad_hoc_tasks");
@@ -112,6 +114,30 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.IsActive).HasColumnName("is_active");
             b.Property(x => x.CreatedByAdminId).HasColumnName("created_by_admin_id");
             // Bang pricing_rules khong co created_at/updated_at (effective_from la field domain).
+            b.Ignore(x => x.CreatedAt);
+            b.Ignore(x => x.UpdatedAt);
+        });
+
+        modelBuilder.Entity<ServicePlan>(b =>
+        {
+            b.ToTable("service_plans");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.ServiceTypeId).HasColumnName("service_type_id");
+            b.Property(x => x.Code).HasColumnName("code").HasMaxLength(100);
+            b.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
+            b.Property(x => x.Description).HasColumnName("description");
+            b.Property(x => x.BillingUnit).HasColumnName("billing_unit").HasMaxLength(30);
+            b.Property(x => x.DurationMinutes).HasColumnName("duration_minutes");
+            b.Property(x => x.IncludedSessions).HasColumnName("included_sessions");
+            b.Property(x => x.TotalPrice).HasColumnName("total_price");
+            b.Property(x => x.ValidityDays).HasColumnName("validity_days");
+            b.Property(x => x.PlatformFeePercent).HasColumnName("platform_fee_percent").HasColumnType("numeric(5,2)");
+            b.Property(x => x.DisputeWindowHours).HasColumnName("dispute_window_hours");
+            b.Property(x => x.SortOrder).HasColumnName("sort_order");
+            b.Property(x => x.EffectiveFrom).HasColumnName("effective_from");
+            b.Property(x => x.EffectiveTo).HasColumnName("effective_to");
+            b.Property(x => x.IsActive).HasColumnName("is_active");
             b.Ignore(x => x.CreatedAt);
             b.Ignore(x => x.UpdatedAt);
         });
