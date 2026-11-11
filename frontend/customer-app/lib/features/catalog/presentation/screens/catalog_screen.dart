@@ -2,6 +2,7 @@ import 'package:caresitter_customer/features/catalog/presentation/widgets/catalo
 import 'package:caresitter_customer/features/catalog/presentation/widgets/catalog_screen_search_bar.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/catalog_screen_banner.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/catalog_screen_service_card.dart';
+import 'package:caresitter_customer/features/catalog/presentation/models/catalog_service_filter.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,15 +20,19 @@ class CatalogScreen extends ConsumerStatefulWidget {
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  CatalogServiceFilter _selectedFilter = CatalogServiceFilter.all;
 
   List<ServiceModel> _filtered(List<ServiceModel> services) {
-    if (_searchQuery.isEmpty) return services;
     final q = _searchQuery.toLowerCase();
     return services
-        .where((s) =>
-            s.name.toLowerCase().contains(q) ||
-            (s.description?.toLowerCase().contains(q) ?? false))
-        .toList();
+        .where(_selectedFilter.matches)
+        .where(
+          (service) =>
+              q.isEmpty ||
+              service.name.toLowerCase().contains(q) ||
+              (service.description?.toLowerCase().contains(q) ?? false),
+        )
+        .toList(growable: false);
   }
 
   @override
@@ -44,6 +49,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         buildSearchBar: _buildSearchBar,
         buildBanner: _buildBanner,
         servicesAsync: servicesAsync,
+        selectedFilter: _selectedFilter,
+        onFilterChanged: (filter) => setState(() => _selectedFilter = filter),
         filtered: _filtered,
         buildServiceCard: _buildServiceCard);
   }

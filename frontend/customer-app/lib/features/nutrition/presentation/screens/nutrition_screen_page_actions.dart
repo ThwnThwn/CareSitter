@@ -15,6 +15,8 @@ class NutritionScreenPageActions {
     required this.onDateSelected,
     required this.onRetryDate,
     required this.onCreatePlan,
+    required this.onCreateWeek,
+    required this.onConfirm,
   });
 
   final VoidCallback onReturnToMenu;
@@ -30,4 +32,6 @@ class NutritionScreenPageActions {
   final ValueChanged<DateTime>? onDateSelected;
   final VoidCallback? onRetryDate;
   final VoidCallback onCreatePlan;
+  final VoidCallback onCreateWeek;
+  final VoidCallback onConfirm;
 }

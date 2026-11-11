@@ -66,3 +66,7 @@
 \ir modules/shared/54-chat-firestore-projection-outbox.sql
 \ir modules/booking/55-booking-chat-user-blocks.sql
 \ir modules/catalog/56-align-home-care-service-catalog.sql
+\ir modules/catalog/57-service-session-plans.sql
+\ir modules/catalog/58-restore-hourly-home-care-services.sql
+\ir modules/catalog/59-complete-hourly-home-care-catalog.sql
+\ir modules/catalog/60-service-catalog-images.sql

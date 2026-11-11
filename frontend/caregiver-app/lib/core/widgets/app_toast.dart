@@ -25,14 +25,18 @@ final class AppToast {
         title: title ?? 'Đang xử lý',
         message: message,
         type: AppToastType.info,
-        duration: const Duration(days: 1),
         actionLabel: actionLabel,
         onAction: onAction,
       );
 
   /// Giữ tương thích các luồng cũ trong khi dùng giao diện toast thông tin.
-  static void loading(BuildContext context, String message) =>
-      info(context, message);
+  static void loading(BuildContext context, String message) => _show(
+        context,
+        title: 'Đang xử lý',
+        message: message,
+        type: AppToastType.info,
+        duration: const Duration(days: 1),
+      );
 
   static void success(BuildContext context, String message) => _show(
         context,

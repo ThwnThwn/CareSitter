@@ -165,18 +165,8 @@ internal sealed class BookingChatDispatcher(
             }
         }
 
-        await hub.Clients.Group(group).SendAsync("BookingChatChanged",
-            new BookingChatChangedEvent(
-                context.BookingId,
-                signal.ConversationId,
-                signal.ChangeVersion,
-                signal.EventId,
-                signal.Kind,
-                DateTimeOffset.UtcNow), ct);
-
-        // Re-use the per-recipient outbox event as the notification identity. This
-        // makes retries at-least-once while the notification service stays deduplicated.
-        if (_options.PushEnabled && signal.Kind == "USER_MESSAGE_CREATED" &&
+        UserNotificationMessage? chatNotification = null;
+        if (signal.Kind == "USER_MESSAGE_CREATED" &&
             signal.MessageId is { } messageId)
         {
             var senderUserId = await db.BookingChatMessages.AsNoTracking()
@@ -188,7 +178,7 @@ internal sealed class BookingChatDispatcher(
                 var deepLink = isCustomer
                     ? $"/bookings/{context.BookingId}/chat"
                     : $"/shifts/{context.BookingId}/chat";
-                await notifications.NotifyAsync(new UserNotificationMessage(
+                chatNotification = new UserNotificationMessage(
                     signal.RecipientUserId,
                     "BOOKING_CHAT",
                     "Tin nhắn mới về lịch chăm sóc",
@@ -201,9 +191,29 @@ internal sealed class BookingChatDispatcher(
                         ["deepLink"] = deepLink
                     },
                     signal.EventId,
-                    DateTimeOffset.UtcNow), ct);
+                    DateTimeOffset.UtcNow,
+                    SendPush: _options.PushEnabled);
             }
         }
+
+        // Khi push bị tắt, vẫn ghi inbox trước khi phát realtime để client tải lại
+        // và thấy notification ngay khi nhận BookingChatChanged.
+        if (chatNotification is { SendPush: false })
+            await notifications.NotifyAsync(chatNotification, ct);
+
+        await hub.Clients.Group(group).SendAsync("BookingChatChanged",
+            new BookingChatChangedEvent(
+                context.BookingId,
+                signal.ConversationId,
+                signal.ChangeVersion,
+                signal.EventId,
+                signal.Kind,
+                DateTimeOffset.UtcNow), ct);
+
+        // Re-use the per-recipient outbox event as the notification identity. This
+        // makes retries at-least-once while the notification service stays deduplicated.
+        if (chatNotification is { SendPush: true })
+            await notifications.NotifyAsync(chatNotification, ct);
 
         await MarkSentAsync(signal, ct);
         return true;

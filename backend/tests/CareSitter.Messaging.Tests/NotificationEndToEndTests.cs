@@ -245,6 +245,30 @@ public sealed class NotificationEndToEndTests(MessagingFixture fixture) : IClass
     }
 
     [Fact]
+    public async Task Inbox_only_notification_is_persisted_once_without_push_delivery()
+    {
+        var connection = await CreateDatabase();
+        await using var db = SupportDatabase(connection);
+        await db.Database.EnsureCreatedAsync();
+        var sender = new LegacyPush();
+        var service = new UserNotificationService(db, sender,
+            NullLogger<UserNotificationService>.Instance,
+            new MessagingSettings(false, false, false, false, "test"));
+        var eventId = Guid.NewGuid();
+        var message = new UserNotificationMessage(
+            Guid.NewGuid(), "BOOKING_CHAT", "Tin nhắn mới",
+            EventId: eventId, SendPush: false);
+
+        await service.NotifyAsync(message);
+        await service.NotifyAsync(message);
+
+        Assert.Equal(0, sender.Count);
+        Assert.Single(await db.Notifications.ToArrayAsync());
+        Assert.Empty(await db.Set<CareSitter.Modules.Support.Domain.NotificationDelivery>()
+            .ToArrayAsync());
+    }
+
+    [Fact]
     public async Task Disabled_notification_flow_keeps_failed_push_retryable()
     {
         var connection = await CreateDatabase();

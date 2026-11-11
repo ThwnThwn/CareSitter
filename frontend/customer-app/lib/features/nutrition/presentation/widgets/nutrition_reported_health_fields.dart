@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+import 'nutrition_allergy_tag_field.dart';
 import 'nutrition_status_field.dart';
 
 class NutritionReportedHealthFields extends StatelessWidget {
@@ -15,7 +16,23 @@ class NutritionReportedHealthFields extends StatelessWidget {
     required this.onConditionStatusChanged,
     required this.onAllergiesChanged,
     required this.onConditionsChanged,
+    this.showErrors = false,
+    this.missingFields = const [],
+    this.allergyStatusKey,
+    this.allergyDetailKey,
+    this.conditionStatusKey,
+    this.conditionDetailKey,
+    this.allergyFocusNode,
+    this.conditionFocusNode,
   });
+  final bool showErrors;
+  final List<String> missingFields;
+  final Key? allergyStatusKey;
+  final Key? allergyDetailKey;
+  final Key? conditionStatusKey;
+  final Key? conditionDetailKey;
+  final FocusNode? allergyFocusNode;
+  final FocusNode? conditionFocusNode;
 
   final bool enabled;
   final String allergyStatus;
@@ -31,6 +48,8 @@ class NutritionReportedHealthFields extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         children: [
           _ReportedStatusField(
+            statusKey: allergyStatusKey,
+            detailKey: allergyDetailKey,
             label: 'Dị ứng thực phẩm',
             value: allergyStatus,
             enabled: enabled,
@@ -45,9 +64,19 @@ class NutritionReportedHealthFields extends StatelessWidget {
             detailMaxLength: 1000,
             onStatusChanged: onAllergyStatusChanged,
             onDetailChanged: onAllergiesChanged,
+            showErrors: showErrors,
+            useTagInput: true,
+            statusError: _hasMissingField('foodAllergyStatus'),
+            detailError: _hasMissingField('allergies'),
+            detailErrorText: _hasMissingField('allergies')
+                ? 'Vui lòng kiểm tra thực phẩm chưa được nhận diện'
+                : null,
+            detailFocusNode: allergyFocusNode,
           ),
           const SizedBox(height: AppSpacing.compact),
           _ReportedStatusField(
+            statusKey: conditionStatusKey,
+            detailKey: conditionDetailKey,
             label: 'Thông tin bệnh lý hiện có',
             value: conditionStatus,
             enabled: enabled,
@@ -63,8 +92,19 @@ class NutritionReportedHealthFields extends StatelessWidget {
             detailMaxLength: 2000,
             onStatusChanged: onConditionStatusChanged,
             onDetailChanged: onConditionsChanged,
+            showErrors: showErrors,
+            statusError: _hasMissingField('conditionsStatus'),
+            detailError: _hasMissingField('chronicConditions'),
+            detailErrorText: _hasMissingField('chronicConditions')
+                ? 'Vui lòng kiểm tra thông tin bệnh lý này'
+                : null,
+            detailFocusNode: conditionFocusNode,
           ),
         ],
+      );
+
+  bool _hasMissingField(String field) => missingFields.any(
+        (item) => item == field || item.startsWith('$field/'),
       );
 }
 
@@ -80,7 +120,23 @@ class _ReportedStatusField extends StatelessWidget {
     required this.detailMaxLength,
     required this.onStatusChanged,
     required this.onDetailChanged,
+    required this.showErrors,
+    required this.statusError,
+    required this.detailError,
+    this.statusKey,
+    this.detailKey,
+    this.detailErrorText,
+    this.detailFocusNode,
+    this.useTagInput = false,
   });
+  final bool showErrors;
+  final bool useTagInput;
+  final bool statusError;
+  final bool detailError;
+  final Key? statusKey;
+  final Key? detailKey;
+  final String? detailErrorText;
+  final FocusNode? detailFocusNode;
 
   final String label;
   final String value;
@@ -97,23 +153,57 @@ class _ReportedStatusField extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         children: [
           NutritionStatusField(
+            key: statusKey,
             label: label,
             value: value,
             enabled: enabled,
             options: options,
             onChanged: onStatusChanged,
+            error: statusError ||
+                (showErrors &&
+                    (value == 'unknown' ||
+                        (value == 'reported_none' &&
+                            controller.text.trim().isNotEmpty))),
           ),
-          if (value == 'reported_present' || controller.text.isNotEmpty)
-            TextField(
-              controller: controller,
-              enabled: enabled,
-              maxLength: detailMaxLength,
-              onChanged: onDetailChanged,
-              decoration: InputDecoration(
-                labelText: detailLabel,
-                helperText: detailHelper,
+          if (value == 'reported_present' || controller.text.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            if (useTagInput)
+              NutritionAllergyTagField(
+                key: detailKey,
+                controller: controller,
+                enabled: enabled,
+                maxLength: detailMaxLength,
+                onChanged: onDetailChanged,
+                focusNode: detailFocusNode,
+                errorText: detailError
+                    ? detailErrorText ?? 'Vui lòng kiểm tra thông tin này'
+                    : showErrors &&
+                            value == 'reported_present' &&
+                            controller.text.trim().isEmpty
+                        ? 'Vui lòng nhập ít nhất một thực phẩm gây dị ứng'
+                        : null,
+              )
+            else
+              TextField(
+                key: detailKey,
+                controller: controller,
+                focusNode: detailFocusNode,
+                enabled: enabled,
+                maxLength: detailMaxLength,
+                onChanged: onDetailChanged,
+                decoration: InputDecoration(
+                  labelText: detailLabel,
+                  helperText: detailHelper,
+                  errorText: detailError
+                      ? detailErrorText ?? 'Vui lòng kiểm tra thông tin này'
+                      : showErrors &&
+                              value == 'reported_present' &&
+                              controller.text.trim().isEmpty
+                          ? 'Vui lòng nhập thông tin này'
+                          : null,
+                ),
               ),
-            ),
+          ],
         ],
       );
 }

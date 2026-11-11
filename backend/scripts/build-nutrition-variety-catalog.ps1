@@ -8,6 +8,17 @@ $snapshotPath = "$catalog/sources/nin-food-composition-2026-10-24.json"
 $snapshot = Get-Content $snapshotPath -Raw | ConvertFrom-Json -AsHashtable
 $foods = @{}
 foreach ($food in $snapshot.foods) { $foods[$food.conceptCode] = $food }
+$derivedAllergens = @{
+    BEEF_LEAN_RAW = 'BEEF'
+    CHICKEN_RAW   = 'CHICKEN'
+}
+$unverifiedCompositeIngredients = @(
+    'CHILI_SAUCE',
+    'FERMENTED_SOYBEAN_RICE',
+    'TOFU_BOILED',
+    'RICE_NOODLE_READY',
+    'GLASS_NOODLE_DRY'
+)
 # These are CareSitter-authored combinations, not recipes quoted from the book.
 # Gram weights follow the food snapshot's raw/cooked basis; no ml-to-g assumption.
 $specs = @(
@@ -79,6 +90,11 @@ foreach ($spec in $specs) {
         if (!$food -or $food.perUnit -ne 'g') { throw "Unsupported food: $code" }
         $ingredients += @{code=$code;name=$food.nameVi;amount=[decimal]$amount;unit='g';basis=$food.basis}
     }
+    $allergens = @($spec[3])
+    foreach ($ingredient in $ingredients) {
+        $derived = $derivedAllergens[$ingredient.code]
+        if ($derived -and $allergens -notcontains $derived) { $allergens += $derived }
+    }
     $nutrients = @{}
     foreach ($key in @('energy_kcal','protein_g','carbohydrate_g','fat_g','fiber_g','sodium_mg')) {
         [decimal]$sum = 0
@@ -102,7 +118,7 @@ foreach ($spec in $specs) {
         payload=@{
             versionId=(StableId "caresitter-variety-version-v1:$($spec[0])");name=$spec[0];mealType=$spec[1];servings=1
             imageUrl=$imageSource.imageUrl;imageAlt="Ảnh minh hoạ $($spec[0])"
-            ingredients=$ingredients;allergens=@($spec[3]);nutrients=$nutrients;allergenDataComplete=$true;dietaryPatterns=@($spec[4])
+            ingredients=$ingredients;allergens=$allergens;nutrients=$nutrients;allergenDataComplete=$true;dietaryPatterns=@($spec[4])
             sourceRecipeNote='Sách không đề cập công thức chế biến cho món phối hợp này; hướng dẫn bên dưới do CareSitter xây dựng cho demo.'
             preparationSteps=@(
                 'Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.',
@@ -113,6 +129,17 @@ foreach ($spec in $specs) {
         }
     }
     $bundle.recipes += $recipe
+}
+foreach ($version in $bundle.recipes) {
+    $recipeAllergens = @($version.payload.allergens)
+    foreach ($ingredient in $version.payload.ingredients) {
+        $derived = $derivedAllergens[$ingredient.code]
+        if ($derived -and $recipeAllergens -notcontains $derived) { $recipeAllergens += $derived }
+    }
+    $version.payload.allergens = $recipeAllergens
+    if (@($version.payload.ingredients | Where-Object { $unverifiedCompositeIngredients -contains $_.code }).Count -gt 0) {
+        $version.payload.allergenDataComplete = $false
+    }
 }
 $uniqueVersionCount = @($bundle.recipes.payload.versionId | Select-Object -Unique).Count
 if ($bundle.recipes.Count -ne 60 -or $uniqueVersionCount -ne 60) {

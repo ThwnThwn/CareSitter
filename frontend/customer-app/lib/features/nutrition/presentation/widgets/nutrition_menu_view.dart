@@ -21,6 +21,7 @@ class NutritionMenuView extends StatelessWidget {
     this.dateError,
     this.onRetryDate,
     this.onCreatePlan,
+    this.onCreateWeek,
   });
 
   final String? beneficiaryName;
@@ -33,9 +34,11 @@ class NutritionMenuView extends StatelessWidget {
   final String? dateError;
   final VoidCallback? onRetryDate;
   final VoidCallback? onCreatePlan;
+  final VoidCallback? onCreateWeek;
 
   @override
   Widget build(BuildContext context) {
+    final staleProfile = flow.resource?.status == 'stale';
     final showPlan = !isLoadingSelectedDate &&
         hasPlanForSelectedDate &&
         flow.resource != null;
@@ -58,6 +61,16 @@ class NutritionMenuView extends StatelessWidget {
           ),
           onDateSelected: onDateSelected,
         ),
+        if (flow.recommendationsEnabled) ...[
+          const SizedBox(height: AppSpacing.compact),
+          OutlinedButton.icon(
+            onPressed: flow.loading ? null : onCreateWeek,
+            icon: const Icon(Icons.date_range_rounded),
+            label: Text(flow.weekProgress == null
+                ? 'Tạo thực đơn 7 ngày từ ngày đã chọn'
+                : 'Đang tạo ${flow.weekProgress}/7 ngày...'),
+          ),
+        ],
         if (isLoadingSelectedDate) ...[
           const SizedBox(height: AppSpacing.compact),
           const LinearProgressIndicator(minHeight: 3),
@@ -70,11 +83,14 @@ class NutritionMenuView extends StatelessWidget {
         ] else if (flow.error != null) ...[
           const SizedBox(height: AppSpacing.compact),
           NutritionInlineError(message: flow.error!),
+        ] else if (staleProfile && !showPlan) ...[
+          const SizedBox(height: AppSpacing.compact),
+          result,
         ] else if (!showPlan) ...[
           const SizedBox(height: AppSpacing.compact),
           _NoPlanNotice(
             date: selectedDate,
-            onCreatePlan: onCreatePlan,
+            onCreatePlan: flow.loading ? null : onCreatePlan,
           ),
         ],
         if (flow.loading && !isLoadingSelectedDate) ...[

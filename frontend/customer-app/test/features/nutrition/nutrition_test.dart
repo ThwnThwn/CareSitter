@@ -28,6 +28,20 @@ Future<void> settle() async {
 }
 
 void main() {
+  testWidgets('save then assess uses new revision and stops on save failure', (tester) async {
+    final repository = _Repository();
+    final controller = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(controller.dispose);
+    await tester.pump();
+    await controller.saveHealthAndAssess({'generalNote': 'fixture'});
+    expect(repository.patches, hasLength(1));
+    expect(repository.writes.single.route, 'nutrition-assessments');
+    expect(repository.writes.single.data['expectedHealthRevision'], 8);
+    repository.patchError = _error(503);
+    await controller.saveHealthAndAssess({'generalNote': 'second'});
+    expect(repository.writes, hasLength(1));
+    expect(controller.view.error, isNotNull);
+  });
   test('assessment start policy allows only actionable failed retries', () {
     expect(
         NutritionAssessmentRules.canStart(
@@ -165,7 +179,7 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check = find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     expect(tester.widget<FilledButton>(check).onPressed, isNotNull);
   });
@@ -199,7 +213,7 @@ void main() {
     await tester.tap(find.text('Ăn qua ống').last);
     await tester.pumpAndSettle();
     final save =
-        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+        find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
@@ -403,7 +417,7 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check = find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
     await tester.pumpAndSettle();
@@ -562,7 +576,7 @@ void main() {
       await tester.scrollUntilVisible(find.text('Dị ứng thực phẩm'), 150,
           scrollable: find.byType(Scrollable).first);
       expect(find.text('Dị ứng thực phẩm'), findsOneWidget);
-      final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+      final check = find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
       await tester.scrollUntilVisible(check, 250);
       await tester.pumpAndSettle();
       await tester.ensureVisible(check);
@@ -597,7 +611,7 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check = find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
     await tester.pumpAndSettle();
@@ -671,12 +685,12 @@ void main() {
     expect(
         tester
             .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Kiểm tra thông tin'))
+                find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin'))
             .onPressed,
-        isNull);
+        isNotNull);
     repository.patchError = _error(503);
     final save =
-        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+        find.widgetWithText(FilledButton, 'Lưu và kiểm tra thông tin');
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();

@@ -48,6 +48,7 @@ public sealed class GeminiMealCandidateRankerTests
             .GetProperty("parts")[0].GetProperty("text").GetString()!);
         Assert.Equal(2, input.RootElement.GetProperty("candidateSets").GetArrayLength());
         Assert.False(input.RootElement.GetProperty("healthFacts")[0].TryGetProperty("quote", out _));
+        Assert.False(input.RootElement.GetProperty("evidence")[0].TryGetProperty("excerpt", out _));
     }
 
     [Fact]
@@ -70,6 +71,21 @@ public sealed class GeminiMealCandidateRankerTests
 
         Assert.False(result.Available);
         Assert.Equal(["meal_ranking_invalid_output"], result.Warnings);
+    }
+
+    [Fact]
+    public async Task Provider_timeout_returns_unavailable_for_safe_rule_fallback()
+    {
+        var options = EnabledOptions() with { TimeoutSeconds = 1 };
+        using var client = new HttpClient(new TimeoutHandler()) { BaseAddress = new Uri(options.BaseUrl) };
+        using var guard = new MealRankingRuntimeGuard(options, TimeProvider.System);
+        var ranker = new GeminiMealCandidateRanker(client, Options.Create(options), guard,
+            NullLogger<GeminiMealCandidateRanker>.Instance);
+
+        var result = await ranker.RankAsync(Request(), default);
+
+        Assert.False(result.Available);
+        Assert.Equal(["meal_ranking_timeout"], result.Warnings);
     }
 
     [Fact]
@@ -137,6 +153,15 @@ public sealed class GeminiMealCandidateRankerTests
             RequestUri = request.RequestUri;
             Body = await request.Content!.ReadAsStringAsync(ct);
             return responses[_requestCount++];
+        }
+    }
+
+    private sealed class TimeoutHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            throw new InvalidOperationException("The request should have been cancelled first.");
         }
     }
 }

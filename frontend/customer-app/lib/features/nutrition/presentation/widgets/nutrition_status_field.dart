@@ -12,7 +12,9 @@ class NutritionStatusField extends StatelessWidget {
     required this.options,
     required this.enabled,
     required this.onChanged,
+    this.error = false,
   });
+  final bool error;
 
   final String label;
   final String value;
@@ -38,6 +40,7 @@ class NutritionStatusField extends StatelessWidget {
       enabled: enabled,
       isConfirmed: isConfirmed,
       onChanged: onChanged,
+      error: error,
     );
   }
 }
@@ -50,7 +53,9 @@ class _StatusCard extends StatelessWidget {
     required this.enabled,
     required this.isConfirmed,
     required this.onChanged,
+    required this.error,
   });
+  final bool error;
 
   final String label;
   final String value;
@@ -64,7 +69,9 @@ class _StatusCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+              color: error ? AppColors.error : AppColors.border,
+              width: error ? 2 : 1),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0A000000),
@@ -88,6 +95,9 @@ class _StatusCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
             ),
+            if (error)
+              const Text('Vui lòng xác nhận mục này',
+                  style: TextStyle(color: AppColors.error)),
             const SizedBox(height: AppSpacing.xs),
             _StatusSelector(
               value: value,

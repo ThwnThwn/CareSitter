@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Application.Catalog;
 using CareSitter.Nutrition.Contracts;
@@ -8,6 +8,18 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class EligibilityTests
 {
+    [Fact]
+    public void Unrecognized_allergy_remains_blocking_when_another_allergy_is_recognized()
+    {
+        var source = Healthy() with { AllergyStatus = "reported_present", AllergyConfirmedAt = DateTimeOffset.UtcNow,
+            Allergies = JsonSerializer.SerializeToElement(new[] { "Tôm", "Bò" }) };
+        var health = HealthSnapshotNormalizer.Normalize(source,
+            [new NutritionConcept("CRUSTACEAN", "food_allergy", ["Tôm"], 1)]);
+        var decision = NutritionEligibilityPolicy.Evaluate(source, health, health.Facts, [], true);
+        Assert.Single(health.Facts);
+        Assert.Contains("allergies/1", decision.MissingFields);
+        Assert.Equal("needs_information", decision.State);
+    }
     [Theory]
     [InlineData("MALNUTRITION")]
     [InlineData("SARCOPENIA")]
@@ -218,6 +230,77 @@ public sealed class EligibilityTests
         var meals = new[] { Recipe("breakfast", 1) with { Allergens = ["SHRIMP"] }, Recipe("lunch", 1), Recipe("dinner", 1) };
         Assert.False(MealConstraintPolicy.Matches(meals, [new("food_allergy", "SHRIMP", "Tôm", "present", "current", "x", "Tôm", "beneficiary")], []));
         Assert.Null(MealConstraintPolicy.Choose([], [], []));
+    }
+
+    [Fact]
+    public void Peanut_oil_code_blocks_peanut_allergy_even_when_catalog_label_is_missing()
+    {
+        var breakfast = Recipe("breakfast", 1) with
+        {
+            Ingredients = [new("PEANUT_OIL", "Dầu ăn", 5, "g", "raw")],
+            Allergens = [],
+            AllergenDataComplete = true
+        };
+        var meals = new[] { breakfast, Recipe("lunch", 1), Recipe("dinner", 1) };
+        var facts = new[] { new HealthFact("food_allergy", "PEANUT", "Lạc", "present", "current", "x", "Lạc", "beneficiary") };
+
+        Assert.False(MealConstraintPolicy.Matches(meals, facts, []));
+        Assert.Null(MealConstraintPolicy.Choose(meals, facts, []));
+    }
+
+    [Theory]
+    [InlineData("BEEF", "Bò", "BEEF_LEAN_RAW")]
+    [InlineData("CHICKEN", "Gà", "CHICKEN_RAW")]
+    public void Meat_ingredient_code_blocks_matching_allergy_even_when_catalog_label_is_missing(
+        string allergyCode,
+        string allergyLabel,
+        string ingredientCode)
+    {
+        var breakfast = Recipe("breakfast", 1) with
+        {
+            Ingredients = [new(ingredientCode, allergyLabel, 50, "g", "raw")],
+            Allergens = [],
+            AllergenDataComplete = true
+        };
+        var meals = new[] { breakfast, Recipe("lunch", 1), Recipe("dinner", 1) };
+        var facts = new[]
+        {
+            new HealthFact("food_allergy", allergyCode, allergyLabel, "present", "current", "x", allergyLabel, "beneficiary")
+        };
+
+        Assert.False(MealConstraintPolicy.Matches(meals, facts, []));
+        Assert.Null(MealConstraintPolicy.Choose(meals, facts, []));
+    }
+
+    [Theory]
+    [InlineData("CHILI_SAUCE")]
+    [InlineData("FERMENTED_SOYBEAN_RICE")]
+    [InlineData("TOFU_BOILED")]
+    [InlineData("RICE_NOODLE_READY")]
+    [InlineData("GLASS_NOODLE_DRY")]
+    public void Composite_condiments_without_verified_ingredients_are_not_eligible(string code)
+    {
+        var lunch = Recipe("lunch", 1) with
+        {
+            Name = "[DEMO] fixture",
+            Ingredients = [new(code, code, 5, "g", "raw")],
+            AllergenDataComplete = true
+        };
+        var meals = new[] { Recipe("breakfast", 1), lunch, Recipe("dinner", 1) };
+
+        Assert.False(MealConstraintPolicy.ValidRecipe(lunch));
+        Assert.Null(MealConstraintPolicy.Choose(meals, [], []));
+    }
+
+    [Fact]
+    public void Demo_sweet_sour_sauce_with_no_ingredient_list_is_not_eligible()
+    {
+        var lunch = Recipe("lunch", 1) with
+        {
+            AllergenDataComplete = false
+        };
+
+        Assert.False(MealConstraintPolicy.ValidRecipe(lunch));
     }
 
     [Fact]

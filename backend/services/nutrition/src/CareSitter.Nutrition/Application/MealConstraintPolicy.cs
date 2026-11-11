@@ -1,17 +1,41 @@
-using CareSitter.Nutrition.Domain;
+﻿using CareSitter.Nutrition.Domain;
 
 namespace CareSitter.Nutrition.Application;
 
 public static class MealConstraintPolicy
 {
+    // Composite or processed ingredients without pinned commercial allergen/composition specifications.
+    private static readonly HashSet<string> UnverifiedCompositeIngredients =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "CHILI_SAUCE",
+            "FERMENTED_SOYBEAN_RICE",
+            "TOFU_BOILED",
+            "RICE_NOODLE_READY",
+            "GLASS_NOODLE_DRY"
+        };
+
+    // Defense in depth: filtering must still work if a catalog recipe forgets the derived allergen label.
+    private static readonly IReadOnlyDictionary<string, HashSet<string>> AllergenIngredientCodes =
+        new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["PEANUT"] = new(StringComparer.OrdinalIgnoreCase) { "PEANUT_OIL" },
+            ["BEEF"] = new(StringComparer.OrdinalIgnoreCase) { "BEEF_LEAN_RAW" },
+            ["CHICKEN"] = new(StringComparer.OrdinalIgnoreCase) { "CHICKEN_RAW" }
+        };
+
     public static bool ValidRecipe(Recipe r) => r.MealType is "breakfast" or "lunch" or "dinner" &&
-        !string.IsNullOrWhiteSpace(r.Name) && r.Servings == 1 && r.Ingredients is { Length: > 0 } &&
+        !string.IsNullOrWhiteSpace(r.Name) &&
+        r.Servings == 1 && r.Ingredients is { Length: > 0 } &&
         r.Allergens is not null && r.AllergenDataComplete && r.Nutrients is not null &&
         r.PreparationSteps is { Length: > 0 } && r.PreparationSteps.All(s => !string.IsNullOrWhiteSpace(s)) &&
         r.Allergens.All(s => !string.IsNullOrWhiteSpace(s)) &&
         r.Sources is { Length: > 0 } && r.Sources.All(s => !string.IsNullOrWhiteSpace(s)) &&
-        r.Ingredients.All(i => i is not null && !string.IsNullOrWhiteSpace(i.Code) && !string.IsNullOrWhiteSpace(i.Name) && i.Amount > 0 &&
-            i.Unit is "g" or "ml" && i.Basis is "raw" or "cooked") && r.Nutrients.All(p => p.Value is null || p.Value >= 0);
+        r.Ingredients.All(i => i is not null && !string.IsNullOrWhiteSpace(i.Code) &&
+            !UnverifiedCompositeIngredients.Contains(i.Code) &&
+            !string.IsNullOrWhiteSpace(i.Name) && i.Amount > 0 &&
+            i.Unit is "g" or "ml" && i.Basis is "raw" or "cooked") &&
+        r.Nutrients.All(p => p.Value is null || p.Value >= 0);
 
     public static bool Matches(IReadOnlyList<Recipe> meals, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular")
@@ -19,8 +43,11 @@ public static class MealConstraintPolicy
         if (meals.Count != 3 || meals.Select(m => m.MealType).Distinct().Count() != 3 || meals.Any(m => !ValidRecipe(m))) return false;
         if (!MatchesDietaryPattern(meals, dietaryPattern)) return false;
         var allergies = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "food_allergy" &&
-            f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code).ToHashSet();
+            f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (meals.Any(m => m.Allergens.Any(allergies.Contains))) return false;
+        if (allergies.Any(allergy => AllergenIngredientCodes.TryGetValue(allergy, out var ingredientCodes) &&
+                meals.Any(meal => meal.Ingredients.Any(ingredient => ingredientCodes.Contains(ingredient.Code))))) return false;
         var conditions = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "condition" &&
             f.Assertion == "present" && f.Temporality == "current").Select(f => f.Code).ToHashSet();
         foreach (var rule in rules.Where(r => conditions.Contains(r.ConditionCode)))
@@ -55,7 +82,9 @@ public static class MealConstraintPolicy
 
     public static Recipe[][] CandidateSets(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain",
-        int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null)
+        int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null,
+        IReadOnlyList<Recipe[]>? previousMenus = null, IReadOnlyList<Recipe>? yesterdayMeals = null,
+        string? varietySeed = null)
     {
         if (maximum < 1) throw new ArgumentOutOfRangeException(nameof(maximum));
         // Bounded catalog avoids unbounded combinations. No constraint is dropped to find a result.
@@ -66,17 +95,24 @@ public static class MealConstraintPolicy
                 foreach (var c in usable.Where(r => r.MealType == "dinner").Take(30))
                     if (Matches([a, b, c], facts, rules, dietaryPattern)) candidates.Add([a, b, c]);
         if (candidates.Count == 0) return [];
+        if (previousMenus is { Count: > 0 })
+        {
+            var previousIds = previousMenus.Select(MenuIds).ToHashSet(StringComparer.Ordinal);
+            var previousNames = previousMenus.Select(MenuNames).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var newMenus = candidates.Where(set => !previousIds.Contains(MenuIds(set)) &&
+                !previousNames.Contains(MenuNames(set))).ToList();
+            if (newMenus.Count > 0) candidates = newMenus;
+        }
         // Apply variety before the shortlist: otherwise all twelve sets can repeat yesterday's meals.
         // Never relax allergies, dietary pattern or nutrient constraints to achieve variety.
+        // Newer dishes weigh more than older ones: the fewest repeats of yesterday, then of the
+        // recent window, then of every remembered menu (up to six days).
+        if (yesterdayMeals is { Count: > 0 })
+            candidates = KeepFewestRepeats(candidates, yesterdayMeals);
         if (recentMeals is { Count: > 0 })
-        {
-            var recentIds = recentMeals.Select(meal => meal.VersionId).ToHashSet();
-            var recentNames = recentMeals.Select(meal => CanonicalName(meal.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            int Repeats(Recipe[] set) => set.Count(meal => recentIds.Contains(meal.VersionId) ||
-                recentNames.Contains(CanonicalName(meal.Name)));
-            var minimumRepeats = candidates.Min(Repeats);
-            candidates = candidates.Where(set => Repeats(set) == minimumRepeats).ToList();
-        }
+            candidates = KeepFewestRepeats(candidates, recentMeals);
+        if (previousMenus is { Count: > 0 })
+            candidates = KeepFewestRepeats(candidates, previousMenus.SelectMany(menu => menu).ToArray());
         var ranked = candidates
             .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals), index))
             .Where(value => value.Energy is not null)
@@ -88,8 +124,41 @@ public static class MealConstraintPolicy
             "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index),
             _ => OrderAroundMedian(ranked)
         };
-        return ordered.Take(maximum).Select(value => value.Meals).ToArray();
+        var final = varietySeed is null ? ordered.ToArray() : ShuffleEnergyBand(ordered.ToArray(), varietySeed);
+        return final.Take(maximum).Select(value => value.Meals).ToArray();
     }
+
+    // Menus whose total energy is within this fraction of the goal's target are treated as equally good.
+    internal const decimal VarietyEnergyBand = 0.10m;
+
+    private static List<Recipe[]> KeepFewestRepeats(List<Recipe[]> candidates, IReadOnlyList<Recipe> meals)
+    {
+        var ids = meals.Select(meal => meal.VersionId).ToHashSet();
+        var names = meals.Select(meal => CanonicalName(meal.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        int Repeats(Recipe[] set) => set.Count(meal => ids.Contains(meal.VersionId) ||
+            names.Contains(CanonicalName(meal.Name)));
+        var minimum = candidates.Min(Repeats);
+        return candidates.Where(set => Repeats(set) == minimum).ToList();
+    }
+
+    // Seeded shuffle of the menus closest to the goal. The first entry is the goal's best menu, so its
+    // energy is the target. The seed (beneficiary + date + catalog revision) changes the order every day
+    // while keeping a repeated request on the same day stable. SHA-256 keeps it identical across runtimes.
+    private static RankedCandidate[] ShuffleEnergyBand(RankedCandidate[] ordered, string seed)
+    {
+        if (ordered.Length < 2) return ordered;
+        var target = ordered[0].Energy!.Value;
+        var tolerance = Math.Abs(target) * VarietyEnergyBand;
+        bool InBand(RankedCandidate value) => Math.Abs(value.Energy!.Value - target) <= tolerance;
+        var band = ordered.Where(InBand)
+            .OrderBy(value => VarietyKey(seed, value.Meals), StringComparer.Ordinal)
+            .ToArray();
+        return [.. band, .. ordered.Where(value => !InBand(value))];
+    }
+
+    private static string VarietyKey(string seed, IEnumerable<Recipe> meals) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(seed + "\n" + MenuIds(meals))));
 
     public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal)
     {
@@ -138,6 +207,12 @@ public static class MealConstraintPolicy
     }
 
     private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy, int Index);
+
+    private static string MenuIds(IEnumerable<Recipe> meals) =>
+        string.Join("|", meals.OrderBy(meal => meal.MealType).Select(meal => meal.VersionId));
+
+    private static string MenuNames(IEnumerable<Recipe> meals) =>
+        string.Join("|", meals.OrderBy(meal => meal.MealType).Select(meal => CanonicalName(meal.Name)));
 
     private static string CanonicalName(string name) => name.Trim().StartsWith("[DEMO]", StringComparison.OrdinalIgnoreCase)
         ? name.Trim()[6..].Trim() : name.Trim();

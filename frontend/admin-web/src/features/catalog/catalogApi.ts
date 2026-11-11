@@ -8,7 +8,7 @@ export const catalogPaths = {
 
 type ServiceDraft = Pick<
   CatalogService,
-  'code' | 'name' | 'description' | 'defaultDurationMinutes' | 'isActive'
+  'code' | 'name' | 'description' | 'imageUrl' | 'defaultDurationMinutes' | 'isActive'
 >;
 type PriceDraft = Omit<PricingRule, 'id' | 'serviceTypeId' | 'effectiveTo'> & {
   effectiveTo: string | null;
@@ -19,15 +19,26 @@ type ChecklistDraft = Pick<
 >;
 
 export function saveCatalogService(id: string | undefined, draft: ServiceDraft) {
-  return api(id ? `${catalogPaths.services}/${id}` : catalogPaths.services, {
+  return api<CatalogService>(id ? `${catalogPaths.services}/${id}` : catalogPaths.services, {
     method: id ? 'PUT' : 'POST',
     body: JSON.stringify(draft),
   });
 }
 
+export async function uploadCatalogServiceImage(file: File) {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('folder', 'catalog');
+  const uploaded = await api<{ url: string }>('/api/v1/media/upload', {
+    method: 'POST',
+    body,
+  });
+  return uploaded.url;
+}
+
 export function savePricingRule(serviceId: string, id: string | undefined, draft: PriceDraft) {
   const path = `${catalogPaths.services}/${serviceId}/pricing-rules`;
-  return api(id ? `${path}/${id}` : path, {
+  return api<PricingRule>(id ? `${path}/${id}` : path, {
     method: id ? 'PUT' : 'POST',
     body: JSON.stringify(draft),
   });
@@ -39,7 +50,7 @@ export function saveChecklistTemplate(
   draft: ChecklistDraft,
 ) {
   const path = catalogPaths.templates(serviceId);
-  return api(id ? `${path}/${id}` : path, {
+  return api<ChecklistTemplate>(id ? `${path}/${id}` : path, {
     method: id ? 'PUT' : 'POST',
     body: JSON.stringify(draft),
   });

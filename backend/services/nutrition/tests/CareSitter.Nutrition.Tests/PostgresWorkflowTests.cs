@@ -206,13 +206,13 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
 
     [PostgresFact]
     public async Task Local_demo_catalog_is_visible_only_when_explicitly_enabled()
-        => await VerifyLocalCatalogAsync("adult-baseline-book-demo.bundle.json", 12);
+        => await VerifyLocalCatalogAsync("adult-baseline-book-demo.bundle.json", 12, 1);
 
     [PostgresFact]
     public async Task Expanded_variety_catalog_supports_save_and_non_repeating_recommendation()
-        => await VerifyLocalCatalogAsync("adult-baseline-variety-demo.bundle.json", 60);
+        => await VerifyLocalCatalogAsync("adult-baseline-variety-demo.bundle.json", 60, 14);
 
-    private async Task VerifyLocalCatalogAsync(string fileName, int expectedCount)
+    private async Task VerifyLocalCatalogAsync(string fileName, int catalogCount, int eligibleLunchCount)
     {
         var path = Path.Combine(
             ServiceArchitectureTests.FindRoot(),
@@ -234,10 +234,12 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         var visible = await demoStore.InOwnerScopeAsync(_owner, session => session.RecipesAsync(default), default);
 
         Assert.Empty(hidden);
-        Assert.Equal(expectedCount, visible.Count);
-        Assert.Equal(expectedCount / 3, visible.Count(recipe => recipe.MealType == "breakfast"));
-        Assert.Equal(expectedCount / 3, visible.Count(recipe => recipe.MealType == "lunch"));
-        Assert.Equal(expectedCount / 3, visible.Count(recipe => recipe.MealType == "dinner"));
+        Assert.Equal(catalogCount, visible.Count);
+        Assert.Equal(catalogCount / 3, visible.Count(recipe => recipe.MealType == "breakfast"));
+        Assert.Equal(catalogCount / 3, visible.Count(recipe => recipe.MealType == "lunch"));
+        Assert.Equal(catalogCount / 3, visible.Count(recipe => recipe.MealType == "dinner"));
+        Assert.Equal(eligibleLunchCount, visible.Count(recipe =>
+            recipe.MealType == "lunch" && MealConstraintPolicy.ValidRecipe(recipe)));
         Assert.All(visible, recipe => Assert.StartsWith("[DEMO] ", recipe.Name, StringComparison.Ordinal));
 
         var demoHandler = new CommandDispatcher(new NutritionWriteScope(
@@ -270,7 +272,14 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
                 new Features())
             .Handle(new(_people.Source.BeneficiaryId, recommendation.Value.Id, "lunch"), default);
         Assert.True(options.IsSuccess);
-        Assert.Equal(expectedCount / 3 - 1, options.Value.Count);
+        Assert.Equal(eligibleLunchCount - 1, options.Value.Count);
+
+        if (eligibleLunchCount == 1)
+        {
+            var onlyPlan = await demoHandler.Handle(Request("save", recommendation.Value.Id), default);
+            Assert.Equal("saved", onlyPlan.Value.Status);
+            return;
+        }
 
         var chosen = options.Value[0];
         var replacement = ((ReplaceMealCommand)Request("replace", recommendation.Value.Id)) with
@@ -296,7 +305,8 @@ public sealed class PostgresWorkflowTests : IAsyncLifetime
         var nextIds = next.Value.Data.GetProperty("meals").EnumerateArray()
             .Select(item => item.GetProperty("versionId").GetGuid()).ToArray();
         Assert.Equal(3, nextIds.Length);
-        Assert.DoesNotContain(nextIds, previousIds.Contains);
+        if (fileName.Contains("variety", StringComparison.Ordinal))
+            Assert.DoesNotContain(nextIds, previousIds.Contains);
         var replay = await demoHandler.Handle(nextRequest, default);
         Assert.Equal(next.Value.Id, replay.Value.Id);
     }

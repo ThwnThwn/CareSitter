@@ -128,7 +128,7 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
                             evidence = request.Evidence.Select(item => new
                             {
                                 evidenceId = item.Id, item.Title, item.Chapter, item.PrintedPages,
-                                item.Locator, item.Excerpt
+                                item.Locator
                             })
                         }, NutritionJson.Options)
                     }

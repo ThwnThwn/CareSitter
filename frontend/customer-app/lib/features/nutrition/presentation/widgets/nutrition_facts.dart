@@ -9,10 +9,12 @@ class NutritionFacts extends StatelessWidget {
       {super.key,
       required this.decision,
       required this.data,
-      required this.state});
+      required this.state,
+      this.health});
   final NutritionDecisionModel decision;
   final NutritionResultModel data;
   final String state;
+  final Map<String, dynamic>? health;
   @override
   Widget build(BuildContext context) {
     const fields = {
@@ -45,6 +47,29 @@ class NutritionFacts extends StatelessWidget {
     if (decision.conflicts.isNotEmpty) {
       widgets.add(const Text(
           'Các nguồn thông tin đang khác nhau. Vui lòng kiểm tra lại hồ sơ; hệ thống giữ các hạn chế đã báo cáo.'));
+    }
+    if (state == 'needs_information') {
+      final allergies = health?['allergies'];
+      if (allergies is List) {
+        for (final field in decision.missingFields) {
+          final match = RegExp(r'^allergies/(\d+)$').firstMatch(field);
+          final index = match == null ? null : int.tryParse(match.group(1)!);
+          if (index == null || index >= allergies.length) continue;
+          final item = allergies[index];
+          final label = item is String
+              ? item
+              : item is Map
+                  ? (item['label'] ?? item['code'])?.toString()
+                  : null;
+          if (label == null || label.trim().isEmpty) continue;
+          widgets.add(Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Text(
+                'Chưa nhận diện được dị ứng “$label”. Thông tin vẫn được lưu; chưa thể gợi ý thực đơn cho đến khi mục này được hỗ trợ.',
+                style: const TextStyle(color: AppColors.error)),
+          ));
+        }
+      }
     }
     if (state == 'needs_professional_guidance') {
       widgets.add(const Text(

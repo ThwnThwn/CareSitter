@@ -28,7 +28,8 @@ class NutritionRecommendationContext extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (trace.isDemo) ...[
+            if (trace.isDemo ||
+                meals.any((meal) => meal.name.startsWith('[DEMO]'))) ...[
               _DemoNotice(graphUsed: trace.isGraphDemo && trace.isGrounded),
               const SizedBox(height: AppSpacing.compact),
             ],

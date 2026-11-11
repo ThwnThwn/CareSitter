@@ -2,6 +2,7 @@ import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
+import 'package:caresitter_customer/features/catalog/presentation/models/catalog_service_filter.dart';
 
 class CatalogServiceCardServiceRow extends StatelessWidget {
   const CatalogServiceCardServiceRow({super.key, required this.service});
@@ -19,7 +20,7 @@ class CatalogServiceCardServiceRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
             child: Text(
-              service.category,
+              servicePricingTypeOf(service).label,
               style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: AppFontSizes.s9,
