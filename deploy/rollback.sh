@@ -6,8 +6,8 @@
 #
 # Uses the release image kept by deploy.sh when present, otherwise rebuilds it
 # from that commit. Migrations are forward-only: the older code must tolerate
-# the newer schema. If it cannot, restore the pre-deploy backup instead
-# (see plan/deploy/PRODUCTION_RUNBOOK.md, "Khôi phục database").
+# the newer schema. If it cannot, verify the pre-deploy backup with
+# deploy/ops/restore-check-main.sh before restoring the database.
 set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$repo_dir/deploy/ops/common.sh"

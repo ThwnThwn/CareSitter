@@ -92,9 +92,7 @@ Desktop.ini
 .playwright-mcp/
 **/*.local.json
 .codex-build/
-/tools/dev/devices.local.json
-/tools/dev/logs/
-/tools/dev/state/
+/tools/dev/
 
 # =====================  BACKEND (.NET)  =====================
 [Bb]in/
