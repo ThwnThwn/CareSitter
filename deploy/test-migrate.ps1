@@ -176,7 +176,11 @@ SELECT count(DISTINCT s.id) FROM catalog.service_types s
 JOIN catalog.pricing_rules p ON p.service_type_id = s.id AND p.is_active
 WHERE s.is_active
 '@ 'fixture_real'
-        if ($pricedServices -ne '4') { throw "Expected 4 active priced services, found $pricedServices." }
+        # The current home-care catalog includes 15 active services with pricing.
+        $expectedPricedServices = '15'
+        if ($pricedServices -ne $expectedPricedServices) {
+            throw "Expected $expectedPricedServices active priced services, found $pricedServices."
+        }
         Write-Output "PASS: all $expectedMigrations real schema migrations apply to a disposable database with the live catalog and no demo accounts or bookings."
 
         Invoke-Docker @('exec', $databaseContainer, 'createdb', '-U', 'postgres', 'fixture_bootstrap')
