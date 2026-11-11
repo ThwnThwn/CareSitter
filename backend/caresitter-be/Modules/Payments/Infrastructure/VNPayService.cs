@@ -41,9 +41,7 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
             ["vnp_CurrCode"] = intent.Currency,
             ["vnp_IpAddr"] = "127.0.0.1",
             ["vnp_Locale"] = options.Locale,
-            // VNPay already displays the amount separately. Describe the payer
-            // clearly and never expose a booking GUID in the customer-facing text.
-            ["vnp_OrderInfo"] = BuildOrderInfo(bookingCustomerName),
+            ["vnp_OrderInfo"] = "Thanh toán đơn hàng",
             ["vnp_OrderType"] = options.OrderType,
             ["vnp_ReturnUrl"] = options.ReturnUrl,
             ["vnp_TxnRef"] = intent.ProviderOrderRef
@@ -52,14 +50,6 @@ public sealed class VNPayService(HttpClient httpClient) : IVNPayService
         var hashData = BuildQuery(values);
         var secureHash = ComputeHash(hashData, options.HashSecret);
         return $"{options.PaymentUrl}?{hashData}&vnp_SecureHash={secureHash}";
-    }
-
-    private static string BuildOrderInfo(string? bookingCustomerName)
-    {
-        var name = string.IsNullOrWhiteSpace(bookingCustomerName)
-            ? "CareSitter"
-            : bookingCustomerName.Trim();
-        return $"Thanh toán đơn hàng của khách hàng {name}";
     }
 
     /// <summary>Kiểm tra chữ ký callback bằng so sánh constant-time.</summary>

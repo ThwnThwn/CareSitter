@@ -1,17 +1,12 @@
 import MotionWords from "./MotionWords";
-import {
-  LifeBuoy,
-  MapPinned,
-  ShieldCheck,
-  WalletCards,
-} from "lucide-react";
+import { LifeBuoy, MapPinned, ShieldCheck, WalletCards } from "lucide-react";
 
 const promises = [
   {
     icon: ShieldCheck,
     meta: "Hồ sơ",
-    title: "Danh tính rõ ràng trước khi bắt đầu",
-    text: "Mỗi caregiver phải hoàn tất xác minh danh tính, hồ sơ và các bước đánh giá cần thiết trước khi được nhận ca.",
+    title: "Hồ sơ được xét duyệt trước khi nhận ca",
+    text: "Người chăm sóc hoàn tất quy trình nộp và xét duyệt hồ sơ trên nền tảng trước khi được nhận ca phù hợp.",
   },
   {
     icon: MapPinned,
@@ -22,14 +17,14 @@ const promises = [
   {
     icon: WalletCards,
     meta: "Thanh toán",
-    title: "Chi phí hiển thị trước, quyền lợi được giữ lại",
-    text: "Mức phí được xác nhận trước khi đặt. Khoản thanh toán chỉ được hoàn tất theo quy trình checkout của gia đình.",
+    title: "Thông tin ca và chi phí rõ ràng",
+    text: "Gia đình xem dịch vụ, thời gian, địa điểm và mức giá trước khi xác nhận đặt ca.",
   },
   {
     icon: LifeBuoy,
     meta: "Hỗ trợ",
     title: "Có người tiếp nhận khi tình huống thay đổi",
-    text: "Kênh hỗ trợ và cảnh báo an toàn giúp kết nối gia đình, caregiver và bộ phận vận hành khi cần.",
+    text: "Gia đình và người chăm sóc có thể gửi yêu cầu, bằng chứng và trao đổi với CareSitter khi phát sinh vấn đề.",
   },
 ];
 
@@ -41,13 +36,13 @@ export default function FeaturesSection() {
           <p className="section-label">An tâm không đến từ một lời hứa</p>
           <h2 className="display display--section" data-scroll-reveal="heading">
             <MotionWords>
-            Mọi ca chăm sóc đều có một
-            <em>đường đi rõ ràng.</em>
+              Mọi ca chăm sóc đều có một
+              <em>đường đi rõ ràng.</em>
             </MotionWords>
           </h2>
           <p>
-            CareSitter tập trung vào những gì gia đình thực sự cần biết: ai
-            đang đến, ca đang diễn ra ra sao và quyền lợi được bảo vệ thế nào.
+            CareSitter tập trung vào những gì gia đình thực sự cần biết: ai đang
+            đến, ca đang diễn ra ra sao và quyền lợi được bảo vệ thế nào.
           </p>
           <a className="inline-link inline-link--light" href="#how-it-works">
             Xem toàn bộ quy trình
@@ -57,7 +52,11 @@ export default function FeaturesSection() {
 
         <div className="promise-list">
           {promises.map(({ icon: Icon, meta, text, title }) => (
-            <article className="promise-item" data-scroll-reveal="item" key={title}>
+            <article
+              className="promise-item"
+              data-scroll-reveal="item"
+              key={title}
+            >
               <div className="promise-item__icon" aria-hidden="true">
                 <Icon size={22} strokeWidth={1.8} />
               </div>

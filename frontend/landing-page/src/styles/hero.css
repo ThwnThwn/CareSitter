@@ -4,14 +4,15 @@
   --hero-distance: 150px;
   background: var(--paper);
   overflow: hidden;
-  padding: clamp(4.5rem, 8vw, 7rem) 0 clamp(4rem, 7vw, 6rem);
+  padding: clamp(3rem, 4.5vw, 4.75rem) 0 clamp(4rem, 7vw, 6rem);
 }
 
 .hero__grid {
   align-items: center;
   display: grid;
-  gap: clamp(3rem, 5vw, 6rem);
-  grid-template-columns: minmax(0, 1.04fr) minmax(400px, 0.96fr);
+  gap: clamp(3rem, 4vw, 5rem);
+  grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
+  max-width: 1480px;
 }
 
 .hero__copy {
@@ -19,14 +20,26 @@
 }
 
 .hero__copy[data-hero-entered] > * {
-  animation: hero-rise-in var(--hero-duration) var(--hero-delay, 0ms) cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: hero-rise-in var(--hero-duration) var(--hero-delay, 0ms)
+    cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.hero__kicker { --hero-delay: 200ms; }
-.hero__copy h1 { --hero-delay: 400ms; --hero-distance: 170px; }
-.hero__lead { --hero-delay: 600ms; }
-.hero__actions { --hero-delay: 800ms; }
-.hero__proof { --hero-delay: 1000ms; }
+.hero__kicker {
+  --hero-delay: 200ms;
+}
+.hero__copy h1 {
+  --hero-delay: 400ms;
+  --hero-distance: 170px;
+}
+.hero__lead {
+  --hero-delay: 600ms;
+}
+.hero__actions {
+  --hero-delay: 800ms;
+}
+.hero__proof {
+  --hero-delay: 1000ms;
+}
 
 .hero__kicker {
   align-items: center;
