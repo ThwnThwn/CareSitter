@@ -1,0 +1,4 @@
+# Shell scripts run inside Linux containers/VMs; CRLF breaks them (set: Illegal option -).
+*.sh text eol=lf
+Caddyfile* text eol=lf
+deploy/ops/systemd/* text eol=lf

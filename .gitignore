@@ -6,6 +6,7 @@
 # ---------- Chỉ theo dõi source chính ----------
 /*
 !/.gitignore
+!/.gitattributes
 !/.github/
 !/.github/**
 !/global.json
@@ -91,9 +92,7 @@ Desktop.ini
 .playwright-mcp/
 **/*.local.json
 .codex-build/
-/tools/dev/devices.local.json
-/tools/dev/logs/
-/tools/dev/state/
+/tools/dev/
 
 # =====================  BACKEND (.NET)  =====================
 [Bb]in/
@@ -172,3 +171,6 @@ baocao/
 **/.kombai/
 **/jitter_preview.png
 **/landing_fullpage_sliding.png
+
+# Per-VM deployment state written by deploy/deploy.sh and deploy/rollback.sh
+deploy/.releases/

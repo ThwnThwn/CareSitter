@@ -1,0 +1,12 @@
+[Unit]
+Description=CareSitter host health probe and alerting
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/caresitter
+UMask=0077
+ExecStart=/bin/sh /opt/caresitter/deploy/ops/healthcheck.sh
+# A failing probe is an expected outcome, already alerted; keep the unit quiet.
+SuccessExitStatus=1
