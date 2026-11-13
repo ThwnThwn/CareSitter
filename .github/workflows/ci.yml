@@ -79,6 +79,11 @@ jobs:
         run: dotnet test backend/services/nutrition/CareSitter.Nutrition.sln --nologo --logger "trx;LogFileName=nutrition.trx" --results-directory backend/artifacts/nutrition
       - name: Build independent runtime image
         run: docker build -t caresitter-nutrition:ci backend/services/nutrition
+      - name: Build combined Render runtime
+        run: docker build -f backend/Dockerfile.render -t caresitter-render:nutrition backend
+      - name: Verify Render TLS, readiness, isolation and process supervision
+        shell: pwsh
+        run: ./backend/render/test-runtime.ps1
       - name: Preserve Nutrition test evidence
         if: always()
         uses: actions/upload-artifact@v4

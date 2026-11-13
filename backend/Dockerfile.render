@@ -1,0 +1,31 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0.425 AS build
+WORKDIR /src
+COPY Directory.Build.props ./
+COPY caresitter-be/ ./caresitter-be/
+COPY services/nutrition/src/ ./services/nutrition/src/
+COPY services/nutrition/protos/ ./services/nutrition/protos/
+RUN dotnet publish caresitter-be/ApiHost/CareSitter.ApiHost.csproj \
+    -c Release -o /out/api /p:UseAppHost=false \
+    && dotnet publish services/nutrition/src/CareSitter.Nutrition/CareSitter.Nutrition.csproj \
+    -c Release -o /out/nutrition /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app/api
+RUN apt-get update && apt-get install -y --no-install-recommends curl openssl tini \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl --fail --silent --show-error --location \
+    https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt \
+    -o /app/supabase-ca.crt \
+    && echo '700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7  /app/supabase-ca.crt' | sha256sum -c -
+COPY --from=build /out/api /app/api
+COPY --from=build /out/nutrition /app/nutrition
+COPY render/ /app/render/
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_EnableDiagnostics=0 \
+    DOTNET_gcServer=0 \
+    RENDER_NUTRITION_ENABLED=false
+USER $APP_UID
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD ["bash", "/app/render/healthcheck.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "bash", "/app/render/start.sh"]
