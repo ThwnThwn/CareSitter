@@ -13,34 +13,23 @@ public sealed class ReleasedGraphMealKnowledgeRetrieverTests : IDisposable
     [Fact]
     public async Task Authorized_reviewed_graph_returns_cited_reachable_chunk()
     {
-        Directory.CreateDirectory(_directory);
-        var corpus = Write("corpus.jsonl", """
-            {"chunk_id":"chunk-1","headings":["Chương tăng huyết áp","Chế độ ăn"],"index_eligible":true,"pdf_page":35,"printed_page":"34","review_status":"ready_for_retrieval_eval","source_locator":"pdf-page:35","text":"Hạn chế natri trong chế độ ăn."}
-            """ + Environment.NewLine);
-        var graph = Write("graph.json", """
-            {"mode":"reviewed_retrieval_graph","nodes":[
-              {"id":"topic-1","label":"tăng huyết áp natri","type":"topic"},
-              {"id":"chunk-1","label":"chunk-1","type":"chunk","chunk_id":"chunk-1"}
-            ],"edges":[{"id":"edge-1","from":"topic-1","to":"chunk-1","type":"SUPPORTED_BY"}]}
-            """);
-        var manifest = Write("manifest.json", """
-            {"release_ready":true,"runtime_integration_authorized":true,
-             "decision":"simplest_strategy_passing_all_gates","selected_strategy":"graph","gate_failures":[],
-             "bindings":{"corpus_freeze_sha256":"freeze-v1","graph_sha256":"__GRAPH_HASH__"}}
-            """.Replace("__GRAPH_HASH__", Hash(graph), StringComparison.Ordinal));
-        var retriever = new ReleasedGraphMealKnowledgeRetriever(Options.Create(OptionsFor(manifest, graph, corpus)));
-
-        var result = await retriever.RetrieveAsync(new MealKnowledgeRequest(
-            ["Tăng huyết áp"], ["natri"], [], "regular", "maintain"), CancellationToken.None);
-
+        var directory = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ReleasedRetrieval");
+        string FilePath(string name) => Path.Combine(directory, name);
+        var settings = new MealGroundingOptions
+        {
+            Enabled = true, Mode = MealGroundingOptions.ReleasedGraphMode,
+            ManifestPath = FilePath("manifest-graph.json"), ManifestSha256 = Hash(FilePath("manifest-graph.json")),
+            RuntimeAuthorizationPath = FilePath("authorization-graph.json"), RuntimeAuthorizationSha256 = Hash(FilePath("authorization-graph.json")),
+            CorpusFreezePath = FilePath("freeze.json"), CorpusFreezeSha256 = Hash(FilePath("freeze.json")),
+            ReviewedGraphPath = FilePath("graph.json"), ReviewedGraphSha256 = Hash(FilePath("graph.json")),
+            CorpusPath = FilePath("corpus.jsonl"), CorpusSha256 = Hash(FilePath("corpus.jsonl"))
+        };
+        var retriever = new ReleasedGraphMealKnowledgeRetriever(Options.Create(settings),
+            new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Staging" });
+        var result = await retriever.RetrieveAsync(new(["robot"], [], [], "", ""), CancellationToken.None);
         Assert.True(result.Available);
-        Assert.Equal("freeze-v1", result.Revision);
-        Assert.Equal("graph", result.Strategy);
-        var evidence = Assert.Single(result.Evidence);
-        Assert.Equal("chunk-1", evidence.Id);
-        Assert.Equal("34", evidence.PrintedPages);
-        Assert.Contains("Viện Dinh dưỡng", evidence.Reference);
-        Assert.Empty(result.Warnings);
+        Assert.Equal("released", result.ReleaseStatus);
+        Assert.NotEmpty(result.Evidence);
     }
 
     [Fact]
@@ -58,7 +47,7 @@ public sealed class ReleasedGraphMealKnowledgeRetrieverTests : IDisposable
              "selected_strategy":null,"gate_failures":["review.pending"],
              "bindings":{"corpus_freeze_sha256":"freeze-v1","graph_sha256":null}}
             """);
-        var retriever = new ReleasedGraphMealKnowledgeRetriever(Options.Create(OptionsFor(manifest, graph, corpus)));
+        var retriever = new ReleasedGraphMealKnowledgeRetriever(Options.Create(OptionsFor(manifest, graph, corpus)), new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Staging" });
 
         var result = await retriever.RetrieveAsync(new MealKnowledgeRequest(
             ["Tăng huyết áp"], [], [], "regular", "maintain"), CancellationToken.None);

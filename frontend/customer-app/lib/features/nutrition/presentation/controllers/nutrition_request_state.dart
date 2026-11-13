@@ -11,13 +11,15 @@ class NutritionRequestState {
       this.selectedDate,
       this.dateLoading = false,
       this.dateError,
-      this.weekProgress});
+      this.weekProgress,
+      this.planTargetDays});
   final String beneficiaryId;
   final int healthRevision;
   final String? resourceId, error;
   final DateTime? selectedDate;
   final String? dateError;
   final int? weekProgress;
+  final int? planTargetDays;
   final bool dateLoading;
   final bool loading, restoringPlan, recommendationsEnabled;
 }

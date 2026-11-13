@@ -51,13 +51,10 @@ class CaregiverListSearchCtrlSearchQueryFields extends StatelessWidget {
                     )
                   : null,
               filled: true,
-              fillColor: AppColors.surfaceVariant,
+              fillColor: AppInputStyle.fillColor,
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.inset, vertical: AppSpacing.compact),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.control),
-                borderSide: BorderSide.none,
-              ),
+              border: AppInputStyle.enabledBorder,
               hintStyle: const TextStyle(
                   color: AppColors.textHint, fontSize: AppFontSizes.s14),
             ),

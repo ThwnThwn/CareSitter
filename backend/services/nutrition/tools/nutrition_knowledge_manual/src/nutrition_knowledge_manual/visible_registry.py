@@ -195,7 +195,9 @@ def _file_hashes(registry: dict[str, Any]) -> dict[str, str]:
 
 
 def _path_for(inventory: dict[str, Any], needle: str) -> str:
-    matches = [item["path"] for item in inventory["files"] if needle in item["path"]]
+    kinds = {"retrieval-corpus-freeze": "corpus_freeze", ".index.": "embedding_index"}
+    matches = [item["path"] for item in inventory["files"]
+               if needle in item["path"] or item.get("kind") == kinds.get(needle)]
     if len(matches) != 1:
         raise ManualGraphError(f"inventory must list exactly one file matching {needle}")
     return matches[0]

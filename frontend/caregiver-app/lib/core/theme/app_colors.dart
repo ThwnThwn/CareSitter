@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 /// Bảng màu chủ đạo của caregiver-app.
 /// Shared brand tokens khớp với customer-app, admin-web, landing-page.
 class AppColors {
+  // CareSitter Onboarding Screen (Stitch).
+  static const Color onboardingTeal = Color(0xFF2BB5A0);
+  static const Color onboardingNavy = Color(0xFF1F3A4D);
+  static const Color onboardingMuted = Color(0xFF4B6375);
+  static const Color onboardingSky = Color(0xFFDFF3F6);
+  static const Color onboardingDot = Color(0xFFD1E5E7);
   // ── Brand tokens shared with customer-app, admin-web, and landing-page ──
   static const Color primary = Color(0xFF006B5B);
   static const Color primaryLight = Color(0xFF00806D);

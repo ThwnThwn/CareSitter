@@ -7,6 +7,23 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class CatalogBundleTests
 {
+    [Theory]
+    [InlineData("http://example.com/photo.jpg", "https://example.com/recipe")]
+    [InlineData("https://example.com/photo.jpg", "javascript:alert(1)")]
+    public void Component_images_require_https_photo_and_source_urls(string url, string source)
+    {
+        var bundle = Bundle();
+        var first = bundle.Recipes[0];
+        var image = new RecipeImage(url, "Món tham khảo", source, "Tác giả", "related_dish");
+        var updated = first with { Payload = first.Payload with { Images = [image] } };
+        bundle = bundle with { Recipes = [updated, .. bundle.Recipes.Skip(1)] };
+
+        var result = CatalogBundleValidator.Validate(bundle);
+
+        Assert.Contains(result.Issues, issue => issue.Path.Contains(".images[0]", StringComparison.Ordinal)
+            && issue.Code == "https_required");
+    }
+
     [Fact]
     public void Complete_structured_bundle_is_valid()
     {

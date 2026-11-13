@@ -33,7 +33,7 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
     volumes: [kafkadata:/tmp/kraft-combined-logs]
-    networks: [data]
+    networks: [data, nutrition-messaging]
     healthcheck:
       test: [CMD-SHELL, "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null"]
       interval: 10s
@@ -64,7 +64,19 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_FLOW_NOTIFICATIONS_ENABLED: ${KAFKA_FLOW_NOTIFICATIONS_ENABLED:-true}
       KAFKA_FLOW_PAYMENTS_ENABLED: ${KAFKA_FLOW_PAYMENTS_ENABLED:-false}
+      KAFKA_FLOW_NUTRITION_ENABLED: ${KAFKA_FLOW_NUTRITION_ENABLED:-false}
       KAFKA_INTERNAL_SERVICE_KEY: ${KAFKA_INTERNAL_SERVICE_KEY:?Set a random messaging service key in deploy/.env}
+    depends_on:
+      kafka-init: {condition: service_completed_successfully}
+
+  nutrition:
+    environment:
+      BeneficiaryEvents__Enabled: ${KAFKA_FLOW_NUTRITION_ENABLED:-false}
+      BeneficiaryEvents__BootstrapServers: kafka:9092
+      BeneficiaryEvents__Topic: ${KAFKA_TOPIC_NUTRITION:-caresitter.nutrition.events.v1}
+      BeneficiaryEvents__ConsumerGroup: nutrition-beneficiary-deletion-v1
+      BeneficiaryEvents__DlqTopic: ${KAFKA_TOPIC_NUTRITION_DLQ:-caresitter.nutrition.events.v1.dlq}
+    networks: [nutrition-data, nutrition-egress, nutrition-messaging]
     depends_on:
       kafka-init: {condition: service_completed_successfully}
 
@@ -91,3 +103,7 @@ services:
 
 volumes:
   kafkadata:
+
+networks:
+  nutrition-messaging:
+    internal: true

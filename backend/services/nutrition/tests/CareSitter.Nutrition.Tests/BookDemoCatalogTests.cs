@@ -88,7 +88,7 @@ public sealed class BookDemoCatalogTests
     }
 
     [Fact]
-    public async Task Expanded_demo_catalog_discloses_recipe_origin_for_all_sixty_meals()
+    public async Task Expanded_demo_catalog_discloses_recipe_origin_and_provides_eligible_choices()
     {
         var path = Path.Combine(
             ServiceArchitectureTests.FindRoot(),
@@ -102,18 +102,48 @@ public sealed class BookDemoCatalogTests
         Assert.True(
             validation.IsValid,
             string.Join(Environment.NewLine, validation.Issues.Select(issue => $"{issue.Path}: {issue.Code}")));
-        Assert.Equal(60, bundle.Recipes.Length);
-        Assert.Equal(20, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "breakfast"));
-        Assert.Equal(20, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "lunch"));
-        Assert.Equal(20, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "dinner"));
-        Assert.Equal(14, bundle.Recipes.Count(recipe =>
+        Assert.Equal(78, bundle.Recipes.Length);
+        Assert.Equal(26, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "breakfast"));
+        Assert.Equal(26, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "lunch"));
+        Assert.Equal(26, bundle.Recipes.Count(recipe => recipe.Payload.MealType == "dinner"));
+        Assert.Equal(57, bundle.Recipes.Count(recipe => MealConstraintPolicy.ValidRecipe(recipe.Payload)));
+        Assert.Equal(20, bundle.Recipes.Count(recipe =>
             recipe.Payload.DietaryPatterns?.Contains("vegetarian", StringComparer.Ordinal) == true));
         Assert.All(bundle.Recipes, version =>
-            Assert.Contains("Sách không đề cập công thức", version.Payload.SourceRecipeNote ?? string.Empty, StringComparison.Ordinal));
+            Assert.False(string.IsNullOrWhiteSpace(version.Payload.SourceRecipeNote)));
         Assert.Equal(12, bundle.Recipes.Count(recipe =>
             recipe.Payload.Sources.Any(source => source.StartsWith("BOOK_2019_", StringComparison.Ordinal))));
         Assert.Equal(48, bundle.Recipes.Count(recipe =>
             recipe.Payload.Sources.Contains("CARESITTER_VARIETY_ADAPTATION_V2", StringComparer.Ordinal)));
+        var homeMeals = bundle.Recipes.Where(recipe =>
+            recipe.Payload.Sources.Contains("CARESITTER_HOME_MEALS_DEMO", StringComparer.Ordinal)).ToArray();
+        Assert.Equal(18, homeMeals.Length);
+        Assert.All(homeMeals, recipe => Assert.True(MealConstraintPolicy.ValidRecipe(recipe.Payload)));
+        Assert.All(bundle.Recipes, version =>
+        {
+            var images = version.Payload.Images;
+            Assert.NotNull(images);
+            Assert.InRange(images.Length, 1, 3);
+            Assert.Equal(images[0].Url, version.Payload.ImageUrl);
+            Assert.All(images, image =>
+            {
+                Assert.StartsWith("https://res.cloudinary.com/", image.Url, StringComparison.Ordinal);
+                Assert.Equal("https", new Uri(image.SourceUrl).Scheme);
+                Assert.False(string.IsNullOrWhiteSpace(image.Attribution));
+            });
+        });
+        var cookingReferences = bundle.Citations
+            .Where(citation => citation.Id.StartsWith("MNMN_", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(2, cookingReferences.Length);
+        Assert.All(cookingReferences, citation =>
+        {
+            Assert.Equal("Món Ngon Mỗi Ngày", citation.Title);
+            Assert.Equal("Ajinomoto Việt Nam", citation.Organization);
+            Assert.Equal("monngonmoingay.com", new Uri(citation.Reference).Host);
+            var adapted = Assert.Single(homeMeals, version => version.Payload.Sources.Contains(citation.Id));
+            Assert.True(MealConstraintPolicy.ValidRecipe(adapted.Payload));
+            Assert.Contains("CareSitter điều chỉnh", adapted.Payload.SourceRecipeNote);
+        });
         AssertPeanutOilIsLabeled(bundle);
         AssertSupportedMeatAllergiesAreLabeled(bundle);
     }

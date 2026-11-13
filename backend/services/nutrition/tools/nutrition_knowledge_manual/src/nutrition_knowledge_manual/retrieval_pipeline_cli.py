@@ -9,6 +9,7 @@ from .catalog_evidence import build_catalog_evidence_packet
 from .embedding_index import build_embedding_index
 from .graph_diagnostics import inspect_graph
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, add_argument
 from .jsonio import content_sha256, load_json
 from .ollama_encoder import OllamaEncoder
 from .retrieval_artifacts import code_identity, local_path, write_once, write_once_atomic
@@ -27,6 +28,7 @@ from .visible_registry import build_repair_inventory, build_visible_registry
 def register_pipeline_commands(commands: argparse._SubParsersAction) -> None:
     for name in _HANDLERS:
         parser = commands.add_parser(name)
+        add_argument(parser)
         if name in {"export-retrieval-case-review", "export-retrieval-graph-review"}:
             parser.add_argument("--output", type=Path, required=True)
             parser.add_argument("--corpus-freeze", type=Path, required=True)
@@ -114,6 +116,9 @@ def register_pipeline_commands(commands: argparse._SubParsersAction) -> None:
                 parser.add_argument("--" + field, type=Path, required=True)
             continue
         parser.add_argument("--cases", type=Path, required=True)
+        if name == "run-retrieval-benchmark":
+            parser.add_argument("--graph-candidate-authorization", type=Path,
+                                help="Technical visible benchmark only; never release evidence")
         if name != "run-retrieval-benchmark":
             parser.add_argument("--visible-report", type=Path, required=True)
             parser.add_argument("--review-ledger", type=Path, required=True)
@@ -189,7 +194,7 @@ def _plan_review_import(args, _):
     if batch.get("target_kind") != args.target_kind:
         raise ManualGraphError("target-kind does not match the review batch")
     return plan_review_import(target=target, corpus_freeze=freeze, ledger=ledger,
-                              batch=batch, batch_path=args.batch)
+                              batch=batch, batch_path=args.batch, review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _apply_review_import(args, _):
@@ -197,7 +202,7 @@ def _apply_review_import(args, _):
     if batch.get("target_kind") != args.target_kind:
         raise ManualGraphError("target-kind does not match the review batch")
     return apply_review_import(target=target, corpus_freeze=freeze, ledger=ledger,
-        batch=batch, batch_path=args.batch, plan=load_json(args.plan))
+        batch=batch, batch_path=args.batch, plan=load_json(args.plan), review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _embedding(args, workspace):
@@ -235,11 +240,11 @@ def _inspect_graph(args, _):
 
 def _graph_review(args, _):
     return record_graph_review(load_json(args.graph_candidate), load_json(args.corpus_freeze),
-        load_json(args.graph_ledger), args.record_id, args.decision, args.reviewer_id, args.reviewer_role, args.comment)
+        load_json(args.graph_ledger), args.record_id, args.decision, args.reviewer_id, args.reviewer_role, args.comment, review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _materialize(args, _):
-    return materialize_graph(load_json(args.graph_candidate), load_json(args.corpus_freeze), load_json(args.graph_ledger))
+    return materialize_graph(load_json(args.graph_candidate), load_json(args.corpus_freeze), load_json(args.graph_ledger), review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _suite(args):
@@ -249,15 +254,27 @@ def _suite(args):
         config=load_json(args.config), encoder=encoder, index=index,
         candidate=load_json(args.graph_candidate) if args.graph_candidate else None,
         ledger=load_json(args.graph_ledger) if args.graph_ledger else None,
-        graph=load_json(args.graph) if args.graph else None)
+        graph=load_json(args.graph) if args.graph else None, review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _benchmark(args, _):
-    chunks, retrievers, bindings = _suite(args)
+    authorization_path = args.graph_candidate_authorization
+    if authorization_path:
+        from .candidate_benchmark import create_candidate_suite
+        if not args.graph_candidate or not args.index or args.graph or args.graph_ledger:
+            raise ManualGraphError("candidate benchmark requires candidate/index and forbids reviewed graph/ledger")
+        index = load_json(args.index)
+        chunks, retrievers, bindings = create_candidate_suite(chunks_path=args.chunks,
+            corpus_freeze=load_json(args.corpus_freeze), config=load_json(args.config),
+            encoder=OllamaEncoder(args.endpoint, index["model"]["digest"]), index=index,
+            candidate_path=args.graph_candidate, authorization=load_json(authorization_path))
+    else:
+        chunks, retrievers, bindings = _suite(args)
     cases = load_json(args.cases)
     if cases.get("corpus", {}).get("corpus_freeze_sha256") != bindings["corpus_freeze_sha256"]:
         raise ManualGraphError("benchmark cases use a different corpus freeze")
-    return benchmark(cases=cases, chunks=chunks, retrievers=retrievers, bindings=bindings)
+    return benchmark(cases=cases, chunks=chunks, retrievers=retrievers, bindings=bindings,
+                     graph_candidate=bool(authorization_path))
 
 
 def _freeze(args, workspace):
@@ -267,12 +284,12 @@ def _freeze(args, workspace):
     return freeze_benchmark(report=load_json(args.visible_report), cases=load_json(args.cases),
         chunks=chunks, bindings=bindings, corpus_freeze=load_json(args.corpus_freeze),
         ledger=load_json(args.review_ledger), developers=args.developer_id,
-        visible_evaluations=[load_json(p) for p in sorted(visible_paths)])
+        visible_evaluations=[load_json(p) for p in sorted(visible_paths)], review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _seal(args, _):
     return seal_for_benchmark(load_json(args.submission), load_json(args.corpus_freeze),
-        [load_json(p) for p in args.visible_evaluation], load_json(args.benchmark_freeze))
+        [load_json(p) for p in args.visible_evaluation], load_json(args.benchmark_freeze), review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _holdout(args, workspace):
@@ -280,7 +297,7 @@ def _holdout(args, workspace):
     report, _ = consume_holdout(workspace=workspace, submission=load_json(args.submission),
         marker=load_json(args.holdout_marker), freeze=load_json(args.benchmark_freeze),
         corpus_freeze=load_json(args.corpus_freeze), ledger=load_json(args.review_ledger),
-        chunks=chunks, retrievers=retrievers, bindings=bindings)
+        chunks=chunks, retrievers=retrievers, bindings=bindings, review_policy=getattr(args, "review_policy", DEFAULT))
     return report
 
 
@@ -296,7 +313,7 @@ def _release_evidence(args, workspace, chunks, bindings):
         freeze=load_json(args.benchmark_freeze) if args.benchmark_freeze else None,
         submission=load_json(args.submission) if args.submission else None,
         holdout_ledger=load_json(args.holdout_ledger) if args.holdout_ledger else None,
-        holdout_report=load_json(args.holdout_report) if args.holdout_report else None)
+        holdout_report=load_json(args.holdout_report) if args.holdout_report else None, review_policy=getattr(args, "review_policy", DEFAULT))
 
 
 def _search(args, workspace):

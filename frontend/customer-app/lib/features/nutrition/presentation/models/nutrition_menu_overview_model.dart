@@ -12,6 +12,7 @@ class NutritionMenuOverviewModel {
     required this.tone,
     required this.mealCount,
     required this.totalKcal,
+    required this.energyComplete,
     required this.plannedDate,
   });
 
@@ -21,6 +22,7 @@ class NutritionMenuOverviewModel {
   final NutritionMenuOverviewTone tone;
   final int mealCount;
   final num totalKcal;
+  final bool energyComplete;
   final DateTime plannedDate;
 
   bool get hasMeals => mealCount > 0;
@@ -76,6 +78,8 @@ class NutritionMenuOverviewModel {
       tone: copy.tone,
       mealCount: meals.length,
       totalKcal: totalKcal,
+      energyComplete:
+          meals.isNotEmpty && meals.every((meal) => meal.energyKcal != null),
       plannedDate: plannedDate,
     );
   }

@@ -161,7 +161,9 @@ class _OverviewMetrics extends StatelessWidget {
   Widget build(BuildContext context) {
     if (compact) {
       return Text(
-        '${overview.mealCount} bữa • ${overview.totalKcal.round()} kcal dự kiến',
+        overview.energyComplete
+            ? '${overview.mealCount} bữa • ${overview.totalKcal.round()} kcal dự kiến'
+            : '${overview.mealCount} bữa • Chưa đủ dữ liệu năng lượng',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
@@ -180,7 +182,9 @@ class _OverviewMetrics extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: _Metric(
-            value: '${overview.totalKcal.round()}',
+            value: overview.energyComplete
+                ? '${overview.totalKcal.round()}'
+                : 'Chưa đủ dữ liệu',
             label: 'kcal dự kiến',
             icon: Icons.local_fire_department_outlined,
           ),

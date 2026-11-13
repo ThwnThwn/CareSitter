@@ -9,12 +9,14 @@ class NutritionWeekProgressCard extends StatelessWidget {
   const NutritionWeekProgressCard({
     super.key,
     required this.completedDays,
+    required this.targetDays,
     required this.decision,
     required this.data,
     required this.health,
   });
 
   final int completedDays;
+  final int targetDays;
   final NutritionDecisionModel decision;
   final NutritionResultModel data;
   final Map<String, dynamic>? health;
@@ -45,7 +47,8 @@ class NutritionWeekProgressCard extends StatelessWidget {
                       Text('Thông tin đã được xác nhận',
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: AppSpacing.xs),
-                      Text('Đang tạo thực đơn cho 7 ngày từ hồ sơ đã lưu.',
+                      Text(
+                          'Đang tạo thực đơn cho $targetDays ngày từ hồ sơ đã lưu.',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -59,7 +62,7 @@ class NutritionWeekProgressCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
               child: LinearProgressIndicator(
-                value: completedDays / 7,
+                value: completedDays / targetDays,
                 minHeight: AppSpacing.tight,
                 backgroundColor: AppColors.primaryContainer,
                 color: AppColors.primary,
@@ -68,7 +71,7 @@ class NutritionWeekProgressCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Align(
               alignment: Alignment.centerRight,
-              child: Text('Đã lưu $completedDays/7 ngày',
+              child: Text('Đã lưu $completedDays/$targetDays ngày',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600)),

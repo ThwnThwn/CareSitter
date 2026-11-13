@@ -8,6 +8,7 @@ class AppRoutes {
   static const root = '/';
   static const auth = '/auth';
   static const home = '/home';
+  static const onboarding = '/onboarding';
   static const login = '/auth/login';
   static const register = '/auth/register';
   static const email = '/auth/email';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const legacyAuthPhone = '/auth/phone';
   static const tracking = '/tracking';
   static const settings = '/settings';
+  static const labDiagnostics = '/settings/lab3-diagnostics';
   static const catalog = '/catalog';
   static const notifications = '/notifications';
   static const paymentResult = '/payment-result';
@@ -42,6 +44,7 @@ class AppRoutes {
 
   static String bookingDetail(String id) => '$bookings/${_segment(id)}';
   static String serviceDetail(String id) => '$catalog/${_segment(id)}';
+  static String bookingReports(String id) => '${bookingDetail(id)}/reports';
   static String bookingTracking(String id) => '${bookingDetail(id)}/tracking';
   static String bookingTimeline(String id) => '${bookingDetail(id)}/timeline';
   static String bookingReview(String id) => '${bookingDetail(id)}/review';

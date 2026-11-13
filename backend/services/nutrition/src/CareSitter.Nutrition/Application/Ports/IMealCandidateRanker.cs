@@ -10,7 +10,7 @@ public interface IMealCandidateRanker
 public sealed record MealCandidateRankingRequest(long CatalogRevision, Recipe[][] CandidateSets,
     IReadOnlyList<HealthFact> Facts, IReadOnlyList<DietaryRule> Rules,
     MealRecommendationEvidence[] Evidence, string DietaryPattern, string NutritionGoal,
-    Recipe[]? RecentMeals = null);
+    Recipe[]? RecentMeals = null, MealPreferences? Preferences = null);
 
 public sealed record MealCandidateRankingResult(bool Available, Guid[] SelectedRecipeVersionIds,
     string? Model, string? PromptVersion, MealRecommendationExplanation[] Explanations, string[] Warnings)

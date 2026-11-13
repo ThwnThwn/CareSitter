@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/config/legal_links.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +57,8 @@ class _LegalTextButton extends StatelessWidget {
         onPressed: () async {
           final opened = await open();
           if (!opened && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            AppToast.showLegacy(
+              context,
               const SnackBar(
                   content: Text('Chưa cấu hình đường dẫn chính sách.')),
             );

@@ -7,6 +7,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('professional guidance reveals the swallowing field',
+      (tester) async {
+    final health = HealthProfileModel.fromJson({
+      'revision': 1,
+      'healthHistory': {
+        'nutrition': {'swallowingStatus': 'difficulty'}
+      }
+    });
+    final resource = NutritionResourceModel.fromJson({
+      'status': 'needs_professional_guidance',
+      'data': {
+        'decision': {
+          'state': 'needs_professional_guidance',
+          'requiredGuidance': ['swallowingStatus']
+        }
+      }
+    });
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NutritionProfileEditor(
+          beneficiaryId: 'test',
+          beneficiaryName: 'Test',
+          plannedDate: DateTime(2026),
+          session: 1,
+          health: health,
+          flow: NutritionFlow(health: health, resource: resource),
+          dirty: false,
+          onDirtyChanged: (_) {},
+          onSave: (_) {},
+          onAssess: () {},
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Khả năng nuốt'), findsOneWidget);
+    expect(find.textContaining('Cần hướng dẫn phù hợp trước khi gợi ý'),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('missing declarations show toast and mark fields',
       (tester) async {
     final health = HealthProfileModel.fromJson({'revision': 1});
@@ -25,7 +65,7 @@ void main() {
       onSave: (_) {},
       onAssess: () => assessed = true,
     ))));
-    final button = find.text('Lưu và kiểm tra thông tin');
+    final button = find.text('Tạo thực đơn');
     await tester.scrollUntilVisible(button, 400,
         scrollable: find.byType(Scrollable).first);
     await tester.tap(button);

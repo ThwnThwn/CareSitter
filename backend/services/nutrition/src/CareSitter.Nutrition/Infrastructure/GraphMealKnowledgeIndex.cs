@@ -158,6 +158,6 @@ internal sealed class GraphMealKnowledgeIndex
         string Locator, int? PdfPage, string Excerpt, string SourceTitle)
     {
         public MealRecommendationEvidence ToEvidence() => new(Id, Title, Chapter, PrintedPage, Locator,
-            $"{SourceTitle}, {(PrintedPage is { Length: > 0 } ? $"trang {PrintedPage}" : PdfPage is > 0 ? $"PDF trang {PdfPage}" : Locator)}", Excerpt);
+            $"{SourceTitle}, {(PrintedPage is { Length: > 0 } ? $"trang {PrintedPage}" : PdfPage is > 0 ? $"PDF trang {PdfPage}" : Locator)}", Excerpt) { SourceTitle = SourceTitle };
     }
 }

@@ -169,37 +169,44 @@ class _DropdownTrigger extends StatelessWidget {
         child: Material(
           type: MaterialType.transparency,
           clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppInputStyle.radius,
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: AppInputStyle.radius,
             focusNode: focusNode,
             onFocusChange: (_) => onFocusChanged(),
             onTap: isEnabled
                 ? () =>
                     controller.isOpen ? controller.close() : controller.open()
                 : null,
-            child: InputDecorator(
-              isFocused: focusNode.hasFocus || controller.isOpen,
-              isEmpty: selectedChild == null && hint == null,
-              decoration: decoration.copyWith(hintText: null),
-              child: Row(
-                mainAxisSize: isExpanded ? MainAxisSize.max : MainAxisSize.min,
-                children: [
-                  if (isExpanded)
-                    Expanded(child: _selectedContent())
-                  else
-                    Flexible(child: _selectedContent()),
-                  const SizedBox(width: AppSpacing.sm),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 20,
-                    color: isEnabled
-                        ? AppColors.textSecondary
-                        : AppColors.textHint,
-                  ),
-                ],
+            child: Padding(
+              // OutlineInputBorder paints a floating label slightly above the
+              // decorator. Reserve that paint area so web/animated parents do
+              // not clip the top half of the label.
+              padding: const EdgeInsets.only(top: AppSpacing.tight),
+              child: InputDecorator(
+                isFocused: focusNode.hasFocus || controller.isOpen,
+                isEmpty: selectedChild == null && hint == null,
+                decoration: decoration.copyWith(hintText: null),
+                child: Row(
+                  mainAxisSize:
+                      isExpanded ? MainAxisSize.max : MainAxisSize.min,
+                  children: [
+                    if (isExpanded)
+                      Expanded(child: _selectedContent())
+                    else
+                      Flexible(child: _selectedContent()),
+                    const SizedBox(width: AppSpacing.sm),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: isEnabled
+                          ? AppColors.textSecondary
+                          : AppColors.textHint,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

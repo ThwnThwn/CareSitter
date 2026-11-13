@@ -58,12 +58,14 @@ class NutritionScreenAppBar extends StatelessWidget
       actions: [
         IconButton(
           tooltip: 'Tra cứu tài liệu dinh dưỡng',
+          color: AppColors.textHint,
           onPressed: () => context.push(AppRoutes.nutritionKnowledge),
           icon: const Icon(Icons.menu_book_outlined),
         ),
         if (canEdit)
           IconButton(
             tooltip: 'Cập nhật thông tin dinh dưỡng',
+            color: AppColors.textHint,
             onPressed: onEdit,
             icon: const Icon(Icons.edit_outlined),
           ),

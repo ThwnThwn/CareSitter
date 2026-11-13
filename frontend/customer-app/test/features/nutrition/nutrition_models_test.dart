@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_capabilities_model.dart';
+import 'package:caresitter_customer/features/nutrition/data/models/nutrition_knowledge_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_decision_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/recipe_option_model.dart';
@@ -8,6 +10,33 @@ import 'package:caresitter_customer/features/nutrition/domain/nutrition_error_co
 import 'package:caresitter_customer/features/nutrition/domain/nutrition_error_copy.dart';
 
 void main() {
+  test('knowledge result keeps source metadata without exposing old excerpts', () {
+    final result = NutritionKnowledgeSearchModel.fromJson({
+      'query': 'chất xơ',
+      'results': [
+        {
+          'chunkId': 'chunk-1', 'heading': 'Chất xơ', 'pdfPage': 42,
+          'printedPage': '41', 'sourceTitle': 'Tài liệu thử',
+          'sourceRevisionId': 'r1', 'excerpt': 'legacy text',
+        }
+      ],
+    });
+    final hit = result.results.single;
+    expect(hit.chunkId, 'chunk-1');
+    expect(hit.sourceRevisionId, 'r1');
+    expect(hit.pdfPage, 42);
+  });
+  test('blank capability disclaimer from an older service is treated as absent',
+      () {
+    final capabilities = NutritionCapabilitiesModel.fromJson({
+      'enabled': true,
+      'disclaimer': '',
+      'disclaimerVersion': '  ',
+    });
+    expect(capabilities.disclaimer, isNull);
+    expect(capabilities.disclaimerVersion, isNull);
+  });
+
   test(
       'typed meal and decision retain unknown server fields in their snapshots',
       () {

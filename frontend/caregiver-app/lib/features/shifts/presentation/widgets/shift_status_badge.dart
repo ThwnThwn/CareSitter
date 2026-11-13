@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:caregiver_app/core/theme/shift_status_style.dart';
 
@@ -22,7 +21,7 @@ class ShiftStatusBadge extends StatelessWidget {
       ),
       child: Text(
         style.label,
-        style: GoogleFonts.beVietnamPro(
+        style: TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s11,
           fontWeight: FontWeight.w600,
           color: style.color,

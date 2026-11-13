@@ -12,6 +12,7 @@ using System.Reflection;
 using FluentValidation;
 using CareSitter.Infrastructure.Persistence;
 using Npgsql;
+using CareSitter.Messaging.Persistence;
 
 namespace CareSitter.Modules.People;
 
@@ -30,6 +31,9 @@ public sealed class PeopleModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
         services.AddValidatorsFromAssemblyContaining<PeopleModule>();
         services.AddScoped<IPeopleRepository, PeopleRepository>();
+        services.AddScoped<IBeneficiaryDeletionEventWriter, BeneficiaryDeletionEventWriter>();
+        services.AddModuleOutbox<PeopleDbContext>(configuration, PeopleDbContext.SchemaName,
+            string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));
         services.AddScoped<IBeneficiaryHealthSnapshotReader, BeneficiaryHealthSnapshotReader>();
         services.AddScoped<IPeopleReadStore, PeopleReadStore>();
         services.AddScoped<IPeopleLookupService, PeopleLookupService>();

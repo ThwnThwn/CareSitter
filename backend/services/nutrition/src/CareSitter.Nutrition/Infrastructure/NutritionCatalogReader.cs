@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Application.Catalog;
 using CareSitter.Nutrition.Domain;
@@ -9,8 +11,9 @@ namespace CareSitter.Nutrition.Infrastructure;
 internal sealed class NutritionCatalogReader(
     NpgsqlConnection connection,
     NpgsqlTransaction transaction,
-    LocalDemoCatalogOptions localDemo)
+    LocalDemoCatalogOptions localDemo, bool allowNonMedicalReference = false)
 {
+    private (CatalogBundle Bundle, long Revision)? _demo;
     private NpgsqlCommand Command(string sql) => new(sql, connection, transaction);
 
     public async Task<IReadOnlyList<NutritionConcept>> ConceptsAsync(CancellationToken ct)
@@ -30,15 +33,18 @@ internal sealed class NutritionCatalogReader(
     public async Task<long> CatalogRevisionAsync(CancellationToken ct)
     {
         await using var c = Command("SELECT revision FROM nutrition.catalog_state WHERE id=1 FOR SHARE");
-        var published = (long)(await c.ExecuteScalarAsync(ct))!;
+        if (await c.ExecuteScalarAsync(ct) is not long published || published < 1)
+            throw new InvalidOperationException("Nutrition catalog revision is missing or invalid.");
+        await using (var integrity = Command("SELECT nutrition.published_catalog_integrity()"))
+            if (await integrity.ExecuteScalarAsync(ct) is not true)
+                throw new InvalidOperationException("Nutrition published catalog digest or materialized payload is missing or inconsistent.");
         if (!localDemo.Enabled) return published;
-        await using var demo = Command("SELECT revision FROM nutrition.local_demo_catalog WHERE package_key=@key");
-        demo.Parameters.AddWithValue("key", localDemo.PackageKey);
-        var revision = await demo.ExecuteScalarAsync(ct);
-        return revision is long localRevision ? checked(published * 1_000_000 + localRevision) : published;
+        var demo = (await LocalDemoAsync(ct))!.Value;
+        return checked(published * 1_000_000 + demo.Revision);
     }
     public async Task<IReadOnlyList<Recipe>> RecipesAsync(CancellationToken ct)
     {
+        await CatalogRevisionAsync(ct);
         var values = new List<Recipe>();
         await using (var c = Command("""
                 SELECT recipe.id,recipe.payload::text,
@@ -60,10 +66,11 @@ internal sealed class NutritionCatalogReader(
             {
                 try
                 {
-                    var recipe = NutritionJson.Read<Recipe>(r.GetString(1));
+                    var recipe = ReadRecipePayload(r.GetString(1), allowNonMedicalReference);
+                    if (recipe is null) continue;
                     values.Add(recipe with { VersionId = r.GetGuid(0), SourceDetails = NutritionJson.Read<RecipeSource[]>(r.GetString(2)) });
                 }
-                catch (JsonException) { /* Nội dung hoặc metadata nguồn sai schema không được đưa vào gợi ý. */ }
+                catch (Exception error) when (error is JsonException or InvalidOperationException or KeyNotFoundException) { /* Nội dung hoặc metadata nguồn sai schema không được đưa vào gợi ý. */ }
             }
         }
         var demo = await LocalDemoAsync(ct);
@@ -72,17 +79,37 @@ internal sealed class NutritionCatalogReader(
             var citations = demo.Value.Bundle.Citations.ToDictionary(value => value.Id, StringComparer.Ordinal);
             foreach (var version in demo.Value.Bundle.Recipes)
             {
+                var recipe = ReadRecipePayload(NutritionJson.Write(version.Payload), allowNonMedicalReference);
+                if (recipe is null) continue;
                 var details = version.Payload.Sources
                     .Where(citations.ContainsKey)
                     .Select(source => Source(citations[source]))
                     .ToArray();
-                values.Add(version.Payload with { SourceDetails = details });
+                values.Add(recipe with { SourceDetails = details });
             }
         }
         return values;
     }
-    public async Task<IReadOnlyList<DietaryRule>> RulesAsync(CancellationToken ct) =>
-        await CatalogAsync<DietaryRule>("nutrition.rule_versions", (value, id) => value with { VersionId = id }, ct);
+    internal static Recipe? ReadRecipePayload(string json, bool allowNonMedicalReference)
+    {
+        using var payload = JsonDocument.Parse(json);
+        var root = payload.RootElement;
+        if (new[] { "review_policy", "intended_use", "clinical_review_performed", "independent_clinical_review",
+                "production_public_release", "clinical_review_not_performed_reason" }
+            .Any(key => root.TryGetProperty(key, out _)))
+        {
+            var policy = ReleaseReviewPolicy.Read(root);
+            if (policy == ReleaseReviewPolicy.Reference && !allowNonMedicalReference)
+                return null;
+        }
+        return NutritionJson.Read<Recipe>(json);
+    }
+
+    public async Task<IReadOnlyList<DietaryRule>> RulesAsync(CancellationToken ct)
+    {
+        await CatalogRevisionAsync(ct);
+        return await CatalogAsync<DietaryRule>("nutrition.rule_versions", (value, id) => value with { VersionId = id }, ct);
+    }
     private async Task<IReadOnlyList<T>> CatalogAsync<T>(string table, Func<T, Guid, T> version, CancellationToken ct)
     {
         await using var c = Command($"SELECT id,payload::text FROM {table} WHERE status='published' ORDER BY id LIMIT 1000");
@@ -90,7 +117,7 @@ internal sealed class NutritionCatalogReader(
         while (await r.ReadAsync(ct))
         {
             try { values.Add(version(NutritionJson.Read<T>(r.GetString(1)), r.GetGuid(0))); }
-            catch (JsonException) { /* Nội dung sai schema không được đưa vào gợi ý. */ }
+            catch (Exception error) when (error is JsonException or InvalidOperationException or KeyNotFoundException) { /* Nội dung sai schema không được đưa vào gợi ý. */ }
         }
         return values;
     }
@@ -98,12 +125,30 @@ internal sealed class NutritionCatalogReader(
     private async Task<(CatalogBundle Bundle, long Revision)?> LocalDemoAsync(CancellationToken ct)
     {
         if (!localDemo.Enabled) return null;
-        await using var command = Command("SELECT payload::text,revision FROM nutrition.local_demo_catalog WHERE package_key=@key");
+        if (_demo is not null) return _demo;
+        // Keep payload and metadata together for this session; the runtime role remains read-only.
+        await using var command = Command("SELECT payload::text,revision,payload_digest FROM nutrition.local_demo_catalog WHERE package_key=@key");
         command.Parameters.AddWithValue("key", localDemo.PackageKey);
         await using var reader = await command.ExecuteReaderAsync(ct);
-        if (!await reader.ReadAsync(ct)) return null;
-        try { return (NutritionJson.Read<CatalogBundle>(reader.GetString(0)), reader.GetInt64(1)); }
-        catch (JsonException) { return null; }
+        if (!await reader.ReadAsync(ct) || reader.IsDBNull(0) || reader.IsDBNull(1) ||
+            reader.GetInt64(1) is < 1 or >= 1_000_000 || reader.IsDBNull(2))
+            throw new InvalidOperationException("Nutrition local demo catalog or revision/digest is missing or invalid.");
+        var json = reader.GetString(0);
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json))).ToLowerInvariant();
+        if (!string.Equals(digest, reader.GetString(2), StringComparison.Ordinal))
+            throw new InvalidOperationException("Nutrition local demo catalog digest is missing or does not match its payload.");
+        try
+        {
+            var bundle = NutritionJson.Read<CatalogBundle>(json);
+            if (bundle.PackageKey != localDemo.PackageKey || bundle.Recipes is null || bundle.Rules is null ||
+                bundle.Concepts is null || bundle.Citations is null || bundle.SupportedScopes is null ||
+                !CatalogBundleValidator.Validate(bundle).IsValid)
+                throw new InvalidOperationException("Nutrition local demo catalog payload is invalid.");
+            _demo = (bundle, reader.GetInt64(1));
+            return _demo;
+        }
+        catch (JsonException error)
+        { throw new InvalidOperationException("Nutrition local demo catalog payload is invalid.", error); }
     }
 
     private static RecipeSource Source(CatalogCitation value) => new(

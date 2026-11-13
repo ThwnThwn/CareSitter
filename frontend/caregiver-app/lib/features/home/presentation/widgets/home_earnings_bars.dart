@@ -1,6 +1,5 @@
 import 'package:caregiver_app/features/home/presentation/widgets/home_earnings_day_label.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
@@ -80,7 +79,7 @@ class HomeEarningsBars extends StatelessWidget {
           BarChartRodData rod, int rodIndex) =>
       BarTooltipItem(
           '${earningsData[group.x].toInt()}k',
-          GoogleFonts.beVietnamPro(
+          const TextStyle(fontFamily: 'Inter',
               fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w600,
               color: AppColors.onPrimary));

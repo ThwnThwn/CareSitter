@@ -2920,7 +2920,7 @@
   "indexKey": "clinical-nutrition-2019-dish-index-v1",
   "referenceOnlyRecipeNote": "Sách không đề cập công thức chế biến chi tiết cho các mục chưa liên kết recipe; các mục này chỉ dùng để tra cứu tên món và trang nguồn, không được dùng để gợi ý thực đơn.",
   "linkedCatalog": {
-    "fileSha256": "5E1378452BCB7615446F8F63ADEF98FB8CD5493D5F0DCE122139BA8FB928041F",
+    "fileSha256": "08358DBC2BFFF00503FC9669A84A2017B7B07D6357C4265E16B1B782999C8DA8",
     "packageKey": "adult-baseline-p2a-v1",
     "path": "backend/services/nutrition/catalog/drafts/adult-baseline-book-demo.bundle.json",
     "recipeVersionIds": [

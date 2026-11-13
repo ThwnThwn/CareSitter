@@ -96,6 +96,45 @@
       "title": "Công thức phối hợp CareSitter v2",
       "verifiedOn": "2026-10-27",
       "year": 2026
+    },
+    {
+      "chapter": null,
+      "edition": null,
+      "id": "CARESITTER_HOME_MEALS_DEMO",
+      "locator": "Công thức một phần",
+      "organization": "CareSitter",
+      "pdfPages": null,
+      "printedPages": null,
+      "reference": "Công thức do CareSitter biên soạn cho bản demo. Dưỡng chất ước tính từ định lượng nguyên liệu.",
+      "title": "Công thức CareSitter",
+      "verifiedOn": "2026-11-11",
+      "year": 2026
+    },
+    {
+      "chapter": "Cá hấp mồng tơi",
+      "edition": "Trang web, năm đối chiếu",
+      "id": "MNMN_CA_HAP_MONG_TOI",
+      "locator": "Công thức gốc trực tuyến",
+      "organization": "Ajinomoto Việt Nam",
+      "pdfPages": null,
+      "printedPages": null,
+      "reference": "https://monngonmoingay.com/ca-hap-mong-toi/",
+      "title": "Món Ngon Mỗi Ngày",
+      "verifiedOn": "2026-11-11",
+      "year": 2026
+    },
+    {
+      "chapter": "Canh gà bí xanh",
+      "edition": "Trang web, năm đối chiếu",
+      "id": "MNMN_CANH_GA_BI_XANH",
+      "locator": "Công thức gốc trực tuyến",
+      "organization": "Ajinomoto Việt Nam",
+      "pdfPages": null,
+      "printedPages": null,
+      "reference": "https://monngonmoingay.com/canh-ga-bi-xanh/",
+      "title": "Món Ngon Mỗi Ngày",
+      "verifiedOn": "2026-11-11",
+      "year": 2026
     }
   ],
   "concepts": [
@@ -542,8 +581,17 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ phở thịt bò",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Phở bò",
+        "images": [
+          {
+            "attribution": "Manh’s Kitchen · Cookpad",
+            "dishName": "Phở bò",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25405265",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/pho_bo-c18de6e4de02.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/pho_bo-c18de6e4de02.jpg",
         "ingredients": [
           {
             "amount": 150,
@@ -599,8 +647,17 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cháo thịt",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo thịt băm hơi cay 😂",
+        "images": [
+          {
+            "attribution": "Hạnh Hạnh · Cookpad",
+            "dishName": "Cháo thịt băm hơi cay 😂",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/13661676",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392639/CareSitter/Nutrition/catalog/chao_heo-fe862b92b725.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392639/CareSitter/Nutrition/catalog/chao_heo-fe862b92b725.jpg",
         "ingredients": [
           {
             "amount": 50,
@@ -663,8 +720,17 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ phở gà",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Phở Gà Ta",
+        "images": [
+          {
+            "attribution": "Bòn Bon · Cookpad",
+            "dishName": "Phở Gà Ta",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25326044",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392662/CareSitter/Nutrition/catalog/pho_ga-433d2a30ab29.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392662/CareSitter/Nutrition/catalog/pho_ga-433d2a30ab29.jpg",
         "ingredients": [
           {
             "amount": 50,
@@ -713,8 +779,17 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ miến ngan trộn",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Miến ngan trộn",
+        "images": [
+          {
+            "attribution": "Dung Nguyễn · Cookpad",
+            "dishName": "Miến ngan trộn",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/11985074",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392656/CareSitter/Nutrition/catalog/mien_ngan-86f25d77bc5b.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392656/CareSitter/Nutrition/catalog/mien_ngan-86f25d77bc5b.jpg",
         "ingredients": [
           {
             "amount": 50,
@@ -778,8 +853,31 @@
           "SOY"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt rang rau răm",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Thịt rang rau răm",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/26623879",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392653/CareSitter/Nutrition/catalog/heo_rang-d438d73d2204.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Hũ Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24184862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392647/CareSitter/Nutrition/catalog/dau_luoc-9136cd140c43.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392653/CareSitter/Nutrition/catalog/heo_rang-d438d73d2204.jpg",
         "ingredients": [
           {
             "amount": 60,
@@ -864,8 +962,31 @@
           "SOY"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bê hấp gừng",
+        "images": [
+          {
+            "attribution": "Bùi Thị Diệu Trang · Cookpad",
+            "dishName": "Bê hấp gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/9977441",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg"
+          },
+          {
+            "attribution": "Pham Huyen · Cookpad",
+            "dishName": "Lạc rang muối",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/23941991",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392653/CareSitter/Nutrition/catalog/lac_rang-ad21b3f56549.jpg"
+          },
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Rau Khoai Lang Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17135508",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392663/CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg",
         "ingredients": [
           {
             "amount": 75,
@@ -971,8 +1092,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Sườn xào chua ngọt",
+        "images": [
+          {
+            "attribution": "ngon · Cookpad",
+            "dishName": "Sườn xào chua ngọt",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/26333608",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/suon_chua-5ac4a1bc4eef.jpg"
+          },
+          {
+            "attribution": "NgThang · Cookpad",
+            "dishName": "Cá rô phi hấp gừng, hành",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/3816325",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg"
+          },
+          {
+            "attribution": "LynLyn · Cookpad",
+            "dishName": "🔸️CẢI NGỒNG LUỘC",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16047825",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_ngong-9f052af93268.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/suon_chua-5ac4a1bc4eef.jpg",
         "ingredients": [
           {
             "amount": 130,
@@ -1064,8 +1208,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá bống biển hấp xì dầu Hongkong",
+        "images": [
+          {
+            "attribution": "Hoàng Phương Thảo · Cookpad",
+            "dishName": "Cá bống biển hấp xì dầu Hongkong",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/5535300",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg"
+          },
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg",
         "ingredients": [
           {
             "amount": 75,
@@ -1151,8 +1318,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá trắm sốt cà chua",
+        "images": [
+          {
+            "attribution": "Pham Huyen · Cookpad",
+            "dishName": "Cá trắm sốt cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15410902",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f.jpg"
+          },
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Trứng hấp",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Cải Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15457122",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f.jpg",
         "ingredients": [
           {
             "amount": 60,
@@ -1244,8 +1434,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Tôm sú hấp sả",
+        "images": [
+          {
+            "attribution": "Trần Thị Tuyết Trinh · Cookpad",
+            "dishName": "Tôm sú hấp sả",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25228716",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg"
+          },
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg",
         "ingredients": [
           {
             "amount": 60,
@@ -1344,8 +1557,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Gà hấp nấm hương",
+        "images": [
+          {
+            "attribution": "NgocTu Ngô · Cookpad",
+            "dishName": "Gà hấp nấm hương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16606272",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97.jpg"
+          },
+          {
+            "attribution": "Hường Lê · Cookpad",
+            "dishName": "Canh khổ qua nhồi thịt",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/26809844",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392659/CareSitter/Nutrition/catalog/muop_nhoi-e45f4d902cb7.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Cô Ve Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97.jpg",
         "ingredients": [
           {
             "amount": 75,
@@ -1444,8 +1680,31 @@
           "PEANUT"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ cơm",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt vai heo sốt cà chua",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Thịt vai heo sốt cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25057948",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_ca-8629eeabcf95.jpg"
+          },
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Bò xào hành tây",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17312454",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_ca-8629eeabcf95.jpg",
         "ingredients": [
           {
             "amount": 75,
@@ -1543,8 +1802,17 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo bò hành lá",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo thịt bò băm",
+        "images": [
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cháo thịt bò băm",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/11323725",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo-842af0bc1dd2.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo-842af0bc1dd2.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1601,8 +1869,17 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo gà nấm hương",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo gà nấm hương",
+        "images": [
+          {
+            "attribution": "Điện máy XANH",
+            "dishName": "Cháo gà nấm hương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://www.dienmayxanh.com/vao-bep/cach-nau-chao-ga-nam-huong-thom-ngon-bo-duong-cho-ca-nha-15933",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_nam-7e53275e905e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_nam-7e53275e905e.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1666,8 +1943,17 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo cá rô phi gừng",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo cá rô phi",
+        "images": [
+          {
+            "attribution": "Điện máy XANH",
+            "dishName": "Cháo cá rô phi",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://www.dienmayxanh.com/vao-bep/2-cach-nau-chao-ca-ro-phi-thom-ngon-hap-dan-don-gian-cho-gia-13402",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392641/CareSitter/Nutrition/catalog/chao_rophi-6bc177d7000d.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392641/CareSitter/Nutrition/catalog/chao_rophi-6bc177d7000d.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1733,8 +2019,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cháo trứng cà chua",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo trứng cà chua 🍅",
+        "images": [
+          {
+            "attribution": "Bếp nhà Cọp · Cookpad",
+            "dishName": "Cháo trứng cà chua 🍅",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24529812",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ca-64e16c227a5c.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ca-64e16c227a5c.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1796,8 +2091,17 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo thịt lợn bí xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo thịt băm bí xanh",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Cháo thịt băm bí xanh",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15194722",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392640/CareSitter/Nutrition/catalog/chao_heo_bi-4dcc55a9f6c1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392640/CareSitter/Nutrition/catalog/chao_heo_bi-4dcc55a9f6c1.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1861,8 +2165,17 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo bò cà chua",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Ăn dặm: cháo cà chua thịt bò",
+        "images": [
+          {
+            "attribution": "Bếp Mẹ Thỏ · Cookpad",
+            "dishName": "Ăn dặm: cháo cà chua thịt bò",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/12145697",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo_ca-3e1b5c9a04a9.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo_ca-3e1b5c9a04a9.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1926,8 +2239,17 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo gà rau ngót",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo thịt gà 🍗 rau ngót",
+        "images": [
+          {
+            "attribution": "Bếp nhà Cọp · Cookpad",
+            "dishName": "Cháo thịt gà 🍗 rau ngót",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24529795",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_ngot-fa8904b0f339.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_ngot-fa8904b0f339.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -1984,8 +2306,17 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cháo cá trắm hành gừng",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo bí đỏ cá trắm- eat clean",
+        "images": [
+          {
+            "attribution": "Đặng Yến · Cookpad",
+            "dishName": "Cháo bí đỏ cá trắm- eat clean",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/13437211",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_catram-302bcfd3b7af.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_catram-302bcfd3b7af.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2049,8 +2380,17 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Miến gà nấm hương",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Miến gà nấm hương",
+        "images": [
+          {
+            "attribution": "Lan Vy · Cookpad",
+            "dishName": "Miến gà nấm hương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24368203",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_ga-0d081546239e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_ga-0d081546239e.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2114,8 +2454,17 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Miến bò cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Miến Bò",
+        "images": [
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Miến Bò",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/14953662",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392654/CareSitter/Nutrition/catalog/mien_bo-e133c2796a7c.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392654/CareSitter/Nutrition/catalog/mien_bo-e133c2796a7c.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2174,8 +2523,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Miến trứng cà chua",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Miến xào cà chua + bí ngòi xào trứng",
+        "images": [
+          {
+            "attribution": "Lê Mai · Cookpad",
+            "dishName": "Miến xào cà chua + bí ngòi xào trứng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/9020696",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392658/CareSitter/Nutrition/catalog/mien_trung-b1da68782900.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392658/CareSitter/Nutrition/catalog/mien_trung-b1da68782900.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2234,8 +2592,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Miến đậu phụ nấm hương",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo 🌱 Miến Chay Rau Nấm",
+        "images": [
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Miến Chay Rau Nấm",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24857246",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_dau-e82914d0114a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_dau-e82914d0114a.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2301,8 +2668,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cháo đậu phụ rau ngót",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo đậu hủ non rau ngót",
+        "images": [
+          {
+            "attribution": "Mẹ Dâu ( Fb Trần Kiều ) 0971.492.563 · Cookpad",
+            "dishName": "Cháo đậu hủ non rau ngót",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/13623576",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392637/CareSitter/Nutrition/catalog/chao_dau_ngot-8a1fa80ae2e2.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392637/CareSitter/Nutrition/catalog/chao_dau_ngot-8a1fa80ae2e2.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2361,8 +2737,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cháo trứng rau ngót",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo hạt mix trứng gà 🍳 rau ngót",
+        "images": [
+          {
+            "attribution": "Bếp nhà Cọp · Cookpad",
+            "dishName": "Cháo hạt mix trứng gà 🍳 rau ngót",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17106486",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ngot-a0c260cb2bc1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ngot-a0c260cb2bc1.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2421,8 +2806,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cháo đậu phụ cà chua",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cháo đậu hũ cà chua",
+        "images": [
+          {
+            "attribution": "Điện máy XANH",
+            "dishName": "Cháo đậu hũ cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://www.dienmayxanh.com/vao-bep/2-cach-nau-chao-dau-hu-ca-chua-beo-thom-don-gian-cho-be-yeu-12261",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_dau_ca-74772bca99fe.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_dau_ca-74772bca99fe.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2481,8 +2875,17 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Miến đậu phụ cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/breakfast-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo 🌱 Miến Chay Rau Nấm",
+        "images": [
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Miến Chay Rau Nấm",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24857246",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_dau-e82914d0114a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_dau-e82914d0114a.jpg",
         "ingredients": [
           {
             "amount": 50.0,
@@ -2539,8 +2942,24 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · bò hấp gừng · cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bắp Bò Hấp Sả Gừng",
+        "images": [
+          {
+            "attribution": "Bếp Của Heo Con · Cookpad",
+            "dishName": "Bắp Bò Hấp Sả Gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/14872375",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hap-451a38934d69.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hap-451a38934d69.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2604,8 +3023,24 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · gà hấp nấm · bí xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Gà hấp nấm hương",
+        "images": [
+          {
+            "attribution": "NgocTu Ngô · Cookpad",
+            "dishName": "Gà hấp nấm hương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16606272",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97.jpg"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2669,8 +3104,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá rô phi hấp · rau muống",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá rô phi hấp gừng, hành",
+        "images": [
+          {
+            "attribution": "NgThang · Cookpad",
+            "dishName": "Cá rô phi hấp gừng, hành",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/3816325",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Muống Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/23952916",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392664/CareSitter/Nutrition/catalog/rau_muong-039e793f9eb7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2732,8 +3183,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · thịt lợn hấp · rau ngót",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt vai heo luộc",
+        "images": [
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Bảo Bình  · Cookpad",
+            "dishName": "Canh rau ngót nấu chay",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24651267",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rau_ngot-5127dc98dd50.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2788,8 +3255,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · thịt lợn · cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt vai heo luộc",
+        "images": [
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2846,8 +3329,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá trắm · cải soong",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá trắm hấp gừng",
+        "images": [
+          {
+            "attribution": "Võ Thị Thu Hạnh · Cookpad",
+            "dishName": "Cá trắm hấp gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/558655",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2904,8 +3403,24 @@
           "CRUSTACEAN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · tôm biển · bí xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Tôm sú hấp sả",
+        "images": [
+          {
+            "attribution": "Trần Thị Tuyết Trinh · Cookpad",
+            "dishName": "Tôm sú hấp sả",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25228716",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -2965,8 +3480,31 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · trứng · đậu phụ · rau muống",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Trứng hấp",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Trứng hấp",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Hũ Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24184862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392647/CareSitter/Nutrition/catalog/dau_luoc-9136cd140c43.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Muống Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/23952916",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392664/CareSitter/Nutrition/catalog/rau_muong-039e793f9eb7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3032,8 +3570,24 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · đậu phụ cà chua · mồng tơi",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Đậu phụ sốt cà chua (món chay)",
+        "images": [
+          {
+            "attribution": "Nhà Vân · Cookpad",
+            "dishName": "Đậu phụ sốt cà chua (món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24193529",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349.jpg"
+          },
+          {
+            "attribution": "Hà Trang · Cookpad",
+            "dishName": "Canh Mồng Tơi (Chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3097,8 +3651,24 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · gà · mướp đắng",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Gà luộc",
+        "images": [
+          {
+            "attribution": "Thanh Binh · Cookpad",
+            "dishName": "Gà luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25045451",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Khổ Qua Rừng Non Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/14987875",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392659/CareSitter/Nutrition/catalog/muop_dang-8938c52356c6.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3155,8 +3725,24 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · bò · hành tây · cải xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bò xào hành tây",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Bò xào hành tây",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17312454",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Cải Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15457122",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3218,8 +3804,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · ngan gừng · rau khoai lang",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Ngan luộc chấm tương",
+        "images": [
+          {
+            "attribution": "Ngoc Anh Le · Cookpad",
+            "dishName": "Ngan luộc chấm tương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/708073",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392660/CareSitter/Nutrition/catalog/ngan_hap-8914f4b466b2.jpg"
+          },
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Rau Khoai Lang Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17135508",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392663/CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392660/CareSitter/Nutrition/catalog/ngan_hap-8914f4b466b2.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3283,8 +3885,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá bống cà chua · cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá bống biển hấp xì dầu Hongkong",
+        "images": [
+          {
+            "attribution": "Hoàng Phương Thảo · Cookpad",
+            "dishName": "Cá bống biển hấp xì dầu Hongkong",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/5535300",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3346,8 +3964,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · bê · hành tây · đậu cô ve",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bê hấp gừng",
+        "images": [
+          {
+            "attribution": "Bùi Thị Diệu Trang · Cookpad",
+            "dishName": "Bê hấp gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/9977441",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Cô Ve Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3411,8 +4045,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá rô phi cà chua · cải xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá rô phi xốt cà chua",
+        "images": [
+          {
+            "attribution": "Nhà Vân · Cookpad",
+            "dishName": "Cá rô phi xốt cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17279470",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Cải Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15457122",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3478,8 +4128,24 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · đậu phụ nấm · cải soong",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/lunch-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Đậu hũ hấp nấm Nhật",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày · Cookpad",
+            "dishName": "Đậu hũ hấp nấm Nhật",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/dau-hu-hap-nam-nhat/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392648/CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392648/CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4.jpg",
         "ingredients": [
           {
             "amount": 75.0,
@@ -3546,8 +4212,31 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · trứng hấp · đậu phụ · cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Trứng hấp",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Trứng hấp",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Hũ Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24184862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392647/CareSitter/Nutrition/catalog/dau_luoc-9136cd140c43.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3611,8 +4300,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá trắm hấp gừng · mồng tơi",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá trắm hấp gừng",
+        "images": [
+          {
+            "attribution": "Võ Thị Thu Hạnh · Cookpad",
+            "dishName": "Cá trắm hấp gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/558655",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f.jpg"
+          },
+          {
+            "attribution": "Hà Trang · Cookpad",
+            "dishName": "Canh Mồng Tơi (Chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3676,8 +4381,24 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · thịt bò hấp · đậu cô ve",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bắp Bò Hấp Sả Gừng",
+        "images": [
+          {
+            "attribution": "Bếp Của Heo Con · Cookpad",
+            "dishName": "Bắp Bò Hấp Sả Gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/14872375",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hap-451a38934d69.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Cô Ve Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hap-451a38934d69.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3734,8 +4455,24 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · gà hấp · cải soong",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Gà luộc",
+        "images": [
+          {
+            "attribution": "Thanh Binh · Cookpad",
+            "dishName": "Gà luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25045451",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3790,8 +4527,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · thịt lợn · bí xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt vai heo luộc",
+        "images": [
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3848,8 +4601,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá rô phi cà chua · cải soong",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá rô phi xốt cà chua",
+        "images": [
+          {
+            "attribution": "Nhà Vân · Cookpad",
+            "dishName": "Cá rô phi xốt cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17279470",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3913,8 +4682,24 @@
           "CRUSTACEAN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · tôm biển · mồng tơi",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Tôm sú hấp sả",
+        "images": [
+          {
+            "attribution": "Trần Thị Tuyết Trinh · Cookpad",
+            "dishName": "Tôm sú hấp sả",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25228716",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg"
+          },
+          {
+            "attribution": "Hà Trang · Cookpad",
+            "dishName": "Canh Mồng Tơi (Chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -3973,8 +4758,24 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · đậu phụ nấm · cải xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Đậu hũ hấp nấm Nhật",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày · Cookpad",
+            "dishName": "Đậu hũ hấp nấm Nhật",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/dau-hu-hap-nam-nhat/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392648/CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Cải Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15457122",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392648/CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4040,8 +4841,24 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · trứng cà chua · rau muống",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Trứng xào cà chua",
+        "images": [
+          {
+            "attribution": "Hồng Hiếu Nguyễn · Cookpad",
+            "dishName": "Trứng xào cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17002795",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/trung_ca-f531d398a004.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Rau Muống Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/23952916",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392664/CareSitter/Nutrition/catalog/rau_muong-039e793f9eb7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/trung_ca-f531d398a004.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4103,8 +4920,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · ngan nấm · cải thìa",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Thịt ngan canh nấm hương",
+        "images": [
+          {
+            "attribution": "Hoai Be · Cookpad",
+            "dishName": "Thịt ngan canh nấm hương",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24957700",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/ngan_nam-f527bf648212.jpg"
+          },
+          {
+            "attribution": "Bếp của Quỳnh · Cookpad",
+            "dishName": "Cải Thìa Xào Nấm Đông Cô",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/ngan_nam-f527bf648212.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4168,8 +5001,24 @@
           "BEEF"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · bò hành tây · bí xanh",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bò xào hành tây",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Bò xào hành tây",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17312454",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4231,8 +5080,24 @@
         "allergenDataComplete": true,
         "allergens": [],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · bê hấp gừng · rau khoai lang",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Bê hấp gừng",
+        "images": [
+          {
+            "attribution": "Bùi Thị Diệu Trang · Cookpad",
+            "dishName": "Bê hấp gừng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/9977441",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg"
+          },
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Rau Khoai Lang Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17135508",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392663/CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4296,8 +5161,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá bống gừng · rau ngót",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá bống biển hấp xì dầu Hongkong",
+        "images": [
+          {
+            "attribution": "Hoàng Phương Thảo · Cookpad",
+            "dishName": "Cá bống biển hấp xì dầu Hongkong",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/5535300",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg"
+          },
+          {
+            "attribution": "Bảo Bình  · Cookpad",
+            "dishName": "Canh rau ngót nấu chay",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24651267",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rau_ngot-5127dc98dd50.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4361,8 +5242,24 @@
           "CHICKEN"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · gà hấp gừng · mướp đắng",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Gà luộc",
+        "images": [
+          {
+            "attribution": "Thanh Binh · Cookpad",
+            "dishName": "Gà luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25045451",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Khổ Qua Rừng Non Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/14987875",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392659/CareSitter/Nutrition/catalog/muop_dang-8938c52356c6.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4426,8 +5323,24 @@
           "FISH"
         ],
         "dietaryPatterns": [],
-        "imageAlt": "Ảnh minh hoạ Cơm · cá trắm cà chua · đậu cô ve",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Cá trắm sốt cà chua",
+        "images": [
+          {
+            "attribution": "Pham Huyen · Cookpad",
+            "dishName": "Cá trắm sốt cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/15410902",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Cô Ve Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4493,8 +5406,24 @@
         "dietaryPatterns": [
           "vegetarian"
         ],
-        "imageAlt": "Ảnh minh hoạ Cơm · đậu phụ · cà chua · cải soong",
-        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/CareSitter/Nutrition/demo/dinner-illustration.jpg",
+        "imageAlt": "Ảnh tham khảo Đậu phụ sốt cà chua (món chay)",
+        "images": [
+          {
+            "attribution": "Nhà Vân · Cookpad",
+            "dishName": "Đậu phụ sốt cà chua (món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24193529",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349.jpg",
         "ingredients": [
           {
             "amount": 60.0,
@@ -4549,6 +5478,1508 @@
         "versionId": "f4546029-e42d-79f7-c1c8-f421bdad09c9"
       },
       "recipeId": "31acc0b5-521d-9ade-52f2-5442dff758e8",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CHICKEN"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Cơm Nắm Ngũ Sắc",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Cơm Nắm Ngũ Sắc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/com-nam-ngu-sac/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_nam-abb97962da8f.png"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_nam-abb97962da8f.png",
+        "ingredients": [
+          {
+            "amount": 60.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 70.0,
+            "basis": "raw",
+            "code": "CHICKEN_RAW",
+            "name": "Thịt gà ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "GINGER_FRESH",
+            "name": "Gừng tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 90.0,
+            "basis": "raw",
+            "code": "MANDARIN_FRESH",
+            "name": "Quít, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cơm nắm gà gừng",
+        "nutrients": {
+          "carbohydrate_g": 54.66,
+          "energy_kcal": 385.84,
+          "fat_g": 9.79,
+          "fiber_g": 0.96,
+          "protein_g": 19.75,
+          "sodium_mg": 56.32
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Luộc gà với gừng, xé nhỏ rồi trộn với cơm nóng và hành đã chần. Nắm thành phần nhỏ, dùng ngay với quýt.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "ee2cf722-aed0-e13b-8e10-ee49d409b00a"
+      },
+      "recipeId": "5c159992-dbac-d177-e30f-1a45b799aabe",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo Sushi cơm cuộn trứng",
+        "images": [
+          {
+            "attribution": "Tiệm nhỏ  · Cookpad",
+            "dishName": "Sushi cơm cuộn trứng",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/12018724",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392643/CareSitter/Nutrition/catalog/com_cuon-c0e17d8de781.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392643/CareSitter/Nutrition/catalog/com_cuon-c0e17d8de781.jpg",
+        "ingredients": [
+          {
+            "amount": 55.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 70.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 80.0,
+            "basis": "raw",
+            "code": "BOK_CHOY_FRESH",
+            "name": "Cải thìa (cải trắng), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "APPLE_FRESH",
+            "name": "Táo tây, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cơm cuộn trứng cải thìa",
+        "nutrients": {
+          "carbohydrate_g": 57.96,
+          "energy_kcal": 400.5,
+          "fat_g": 11.98,
+          "fiber_g": 2.26,
+          "protein_g": 15.04,
+          "sodium_mg": 148.55
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm và luộc cải thìa, để ráo rồi thái nhỏ. Tráng trứng chín với dầu lạc. Trải cơm và cải lên trứng, cuộn lại, ăn kèm táo.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "073f5af3-bfe1-b594-6de4-b008114e57f5"
+      },
+      "recipeId": "24933d87-7bb9-afb1-4f7d-ffe029a45888",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo SP.0953 - Cơm Chiên Nấm Hương Trứng Gà",
+        "images": [
+          {
+            "attribution": "Shan Wu · Cookpad",
+            "dishName": "SP.0953 - Cơm Chiên Nấm Hương Trứng Gà",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24742722",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392645/CareSitter/Nutrition/catalog/com_tron-f2e2cc11f239.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392645/CareSitter/Nutrition/catalog/com_tron-f2e2cc11f239.jpg",
+        "ingredients": [
+          {
+            "amount": 60.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 80.0,
+            "basis": "cooked",
+            "code": "GREEN_BEANS_BOILED",
+            "name": "Đậu cô ve, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cơm trộn đậu cô ve, trứng và nấm",
+        "nutrients": {
+          "carbohydrate_g": 60.52,
+          "energy_kcal": 422.78,
+          "fat_g": 11.65,
+          "fiber_g": 1.78,
+          "protein_g": 18.91,
+          "sodium_mg": 188.02
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Ngâm nấm cho mềm rồi băm nhỏ. Xào chín nấm với dầu lạc, thêm đậu cô ve đã luộc và trứng. Đảo đến khi trứng chín rồi trộn với cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "a57f399a-a546-fb1c-f0cf-23e611a0ae3f"
+      },
+      "recipeId": "bb6d40ab-640c-d167-bcd4-bf8b8ee5c573",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CRUSTACEAN",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Cơm chiên tôm sú",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Cơm chiên tôm sú",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25238217",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_tom-8ce962cf6b58.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_tom-8ce962cf6b58.jpg",
+        "ingredients": [
+          {
+            "amount": 60.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 70.0,
+            "basis": "raw",
+            "code": "SEA_SHRIMP_RAW",
+            "name": "Tôm biển, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 80.0,
+            "basis": "raw",
+            "code": "BOK_CHOY_FRESH",
+            "name": "Cải thìa (cải trắng), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 3.0,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cơm rang tôm và cải thìa",
+        "nutrients": {
+          "carbohydrate_g": 50.56,
+          "energy_kcal": 332.98,
+          "fat_g": 6.35,
+          "fiber_g": 1.73,
+          "protein_g": 18.36,
+          "sodium_mg": 127.14
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm và xới cho tơi. Bóc vỏ, bỏ chỉ lưng tôm rồi cắt nhỏ. Xào tỏi, tôm và cải với dầu lạc đến khi chín, cho cơm vào đảo nóng đều.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "dcf9f66b-d739-4e68-2aa7-03523f66064b"
+      },
+      "recipeId": "ff97bb70-03e0-bd29-772c-62e0419289d2",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "FISH"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Cháo cá bống rau ngót cho bé",
+        "images": [
+          {
+            "attribution": "Mẹ Dâu ( Fb Trần Kiều ) 0971.492.563 · Cookpad",
+            "dishName": "Cháo cá bống rau ngót cho bé",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/13302405",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392634/CareSitter/Nutrition/catalog/chao_cabong-aff6de176212.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392634/CareSitter/Nutrition/catalog/chao_cabong-aff6de176212.jpg",
+        "ingredients": [
+          {
+            "amount": 55.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "GOBY_RAW",
+            "name": "Cá bống, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "WINTER_MELON_FRESH",
+            "name": "Quả bí đao (bí xanh), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "GINGER_FRESH",
+            "name": "Gừng tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Cháo cá bống bí xanh",
+        "nutrients": {
+          "carbohydrate_g": 45.71,
+          "energy_kcal": 260.44,
+          "fat_g": 1.17,
+          "fiber_g": 1.35,
+          "protein_g": 16.81,
+          "sodium_mg": 15.76
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Ninh gạo với nước. Hấp chín cá với gừng, gỡ kỹ xương và lấy thịt cá. Thêm bí cắt nhỏ vào cháo, nấu mềm rồi cho cá vào đun nóng lại.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "909bc179-3565-4f06-e717-fd55618fe4fc"
+      },
+      "recipeId": "fe8da4b1-6ab9-ff1f-125c-3c78893c884b",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo SP.0954 - Cháo Dinh Dưỡng Thịt Heo Rau Củ",
+        "images": [
+          {
+            "attribution": "Shan Wu · Cookpad",
+            "dishName": "SP.0954 - Cháo Dinh Dưỡng Thịt Heo Rau Củ",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24725341",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/sup_heo-e64b8957d1a6.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/sup_heo-e64b8957d1a6.jpg",
+        "ingredients": [
+          {
+            "amount": 55.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 70.0,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "cooked",
+            "code": "GREEN_BEANS_BOILED",
+            "name": "Đậu cô ve, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 20.0,
+            "basis": "raw",
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "breakfast",
+        "name": "Súp gạo thịt nạc và đậu cô ve",
+        "nutrients": {
+          "carbohydrate_g": 59.20,
+          "energy_kcal": 381.6,
+          "fat_g": 5.69,
+          "fiber_g": 1.52,
+          "protein_g": 23.39,
+          "sodium_mg": 160.35
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu gạo với nước thành súp. Băm thịt nạc và hành tây, cho vào nồi nấu chín. Cắt nhỏ đậu cô ve đã luộc, cho vào sau cùng và đun nóng.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "d51d256c-54e8-179e-1a72-8044c82439aa"
+      },
+      "recipeId": "391fb589-0e60-994c-3813-f3ac45191417",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CHICKEN"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Canh gà bí xanh",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Canh gà bí xanh",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/canh-ga-bi-xanh/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/canh_ga_bi-63710dca4456.webp"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/canh_ga_bi-63710dca4456.webp",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "CHICKEN_RAW",
+            "name": "Thịt gà ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150.0,
+            "basis": "raw",
+            "code": "WINTER_MELON_FRESH",
+            "name": "Quả bí đao (bí xanh), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 6.0,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "GINGER_FRESH",
+            "name": "Gừng tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm với canh gà bí xanh",
+        "nutrients": {
+          "carbohydrate_g": 62.98,
+          "energy_kcal": 485.70,
+          "fat_g": 13.87,
+          "fiber_g": 1.99,
+          "protein_g": 27.22,
+          "sodium_mg": 94.09
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm riêng. Cắt gà bỏ xương thành miếng nhỏ và đun với gừng trong nước đến khi thịt chín. Cho bí vào nấu mềm, thêm hành lá và dùng với cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Tham khảo cách nấu từ Món Ngon Mỗi Ngày — Ajinomoto Việt Nam. CareSitter điều chỉnh nguyên liệu và định lượng cho một phần.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017",
+          "MNMN_CANH_GA_BI_XANH"
+        ],
+        "versionId": "e4a32b93-86fc-2b7f-0bb6-2b7fec6100fa"
+      },
+      "recipeId": "fa493024-c0cd-5723-520d-e9abb2e75ca9",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "PEANUT",
+          "BEEF"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Đậu cô ve xào thịt bò cà chua",
+        "images": [
+          {
+            "attribution": "Phuong Tran · Cookpad",
+            "dishName": "Đậu cô ve xào thịt bò cà chua",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25182278",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bo_dau-b8f57b165843.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bo_dau-b8f57b165843.jpg",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 85.0,
+            "basis": "raw",
+            "code": "BEEF_LEAN_RAW",
+            "name": "Thịt bò, loại I, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 120.0,
+            "basis": "cooked",
+            "code": "GREEN_BEANS_BOILED",
+            "name": "Đậu cô ve, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 3.0,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 6.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · bò xào đậu cô ve · cà chua",
+        "nutrients": {
+          "carbohydrate_g": 81.19,
+          "energy_kcal": 543.58,
+          "fat_g": 10.48,
+          "fiber_g": 2.44,
+          "protein_g": 31.01,
+          "sodium_mg": 210.52
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Thái bò mỏng, phi tỏi với dầu lạc rồi xào thịt chín. Cho đậu đã luộc và cà chua cắt miếng vào đảo nóng, dọn cùng cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "b95a386b-6095-f707-97fc-a59101d4a1a9"
+      },
+      "recipeId": "3cd8fcd8-3e4b-c729-417c-4565c173bc6a",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo Trứng chiên nấm sò nâu",
+        "images": [
+          {
+            "attribution": "Annie Vo · Cookpad",
+            "dishName": "Trứng chiên nấm sò nâu",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24065133",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392672/CareSitter/Nutrition/catalog/trung_nam-0c91d845e40c.jpg"
+          },
+          {
+            "attribution": "Dory · Cookpad",
+            "dishName": "🌱 Rau Khoai Lang Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/17135508",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392663/CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392672/CareSitter/Nutrition/catalog/trung_nam-0c91d845e40c.jpg",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 130.0,
+            "basis": "raw",
+            "code": "SWEET_POTATO_LEAVES_FRESH",
+            "name": "Rau khoai lang, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · trứng đúc nấm · rau khoai lang",
+        "nutrients": {
+          "carbohydrate_g": 65.69,
+          "energy_kcal": 508.0,
+          "fat_g": 16.55,
+          "fiber_g": 2.97,
+          "protein_g": 24.07,
+          "sodium_mg": 186.46
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm, luộc rau khoai lang. Ngâm mềm nấm rồi băm nhỏ, trộn với trứng. Tráng hỗn hợp bằng dầu lạc cho chín đều hai mặt.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "398999b9-6aab-9678-fd19-bdce84dd3e54"
+      },
+      "recipeId": "4ba806fb-1209-6d04-c838-984b57009ca8",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo Trứng hấp",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Trứng hấp",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png"
+          },
+          {
+            "attribution": "Hà Trang · Cookpad",
+            "dishName": "Canh Mồng Tơi (Chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 25.0,
+            "basis": "raw",
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150.0,
+            "basis": "raw",
+            "code": "MALABAR_SPINACH_FRESH",
+            "name": "Rau mồng tơi, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · trứng hấp hành tây · canh mồng tơi",
+        "nutrients": {
+          "carbohydrate_g": 66.65,
+          "energy_kcal": 456.75,
+          "fat_g": 11.11,
+          "fiber_g": 4.33,
+          "protein_g": 22.34,
+          "sodium_mg": 219.88
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Đánh trứng với hành tây thái nhỏ và một ít nước, hấp đến khi trứng đông chín. Nấu mồng tơi với nước thành canh.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "acc2df39-ec77-f765-aae0-f805a6e1cb9a"
+      },
+      "recipeId": "64366b68-8c2a-76e6-4661-a09c9a26ebd3",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CRUSTACEAN",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo SP.0956 - Tôm Nõn Xào Cải Thìa",
+        "images": [
+          {
+            "attribution": "Shan Wu · Cookpad",
+            "dishName": "SP.0956 - Tôm Nõn Xào Cải Thìa",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24759415",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392668/CareSitter/Nutrition/catalog/tom_cai-b7febf70b0d8.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392668/CareSitter/Nutrition/catalog/tom_cai-b7febf70b0d8.jpg",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "SEA_SHRIMP_RAW",
+            "name": "Tôm biển, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 130.0,
+            "basis": "raw",
+            "code": "MUSTARD_GREENS_FRESH",
+            "name": "Cải xanh, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 3.0,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 6.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · tôm xào cải xanh và nấm",
+        "nutrients": {
+          "carbohydrate_g": 65.78,
+          "energy_kcal": 446.28,
+          "fat_g": 8.04,
+          "fiber_g": 3.54,
+          "protein_g": 27.72,
+          "sodium_mg": 189.47
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Bóc vỏ và bỏ chỉ lưng tôm. Ngâm mềm nấm, cắt lát. Dùng dầu lạc xào tỏi, tôm, nấm và cải đến khi chín, ăn với cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "3276ad86-f6c8-f0c6-5580-38c4c5a3f8a6"
+      },
+      "recipeId": "adaf72e5-c8c8-b74e-ce76-a7c0d97c26ff",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Thịt vai heo luộc",
+        "images": [
+          {
+            "attribution": " Kim Dung . · Cookpad",
+            "dishName": "Thịt vai heo luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg"
+          },
+          {
+            "attribution": "Huyen le Tran · Cookpad",
+            "dishName": "Canh cải xà lách xoong(món chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg",
+        "ingredients": [
+          {
+            "amount": 75.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 85.0,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "GINGER_FRESH",
+            "name": "Gừng tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150.0,
+            "basis": "raw",
+            "code": "WATERCRESS_FRESH",
+            "name": "Cải soong, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 60.0,
+            "basis": "raw",
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "lunch",
+        "name": "Cơm · thịt nạc hấp gừng · canh cải soong",
+        "nutrients": {
+          "carbohydrate_g": 65.51,
+          "energy_kcal": 427.10,
+          "fat_g": 6.97,
+          "fiber_g": 3.95,
+          "protein_g": 25.61,
+          "sodium_mg": 203.82
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Hấp thịt thái lát với gừng đến khi chín. Đun cà chua với nước, thêm cải soong và nấu rau chín thành canh.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "b3a7c7e9-38fb-7e2a-92b0-ba69d9a7cb33"
+      },
+      "recipeId": "cf45edef-262f-5470-35a5-ad3a083608af",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "FISH"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Cá rô phi hấp gừng, hành",
+        "images": [
+          {
+            "attribution": "NgThang · Cookpad",
+            "dishName": "Cá rô phi hấp gừng, hành",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/3816325",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg"
+          },
+          {
+            "attribution": "Hà Trang · Cookpad",
+            "dishName": "Canh Mồng Tơi (Chay)",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "TILAPIA_RAW",
+            "name": "Cá rô phi, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 140.0,
+            "basis": "raw",
+            "code": "MALABAR_SPINACH_FRESH",
+            "name": "Rau mồng tơi, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 3.0,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · cá rô phi hấp mồng tơi",
+        "nutrients": {
+          "carbohydrate_g": 56.05,
+          "energy_kcal": 363.58,
+          "fat_g": 2.96,
+          "fiber_g": 3.85,
+          "protein_g": 27.88,
+          "sodium_mg": 57.09
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Hấp phi lê cá với tỏi và hành đến khi chín, kiểm tra và gỡ xương. Luộc mồng tơi, để ráo rồi dọn với cá và cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Tham khảo cách nấu từ Món Ngon Mỗi Ngày — Ajinomoto Việt Nam. CareSitter điều chỉnh nguyên liệu và định lượng cho một phần.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017",
+          "MNMN_CA_HAP_MONG_TOI"
+        ],
+        "versionId": "d541a6d5-3626-6e2d-b1bd-08e96b7a6c09"
+      },
+      "recipeId": "caf66b7a-0fed-9252-6ca2-b3a638b695af",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG",
+          "PEANUT"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo Trứng Cuộn Cải Bó Xôi",
+        "images": [
+          {
+            "attribution": "Bòn Bon · Cookpad",
+            "dishName": "Trứng Cuộn Cải Bó Xôi",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/22673750",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392670/CareSitter/Nutrition/catalog/trung_cuon-6fbd0aa7ed0f.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392670/CareSitter/Nutrition/catalog/trung_cuon-6fbd0aa7ed0f.jpg",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "MUSTARD_GREENS_FRESH",
+            "name": "Cải xanh, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "TOMATO_FRESH",
+            "name": "Quả cà chua, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · trứng cuộn cải xanh · canh cà chua",
+        "nutrients": {
+          "carbohydrate_g": 59.38,
+          "energy_kcal": 466.9,
+          "fat_g": 16.35,
+          "fiber_g": 2.86,
+          "protein_g": 20.40,
+          "sodium_mg": 202.05
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Chần cải xanh, vắt ráo và thái nhỏ. Tráng trứng với dầu lạc, thêm cải và cuộn khi trứng đã chín. Nấu cà chua với nước để làm canh.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "2e084fe2-485e-b996-2380-e81b8059eb10"
+      },
+      "recipeId": "142a0fe8-de8b-0678-9ad0-13b685684999",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "EGG"
+        ],
+        "dietaryPatterns": [
+          "vegetarian"
+        ],
+        "imageAlt": "Ảnh tham khảo Trứng hấp",
+        "images": [
+          {
+            "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+            "dishName": "Trứng hấp",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap_nam-0f2e51eeeef7.png"
+          },
+          {
+            "attribution": "Pi Ha · Cookpad",
+            "dishName": "Bí xanh luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap_nam-0f2e51eeeef7.png",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "CHICKEN_EGG_RAW",
+            "name": "Trứng gà ta",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 150.0,
+            "basis": "raw",
+            "code": "WINTER_MELON_FRESH",
+            "name": "Quả bí đao (bí xanh), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · trứng hấp nấm · bí xanh luộc",
+        "nutrients": {
+          "carbohydrate_g": 58.23,
+          "energy_kcal": 417.3,
+          "fat_g": 11.18,
+          "fiber_g": 2.66,
+          "protein_g": 20.86,
+          "sodium_mg": 181.15
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Ngâm nấm, thái nhỏ rồi trộn với trứng, hành và một ít nước. Hấp đến khi trứng đông chín. Luộc bí xanh và dùng cùng cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "7e1fe14e-4b9a-484f-5e5c-fc484b6d737e"
+      },
+      "recipeId": "5b6230db-f9e1-9a3d-7ea0-2b144b4a6ee4",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "CRUSTACEAN"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Canh tôm rau ngót cho bé",
+        "images": [
+          {
+            "attribution": "Pham Diep · Cookpad",
+            "dishName": "Canh tôm rau ngót cho bé",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16506546",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/canh_tom_ngot-7d35598c78b8.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/canh_tom_ngot-7d35598c78b8.jpg",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 100.0,
+            "basis": "raw",
+            "code": "SEA_SHRIMP_RAW",
+            "name": "Tôm biển, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 130.0,
+            "basis": "raw",
+            "code": "SAUROPUS_FRESH",
+            "name": "Rau ngót, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 20.0,
+            "basis": "raw",
+            "code": "ONION_FRESH",
+            "name": "Hành tây, tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm với canh tôm rau ngót",
+        "nutrients": {
+          "carbohydrate_g": 60.02,
+          "energy_kcal": 374.4,
+          "fat_g": 1.57,
+          "fiber_g": 3.73,
+          "protein_g": 29.99,
+          "sodium_mg": 184.60
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Tôm bóc vỏ, bỏ chỉ lưng rồi băm nhỏ. Đun hành tây và tôm trong nước đến khi tôm chín, cho rau ngót vào và nấu mềm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "5e8394d1-3d3c-b35b-0ce3-75c06aeaabf2"
+      },
+      "recipeId": "f7a1244f-d5f7-90f1-9543-8891b2972c6b",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [
+          "PEANUT",
+          "CHICKEN"
+        ],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Đùi Gà Rút Xương áp chảo EatWell",
+        "images": [
+          {
+            "attribution": "EatWell · Cookpad",
+            "dishName": "Đùi Gà Rút Xương áp chảo EatWell",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/25759126",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_apchao-73e04b46b750.jpg"
+          },
+          {
+            "attribution": "Rose Truong · Cookpad",
+            "dishName": "Đậu Cô Ve Luộc",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_apchao-73e04b46b750.jpg",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 90.0,
+            "basis": "raw",
+            "code": "CHICKEN_RAW",
+            "name": "Thịt gà ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 4.0,
+            "basis": "raw",
+            "code": "GARLIC_FRESH",
+            "name": "Tỏi ta, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 140.0,
+            "basis": "cooked",
+            "code": "GREEN_BEANS_BOILED",
+            "name": "Đậu cô ve, luộc",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "PEANUT_OIL",
+            "name": "Dầu lạc",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · gà áp chảo tỏi · đậu cô ve",
+        "nutrients": {
+          "carbohydrate_g": 72.11,
+          "energy_kcal": 573.04,
+          "fat_g": 17.76,
+          "fiber_g": 1.83,
+          "protein_g": 31.18,
+          "sodium_mg": 211.03
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Cắt gà thành miếng mỏng, áp chảo hai mặt với dầu lạc đến khi chín kỹ. Thêm tỏi và đậu đã luộc, đảo nóng rồi dọn với cơm.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "45f8f9be-ebaf-051e-db0f-36449500607b"
+      },
+      "recipeId": "150449e6-282f-a32a-b247-e746eee3474d",
+      "version": 1
+    },
+    {
+      "payload": {
+        "allergenDataComplete": true,
+        "allergens": [],
+        "dietaryPatterns": [],
+        "imageAlt": "Ảnh tham khảo Bắp cải cuộn thịt bằm",
+        "images": [
+          {
+            "attribution": "Jade can cook · Cookpad",
+            "dishName": "Bắp cải cuộn thịt bằm",
+            "matchKind": "related_dish",
+            "sourceUrl": "https://cookpad.com/vn/cong-thuc/22612209",
+            "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_cuon-1070f76edaa6.jpg"
+          }
+        ],
+        "imageUrl": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_cuon-1070f76edaa6.jpg",
+        "ingredients": [
+          {
+            "amount": 65.0,
+            "basis": "raw",
+            "code": "RICE_WHITE_RAW",
+            "name": "Gạo, trắng, tẻ, xát máy, sống",
+            "unit": "g"
+          },
+          {
+            "amount": 90.0,
+            "basis": "raw",
+            "code": "PORK_LEAN_RAW",
+            "name": "Thịt lợn, nạc, tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 150.0,
+            "basis": "raw",
+            "code": "BOK_CHOY_FRESH",
+            "name": "Cải thìa (cải trắng), tươi",
+            "unit": "g"
+          },
+          {
+            "amount": 6.0,
+            "basis": "raw",
+            "code": "SHIITAKE_DRY",
+            "name": "Nấm hương, khô",
+            "unit": "g"
+          },
+          {
+            "amount": 5.0,
+            "basis": "raw",
+            "code": "SCALLION_FRESH",
+            "name": "Hành lá (hành hoa), tươi",
+            "unit": "g"
+          }
+        ],
+        "mealType": "dinner",
+        "name": "Cơm · thịt nạc cuộn cải thìa · nấm hấp",
+        "nutrients": {
+          "carbohydrate_g": 58.68,
+          "energy_kcal": 407.82,
+          "fat_g": 7.40,
+          "fiber_g": 4.03,
+          "protein_g": 26.56,
+          "sodium_mg": 109.95
+        },
+        "preparationSteps": [
+          "Cân nguyên liệu theo định lượng và trạng thái sống/chín ghi trong danh sách; lượng gạo là gạo khô.",
+          "Nấu cơm. Chần lá cải cho mềm, bọc thịt nạc băm trộn hành thành cuốn nhỏ. Ngâm nấm cho mềm rồi hấp cùng cuốn đến khi nhân chín kỹ.",
+          "Dùng nước để nấu theo hướng dẫn. Dưỡng chất ước tính từ lượng nguyên liệu đã ghi và chưa tính hao hụt khi nấu."
+        ],
+        "servings": 1,
+        "sourceRecipeNote": "Công thức một phần do CareSitter biên soạn cho bản demo.",
+        "sources": [
+          "CARESITTER_HOME_MEALS_DEMO",
+          "VIETNAM_FOOD_COMPOSITION_2017"
+        ],
+        "versionId": "64c4ab56-b62f-d9ab-5dd6-3784e5562f93"
+      },
+      "recipeId": "68c1aa28-b1d3-d5f0-0367-f54118c062c3",
       "version": 1
     }
   ],

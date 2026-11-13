@@ -463,7 +463,8 @@
           }
         ],
         "allergens": [
-          "SOY"
+          "SOY",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 495.5,
@@ -555,7 +556,8 @@
         ],
         "allergens": [
           "FISH",
-          "EGG"
+          "EGG",
+          "PEANUT"
         ],
         "nutrients": {
           "energy_kcal": 532.5,

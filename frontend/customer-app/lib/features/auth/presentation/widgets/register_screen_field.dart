@@ -47,7 +47,8 @@ class RegisterScreenField extends StatelessWidget {
         hintText: hint,
         prefixIcon: prefixWidget != null
             ? Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.inset, right: 0),
+                padding:
+                    const EdgeInsets.only(left: AppSpacing.inset, right: 0),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -59,29 +60,14 @@ class RegisterScreenField extends StatelessWidget {
               )
             : Icon(icon, color: AppColors.primary, size: 20),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppInputStyle.fillColor,
         contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.md),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-        ),
+        border: AppInputStyle.enabledBorder,
+        enabledBorder: AppInputStyle.enabledBorder,
+        focusedBorder: AppInputStyle.focusedBorder,
+        errorBorder: AppInputStyle.errorBorder,
+        focusedErrorBorder: AppInputStyle.errorBorder,
       ),
     );
   }

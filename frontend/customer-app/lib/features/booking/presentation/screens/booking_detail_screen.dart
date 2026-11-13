@@ -36,6 +36,19 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   bool _cancelDialogOpen = false;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      if (!mounted) return;
+      try {
+        await ref.read(bookingStoreProvider.notifier).refresh();
+      } catch (_) {
+        // Keep the last known booking while the API is unavailable.
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final matches =
         ref.watch(bookingStoreProvider).where((b) => b.id == widget.id);
@@ -54,6 +67,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       backgroundColor: AppColors.background,
       appBar: BookingDetailAppBar(
           statusConfig: statusConfig,
+          onReports: () => context.push(AppRoutes.bookingReports(booking.id)),
           onMoreOptions: _isCancelling || _cancelDialogOpen
               ? null
               : () => _showMoreOptions(context, ref, booking)),

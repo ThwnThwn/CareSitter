@@ -23,7 +23,8 @@ void main() {
         current: () => true,
         read: () => items,
         write: (next) => items = next);
-    sync = BookingSyncController(repository, cache, refreshNotifications: () async {
+    sync = BookingSyncController(repository, cache,
+        refreshNotifications: () async {
       notifications++;
     }, announceAccepted: (_, __) {});
   });
@@ -35,6 +36,17 @@ void main() {
     repository.loads.first.complete(_list('old'));
     await old;
     expect(items.single.id, 'latest');
+  });
+  test('refresh loads bookings beyond the first page', () async {
+    final pending = sync.refresh();
+    repository.loads.first.complete(BookingListResponse(
+        items: [_booking('newer')], total: 2, page: 1, pageSize: 50));
+    await Future<void>.delayed(Duration.zero);
+    expect(repository.pages, [1, 2]);
+    repository.loads.last.complete(BookingListResponse(
+        items: [_booking('older')], total: 2, page: 2, pageSize: 50));
+    await pending;
+    expect(items.map((booking) => booking.id), containsAll(['newer', 'older']));
   });
   test('closing the session ignores pending refresh and stops future requests',
       () async {
@@ -48,7 +60,8 @@ void main() {
     expect(repository.loads, hasLength(1));
     expect(repository.syncs, isEmpty);
   });
-  test('delta arriving after session close cannot patch cache or notify', () async {
+  test('delta arriving after session close cannot patch cache or notify',
+      () async {
     final pending = sync.requestSync();
     cache.close();
     repository.syncs.single.complete(_delta('old-account'));
@@ -64,16 +77,19 @@ void main() {
   });
   test('a late cancellation cannot report success after the session closes',
       () async {
-    final pending = BookingActionController(repository, cache).cancel('booking');
+    final pending =
+        BookingActionController(repository, cache).cancel('booking');
     final expectation = expectLater(pending, throwsStateError);
     cache.close();
-    repository.canceled.complete(_booking('booking').copyWith(status: 'cancelled'));
+    repository.canceled
+        .complete(_booking('booking').copyWith(status: 'cancelled'));
     await expectation;
     expect(items, isEmpty);
   });
   test('a closed session cannot send a cancellation request', () async {
     cache.close();
-    await expectLater(BookingActionController(repository, cache).cancel('booking'),
+    await expectLater(
+        BookingActionController(repository, cache).cancel('booking'),
         throwsStateError);
     expect(repository.cancelCalls, 0);
   });
@@ -105,11 +121,13 @@ class _Repository implements BookingRepository {
   }
 
   final loads = <Completer<BookingListResponse>>[];
+  final pages = <int>[];
   final syncs = <Completer<BookingSyncResponse>>[];
   @override
   Future<BookingListResponse> getBookings(
       {String? status, int page = 1, int pageSize = 20}) {
     final pending = Completer<BookingListResponse>();
+    pages.add(page);
     loads.add(pending);
     return pending.future;
   }

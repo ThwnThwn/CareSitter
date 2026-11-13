@@ -37,15 +37,19 @@ public sealed class LocalDemoCatalogTests
         Assert.Contains(result.Issues, issue => issue.Code == "demo_conditions_forbidden");
     }
 
-    [Fact]
-    public void Options_reject_enabling_demo_outside_development()
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("production")]
+    [InlineData("Staging")]
+    [InlineData("Custom")]
+    public void Options_reject_enabling_demo_outside_development(string environment)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["NutritionCatalog:LocalDemoEnabled"] = "true"
         }).Build();
 
-        Assert.Throws<InvalidOperationException>(() => LocalDemoCatalogOptions.From(configuration, new Environment("Production")));
+        Assert.Throws<InvalidOperationException>(() => LocalDemoCatalogOptions.From(configuration, new Environment(environment)));
     }
 
     private static CatalogBundle Baseline()

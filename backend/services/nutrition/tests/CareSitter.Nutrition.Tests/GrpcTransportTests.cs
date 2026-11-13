@@ -27,6 +27,8 @@ public sealed class GrpcTransportTests
         await AssertRpcAsync(StatusCode.PermissionDenied, () => client.GetCapabilitiesAsync(new Empty(), fixture.Headers(role: "CAREGIVER")).ResponseAsync);
         var response = await client.GetCapabilitiesAsync(new Empty(), fixture.Headers());
         Assert.True(response.Enabled);
+        Assert.Equal(NutritionDisclaimer.Reference, response.Disclaimer);
+        Assert.Equal(NutritionDisclaimer.ReferenceVersion, response.DisclaimerVersion);
         fixture.Identity.Active = false;
         await AssertRpcAsync(StatusCode.Unauthenticated, () => client.GetCapabilitiesAsync(new Empty(), fixture.Headers()).ResponseAsync);
         fixture.Identity.Unavailable = true;

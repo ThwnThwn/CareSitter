@@ -1,0 +1,30 @@
+{
+  "benchmark_freeze_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "bindings": {
+    "config": {
+      "keyword_minimum_score": 0.0,
+      "schema_version": 1
+    },
+    "config_sha256": "e5eda9297ab9a6ff506c331f1e10c282487f237639fd0d0ea6a325150d92d957",
+    "corpus_freeze_sha256": "6d7747fa578afafafd2ee738565828175048e85328cae27a95787c6546d8efba",
+    "graph_sha256": "bc45a88cd01ef05f1f8800857790cc0f35494252361b4f9a47d95d72eef32d0b"
+  },
+  "clinical_review_performed": true,
+  "content_sha256": "569a8658d1c9fe073e3a11560401c697719e8bc4fe76458577bc2fa380966180",
+  "decision": "simplest_strategy_passing_all_gates",
+  "gate_failures": [],
+  "holdout_report_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "holdout_review_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+  "independent_clinical_review": true,
+  "intended_use": "reviewed_nutrition_reference",
+  "mode": "retrieval_release_manifest",
+  "production_public_release": false,
+  "release_ready": true,
+  "review_policy": "source_and_clinical",
+  "runtime_integration_authorized": false,
+  "schema_version": 1,
+  "selected_strategy": "hybrid",
+  "strategy_gate_failures": {
+    "hybrid": []
+  }
+}

@@ -4,6 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+      'component photos remain thumbnails without a photo section in details',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final meal = NutritionMealModel.fromJson({
+      'name': 'Cơm, cá hấp và rau luộc',
+      'mealType': 'lunch',
+      'images': [
+        for (final dish in ['Cá hấp', 'Rau luộc'])
+          {
+            'url': 'https://example.com/$dish.jpg',
+            'dishName': dish,
+            'sourceUrl': 'https://example.com/recipe',
+            'attribution': 'Tác giả ảnh · Nguồn ảnh',
+            'matchKind': 'related_dish',
+          },
+        {'url': 'http://example.com/insecure.jpg'},
+      ],
+    });
+    expect(meal.images.length, 2);
+    expect(NutritionMealModel.fromJson(meal.toJson()).images.length, 2);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: NutritionMealCard(
+            meal: meal,
+            loading: false,
+            canReplace: false,
+            onReplace: _ignore,
+          ),
+        ),
+      ),
+    ));
+    expect(find.byType(Image), findsNWidgets(2));
+    await tester.tap(find.text('Xem chi tiết món ăn'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Image), findsNWidgets(2));
+    expect(find.text('Ảnh tham khảo'), findsNothing);
+    expect(find.text('Ảnh món tương tự'), findsNothing);
+    expect(find.text('Tác giả ảnh · Nguồn ảnh'), findsNothing);
+    expect(find.text('Thành phần'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('meal card surfaces an illustration and defers dense details',
       (tester) async {
     tester.view.physicalSize = const Size(320, 844);
@@ -51,7 +98,7 @@ void main() {
     final titleRect =
         tester.getRect(find.text('[DEMO] Cháo gạo tẻ đậu phụ và cà chua'));
     expect(imageRect.right, lessThan(titleRect.left));
-    expect(imageRect.width, 56);
+    expect(imageRect.width, 64);
     expect(find.text('Thành phần'), findsNothing);
     expect(find.text('Chọn món thay thế'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -60,7 +107,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Thành phần'), findsOneWidget);
-    expect(find.textContaining('Gạo tẻ: 50 g'), findsOneWidget);
+    expect(find.text('Gạo tẻ'), findsOneWidget);
+    expect(find.text('50 g'), findsOneWidget);
     expect(find.textContaining('Sách không đề cập công thức'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -103,6 +151,13 @@ void main() {
     final titleRect =
         tester.getRect(find.text('Cơm đậu xanh, cải thìa và hành tây'));
     expect(imageRect.right, lessThan(titleRect.left));
+    expect(tester.takeException(), isNull);
+    final details = find.text('Xem chi tiết món ăn');
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.text('Năng lượng: 375.9 kcal'), findsOneWidget);
+    expect(find.text('Kali: Chưa có dữ liệu'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

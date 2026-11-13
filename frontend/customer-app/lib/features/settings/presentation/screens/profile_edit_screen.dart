@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_form.dart';
 import 'package:caresitter_customer/features/settings/presentation/widgets/profile_edit_app_bar.dart';
 import 'package:flutter/material.dart';
@@ -116,8 +117,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
+        AppToast.showLegacy(
+            context,
+            const SnackBar(
+                content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
       }
     }
   }
@@ -134,15 +137,20 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     if (!mounted || result.ignored) return;
     if (result.avatarUploaded) setState(() => _pendingAvatarFile = null);
     if (result.message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.message!),
-          backgroundColor: result.saved ? AppColors.warning : AppColors.error));
+      AppToast.showLegacy(
+          context,
+          SnackBar(
+              content: Text(result.message!),
+              backgroundColor:
+                  result.saved ? AppColors.warning : AppColors.error));
       return;
     }
     if (result.saved) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Đã cập nhật thông tin cá nhân!'),
-          backgroundColor: AppColors.primary));
+      AppToast.showLegacy(
+          context,
+          const SnackBar(
+              content: Text('✅ Đã cập nhật thông tin cá nhân!'),
+              backgroundColor: AppColors.primary));
       popOrGo(context, fallbackRoute: AppRoutes.settings);
     }
   }

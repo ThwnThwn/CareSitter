@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function activeOwner(uid) {
+      return request.auth != null && request.auth.uid == uid
+        && 'careSessionExpiresAtMs' in request.auth.token
+        && request.auth.token.careSessionExpiresAtMs is int
+        && request.time.toMillis() < request.auth.token.careSessionExpiresAtMs;
+    }
+    match /reports/{uid}/{file} {
+      allow get: if activeOwner(uid)
+        && 'careReportPath' in request.auth.token
+        && request.auth.token.careReportPath == 'reports/' + uid + '/' + file;
+      allow create: if resource == null && activeOwner(uid)
+        && 'careReportPath' in request.auth.token
+        && request.auth.token.careReportPath == 'reports/' + uid + '/' + file
+        && file.matches('^[a-f0-9]{32}\\.pdf$')
+        && request.resource.size >= 16
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.size == request.auth.token.careReportSize
+        && request.resource.contentType == 'application/pdf'
+        && request.resource.metadata.sha256 == request.auth.token.careReportChecksum;
+      // Completed objects are immutable. Enumeration, overwrite and deletion stay server-only.
+      allow list, update, delete: if false;
+    }
+  }
+}

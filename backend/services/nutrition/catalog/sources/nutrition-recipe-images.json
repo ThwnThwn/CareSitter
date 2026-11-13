@@ -1,0 +1,1577 @@
+{
+  "format": "caresitter.recipe-images.v1",
+  "updatedOn": "2026-11-11",
+  "scope": "Ảnh tham khảo món tương tự và thành phần bữa ăn, có nguồn gốc riêng cho từng ảnh.",
+  "assets": {
+    "be_hap": {
+      "dishName": "Bê hấp gừng",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/9977441",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/9ec58b4fdfb63a5a/1200x630cq80/photo.jpg",
+      "attribution": "Bùi Thị Diệu Trang · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "9ec752e5f9853aa1c59952d43ebee5a6608a820e530de6229158800d9233478b",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/be_hap-9ec752e5f985.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/be_hap-9ec752e5f985",
+      "width": 1200,
+      "height": 630
+    },
+    "bi_xanh": {
+      "dishName": "Bí xanh luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/8493766",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/ce9c1fa7e0e19731/1200x630cq80/photo.jpg",
+      "attribution": "Pi Ha · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "222786f1721e2895a988bba2eb22a6948339a6d60c2ee78c32c5c771d689258a",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bi_xanh-222786f1721e.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/bi_xanh-222786f1721e",
+      "width": 1200,
+      "height": 630
+    },
+    "bo_dau": {
+      "dishName": "Đậu cô ve xào thịt bò cà chua",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25182278",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/da4b843076d91137/1200x630cq80/photo.jpg",
+      "attribution": "Phuong Tran · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "b8f57b165843efb161e31b3d752ae5cd79e26cce1fbaeb640fb43480393da783",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392623/CareSitter/Nutrition/catalog/bo_dau-b8f57b165843.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/bo_dau-b8f57b165843",
+      "width": 1200,
+      "height": 630
+    },
+    "bo_hanh": {
+      "dishName": "Bò xào hành tây",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/17312454",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/0be4b0234ece2aea/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "6bed0caef9d13fd731aeeb8b48133f8c598f7a68d4466dd6519fa57d14cebcea",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/bo_hanh-6bed0caef9d1",
+      "width": 1200,
+      "height": 630
+    },
+    "bo_hap": {
+      "dishName": "Bắp Bò Hấp Sả Gừng",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/14872375",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/2cd9c0031cd2aaf2/1200x630cq80/photo.jpg",
+      "attribution": "Bếp Của Heo Con · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "451a38934d69818d6ee95efc1dc049292922428e2712932e4644d3cb62841389",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392625/CareSitter/Nutrition/catalog/bo_hap-451a38934d69.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/bo_hap-451a38934d69",
+      "width": 1200,
+      "height": 630
+    },
+    "cabong_hap": {
+      "dishName": "Cá bống biển hấp xì dầu Hongkong",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/5535300",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/ebaff02b9e7d0fba/1200x630cq80/photo.jpg",
+      "attribution": "Hoàng Phương Thảo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "24fd2cefba63d89db0eb34676e55f8b5b527ccca31f240c522b8e0edf63084b8",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/cabong_hap-24fd2cefba63",
+      "width": 1200,
+      "height": 630
+    },
+    "cai_ngong": {
+      "dishName": "🔸️CẢI NGỒNG LUỘC",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/16047825",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/bea904a93087aaaf/1200x630cq80/photo.jpg",
+      "attribution": "LynLyn · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "9f052af9326825156aa73c28881bb5966b7383b5efed2cb0773a17d7ebe55a40",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_ngong-9f052af93268.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/cai_ngong-9f052af93268",
+      "width": 1200,
+      "height": 630
+    },
+    "cai_soong": {
+      "dishName": "Canh cải xà lách xoong(món chay)",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/10092591",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/e8ff2cb59cdc2225/1200x630cq80/photo.jpg",
+      "attribution": "Huyen le Tran · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "12eb9533f91a569a4276772cf32b16a757e2057cb01ec0159b358d7b0f9ac7b0",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392628/CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/cai_soong-12eb9533f91a",
+      "width": 1200,
+      "height": 630
+    },
+    "cai_thia": {
+      "dishName": "Cải Thìa Xào Nấm Đông Cô",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25010862",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/8c26e25185c2ec7e/1200x630cq80/photo.jpg",
+      "attribution": "Bếp của Quỳnh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "d3b162ec52a794dd5a06046e7b7f30013f704f229693aa29ff471ff49b060053",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/cai_thia-d3b162ec52a7",
+      "width": 1200,
+      "height": 630
+    },
+    "cai_xanh": {
+      "dishName": "Rau Cải Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/15457122",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/1bf1217956c4648a/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "757dac5b96eb13fec31877916105fe7e282b4bef509c7ff6a3271554bafeec79",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/cai_xanh-757dac5b96eb",
+      "width": 1200,
+      "height": 630
+    },
+    "canh_ga_bi": {
+      "dishName": "Canh gà bí xanh",
+      "sourceUrl": "https://monngonmoingay.com/canh-ga-bi-xanh/",
+      "originalImageUrl": "https://monngonmoingay.com/wp-content/uploads/2020/05/canh-ga-bi-xanh.webp",
+      "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+      "rightsStatus": "pending_owner_request",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "63710dca4456d9286d6d27285b4119c7a407b5f0d8730f98b0d19d1f11893224",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392630/CareSitter/Nutrition/catalog/canh_ga_bi-63710dca4456.webp",
+      "publicId": "CareSitter/Nutrition/catalog/canh_ga_bi-63710dca4456",
+      "width": 881,
+      "height": 502
+    },
+    "canh_tom_ngot": {
+      "dishName": "Canh tôm rau ngót cho bé",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/16506546",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/9cc7427c353d052e/1200x630cq80/photo.jpg",
+      "attribution": "Pham Diep · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "7d35598c78b8b7d34ad860db792ecc721a5b00ad8b9255fc0453aea32dbd6914",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/canh_tom_ngot-7d35598c78b8.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/canh_tom_ngot-7d35598c78b8",
+      "width": 1200,
+      "height": 630
+    },
+    "catram_ca": {
+      "dishName": "Cá trắm sốt cà chua",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/15410902",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/74c520c246aa0b70/1200x630cq80/photo.jpg",
+      "attribution": "Pham Huyen · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "c52676ba3f4f8a5f167bc386c9ab54ed01754fba68d05a05298a259b731472a0",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/catram_ca-c52676ba3f4f",
+      "width": 1200,
+      "height": 630
+    },
+    "catram_hap": {
+      "dishName": "Cá trắm hấp gừng",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/558655",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/d003d43abb9ee5de/1200x630cq80/photo.jpg",
+      "attribution": "Võ Thị Thu Hạnh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "1009e9b3d13f0fd140daa6f94e0fde497318c064363c88b58b88359e13dae0d7",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392632/CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/catram_hap-1009e9b3d13f",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_bo": {
+      "dishName": "Cháo thịt bò băm",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/11323725",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/f234cac3982c8198/1200x630cq80/photo.jpg",
+      "attribution": "Bếp của Quỳnh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "842af0bc1dd202926541bb282c846cb1bd927b16750a17085c4c6542366e3525",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo-842af0bc1dd2.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_bo-842af0bc1dd2",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_bo_ca": {
+      "dishName": "Ăn dặm: cháo cà chua thịt bò",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/12145697",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/874d556fcf5e78ef/1200x630cq80/photo.jpg",
+      "attribution": "Bếp Mẹ Thỏ · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "3e1b5c9a04a910df8e487525de7667f2e8ebf4a737b1e4a9ce5189164ad01368",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392635/CareSitter/Nutrition/catalog/chao_bo_ca-3e1b5c9a04a9.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_bo_ca-3e1b5c9a04a9",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_cabong": {
+      "dishName": "Cháo cá bống rau ngót cho bé",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/13302405",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/b5f752f6625f1481/1200x630cq80/photo.jpg",
+      "attribution": "Mẹ Dâu ( Fb Trần Kiều ) 0971.492.563 · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "aff6de1762124f14b9e813ca04f47c4a5dcd257a77c9e96030ac96982836a62b",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392634/CareSitter/Nutrition/catalog/chao_cabong-aff6de176212.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_cabong-aff6de176212",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_catram": {
+      "dishName": "Cháo bí đỏ cá trắm- eat clean",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/13437211",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/d0639aee8b2eb230/1200x630cq80/photo.jpg",
+      "attribution": "Đặng Yến · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "302bcfd3b7af03c9d81809e25a016dde33bb45c4919572d86bed429dc4c7693e",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_catram-302bcfd3b7af.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_catram-302bcfd3b7af",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_dau_ca": {
+      "dishName": "Cháo đậu hũ cà chua",
+      "sourceUrl": "https://www.dienmayxanh.com/vao-bep/2-cach-nau-chao-dau-hu-ca-chua-beo-thom-don-gian-cho-be-yeu-12261",
+      "originalImageUrl": "https://cdn.tgdd.vn/2021/08/CookProductThumb/Chaodauhucachua%281%29-620x620.jpg",
+      "attribution": "Điện máy XANH",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "74772bca99fee0984f08c2deb728d48b38ac7ccddf1aa31ba148d903c3325b38",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392636/CareSitter/Nutrition/catalog/chao_dau_ca-74772bca99fe.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_dau_ca-74772bca99fe",
+      "width": 620,
+      "height": 620
+    },
+    "chao_dau_ngot": {
+      "dishName": "Cháo đậu hủ non rau ngót",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/13623576",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/64298884ec30cf11/1200x630cq80/photo.jpg",
+      "attribution": "Mẹ Dâu ( Fb Trần Kiều ) 0971.492.563 · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "8a1fa80ae2e20da83f495b978a8b26266fe128b3e9b4361dd2ff0f9f6060bea9",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392637/CareSitter/Nutrition/catalog/chao_dau_ngot-8a1fa80ae2e2.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_dau_ngot-8a1fa80ae2e2",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_ga_nam": {
+      "dishName": "Cháo gà nấm hương",
+      "sourceUrl": "https://www.dienmayxanh.com/vao-bep/cach-nau-chao-ga-nam-huong-thom-ngon-bo-duong-cho-ca-nha-15933",
+      "originalImageUrl": "https://cdn.tgdd.vn/2021/12/CookDishThumb/cach-nau-chao-ga-nam-huong-thom-ngon-bo-duong-cho-ca-nha-thumb-620x620.jpg",
+      "attribution": "Điện máy XANH",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "7e53275e905ed27c203b875849d1c00c6935ac6ad5bd7932630c32b0e1066b01",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_nam-7e53275e905e.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_ga_nam-7e53275e905e",
+      "width": 620,
+      "height": 620
+    },
+    "chao_ga_ngot": {
+      "dishName": "Cháo thịt gà 🍗 rau ngót",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24529795",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/666f4209ec561105/1200x630cq80/photo.jpg",
+      "attribution": "Bếp nhà Cọp · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "fa8904b0f339e959c03d1c38640f9108a822ca45fd167365045dc0cc2900f76c",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392638/CareSitter/Nutrition/catalog/chao_ga_ngot-fa8904b0f339.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_ga_ngot-fa8904b0f339",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_heo": {
+      "dishName": "Cháo thịt băm hơi cay 😂",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/13661676",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/1b7a7bd4e29b50ff/1200x630cq80/photo.jpg",
+      "attribution": "Hạnh Hạnh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "fe862b92b725d96d3fdea685318e857809f6f2f1bb96a472dc36e5d71fb11ee1",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392639/CareSitter/Nutrition/catalog/chao_heo-fe862b92b725.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_heo-fe862b92b725",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_heo_bi": {
+      "dishName": "Cháo thịt băm bí xanh",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/15194722",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/075d4533b54bb435/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "4dcc55a9f6c18172cd6a3663825382cba8338d33e0efdbb83bb217eda24b8aff",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392640/CareSitter/Nutrition/catalog/chao_heo_bi-4dcc55a9f6c1.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_heo_bi-4dcc55a9f6c1",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_rophi": {
+      "dishName": "Cháo cá rô phi",
+      "sourceUrl": "https://www.dienmayxanh.com/vao-bep/2-cach-nau-chao-ca-ro-phi-thom-ngon-hap-dan-don-gian-cho-gia-13402",
+      "originalImageUrl": "https://cdn.tgdd.vn/2021/09/CookRecipe/Avatar/chao-ca-ro-cai-ngot-an-dam-thumbnail-3.jpg",
+      "attribution": "Điện máy XANH",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "6bc177d7000d129a44b64e841bff127f621113586f0371eb48adb1e1c671096e",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392641/CareSitter/Nutrition/catalog/chao_rophi-6bc177d7000d.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_rophi-6bc177d7000d",
+      "width": 1200,
+      "height": 676
+    },
+    "chao_trung_ca": {
+      "dishName": "Cháo trứng cà chua 🍅",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24529812",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/eb60ed3532cf9e40/1200x630cq80/photo.jpg",
+      "attribution": "Bếp nhà Cọp · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "64e16c227a5c1a6d16e98ddc7e85520bed3b89fd2b943a8127116fcaaad82018",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ca-64e16c227a5c.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_trung_ca-64e16c227a5c",
+      "width": 1200,
+      "height": 630
+    },
+    "chao_trung_ngot": {
+      "dishName": "Cháo hạt mix trứng gà 🍳 rau ngót",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/17106486",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/e953e61455532347/1200x630cq80/photo.jpg",
+      "attribution": "Bếp nhà Cọp · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "a0c260cb2bc1d8dc92cdf4502207bac531d3aa95187b6a4d35cd9d42582db12f",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392642/CareSitter/Nutrition/catalog/chao_trung_ngot-a0c260cb2bc1.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/chao_trung_ngot-a0c260cb2bc1",
+      "width": 1200,
+      "height": 630
+    },
+    "com_cuon": {
+      "dishName": "Sushi cơm cuộn trứng",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/12018724",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/4a07cefcff9b018d/1200x630cq80/photo.jpg",
+      "attribution": "Tiệm nhỏ  · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "c0e17d8de7811ffbbfe8cce1ee3147f198285c2b687d93d2af6deed896c8de44",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392643/CareSitter/Nutrition/catalog/com_cuon-c0e17d8de781.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/com_cuon-c0e17d8de781",
+      "width": 1200,
+      "height": 630
+    },
+    "com_nam": {
+      "dishName": "Cơm Nắm Ngũ Sắc",
+      "sourceUrl": "https://monngonmoingay.com/com-nam-ngu-sac/",
+      "originalImageUrl": "https://monngonmoingay.com/wp-content/uploads/2026/06/COMNAMNGUSAC.png",
+      "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+      "rightsStatus": "pending_owner_request",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "abb97962da8f75bef2daaaa97dee5f5f749cf4cf213c51b4fdd96c35d6cde955",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_nam-abb97962da8f.png",
+      "publicId": "CareSitter/Nutrition/catalog/com_nam-abb97962da8f",
+      "width": 880,
+      "height": 502
+    },
+    "com_tom": {
+      "dishName": "Cơm chiên tôm sú",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25238217",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/976c90b9f909dc9b/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "8ce962cf6b5839354ad367d85fe1a5407067da1a3dc8f984c743e69fa2057db4",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392644/CareSitter/Nutrition/catalog/com_tom-8ce962cf6b58.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/com_tom-8ce962cf6b58",
+      "width": 1200,
+      "height": 630
+    },
+    "com_tron": {
+      "dishName": "SP.0953 - Cơm Chiên Nấm Hương Trứng Gà",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24742722",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/7b037e952c48822a/1200x630cq80/photo.jpg",
+      "attribution": "Shan Wu · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "f2e2cc11f239aa91522b7ed42effcdb5112df73ae7c0ff175b366672629e8428",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392645/CareSitter/Nutrition/catalog/com_tron-f2e2cc11f239.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/com_tron-f2e2cc11f239",
+      "width": 1200,
+      "height": 630
+    },
+    "dau_ca": {
+      "dishName": "Đậu phụ sốt cà chua (món chay)",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24193529",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/1f8aa5e2a494553a/1200x630cq80/photo.jpg",
+      "attribution": "Nhà Vân · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "3aee3a2c8349f4216ecc92682b462d7d0976bbfb2258009ea2ce2e762310a276",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/dau_ca-3aee3a2c8349",
+      "width": 1200,
+      "height": 630
+    },
+    "dau_cove": {
+      "dishName": "Đậu Cô Ve Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/16775053",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/ad370c6cd33147e9/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "3e913a240778c84ac080be8945ca848e8618ff55af9371eef8a41a366589c864",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392646/CareSitter/Nutrition/catalog/dau_cove-3e913a240778.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/dau_cove-3e913a240778",
+      "width": 1200,
+      "height": 630
+    },
+    "dau_luoc": {
+      "dishName": "Đậu Hũ Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24184862",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/6dc7fcb34fa3a251/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "9136cd140c43c476727e9acb2091ad159b24bd33476a2700dfa08aa88186934c",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392647/CareSitter/Nutrition/catalog/dau_luoc-9136cd140c43.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/dau_luoc-9136cd140c43",
+      "width": 1200,
+      "height": 630
+    },
+    "dau_nam": {
+      "dishName": "Đậu hũ hấp nấm Nhật",
+      "sourceUrl": "https://monngonmoingay.com/dau-hu-hap-nam-nhat/",
+      "originalImageUrl": "https://monngonmoingay.com/wp-content/uploads/2020/03/dau-hu-hap-nam-nhat-300.jpg",
+      "attribution": "Món Ngon Mỗi Ngày · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "438873d0a2d415414db9631992f865d4efa45adbd64afff312481fb37765199e",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392648/CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/dau_nam-438873d0a2d4",
+      "width": 305,
+      "height": 150
+    },
+    "ga_apchao": {
+      "dishName": "Đùi Gà Rút Xương áp chảo EatWell",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25759126",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/934e7b6c1358ab23/1200x630cq80/photo.jpg",
+      "attribution": "EatWell · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "73e04b46b750662c9b3758b60958960c7d7b2363c72cb251dd7d826fe9199001",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_apchao-73e04b46b750.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/ga_apchao-73e04b46b750",
+      "width": 1200,
+      "height": 630
+    },
+    "ga_hap_nam": {
+      "dishName": "Gà hấp nấm hương",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/16606272",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/e31f76a71737ca34/1200x630cq80/photo.jpg",
+      "attribution": "NgocTu Ngô · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "2d3bfff86c975d41a7f8ce2e3bb041457141aa52ac8488d212bd4439652c1398",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392649/CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/ga_hap_nam-2d3bfff86c97",
+      "width": 1200,
+      "height": 630
+    },
+    "ga_luoc": {
+      "dishName": "Gà luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25045451",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/d31c7c2371c78c69/1200x630cq80/photo.jpg",
+      "attribution": "Thanh Binh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "076d5e6ddaf1e51837ce54081215765164c194be87b2b5c2ebbfd84cff81405e",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392650/CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/ga_luoc-076d5e6ddaf1",
+      "width": 1200,
+      "height": 630
+    },
+    "heo_ca": {
+      "dishName": "Thịt vai heo sốt cà chua",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25057948",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/16dab6ea91c3a55c/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "8629eeabcf9537a4cb6564fb6c952b2ef1d0c0eb76af54eff391189306463468",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_ca-8629eeabcf95.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/heo_ca-8629eeabcf95",
+      "width": 1200,
+      "height": 630
+    },
+    "heo_cuon": {
+      "dishName": "Bắp cải cuộn thịt bằm",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/22612209",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/c677705c07b7d0a7/1200x630cq80/photo.jpg",
+      "attribution": "Jade can cook · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "1070f76edaa642d08c88ca0c0c6dc7596115843d5841ff8d7dce2fa6dda68dac",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392651/CareSitter/Nutrition/catalog/heo_cuon-1070f76edaa6.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/heo_cuon-1070f76edaa6",
+      "width": 1200,
+      "height": 630
+    },
+    "heo_luoc": {
+      "dishName": "Thịt vai heo luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24638666",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/5c3877159bd042a5/1200x630cq80/photo.jpg",
+      "attribution": " Kim Dung . · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "3331ec48829361421e3448efb2ae6f7cce7eff463aeec41c4bb3d20775cc6708",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392652/CareSitter/Nutrition/catalog/heo_luoc-3331ec488293.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/heo_luoc-3331ec488293",
+      "width": 1200,
+      "height": 630
+    },
+    "heo_rang": {
+      "dishName": "Thịt rang rau răm",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/26623879",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/53cf1a04ddffbba8/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "d438d73d22049288b2a45ebd736d6ec9a36065f6bf7e97bf66ce27aa05863ee4",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392653/CareSitter/Nutrition/catalog/heo_rang-d438d73d2204.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/heo_rang-d438d73d2204",
+      "width": 1200,
+      "height": 630
+    },
+    "lac_rang": {
+      "dishName": "Lạc rang muối",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/23941991",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/3d2d70f4b9dba9b9/1200x630cq80/photo.jpg",
+      "attribution": "Pham Huyen · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "ad21b3f56549d04a1f1d63b3680d9b677ffc25250113b6c0c39b7165b34bb879",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392653/CareSitter/Nutrition/catalog/lac_rang-ad21b3f56549.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/lac_rang-ad21b3f56549",
+      "width": 1200,
+      "height": 630
+    },
+    "mien_bo": {
+      "dishName": "Miến Bò",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/14953662",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/7385a1e9112e42c3/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "e133c2796a7c288653dcb530401bbf409884a3dec4f503ba821b0827cc0c47c9",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392654/CareSitter/Nutrition/catalog/mien_bo-e133c2796a7c.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mien_bo-e133c2796a7c",
+      "width": 1200,
+      "height": 630
+    },
+    "mien_dau": {
+      "dishName": "🌱 Miến Chay Rau Nấm",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24857246",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/b060464dc439d4d0/1200x630cq80/photo.jpg",
+      "attribution": "Dory · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "e82914d0114af553da8919a5ee70ebfd723c9354101c2a213cd1edc66cbe4786",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_dau-e82914d0114a.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mien_dau-e82914d0114a",
+      "width": 1200,
+      "height": 630
+    },
+    "mien_ga": {
+      "dishName": "Miến gà nấm hương",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24368203",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/f6b626c29e76cd96/1200x630cq80/photo.jpg",
+      "attribution": "Lan Vy · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "0d081546239e1c5c89ea741b71b28527fc27e4193fb99327bf683e292c192c69",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392655/CareSitter/Nutrition/catalog/mien_ga-0d081546239e.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mien_ga-0d081546239e",
+      "width": 1200,
+      "height": 630
+    },
+    "mien_ngan": {
+      "dishName": "Miến ngan trộn",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/11985074",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/d368f47d24964442/1200x630cq80/photo.jpg",
+      "attribution": "Dung Nguyễn · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "86f25d77bc5b5fc1001ccc11388d4ac0eb66cf1cb7e89596875f9a7b60afa827",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392656/CareSitter/Nutrition/catalog/mien_ngan-86f25d77bc5b.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mien_ngan-86f25d77bc5b",
+      "width": 1200,
+      "height": 630
+    },
+    "mien_trung": {
+      "dishName": "Miến xào cà chua + bí ngòi xào trứng",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/9020696",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/a9e4f9e33f24928a/1200x630cq80/photo.jpg",
+      "attribution": "Lê Mai · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "b1da6878290029742c8590abe7c467e6f30297c8dc9295d2930fa7c5029b2c8c",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392658/CareSitter/Nutrition/catalog/mien_trung-b1da68782900.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mien_trung-b1da68782900",
+      "width": 1200,
+      "height": 630
+    },
+    "mong_toi": {
+      "dishName": "Canh Mồng Tơi (Chay)",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/7860794",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/37082226a69fac35/1200x630cq80/photo.jpg",
+      "attribution": "Hà Trang · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "ad39453006ed29fff9e6dd425b8d1e43a77b55863f98ef3a2481e1ec48f19b41",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392657/CareSitter/Nutrition/catalog/mong_toi-ad39453006ed.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/mong_toi-ad39453006ed",
+      "width": 1200,
+      "height": 630
+    },
+    "muop_dang": {
+      "dishName": "Khổ Qua Rừng Non Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/14987875",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/53ef98305717aca6/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "8938c52356c67d2360dc33f716c5810cc6b08018a328b6080bd3dec526e562f4",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392659/CareSitter/Nutrition/catalog/muop_dang-8938c52356c6.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/muop_dang-8938c52356c6",
+      "width": 1200,
+      "height": 630
+    },
+    "muop_nhoi": {
+      "dishName": "Canh khổ qua nhồi thịt",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/26809844",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/35a12fdf915b185b/1200x630cq80/photo.jpg",
+      "attribution": "Hường Lê · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "e45f4d902cb73e65a782309ad5628d016d5619974ab3c00ec6487772cc0be0da",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392659/CareSitter/Nutrition/catalog/muop_nhoi-e45f4d902cb7.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/muop_nhoi-e45f4d902cb7",
+      "width": 1200,
+      "height": 630
+    },
+    "ngan_hap": {
+      "dishName": "Ngan luộc chấm tương",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/708073",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/1cb111c381a379d1/1200x630cq80/photo.jpg",
+      "attribution": "Ngoc Anh Le · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "8914f4b466b27999ba4d3311466ccdbc7025982be111b81f825fea0a13e81479",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392660/CareSitter/Nutrition/catalog/ngan_hap-8914f4b466b2.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/ngan_hap-8914f4b466b2",
+      "width": 1200,
+      "height": 630
+    },
+    "ngan_nam": {
+      "dishName": "Thịt ngan canh nấm hương",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24957700",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/98843ebc1ef34645/1200x630cq80/photo.jpg",
+      "attribution": "Hoai Be · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "f527bf64821208c5dd9bdf89dce78e6a4fa8428eeb22f8eefbab55bd259927c5",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/ngan_nam-f527bf648212.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/ngan_nam-f527bf648212",
+      "width": 1200,
+      "height": 630
+    },
+    "pho_bo": {
+      "dishName": "Phở bò",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25405265",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/6e5b53c153c4705b/1200x630cq80/photo.jpg",
+      "attribution": "Manh’s Kitchen · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "c18de6e4de024f1ad41d3ac061a61b090eaf32f79a3a4ea18a534e5f768b1b21",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392661/CareSitter/Nutrition/catalog/pho_bo-c18de6e4de02.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/pho_bo-c18de6e4de02",
+      "width": 1200,
+      "height": 630
+    },
+    "pho_ga": {
+      "dishName": "Phở Gà Ta",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25326044",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/5279bee765a6f99f/1200x630cq80/photo.jpg",
+      "attribution": "Bòn Bon · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "433d2a30ab292d80dd992f9e4f5f9b9ce0aefab1041aba1bd44fe15773f5636e",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392662/CareSitter/Nutrition/catalog/pho_ga-433d2a30ab29.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/pho_ga-433d2a30ab29",
+      "width": 1200,
+      "height": 630
+    },
+    "rau_khoai": {
+      "dishName": "🌱 Rau Khoai Lang Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/17135508",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/862fe40c9513ce2a/1200x630cq80/photo.jpg",
+      "attribution": "Dory · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "3825b4f5fdb10392f96f5c710a759c7d6c8b19c65a1d2341a1ce5698bcb943ef",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392663/CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/rau_khoai-3825b4f5fdb1",
+      "width": 1200,
+      "height": 630
+    },
+    "rau_muong": {
+      "dishName": "Rau Muống Luộc",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/23952916",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/f6d0831795556140/1200x630cq80/photo.jpg",
+      "attribution": "Rose Truong · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "039e793f9eb73e23a5599a3198996ca9b35dbd1369df9b49827f967faf8e1e95",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392664/CareSitter/Nutrition/catalog/rau_muong-039e793f9eb7.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/rau_muong-039e793f9eb7",
+      "width": 1200,
+      "height": 630
+    },
+    "rau_ngot": {
+      "dishName": "Canh rau ngót nấu chay",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24651267",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/89d424739c78060d/1200x630cq80/photo.jpg",
+      "attribution": "Bảo Bình  · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "5127dc98dd505d20f842ce5c5005ddb9e8b4e743c41e02ce12635e11fc13746b",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rau_ngot-5127dc98dd50.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/rau_ngot-5127dc98dd50",
+      "width": 1200,
+      "height": 630
+    },
+    "rophi_ca": {
+      "dishName": "Cá rô phi xốt cà chua",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/17279470",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/2e45e6ef8d7622fb/1200x630cq80/photo.jpg",
+      "attribution": "Nhà Vân · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "2998637ba5fb33f59e965adc506a0be7267134fb20010d59d1d9f06776681683",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392665/CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/rophi_ca-2998637ba5fb",
+      "width": 1200,
+      "height": 630
+    },
+    "rophi_hap": {
+      "dishName": "Cá rô phi hấp gừng, hành",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/3816325",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/b53d2a05f6a3d04f/1200x630cq80/photo.jpg",
+      "attribution": "NgThang · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "36dc6ad86ad8d3f29fa4c0e836a209d3c42ef9ab16046ff8ea8d7cd775d5e0da",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392666/CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/rophi_hap-36dc6ad86ad8",
+      "width": 1200,
+      "height": 630
+    },
+    "suon_chua": {
+      "dishName": "Sườn xào chua ngọt",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/26333608",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/c385520b551b25a2/1200x630cq80/photo.jpg",
+      "attribution": "ngon · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "5ac4a1bc4eef031ecda67689b2b91044fca97fd528131d72b7a1bc86c57d59a8",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/suon_chua-5ac4a1bc4eef.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/suon_chua-5ac4a1bc4eef",
+      "width": 1200,
+      "height": 630
+    },
+    "sup_heo": {
+      "dishName": "SP.0954 - Cháo Dinh Dưỡng Thịt Heo Rau Củ",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24725341",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/6dcfa8118cbe8be7/1200x630cq80/photo.jpg",
+      "attribution": "Shan Wu · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "e64b8957d1a68673515f43e2f26ab3cbac26d3172034c8f35f0b78f4cb685595",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392667/CareSitter/Nutrition/catalog/sup_heo-e64b8957d1a6.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/sup_heo-e64b8957d1a6",
+      "width": 1200,
+      "height": 630
+    },
+    "tom_cai": {
+      "dishName": "SP.0956 - Tôm Nõn Xào Cải Thìa",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24759415",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/4cb07e80bd596859/1200x630cq80/photo.jpg",
+      "attribution": "Shan Wu · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "b7febf70b0d80dbf174ed28e5bae4a0eccf016410d84108643a676df6dbd27e6",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392668/CareSitter/Nutrition/catalog/tom_cai-b7febf70b0d8.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/tom_cai-b7febf70b0d8",
+      "width": 1200,
+      "height": 630
+    },
+    "tom_luoc": {
+      "dishName": "Tôm sú hấp sả",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/25228716",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/4bd9856a4346756a/1200x630cq80/photo.jpg",
+      "attribution": "Trần Thị Tuyết Trinh · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "4c02a414fbba49cde8fa1839028fcf177d24db4f811a19e1301a9ec5f955ecb9",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/tom_luoc-4c02a414fbba",
+      "width": 1200,
+      "height": 630
+    },
+    "trung_ca": {
+      "dishName": "Trứng xào cà chua",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/17002795",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/9f4b99cbbf86769a/1200x630cq80/photo.jpg",
+      "attribution": "Hồng Hiếu Nguyễn · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "f531d398a004996b75e42cc0e536ce720b9326ca2919c56a8d3aebcb741d6878",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392669/CareSitter/Nutrition/catalog/trung_ca-f531d398a004.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/trung_ca-f531d398a004",
+      "width": 1200,
+      "height": 630
+    },
+    "trung_cuon": {
+      "dishName": "Trứng Cuộn Cải Bó Xôi",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/22673750",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/4d3b2585f3371537/1200x630cq80/photo.jpg",
+      "attribution": "Bòn Bon · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "6fbd0aa7ed0f947ddbee87ed89f531f55d43e1df51bdf2541d855d188654621c",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392670/CareSitter/Nutrition/catalog/trung_cuon-6fbd0aa7ed0f.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/trung_cuon-6fbd0aa7ed0f",
+      "width": 1200,
+      "height": 630
+    },
+    "trung_hap": {
+      "dishName": "Trứng hấp",
+      "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+      "originalImageUrl": "https://monngonmoingay.com/wp-content/uploads/2025/04/4.png",
+      "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "0f2e51eeeef7cfee7a4b673e081a564b70ffc9a62db258ff09e077db130b8f54",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7.png",
+      "publicId": "CareSitter/Nutrition/catalog/trung_hap-0f2e51eeeef7",
+      "width": 880,
+      "height": 502
+    },
+    "trung_hap_nam": {
+      "dishName": "Trứng hấp",
+      "sourceUrl": "https://monngonmoingay.com/trung-hap/",
+      "originalImageUrl": "https://monngonmoingay.com/wp-content/uploads/2025/04/4.png",
+      "attribution": "Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "0f2e51eeeef7cfee7a4b673e081a564b70ffc9a62db258ff09e077db130b8f54",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392671/CareSitter/Nutrition/catalog/trung_hap_nam-0f2e51eeeef7.png",
+      "publicId": "CareSitter/Nutrition/catalog/trung_hap_nam-0f2e51eeeef7",
+      "width": 880,
+      "height": 502
+    },
+    "trung_nam": {
+      "dishName": "Trứng chiên nấm sò nâu",
+      "sourceUrl": "https://cookpad.com/vn/cong-thuc/24065133",
+      "originalImageUrl": "https://img-global.cpcdn.com/recipes/fdc1888f6ede11a1/1200x630cq80/photo.jpg",
+      "attribution": "Annie Vo · Cookpad",
+      "rightsStatus": "permission_not_verified",
+      "checkedOn": "2026-11-11",
+      "matchKind": "related_dish",
+      "fileSha256": "0c91d845e40c3ba90042932c6d3ded24ccd4cbe2d7ea22e9c83534cd11ee9a4a",
+      "url": "https://res.cloudinary.com/dq9xxhsmf/image/upload/v1794392672/CareSitter/Nutrition/catalog/trung_nam-0c91d845e40c.jpg",
+      "publicId": "CareSitter/Nutrition/catalog/trung_nam-0c91d845e40c",
+      "width": 1200,
+      "height": 630
+    }
+  },
+  "recipes": [
+    {
+      "recipeVersionId": "34a33263-bd12-5f9b-8765-5bd8a17b2a0e",
+      "name": "Phở thịt bò · thực đơn mẫu trang 143",
+      "assetKeys": [
+        "pho_bo"
+      ]
+    },
+    {
+      "recipeVersionId": "bfa06fc6-2372-539e-88e6-effca0601559",
+      "name": "Cháo thịt · thực đơn mẫu trang 273",
+      "assetKeys": [
+        "chao_heo"
+      ]
+    },
+    {
+      "recipeVersionId": "5fd8eaae-bd3b-5e62-92ff-7c11da06ac33",
+      "name": "Phở gà · thực đơn mẫu trang 286",
+      "assetKeys": [
+        "pho_ga"
+      ]
+    },
+    {
+      "recipeVersionId": "b0128004-869e-5a0a-9160-cc92063b0d7b",
+      "name": "Miến ngan trộn · thực đơn mẫu trang 219",
+      "assetKeys": [
+        "mien_ngan"
+      ]
+    },
+    {
+      "recipeVersionId": "2af6a2cd-3ece-5fba-8e84-7e9ac16e07d2",
+      "name": "Cơm · thịt lợn rang · đậu phụ · cải thìa",
+      "assetKeys": [
+        "heo_rang",
+        "dau_luoc",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "62661b9c-098b-5ccd-a4f2-5d44b5b31cd5",
+      "name": "Cơm · bê hấp gừng · lạc rang · rau khoai lang",
+      "assetKeys": [
+        "be_hap",
+        "lac_rang",
+        "rau_khoai"
+      ]
+    },
+    {
+      "recipeVersionId": "08d91c19-86b0-5e61-9290-49a2837ab4a3",
+      "name": "Cơm · sườn chua ngọt · cá rô phi · cải ngồng",
+      "assetKeys": [
+        "suon_chua",
+        "rophi_hap",
+        "cai_ngong"
+      ]
+    },
+    {
+      "recipeVersionId": "9c0e9d96-6211-5b79-b728-4583d56986ba",
+      "name": "Cơm · cá bống · thịt băm · cải chíp",
+      "assetKeys": [
+        "cabong_hap",
+        "heo_luoc",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "1d1f754f-8a57-5162-939a-b44894425b2e",
+      "name": "Cơm · cá trắm sốt cà chua · trứng · rau",
+      "assetKeys": [
+        "catram_ca",
+        "trung_hap",
+        "cai_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "9678e2b2-265b-554d-8c32-14c3ed3563d4",
+      "name": "Cơm · tôm biển · thịt băm · cải soong",
+      "assetKeys": [
+        "tom_luoc",
+        "heo_luoc",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "11d4fb6b-e523-5728-9765-e90f604a8bab",
+      "name": "Cơm · gà om nấm · mướp đắng nhồi thịt · đậu cô ve",
+      "assetKeys": [
+        "ga_hap_nam",
+        "muop_nhoi",
+        "dau_cove"
+      ]
+    },
+    {
+      "recipeVersionId": "8f82fd2f-e2f4-5f15-9a8a-8df7d4b67a78",
+      "name": "Cơm · lợn sốt cà chua · bò xào hành tây · bí xanh",
+      "assetKeys": [
+        "heo_ca",
+        "bo_hanh",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "1cc1f764-ecf4-e0d2-895d-f3e705c97053",
+      "name": "Cháo bò hành lá",
+      "assetKeys": [
+        "chao_bo"
+      ]
+    },
+    {
+      "recipeVersionId": "f01d3df9-bb2c-fa82-1f02-f00dc176698a",
+      "name": "Cháo gà nấm hương",
+      "assetKeys": [
+        "chao_ga_nam"
+      ]
+    },
+    {
+      "recipeVersionId": "8df624b6-021e-8467-3022-e583b656f656",
+      "name": "Cháo cá rô phi gừng",
+      "assetKeys": [
+        "chao_rophi"
+      ]
+    },
+    {
+      "recipeVersionId": "1b94d0eb-3410-6342-f4b6-33651b00e484",
+      "name": "Cháo trứng cà chua",
+      "assetKeys": [
+        "chao_trung_ca"
+      ]
+    },
+    {
+      "recipeVersionId": "d46a618e-61d4-088a-fb9d-173a89c88090",
+      "name": "Cháo thịt lợn bí xanh",
+      "assetKeys": [
+        "chao_heo_bi"
+      ]
+    },
+    {
+      "recipeVersionId": "ef96959b-0c83-02dc-7596-ca32485c0333",
+      "name": "Cháo bò cà chua",
+      "assetKeys": [
+        "chao_bo_ca"
+      ]
+    },
+    {
+      "recipeVersionId": "985c9462-95d1-4294-8c91-3daccac2b160",
+      "name": "Cháo gà rau ngót",
+      "assetKeys": [
+        "chao_ga_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "733f4266-fc90-feb0-5ff7-65ce0e541bbe",
+      "name": "Cháo cá trắm hành gừng",
+      "assetKeys": [
+        "chao_catram"
+      ]
+    },
+    {
+      "recipeVersionId": "c2b0c23e-60b1-5ede-8af7-1ec46a229f40",
+      "name": "Miến gà nấm hương",
+      "assetKeys": [
+        "mien_ga"
+      ]
+    },
+    {
+      "recipeVersionId": "06b0e080-3c6e-5697-9cf0-efa7f5ddd0d1",
+      "name": "Miến bò cải thìa",
+      "assetKeys": [
+        "mien_bo"
+      ]
+    },
+    {
+      "recipeVersionId": "c9f1b493-7ddd-390b-3768-b88f551115de",
+      "name": "Miến trứng cà chua",
+      "assetKeys": [
+        "mien_trung"
+      ]
+    },
+    {
+      "recipeVersionId": "cba4ec74-0308-2ff1-e202-01f8cb2bc60b",
+      "name": "Miến đậu phụ nấm hương",
+      "assetKeys": [
+        "mien_dau"
+      ]
+    },
+    {
+      "recipeVersionId": "15dc7c02-ff41-6d5e-8450-197d81a63ff9",
+      "name": "Cháo đậu phụ rau ngót",
+      "assetKeys": [
+        "chao_dau_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "e8f04d0c-97dc-e0be-383d-47783ec08ca6",
+      "name": "Cháo trứng rau ngót",
+      "assetKeys": [
+        "chao_trung_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "080b0f8d-e1dc-1f6f-3852-3cdba1a54bc3",
+      "name": "Cháo đậu phụ cà chua",
+      "assetKeys": [
+        "chao_dau_ca"
+      ]
+    },
+    {
+      "recipeVersionId": "d1ee0794-e2e0-ac9d-01a9-9edf242258b9",
+      "name": "Miến đậu phụ cải thìa",
+      "assetKeys": [
+        "mien_dau"
+      ]
+    },
+    {
+      "recipeVersionId": "1a0d1121-8761-05f6-d506-0a6bf33f8a59",
+      "name": "Cơm · bò hấp gừng · cải thìa",
+      "assetKeys": [
+        "bo_hap",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "db84530a-e318-346e-d42b-70082821bb2d",
+      "name": "Cơm · gà hấp nấm · bí xanh",
+      "assetKeys": [
+        "ga_hap_nam",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "6abb5805-14b3-aa66-5db4-d10e1f54e082",
+      "name": "Cơm · cá rô phi hấp · rau muống",
+      "assetKeys": [
+        "rophi_hap",
+        "rau_muong"
+      ]
+    },
+    {
+      "recipeVersionId": "8948cd3f-7cb1-86d9-8578-eac67d0c4832",
+      "name": "Cơm · thịt lợn hấp · rau ngót",
+      "assetKeys": [
+        "heo_luoc",
+        "rau_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "7ea8bb3c-5e35-00f6-97ee-f93e5d72f1f0",
+      "name": "Cơm · thịt lợn · cải thìa",
+      "assetKeys": [
+        "heo_luoc",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "d35dd098-14e8-fbb8-8c99-144bdd934b87",
+      "name": "Cơm · cá trắm · cải soong",
+      "assetKeys": [
+        "catram_hap",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "c978466c-85cd-efff-1763-a66761985774",
+      "name": "Cơm · tôm biển · bí xanh",
+      "assetKeys": [
+        "tom_luoc",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "a5e40ba7-5745-8074-46c0-5314b8c11910",
+      "name": "Cơm · trứng · đậu phụ · rau muống",
+      "assetKeys": [
+        "trung_hap",
+        "dau_luoc",
+        "rau_muong"
+      ]
+    },
+    {
+      "recipeVersionId": "d08695a7-0902-a569-a644-52bed1b4051c",
+      "name": "Cơm · đậu phụ cà chua · mồng tơi",
+      "assetKeys": [
+        "dau_ca",
+        "mong_toi"
+      ]
+    },
+    {
+      "recipeVersionId": "3916013a-0254-56fb-c3cb-f97a8ea2aab3",
+      "name": "Cơm · gà · mướp đắng",
+      "assetKeys": [
+        "ga_luoc",
+        "muop_dang"
+      ]
+    },
+    {
+      "recipeVersionId": "a4d9d89b-d44b-ff1d-2f0a-1d31d1506e76",
+      "name": "Cơm · bò · hành tây · cải xanh",
+      "assetKeys": [
+        "bo_hanh",
+        "cai_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "742a2e58-972e-f256-193a-4455c4f82dd4",
+      "name": "Cơm · ngan gừng · rau khoai lang",
+      "assetKeys": [
+        "ngan_hap",
+        "rau_khoai"
+      ]
+    },
+    {
+      "recipeVersionId": "c1f89a79-2952-5c99-c976-da09b6d4da35",
+      "name": "Cơm · cá bống cà chua · cải thìa",
+      "assetKeys": [
+        "cabong_hap",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "1fed7589-3c5d-5eb4-7943-3bd6f943bf78",
+      "name": "Cơm · bê · hành tây · đậu cô ve",
+      "assetKeys": [
+        "be_hap",
+        "dau_cove"
+      ]
+    },
+    {
+      "recipeVersionId": "f67c2f9c-4ced-fa5a-f7c5-b0f4e9b3072a",
+      "name": "Cơm · cá rô phi cà chua · cải xanh",
+      "assetKeys": [
+        "rophi_ca",
+        "cai_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "89a6dd5d-fdb6-73f6-c426-520fe06a3a56",
+      "name": "Cơm · đậu phụ nấm · cải soong",
+      "assetKeys": [
+        "dau_nam",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "7e574909-48bc-7a6d-5d9a-c5cc91569138",
+      "name": "Cơm · trứng hấp · đậu phụ · cải thìa",
+      "assetKeys": [
+        "trung_hap",
+        "dau_luoc",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "0a49a90d-101e-3aa5-2e99-c672870fd05d",
+      "name": "Cơm · cá trắm hấp gừng · mồng tơi",
+      "assetKeys": [
+        "catram_hap",
+        "mong_toi"
+      ]
+    },
+    {
+      "recipeVersionId": "d09c9309-887a-32c8-5493-721696a46a4d",
+      "name": "Cơm · thịt bò hấp · đậu cô ve",
+      "assetKeys": [
+        "bo_hap",
+        "dau_cove"
+      ]
+    },
+    {
+      "recipeVersionId": "fa9b5b95-55bb-9531-13e3-75e4a5c21d5e",
+      "name": "Cơm · gà hấp · cải soong",
+      "assetKeys": [
+        "ga_luoc",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "c4161b8c-3b76-b41c-0378-9479dd80bfaf",
+      "name": "Cơm · thịt lợn · bí xanh",
+      "assetKeys": [
+        "heo_luoc",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "32943990-7eb8-82e7-69e3-d8b4533dfa02",
+      "name": "Cơm · cá rô phi cà chua · cải soong",
+      "assetKeys": [
+        "rophi_ca",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "6d49d819-1007-e3a4-6df2-a0b8fbd9ad06",
+      "name": "Cơm · tôm biển · mồng tơi",
+      "assetKeys": [
+        "tom_luoc",
+        "mong_toi"
+      ]
+    },
+    {
+      "recipeVersionId": "21ba6b1e-c2b6-1047-c16b-1e4146150f5a",
+      "name": "Cơm · đậu phụ nấm · cải xanh",
+      "assetKeys": [
+        "dau_nam",
+        "cai_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "fd9ee7e8-598d-77eb-1bff-133f21367b90",
+      "name": "Cơm · trứng cà chua · rau muống",
+      "assetKeys": [
+        "trung_ca",
+        "rau_muong"
+      ]
+    },
+    {
+      "recipeVersionId": "bee03fb4-4429-6ff7-45d6-2b2fd97f8a35",
+      "name": "Cơm · ngan nấm · cải thìa",
+      "assetKeys": [
+        "ngan_nam",
+        "cai_thia"
+      ]
+    },
+    {
+      "recipeVersionId": "298ac51f-1335-b4eb-7eb4-9a1096cf6671",
+      "name": "Cơm · bò hành tây · bí xanh",
+      "assetKeys": [
+        "bo_hanh",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "28ff240a-55e8-4217-4c1c-77840b1be95d",
+      "name": "Cơm · bê hấp gừng · rau khoai lang",
+      "assetKeys": [
+        "be_hap",
+        "rau_khoai"
+      ]
+    },
+    {
+      "recipeVersionId": "0230ab5b-dfcd-1d57-d3d6-8d797f0fc614",
+      "name": "Cơm · cá bống gừng · rau ngót",
+      "assetKeys": [
+        "cabong_hap",
+        "rau_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "b51b6bfe-13e2-a1df-0668-32f47b9f3e89",
+      "name": "Cơm · gà hấp gừng · mướp đắng",
+      "assetKeys": [
+        "ga_luoc",
+        "muop_dang"
+      ]
+    },
+    {
+      "recipeVersionId": "bafcae18-fed2-40b4-f2bb-ac729d078a23",
+      "name": "Cơm · cá trắm cà chua · đậu cô ve",
+      "assetKeys": [
+        "catram_ca",
+        "dau_cove"
+      ]
+    },
+    {
+      "recipeVersionId": "f4546029-e42d-79f7-c1c8-f421bdad09c9",
+      "name": "Cơm · đậu phụ · cà chua · cải soong",
+      "assetKeys": [
+        "dau_ca",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "ee2cf722-aed0-e13b-8e10-ee49d409b00a",
+      "name": "Cơm nắm gà gừng",
+      "assetKeys": [
+        "com_nam"
+      ]
+    },
+    {
+      "recipeVersionId": "073f5af3-bfe1-b594-6de4-b008114e57f5",
+      "name": "Cơm cuộn trứng cải thìa",
+      "assetKeys": [
+        "com_cuon"
+      ]
+    },
+    {
+      "recipeVersionId": "a57f399a-a546-fb1c-f0cf-23e611a0ae3f",
+      "name": "Cơm trộn đậu cô ve, trứng và nấm",
+      "assetKeys": [
+        "com_tron"
+      ]
+    },
+    {
+      "recipeVersionId": "dcf9f66b-d739-4e68-2aa7-03523f66064b",
+      "name": "Cơm rang tôm và cải thìa",
+      "assetKeys": [
+        "com_tom"
+      ]
+    },
+    {
+      "recipeVersionId": "909bc179-3565-4f06-e717-fd55618fe4fc",
+      "name": "Cháo cá bống bí xanh",
+      "assetKeys": [
+        "chao_cabong"
+      ]
+    },
+    {
+      "recipeVersionId": "d51d256c-54e8-179e-1a72-8044c82439aa",
+      "name": "Súp gạo thịt nạc và đậu cô ve",
+      "assetKeys": [
+        "sup_heo"
+      ]
+    },
+    {
+      "recipeVersionId": "e4a32b93-86fc-2b7f-0bb6-2b7fec6100fa",
+      "name": "Cơm với canh gà bí xanh",
+      "assetKeys": [
+        "canh_ga_bi"
+      ]
+    },
+    {
+      "recipeVersionId": "b95a386b-6095-f707-97fc-a59101d4a1a9",
+      "name": "Cơm · bò xào đậu cô ve · cà chua",
+      "assetKeys": [
+        "bo_dau"
+      ]
+    },
+    {
+      "recipeVersionId": "398999b9-6aab-9678-fd19-bdce84dd3e54",
+      "name": "Cơm · trứng đúc nấm · rau khoai lang",
+      "assetKeys": [
+        "trung_nam",
+        "rau_khoai"
+      ]
+    },
+    {
+      "recipeVersionId": "acc2df39-ec77-f765-aae0-f805a6e1cb9a",
+      "name": "Cơm · trứng hấp hành tây · canh mồng tơi",
+      "assetKeys": [
+        "trung_hap",
+        "mong_toi"
+      ]
+    },
+    {
+      "recipeVersionId": "3276ad86-f6c8-f0c6-5580-38c4c5a3f8a6",
+      "name": "Cơm · tôm xào cải xanh và nấm",
+      "assetKeys": [
+        "tom_cai"
+      ]
+    },
+    {
+      "recipeVersionId": "b3a7c7e9-38fb-7e2a-92b0-ba69d9a7cb33",
+      "name": "Cơm · thịt nạc hấp gừng · canh cải soong",
+      "assetKeys": [
+        "heo_luoc",
+        "cai_soong"
+      ]
+    },
+    {
+      "recipeVersionId": "d541a6d5-3626-6e2d-b1bd-08e96b7a6c09",
+      "name": "Cơm · cá rô phi hấp mồng tơi",
+      "assetKeys": [
+        "rophi_hap",
+        "mong_toi"
+      ]
+    },
+    {
+      "recipeVersionId": "2e084fe2-485e-b996-2380-e81b8059eb10",
+      "name": "Cơm · trứng cuộn cải xanh · canh cà chua",
+      "assetKeys": [
+        "trung_cuon"
+      ]
+    },
+    {
+      "recipeVersionId": "7e1fe14e-4b9a-484f-5e5c-fc484b6d737e",
+      "name": "Cơm · trứng hấp nấm · bí xanh luộc",
+      "assetKeys": [
+        "trung_hap_nam",
+        "bi_xanh"
+      ]
+    },
+    {
+      "recipeVersionId": "5e8394d1-3d3c-b35b-0ce3-75c06aeaabf2",
+      "name": "Cơm với canh tôm rau ngót",
+      "assetKeys": [
+        "canh_tom_ngot"
+      ]
+    },
+    {
+      "recipeVersionId": "45f8f9be-ebaf-051e-db0f-36449500607b",
+      "name": "Cơm · gà áp chảo tỏi · đậu cô ve",
+      "assetKeys": [
+        "ga_apchao",
+        "dau_cove"
+      ]
+    },
+    {
+      "recipeVersionId": "64c4ab56-b62f-d9ab-5dd6-3784e5562f93",
+      "name": "Cơm · thịt nạc cuộn cải thìa · nấm hấp",
+      "assetKeys": [
+        "heo_cuon"
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _TestAuthNotifier extends AuthNotifier {
   @override
@@ -18,6 +19,26 @@ class _AuthenticatedAuthNotifier extends AuthNotifier {
 }
 
 void main() {
+  testWidgets('native cold start shows onboarding before login',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer(overrides: [
+      authStateProvider.overrideWith(_TestAuthNotifier.new),
+    ]);
+    addTearDown(container.dispose);
+    final router = container.read(appRouterProvider);
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+        router.routeInformationProvider.value.uri.path, AppRoutes.onboarding);
+    expect(find.text('Chăm sóc an tâm ngay tại nhà'), findsOneWidget);
+  });
+
   test('production route map parses creation and detail deep links', () {
     final container = ProviderContainer(overrides: [
       authStateProvider.overrideWith(_TestAuthNotifier.new),
@@ -45,6 +66,10 @@ void main() {
     ));
     expect(detail.error, isNull);
     expect(detail.pathParameters['id'], 'booking-1');
+    final reports = router.configuration
+        .findMatch(Uri.parse(AppRoutes.bookingReports('booking-1')));
+    expect(reports.error, isNull);
+    expect(reports.pathParameters['id'], 'booking-1');
 
     expect(router.configuration.findMatch(Uri.parse('/not-a-route')).error,
         isNotNull);

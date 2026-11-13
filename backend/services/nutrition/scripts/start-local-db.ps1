@@ -18,6 +18,9 @@ $releaseEvidencePath = Join-Path $backendRoot 'init-db/nutrition-service/06-cata
 $knowledgeReviewPath = Join-Path $backendRoot 'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql'
 $localDemoPath = Join-Path $backendRoot 'init-db/nutrition-service/08-local-demo-catalog.sql'
 $knowledgeChunksPath = Join-Path $backendRoot 'init-db/nutrition-service/09-knowledge-chunks.sql'
+$catalogPolicyPath = Join-Path $backendRoot 'init-db/nutrition-service/11-catalog-review-policy.sql'
+$beneficiaryDeletionPath = Join-Path $backendRoot 'init-db/nutrition-service/12-beneficiary-deletion.sql'
+$catalogIntegrityPath = Join-Path $backendRoot 'init-db/nutrition-service/10-published-catalog-integrity.sql'
 foreach ($program in @('initdb.exe', 'pg_ctl.exe', 'psql.exe')) {
     if (!(Test-Path -LiteralPath (Join-Path $PostgresBin $program))) { throw "Missing PostgreSQL tool: $program" }
 }
@@ -108,9 +111,26 @@ try {
             & $psql @arguments -d nutrition -f $knowledgeChunksPath
             if ($LASTEXITCODE -ne 0) { throw 'Knowledge chunk migration failed.' }
         }
+        $catalogIntegrityExists = & $psql @arguments -d nutrition -Atc "SELECT to_regprocedure('nutrition.published_catalog_integrity()') IS NOT NULL"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the catalog integrity function.' }
+        if ($catalogIntegrityExists.Trim() -eq 'f') {
+            & $psql @arguments -d nutrition -f $catalogIntegrityPath
+            if ($LASTEXITCODE -ne 0) { throw 'Published catalog integrity migration failed.' }
+        }
+        # Reapply SQL 11 after legacy 06/07 above refresh their functions.
+        $catalogPolicyExists = & $psql @arguments -d nutrition -Atc "SELECT to_regclass('nutrition.catalog_review_policy') IS NOT NULL AND to_regprocedure('nutrition.current_catalog_review_policy()') IS NOT NULL"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect catalog review policy.' }
+        & $psql @arguments -d nutrition -f $catalogPolicyPath
+        if ($LASTEXITCODE -ne 0) { throw 'Catalog review policy migration failed.' }
+        $beneficiaryDeletionExists = & $psql @arguments -d nutrition -Atc "SELECT to_regclass('nutrition.beneficiary_deletions') IS NOT NULL AND to_regclass('nutrition.beneficiary_deletion_inbox') IS NOT NULL"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect beneficiary deletion schema.' }
+        if ($beneficiaryDeletionExists.Trim() -eq 'f') {
+            & $psql @arguments -d nutrition -f $beneficiaryDeletionPath
+            if ($LASTEXITCODE -ne 0) { throw 'Beneficiary deletion migration failed.' }
+        }
         $env:PGPASSWORD = $config.AppPassword
         $requiredTables = @(
-            'assessment_jobs', 'assessments', 'catalog_audit', 'catalog_package_entries',
+            'assessment_jobs', 'assessments', 'beneficiary_deletions', 'beneficiary_deletion_inbox', 'catalog_audit', 'catalog_package_entries',
             'catalog_packages', 'catalog_release_evidence', 'catalog_state', 'concepts',
             'local_demo_catalog', 'meal_plans', 'preferences', 'recipe_source_citations', 'recipe_versions',
             'recommendations', 'rule_versions'

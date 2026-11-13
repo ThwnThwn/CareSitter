@@ -27,7 +27,7 @@ class LoginIdentifierField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.surface,
+          fillColor: AppInputStyle.fillColor,
           floatingLabelBehavior: FloatingLabelBehavior.always,
           labelText: usePassword ? 'Email hoặc Số điện thoại' : 'Email',
           hintText: usePassword

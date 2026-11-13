@@ -1,10 +1,10 @@
+import '../models/nutrition_medication_draft.dart';
+import 'nutrition_medications_section.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 
-import '../models/nutrition_medication_draft.dart';
 import 'nutrition_expansion_card.dart';
-import 'nutrition_medication_editor.dart';
 
 /// Edits only the structured fields supplied by the customer; saved history stays on People.
 class NutritionHealthFields extends StatefulWidget {
@@ -18,9 +18,11 @@ class NutritionHealthFields extends StatefulWidget {
       required this.enabled,
       required this.onChanged,
       this.showErrors = false,
+      this.guidanceFields = const [],
       this.missingFields = const []});
   final bool showErrors;
   final List<String> missingFields;
+  final List<String> guidanceFields;
 
   @override
   State<NutritionHealthFields> createState() => NutritionHealthFieldsState();
@@ -47,7 +49,8 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
   void didUpdateWidget(covariant NutritionHealthFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if ((widget.showErrors && !oldWidget.showErrors) ||
-        !_sameMissingFields(oldWidget.missingFields, widget.missingFields)) {
+        !_sameMissingFields(oldWidget.missingFields, widget.missingFields) ||
+        !_sameMissingFields(oldWidget.guidanceFields, widget.guidanceFields)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _hasAnyError && !_expansion.isExpanded) {
           _expansion.expand();
@@ -89,6 +92,11 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
             (item == 'medications' || item.startsWith('medications/'));
       });
 
+  bool _needsGuidance(String field) => widget.guidanceFields.any((item) =>
+      item == field ||
+      item.endsWith('/$field') ||
+      (field == 'medicationsStatus' && item == 'medications'));
+
   bool _isLocallyInvalid(String field) {
     final current = _profileChanges[field] ?? _profile[field];
     if (current == null || current == 'unknown') return true;
@@ -103,6 +111,7 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
   bool get _hasAnyError => _fieldKeys.keys.any(
         (field) =>
             _isMissing(field) ||
+            _needsGuidance(field) ||
             (widget.showErrors && _isLocallyInvalid(field)),
       );
 
@@ -111,6 +120,7 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
           (item) =>
               item != null &&
               (_isMissing(item) ||
+                  _needsGuidance(item) ||
                   (widget.showErrors && _isLocallyInvalid(item))),
           orElse: () => null,
         );
@@ -153,16 +163,19 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
         isExpanded: true,
         decoration: InputDecoration(
             labelText: label,
-            errorText: _isMissing(field) ||
+            errorText: _needsGuidance(field) ||
+                    _isMissing(field) ||
                     (widget.showErrors &&
                         (current == null ||
                             current == 'unknown' ||
                             medicationConflict))
-                ? (medicationConflict
-                    ? 'Vui lòng làm rõ danh sách thuốc'
-                    : _isMissing(field)
-                        ? 'Vui lòng kiểm tra lại mục này'
-                        : 'Vui lòng xác nhận mục này')
+                ? (_needsGuidance(field)
+                    ? 'Cần hướng dẫn phù hợp trước khi gợi ý. Kiểm tra thông tin đã khai; không tự thay đổi nếu đúng.'
+                    : medicationConflict
+                        ? 'Vui lòng làm rõ danh sách thuốc'
+                        : _isMissing(field)
+                            ? 'Vui lòng kiểm tra lại mục này'
+                            : 'Vui lòng xác nhận mục này')
                 : null),
         items: options.entries
             .map((e) => DropdownMenuItem(
@@ -180,6 +193,34 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
     );
   }
 
+  void _medicationNameChanged() {
+    setState(() => _medicationsDirty = true);
+    _emit();
+  }
+
+  void _medicationChanged() {
+    _medicationsDirty = true;
+    _emit();
+  }
+
+  void _removeMedication(NutritionMedicationDraft medication) {
+    setState(() {
+      _medications.remove(medication);
+      _medicationsDirty = true;
+    });
+    medication.dispose();
+    _emit();
+  }
+
+  void _addMedication() {
+    setState(() {
+      _medications
+          .add(NutritionMedicationDraft({'name': '', 'is_active': true}));
+      _medicationsDirty = true;
+    });
+    _emit();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -195,28 +236,15 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
           'reported_none': 'Đã xác nhận không dùng',
           'reported_present': 'Đang dùng thuốc',
         }),
-        if (_legacyMedications)
-          const Text(
-              'Danh sách thuốc cũ chưa đúng định dạng. Thông tin được giữ nguyên và cần kiểm tra lại trong hồ sơ.'),
-        for (var i = 0; i < _medications.length; i++)
-          _medication(_medications[i], i),
-        if (!_legacyMedications && _medications.length < 40)
-          Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Thêm thuốc đã được kê / đang dùng'),
-                onPressed: !widget.enabled
-                    ? null
-                    : () {
-                        setState(() {
-                          _medications.add(NutritionMedicationDraft(
-                              {'name': '', 'is_active': true}));
-                          _medicationsDirty = true;
-                        });
-                        _emit();
-                      },
-              )),
+        NutritionMedicationsSection(
+          medications: _medications,
+          legacy: _legacyMedications,
+          enabled: widget.enabled,
+          onNameChanged: _medicationNameChanged,
+          onChanged: _medicationChanged,
+          onRemove: _removeMedication,
+          onAdd: _addMedication,
+        ),
         const SizedBox(height: AppSpacing.compact),
         _choice('feedingRoute', 'Cách ăn uống hiện tại', const {
           'unknown': 'Chưa rõ',
@@ -241,30 +269,6 @@ class NutritionHealthFieldsState extends State<NutritionHealthFields>
       ],
     );
   }
-
-  Widget _medication(NutritionMedicationDraft medication, int index) =>
-      NutritionMedicationEditor(
-        key: ObjectKey(medication),
-        medication: medication,
-        index: index,
-        enabled: widget.enabled,
-        onNameChanged: () {
-          setState(() => _medicationsDirty = true);
-          _emit();
-        },
-        onChanged: () {
-          _medicationsDirty = true;
-          _emit();
-        },
-        onRemove: () {
-          setState(() {
-            _medications.remove(medication);
-            _medicationsDirty = true;
-          });
-          medication.dispose();
-          _emit();
-        },
-      );
 
   @override
   void dispose() {

@@ -1,7 +1,7 @@
 import 'nutrition_facts.dart';
 import 'nutrition_meal_card.dart';
-import 'nutrition_recommendation_context.dart';
 import 'nutrition_week_progress_card.dart';
+import 'nutrition_daily_macros.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
@@ -38,6 +38,7 @@ class NutritionResult extends StatelessWidget {
       return [
         NutritionWeekProgressCard(
           completedDays: flow.weekProgress!,
+          targetDays: flow.planTargetDays ?? 7,
           decision: decision,
           data: data,
           health: flow.health,
@@ -83,7 +84,6 @@ class NutritionResult extends StatelessWidget {
           'needs_information': 'Cần bổ sung thông tin',
           'needs_professional_guidance':
               'Cần hướng dẫn phù hợp trước khi gợi ý',
-          'awaiting_confirmation': 'Kiểm tra bản tóm tắt',
           'eligible': 'Thông tin đã được xác nhận',
           'no_content': 'Chưa có dữ liệu thực đơn để gợi ý',
           'no_match': 'Chưa có thực đơn phù hợp',
@@ -94,8 +94,10 @@ class NutritionResult extends StatelessWidget {
         }[state] ??
         'Trạng thái: $status';
     final widgets = <Widget>[
-      Text(title, style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.compact)
+      if (state != 'awaiting_confirmation') ...[
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.compact),
+      ],
     ];
     if (!menuOnly) {
       widgets.add(NutritionFacts(
@@ -118,7 +120,7 @@ class NutritionResult extends StatelessWidget {
           width: double.infinity,
           child: FilledButton(
               onPressed: flow.loading ? null : onConfirm,
-              child: const Text('Thông tin đúng, tiếp tục'))));
+              child: const Text('Tạo thực đơn'))));
     }
     if (state == 'eligible' &&
         flow.recommendationsEnabled &&
@@ -144,12 +146,7 @@ class NutritionResult extends StatelessWidget {
     if (state != 'stale') {
       final meals = data.meals;
       final trace = data.recommendationTrace;
-      if (meals.isNotEmpty && trace != null) {
-        widgets.add(NutritionRecommendationContext(
-          trace: trace,
-          meals: meals,
-        ));
-      }
+      if (meals.isNotEmpty) widgets.add(NutritionDailyMacros(meals: meals));
       for (int i = 0; i < meals.length; i++) {
         final meal = meals[i];
         // Divider nhẹ giữa các section bữa ăn (trừ section đầu tiên)
@@ -163,6 +160,7 @@ class NutritionResult extends StatelessWidget {
         widgets.add(_MealSectionHeader(mealType: meal.mealType));
         widgets.add(NutritionMealCard(
             meal: meal,
+            trace: trace,
             loading: flow.loading,
             canReplace: state == 'suggested' &&
                 status != 'saved' &&

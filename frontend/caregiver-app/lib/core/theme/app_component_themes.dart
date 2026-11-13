@@ -1,8 +1,8 @@
 import 'package:caregiver_app/core/theme/app_spacing.dart';
 import 'package:caregiver_app/core/theme/app_radius.dart';
+import 'package:caregiver_app/core/theme/app_input_style.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_colors.dart';
 import 'package:caregiver_app/core/theme/app_text_theme.dart';
 
@@ -10,7 +10,7 @@ import 'package:caregiver_app/core/theme/app_text_theme.dart';
 abstract final class AppComponentThemes {
   // ── AppBar ──
   static AppBarTheme appBar() {
-    return AppBarTheme(
+    return const AppBarTheme(
       backgroundColor: AppColors.cardBackground,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
@@ -18,12 +18,12 @@ abstract final class AppComponentThemes {
       shadowColor: AppColors.shadow,
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.beVietnamPro(
+      titleTextStyle: TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s18,
         color: AppColors.textPrimary,
         fontWeight: FontWeight.w600,
       ),
-      iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
+      iconTheme: IconThemeData(color: AppColors.textPrimary, size: 24),
     );
   }
 
@@ -42,7 +42,7 @@ abstract final class AppComponentThemes {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         minimumSize: const Size(double.infinity, 52),
-        textStyle: GoogleFonts.beVietnamPro(
+        textStyle: const TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s16,
           fontWeight: FontWeight.w600,
         ),
@@ -61,7 +61,7 @@ abstract final class AppComponentThemes {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         minimumSize: const Size(double.infinity, 52),
-        textStyle: GoogleFonts.beVietnamPro(
+        textStyle: const TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s16,
           fontWeight: FontWeight.w600,
         ),
@@ -74,7 +74,7 @@ abstract final class AppComponentThemes {
     return TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
-        textStyle: GoogleFonts.beVietnamPro(
+        textStyle: const TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s14,
           fontWeight: FontWeight.w600,
         ),
@@ -88,27 +88,13 @@ abstract final class AppComponentThemes {
   static InputDecorationTheme input() {
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceVariant,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border, width: 1),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.error, width: 2),
-      ),
+      fillColor: AppInputStyle.fillColor,
+      border: AppInputStyle.enabledBorder,
+      enabledBorder: AppInputStyle.enabledBorder,
+      disabledBorder: AppInputStyle.enabledBorder,
+      focusedBorder: AppInputStyle.focusedBorder,
+      errorBorder: AppInputStyle.errorBorder,
+      focusedErrorBorder: AppInputStyle.errorBorder,
       contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.inset),
       hintStyle: AppTextTheme.textStyle(14, AppColors.textHint),
@@ -140,7 +126,7 @@ abstract final class AppComponentThemes {
     return ChipThemeData(
       backgroundColor: AppColors.primaryContainer,
       selectedColor: AppColors.primaryContainer,
-      labelStyle: GoogleFonts.beVietnamPro(
+      labelStyle: const TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s12,
         color: AppColors.onPrimaryContainer,
         fontWeight: FontWeight.w500,
@@ -157,18 +143,18 @@ abstract final class AppComponentThemes {
 
   // ── Bottom Nav ──
   static BottomNavigationBarThemeData bottomNav() {
-    return BottomNavigationBarThemeData(
+    return const BottomNavigationBarThemeData(
       backgroundColor: AppColors.cardBackground,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textHint,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
-      selectedLabelStyle: GoogleFonts.beVietnamPro(
+      selectedLabelStyle: TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s11,
         fontWeight: FontWeight.w600,
         color: AppColors.primary,
       ),
-      unselectedLabelStyle: GoogleFonts.beVietnamPro(
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s11,
         color: AppColors.textHint,
       ),
@@ -183,13 +169,13 @@ abstract final class AppComponentThemes {
       surfaceTintColor: Colors.transparent,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return GoogleFonts.beVietnamPro(
+          return const TextStyle(fontFamily: 'Inter',
             fontSize: AppFontSizes.s11,
             fontWeight: FontWeight.w600,
             color: AppColors.primary,
           );
         }
-        return GoogleFonts.beVietnamPro(
+        return const TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s11,
           color: AppColors.textHint,
         );
@@ -205,19 +191,19 @@ abstract final class AppComponentThemes {
 
   // ── Tab Bar ──
   static TabBarThemeData tabBar() {
-    return TabBarThemeData(
+    return const TabBarThemeData(
       labelColor: AppColors.primary,
       unselectedLabelColor: AppColors.textSecondary,
-      labelStyle: GoogleFonts.beVietnamPro(
+      labelStyle: TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s14,
         fontWeight: FontWeight.w600,
         color: AppColors.primary,
       ),
-      unselectedLabelStyle: GoogleFonts.beVietnamPro(
+      unselectedLabelStyle: TextStyle(fontFamily: 'Inter',
         fontSize: AppFontSizes.s14,
         color: AppColors.textSecondary,
       ),
-      indicator: const UnderlineTabIndicator(
+      indicator: UnderlineTabIndicator(
         borderSide: BorderSide(color: AppColors.primary, width: 3),
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.s2)),
       ),

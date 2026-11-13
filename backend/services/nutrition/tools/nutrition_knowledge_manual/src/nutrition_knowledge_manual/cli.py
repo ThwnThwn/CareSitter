@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 
 from .errors import ManualGraphError
+from .review_policy import add_argument
 from .catalog_authoring import finalize_catalog_candidate, prepare_catalog_candidate
 from .catalog_review import (
     catalog_review_status,
@@ -141,6 +142,8 @@ def parser() -> argparse.ArgumentParser:
     source_reference.add_argument("--notes", required=True)
     source_reference.add_argument("--package-key", required=True)
     source_reference.add_argument("--output-dir", type=Path, required=True)
+    for subparser in (finalize_catalog, review_recipe, review_catalog, review_status, release, materialize, review):
+        add_argument(subparser)
     register_retrieval_commands(commands)
     return root
 
@@ -235,7 +238,7 @@ def dispatch(args: argparse.Namespace) -> dict:
             candidate_manifest=load_json(args.candidate_manifest),
             candidate_bundle=load_json(args.candidate_bundle),
             candidate_evidence=load_json(args.candidate_evidence),
-            decisions=load_json(args.decisions),
+            decisions=load_json(args.decisions), review_policy=args.review_policy,
         )
         package_key = result["manifest"]["package_key"]
         paths = {
@@ -270,7 +273,7 @@ def dispatch(args: argparse.Namespace) -> dict:
             reviewer_id=args.reviewer_id,
             reviewer_role=args.reviewer_role,
             comment=args.comment,
-            resolutions=resolutions,
+            resolutions=resolutions, review_policy=args.review_policy,
         )
         write_json(args.ledger, result)
         return {
@@ -288,7 +291,7 @@ def dispatch(args: argparse.Namespace) -> dict:
             reviewer_id=args.reviewer_id,
             credentials=args.credentials,
             decision=args.decision,
-            notes=args.notes,
+            notes=args.notes, review_policy=args.review_policy,
         )
         write_json(args.ledger, result)
         return {
@@ -301,7 +304,7 @@ def dispatch(args: argparse.Namespace) -> dict:
         return catalog_review_status(
             candidate_manifest=load_json(args.candidate_manifest),
             candidate_evidence=load_json(args.candidate_evidence),
-            ledger=load_json(args.ledger),
+            ledger=load_json(args.ledger), review_policy=args.review_policy,
         )
     if args.command == "validate-dish-index":
         return validate_dish_index(load_json(args.index), workspace)
@@ -347,18 +350,18 @@ def dispatch(args: argparse.Namespace) -> dict:
     if args.command == "review":
         result = append_decision(
             graph=graph, ledger=ledger, candidate_id=args.candidate_id, decision=args.decision,
-            reviewer_id=args.reviewer_id, reviewer_role=args.reviewer_role, comment=args.comment, policy=policy
+            reviewer_id=args.reviewer_id, reviewer_role=args.reviewer_role, comment=args.comment, policy=policy, review_policy=args.review_policy
         )
         write_json(args.ledger, result)
         return {"decision_count": len(result["decisions"]), "graph_content_sha256": result["graph_content_sha256"]}
     if args.command == "materialize":
-        result = materialize_reviewed_graph(graph, ledger, policy)
+        result = materialize_reviewed_graph(graph, ledger, policy, review_policy=args.review_policy)
         write_json(args.output, result)
         return _summary(result)
     if args.command == "prepare-release":
         evidence, authorization = prepare_release(
             workspace=workspace, manifest_path=args.manifest, bundle_source_id=args.source_id,
-            evidence_path=args.evidence, graph=graph, ledger=ledger, policy=policy
+            evidence_path=args.evidence, graph=graph, ledger=ledger, policy=policy, review_policy=args.review_policy
         )
         write_json(args.output_evidence, evidence)
         write_json(args.output_authorization, authorization)

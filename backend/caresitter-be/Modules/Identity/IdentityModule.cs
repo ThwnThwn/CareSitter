@@ -36,6 +36,8 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IIdentityDeviceStore, IdentityDeviceStore>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
+        services.AddSingleton<IFirebaseGoogleIdentityVerifier, FirebaseGoogleIdentityVerifier>();
+        services.AddScoped<GoogleAccountSignIn>();
         services.AddScoped<IAuthenticationAttemptLimiter, AuthenticationAttemptLimiter>();
         services.AddScoped<IOtpStore, OtpStore>();
         services.AddScoped<IAccessTokenRevocationStore, AccessTokenRevocationStore>();

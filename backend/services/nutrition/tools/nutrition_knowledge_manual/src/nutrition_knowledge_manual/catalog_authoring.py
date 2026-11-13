@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256, serialized_json_sha256
 from .catalog_review import validate_catalog_review_ledger
 
@@ -192,8 +193,10 @@ def finalize_catalog_candidate(
     candidate_bundle: dict[str, Any],
     candidate_evidence: dict[str, Any],
     decisions: dict[str, Any],
+    review_policy=DEFAULT,
 ) -> dict[str, dict[str, Any]]:
     """Finalize reviewed artifacts; knowledge review remains a separate mandatory gate."""
+    check(review_policy, decisions)
     _validate_profile(profile, require_authoring=False)
     if not profile.get("release_enabled"):
         raise ManualGraphError("catalog finalization is disabled for this profile")
@@ -232,39 +235,63 @@ def finalize_catalog_candidate(
         decision = decision_by_recipe[version_id]
         if manifest_hash != expected_candidate_hash or decision.get("candidate_sha256") != expected_candidate_hash:
             raise ManualGraphError(f"recipe decision is stale or tampered: {version_id}")
-        _validate_approval(decision.get("data_review"), {"data_steward"}, "data", version_id)
-        clinical = _validate_approval(
-            decision.get("clinical_review"), {"dietitian", "physician"}, "clinical", version_id
-        )
-        clinical_reviewer_ids.add(clinical["reviewer_id"])
+        if review_policy == REFERENCE and (decision.get("data_review") or {}).get("decision") != "approved":
+            continue
+        data_review = _validate_approval(decision.get("data_review"), {"data_steward"}, "data", version_id)
+        if review_policy != REFERENCE:
+            clinical = _validate_approval(
+                decision.get("clinical_review"), {"dietitian", "physician"}, "clinical", version_id
+            )
+            clinical_reviewer_ids.add(clinical["reviewer_id"])
         _validate_resolutions(
             evidence.get("unresolvedItems") or [], decision.get("resolutions") or [], decision, version_id
         )
-        finalized_evidence.append({**deepcopy(evidence), "unresolvedItems": []})
+        finalized_row = {**deepcopy(evidence), "unresolvedItems": []}
+        if review_policy == REFERENCE:
+            # Data-steward approval is the only review in a non-medical reference catalog.
+            finalized_row["dataReview"] = {
+                "decision": "approved",
+                "reviewerRole": "data_steward",
+                "reviewerId": _required_text(data_review, "reviewer_id"),
+                "reviewedAt": _iso_with_timezone(
+                    _required_text(data_review, "reviewed_at_utc"), f"recipe {version_id} data review"
+                ),
+            }
+        finalized_evidence.append(finalized_row)
 
     clinical_review = decisions.get("clinical_review")
-    if not isinstance(clinical_review, dict) or clinical_review.get("decision") != "approved":
-        raise ManualGraphError("an approved final clinical review is required")
-    clinical_reviewer_id = _required_text(clinical_review, "reviewerId")
-    if clinical_reviewer_id not in clinical_reviewer_ids:
-        raise ManualGraphError("final clinical reviewer must appear in recipe clinical decisions")
-    for field in ("reviewerName", "credentials", "reviewedAt"):
-        _required_text(clinical_review, field)
-    try:
-        reviewed_at = datetime.fromisoformat(clinical_review["reviewedAt"])
-    except ValueError:
-        raise ManualGraphError("clinical review reviewedAt must be an ISO-8601 timestamp") from None
-    if reviewed_at.tzinfo is None:
-        raise ManualGraphError("clinical review reviewedAt must include a timezone")
+    if review_policy != REFERENCE:
+        if not isinstance(clinical_review, dict) or clinical_review.get("decision") != "approved":
+            raise ManualGraphError("an approved final clinical review is required")
+        clinical_reviewer_id = _required_text(clinical_review, "reviewerId")
+        if clinical_reviewer_id not in clinical_reviewer_ids:
+            raise ManualGraphError("final clinical reviewer must appear in recipe clinical decisions")
+        for field in ("reviewerName", "credentials", "reviewedAt"):
+            _required_text(clinical_review, field)
+        try:
+            reviewed_at = datetime.fromisoformat(clinical_review["reviewedAt"])
+        except ValueError:
+            raise ManualGraphError("clinical review reviewedAt must be an ISO-8601 timestamp") from None
+        if reviewed_at.tzinfo is None:
+            raise ManualGraphError("clinical review reviewedAt must include a timezone")
 
     release_bundle = deepcopy(candidate_bundle)
+    retained = {row["recipeVersionId"] for row in finalized_evidence}
+    if not retained:
+        raise ManualGraphError("catalog has no source-approved recipes")
+    release_bundle["recipes"] = [r for r in release_bundle["recipes"] if r["payload"]["versionId"] in retained]
+    release_bundle.update(metadata(review_policy))
+    for recipe in release_bundle["recipes"]:
+        recipe["payload"].update(metadata(review_policy))
     release_evidence = {
         **deepcopy(candidate_evidence),
-        "contentStatus": "review_ready",
+        **metadata(review_policy), "contentStatus": "review_ready",
         "recipes": finalized_evidence,
         "clinicalReview": deepcopy(clinical_review),
+        "bundleFileSha256": serialized_json_sha256(release_bundle),
     }
     release_manifest_without_hash = {
+        **metadata(review_policy),
         "schema_version": 1,
         "profile_id": _required_text(profile, "profile_id"),
         "package_key": _required_text(profile, "package_key"),
@@ -554,6 +581,16 @@ def _validate_manifest(
             raise ManualGraphError(f"candidate {key} hash is invalid")
     if evidence.get("bundleFileSha256") != serialized_json_sha256(bundle):
         raise ManualGraphError("candidate evidence is not bound to the exact bundle file")
+
+
+def _iso_with_timezone(value: str, label: str) -> str:
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        raise ManualGraphError(f"{label} reviewed time must be an ISO-8601 timestamp") from None
+    if parsed.tzinfo is None:
+        raise ManualGraphError(f"{label} reviewed time must include a timezone")
+    return parsed.isoformat()
 
 
 def _validate_approval(value: Any, roles: set[str], label: str, version_id: str) -> dict[str, Any]:

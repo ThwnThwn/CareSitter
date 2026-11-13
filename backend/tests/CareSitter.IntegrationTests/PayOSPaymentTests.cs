@@ -201,9 +201,9 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
             .Where(x => x.BookingId == booking.Id).ToListAsync());
         Assert.Equal(BookingStatus.Cancelled, closed.Status);
         var queue = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit())
-            .ListAsync();
-        Assert.Single(queue); Assert.False(queue[0].CanResolve);
-        Assert.Contains("PAYOS_LATE_PAYMENT", queue[0].ManualReviewReason);
+            .ListAsync(page: 1, pageSize: 20);
+        var item = Assert.Single(queue.Items); Assert.False(item.CanResolve);
+        Assert.Contains("PAYOS_LATE_PAYMENT", item.ManualReviewReason);
         var rejected = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit())
             .ResolveAsync(new ResolvePaymentReviewCommand(intent.Id, true, "Test cannot reopen", "bank-reference"));
         Assert.True(rejected.IsFailure);
@@ -223,9 +223,9 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         Assert.Equal(200, (await scope.PayOS.ProcessWebhookAsync(_bank.Webhook(intent, "second-transfer"))).StatusCode);
         Assert.Single(await scope.Payments.LedgerEntries
             .Where(x => x.BookingId == booking.Id).ToListAsync());
-        var queue = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit()).ListAsync();
-        Assert.Single(queue); Assert.False(queue[0].CanResolve);
-        Assert.Contains("PAYOS_ADDITIONAL_PAYMENT", queue[0].ManualReviewReason);
+        var queue = await new PaymentReconciliationProcessor(scope.Payments, scope.Gateway, scope.Finalizer, scope.Outbox, new Audit()).ListAsync(page: 1, pageSize: 20);
+        var item = Assert.Single(queue.Items); Assert.False(item.CanResolve);
+        Assert.Contains("PAYOS_ADDITIONAL_PAYMENT", item.ManualReviewReason);
     }
 
     [PostgresFact]

@@ -11,10 +11,17 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class GeminiMealCandidateRankerTests
 {
-    [Fact]
-    public async Task Request_is_structured_and_response_preserves_supplied_catalog_ids()
+    [Theory]
+    [InlineData("source_and_clinical")]
+    [InlineData("non_medical_reference")]
+    public async Task Request_is_structured_and_response_preserves_supplied_catalog_ids(string policy)
     {
         var request = Request();
+        request = request with
+        {
+            CandidateSets = request.CandidateSets.Select(set => set.Select(recipe => recipe with { ReviewPolicy = policy }).ToArray()).ToArray(),
+            Evidence = request.Evidence.Select(item => item with { Excerpt = "SYNTHETIC_BOOK_TEXT_SENTINEL" }).ToArray()
+        };
         var selected = request.CandidateSets[1];
         var output = new
         {
@@ -47,8 +54,14 @@ public sealed class GeminiMealCandidateRankerTests
         var input = JsonDocument.Parse(body.RootElement.GetProperty("contents")[0]
             .GetProperty("parts")[0].GetProperty("text").GetString()!);
         Assert.Equal(2, input.RootElement.GetProperty("candidateSets").GetArrayLength());
+        var preferences = input.RootElement.GetProperty("preferences");
+        Assert.Equal("prefer_dry", preferences.GetProperty("mealFormat").GetString());
+        Assert.Equal("cá", preferences.GetProperty("preferredFoods")[0].GetString());
+        Assert.Equal("cháo", preferences.GetProperty("dislikedFoods")[0].GetString());
         Assert.False(input.RootElement.GetProperty("healthFacts")[0].TryGetProperty("quote", out _));
         Assert.False(input.RootElement.GetProperty("evidence")[0].TryGetProperty("excerpt", out _));
+        Assert.DoesNotContain("SYNTHETIC_BOOK_TEXT_SENTINEL", handler.Body!);
+        Assert.DoesNotContain("review_policy", handler.Body!);
     }
 
     [Fact]
@@ -89,6 +102,23 @@ public sealed class GeminiMealCandidateRankerTests
     }
 
     [Fact]
+    public async Task Waiting_for_a_ranker_slot_counts_toward_the_fallback_deadline()
+    {
+        var options = EnabledOptions() with { TimeoutSeconds = 1, MaxConcurrency = 1 };
+        using var client = new HttpClient(new TimeoutHandler()) { BaseAddress = new Uri(options.BaseUrl) };
+        using var guard = new MealRankingRuntimeGuard(options, TimeProvider.System);
+        using var occupied = await guard.EnterAsync(default);
+        var ranker = new GeminiMealCandidateRanker(client, Options.Create(options), guard,
+            NullLogger<GeminiMealCandidateRanker>.Instance);
+        using var caller = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+        var result = await ranker.RankAsync(Request(), caller.Token);
+
+        Assert.False(result.Available);
+        Assert.Equal(["meal_ranking_timeout"], result.Warnings);
+    }
+
+    [Fact]
     public void Validator_requires_explicit_data_processing_approval()
     {
         var validator = new MealRankingOptionsValidator();
@@ -119,7 +149,7 @@ public sealed class GeminiMealCandidateRankerTests
         return new(7, [[breakfast1, lunch, dinner], [breakfast2, lunch, dinner]],
             [new("condition", "HYPERTENSION", "Tăng huyết áp", "present", "current", "note", "raw quote", "beneficiary")],
             [], [new("evidence-1", "Khuyến nghị", null, "10", "pdf-page:10", "Nguồn, trang 10", "Giảm muối")],
-            "regular", "maintain");
+            "regular", "maintain", null, new("prefer_dry", ["cá"], ["cháo"]));
     }
 
     private static Recipe Recipe(string mealType, decimal energy) => new(Guid.NewGuid(), $"Fixture {mealType}",

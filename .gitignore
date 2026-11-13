@@ -16,6 +16,13 @@
 !/backend/**
 !/deploy/
 !/deploy/**
+!/firebase/
+/firebase/*
+!/firebase/firebase.json
+!/firebase/storage.rules
+!/firebase/storage.rules.test.mjs
+!/firebase/package.json
+!/firebase/package-lock.json
 !/frontend/
 !/frontend/**
 !/tools/
@@ -102,6 +109,8 @@ __pycache__/
 .venv/
 *.egg-info/
 [Dd]ebug/
+!/frontend/customer-app/android/app/src/debug/
+!/frontend/caregiver-app/android/app/src/debug/
 [Rr]elease/
 artifacts/
 *.dll

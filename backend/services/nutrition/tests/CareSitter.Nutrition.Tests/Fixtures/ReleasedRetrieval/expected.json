@@ -1,0 +1,158 @@
+[
+  {
+    "case_id": "synthetic-q00",
+    "chunk_ids": [
+      "synthetic-a",
+      "synthetic-b"
+    ],
+    "question_sha256": "808550c01675cea85287464f19dae79f137334c1c749f2177ab42937f050308a"
+  },
+  {
+    "case_id": "synthetic-q01",
+    "chunk_ids": [
+      "synthetic-a",
+      "synthetic-b"
+    ],
+    "question_sha256": "9948ce3255ca901c3ab1eb95aab6f07d2b38ab20935db7650fa0750e99ec85bb"
+  },
+  {
+    "case_id": "synthetic-q02",
+    "chunk_ids": [
+      "synthetic-a",
+      "synthetic-b"
+    ],
+    "question_sha256": "95f233cbc61b07d3d23f322f63c6707b208f71711bc5ef4576df642f5a556ab7"
+  },
+  {
+    "case_id": "synthetic-q03",
+    "chunk_ids": [
+      "synthetic-b",
+      "synthetic-a",
+      "synthetic-c"
+    ],
+    "question_sha256": "8699c283c398720a362e02f9be0a7929eb182d4e560148b7f0d099b08a34472e"
+  },
+  {
+    "case_id": "synthetic-q04",
+    "chunk_ids": [
+      "synthetic-a"
+    ],
+    "question_sha256": "fc4dcd4e9db99d9bb4d800c232de6289cc2c38c635891ca89919aff8c9a59e22"
+  },
+  {
+    "case_id": "synthetic-q05",
+    "chunk_ids": [
+      "synthetic-d",
+      "synthetic-e"
+    ],
+    "question_sha256": "319e2ba078f51cfad133ae161e413fb38dcfdd3b5348907aa82d909f8d86d800"
+  },
+  {
+    "case_id": "synthetic-q06",
+    "chunk_ids": [
+      "synthetic-d",
+      "synthetic-e"
+    ],
+    "question_sha256": "baf32fe72df536ad4bb3318edbcec9b3043e20fce4936b436065475dfdc3ff7d"
+  },
+  {
+    "case_id": "synthetic-q07",
+    "chunk_ids": [],
+    "question_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "case_id": "synthetic-q08",
+    "chunk_ids": [],
+    "question_sha256": "e84c538e7fe250730ef62de220c40dfa808d3008c0cdb437181564b88b8714b8"
+  },
+  {
+    "case_id": "synthetic-q09",
+    "chunk_ids": [],
+    "question_sha256": "5c7fc204e1d955abba36b7506f031a51e26c20f4de3264890d8c9a3ede45d0c1"
+  },
+  {
+    "case_id": "synthetic-q10",
+    "chunk_ids": [],
+    "question_sha256": "35ea5afa8f4aeb8760c261e6dcf8e0ed7f3ee9da946abb3f3d0d8280aa2ff0e6"
+  },
+  {
+    "case_id": "synthetic-q11",
+    "chunk_ids": [
+      "synthetic-b",
+      "synthetic-c",
+      "synthetic-a"
+    ],
+    "question_sha256": "28ff424c2694c2cca97f8b4d77ed66a436fdd004dda150987184656620ee90f6"
+  },
+  {
+    "case_id": "synthetic-q12",
+    "chunk_ids": [
+      "synthetic-a"
+    ],
+    "question_sha256": "c6b8aa89a2be8b2ff829ce3e44ed0451e0a1a023c828d6d54905fbb4492b6bab"
+  },
+  {
+    "case_id": "synthetic-q13",
+    "chunk_ids": [
+      "synthetic-a",
+      "synthetic-b"
+    ],
+    "question_sha256": "b30603b338b1bc6ec137cbd175562eefce5bed633c83b8c16a007b8096e85436"
+  },
+  {
+    "case_id": "synthetic-q14",
+    "chunk_ids": [
+      "synthetic-c",
+      "synthetic-b"
+    ],
+    "question_sha256": "8cc28d7bb429b13e1c0d7a680f0d014880b39ac5555cd98072519fa763436984"
+  },
+  {
+    "case_id": "synthetic-threshold",
+    "chunk_ids": [],
+    "question_sha256": "18d63be10ad544a04a22c944dee01d6d864ec69b797a58edae92e6a44ad8fdbf"
+  },
+  {
+    "case_id": "synthetic-top1",
+    "chunk_ids": [
+      "synthetic-d"
+    ],
+    "question_sha256": "319e2ba078f51cfad133ae161e413fb38dcfdd3b5348907aa82d909f8d86d800"
+  },
+  {
+    "case_id": "synthetic-filter",
+    "chunk_ids": [],
+    "question_sha256": "18d63be10ad544a04a22c944dee01d6d864ec69b797a58edae92e6a44ad8fdbf"
+  },
+  {
+    "case_id": "synthetic-edition-2019",
+    "chunk_ids": [
+      "synthetic-b",
+      "synthetic-c",
+      "synthetic-a"
+    ],
+    "question_sha256": "33fe3d8ada342b4eb2a4ef6f6016f8a556bd22aefbb2e4e255680873ad9ef36f"
+  },
+  {
+    "case_id": "synthetic-edition-2024",
+    "chunk_ids": [],
+    "question_sha256": "a9d92c810e9a68badecd32e41cc4879886571f3eeb89653660d4f9a6376040eb"
+  },
+  {
+    "case_id": "synthetic-edition-missing",
+    "chunk_ids": [],
+    "question_sha256": "1b5cfdcbfa1fb771b5149fff797ff9ac23fa76e95dfbd68d8ce1150ec9dda0ab"
+  },
+  {
+    "case_id": "synthetic-round-accept",
+    "chunk_ids": [
+      "synthetic-a"
+    ],
+    "question_sha256": "fc4dcd4e9db99d9bb4d800c232de6289cc2c38c635891ca89919aff8c9a59e22"
+  },
+  {
+    "case_id": "synthetic-round-reject",
+    "chunk_ids": [],
+    "question_sha256": "fc4dcd4e9db99d9bb4d800c232de6289cc2c38c635891ca89919aff8c9a59e22"
+  }
+]

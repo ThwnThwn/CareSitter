@@ -27,8 +27,20 @@ class NutritionRepository {
           .map(RecipeOptionModel.fromJson)
           .toList();
   Future<List<MealPlanSummaryModel>> savedPlans(
-          String id, ApiCancellation token) async =>
-      (await list(id, 'meal-plans', token))
+          String id, ApiCancellation token,
+          {DateTime? weekStart}) async =>
+      (await list(
+              id,
+              Uri(
+                path: 'meal-plans',
+                queryParameters: weekStart == null
+                    ? null
+                    : {
+                        'weekStart':
+                            weekStart.toIso8601String().split('T').first,
+                      },
+              ).toString(),
+              token))
           .map(MealPlanSummaryModel.fromJson)
           .toList();
   Future<HealthProfileModel> health(String id, ApiCancellation token) async =>

@@ -11,6 +11,7 @@ import 'package:caresitter_customer/core/router/app_routes.dart';
 
 import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/core/widgets/app_messenger.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 
 NotificationDeepLinkService createNotificationDeepLinkService(Ref ref) {
   final service = AppNotificationDeepLinkService(ref);
@@ -93,20 +94,19 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     required Map<String, dynamic> data,
     String? deliveryId,
   }) {
-    final messenger = appMessengerKey.currentState;
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(body.isEmpty ? title : '$title\n$body'),
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: 'Xem',
-            onPressed: () => handle(data, deliveryId: deliveryId),
-          ),
+    final context = appMessengerKey.currentContext;
+    if (context == null) return;
+    AppToast.showLegacy(
+      context,
+      SnackBar(
+        content: Text(body.isEmpty ? title : '$title\n$body'),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: 'Xem',
+          onPressed: () => handle(data, deliveryId: deliveryId),
         ),
-      );
+      ),
+    );
   }
 
   Future<void> _listenForNativeLinks() async {

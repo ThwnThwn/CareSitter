@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/phone_login_form.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/phone_login_security_icon.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +44,8 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       if (mounted) context.push(AppRoutes.otp, extra: phone);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        AppToast.showLegacy(
+          context,
           SnackBar(
               content: Text(e.toString()), backgroundColor: AppColors.error),
         );

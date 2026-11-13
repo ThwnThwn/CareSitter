@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/features/auth/data/services/firebase_identity_bridge.dart';
+import 'package:caresitter_customer/features/auth/domain/firebase_identity_bridge.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +29,23 @@ class _Repository extends AuthRepository {
   _Repository() : super(_Client());
   Completer<AuthResponse>? pending;
   bool failLogout = false;
+  bool failGoogle = false;
+  String? firebaseToken;
+  AuthResponse? detached;
+  @override
+  Future<AuthResponse> loginWithFirebaseGoogleToken(String token) async {
+    firebaseToken = token;
+    if (failGoogle) {
+      throw const AppApiException(message: 'Unavailable', statusCode: 503);
+    }
+    return pending == null ? response : await pending!.future;
+  }
+
+  @override
+  Future<void> revokeDetachedSession(AuthResponse response) async {
+    detached = response;
+  }
+
   String? revoked;
   @override
   Future<AuthResponse> login(LoginRequest request) async =>
@@ -57,11 +76,35 @@ class _Google implements GoogleIdentityGateway {
   Future<void> clearLocalSelection() async {}
 }
 
+class _Firebase implements FirebaseIdentityBridge {
+  String? boundOwner;
+  int exchanges = 0, signouts = 0;
+  @override
+  Future<String?> exchangeGoogleToken(String token) async {
+    exchanges++;
+    return 'firebase-token';
+  }
+
+  @override
+  Future<void> bindOwner(String owner) async {
+    boundOwner = owner;
+  }
+
+  @override
+  Future<bool> reconcileSession(String? owner) async => true;
+  @override
+  Future<void> signOut() async {
+    signouts++;
+    boundOwner = null;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   late ProviderContainer container;
   late _Repository repository;
+  late _Firebase firebase;
   late Map<String, String> storageValues;
   setUp(() async {
     storageValues = <String, String>{};
@@ -79,8 +122,10 @@ void main() {
       return null;
     });
     repository = _Repository();
+    firebase = _Firebase();
     container = ProviderContainer(overrides: [
       authRepositoryProvider.overrideWithValue(repository),
+      firebaseIdentityBridgeProvider.overrideWithValue(firebase),
       profileStoreProvider.overrideWith((ref) => _Profile(ref)),
       googleIdentityGatewayProvider.overrideWithValue(_Google())
     ]);
@@ -154,5 +199,57 @@ void main() {
     expect(repository.revoked, 'test-refresh');
     expect(container.read(authStateProvider).value!.isAuthenticated, isFalse);
     expect(container.read(profileStoreProvider).name, isEmpty);
+  });
+  test(
+      'native Google exchange sends Firebase ID token and binds the accepted CareSitter owner',
+      () async {
+    await container
+        .read(authSessionControllerProvider)
+        .loginWithGoogleIdToken('google-token');
+    expect(firebase.exchanges, 1);
+    expect(repository.firebaseToken, 'firebase-token');
+    expect(firebase.boundOwner, 'owner');
+    expect(container.read(authStateProvider).value!.userId, 'owner');
+  });
+  test(
+      'backend failure clears the partial Firebase login without accepting a CareSitter session',
+      () async {
+    repository.failGoogle = true;
+    await expectLater(
+        container
+            .read(authSessionControllerProvider)
+            .loginWithGoogleIdToken('google-token'),
+        throwsA(isA<AppApiException>()));
+    expect(firebase.signouts, 1);
+    expect(container.read(authStateProvider).value!.isAuthenticated, isFalse);
+  });
+  test(
+      'logout during a pending Google exchange revokes the detached backend session',
+      () async {
+    repository.pending = Completer<AuthResponse>();
+    final signingIn = container
+        .read(authSessionControllerProvider)
+        .loginWithGoogleIdToken('google-token');
+    final check = expectLater(signingIn, throwsStateError);
+    await Future<void>.delayed(Duration.zero);
+    await container.read(authSessionControllerProvider).logout();
+    repository.pending!.complete(response);
+    await check;
+    expect(repository.detached, response);
+    expect(firebase.boundOwner, isNull);
+    expect(container.read(authStateProvider).value!.isAuthenticated, isFalse);
+  });
+  test(
+      'logout invalidates a pending password attempt before it can publish a session',
+      () async {
+    repository.pending = Completer<AuthResponse>();
+    final signingIn = container.read(authSessionControllerProvider).login(
+        const LoginRequest(
+            email: 'demo@example.com', password: 'test-password'));
+    final check = expectLater(signingIn, throwsStateError);
+    await container.read(authSessionControllerProvider).logout();
+    repository.pending!.complete(response);
+    await check;
+    expect(container.read(authStateProvider).value!.isAuthenticated, isFalse);
   });
 }

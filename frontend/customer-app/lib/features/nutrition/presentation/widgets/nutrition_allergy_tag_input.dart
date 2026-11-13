@@ -9,7 +9,6 @@ class NutritionAllergyTagInput extends StatelessWidget {
     required this.focusNode,
     required this.enabled,
     required this.hasError,
-    required this.maxLength,
     required this.onChanged,
     required this.onSubmitted,
     required this.onRemove,
@@ -20,7 +19,6 @@ class NutritionAllergyTagInput extends StatelessWidget {
   final FocusNode focusNode;
   final bool enabled;
   final bool hasError;
-  final int maxLength;
   final ValueChanged<String> onChanged;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<String> onRemove;
@@ -36,8 +34,8 @@ class NutritionAllergyTagInput extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(AppRadius.control),
+          color: AppInputStyle.fillColor,
+          borderRadius: AppInputStyle.radius,
           border: Border.all(
             color: hasError ? AppColors.error : Colors.transparent,
             width: 1.5,
@@ -62,7 +60,6 @@ class NutritionAllergyTagInput extends StatelessWidget {
                   controller: input,
                   focusNode: focusNode,
                   enabled: enabled,
-                  maxLength: maxLength,
                   textInputAction: TextInputAction.done,
                   onChanged: onChanged,
                   onSubmitted: onSubmitted,

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  // CareSitter Onboarding Screen (Stitch).
+  static const Color onboardingTeal = Color(0xFF2BB5A0);
+  static const Color onboardingNavy = Color(0xFF1F3A4D);
+  static const Color onboardingMuted = Color(0xFF4B6375);
+  static const Color onboardingSky = Color(0xFFDFF3F6);
+  static const Color onboardingDot = Color(0xFFD1E5E7);
   // Palette cũ được gom về đây để giữ nguyên màu khi refactor.
   static const Color legacyError = Color(0xFFE74C3C);
   static const Color legacyInfo = Color(0xFF2980B9);

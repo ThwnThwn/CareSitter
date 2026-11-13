@@ -46,15 +46,26 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             ["NutritionGateway:Enabled"] = "true", ["NutritionGateway:GrpcUrl"] = address,
             ["NutritionGateway:ServiceKey"] = _gateway, ["NutritionGateway:TimeoutSeconds"] = "3"
         }).Build();
-        _apiHost = await new HostBuilder().ConfigureWebHost(web => web.UseTestServer().ConfigureServices(services =>
+        _apiHost = await new HostBuilder().UseEnvironment("Development").ConfigureWebHost(web => web.UseTestServer().ConfigureServices(services =>
         {
             services.AddLogging(); services.AddHttpContextAccessor();
             services.AddJwtAuthentication(configuration); services.AddSingleton<IAccessSessionValidator>(new Sessions());
             services.Configure<NutritionGatewayOptions>(configuration.GetSection("NutritionGateway"));
+            services.Configure<NutritionKnowledgeOptions>(options =>
+            {
+                options.Enabled = true;
+                options.LocalDemoLanAddress = "192.168.55.10";
+            });
             services.AddSingleton<INutritionGateway, NutritionGrpcGateway>();
             services.AddControllers().AddApplicationPart(typeof(NutritionGatewayController).Assembly);
         }).Configure(app =>
         {
+            app.Use(async (context, next) =>
+            {
+                context.Connection.LocalIpAddress = IPAddress.Parse("192.168.55.10");
+                context.Connection.RemoteIpAddress = IPAddress.Parse("192.168.55.20");
+                await next();
+            });
             app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.UseEndpoints(endpoints => endpoints.MapControllers());
         })).StartAsync();
         _http = _apiHost.GetTestClient();
@@ -108,9 +119,108 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(); Assert.True(body.GetProperty("enabled").GetBoolean());
         Assert.False(body.GetProperty("freeTextParserReady").GetBoolean());
+        Assert.Equal("Chỉ mang tính tham khảo.", body.GetProperty("disclaimer").GetString());
+        Assert.Equal("nutrition-reference-2026-11-10-v1", body.GetProperty("disclaimerVersion").GetString());
         Assert.Equal(_http.DefaultRequestHeaders.Authorization!.ToString(), _stub.Authorization);
         Assert.Equal(_gateway, _stub.GatewayKey);
         Assert.InRange(_stub.Deadline - DateTime.UtcNow, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+    }
+
+    [Theory]
+    [InlineData("192.168.55.10", false, true)]
+    [InlineData("192.168.55.10", true, false)]
+    [InlineData("tunnel.example", false, false)]
+    public async Task Excerpts_require_a_direct_demo_lan_request(string host, bool forwarded, bool expectedDemo)
+    {
+        Authenticate();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = host;
+        if (forwarded) request.Headers.Add("X-Forwarded-For", "203.0.113.10");
+        using var response = await _http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<NutritionKnowledgeSearchResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedDemo, _stub.KnowledgeRequest?.LocalDemo);
+        Assert.Equal(expectedDemo, result.LocalDemo);
+        Assert.Equal(expectedDemo ? "demo" : null, result.AnswerChunkId);
+        Assert.Equal(expectedDemo ? new[] { "demo" } : [], result.AnswerChunkIds);
+        Assert.Equal(expectedDemo ? "answered" : null, result.AnswerStatus);
+        Assert.Equal(expectedDemo ? "Gemini" : null, result.AnswerProvider);
+        Assert.Equal(expectedDemo ? 1 : 0, result.AnswerBlocks?.Count);
+        Assert.Equal(expectedDemo ? "Fixture source passage." : null, Assert.Single(result.Results).Excerpt);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Knowledge_suggestions_are_uncited_and_local_only(bool forwarded, bool forgedCitation)
+    {
+        Authenticate();
+        _stub.AnswerStatus = "ai_suggestion";
+        _stub.AnswerIds = [];
+        _stub.BlockIds = forgedCitation ? ["demo"] : [];
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = "192.168.55.10";
+        if (forwarded) request.Headers.Add("X-Forwarded-For", "203.0.113.10");
+        using var response = await _http.SendAsync(request);
+        if (forgedCitation)
+        {
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            return;
+        }
+        response.EnsureSuccessStatusCode();
+        var body = (await response.Content.ReadFromJsonAsync<NutritionKnowledgeSearchResponse>())!;
+        Assert.Empty(body.AnswerChunkIds!);
+        Assert.Equal(forwarded ? null : "ai_suggestion", body.AnswerStatus);
+        Assert.Equal(forwarded ? 0 : 1, body.AnswerBlocks!.Count);
+        if (!forwarded) Assert.Empty(Assert.Single(body.AnswerBlocks).ChunkIds);
+    }
+
+    [Fact]
+    public async Task Knowledge_preserves_five_sources_and_their_generated_answer_block()
+    {
+        Authenticate();
+        _stub.KnowledgeSources = 5;
+        _stub.AnswerIds = _stub.BlockIds = ["demo", "demo2", "demo3", "demo4", "demo5"];
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = "192.168.55.10";
+        using var response = await _http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<NutritionKnowledgeSearchResponse>();
+        Assert.Equal(5, body!.AnswerChunkIds!.Count);
+        Assert.Equal(_stub.BlockIds, Assert.Single(body.AnswerBlocks!).ChunkIds);
+        Assert.Equal("Gemini generated fixture answer.", Assert.Single(body.AnswerBlocks!).Text);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("demo,demo")]
+    public async Task Knowledge_rejects_generated_paragraphs_with_invalid_source_binding(string ids)
+    {
+        Authenticate();
+        _stub.BlockIds = ids.Split(',');
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = "192.168.55.10";
+        using var response = await _http.SendAsync(request);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.DoesNotContain("Gemini generated fixture answer.", await response.Content.ReadAsStringAsync());
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("demo,demo")]
+    public async Task Knowledge_rejects_invalid_citations_from_internal_service(string ids)
+    {
+        Authenticate();
+        _stub.AnswerIds = ids.Split(',');
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = "192.168.55.10";
+        using var response = await _http.SendAsync(request);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.DoesNotContain("Fixture source passage.", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -127,6 +237,47 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         var data = await response.Content.ReadFromJsonAsync<JsonElement>(); Assert.Equal("queued", data.GetProperty("status").GetString());
         Assert.Equal(_beneficiary.ToString(), data.GetProperty("beneficiaryId").GetString());
         Assert.Equal(12.34m, data.GetProperty("data").GetProperty("exactNumber").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Meal_recommendation_trace_fields_pass_through_with_existing_casing()
+    {
+        Authenticate();
+        _stub.DataJson = """
+            {"recommendationTrace":{"releaseStatus":"reference","retrievalStrategy":"keyword","graphRole":"explanation",
+            "citations":[{"title":"Sách","chapter":"Chương 1","heading":"Mục","pages":"12","graphPath":[{"nodeId":"topic:1","heading":"Mục","pages":[12]}]}],
+            "disclaimer":"Chỉ mang tính tham khảo.","disclaimerVersion":"nutrition-reference-2026-11-10-v1"}}
+            """;
+        try
+        {
+            var response = await _http.PostAsJsonAsync($"/api/v1/beneficiaries/{_beneficiary}/meal-recommendations",
+                new { expectedHealthRevision = 7, idempotencyKey = Guid.NewGuid(), assessmentId = Guid.NewGuid() });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var trace = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("data").GetProperty("recommendationTrace");
+            Assert.Equal("reference", trace.GetProperty("releaseStatus").GetString());
+            Assert.Equal("explanation", trace.GetProperty("graphRole").GetString());
+            Assert.Equal("topic:1", trace.GetProperty("citations")[0].GetProperty("graphPath")[0].GetProperty("nodeId").GetString());
+            Assert.Equal("nutrition-reference-2026-11-10-v1", trace.GetProperty("disclaimerVersion").GetString());
+        }
+        finally { _stub.DataJson = "{\"exactNumber\":12.34}"; }
+    }
+
+    [Theory]
+    [InlineData("nutrition-assessments", 202)]
+    [InlineData("nutrition-assessments/{id}/confirm", 200)]
+    [InlineData("meal-recommendations", 200)]
+    [InlineData("meal-recommendations/{id}/replacements", 200)]
+    [InlineData("meal-plans", 200)]
+    public async Task Committed_stale_write_preserves_status_identity_and_original_revision(string route, int status)
+    {
+        Authenticate(); _stub.ResourceStatus = "stale";
+        var response = await _http.PostAsJsonAsync($"/api/v1/beneficiaries/{_beneficiary}/{route.Replace("{id}", Guid.NewGuid().ToString())}",
+            new { expectedHealthRevision = 7, idempotencyKey = Guid.NewGuid() });
+        Assert.Equal(status, (int)response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("stale", body.GetProperty("status").GetString());
+        Assert.Equal(_stub.ResourceId.ToString(), body.GetProperty("id").GetString());
+        Assert.Equal(7, body.GetProperty("healthRevision").GetInt64());
     }
 
     [Theory]
@@ -253,6 +404,15 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret)), SecurityAlgorithms.HmacSha256));
         _http.DefaultRequestHeaders.Authorization = new("Bearer", new JwtSecurityTokenHandler().WriteToken(token));
     }
+    [Fact]
+    public async Task Week_start_is_forwarded_to_the_meal_plan_rpc()
+    {
+        Authenticate("CUSTOMER");
+        using var response = await _http.GetAsync($"/api/v1/beneficiaries/{_beneficiary}/meal-plans?weekStart=2027-01-03");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("2027-01-03", _stub.WeekStart);
+    }
+
     private sealed class Sessions : IAccessSessionValidator
     {
         public Task<bool> IsActiveAsync(Guid user, Guid session, CancellationToken ct = default) => Task.FromResult(true);
@@ -266,9 +426,15 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         public DateTime Deadline;
         public CommandRequest? Command;
         public ResourceRequest? Query;
-        public string? ListBeneficiary, MealType;
+        public KnowledgeSearchRequest? KnowledgeRequest;
+        public string[] AnswerIds = ["demo"];
+        public string[] BlockIds = ["demo"];
+        public int KnowledgeSources = 1;
+        public string AnswerStatus = "answered";
+        public string? ListBeneficiary, MealType, WeekStart;
         public Failure? Failure;
         public Status? TransportError;
+        public string ResourceStatus = "queued";
         public string DataJson = "{\"exactNumber\":12.34}";
         public bool Block;
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -281,6 +447,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             binder.AddMethod(Method("GetResource", ResourceRequest.Parser, ResourceResult.Parser), service is null ? null : service.GetResource);
             binder.AddMethod(Method("ListMealPlans", BeneficiaryRequest.Parser, ResourceListResult.Parser), service is null ? null : service.ListMealPlans);
             binder.AddMethod(Method("GetReplacementOptions", ReplacementOptionsRequest.Parser, RecipeListResult.Parser), service is null ? null : service.GetReplacementOptions);
+            binder.AddMethod(Method("SearchKnowledge", KnowledgeSearchRequest.Parser, KnowledgeSearchResponse.Parser), service is null ? null : service.SearchKnowledge);
         }
         private static Method<TRequest, TResponse> Method<TRequest, TResponse>(string name, MessageParser<TRequest> input, MessageParser<TResponse> output)
             where TRequest : class, IMessage<TRequest> where TResponse : class, IMessage<TResponse> =>
@@ -300,7 +467,8 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             }
         }
         public virtual async Task<CapabilitiesResponse> GetCapabilities(Empty request, ServerCallContext context)
-        { await ObserveAsync(context); return new() { Enabled = true, AssessmentsEnabled = true, RecommendationsEnabled = true }; }
+        { await ObserveAsync(context); return new() { Enabled = true, AssessmentsEnabled = true, RecommendationsEnabled = true,
+            Disclaimer = "Chỉ mang tính tham khảo.", DisclaimerVersion = "nutrition-reference-2026-11-10-v1" }; }
         public virtual async Task<ResourceResult> Execute(CommandRequest request, ServerCallContext context)
         { await ObserveAsync(context); Command = request; return Result(request.BeneficiaryId); }
         public virtual async Task<ResourceResult> GetResource(ResourceRequest request, ServerCallContext context)
@@ -308,6 +476,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         public virtual async Task<ResourceListResult> ListMealPlans(BeneficiaryRequest request, ServerCallContext context)
         {
             await ObserveAsync(context); ListBeneficiary = request.BeneficiaryId;
+            WeekStart = request.HasWeekStart ? request.WeekStart : null;
             var list = new ResourceList(); list.Resources.Add(Result(request.BeneficiaryId).Resource);
             return new() { Items = list };
         }
@@ -317,10 +486,26 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             var list = new RecipeList(); list.Recipes.Add(new RecipeOption { DataJson = "{\"name\":\"Recipe\"}" });
             return new() { Items = list };
         }
+        public virtual async Task<KnowledgeSearchResponse> SearchKnowledge(KnowledgeSearchRequest request, ServerCallContext context)
+        {
+            await ObserveAsync(context);
+            KnowledgeRequest = request;
+            var result = new KnowledgeSearchResponse { Query = request.Query, LocalDemo = true, AnswerChunkId = AnswerStatus == "ai_suggestion" ? "" : "demo",
+                AnswerStatus = AnswerStatus, AnswerProvider = "Gemini" };
+            result.AnswerChunkIds.AddRange(AnswerIds);
+            for (var index = 1; index <= KnowledgeSources; index++)
+                result.Results.Add(new KnowledgeHit { ChunkId = index == 1 ? "demo" : $"demo{index}", Heading = "Fixture",
+                    SourceTitle = "Test", PdfPage = index + 3, SourceRevisionId = "v1", Excerpt = "Fixture source passage." });
+            var block = new KnowledgeAnswerBlock { Text = "Gemini generated fixture answer." };
+            block.ChunkIds.AddRange(BlockIds);
+            result.AnswerBlocks.Add(block);
+            return result;
+        }
+
         private ResourceResult Result(string beneficiary) => Failure is not null ? new() { Failure = Failure } : new()
         {
             Resource = new Resource { Id = ResourceId.ToString(), BeneficiaryId = BeneficiaryOverride ?? beneficiary,
-                HealthRevision = 7, Status = "queued", DataJson = DataJson, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) }
+                HealthRevision = 7, Status = ResourceStatus, DataJson = DataJson, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) }
         };
     }
 }

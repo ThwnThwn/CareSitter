@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -35,7 +36,8 @@ class BookingDetailShowMoreOptionsCtxStatusContent extends StatelessWidget {
                 title: const Text('Chia sẻ lịch hẹn'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.showLegacy(
+                    context,
                     const SnackBar(
                         content: Text('Đã sao chép thông tin lịch hẹn')),
                   );
@@ -47,7 +49,8 @@ class BookingDetailShowMoreOptionsCtxStatusContent extends StatelessWidget {
                 title: const Text('In hóa đơn'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.showLegacy(
+                    context,
                     const SnackBar(
                         content: Text('Tính năng in hóa đơn sẽ sớm ra mắt')),
                   );
@@ -79,7 +82,8 @@ class BookingDetailShowMoreOptionsCtxStatusContent extends StatelessWidget {
                 title: const Text('Liên hệ hỗ trợ'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  AppToast.showLegacy(
+                    context,
                     const SnackBar(
                         content: Text('Đang kết nối với bộ phận hỗ trợ...')),
                   );

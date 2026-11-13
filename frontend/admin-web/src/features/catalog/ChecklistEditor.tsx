@@ -1,4 +1,5 @@
 import { EmptyState, ErrorBanner, LoadingTable, StatusChip } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { CatalogService } from '../../types';
 import { useChecklistEditor } from './useChecklistEditor';
 
@@ -6,11 +7,14 @@ export function ChecklistEditor({
   service,
   onBusy,
   onPolicyChanged,
+  onChanged,
 }: {
   service: CatalogService;
   onBusy: (value: boolean) => void;
   onPolicyChanged: (value: boolean) => void;
+  onChanged: (message: string) => void;
 }) {
+  const confirm = useConfirmation();
   const {
     templates,
     loading,
@@ -30,7 +34,7 @@ export function ChecklistEditor({
     toggleTemplate,
     removeTemplate,
     editTemplate,
-  } = useChecklistEditor(service, onBusy, onPolicyChanged);
+  } = useChecklistEditor(service, onBusy, onPolicyChanged, onChanged);
   return (
     <section className="data-panel">
       <div className="panel-heading">
@@ -89,10 +93,8 @@ export function ChecklistEditor({
                 <button
                   className="row-action danger-text"
                   disabled={disabled}
-                  onClick={() => {
-                    if (window.confirm(`Xóa “${template.name}” khỏi checklist?`))
-                      void removeTemplate(template);
-                  }}
+                  onClick={() => void confirm({ title: 'Xóa công việc khỏi checklist?', message: template.name, confirmLabel: 'Xóa công việc' })
+                    .then((accepted) => { if (accepted) void removeTemplate(template); })}
                 >
                   Xóa
                 </button>

@@ -67,8 +67,8 @@ class NutritionMenuView extends StatelessWidget {
             onPressed: flow.loading ? null : onCreateWeek,
             icon: const Icon(Icons.date_range_rounded),
             label: Text(flow.weekProgress == null
-                ? 'Tạo thực đơn 7 ngày từ ngày đã chọn'
-                : 'Đang tạo ${flow.weekProgress}/7 ngày...'),
+                ? 'Tạo thực đơn mới'
+                : 'Đang tạo ${flow.weekProgress}/${flow.planTargetDays ?? 7} ngày...'),
           ),
         ],
         if (isLoadingSelectedDate) ...[

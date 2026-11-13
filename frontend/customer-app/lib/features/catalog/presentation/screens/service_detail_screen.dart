@@ -1,3 +1,5 @@
+import '../controllers/service_view_controller.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/features/catalog/presentation/controllers/service_controller.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/service_detail_content.dart';
@@ -13,6 +15,7 @@ class ServiceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(serviceViewControllerProvider(serviceId));
     final services = ref.watch(serviceStoreProvider);
     final checklist = ref.watch(serviceChecklistProvider(serviceId));
     return services.when(
@@ -35,7 +38,8 @@ class ServiceDetailScreen extends ConsumerWidget {
               ref.invalidate(serviceChecklistProvider(serviceId)),
           onBack: () =>
               context.canPop() ? context.pop() : context.go(AppRoutes.catalog),
-          onShare: () => ScaffoldMessenger.of(context).showSnackBar(
+          onShare: () => AppToast.showLegacy(
+            context,
             const SnackBar(
               content: Text('Đã sẵn sàng để chia sẻ dịch vụ.'),
             ),

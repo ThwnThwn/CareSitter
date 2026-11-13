@@ -1,4 +1,4 @@
-﻿using CareSitter.Nutrition.Domain;
+using CareSitter.Nutrition.Domain;
 
 namespace CareSitter.Nutrition.Application;
 
@@ -83,8 +83,8 @@ public static class MealConstraintPolicy
     public static Recipe[][] CandidateSets(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain",
         int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null,
-        IReadOnlyList<Recipe[]>? previousMenus = null, IReadOnlyList<Recipe>? yesterdayMeals = null,
-        string? varietySeed = null)
+        IReadOnlyList<Recipe[]>? previousMenus = null, MealPreferences? preferences = null,
+        IReadOnlyList<Recipe>? yesterdayMeals = null, string? varietySeed = null)
     {
         if (maximum < 1) throw new ArgumentOutOfRangeException(nameof(maximum));
         // Bounded catalog avoids unbounded combinations. No constraint is dropped to find a result.
@@ -105,23 +105,35 @@ public static class MealConstraintPolicy
         }
         // Apply variety before the shortlist: otherwise all twelve sets can repeat yesterday's meals.
         // Never relax allergies, dietary pattern or nutrient constraints to achieve variety.
-        // Newer dishes weigh more than older ones: the fewest repeats of yesterday, then of the
-        // recent window, then of every remembered menu (up to six days).
         if (yesterdayMeals is { Count: > 0 })
             candidates = KeepFewestRepeats(candidates, yesterdayMeals);
         if (recentMeals is { Count: > 0 })
             candidates = KeepFewestRepeats(candidates, recentMeals);
         if (previousMenus is { Count: > 0 })
             candidates = KeepFewestRepeats(candidates, previousMenus.SelectMany(menu => menu).ToArray());
+        candidates = candidates
+            .Select((meals, index) => new
+            {
+                Meals = meals,
+                Penalty = PreferencePenalty(meals, preferences),
+                Index = index
+            })
+            .OrderBy(value => value.Penalty)
+            .ThenBy(value => value.Index)
+            .Select(value => value.Meals)
+            .ToList();
         var ranked = candidates
-            .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals), index))
+            .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals),
+                PreferencePenalty(meals, preferences), index))
             .Where(value => value.Energy is not null)
             .ToArray();
         if (ranked.Length == 0) return candidates.Take(maximum).ToArray();
         var ordered = nutritionGoal switch
         {
-            "lose" => ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index),
-            "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index),
+            "lose" => ranked.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy)
+                .ThenBy(value => value.Index),
+            "gain" => ranked.OrderBy(value => value.PreferencePenalty).ThenByDescending(value => value.Energy)
+                .ThenBy(value => value.Index),
             _ => OrderAroundMedian(ranked)
         };
         var final = varietySeed is null ? ordered.ToArray() : ShuffleEnergyBand(ordered.ToArray(), varietySeed);
@@ -149,7 +161,8 @@ public static class MealConstraintPolicy
         if (ordered.Length < 2) return ordered;
         var target = ordered[0].Energy!.Value;
         var tolerance = Math.Abs(target) * VarietyEnergyBand;
-        bool InBand(RankedCandidate value) => Math.Abs(value.Energy!.Value - target) <= tolerance;
+        bool InBand(RankedCandidate value) => value.PreferencePenalty == ordered[0].PreferencePenalty &&
+            Math.Abs(value.Energy!.Value - target) <= tolerance;
         var band = ordered.Where(InBand)
             .OrderBy(value => VarietyKey(seed, value.Meals), StringComparer.Ordinal)
             .ToArray();
@@ -160,17 +173,27 @@ public static class MealConstraintPolicy
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(seed + "\n" + MenuIds(meals))));
 
-    public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal)
+    public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal,
+        MealPreferences? preferences = null)
     {
-        var values = recipes.Select((recipe, index) => new { Recipe = recipe, Energy = Energy(recipe), Index = index }).ToArray();
+        var values = recipes.Select((recipe, index) => new
+        {
+            Recipe = recipe,
+            Energy = Energy(recipe),
+            PreferencePenalty = PreferencePenalty([recipe], preferences),
+            Index = index
+        }).ToArray();
         var known = values.Where(value => value.Energy is not null).OrderBy(value => value.Energy).ToArray();
         if (known.Length == 0) return values.OrderBy(value => value.Index).Select(value => value.Recipe);
         var median = known[known.Length / 2].Energy!.Value;
         return nutritionGoal switch
         {
-            "lose" => values.OrderBy(value => value.Energy is null).ThenBy(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
-            "gain" => values.OrderBy(value => value.Energy is null).ThenByDescending(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
-            _ => values.OrderBy(value => value.Energy is null).ThenBy(value => value.Energy is null ? decimal.MaxValue : Math.Abs(value.Energy.Value - median))
+            "lose" => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenBy(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
+            "gain" => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenByDescending(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
+            _ => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenBy(value => value.Energy is null ? decimal.MaxValue : Math.Abs(value.Energy.Value - median))
                 .ThenBy(value => value.Index).Select(value => value.Recipe)
         };
     }
@@ -202,11 +225,55 @@ public static class MealConstraintPolicy
         var sorted = ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index).ToArray();
         var baseline = sorted[sorted.Length / 2];
         var median = baseline.Energy!.Value;
-        return ranked.OrderBy(value => value.Index == baseline.Index ? 0 : 1)
+        return ranked.OrderBy(value => value.PreferencePenalty)
+            .ThenBy(value => value.Index == baseline.Index ? 0 : 1)
             .ThenBy(value => Math.Abs(value.Energy!.Value - median)).ThenBy(value => value.Index);
     }
 
-    private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy, int Index);
+    private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy,
+        int PreferencePenalty, int Index);
+
+    private static int PreferencePenalty(IEnumerable<Recipe> meals, MealPreferences? preferences)
+    {
+        if (preferences is null) return 0;
+        var penalty = 0;
+        foreach (var meal in meals)
+        {
+            var liquid = IsLiquidMeal(meal.Name);
+            if (preferences.MealFormatPreference == "prefer_dry" && liquid) penalty += 8;
+            if (preferences.MealFormatPreference == "prefer_soup" && !liquid) penalty += 8;
+            var searchable = Normalize(string.Join(' ', meal.Name,
+                string.Join(' ', meal.Ingredients.Select(ingredient => ingredient.Name))));
+            penalty += preferences.DislikedFoods.Count(value => Contains(searchable, value)) * 20;
+            penalty -= preferences.PreferredFoods.Count(value => Contains(searchable, value)) * 3;
+        }
+        return penalty;
+    }
+
+    private static bool IsLiquidMeal(string name)
+    {
+        var normalized = Normalize(name);
+        return new[] { "chao", "sup", "soup", "canh", "pho", "hu tieu", "mien nuoc", "bun nuoc" }
+            .Any(keyword => normalized.Contains(keyword, StringComparison.Ordinal));
+    }
+
+    private static bool Contains(string searchable, string preference)
+    {
+        var normalized = Normalize(preference);
+        return normalized.Length >= 2 && searchable.Contains(normalized, StringComparison.Ordinal);
+    }
+
+    private static string Normalize(string value)
+    {
+        var decomposed = value.Trim().ToLowerInvariant()
+            .Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(decomposed.Length);
+        foreach (var character in decomposed)
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) !=
+                System.Globalization.UnicodeCategory.NonSpacingMark)
+                builder.Append(character == 'đ' ? 'd' : character);
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
 
     private static string MenuIds(IEnumerable<Recipe> meals) =>
         string.Join("|", meals.OrderBy(meal => meal.MealType).Select(meal => meal.VersionId));

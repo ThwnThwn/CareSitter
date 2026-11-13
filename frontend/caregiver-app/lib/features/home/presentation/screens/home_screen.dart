@@ -11,7 +11,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/widgets/app_toast.dart';
@@ -121,18 +120,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Lý do từ chối ca',
-              style: GoogleFonts.beVietnamPro(
+              style: TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
+            const Text(
               'Thông tin này giúp hệ thống ghép ca phù hợp hơn cho bạn.',
-              style: GoogleFonts.beVietnamPro(
+              style: TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s13,
                 color: AppColors.textSecondary,
               ),
@@ -144,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 minVerticalPadding: 4,
                 title: Text(reason,
                     style:
-                        GoogleFonts.beVietnamPro(fontSize: AppFontSizes.s15)),
+                        const TextStyle(fontFamily: 'Inter', fontSize: AppFontSizes.s15)),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(sheetContext).pop(reason),
               ),

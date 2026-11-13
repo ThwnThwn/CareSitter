@@ -41,9 +41,9 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Plan(Guid beneficiaryId, Guid id, CancellationToken ct) =>
         Present(await mediator.Send(new NutritionResourceQuery("plan", beneficiaryId, id), ct));
     [HttpGet("meal-plans")]
-    public async Task<IActionResult> Plans(Guid beneficiaryId, CancellationToken ct)
+    public async Task<IActionResult> Plans(Guid beneficiaryId, CancellationToken ct, [FromQuery] DateOnly? weekStart = null)
     {
-        var result = await mediator.Send(new ListMealPlansQuery(beneficiaryId), ct);
+        var result = await mediator.Send(new ListMealPlansQuery(beneficiaryId, weekStart), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     private static NutritionWriteInput Input(NutritionWriteRequest r) =>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/nutrition_controller.dart';
 import '../widgets/nutrition_empty_state.dart';
+import '../widgets/nutrition_disclaimer_banner.dart';
 import '../widgets/nutrition_menu_view.dart';
 import '../widgets/nutrition_plan_loading.dart';
 import '../widgets/nutrition_profile_editor.dart';
@@ -16,11 +17,16 @@ class NutritionScreenPage extends StatelessWidget {
     required this.state,
     required this.actions,
     required this.controller,
+    this.userId,
+    this.disclaimer,
+    this.disclaimerVersion,
   });
 
   final NutritionScreenPageState state;
   final NutritionScreenPageActions actions;
   final NutritionFlowController controller;
+  final String? userId;
+  final String? disclaimer, disclaimerVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +51,15 @@ class NutritionScreenPage extends StatelessWidget {
     );
     return Scaffold(
       appBar: _buildAppBar(),
-      body: _buildBody(profileResult, menuResult),
+      body: Column(children: [
+        NutritionDisclaimerBanner(
+          userId: userId,
+          trace: state.flow.resource?.result.recommendationTrace,
+          defaultDisclaimer: disclaimer,
+          defaultVersion: disclaimerVersion,
+        ),
+        Expanded(child: _buildBody(profileResult, menuResult)),
+      ]),
     );
   }
 

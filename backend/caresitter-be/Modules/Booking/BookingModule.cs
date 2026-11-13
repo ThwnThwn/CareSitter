@@ -113,6 +113,7 @@ public sealed class BookingModule : IModule
         // Scoped vì phụ thuộc BookingDbContext (cũng Scoped).
         services.AddScoped<IBookingMembershipChecker, BookingMembershipReader>();
         services.AddScoped<IBookingPartyAccess, BookingMembershipReader>();
+        services.AddScoped<IBookingReportAccess, BookingMembershipReader>();
         services.AddScoped<IReviewBookingLookup, ReviewBookingLookup>();
         services.AddScoped<IDisputeBookingWorkflow, DisputeBookingWorkflow>();
 

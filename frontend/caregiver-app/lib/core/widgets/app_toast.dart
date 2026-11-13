@@ -22,32 +22,43 @@ final class AppToast {
   }) =>
       _show(
         context,
-        title: title ?? 'Đang xử lý',
+        title: title ?? 'Thông tin',
         message: message,
         type: AppToastType.info,
         actionLabel: actionLabel,
         onAction: onAction,
       );
 
-  /// Giữ tương thích các luồng cũ trong khi dùng giao diện toast thông tin.
   static void loading(BuildContext context, String message) => _show(
         context,
         title: 'Đang xử lý',
         message: message,
-        type: AppToastType.info,
+        type: AppToastType.loading,
         duration: const Duration(days: 1),
       );
 
-  static void success(BuildContext context, String message) => _show(
+  static void success(
+    BuildContext context,
+    String message, {
+    String? title,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) =>
+      _show(
         context,
-        title: message,
+        title: title ?? message,
+        message: title == null ? null : message,
         type: AppToastType.success,
+        actionLabel: actionLabel,
+        onAction: onAction,
       );
 
   static void error(
     BuildContext context,
     String message, {
     String? title,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) =>
       _show(
         context,
@@ -55,7 +66,30 @@ final class AppToast {
         message: title == null ? null : message,
         type: AppToastType.error,
         duration: const Duration(seconds: 5),
+        actionLabel: actionLabel,
+        onAction: onAction,
       );
+
+  /// Chuyển tiếp các thông báo cũ mà vẫn giữ hành động và thời lượng.
+  static void showLegacy(BuildContext context, SnackBar snackBar) {
+    final message = snackBar.content is Text
+        ? (snackBar.content as Text).data ?? 'Thông báo'
+        : 'Thông báo';
+    final type = snackBar.backgroundColor == AppColors.error
+        ? AppToastType.error
+        : snackBar.backgroundColor == AppColors.success ||
+                snackBar.backgroundColor == AppColors.primary
+            ? AppToastType.success
+            : AppToastType.info;
+    _show(
+      context,
+      title: message,
+      type: type,
+      duration: snackBar.duration,
+      actionLabel: snackBar.action?.label,
+      onAction: snackBar.action?.onPressed,
+    );
+  }
 
   static void dismiss(BuildContext context) {
     final entry = _entry;
@@ -79,6 +113,7 @@ final class AppToast {
       AppToastType.success => (Icons.check_rounded, AppColors.success),
       AppToastType.error => (Icons.close_rounded, AppColors.error),
       AppToastType.info => (Icons.info_rounded, AppColors.info),
+      AppToastType.loading => (Icons.hourglass_top_rounded, AppColors.primary),
     };
     dismiss(context);
     final overlay = Overlay.maybeOf(context, rootOverlay: true) ??

@@ -1,28 +1,34 @@
 import 'dart:async';
-
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:caresitter_customer/core/api/push_device_repository.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/notifications/in_app_notification_events.dart';
+import 'package:caresitter_customer/core/push/firebase_push_messaging_gateway.dart';
+import 'package:caresitter_customer/core/push/push_messaging_gateway.dart';
+import 'package:caresitter_customer/core/push/push_message.dart';
+import 'package:caresitter_customer/core/push/push_receipt_store.dart';
+import 'package:caresitter_customer/core/push/push_receipt_storage.dart';
+import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
-import 'package:caresitter_customer/core/push/notification_deep_link_service.dart';
 
-/// Top-level background message handler (phải là hàm top-level).
-/// Gọi khi app ở background hoặc terminated và nhận FCM data message.
-/// Không cần trigger BookingStore vì app sẽ sync tự động khi user mở lại app.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background: đảm bảo Firebase khởi tạo trước khi xử lý message.
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp();
+  final gateway = FirebasePushMessagingGateway();
+  if (!await gateway.initialize()) return;
+  try {
+    await PushReceiptStore(SecurePushReceiptStorage())
+        .capture(FirebasePushMessagingGateway.message(message));
+  } catch (_) {
+    debugPrint('[FCM] background receipt unavailable');
   }
-  // Không cần làm gì thêm — BookingSyncWatchdog sẽ trigger requestSync khi resume.
-  debugPrint('[FCM Background] type=${message.data["type"]}');
+}
+
+class FirebasePushNotifications {
+  static Future<bool> initialize() =>
+      FirebasePushMessagingGateway().initialize();
 }
 
 final pushNotificationServiceProvider =
@@ -32,175 +38,243 @@ final pushNotificationServiceProvider =
   return service;
 });
 
-class FirebasePushNotifications {
-  static bool _initialized = false;
-  static bool _initializationFailed = false;
-
-  static Future<bool> initialize() async {
-    if (_initialized) return true;
-    if (_initializationFailed) return false;
-
-    try {
-      if (kIsWeb) {
-        _initializationFailed = true;
-        return false;
-      }
-
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
-      }
-      _initialized = true;
-      return true;
-    } catch (e) {
-      _initializationFailed = true;
-      debugPrint('Firebase disabled: $e');
-      return false;
-    }
-  }
-}
-
 class PushNotificationService {
+  PushNotificationService(this._ref,
+      {this.operationTimeout = const Duration(seconds: 10)}) {
+    _auth = _ref.read(authStateProvider.notifier);
+    _auth.registerLogoutCleanup(unregisterCurrentDevice);
+  }
   final Ref _ref;
-  StreamSubscription<String>? _tokenRefreshSub;
-  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
-  StreamSubscription<RemoteMessage>? _openedMessageSub;
-  String? _lastRegisteredToken;
-  String? _registeredDeviceId;
-  bool _initialMessageHandled = false;
+  final Duration operationTimeout;
+  late final AuthNotifier _auth;
+  PushMessagingGateway get _gateway => _ref.read(pushMessagingGatewayProvider);
+  StreamSubscription<String>? _tokens;
+  StreamSubscription<PushMessage>? _foreground, _opened;
+  String? _registeredOwner, _registeredToken, _deviceId;
+  bool _disposed = false, _permissionRequested = false, _initialHandled = false;
+  Future<void> _operations = Future.value();
 
-  PushNotificationService(this._ref) {
-    _authNotifier = _ref.read(authStateProvider.notifier);
-    _authNotifier.registerLogoutCleanup(unregisterCurrentDevice);
+  Future<void> _serial(Future<void> Function() operation) {
+    final next = _operations.then((_) => operation());
+    _operations =
+        next.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return next;
   }
 
-  late final AuthNotifier _authNotifier;
+  bool _current(int generation, String owner) =>
+      !_disposed &&
+      generation == _auth.sessionGeneration &&
+      _ref.read(authStateProvider).valueOrNull?.userId == owner &&
+      _ref.read(authStateProvider).valueOrNull?.isAuthenticated == true;
 
-  Future<void> syncTokenForCurrentUser() async {
-    final auth = _ref.read(authStateProvider).value;
-    if (auth?.isAuthenticated != true) return;
+  Future<void> syncTokenForCurrentUser({bool requestPermission = false}) {
+    final session = _ref.read(authStateProvider).valueOrNull;
+    if (session?.isAuthenticated != true || session?.userId == null) {
+      return Future.value();
+    }
+    final owner = session!.userId!;
+    final generation = _auth.sessionGeneration;
+    return _serial(() async {
+      if (!_current(generation, owner)) return;
+      try {
+        if (!await _gateway.initialize().timeout(operationTimeout) ||
+            !_current(generation, owner)) {
+          return;
+        }
+        _tokens ??= _gateway.tokenRefresh.listen((token) {
+          final auth = _ref.read(authStateProvider).valueOrNull;
+          if (auth?.isAuthenticated == true && auth?.userId != null) {
+            final owner = auth!.userId!;
+            final generation = _auth.sessionGeneration;
+            unawaited(_serial(() => _register(token, owner, generation)));
+          }
+        }, onError: (Object _) {
+          debugPrint('[FCM] token refresh unavailable');
+        });
+        _foreground ??= _gateway.foreground
+            .listen((message) => unawaited(_receive(message, opened: false)));
+        _opened ??= _gateway.opened
+            .listen((message) => unawaited(_receive(message, opened: true)));
+        try {
+          if (!_initialHandled && _current(generation, owner)) {
+            final initial =
+                await _gateway.initialMessage().timeout(operationTimeout);
+            if (!_current(generation, owner)) return;
+            _initialHandled = true;
+            if (initial != null) {
+              await _receive(initial, opened: true);
+            }
+          }
+        } catch (_) {
+          debugPrint('[FCM] initial message unavailable');
+        }
+        var permission = await _gateway.permission().timeout(operationTimeout);
+        if (!_current(generation, owner)) return;
+        if (requestPermission ||
+            (permission == PushPermission.notDetermined &&
+                !_permissionRequested)) {
+          _permissionRequested = true;
+          permission = await _gateway
+              .permission(request: true)
+              .timeout(operationTimeout);
+        }
+        if (!_current(generation, owner)) return;
+        if (permission == PushPermission.authorized ||
+            permission == PushPermission.provisional) {
+          final token = await _gateway.token().timeout(operationTimeout);
+          if (token != null && _current(generation, owner)) {
+            await _register(token, owner, generation);
+          }
+        }
+        if (_current(generation, owner)) {
+          await _ref
+              .read(notificationsProvider.notifier)
+              .refresh()
+              .timeout(operationTimeout);
+        }
+      } catch (_) {
+        debugPrint('[FCM] synchronization unavailable');
+      }
+    });
+  }
 
-    final ready = await FirebasePushNotifications.initialize();
-    if (!ready) return;
-
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+  Future<void> _register(String token, String owner, int generation) async {
+    if (!_current(generation, owner) ||
+        (token == _registeredToken && owner == _registeredOwner)) {
       return;
     }
-
-    final token = await messaging.getToken();
-    if (token != null) {
-      await _registerToken(token);
-    }
-
-    _tokenRefreshSub ??= messaging.onTokenRefresh.listen((newToken) {
-      unawaited(_registerToken(newToken));
-    });
-
-    _foregroundMessageSub ??=
-        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    _openedMessageSub ??=
-        FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
-
-    if (!_initialMessageHandled) {
-      _initialMessageHandled = true;
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        await _handleOpenedMessage(initialMessage);
-      }
-    }
-  }
-
-  Future<void> _registerToken(String token) async {
-    if (token == _lastRegisteredToken) return;
-
     try {
-      final deviceId = await _ref.read(pushDeviceRepositoryProvider).register(
-          platform: _platform,
-          pushToken: token,
-          deviceName: defaultTargetPlatform.name);
-      _lastRegisteredToken = token;
-      _registeredDeviceId = deviceId;
-    } catch (e) {
-      debugPrint('FCM token registration failed: $e');
+      final permission = await _gateway.permission().timeout(operationTimeout);
+      if (!_current(generation, owner) ||
+          (permission != PushPermission.authorized &&
+              permission != PushPermission.provisional)) {
+        return;
+      }
+      final id = await _ref
+          .read(pushDeviceRepositoryProvider)
+          .register(
+              platform: _platform,
+              pushToken: token,
+              deviceName: defaultTargetPlatform.name)
+          .timeout(operationTimeout);
+      if (!_current(generation, owner)) return;
+      _deviceId = id;
+      await _ref
+          .read(pushReceiptStoreProvider)
+          .bind(owner)
+          .timeout(operationTimeout);
+      if (!_current(generation, owner)) {
+        await _ref
+            .read(pushReceiptStoreProvider)
+            .clearBinding()
+            .timeout(operationTimeout);
+        return;
+      }
+      _registeredToken = token;
+      _registeredOwner = owner;
+    } catch (_) {
+      debugPrint('[FCM] device registration unavailable');
     }
   }
 
-  Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    final isAuthenticated =
-        _ref.read(authStateProvider).value?.isAuthenticated ?? false;
-    if (!isAuthenticated) return;
-
-    await Future.wait([
-      _ref.read(bookingStoreProvider.notifier).requestSync(),
-      _ref.read(notificationsProvider.notifier).refresh(),
-    ]);
-    final notification = message.notification;
-    final data = Map<String, dynamic>.from(message.data);
-    final bookingId = data['bookingId']?.toString().trim();
-    final status = data['status']?.toString().trim().toLowerCase();
-    final deduplicationKey = bookingId != null &&
-            bookingId.isNotEmpty &&
-            status != null &&
-            status.isNotEmpty
-        ? 'booking:$bookingId:$status'
-        : 'fcm:${data['eventId'] ?? message.messageId ?? DateTime.now().microsecondsSinceEpoch}';
-    _ref.read(inAppNotificationEventsProvider).publish(
-          InAppNotificationEvent(
-            title: notification?.title ?? 'CareSitter',
-            body: notification?.body ?? '',
-            data: data,
-            deduplicationKey: deduplicationKey,
-          ),
-        );
+  Future<void> _receive(PushMessage message, {required bool opened}) async {
+    final session = _ref.read(authStateProvider).valueOrNull;
+    if (session?.isAuthenticated != true ||
+        session?.userId == null ||
+        _disposed) {
+      return;
+    }
+    final owner = session!.userId!;
+    final generation = _auth.sessionGeneration;
+    final recipient = message.data['recipient_user_id'];
+    if ((message.data['source'] == 'console_test' && recipient != owner) ||
+        (recipient != null && recipient != owner)) {
+      return;
+    }
+    try {
+      try {
+        await _ref
+            .read(pushReceiptStoreProvider)
+            .capture(message)
+            .timeout(operationTimeout);
+      } catch (_) {
+        debugPrint('[FCM] local receipt unavailable');
+      }
+      if (!_current(generation, owner)) return;
+      unawaited(_ref
+          .read(notificationsProvider.notifier)
+          .refresh()
+          .timeout(operationTimeout)
+          .catchError((Object _) {
+        debugPrint('[FCM] inbox refresh unavailable');
+      }));
+      if (!_current(generation, owner)) return;
+      if (opened) {
+        await _ref
+            .read(notificationDeepLinkServiceProvider)
+            .handle(message.data, deliveryId: message.id)
+            .timeout(operationTimeout);
+      } else {
+        // Inbox availability and booking synchronization fail independently.
+        unawaited(_ref
+            .read(bookingStoreProvider.notifier)
+            .requestSync()
+            .catchError((Object _) {}));
+        _ref.read(inAppNotificationEventsProvider).publish(
+            InAppNotificationEvent(
+                title: message.title,
+                body: message.body,
+                data: message.data,
+                deduplicationKey: 'fcm:${message.id}'));
+      }
+    } catch (_) {
+      debugPrint('[FCM] receipt handling unavailable');
+    }
   }
-
-  Future<void> _handleOpenedMessage(RemoteMessage message) =>
-      _ref.read(notificationDeepLinkServiceProvider).handle(
-            Map<String, dynamic>.from(message.data),
-            deliveryId:
-                message.data['eventId']?.toString() ?? message.messageId,
-          );
 
   Future<void> unregisterCurrentDevice() async {
-    final deviceId = _registeredDeviceId;
+    // Clear local attribution immediately, even while a prior registration is finishing.
     try {
-      if (deviceId != null && deviceId.isNotEmpty) {
-        await _ref.read(pushDeviceRepositoryProvider).unregister(deviceId);
-      }
-    } catch (e) {
-      debugPrint('FCM device cleanup failed: $e');
-    } finally {
+      await _ref
+          .read(pushReceiptStoreProvider)
+          .clearBinding()
+          .timeout(operationTimeout);
+    } catch (_) {
+      debugPrint('[FCM] local attribution cleanup unavailable');
+    }
+    await _serial(() async {
       try {
-        if (await FirebasePushNotifications.initialize()) {
-          await FirebaseMessaging.instance.deleteToken();
+        if (_deviceId != null) {
+          await _ref
+              .read(pushDeviceRepositoryProvider)
+              .unregister(_deviceId!)
+              .timeout(operationTimeout);
         }
-      } catch (_) {}
-      _registeredDeviceId = null;
-      _lastRegisteredToken = null;
-    }
+      } catch (_) {
+        debugPrint('[FCM] remote cleanup unavailable');
+      } finally {
+        try {
+          if (await _gateway.initialize().timeout(operationTimeout)) {
+            await _gateway.deleteToken().timeout(operationTimeout);
+          }
+        } catch (_) {}
+        _registeredOwner = null;
+        _registeredToken = null;
+        _deviceId = null;
+      }
+    });
   }
 
-  String get _platform {
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'ANDROID';
-      case TargetPlatform.iOS:
-        return 'IOS';
-      default:
-        return 'WEB';
-    }
-  }
-
+  String get _platform => switch (defaultTargetPlatform) {
+        TargetPlatform.android => 'ANDROID',
+        TargetPlatform.iOS => 'IOS',
+        _ => 'WEB'
+      };
   void dispose() {
-    _authNotifier.unregisterLogoutCleanup(unregisterCurrentDevice);
-    unawaited(_tokenRefreshSub?.cancel());
-    unawaited(_foregroundMessageSub?.cancel());
-    unawaited(_openedMessageSub?.cancel());
+    _disposed = true;
+    _auth.unregisterLogoutCleanup(unregisterCurrentDevice);
+    unawaited(_tokens?.cancel());
+    unawaited(_foreground?.cancel());
+    unawaited(_opened?.cancel());
   }
 }

@@ -1,8 +1,13 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-
 import 'nutrition_allergy_tag_field.dart';
 import 'nutrition_status_field.dart';
+
+List<String> parseNutritionItems(String value) => value
+    .split(';')
+    .map((item) => item.trim())
+    .where((item) => item.isNotEmpty)
+    .toList();
 
 class NutritionReportedHealthFields extends StatelessWidget {
   const NutritionReportedHealthFields({
@@ -27,6 +32,8 @@ class NutritionReportedHealthFields extends StatelessWidget {
   });
   final bool showErrors;
   final List<String> missingFields;
+  static const allergyMaxLength = 1000;
+
   final Key? allergyStatusKey;
   final Key? allergyDetailKey;
   final Key? conditionStatusKey;
@@ -61,7 +68,7 @@ class NutritionReportedHealthFields extends StatelessWidget {
             controller: allergyController,
             detailLabel: 'Thực phẩm gây dị ứng *',
             detailHelper: 'Bắt buộc khi có dị ứng. Ngăn cách bằng dấu ;',
-            detailMaxLength: 1000,
+            detailMaxLength: allergyMaxLength,
             onStatusChanged: onAllergyStatusChanged,
             onDetailChanged: onAllergiesChanged,
             showErrors: showErrors,

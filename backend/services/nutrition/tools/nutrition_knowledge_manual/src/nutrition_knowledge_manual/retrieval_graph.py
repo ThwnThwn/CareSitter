@@ -6,6 +6,7 @@ import unicodedata
 
 from .corpus_freeze import validate_retrieval_corpus_freeze_document
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256
 from .retrieval_artifacts import sign, verify
 from .retrieval_review import _validate_review, _timestamp, _required_text
@@ -67,7 +68,9 @@ def _is_reviewable_heading(heading: str, has_context: bool) -> bool:
         return False
     if len(value) > 160:
         return False
-    if _HEADING_NUMBER.match(value) and len(words) > 12:
+    letters = [char for char in value if char.isalpha()]
+    uppercase_ratio = sum(char.isupper() for char in letters) / max(1, len(letters))
+    if _HEADING_NUMBER.match(value) and len(words) > 12 and uppercase_ratio < 0.9:
         return False
     if _HEADING_NUMBER.match(value) and value.endswith(":") and len(words) > 6:
         return False
@@ -326,7 +329,8 @@ def validate_graph_review(candidate: dict, corpus_freeze: dict, ledger: dict) ->
 
 
 def record_graph_review(candidate: dict, corpus_freeze: dict, ledger: dict, record_id: str,
-                        decision: str, reviewer_id: str, reviewer_role: str, comment: str) -> dict:
+                        decision: str, reviewer_id: str, reviewer_role: str, comment: str, review_policy=DEFAULT) -> dict:
+    check(review_policy, ledger, role=reviewer_role)
     records = validate_graph_review(candidate, corpus_freeze, ledger)
     if record_id not in records or decision not in {"approved", "rejected"}:
         raise ManualGraphError("invalid graph review target or decision")
@@ -337,21 +341,24 @@ def record_graph_review(candidate: dict, corpus_freeze: dict, ledger: dict, reco
     result["records"][record_id][slot] = {"decision": decision, "reviewer_role": reviewer_role,
         "reviewer_id": _required_text(reviewer_id, "reviewer_id"), "comment": _required_text(comment, "comment"),
         "reviewed_at_utc": _timestamp(None)}
+    if review_policy == REFERENCE:
+        result.update(metadata(review_policy))
     return sign(result)
 
 
-def materialize_graph(candidate: dict, corpus_freeze: dict, ledger: dict) -> dict:
+def materialize_graph(candidate: dict, corpus_freeze: dict, ledger: dict, review_policy=DEFAULT) -> dict:
+    check(review_policy, ledger)
     validate_graph_review(candidate, corpus_freeze, ledger)
     approved = {rid for rid, entry in ledger["records"].items()
                 if all((entry.get(slot) or {}).get("decision") == "approved"
-                       for slot in ("source_review", "clinical_review"))}
+                       for slot in (("source_review",) if review_policy == REFERENCE else ("source_review", "clinical_review")))}
     nodes = [n for n in candidate["nodes"] if n["id"] in approved]
     node_ids = {n["id"] for n in nodes}
     approved_chunks = {n["chunk_id"] for n in nodes if n["type"] == "chunk"}
     edges = [e for e in candidate["edges"] if e["id"] in approved
              and e["from"] in node_ids and e["to"] in node_ids
              and set(e.get("scope_evidence_chunk_ids", [])) <= approved_chunks]
-    return sign({"schema_version": 1, "mode": "reviewed_retrieval_graph",
+    return sign({**metadata(review_policy), "schema_version": 1, "mode": "reviewed_retrieval_graph",
                  "corpus_freeze_sha256": corpus_freeze["content_sha256"],
                  "candidate_sha256": candidate["content_sha256"], "ledger_sha256": ledger["content_sha256"],
                  "nodes": nodes, "edges": edges, "automatic_admissions": 0})

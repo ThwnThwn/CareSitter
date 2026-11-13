@@ -2,6 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'assert-networks.ps1')
 $repository = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $state = Join-Path $repository ('backend/artifacts/nutrition-demo-compose-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $state | Out-Null
@@ -37,7 +38,7 @@ NUTRITION_DEMO_CATALOG_SHA256=$('a' * 64)
 NUTRITION_DEMO_AUTHORIZATION_SHA256=$('b' * 64)
 NUTRITION_DEMO_CORPUS_SHA256=$('c' * 64)
 NUTRITION_DEMO_GRAPH_SHA256=$('d' * 64)
-NUTRITION_DEMO_EXPECTED_RECIPES=60
+NUTRITION_DEMO_EXPECTED_RECIPES=78
 NUTRITION_DEMO_PACKAGE_KEY=adult-baseline-p2a-v1-local-demo
 NUTRITION_GEMINI_MODEL=gemini-3.5-flash-lite
 NUTRITION_GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/
@@ -52,12 +53,13 @@ try {
         --profile nutrition-demo-seed --profile nutrition-smoke config --format json 1> $configFile 2> (Join-Path $state 'compose-errors.log')
     if ($LASTEXITCODE -ne 0) { throw "Demo Compose validation failed; inspect $state." }
     $config = Get-Content -LiteralPath $configFile -Raw | ConvertFrom-Json
+    Assert-NutritionNetworks $config
     $nutrition = $config.services.nutrition
     $seed = $config.services.'nutrition-demo-catalog'
     $smoke = $config.services.'nutrition-smoke'
     if ($nutrition.environment.ASPNETCORE_ENVIRONMENT -ne 'Development') { throw 'Demo Nutrition must run in Development.' }
     foreach ($name in @('Nutrition__Enabled','Nutrition__AssessmentsEnabled','Nutrition__RecommendationsEnabled',
-            'NutritionCatalog__LocalDemoEnabled','HealthParser__Enabled','MealGrounding__Enabled','MealRanking__Enabled')) {
+            'NutritionCatalog__LocalDemoEnabled','HealthParser__Enabled','MealGrounding__Enabled','MealGrounding__AllowNonMedicalReference','MealRanking__Enabled')) {
         if ($nutrition.environment.$name -ne 'true') { throw "Demo flag is not enabled: $name" }
     }
     if ($nutrition.environment.MealGrounding__Mode -ne 'owner_authorized_graph_demo') { throw 'Demo grounding mode is incorrect.' }
@@ -73,12 +75,20 @@ try {
     if ($seed.ports) { throw 'Demo catalog seed job must not publish ports.' }
     if (-not ($seed.networks.PSObject.Properties.Name -contains 'nutrition-data') -or
         -not $config.networks.'nutrition-data'.internal) { throw 'Demo catalog seed job must stay on the private Nutrition network.' }
-    if ($seed.environment.NUTRITION_DEMO_EXPECTED_RECIPES -ne '60') { throw 'Demo catalog recipe count is not locked.' }
+    if ($seed.environment.NUTRITION_DEMO_EXPECTED_RECIPES -ne '78') { throw 'Demo catalog recipe count is not locked.' }
     if ($seed.depends_on.'nutrition-db'.condition -ne 'service_healthy') { throw 'Demo seed job can start before the database is healthy.' }
     if ($smoke.environment.EXPECT_NUTRITION_DEMO_FEATURES -ne 'true') {
         throw 'Demo smoke must verify the Nutrition feature flags.'
     }
-    Write-Output 'PASS: demo overlay enables guarded Nutrition features, private idempotent seed job, artifact mounts and file-based Gemini secret.'
+    # Timeout budget (R2c): each AI call must finish inside the API gateway deadline, and both stay within the 1-25 s option bounds.
+    $gatewayTimeout = [int]$config.services.api.environment.NutritionGateway__TimeoutSeconds
+    $parserTimeout = [int]$nutrition.environment.HealthParser__TimeoutSeconds
+    $rankingTimeout = [int]$nutrition.environment.MealRanking__TimeoutSeconds
+    foreach ($timeout in @($parserTimeout, $rankingTimeout)) {
+        if ($timeout -lt 1 -or $timeout -gt 25) { throw 'AI timeouts must stay within the 1-25 second option bounds.' }
+        if ($timeout -ge $gatewayTimeout) { throw 'An AI timeout must be shorter than the API gateway deadline.' }
+    }
+    Write-Output 'PASS: demo overlay enables guarded Nutrition features, isolated AI egress, private idempotent seed job, artifact mounts and file-based Gemini secret.'
     Write-Output 'This check validates Compose structure only; it does not contact Gemini or deploy a host.'
 }
 finally {

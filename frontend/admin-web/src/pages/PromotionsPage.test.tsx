@@ -41,7 +41,8 @@ it('shows a recoverable loading error and then a real empty state', async () => 
 
 it('creates a disabled campaign with normalized fields and null optional limits', async () => {
   const fetch = mockApi();
-  render(<PromotionsPage />); await userEvent.click(screen.getByRole('button', { name: 'Tạo chiến dịch' }));
+  const showToast = vi.fn();
+  render(<PromotionsPage showToast={showToast} />); await userEvent.click(screen.getByRole('button', { name: 'Tạo chiến dịch' }));
   fireEvent.change(await screen.findByLabelText('Mã ưu đãi'), { target: { value: 'care_new' } });
   fireEvent.change(screen.getByLabelText('Nhãn ưu đãi'), { target: { value: '10%' } });
   fireEvent.change(screen.getByLabelText('Tên chiến dịch'), { target: { value: 'Chiến dịch mới' } });
@@ -51,7 +52,7 @@ it('creates a disabled campaign with normalized fields and null optional limits'
   const call = fetch.mock.calls.find(([, init]) => init.method === 'POST')!;
   expect(call[0]).toMatch(/\/api\/v1\/admin\/promotions$/);
   expect(JSON.parse(call[1].body)).toMatchObject({ code: 'CARE_NEW', isActive: false, totalUsageLimit: null, maxDiscountAmount: null, eligibleServiceIds: [] });
-  expect(await screen.findByRole('status')).toHaveProperty('textContent', 'Đã tạo chiến dịch ưu đãi.');
+  await waitFor(() => expect(showToast).toHaveBeenCalledWith('Đã tạo chiến dịch ưu đãi.'));
 });
 
 it('locks financial fields and preserves the exact original start time for a used campaign', async () => {
@@ -108,7 +109,8 @@ it('allows correcting a duplicate code without discarding the create draft', asy
   const fetch = mockApi(promotion, () => duplicate
     ? Response.json({ title: 'promotion.code_exists', detail: 'Mã ưu đãi đã tồn tại.' }, { status: 409 })
     : Response.json(promotion));
-  render(<PromotionsPage />); await userEvent.click(screen.getByRole('button', { name: 'Tạo chiến dịch' }));
+  const showToast = vi.fn();
+  render(<PromotionsPage showToast={showToast} />); await userEvent.click(screen.getByRole('button', { name: 'Tạo chiến dịch' }));
   fireEvent.change(await screen.findByLabelText('Mã ưu đãi'), { target: { value: 'CARE10' } });
   fireEvent.change(screen.getByLabelText('Nhãn ưu đãi'), { target: { value: '10%' } });
   fireEvent.change(screen.getByLabelText('Tên chiến dịch'), { target: { value: 'Bản nháp' } });
@@ -120,7 +122,7 @@ it('allows correcting a duplicate code without discarding the create draft', asy
   duplicate = false;
   fireEvent.change(screen.getByLabelText('Mã ưu đãi'), { target: { value: 'CARE_NEW' } });
   await userEvent.click(screen.getAllByRole('button', { name: 'Tạo chiến dịch' }).at(-1)!);
-  await screen.findByText('Đã tạo chiến dịch ưu đãi.');
+  await waitFor(() => expect(showToast).toHaveBeenCalledWith('Đã tạo chiến dịch ưu đãi.'));
   expect(fetch.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(2);
 });
 

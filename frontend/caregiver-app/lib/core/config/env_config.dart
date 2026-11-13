@@ -20,10 +20,20 @@ abstract final class EnvConfig {
     defaultValue: 'development',
   );
 
-  static const String baseUrl = String.fromEnvironment(
+  static const String _configuredBaseUrl = String.fromEnvironment(
     'BASE_URL',
     defaultValue: 'http://localhost:5033/api/v1',
   );
+
+  static String get baseUrl {
+    if ((isProduction || const bool.fromEnvironment('dart.vm.product')) &&
+        (_configuredBaseUrl.isEmpty ||
+            _configuredBaseUrl.startsWith('http://localhost') ||
+            _configuredBaseUrl.startsWith('http://127.0.0.1'))) {
+      throw StateError('BASE_URL must be configured for production.');
+    }
+    return _configuredBaseUrl;
+  }
 
   static AppEnvironment get environment => switch (environmentName) {
         'production' || 'prod' => AppEnvironment.production,

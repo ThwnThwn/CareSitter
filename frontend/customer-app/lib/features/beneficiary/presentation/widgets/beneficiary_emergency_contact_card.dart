@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -43,7 +44,8 @@ class _BeneficiaryEmergencyContactCardState
     final phone = widget.entry.phoneCtrl.text.trim();
     if (beneficiaryContactNameError(name) != null ||
         beneficiaryContactPhoneError(phone) != null) {
-      _message('Nhập họ tên và số điện thoại hợp lệ trước khi lưu.', error: true);
+      _message('Nhập họ tên và số điện thoại hợp lệ trước khi lưu.',
+          error: true);
       return;
     }
     setState(() => _saving = true);
@@ -54,15 +56,16 @@ class _BeneficiaryEmergencyContactCardState
       if (mounted) _message('Đã lưu vào danh bạ gia đình.');
     } catch (_) {
       if (mounted) {
-        _message('Không lưu được liên hệ. Số này có thể đã tồn tại.', error: true);
+        _message('Không lưu được liên hệ. Số này có thể đã tồn tại.',
+            error: true);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _message(String value, {bool error = false}) =>
-      ScaffoldMessenger.of(context).showSnackBar(
+  void _message(String value, {bool error = false}) => AppToast.showLegacy(
+        context,
         SnackBar(
             content: Text(value),
             backgroundColor: error ? AppColors.error : AppColors.success),
@@ -83,7 +86,8 @@ class _BeneficiaryEmergencyContactCardState
                 offset: const Offset(0, 2))
           ],
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text('Liên hệ khẩn cấp ${widget.index + 1}',
               style: const TextStyle(fontWeight: FontWeight.w700)),
           Wrap(alignment: WrapAlignment.end, children: [

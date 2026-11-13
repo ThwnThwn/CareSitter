@@ -65,6 +65,12 @@ key=$(read_secret "$gemini_key")
 [ "$(stat -c '%a' "$gemini_key")" = 400 ] || [ "$(stat -c '%a' "$gemini_key")" = 444 ] ||
     fail 'Gemini API key must have permission 0400 or 0444.'
 
-(cd "$repo_dir" && sh deploy/nutrition/preflight.sh)
+# The runtime probe must use the demo overlay, not the base configuration.
+(export NUTRITION_CHECK_AI_EGRESS=false; cd "$repo_dir" && sh deploy/nutrition/preflight.sh)
 sh "$script_dir/demo-compose.sh" --profile nutrition-demo-seed config --quiet
+if [ "${NUTRITION_CHECK_AI_EGRESS:-false}" = true ]; then
+    sh "$script_dir/demo-compose.sh" exec -T nutrition sh -s < "$script_dir/check-ai-egress.sh"
+else
+    echo 'Demo AI runtime egress not checked. After startup, set NUTRITION_CHECK_AI_EGRESS=true to probe from Nutrition.'
+fi
 echo 'Nutrition academic-demo deployment preflight passed.'

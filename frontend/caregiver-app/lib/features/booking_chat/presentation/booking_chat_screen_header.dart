@@ -29,7 +29,10 @@ class _BookingChatAppBar extends StatelessWidget
       backgroundColor: AppColors.surface,
       elevation: 0,
       titleSpacing: 0,
-      leading: const BackButton(color: AppColors.textPrimary),
+      leading: const AppBackButton(
+        fallbackRoute: AppRoutes.home,
+        color: AppColors.textPrimary,
+      ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

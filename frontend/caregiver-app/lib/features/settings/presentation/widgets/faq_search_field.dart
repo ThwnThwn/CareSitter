@@ -28,15 +28,10 @@ class FaqSearchField extends StatelessWidget {
                   )
                 : null,
             filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
+            fillColor: AppInputStyle.fillColor,
+            border: AppInputStyle.enabledBorder,
+            enabledBorder: AppInputStyle.enabledBorder,
+            focusedBorder: AppInputStyle.focusedBorder,
           ),
         ),
       );

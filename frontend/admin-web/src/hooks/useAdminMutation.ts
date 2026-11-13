@@ -12,7 +12,7 @@ export function useAdminMutation<Action extends string>() {
   }, []);
 
   async function run(action: Action, request: (signal: AbortSignal) => Promise<unknown>,
-    fallback: string, onSuccess: () => void, onFailure?: () => void) {
+    fallback: string, onSuccess: (message: string) => void, successMessage?: string, onFailure?: () => void) {
     // A ref also blocks a second click before React renders the disabled button.
     if (active.current || !mounted.current) return false;
     const controller = new AbortController();
@@ -24,7 +24,7 @@ export function useAdminMutation<Action extends string>() {
     try {
       await request(controller.signal);
       if (!current()) return false;
-      onSuccess();
+      onSuccess(successMessage ?? '');
       return true;
     } catch (cause) {
       if (current()) {

@@ -14,9 +14,7 @@ export function useHeroCollageMotion(heroRef: RefObject<HTMLElement | null>) {
       const journey = hero?.querySelector<HTMLElement>(".hero-journey");
       if (!hero || !journey) return;
 
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-      if (reducedMotion.matches) return;
-
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
       const photo = journey.querySelector<HTMLElement>(".hero-journey__photo img");
       const portrait = journey.querySelector<HTMLElement>(".hero-journey__portrait");
@@ -52,6 +50,9 @@ export function useHeroCollageMotion(heroRef: RefObject<HTMLElement | null>) {
           },
           0.58,
         );
+
+      // Keep the opening sequence, but skip continuous pointer and scroll motion.
+      if (reducedMotion) return;
 
       const layerMotion = layers.map((layer) => {
         const depth = Number(layer.dataset.depth ?? 1);

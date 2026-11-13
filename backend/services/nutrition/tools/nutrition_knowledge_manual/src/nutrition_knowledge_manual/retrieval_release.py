@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, check, metadata, validate_metadata
 from .jsonio import content_sha256, load_json, write_json
 from .retrieval_artifacts import code_identity, local_path, sign, verify, write_once
 from .retrieval_benchmark import (COVERAGE_TAGS, STRATEGIES, benchmark, hard_gate_failures,
@@ -12,7 +13,19 @@ from .retrieval_holdout import seal_independent_holdout, validate_sealed_indepen
 from .retrieval_review import retrieval_review_status
 
 
+def reject_candidate_evidence(artifact: dict, bindings: dict) -> None:
+    from .candidate_benchmark import CANDIDATE_MODE, CANDIDATE_REVIEW_STATUS
+    if (artifact.get("mode") == CANDIDATE_MODE
+            or artifact.get("review_status") == CANDIDATE_REVIEW_STATUS
+            or "graph-candidate" in artifact.get("strategies", {})
+            or "graph-candidate" in artifact.get("selected_strategies", [])
+            or bindings.get("candidate_demo_authorization_sha256")
+            or artifact.get("bindings", {}).get("candidate_demo_authorization_sha256")):
+        raise ManualGraphError("candidate benchmark is technical only; release, shortlist and holdout forbidden")
+
+
 def validate_report(report: dict, cases: dict, chunks: list[dict], bindings: dict) -> None:
+    reject_candidate_evidence(report, bindings)
     verify(report, "paired_retrieval_benchmark")
     if (report.get("bindings") != bindings or report.get("evaluation_sha256") != content_sha256(cases)
             or report.get("code") != code_identity()):
@@ -40,8 +53,8 @@ def validate_report(report: dict, cases: dict, chunks: list[dict], bindings: dic
 
 
 def review_failures(cases: dict, corpus_freeze: dict, ledger: dict, developers: list[str],
-                    minimum: int, coverage: int) -> list[str]:
-    status = retrieval_review_status(cases=cases, corpus_freeze=corpus_freeze, ledger=ledger)
+                    minimum: int, coverage: int, review_policy=DEFAULT) -> list[str]:
+    status = retrieval_review_status(cases=cases, corpus_freeze=corpus_freeze, ledger=ledger, review_policy=review_policy)
     failures = []
     if len(cases["cases"]) < minimum:
         failures.append("review.insufficient_case_count")
@@ -60,12 +73,12 @@ def review_failures(cases: dict, corpus_freeze: dict, ledger: dict, developers: 
 
 def freeze_benchmark(*, report: dict, cases: dict, chunks: list[dict], bindings: dict,
                      corpus_freeze: dict, ledger: dict, developers: list[str],
-                     visible_evaluations: list[dict]) -> dict:
+                     visible_evaluations: list[dict], review_policy=DEFAULT) -> dict:
     validate_cases(cases["cases"], chunks, {"development", "validation"})
     validate_report(report, cases, chunks, bindings)
     if not developers or any(not d.strip() for d in developers):
         raise ManualGraphError("benchmark freeze requires developer identities")
-    failures = review_failures(cases, corpus_freeze, ledger, developers, 30, 8)
+    failures = review_failures(cases, corpus_freeze, ledger, developers, 30, 8, review_policy)
     if not {"development", "validation"}.issubset({c["split"] for c in cases["cases"]}):
         failures.append("evaluation.requires_development_and_validation")
     if report.get("dataset_kind") != "visible":
@@ -83,7 +96,7 @@ def freeze_benchmark(*, report: dict, cases: dict, chunks: list[dict], bindings:
     if "graph" in selected:
         selected = ["hybrid", "graph"]  # Paired graph comparison requires the same hybrid seeds.
     registry = sorted(set(content_sha256(e) for e in [cases, *visible_evaluations]))
-    return sign({"schema_version": 1, "mode": "retrieval_benchmark_freeze", "code": code_identity(),
+    return sign({"schema_version": 1, "mode": "retrieval_benchmark_freeze", **metadata(review_policy), "code": code_identity(),
                  "bindings": bindings, "visible_evaluation_sha256": content_sha256(cases),
                  "visible_registry_sha256": registry, "visible_report_sha256": report["content_sha256"],
                  "review_ledger_sha256": ledger["content_sha256"], "developer_ids": sorted(set(developers)),
@@ -92,6 +105,7 @@ def freeze_benchmark(*, report: dict, cases: dict, chunks: list[dict], bindings:
 
 
 def validate_benchmark_freeze(freeze: dict, bindings: dict) -> None:
+    reject_candidate_evidence(freeze, bindings)
     verify(freeze, "retrieval_benchmark_freeze")
     if freeze.get("code") != code_identity() or freeze.get("bindings") != bindings:
         raise ManualGraphError("benchmark freeze is stale; rebuild before sealing a new holdout")
@@ -100,12 +114,13 @@ def validate_benchmark_freeze(freeze: dict, bindings: dict) -> None:
         raise ManualGraphError("invalid frozen strategy shortlist")
 
 
-def seal_for_benchmark(submission: dict, corpus_freeze: dict, visible: list[dict], freeze: dict) -> dict:
+def seal_for_benchmark(submission: dict, corpus_freeze: dict, visible: list[dict], freeze: dict, review_policy=DEFAULT) -> dict:
     validate_benchmark_freeze(freeze, freeze["bindings"])
+    validate_metadata(freeze, review_policy)
     if sorted(set(content_sha256(e) for e in visible)) != freeze["visible_registry_sha256"]:
         raise ManualGraphError("holdout seal must check the complete frozen visible registry")
     marker = seal_independent_holdout(submission=submission, corpus_freeze=corpus_freeze,
-                                     visible_evaluations=visible)
+                                     visible_evaluations=visible, review_policy=review_policy)
     if submission["independence"]["author_id"] in freeze["developer_ids"]:
         raise ManualGraphError("holdout author must be independent of developers")
     marker["benchmark_freeze_sha256"] = freeze["content_sha256"]
@@ -117,13 +132,18 @@ def seal_for_benchmark(submission: dict, corpus_freeze: dict, visible: list[dict
 
 def consume_holdout(*, workspace: Path, submission: dict, marker: dict, freeze: dict,
                     corpus_freeze: dict, ledger: dict, chunks: list[dict], retrievers: dict,
-                    bindings: dict) -> tuple[dict, dict]:
+                    bindings: dict, review_policy=DEFAULT) -> tuple[dict, dict]:
+    reject_candidate_evidence({}, bindings)
+    if "graph-candidate" in retrievers:
+        raise ManualGraphError("candidate benchmark cannot consume holdout")
     validate_benchmark_freeze(freeze, bindings)
-    validate_sealed_independent_holdout(sealed_holdout=marker, submission=submission, corpus_freeze=corpus_freeze)
+    validate_metadata(freeze, review_policy)
+    check(review_policy, ledger, submission)
+    validate_sealed_independent_holdout(sealed_holdout=marker, submission=submission, corpus_freeze=corpus_freeze, review_policy=review_policy)
     if marker.get("benchmark_freeze_sha256") != freeze["content_sha256"]:
         raise ManualGraphError("holdout must be sealed after the exact benchmark freeze")
     validate_cases(submission["cases"], chunks, {"holdout"})
-    failures = review_failures(submission, corpus_freeze, ledger, freeze["developer_ids"], 10, 1)
+    failures = review_failures(submission, corpus_freeze, ledger, freeze["developer_ids"], 10, 1, review_policy)
     if submission["independence"]["author_id"] in freeze["developer_ids"]:
         failures.append("holdout.author_is_a_developer")
     if failures:
@@ -174,10 +194,15 @@ def graph_gate(graph: dict, hybrid: dict) -> list[str]:
 def release_manifest(*, workspace: Path, visible_report: dict, visible_cases: dict,
                      visible_ledger: dict, corpus_freeze: dict, chunks: list[dict], bindings: dict,
                      freeze: dict | None = None, submission: dict | None = None,
-                     holdout_ledger: dict | None = None, holdout_report: dict | None = None) -> dict:
+                     holdout_ledger: dict | None = None, holdout_report: dict | None = None, review_policy=DEFAULT) -> dict:
+    if holdout_report is not None:
+        reject_candidate_evidence(holdout_report, bindings)
     validate_report(visible_report, visible_cases, chunks, bindings)
+    check(review_policy, visible_ledger, holdout_ledger, submission)
+    if freeze is not None:
+        validate_metadata(freeze, review_policy)
     developers = freeze["developer_ids"] if freeze else []
-    failures = review_failures(visible_cases, corpus_freeze, visible_ledger, developers, 30, 8)
+    failures = review_failures(visible_cases, corpus_freeze, visible_ledger, developers, 30, 8, review_policy)
     for name in STRATEGIES:
         if visible_report["strategies"].get(name, {}).get("status") != "evaluated":
             failures.append(f"matrix.not_evaluated:{name}")
@@ -204,7 +229,7 @@ def release_manifest(*, workspace: Path, visible_report: dict, visible_cases: di
                 or receipt.get("review_ledger_sha256") != holdout_ledger["content_sha256"]
                 or receipt.get("submission_sha256") != content_sha256(submission)):
             raise ManualGraphError("holdout receipt does not bind these release artifacts")
-        failures += review_failures(submission, corpus_freeze, holdout_ledger, developers, 10, 1)
+        failures += review_failures(submission, corpus_freeze, holdout_ledger, developers, 10, 1, review_policy)
         if set(holdout_report["strategies"]) != set(freeze["selected_strategies"]):
             raise ManualGraphError("holdout report must contain only the frozen shortlist")
         if holdout_report.get("dataset_kind") != "holdout":
@@ -235,7 +260,7 @@ def release_manifest(*, workspace: Path, visible_report: dict, visible_cases: di
         if not winners:
             failures.append("release.no_strategy_passes_all_gates")
     winner = min(winners, key=STRATEGIES.index) if winners and not failures else None
-    return sign({"schema_version": 1, "mode": "retrieval_release_manifest", "bindings": bindings,
+    return sign({"schema_version": 1, "mode": "retrieval_release_manifest", **metadata(review_policy), "bindings": bindings,
                  "code": code_identity(), "visible_report_sha256": visible_report["content_sha256"],
                  "visible_review_sha256": visible_ledger["content_sha256"],
                  "benchmark_freeze_sha256": freeze["content_sha256"] if freeze else None,

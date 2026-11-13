@@ -3,6 +3,7 @@ using CareSitter.Contracts.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CareSitter.Infrastructure.Hubs;
 
@@ -21,7 +22,7 @@ public sealed class RealtimeSessionRegistry
     }
 }
 
-public sealed class RealtimeSessionWatchdog(RealtimeSessionRegistry registry, IServiceScopeFactory scopes) : BackgroundService
+public sealed class RealtimeSessionWatchdog(RealtimeSessionRegistry registry, IServiceScopeFactory scopes, ILogger<RealtimeSessionWatchdog> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -36,7 +37,10 @@ public sealed class RealtimeSessionWatchdog(RealtimeSessionRegistry registry, IS
                     if (await validator.IsActiveAsync(entry.UserId, entry.SessionId, stoppingToken)) continue;
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
-                catch (Exception) { /* Fail closed nếu không kiểm được phiên. */ }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Session validation failed for realtime connection {ConnectionId}; closing connection.", entry.Context.ConnectionId);
+                }
                 registry.Remove(entry.Context.ConnectionId); entry.Context.Abort();
             }
             try { await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken); }

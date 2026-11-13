@@ -6,7 +6,7 @@ library;
 
 import 'package:caresitter_customer/core/config/env_config.dart';
 
-const String kBaseUrl = EnvConfig.apiBaseUrl;
+final String kBaseUrl = EnvConfig.apiBaseUrl;
 
 class ApiPaths {
   ApiPaths._();

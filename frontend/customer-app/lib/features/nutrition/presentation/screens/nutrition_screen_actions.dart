@@ -1,33 +1,34 @@
+import '../widgets/nutrition_plan_history_sheet.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
-import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../controllers/nutrition_controller.dart';
-import '../../data/models/recipe_option_model.dart';
-import '../widgets/nutrition_plan_history_sheet.dart';
+import '../widgets/nutrition_plan_setup_sheet.dart';
+import '../widgets/nutrition_replacement_sheet.dart';
 
 class NutritionScreenActions {
   const NutritionScreenActions._();
 
-  static void saveHealth(
-    BuildContext context,
-    NutritionFlowController controller,
-    Map<String, dynamic> changes,
-  ) {
-    if (changes.isEmpty) {
-      AppToast.showLegacy(
-        context,
-        const SnackBar(content: Text('Chưa có thông tin thay đổi.')),
+  static Future<int?> choosePlanDays({
+    required BuildContext context,
+    required DateTime startDate,
+    required String? beneficiaryName,
+    required ValueChanged<VoidCallback?> onCloseSheetChanged,
+  }) =>
+      showSheet<int>(
+        context: context,
+        onCloseSheetChanged: onCloseSheetChanged,
+        builder: (_) => NutritionPlanSetupSheet(
+          startDate: startDate,
+          beneficiaryName: beneficiaryName,
+        ),
       );
-      return;
-    }
-    controller.saveHealth(changes);
-  }
 
   static Future<void> createWeek({
     required BuildContext context,
     required NutritionFlowController controller,
     required DateTime selectedDate,
+    required int days,
     required bool Function() isCurrent,
     required VoidCallback onNeedsProfile,
     bool confirmFirst = false,
@@ -45,7 +46,7 @@ class NutritionScreenActions {
       }
       AppToast.success(context, 'Lưu thông tin thành công');
     }
-    final result = await controller.generateWeek(selectedDate);
+    final result = await controller.generateWeek(selectedDate, days: days);
     if (!context.mounted || !isCurrent()) {
       return;
     }
@@ -58,11 +59,11 @@ class NutritionScreenActions {
       AppToast.success(
           context,
           result.createdDays == 0
-              ? 'Đã có thực đơn cho đủ 7 ngày'
-              : 'Đã lưu thực đơn cho đủ 7 ngày');
+              ? 'Đã có thực đơn cho đủ $days ngày'
+              : 'Đã lưu thực đơn cho đủ $days ngày');
     } else {
       AppToast.error(context,
-          '${result.error ?? 'Chưa hoàn tất tuần.'} Đã có ${result.createdDays + result.existingDays}/7 ngày.');
+          '${result.error ?? 'Chưa hoàn tất kế hoạch.'} Đã có ${result.createdDays + result.existingDays}/$days ngày.');
     }
   }
 
@@ -74,23 +75,35 @@ class NutritionScreenActions {
   }) async {
     final plans = await controller.plans();
     if (!context.mounted || !isCurrent() || plans == null) return false;
-
     final chosen = await showSheet<String>(
       context: context,
       onCloseSheetChanged: onCloseSheetChanged,
       builder: (_) => NutritionPlanHistorySheet(plans: plans),
     );
-    if (!isCurrent() || chosen == null) return false;
-
+    if (!context.mounted || !isCurrent() || chosen == null) return false;
     await controller.openPlan(chosen);
-    if (!isCurrent()) return false;
-
+    if (!context.mounted || !isCurrent()) return false;
     final openedResource = controller.view.resource;
     final plannedDate = openedResource?.id == chosen
         ? DateTime.tryParse(openedResource!.result.plannedDate ?? '')
         : null;
     if (plannedDate != null) controller.adoptResourceDate();
     return true;
+  }
+
+  static void saveHealth(
+    BuildContext context,
+    NutritionFlowController controller,
+    Map<String, dynamic> changes,
+  ) {
+    if (changes.isEmpty) {
+      AppToast.showLegacy(
+        context,
+        const SnackBar(content: Text('Chưa có thông tin thay đổi.')),
+      );
+      return;
+    }
+    controller.saveHealth(changes);
   }
 
   static Future<void> replaceMeal({
@@ -106,9 +119,9 @@ class NutritionScreenActions {
     final chosen = await showSheet<String>(
       context: context,
       onCloseSheetChanged: onCloseSheetChanged,
-      builder: (_) => _ReplacementOptionsSheet(options: options),
+      builder: (_) => NutritionReplacementSheet(options: options),
     );
-    if (isCurrent() && chosen != null) {
+    if (context.mounted && isCurrent() && chosen != null) {
       await controller.replace(chosen, mealType);
     }
   }
@@ -133,37 +146,4 @@ class NutritionScreenActions {
       onCloseSheetChanged(null);
     }
   }
-}
-
-class _ReplacementOptionsSheet extends StatelessWidget {
-  const _ReplacementOptionsSheet({required this.options});
-
-  final List<RecipeOptionModel> options;
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .6,
-          child: options.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Text(
-                      'Chưa có món thay thế đáp ứng các yêu cầu của thực đơn.',
-                    ),
-                  ),
-                )
-              : ListView(
-                  children: [
-                    const ListTile(title: Text('Món thay thế phù hợp')),
-                    for (final recipe in options)
-                      ListTile(
-                        title: Text(recipe.name),
-                        subtitle: Text('Khẩu phần: ${recipe.servings} phần'),
-                        onTap: () => Navigator.pop(context, recipe.versionId),
-                      ),
-                  ],
-                ),
-        ),
-      );
 }

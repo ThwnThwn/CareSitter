@@ -137,6 +137,49 @@ class ManualGraphPipelineTests(unittest.TestCase):
             "1.1 Viêm gan virut cấp là một bệnh truyền nhiễm cấp tính thường gặp do các virut viêm gan gây ra."
         ))
 
+    def test_wrapped_numbered_title_does_not_merge_with_chapter_title(self):
+        layout = (
+            "XÂY DỰNG KHẨU PHẦN\n\n"
+            "Đoạn giới thiệu về cách xây dựng khẩu phần và sức khỏe.\n\n"
+            "I. XÂY DỰNG KHẨU PHẦN CẦN PHÂN TÍCH MỐI LIÊN QUAN GIỮA DINH\n"
+            "DƯỠNG, SỨC KHỎE VÀ BỆNH TẬT\n\n"
+            + "Nội dung có nguồn trên trang sách. " * 30
+        )
+        chunks, _ = chunk_page(source=self.source, pdf_page=65, layout_text=layout,
+                               target_tokens=120, maximum_tokens=700, overlap_tokens=20)
+        headings = [heading for chunk in chunks for heading in chunk["headings"]]
+        self.assertEqual("XÂY DỰNG KHẨU PHẦN", headings[0])
+        self.assertEqual(
+            "I. XÂY DỰNG KHẨU PHẦN CẦN PHÂN TÍCH MỐI LIÊN QUAN GIỮA DINH DƯỠNG, SỨC KHỎE VÀ BỆNH TẬT",
+            headings[1],
+        )
+
+    def test_flowchart_labels_are_not_headings_but_following_section_is(self):
+        layout = (
+            "SÀNG LỌC\n- Giảm ăn vào\nNguy cơ suy dinh dưỡng?\n\n"
+            "có không\n\nĐÁNH GIÁ\n- Giám sát ăn vào\nCAN THIỆP\nGIÁM SÁT\n\n"
+            "Sơ đồ chăm sóc dinh dưỡng người cao tuổi\n\n"
+            "3. Các khuyến nghị chăm sóc dinh dưỡng\n\n"
+            + "Nội dung chăm sóc dinh dưỡng có nguồn. " * 30
+        )
+        chunks, _ = chunk_page(source=self.source, pdf_page=354, layout_text=layout,
+                               target_tokens=120, maximum_tokens=700, overlap_tokens=20)
+        headings = [heading for chunk in chunks for heading in chunk["headings"]]
+        self.assertEqual(["3. Các khuyến nghị chăm sóc dinh dưỡng"], headings)
+
+    def test_wrapped_title_can_have_a_layout_blank_line(self):
+        layout = (
+            "CHẾ ĐỘ DINH DƯỠNG\n\n"
+            "II. XÂY DỰNG KHẨU PHẦN CẦN PHÂN TÍCH MỐI LIÊN QUAN GIỮA DINH\n\n"
+            "DƯỠNG VÀ LAO ĐỘNG\n\n"
+            + "Nội dung có nguồn trên trang sách. " * 30
+        )
+        chunks, _ = chunk_page(source=self.source, pdf_page=66, layout_text=layout,
+                               target_tokens=120, maximum_tokens=700, overlap_tokens=20)
+        headings = [heading for chunk in chunks for heading in chunk["headings"]]
+        self.assertEqual("II. XÂY DỰNG KHẨU PHẦN CẦN PHÂN TÍCH MỐI LIÊN QUAN GIỮA DINH DƯỠNG VÀ LAO ĐỘNG",
+                         headings[1])
+
     def test_local_chunk_seed_is_idempotent_and_keeps_review_gate(self):
         source = {"source_id": "book", "revision_id": "book@1", "sha256": "a" * 64}
         chunks, _ = chunk_page(
@@ -393,6 +436,56 @@ class ManualGraphPipelineTests(unittest.TestCase):
             self.assertEqual(0, review["pendingCount"])
             self.assertEqual("approved", review["decision"])
             self.assertEqual("release_check_required", authorization["status"])
+            self.assertNotIn("dataReviewerIds", review)
+
+    def test_prepare_release_reference_binds_data_reviewers(self):
+        """Synthetic data-steward fixture only; no clinical approval exists or is implied."""
+        from nutrition_knowledge_manual.review_policy import REFERENCE, metadata
+        with tempfile.TemporaryDirectory() as folder:
+            temporary = Path(folder)
+            manifest = {
+                "schema_version": 1,
+                "sources": [{
+                    "source_id": "fixture", "revision_id": "fixture@permitted", "title": "fixture",
+                    "path": str(self.bundle_path.relative_to(WORKSPACE)).replace("\\", "/"),
+                    "sha256": file_sha256(self.bundle_path), "byte_size": self.bundle_path.stat().st_size,
+                    "rights_status": "permitted", "citation_ids": ["SYNTHETIC_SOURCE"],
+                    "allowed_uses": ["local_index", "local_query", "internal_citation"]
+                }]
+            }
+            manifest_path = temporary / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            source, _ = resolve_source(workspace=WORKSPACE, manifest_path=manifest_path, source_id="fixture")
+            graph = build_candidate_graph(self.bundle, source)
+            ledger = empty_decision_ledger(graph)
+            for candidate in graph["candidates"]:
+                ledger = append_decision(
+                    graph=graph, ledger=ledger, candidate_id=candidate["candidate_id"], decision="approve",
+                    reviewer_id="graph-steward-fixture", reviewer_role="data_steward",
+                    comment="Synthetic review only", policy=self.policy, review_policy=REFERENCE
+                )
+            evidence = load_json(ROOT / "fixtures" / "evidence.synthetic.json")
+            evidence = {**evidence, **metadata(REFERENCE), "clinicalReview": None,
+                        "recipes": [{"recipeVersionId": "00000000-0000-0000-0000-000000000001",
+                                     "ingredients": [], "nutrients": [], "unresolvedItems": []}]}
+            for row in evidence["recipes"]:
+                row["dataReview"] = {"decision": "approved", "reviewerRole": "data_steward",
+                                     "reviewerId": "recipe-steward-fixture",
+                                     "reviewedAt": "2026-11-10T00:00:00+00:00"}
+            evidence_path = temporary / "evidence.json"
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            kwargs = dict(workspace=WORKSPACE, manifest_path=manifest_path, bundle_source_id="fixture",
+                          graph=graph, ledger=ledger, policy=self.policy, review_policy=REFERENCE)
+            output, _ = prepare_release(**kwargs, evidence_path=evidence_path)
+            review = output["knowledgeReview"]
+            self.assertEqual([], review["clinicalReviewerIds"])
+            self.assertEqual(["graph-steward-fixture", "recipe-steward-fixture"], review["dataReviewerIds"])
+            self.assertEqual(REFERENCE, review["review_policy"])
+
+            evidence["recipes"][0]["dataReview"] = None
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            with self.assertRaisesRegex(ManualGraphError, "data-steward review"):
+                prepare_release(**kwargs, evidence_path=evidence_path)
 
 
 if __name__ == "__main__":

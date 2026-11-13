@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:caregiver_app/features/auth/presentation/screens/password_recovery_screen.dart';
 import 'package:caregiver_app/features/auth/presentation/screens/recovery_email_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/core/router/shell_scaffold.dart';
+import 'package:caregiver_app/core/router/app_routes.dart';
+import 'package:caregiver_app/core/router/auth_route_redirect.dart';
+import 'package:caregiver_app/app/onboarding/onboarding_screen.dart';
+import 'package:caregiver_app/app/onboarding/onboarding_status.dart';
 
 import 'package:caregiver_app/features/auth/presentation/screens/phone_input_screen.dart';
 import 'package:caregiver_app/features/auth/presentation/screens/otp_verify_screen.dart';
@@ -119,17 +124,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/home',
+    initialLocation: kIsWeb ? AppRoutes.home : AppRoutes.onboarding,
     refreshListenable: refreshSignal,
-    redirect: (context, state) {
-      final isLoggedIn =
-          ref.read(authStateProvider).value?.isAuthenticated ?? false;
-      final isAuthRoute = state.matchedLocation.startsWith('/auth');
-      if (!isLoggedIn && !isAuthRoute) return '/auth/phone';
-      if (isLoggedIn && isAuthRoute) return '/home';
-      return null;
-    },
+    redirect: (context, state) => caregiverAuthRouteRedirect(
+      location: state.uri.toString(),
+      isAuthenticated: ref
+          .read(authStateProvider.future)
+          .then((session) => session.isAuthenticated),
+      hasCompletedOnboarding: state.uri.path == AppRoutes.onboarding
+          ? OnboardingStatus.hasCompleted()
+          : null,
+    ),
     routes: [
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(
+          registerRoute: AppRoutes.register,
+          loginRoute: AppRoutes.login,
+        ),
+      ),
       GoRoute(
           path: '/auth/forgot-password',
           builder: (ctx, state) => const PasswordRecoveryScreen()),
@@ -367,8 +380,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/settings/support/chat',
-        pageBuilder: (ctx, state) =>
-            _detailPage(pageKey: state.pageKey, child: const SupportChatScreen()),
+        pageBuilder: (ctx, state) => _detailPage(
+            pageKey: state.pageKey, child: const SupportChatScreen()),
       ),
     ],
   );

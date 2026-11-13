@@ -9,7 +9,7 @@ export function useResource<T>(path: string | null, initial: T) {
   const request = useRef(0);
   const mounted = useRef(true);
   const controller = useRef<AbortController | null>(null);
-  const [state, setState] = useState({ path, data: initial, loading: !!path, error: '' });
+  const [state, setState] = useState({ path, data: initial, loading: !!path, error: '', hasLoaded: false });
   const reload = useCallback(async () => {
     if (!mounted.current || currentPath.current !== path) return;
     const sequence = ++request.current;
@@ -17,14 +17,14 @@ export function useResource<T>(path: string | null, initial: T) {
     const abort = new AbortController();
     controller.current = abort;
     if (!path) {
-      setState({ path, data: initialValue.current, loading: false, error: '' });
+      setState({ path, data: initialValue.current, loading: false, error: '', hasLoaded: true });
       return;
     }
-    setState((previous) => ({ path, data: previous.path === path ? previous.data : initialValue.current, loading: true, error: '' }));
+    setState((previous) => ({ path, data: previous.path === path ? previous.data : initialValue.current, loading: true, error: '', hasLoaded: previous.path === path && previous.hasLoaded }));
     try {
       const data = await api<T>(path, { signal: abort.signal });
       if (request.current === sequence && !abort.signal.aborted && currentPath.current === path) {
-        setState({ path, data, loading: false, error: '' });
+        setState({ path, data, loading: false, error: '', hasLoaded: true });
       }
     } catch (cause) {
       if (request.current === sequence && !abort.signal.aborted && currentPath.current === path) {
@@ -41,6 +41,7 @@ export function useResource<T>(path: string | null, initial: T) {
     data: state.path === path ? state.data : initialValue.current,
     loading: state.path === path ? state.loading : !!path,
     error: state.path === path ? state.error : '',
+    hasLoaded: state.path === path ? state.hasLoaded : false,
     reload,
   };
 }

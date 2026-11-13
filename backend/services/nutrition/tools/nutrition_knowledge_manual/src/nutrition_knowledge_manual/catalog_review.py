@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256
 
 
@@ -44,8 +45,10 @@ def record_recipe_review(
     comment: str,
     resolutions: list[dict[str, str]] | None = None,
     reviewed_at_utc: str | None = None,
+    review_policy=DEFAULT,
 ) -> dict[str, Any]:
     """Record one role's recipe review while preserving all other decisions."""
+    check(review_policy, ledger, role=reviewer_role)
     candidates = validate_catalog_review_ledger(candidate_manifest, ledger)
     if recipe_version_id not in candidates:
         raise ManualGraphError(f"recipe candidate does not exist: {recipe_version_id}")
@@ -77,6 +80,8 @@ def record_recipe_review(
         for item in normalized_resolutions:
             existing[item["item"]] = item
         entry["resolutions"] = [existing[key] for key in sorted(existing)]
+    if review_policy == REFERENCE:
+        result.update(metadata(review_policy))
     return _sign_ledger(result)
 
 
@@ -90,8 +95,10 @@ def record_catalog_clinical_review(
     decision: str,
     notes: str | None = None,
     reviewed_at: str | None = None,
+    review_policy=DEFAULT,
 ) -> dict[str, Any]:
     """Record the final catalog-level clinical decision after recipe-level review."""
+    check(review_policy, ledger, role="dietitian")
     validate_catalog_review_ledger(candidate_manifest, ledger)
     if decision not in {"approved", "rejected"}:
         raise ManualGraphError("catalog clinical decision must be approved or rejected")
@@ -104,13 +111,16 @@ def record_catalog_clinical_review(
         "decision": decision,
         "notes": notes.strip() if isinstance(notes, str) and notes.strip() else None,
     }
+    if review_policy == REFERENCE:
+        result.update(metadata(review_policy))
     return _sign_ledger(result)
 
 
 def catalog_review_status(
-    *, candidate_manifest: dict[str, Any], candidate_evidence: dict[str, Any], ledger: dict[str, Any]
+    *, candidate_manifest: dict[str, Any], candidate_evidence: dict[str, Any], ledger: dict[str, Any], review_policy=DEFAULT
 ) -> dict[str, Any]:
     """Return an auditable readiness summary without mutating the review ledger."""
+    check(review_policy, ledger)
     candidates = validate_catalog_review_ledger(candidate_manifest, ledger)
     raw_evidence = candidate_evidence.get("recipes")
     if not isinstance(raw_evidence, list):
@@ -159,12 +169,11 @@ def catalog_review_status(
     reviewer_bound = bool(final_reviewer) and final_reviewer in clinical_recipe_reviewers
     ready = (
         counts["data_approved"] == len(candidates)
-        and counts["clinical_approved"] == len(candidates)
+        and (review_policy == REFERENCE or counts["clinical_approved"] == len(candidates))
         and counts["data_rejected"] == 0
         and counts["clinical_rejected"] == 0
         and missing_resolution_count == 0
-        and final_decision == "approved"
-        and reviewer_bound
+        and (review_policy == REFERENCE or (final_decision == "approved" and reviewer_bound))
     )
     return {
         "schema_version": 1,

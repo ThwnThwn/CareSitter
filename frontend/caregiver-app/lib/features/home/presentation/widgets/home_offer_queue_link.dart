@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeOfferQueueLink extends StatelessWidget {
@@ -20,7 +19,7 @@ class HomeOfferQueueLink extends StatelessWidget {
             foregroundColor: AppColors.primary,
             minimumSize: const Size(44, 40),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            textStyle: GoogleFonts.beVietnamPro(
+            textStyle: const TextStyle(fontFamily: 'Inter',
               fontSize: AppFontSizes.s12,
               fontWeight: FontWeight.w600,
             ),

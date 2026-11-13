@@ -1,3 +1,4 @@
+import 'catalog_configured_banner.dart';
 import 'package:caresitter_customer/features/catalog/presentation/widgets/catalog_services_async_filter_services_content.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
@@ -67,10 +68,7 @@ class CatalogServicesAsyncFilteredContent extends StatelessWidget {
                 const SizedBox(height: AppSpacing.inset),
 
                 // ── Banner ─────────────────────────────────────────────────
-                FadeSlideStaggered(
-                  index: 1,
-                  child: buildBanner(),
-                ),
+                CatalogConfiguredBanner(builder: buildBanner),
                 const SizedBox(height: 22),
 
                 // ── Section Title ──────────────────────────────────────────

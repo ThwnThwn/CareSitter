@@ -17,6 +17,14 @@ internal sealed class SaveMealPlanCommandHandler(NutritionWriteScope scope, Meal
         var prepared = await meals.PrepareAsync(session, request.BeneficiaryId, request.Input, snapshot, request.RecommendationId, ct);
         if (prepared.IsFailure) return prepared.Error;
         var meal = prepared.Value;
+        // A dated save is used by weekly generation, which must preserve an occupied day.
+        if (request.Input.PlannedDate is { } date)
+        {
+            if (date != meal.PlannedDate)
+                return Error.Validation("nutrition.request", "Ngày lưu không khớp với ngày gợi ý.");
+            if ((await session.PlansAsync(request.BeneficiaryId, ct, date, date)).Count > 0)
+                return Error.Conflict("nutrition.plan_date_occupied", "Ngày này đã có thực đơn. Vui lòng tải lại.");
+        }
         return new NutritionResourceDraft("saved", NutritionJson.Write(meal.Complete(meal.Previous!.Meals)));
     }
 }

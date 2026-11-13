@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 
 import '../controllers/nutrition_controller.dart';
+import '../controllers/nutrition_entry_controller.dart';
 import 'nutrition_screen_actions.dart';
 import 'nutrition_screen_page.dart';
 import 'nutrition_screen_page_actions.dart';
@@ -29,6 +31,12 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
   bool _historyLoading = false;
   bool _editingProfile = false;
   VoidCallback? _closeSheet;
+
+  bool _isCurrent(String beneficiary, Object session) =>
+      mounted &&
+      beneficiary == widget.beneficiaryId &&
+      ref.read(nutritionSessionProvider) == session;
+
   @override
   void initState() {
     super.initState();
@@ -107,59 +115,31 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     int session,
     NutritionFlowController controller,
   ) {
-    final health = flow.health;
-    final resourceDate = DateTime.tryParse(
-      flow.resource?.result.plannedDate ?? '',
-    );
     final selectedDate =
         flow.selectedDate ?? DateUtils.dateOnly(DateTime.now());
-    final hasPlanForSelectedDate = flow.resource != null &&
-        (resourceDate == null ||
-            DateUtils.isSameDay(resourceDate, selectedDate));
-    final dateError =
-        flow.dateError ?? (!hasPlanForSelectedDate ? flow.error : null);
-    final editing = !flow.restoringPlan && (_editingProfile || health == null);
     return NutritionScreenPage(
+      userId: ref.watch(authStateProvider.select((s) => s.valueOrNull?.userId)),
+      disclaimer:
+          ref.watch(nutritionCapabilitiesProvider).valueOrNull?.disclaimer,
+      disclaimerVersion: ref
+          .watch(nutritionCapabilitiesProvider)
+          .valueOrNull
+          ?.disclaimerVersion,
       controller: controller,
-      state: _pageState(flow, session, selectedDate, hasPlanForSelectedDate,
-          dateError, editing),
-      actions: _pageActions(flow, controller, selectedDate),
-    );
-  }
-
-  NutritionScreenPageState _pageState(
-    NutritionFlow flow,
-    int session,
-    DateTime selectedDate,
-    bool hasPlanForSelectedDate,
-    String? dateError,
-    bool editing,
-  ) =>
-      NutritionScreenPageState(
+      state: NutritionScreenPageState.fromFlow(
         beneficiaryId: widget.beneficiaryId,
         beneficiaryName: widget.beneficiaryName,
         session: session,
         flow: flow,
-        health: flow.health,
-        editing: editing,
-        dirty: _dirty,
         selectedDate: selectedDate,
-        hasPlanForSelectedDate: hasPlanForSelectedDate,
-        isLoadingSelectedDate: flow.dateLoading,
-        dateError: dateError,
-        canReturnToMenu:
-            _editingProfile && flow.health != null && !_dirty && !flow.loading,
-        canReturnToBeneficiaries:
-            widget.onChangeBeneficiary != null && !_dirty && !flow.loading,
-        canEdit: flow.health != null && !_editingProfile && !flow.loading,
-        canOpenHistory: flow.health != null &&
-            !_dirty &&
-            !flow.loading &&
-            !_historyLoading &&
-            !flow.dateLoading,
-        canChangeBeneficiary:
-            widget.onChangeBeneficiary != null && !_dirty && !flow.loading,
-      );
+        dirty: _dirty,
+        editingProfile: _editingProfile,
+        historyLoading: _historyLoading,
+        canChangeBeneficiary: widget.onChangeBeneficiary != null,
+      ),
+      actions: _pageActions(flow, controller, selectedDate),
+    );
+  }
 
   NutritionScreenPageActions _pageActions(
     NutritionFlow flow,
@@ -180,7 +160,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
           final previousRevision = controller.revision;
           controller.selectDate(selectedDate);
           await controller.saveHealthAndAssess(changes,
-              plannedDate: selectedDate);
+              plannedDate: changes.isEmpty ? selectedDate : null);
           if (!mounted ||
               beneficiary != widget.beneficiaryId ||
               ref.read(nutritionSessionProvider) != session) {
@@ -212,49 +192,52 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
       );
 
   Future<void> _createWeek(
-    NutritionFlowController controller,
-    DateTime selectedDate, {
-    bool confirmFirst = false,
-  }) {
-    return NutritionScreenActions.createWeek(
+      NutritionFlowController controller, DateTime selectedDate,
+      {bool confirmFirst = false}) async {
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
+    final days = await NutritionScreenActions.choosePlanDays(
+      context: context,
+      startDate: selectedDate,
+      beneficiaryName: widget.beneficiaryName,
+      onCloseSheetChanged: (close) => _closeSheet = close,
+    );
+    if (!mounted || days == null || !_isCurrent(beneficiary, session)) {
+      return;
+    }
+    await NutritionScreenActions.createWeek(
       context: context,
       controller: controller,
       selectedDate: selectedDate,
-      isCurrent: _captureScope(),
-      onNeedsProfile: () => setState(() => _editingProfile = true),
+      days: days,
       confirmFirst: confirmFirst,
+      isCurrent: () => _isCurrent(beneficiary, session),
+      onNeedsProfile: () => setState(() => _editingProfile = true),
     );
-  }
-
-  bool Function() _captureScope() {
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
-    return () =>
-        mounted &&
-        beneficiary == widget.beneficiaryId &&
-        ref.read(nutritionSessionProvider) == session;
   }
 
   Future<void> _createPlan(
     NutritionFlowController controller,
     DateTime selectedDate,
   ) async {
-    final isCurrent = _captureScope();
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
     final created =
         await controller.recommendForDateUsingConfirmedHealth(selectedDate);
-    if (!isCurrent()) {
+    if (!_isCurrent(beneficiary, session)) {
       return;
     }
     if (!created) setState(() => _editingProfile = true);
   }
 
   Future<void> _replace(NutritionFlowController c, String mealType) async {
-    final isCurrent = _captureScope();
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
     await NutritionScreenActions.replaceMeal(
       context: context,
       controller: c,
       mealType: mealType,
-      isCurrent: isCurrent,
+      isCurrent: () => _isCurrent(beneficiary, session),
       onCloseSheetChanged: (close) => _closeSheet = close,
     );
   }
@@ -262,15 +245,16 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
   Future<void> _history(NutritionFlowController c) async {
     if (_historyLoading) return;
     setState(() => _historyLoading = true);
-    final isCurrent = _captureScope();
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
     try {
       final opened = await NutritionScreenActions.openHistory(
         context: context,
         controller: c,
-        isCurrent: isCurrent,
+        isCurrent: () => _isCurrent(beneficiary, session),
         onCloseSheetChanged: (close) => _closeSheet = close,
       );
-      if (opened && isCurrent()) setState(() => _editingProfile = false);
+      if (opened && mounted) setState(() => _editingProfile = false);
     } finally {
       if (mounted) setState(() => _historyLoading = false);
     }
@@ -280,9 +264,10 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     NutritionFlowController controller,
     DateTime date,
   ) async {
-    final isCurrent = _captureScope();
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
     final opened = await controller.openPlanForDate(date);
-    if (opened && isCurrent()) {
+    if (opened && _isCurrent(beneficiary, session)) {
       setState(() => _editingProfile = false);
     }
   }

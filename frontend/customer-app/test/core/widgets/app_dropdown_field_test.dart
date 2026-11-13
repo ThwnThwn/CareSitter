@@ -31,12 +31,6 @@ void main() {
     final input = tester.widget<InputDecorator>(find.byType(InputDecorator));
     final border = input.decoration.border! as OutlineInputBorder;
     final menu = tester.widget<MenuAnchor>(find.byType(MenuAnchor));
-
-    expect(input.decoration.filled, isTrue);
-    expect(input.decoration.fillColor, AppColors.surface);
-    expect(border.borderRadius, BorderRadius.circular(AppRadius.xl));
-    expect(menu.style!.alignment, AlignmentDirectional.bottomStart);
-    expect(menu.useRootOverlay, isTrue);
     final triggerMaterial = tester.widget<Material>(
       find
           .ancestor(
@@ -45,10 +39,16 @@ void main() {
           )
           .first,
     );
+
+    expect(input.decoration.filled, isTrue);
+    expect(input.decoration.fillColor, AppInputStyle.fillColor);
+    expect(border.borderRadius, AppInputStyle.radius);
+    expect(menu.style!.alignment, AlignmentDirectional.bottomStart);
+    expect(menu.useRootOverlay, isTrue);
     expect(triggerMaterial.clipBehavior, Clip.antiAlias);
     expect(
       (triggerMaterial.shape! as RoundedRectangleBorder).borderRadius,
-      BorderRadius.circular(AppRadius.xl),
+      AppInputStyle.radius,
     );
 
     final fieldRect = tester.getRect(find.byType(InputDecorator));
@@ -99,6 +99,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mục thứ hai'), findsNothing);
+  });
+
+  testWidgets('floating label is not clipped by the dropdown trigger',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: AppDropdownField<String>(
+              initialValue: 'first',
+              decoration: const InputDecoration(
+                labelText: 'Việc dùng thuốc hiện tại',
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'first',
+                  child: Text('Đã xác nhận không dùng'),
+                ),
+              ],
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final fieldRect = tester.getRect(find.byType(InputDecorator));
+    final labelRect = tester.getRect(find.text('Việc dùng thuốc hiện tại'));
+    final materialRect = tester.getRect(
+      find
+          .ancestor(
+            of: find.byType(InkWell),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(
+      labelRect.top,
+      greaterThanOrEqualTo(materialRect.top),
+      reason: 'The floating label must remain inside the painted field bounds.',
+    );
+    expect(labelRect.bottom, lessThan(fieldRect.bottom));
   });
 
   testWidgets('validates and updates a value supplied by the parent',

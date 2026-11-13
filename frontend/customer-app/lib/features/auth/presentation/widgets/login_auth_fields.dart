@@ -82,8 +82,7 @@ class LoginAuthFields extends StatelessWidget {
                 // Disable browser autofill for both login fields on Web: Edge
                 // can keep Flutter's hidden username input focused after moving
                 // to the password field, making edits appear frozen.
-                autofillHints:
-                    kIsWeb ? null : const [AutofillHints.username],
+                autofillHints: kIsWeb ? null : const [AutofillHints.username],
                 enabled: !loginState.isLoading,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -95,8 +94,7 @@ class LoginAuthFields extends StatelessWidget {
                 obscureText: obscurePass,
                 validator: AuthValidators.loginPassword,
                 textInputAction: TextInputAction.done,
-                autofillHints:
-                    kIsWeb ? null : const [AutofillHints.password],
+                autofillHints: kIsWeb ? null : const [AutofillHints.password],
                 enabled: !loginState.isLoading,
                 onFieldSubmitted: (_) => login(),
                 suffixIcon: IconButton(
@@ -130,43 +128,24 @@ class LoginAuthFields extends StatelessWidget {
   }
 
   static InputDecorationTheme _heroInputTheme() {
-    return InputDecorationTheme(
+    return const InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(
+      fillColor: AppInputStyle.fillColor,
+      contentPadding: EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.inset),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: BorderSide(
-          color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: BorderSide(
-          color: LoginHeroTokens.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide:
-            const BorderSide(color: LoginHeroTokens.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
-      hintStyle: const TextStyle(
+      border: AppInputStyle.enabledBorder,
+      enabledBorder: AppInputStyle.enabledBorder,
+      disabledBorder: AppInputStyle.enabledBorder,
+      focusedBorder: AppInputStyle.focusedBorder,
+      errorBorder: AppInputStyle.errorBorder,
+      focusedErrorBorder: AppInputStyle.errorBorder,
+      hintStyle: TextStyle(
           fontSize: AppFontSizes.s14, color: AppColors.textHint),
-      labelStyle: const TextStyle(
+      labelStyle: TextStyle(
         fontSize: AppFontSizes.s14,
         color: LoginHeroTokens.onSurfaceVariant,
       ),
-      floatingLabelStyle: const TextStyle(
+      floatingLabelStyle: TextStyle(
         fontSize: AppFontSizes.s12,
         color: LoginHeroTokens.primary,
         fontWeight: FontWeight.w500,
@@ -174,7 +153,7 @@ class LoginAuthFields extends StatelessWidget {
       prefixIconColor: LoginHeroTokens.outline,
       suffixIconColor: LoginHeroTokens.outline,
       errorStyle:
-          const TextStyle(fontSize: AppFontSizes.s12, color: AppColors.error),
+          TextStyle(fontSize: AppFontSizes.s12, color: AppColors.error),
     );
   }
 }

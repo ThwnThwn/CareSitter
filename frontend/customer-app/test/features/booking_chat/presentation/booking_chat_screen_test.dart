@@ -35,9 +35,10 @@ void main() {
     ));
     await tester.pump();
 
+    expect(find.byType(BackButton), findsOneWidget);
     final label = find.text('Xin chào caregiver');
-    final chip = find.ancestor(
-        of: label, matching: find.byType(GestureDetector));
+    final chip =
+        find.ancestor(of: label, matching: find.byType(GestureDetector));
     expect(chip, findsOneWidget);
     expect(tester.getSize(chip).height, greaterThanOrEqualTo(44));
     expect(tester.getRect(chip).contains(tester.getRect(label).bottomRight),

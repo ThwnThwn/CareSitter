@@ -38,7 +38,7 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             recommendationsEnabled = false, freeTextParserReady = false }))
         : CallAsync((headers, deadline) => _client!.GetCapabilitiesAsync(new Empty(), headers, deadline, ct),
             value => new(200, new { value.Enabled, value.AssessmentsEnabled, value.RecommendationsEnabled,
-                value.FreeTextParserReady }), ct);
+                value.FreeTextParserReady, value.Disclaimer, value.DisclaimerVersion }), ct);
 
     public Task<NutritionGatewayResponse> ExecuteAsync(CommandRequest request, CancellationToken ct) =>
         CallAsync((headers, deadline) => _client!.ExecuteAsync(request, headers, deadline, ct),
@@ -66,8 +66,47 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             return new(200, value.Items.Recipes.Select(recipe => Json(recipe.DataJson)).ToArray());
         }, ct);
 
+    public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false) =>
+        CallAsync((headers, deadline) => _client!.SearchKnowledgeAsync(
+            new KnowledgeSearchRequest { Query = query, LocalDemo = localDemo }, headers, deadline, ct), value =>
+        {
+            if (value.Query != query || value.Results.Count > 10 ||
+                value.Results.Select(hit => hit.ChunkId).Distinct(StringComparer.Ordinal).Count() != value.Results.Count || value.Results.Any(hit =>
+                    string.IsNullOrWhiteSpace(hit.ChunkId) || hit.Heading.Length > 500 ||
+                    hit.SourceTitle.Length > 500 || hit.SourceRevisionId.Length > 200))
+                throw new InvalidDataException();
+            var showPassages = localDemo && value.LocalDemo;
+            var answerIds = showPassages
+                ? (value.AnswerChunkIds.Count > 0 ? value.AnswerChunkIds.ToArray() :
+                    string.IsNullOrEmpty(value.AnswerChunkId) ? [] : new[] { value.AnswerChunkId })
+                : [];
+            if (answerIds.Length > 5 || answerIds.Distinct(StringComparer.Ordinal).Count() != answerIds.Length ||
+                answerIds.Any(id => !value.Results.Any(hit => hit.ChunkId == id && hit.Excerpt.Length is > 0 and <= 640)))
+                throw new InvalidDataException();
+            var suggestion = showPassages && value.AnswerStatus == "ai_suggestion";
+            if (suggestion && (value.AnswerProvider != "Gemini" || answerIds.Length != 0 || value.AnswerBlocks.Count == 0))
+                throw new InvalidDataException();
+            var status = suggestion ? "ai_suggestion" : !showPassages ? null : answerIds.Length > 0 ? "answered" :
+                value.AnswerStatus is "unavailable" or "not_configured" or "rate_limited" or "timeout" or "invalid_output"
+                    ? value.AnswerStatus : "insufficient_evidence";
+            var blocks = showPassages ? value.AnswerBlocks.ToArray() : [];
+            if (blocks.Length > 4 || blocks.Any(block => block.Text.Length is < 10 or > 1200 ||
+                    (suggestion ? block.ChunkIds.Count != 0 : block.ChunkIds.Count is < 1 or > 5) || block.ChunkIds.Distinct(StringComparer.Ordinal).Count() != block.ChunkIds.Count ||
+                    block.ChunkIds.Any(id => !answerIds.Contains(id, StringComparer.Ordinal))) ||
+                blocks.Length > 0 && !blocks.SelectMany(block => block.ChunkIds).ToHashSet(StringComparer.Ordinal).SetEquals(answerIds))
+                throw new InvalidDataException();
+            return new(200, new NutritionKnowledgeSearchResponse(value.Query,
+                value.Results.Select(hit => new NutritionKnowledgeHitResponse(hit.ChunkId, hit.Heading,
+                    hit.PdfPage, string.IsNullOrEmpty(hit.PrintedPage) ? null : hit.PrintedPage,
+                    hit.SourceTitle, hit.SourceRevisionId,
+                    showPassages && hit.Excerpt.Length is > 0 and <= 640 ? hit.Excerpt : null)).ToArray(),
+                answerIds.FirstOrDefault(), showPassages, answerIds, status,
+                blocks.Select(block => new NutritionKnowledgeAnswerBlockResponse(block.Text, block.ChunkIds.ToArray())).ToArray(),
+                showPassages && value.AnswerProvider is "Gemini" or "Ollama" ? value.AnswerProvider : null));
+        }, ct, _options.KnowledgeTimeoutSeconds);
+
     private async Task<NutritionGatewayResponse> CallAsync<T>(Func<Metadata, DateTime, AsyncUnaryCall<T>> call,
-        Func<T, NutritionGatewayResponse> present, CancellationToken ct)
+        Func<T, NutritionGatewayResponse> present, CancellationToken ct, int? timeoutSeconds = null)
     {
         if (!_options.Enabled) return Unavailable("nutrition.disabled");
         var bearer = _context.HttpContext?.Request.Headers.Authorization.ToString();
@@ -75,7 +114,7 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
         var headers = new Metadata { { "authorization", bearer }, { "x-nutrition-gateway-key", _options.ServiceKey } };
         try
         {
-            using var pending = call(headers, DateTime.UtcNow.AddSeconds(_options.TimeoutSeconds));
+            using var pending = call(headers, DateTime.UtcNow.AddSeconds(timeoutSeconds ?? _options.TimeoutSeconds));
             return present(await pending.ResponseAsync);
         }
         catch (RpcException) when (ct.IsCancellationRequested) { throw new OperationCanceledException(ct); }

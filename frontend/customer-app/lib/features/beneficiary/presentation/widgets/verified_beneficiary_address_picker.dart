@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/widgets/verified_beneficiary_address_picker_address_picker_button.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
@@ -33,7 +34,8 @@ class VerifiedBeneficiaryAddressPicker extends ConsumerWidget {
       }
     }
     if (selected == null || !selected.isVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
           content: Text('Vui lòng chọn một địa chỉ đã được xác minh.'),
           backgroundColor: AppColors.error,

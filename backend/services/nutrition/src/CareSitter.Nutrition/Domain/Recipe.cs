@@ -9,4 +9,11 @@ public sealed record Recipe(Guid VersionId, string Name, string MealType, decima
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? DietaryPatterns = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ImageUrl = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ImageAlt = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? SourceRecipeNote = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? SourceRecipeNote = null) : ReleaseReviewMetadata
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RecipeImage[]? Images { get; init; }
+}
+
+public sealed record RecipeImage(string Url, string DishName, string SourceUrl,
+    string Attribution, string MatchKind);

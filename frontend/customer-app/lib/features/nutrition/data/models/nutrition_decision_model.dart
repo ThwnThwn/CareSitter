@@ -8,6 +8,8 @@ class NutritionDecisionModel {
   String? get state => _json['state']?.toString();
   List<String> get missingFields =>
       nutritionJsonStrings(_json['missingFields']);
+  List<String> get requiredGuidance =>
+      nutritionJsonStrings(_json['requiredGuidance']);
   List<Object?> get conflicts => _json['conflicts'] is List
       ? List<Object?>.of(_json['conflicts'] as List)
       : const [];

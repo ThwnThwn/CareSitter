@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsHeading extends StatelessWidget {
@@ -18,9 +17,9 @@ class HomeEarningsHeading extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Thu nhập 7 ngày qua',
-                  style: GoogleFonts.beVietnamPro(
+                  style: TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -29,7 +28,7 @@ class HomeEarningsHeading extends StatelessWidget {
                 const SizedBox(height: AppSpacing.micro),
                 RichText(
                   text: TextSpan(
-                    style: GoogleFonts.beVietnamPro(
+                    style: const TextStyle(fontFamily: 'Inter',
                       fontSize: AppFontSizes.s12,
                       color: AppColors.textSecondary,
                     ),
@@ -37,7 +36,7 @@ class HomeEarningsHeading extends StatelessWidget {
                       const TextSpan(text: 'Tổng tích luỹ: '),
                       TextSpan(
                         text: formatVnd(total, compact: true, round: true),
-                        style: GoogleFonts.beVietnamPro(
+                        style: const TextStyle(fontFamily: 'Inter',
                           fontSize: AppFontSizes.s12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
@@ -51,17 +50,17 @@ class HomeEarningsHeading extends StatelessWidget {
           ),
           GestureDetector(
             onTap: onOpenDetails,
-            child: Row(
+            child: const Row(
               children: [
                 Text(
                   'Chi tiết',
-                  style: GoogleFonts.beVietnamPro(
+                  style: TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s11,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
+                Icon(Icons.chevron_right_rounded,
                     color: AppColors.primary, size: 14),
               ],
             ),

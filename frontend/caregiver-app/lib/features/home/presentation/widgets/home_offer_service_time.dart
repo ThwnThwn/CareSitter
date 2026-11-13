@@ -1,7 +1,6 @@
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 
@@ -24,7 +23,7 @@ class HomeOfferServiceTime extends StatelessWidget {
                 booking.serviceName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.beVietnamPro(
+                style: const TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s13,
                   fontWeight: FontWeight.w500,
                   color: AppColors.primary,
@@ -38,7 +37,7 @@ class HomeOfferServiceTime extends StatelessWidget {
               '· ${booking.duration} (${booking.time})',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.beVietnamPro(
+              style: const TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s12,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,

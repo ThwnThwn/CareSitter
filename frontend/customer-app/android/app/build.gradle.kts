@@ -74,6 +74,7 @@ if (releaseTaskRequested && !hasReleaseSigning) {
 
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 android {

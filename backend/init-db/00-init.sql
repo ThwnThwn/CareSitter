@@ -70,3 +70,6 @@
 \ir modules/catalog/58-restore-hourly-home-care-services.sql
 \ir modules/catalog/59-complete-hourly-home-care-catalog.sql
 \ir modules/catalog/60-service-catalog-images.sql
+\ir modules/catalog/61-private-booking-reports.sql
+\ir modules/people/62-beneficiary-deletion-outbox.sql
+\ir modules/catalog/63-firebase-booking-reports.sql

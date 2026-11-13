@@ -27,7 +27,7 @@ class BookingStatusPresentation {
     final status = booking.presentationStatusAt(now);
     if (status == 'confirmed' && booking.caregiverId == null) {
       return const BookingStatusPresentation(
-        label: 'Chờ ghép CSV',
+        label: 'Chờ ghép chăm sóc viên',
         color: AppColors.warning,
         backgroundColor: AppColors.warningLight,
         currentStep: 1,

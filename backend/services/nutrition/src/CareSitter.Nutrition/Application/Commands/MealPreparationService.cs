@@ -63,7 +63,9 @@ internal sealed record MealPreparation(Guid AssessmentId, DateOnly PlannedDate, 
             RecommendationTrace = trace with
             {
                 Strategy = "rule_manual_replacement", UsedAi = false, Model = null, PromptVersion = null,
-                Evidence = [], Explanations = [], GroundingRevision = null,
+                Evidence = [], Citations = [], GraphRole = "none", RetrievalStrategy = null,
+                Explanations = [], GroundingRevision = null,
+                ReleaseStatus = trace.ReleaseStatus == "demo" || Previous.Meals.Any(m => m.Name.StartsWith("[DEMO]", StringComparison.Ordinal)) ? "demo" : "ungrounded",
                 Warnings = trace.Warnings.Append("meal_replaced_by_user").Distinct(StringComparer.Ordinal).ToArray()
             }
         };

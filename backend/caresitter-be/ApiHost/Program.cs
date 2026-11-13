@@ -60,13 +60,7 @@ builder.Services.AddHttpClient<NutritionReadinessHealthCheck>()
             .GetRequiredService<IOptions<NutritionGatewayOptions>>().Value.TrustedRootCertificatePath));
 builder.Services.AddOptions<NutritionKnowledgeOptions>()
     .Bind(builder.Configuration.GetSection("NutritionKnowledge"))
-    .Validate(options => !options.Enabled ||
-        (builder.Environment.IsDevelopment() &&
-         Path.IsPathFullyQualified(options.CorpusPath) &&
-         options.CorpusSha256.Length == 64),
-        "NutritionKnowledge requires Development, an absolute corpus path and SHA-256 digest when enabled.")
     .ValidateOnStart();
-builder.Services.AddSingleton<NutritionKnowledgeSearch>();
 builder.Services.AddOptions<ChatFirestoreOptions>()
     .Bind(builder.Configuration.GetSection("ChatFirestore"))
     .Validate(options => !options.ClientReadEnabled || options.ProjectionEnabled,
@@ -91,6 +85,8 @@ builder.Services.AddKafkaMessaging(builder.Configuration, (events, options) =>
         "caresitter.payments.succeeded", 1, options.PaymentsTopic);
     events.Add<CareSitter.Messaging.Contracts.Events.MealPlanSelected>(
         "caresitter.nutrition.mealplan-selected", 1, options.NutritionTopic);
+    events.Add<CareSitter.Messaging.Contracts.Events.BeneficiaryDeleted>(
+        "caresitter.people.beneficiary-deleted", 1, options.NutritionTopic);
 });
 builder.Services.AddAuthentication().AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions,
     MessagingServiceAuthenticationHandler>("MessagingService", _ => { });

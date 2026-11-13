@@ -4,6 +4,29 @@ namespace CareSitter.AppHost;
 
 internal static class NutritionDatabaseConfiguration
 {
+    public static async Task ConfigureSharedServerRuntimeRoleAsync(string careSitterConnection,
+        string database, string username, string password)
+    {
+        var runtimeConnection = BuildSharedServerConnection(
+            careSitterConnection, database, username, password);
+        var adminConnection = new NpgsqlConnectionStringBuilder(careSitterConnection)
+        {
+            Database = database
+        };
+
+        await using var connection = new NpgsqlConnection(adminConnection.ConnectionString);
+        await connection.OpenAsync();
+        var quoting = new NpgsqlCommandBuilder();
+        var quotedPassword = password.Replace("'", "''", StringComparison.Ordinal);
+        var sql = $"ALTER ROLE {quoting.QuoteIdentifier(username)} PASSWORD '{quotedPassword}'";
+        await using var command = new NpgsqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
+
+        // Validate the exact least-privilege connection that Nutrition will receive.
+        await using var validation = new NpgsqlConnection(runtimeConnection);
+        await validation.OpenAsync();
+    }
+
     public static string BuildSharedServerConnection(string careSitterConnection, string database,
         string username, string password)
     {

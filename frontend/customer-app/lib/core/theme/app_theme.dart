@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
-import 'app_radius.dart';
+import 'app_input_style.dart';
 export 'app_colors.dart';
 export 'app_spacing.dart';
 export 'app_radius.dart';
+export 'app_input_style.dart';
 export 'app_breakpoints.dart';
 export 'app_layout.dart';
 export 'app_shadows.dart';
@@ -210,27 +211,13 @@ class AppTheme {
   static InputDecorationTheme _buildInputDecorationTheme() {
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceVariant,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error, width: 2),
-      ),
+      fillColor: AppInputStyle.fillColor,
+      border: AppInputStyle.enabledBorder,
+      enabledBorder: AppInputStyle.enabledBorder,
+      disabledBorder: AppInputStyle.enabledBorder,
+      focusedBorder: AppInputStyle.focusedBorder,
+      errorBorder: AppInputStyle.errorBorder,
+      focusedErrorBorder: AppInputStyle.errorBorder,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       hintStyle: _textStyle(14, AppColors.textHint),
       labelStyle: _textStyle(14, AppColors.textSecondary),
@@ -245,31 +232,17 @@ class AppTheme {
   static InputDecorationTheme _buildAuthInputDecorationTheme() {
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppInputStyle.fillColor,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.authFieldBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.authFieldBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.control),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
+      border: AppInputStyle.enabledBorder,
+      enabledBorder: AppInputStyle.enabledBorder,
+      disabledBorder: AppInputStyle.enabledBorder,
+      focusedBorder: AppInputStyle.focusedBorder,
+      errorBorder: AppInputStyle.errorBorder,
+      focusedErrorBorder: AppInputStyle.errorBorder,
       hintStyle: _textStyle(14, AppColors.authTextHint),
       labelStyle: _textStyle(14, AppColors.authTextSecondary),
       floatingLabelStyle:

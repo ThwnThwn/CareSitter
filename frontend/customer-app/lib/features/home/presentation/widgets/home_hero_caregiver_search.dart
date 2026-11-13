@@ -26,32 +26,23 @@ class HomeHeroCaregiverSearch extends StatelessWidget {
             color: AppColors.textPrimary,
             fontSize: AppFontSizes.s13,
           ),
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Tìm người chăm sóc, kỹ năng, địa chỉ...',
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               color: AppColors.textSecondary,
               fontSize: AppFontSizes.s13,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.search_rounded,
               color: AppColors.textSecondary,
               size: 20,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppInputStyle.fillColor,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 13),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: const BorderSide(
-                color: AppColors.primaryLight,
-                width: 1.5,
-              ),
-            ),
+            contentPadding: EdgeInsets.symmetric(vertical: 13),
+            enabledBorder: AppInputStyle.enabledBorder,
+            focusedBorder: AppInputStyle.focusedBorder,
           ),
         ),
       );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 
@@ -18,7 +17,7 @@ class ShiftMetadata extends StatelessWidget {
         const SizedBox(width: AppSpacing.tight),
         Text(
           label,
-          style: GoogleFonts.beVietnamPro(
+          style: const TextStyle(fontFamily: 'Inter',
             fontSize: AppFontSizes.s14,
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,

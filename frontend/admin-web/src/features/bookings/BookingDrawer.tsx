@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { DetailList, Drawer, EmptyState, ErrorBanner, LoadingTable, StatusChip, Tabs, formatDate, formatMoney, shortId } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { Booking } from '../../types';
 import { useBookingReview } from './useBookingReview';
 
-export function BookingDrawer({ booking, onClose, onChanged }: { booking: Booking; onClose: () => void; onChanged: () => void }) {
+export function BookingDrawer({ booking, onClose, onChanged }: { booking: Booking; onClose: () => void; onChanged: (message: string) => void }) {
   const { detail, tasks, timeline, loading, loadError, busy, error, reloadDetails, complete: submit } = useBookingReview(booking, onChanged);
+  const confirm = useConfirmation();
   const [tab, setTab] = useState('summary');
-  async function complete() { await submit(() => window.confirm('Xác nhận hoàn tất ca này? Tiền giữ chờ chỉ được giải ngân sau thời hạn khiếu nại theo cấu hình của booking.')); }
+  async function complete() { await submit(() => confirm({ title: 'Xác nhận hoàn tất ca này?', message: 'Tiền giữ chờ chỉ được giải ngân sau thời hạn khiếu nại theo cấu hình của booking.', confirmLabel: 'Xác nhận hoàn tất', tone: 'primary' })); }
 
   return <Drawer title={shortId(detail.id)} subtitle="Chi tiết booking" busy={!!busy} onClose={onClose}
     footer={detail.status === 'checkout_pending_review' && <button className="primary" disabled={busy || loading || !!loadError} onClick={() => void complete()}><CheckCircle2 size={17} /> {busy ? 'Đang hoàn tất…' : 'Xác nhận hoàn tất ca'}</button>}>

@@ -26,7 +26,7 @@ function preferredDate(value: string) {
 }
 
 export function ConsultationInbox() {
-  const { data, loading, error, reload, setPage } = useConsultationRequests();
+  const { data, loading, error, hasLoaded, reload, setPage } = useConsultationRequests();
   const [selected, setSelected] = useState<ConsultationRequest | null>(null);
   return (
     <>
@@ -41,9 +41,9 @@ export function ConsultationInbox() {
       />
       {error && <ErrorBanner message={error} onRetry={() => void reload()} />}
       <section className="data-panel">
-        {loading ? (
+        {loading && !hasLoaded ? (
           <LoadingTable rows={5} columns={5} />
-        ) : error ? null : !data.items.length ? (
+        ) : error && !hasLoaded ? null : !data.items.length ? (
           <EmptyState
             title="Chưa có yêu cầu tư vấn"
             description="Yêu cầu mới sẽ xuất hiện sau khi khách gửi thông tin."
@@ -84,7 +84,7 @@ export function ConsultationInbox() {
             </table>
           </div>
         )}
-        {!loading && !error && (
+        {hasLoaded && (
           <Pagination
             page={data.page}
             pageSize={data.pageSize}

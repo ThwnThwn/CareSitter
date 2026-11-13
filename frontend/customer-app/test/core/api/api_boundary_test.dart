@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/features/reports/data/repositories/reports_repository.dart';
+import 'package:caresitter_customer/features/reports/domain/report_document.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +53,37 @@ void main() {
     client = container.read(dioClientProvider);
   });
   tearDown(() => container.dispose());
+  test('knowledge timeout override does not change ordinary API requests',
+      () async {
+    server.status = 200;
+    server.body = '{}';
+    await client.getCancelable('/nutrition/knowledge',
+        cancelToken: CancelToken(),
+        receiveTimeout: const Duration(seconds: 45));
+    expect(server.lastRequest!.receiveTimeout, const Duration(seconds: 45));
+    await client.get('/test');
+    expect(server.lastRequest!.receiveTimeout, const Duration(seconds: 30));
+  });
+  test('ngrok API requests skip the browser interstitial only on ngrok hosts',
+      () async {
+    final ngrokContainer = ProviderContainer(overrides: [
+      authStateProvider.overrideWith(_Auth.new),
+      dioClientProvider.overrideWith((ref) => DioClient(ref,
+          baseUrl: 'https://demo.ngrok-free.dev/api/v1', adapter: server)),
+    ]);
+    addTearDown(ngrokContainer.dispose);
+    await ngrokContainer.read(authStateProvider.future);
+    final ngrok = ngrokContainer.read(dioClientProvider);
+    await expectLater(
+        ngrok.get('/nutrition/capabilities'), throwsA(isA<AppApiException>()));
+    expect(server.lastRequest?.headers['ngrok-skip-browser-warning'], '1');
+
+    await expectLater(
+        client.get('/nutrition/capabilities'), throwsA(isA<AppApiException>()));
+    expect(
+        server.lastRequest?.headers.containsKey('ngrok-skip-browser-warning'),
+        isFalse);
+  });
   test(
       'HTTP failure exposes AppApiException with business code and retry delay',
       () async {
@@ -111,5 +144,24 @@ void main() {
     expect(await repository.getSelf(), isNull);
     server.body = '{"title":"beneficiary.not_found"}';
     await expectLater(repository.getSelf(), throwsA(isA<AppApiException>()));
+  });
+  test('report upload uses PDF multipart and a stable header outside the body',
+      () async {
+    server.status = 200;
+    server.body =
+        '{"id":"report","bookingId":"booking","status":"COMPLETED","sizeBytes":3,"createdAt":"2026-11-06T00:00:00Z"}';
+    final request = ReportsRepository(client).upload(
+        'booking',
+        ReportDocument(
+            bytes: Uint8List.fromList([1, 2, 3]), idempotencyKey: 'stable-key'),
+        (_, __) {});
+    final receipt = await request.result;
+    expect(receipt.completed, isTrue);
+    expect(server.lastRequest!.path, '/bookings/booking/reports');
+    expect(server.lastRequest!.headers['Idempotency-Key'], 'stable-key');
+    final form = server.lastRequest!.data as FormData;
+    expect(form.files.single.key, 'file');
+    expect(form.files.single.value.filename, 'caresitter-report.pdf');
+    expect(form.files.single.value.contentType.toString(), 'application/pdf');
   });
 }

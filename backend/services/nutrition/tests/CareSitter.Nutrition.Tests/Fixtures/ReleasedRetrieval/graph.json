@@ -1,0 +1,28 @@
+{
+  "clinical_review_performed": true,
+  "content_sha256": "bc45a88cd01ef05f1f8800857790cc0f35494252361b4f9a47d95d72eef32d0b",
+  "corpus_freeze_sha256": "6d7747fa578afafafd2ee738565828175048e85328cae27a95787c6546d8efba",
+  "edges": [
+    {
+      "from": "synthetic-topic",
+      "to": "synthetic-node"
+    }
+  ],
+  "independent_clinical_review": true,
+  "intended_use": "reviewed_nutrition_reference",
+  "mode": "reviewed_retrieval_graph",
+  "nodes": [
+    {
+      "id": "synthetic-topic",
+      "label": "robot"
+    },
+    {
+      "chunk_id": "synthetic-a",
+      "id": "synthetic-node",
+      "label": "synthetic-a"
+    }
+  ],
+  "production_public_release": false,
+  "review_policy": "source_and_clinical",
+  "schema_version": 1
+}

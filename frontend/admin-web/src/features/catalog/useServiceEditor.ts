@@ -9,7 +9,7 @@ import {
   uploadCatalogServiceImage,
 } from './catalogApi';
 
-export function useServiceEditor(service: CatalogService | null, onChanged: () => void) {
+export function useServiceEditor(service: CatalogService | null, onChanged: (message: string) => void) {
   const { defaults } = useAdminMetadata();
   const createServiceForm = () => ({
     code: '',
@@ -182,7 +182,7 @@ export function useServiceEditor(service: CatalogService | null, onChanged: () =
           setCreationProgress(progress);
         }
       }
-      onChanged();
+      onChanged(service ? 'Cập nhật dịch vụ thành công.' : 'Tạo dịch vụ mới thành công.');
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Không thể lưu dịch vụ.';
       setError(
@@ -201,7 +201,7 @@ export function useServiceEditor(service: CatalogService | null, onChanged: () =
     setError('');
     try {
       await savePricingRule(service.id, editingPrice?.id, pricingDraft());
-      onChanged();
+      onChanged('Lưu bảng giá thành công.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể lưu bảng giá.');
     } finally {

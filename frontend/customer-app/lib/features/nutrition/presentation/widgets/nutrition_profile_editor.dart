@@ -89,14 +89,31 @@ class _NutritionProfileEditorState extends State<NutritionProfileEditor> {
                       widget.flow.resource?.result.decision.state !=
                           'needs_information'
                   ? const []
-                  : widget.flow.resource!.result.decision.missingFields,
+                  : [
+                      ...widget.flow.resource!.result.decision.missingFields,
+                      if (widget.flow.resource!.result.decision.conflicts
+                          .contains('allergy_sources_conflict'))
+                        'foodAllergyStatus',
+                      if (widget.flow.resource!.result.decision.conflicts
+                          .contains('condition_sources_conflict'))
+                        'conditionsStatus',
+                      if (widget.flow.resource!.result.decision.conflicts
+                          .contains('medication_sources_conflict'))
+                        'medicationsStatus',
+                    ],
+              guidanceFields: widget.dirty ||
+                      widget.flow.resource?.result.decision.state !=
+                          'needs_professional_guidance'
+                  ? const []
+                  : widget.flow.resource!.result.decision.requiredGuidance,
               enabled: !widget.flow.loading,
               onDirtyChanged: widget.onDirtyChanged,
               onSave: widget.onSave,
               showSaveButton: false,
             ),
           ),
-          if (widget.flow.weekProgress == null) ...[
+          if (widget.flow.weekProgress == null &&
+              (widget.dirty || widget.result == null)) ...[
             const SizedBox(height: AppSpacing.compact),
             FilledButton.icon(
               onPressed: widget.flow.loading ||
@@ -104,7 +121,7 @@ class _NutritionProfileEditorState extends State<NutritionProfileEditor> {
                   ? null
                   : _check,
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: const Text('Lưu và kiểm tra thông tin'),
+              label: Text(widget.dirty ? 'Lưu thông tin' : 'Tạo thực đơn'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

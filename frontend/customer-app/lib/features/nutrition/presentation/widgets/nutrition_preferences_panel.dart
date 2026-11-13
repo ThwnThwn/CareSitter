@@ -2,6 +2,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import 'nutrition_expansion_card.dart';
+import 'nutrition_preference_tag_field.dart';
 import 'nutrition_status_field.dart';
 
 class NutritionPreferencesPanel extends StatelessWidget {
@@ -10,15 +11,27 @@ class NutritionPreferencesPanel extends StatelessWidget {
     required this.enabled,
     required this.dietaryPattern,
     required this.nutritionGoal,
+    required this.mealFormatPreference,
+    required this.preferredFoods,
+    required this.dislikedFoods,
     required this.onDietaryPatternChanged,
     required this.onNutritionGoalChanged,
+    required this.onMealFormatPreferenceChanged,
+    required this.onPreferredFoodsChanged,
+    required this.onDislikedFoodsChanged,
   });
 
   final bool enabled;
   final String dietaryPattern;
   final String nutritionGoal;
+  final String mealFormatPreference;
+  final String preferredFoods;
+  final String dislikedFoods;
   final ValueChanged<String> onDietaryPatternChanged;
   final ValueChanged<String> onNutritionGoalChanged;
+  final ValueChanged<String> onMealFormatPreferenceChanged;
+  final ValueChanged<String> onPreferredFoodsChanged;
+  final ValueChanged<String> onDislikedFoodsChanged;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -41,8 +54,14 @@ class NutritionPreferencesPanel extends StatelessWidget {
             enabled: enabled,
             dietaryPattern: dietaryPattern,
             nutritionGoal: nutritionGoal,
+            mealFormatPreference: mealFormatPreference,
+            preferredFoods: preferredFoods,
+            dislikedFoods: dislikedFoods,
             onDietaryPatternChanged: onDietaryPatternChanged,
             onNutritionGoalChanged: onNutritionGoalChanged,
+            onMealFormatPreferenceChanged: onMealFormatPreferenceChanged,
+            onPreferredFoodsChanged: onPreferredFoodsChanged,
+            onDislikedFoodsChanged: onDislikedFoodsChanged,
           ),
         ],
       );
@@ -53,28 +72,46 @@ class _PreferencesCard extends StatelessWidget {
     required this.enabled,
     required this.dietaryPattern,
     required this.nutritionGoal,
+    required this.mealFormatPreference,
+    required this.preferredFoods,
+    required this.dislikedFoods,
     required this.onDietaryPatternChanged,
     required this.onNutritionGoalChanged,
+    required this.onMealFormatPreferenceChanged,
+    required this.onPreferredFoodsChanged,
+    required this.onDislikedFoodsChanged,
   });
 
   final bool enabled;
   final String dietaryPattern;
   final String nutritionGoal;
+  final String mealFormatPreference;
+  final String preferredFoods;
+  final String dislikedFoods;
   final ValueChanged<String> onDietaryPatternChanged;
   final ValueChanged<String> onNutritionGoalChanged;
+  final ValueChanged<String> onMealFormatPreferenceChanged;
+  final ValueChanged<String> onPreferredFoodsChanged;
+  final ValueChanged<String> onDislikedFoodsChanged;
 
   @override
   Widget build(BuildContext context) => NutritionExpansionCard(
         key: const ValueKey('nutrition-preferences'),
-        title: 'Kiểu ăn và mục tiêu',
-        subtitle: 'Lọc món và ưu tiên mức năng lượng tương đối.',
+        title: 'Kiểu ăn, mục tiêu và sở thích',
+        subtitle: 'Lọc món bắt buộc và ưu tiên món hợp thói quen.',
         children: [
           _PreferenceFields(
             enabled: enabled,
             dietaryPattern: dietaryPattern,
             nutritionGoal: nutritionGoal,
+            mealFormatPreference: mealFormatPreference,
+            preferredFoods: preferredFoods,
+            dislikedFoods: dislikedFoods,
             onDietaryPatternChanged: onDietaryPatternChanged,
             onNutritionGoalChanged: onNutritionGoalChanged,
+            onMealFormatPreferenceChanged: onMealFormatPreferenceChanged,
+            onPreferredFoodsChanged: onPreferredFoodsChanged,
+            onDislikedFoodsChanged: onDislikedFoodsChanged,
           ),
         ],
       );
@@ -85,15 +122,27 @@ class _PreferenceFields extends StatelessWidget {
     required this.enabled,
     required this.dietaryPattern,
     required this.nutritionGoal,
+    required this.mealFormatPreference,
+    required this.preferredFoods,
+    required this.dislikedFoods,
     required this.onDietaryPatternChanged,
     required this.onNutritionGoalChanged,
+    required this.onMealFormatPreferenceChanged,
+    required this.onPreferredFoodsChanged,
+    required this.onDislikedFoodsChanged,
   });
 
   final bool enabled;
   final String dietaryPattern;
   final String nutritionGoal;
+  final String mealFormatPreference;
+  final String preferredFoods;
+  final String dislikedFoods;
   final ValueChanged<String> onDietaryPatternChanged;
   final ValueChanged<String> onNutritionGoalChanged;
+  final ValueChanged<String> onMealFormatPreferenceChanged;
+  final ValueChanged<String> onPreferredFoodsChanged;
+  final ValueChanged<String> onDislikedFoodsChanged;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -123,8 +172,41 @@ class _PreferenceFields extends StatelessWidget {
             onChanged: onNutritionGoalChanged,
           ),
           const SizedBox(height: AppSpacing.compact),
+          NutritionStatusField(
+            key: const ValueKey('nutrition-mealFormatPreference'),
+            label: 'Dạng món muốn ưu tiên',
+            value: mealFormatPreference,
+            enabled: enabled,
+            options: const {
+              'no_preference': 'Không ưu tiên',
+              'prefer_dry': 'Ưu tiên món khô',
+              'prefer_soup': 'Ưu tiên món nước',
+            },
+            onChanged: onMealFormatPreferenceChanged,
+          ),
+          const SizedBox(height: AppSpacing.compact),
+          NutritionPreferenceTagField(
+            fieldKey: const ValueKey('nutrition-preferredFoods'),
+            label: 'Món hoặc nguyên liệu thường thích',
+            helperText:
+                'Ví dụ: cá hấp, bí đỏ. CareSitter dùng để ưu tiên khi có lựa chọn phù hợp.',
+            value: preferredFoods,
+            enabled: enabled,
+            onChanged: onPreferredFoodsChanged,
+          ),
+          const SizedBox(height: AppSpacing.compact),
+          NutritionPreferenceTagField(
+            fieldKey: const ValueKey('nutrition-dislikedFoods'),
+            label: 'Món hoặc nguyên liệu không thích',
+            helperText:
+                'Đây là sở thích mềm, không thay thế khai báo dị ứng ở phần bắt buộc.',
+            value: dislikedFoods,
+            enabled: enabled,
+            onChanged: onDislikedFoodsChanged,
+          ),
+          const SizedBox(height: AppSpacing.compact),
           Text(
-            'Mục tiêu này không thay thế tư vấn dinh dưỡng chuyên môn.',
+            'Sở thích được dùng để xếp hạng món; các ràng buộc sức khỏe và dị ứng luôn được kiểm tra trước.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

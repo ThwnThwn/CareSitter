@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import '../widgets/change_password_form.dart';
 import 'package:caresitter_customer/core/error/app_exception.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +52,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (changed) {
         // Đổi thành công → logout → về login
         if (!mounted || !controller.isCurrent) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        AppToast.showLegacy(
+          context,
           const SnackBar(
             content: Text('✅ Đổi mật khẩu thành công! Vui lòng đăng nhập lại.'),
             backgroundColor: AppColors.primary,
@@ -75,7 +77,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
 
     if (errorMsg != null && mounted && controller.isCurrent) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         SnackBar(
           content: Text(errorMsg),
           backgroundColor: AppColors.error,

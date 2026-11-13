@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeOfferAcceptAction extends StatelessWidget {
@@ -30,11 +29,11 @@ class HomeOfferAcceptAction extends StatelessWidget {
                     ),
                   )
                 : const Icon(Icons.check_circle_rounded, size: 18),
-            label: FittedBox(
+            label: const FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 'Nhận ca ngay',
-                style: GoogleFonts.beVietnamPro(
+                style: TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s15,
                   fontWeight: FontWeight.w600,
                 ),

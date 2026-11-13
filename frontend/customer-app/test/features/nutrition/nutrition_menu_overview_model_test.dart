@@ -27,7 +27,23 @@ void main() {
     expect(overview.title, 'Thực đơn ngày 22/10');
     expect(overview.badgeLabel, 'Đã lưu');
     expect(overview.totalKcal, 860);
+    expect(overview.energyComplete, isTrue);
     expect(overview.tone, NutritionMenuOverviewTone.success);
+  });
+
+  test('missing energy is not reported as a complete daily total', () {
+    final overview = NutritionMenuOverviewModel.fromFlow(_flow(
+      status: 'saved',
+      state: 'suggested',
+      meals: const [
+        {
+          'name': 'Món một',
+          'nutrients': {'energy_kcal': 320}
+        },
+        {'name': 'Món hai', 'nutrients': <String, dynamic>{}},
+      ],
+    ));
+    expect(overview.energyComplete, isFalse);
   });
 
   test('workflow states are not presented as a menu being generated', () {

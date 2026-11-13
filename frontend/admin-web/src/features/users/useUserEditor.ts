@@ -3,19 +3,19 @@ import { useAdminMutation } from '../../hooks/useAdminMutation';
 import { AdminUser } from '../../types';
 import { updateUserRoles, updateUserStatus } from './userApi';
 
-export function useUserEditor(user: AdminUser, onChanged: () => void) {
+export function useUserEditor(user: AdminUser, onChanged: (message: string) => void) {
   const [roles, setRoles] = useState(user.roles);
   const mutation = useAdminMutation<'roles' | 'status'>();
   function toggleRole(role: string) { setRoles(current => current.includes(role) ? current.filter(x => x !== role) : [...current, role]); }
-  async function saveRoles(confirm: () => boolean) {
+  async function saveRoles(confirm: () => boolean | Promise<boolean>) {
     if (mutation.busy) return;
     if (roles.length === 0) { mutation.setError('Tài khoản phải có ít nhất một vai trò.'); return; }
-    if (roles.includes('ADMIN') !== user.roles.includes('ADMIN') && !confirm()) return;
-    await mutation.run('roles', signal => updateUserRoles(user.id, roles, signal), 'Không thể cập nhật vai trò.', onChanged);
+    if (roles.includes('ADMIN') !== user.roles.includes('ADMIN') && !(await confirm())) return;
+    await mutation.run('roles', signal => updateUserRoles(user.id, roles, signal), 'Không thể cập nhật vai trò.', onChanged, 'Cập nhật vai trò thành công.');
   }
-  async function setStatus(status: string, confirm: () => boolean) {
-    if (mutation.busy || !confirm()) return;
-    await mutation.run('status', signal => updateUserStatus(user.id, status, signal), 'Không thể cập nhật trạng thái tài khoản.', onChanged);
+  async function setStatus(status: string, confirm: () => boolean | Promise<boolean>) {
+    if (mutation.busy || !(await confirm())) return;
+    await mutation.run('status', signal => updateUserStatus(user.id, status, signal), 'Không thể cập nhật trạng thái tài khoản.', onChanged, 'Cập nhật trạng thái tài khoản thành công.');
   }
   return { roles, toggleRole, busy: mutation.busy, error: mutation.error, saveRoles, setStatus };
 }

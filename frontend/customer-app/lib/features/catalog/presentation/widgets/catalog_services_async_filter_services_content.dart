@@ -1,3 +1,4 @@
+import 'catalog_service_results.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -79,13 +80,10 @@ class CatalogServicesAsyncFilterServicesContent extends StatelessWidget {
                     ),
                   )
                 else
-                  ...filtered.asMap().entries.map(
-                        (entry) => buildServiceCard(
-                          entry.value,
-                          entry.key,
-                          context,
-                        ),
-                      ),
+                  CatalogServiceResults(
+                      key: ValueKey(filtered.map((s) => s.id).join(',')),
+                      services: filtered,
+                      buildCard: buildServiceCard),
               ],
             );
           },

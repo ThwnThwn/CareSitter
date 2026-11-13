@@ -7,6 +7,9 @@ public static class CatalogReleaseValidator
 {
     public const int EvidenceSchemaVersion = 1;
     public const string SourceReferenceReleaseProfile = "adult_baseline_source_reference_v1";
+    public const string NonMedicalReferencePolicy = "non_medical_reference";
+    public const string SourceAndClinicalPolicy = "source_and_clinical";
+    public const string DataStewardRole = "data_steward";
     public static readonly IReadOnlySet<string> RequiredP2Nutrients = new HashSet<string>(StringComparer.Ordinal)
     {
         "energy_kcal", "protein_g", "carbohydrate_g", "fat_g", "fiber_g", "sodium_mg"
@@ -40,6 +43,8 @@ public static class CatalogReleaseValidator
             Add("evidence.contentStatus", "not_review_ready", "Content status must be review_ready before release.");
         var releaseProfile = evidence.ReleaseProfile ?? "adult_condition_v1";
         var sourceReferenceRelease = releaseProfile == SourceReferenceReleaseProfile;
+        var nonMedical = evidence.ReviewPolicy == NonMedicalReferencePolicy;
+        ValidateReviewPolicy(bundle, evidence, nonMedical, releaseProfile, Add);
         if (releaseProfile is not ("adult_baseline_v1" or "adult_condition_v1" or SourceReferenceReleaseProfile))
             Add("evidence.releaseProfile", "unsupported", "Release profile must be adult_baseline_v1, adult_baseline_source_reference_v1 or adult_condition_v1.");
         if (releaseProfile is "adult_baseline_v1" or SourceReferenceReleaseProfile)
@@ -83,7 +88,7 @@ public static class CatalogReleaseValidator
             Add("evidence.recipes", "duplicate", $"Recipe version {group.Key} has duplicate evidence.");
 
         for (var index = 0; index < recipes.Length; index++)
-            ValidateRecipe(recipes[index], index, recipeEvidence, bundle.Citations ?? [], required, Add);
+            ValidateRecipe(recipes[index], index, recipeEvidence, bundle.Citations ?? [], required, nonMedical, Add);
 
         var ruleEvidence = (evidence.Rules ?? [])
             .Where(x => x is not null)
@@ -98,7 +103,13 @@ public static class CatalogReleaseValidator
             ValidateRule(rules[index], index, ruleEvidence, bundle.Citations ?? [], Add);
 
         var review = evidence.ClinicalReview;
-        if (sourceReferenceRelease)
+        if (nonMedical)
+        {
+            // Non-medical reference: nobody signs as a clinician, so a clinical review must be absent.
+            if (review is not null)
+                Add("evidence.clinicalReview", "clinical_review_forbidden", "A non_medical_reference release cannot carry a clinical review.");
+        }
+        else if (sourceReferenceRelease)
         {
             ValidateSourceReferenceRelease(bundle, evidence.SourcePublication, evidence.ReleaseAuthorization, Add);
         }
@@ -114,11 +125,14 @@ public static class CatalogReleaseValidator
             if (review.ReviewedAt == default) Add("evidence.clinicalReview.reviewedAt", "required", "Review time is required.");
             if (review.Decision != "approved") Add("evidence.clinicalReview.decision", "not_approved", "Clinical review decision must be approved.");
         }
-        ValidateKnowledgeReview(
-            evidence.KnowledgeReview,
-            review,
-            sourceReferenceRelease ? evidence.ReleaseAuthorization : null,
-            Add);
+        if (nonMedical)
+            ValidateNonMedicalKnowledgeReview(evidence.KnowledgeReview, evidence.Recipes ?? [], Add);
+        else
+            ValidateKnowledgeReview(
+                evidence.KnowledgeReview,
+                review,
+                sourceReferenceRelease ? evidence.ReleaseAuthorization : null,
+                Add);
 
         combinations.Add(CountCombinations("baseline", null, recipes, [], []));
         foreach (var rule in rules)
@@ -169,6 +183,7 @@ public static class CatalogReleaseValidator
         IReadOnlyDictionary<Guid, CatalogRecipeEvidence[]> evidenceById,
         CatalogCitation[] citations,
         IReadOnlySet<string> requiredNutrients,
+        bool nonMedical,
         Action<string, string, string> add)
     {
         var path = $"evidence.recipes[{index}]";
@@ -181,6 +196,10 @@ public static class CatalogReleaseValidator
         var evidence = entries[0];
         if ((evidence.UnresolvedItems ?? []).Any(x => !string.IsNullOrWhiteSpace(x)))
             add(path + ".unresolvedItems", "unresolved", "Recipe has unresolved source or calculation items.");
+        if (nonMedical)
+            ValidateDataReview(evidence.DataReview, path + ".dataReview", add);
+        else if (evidence.DataReview is not null)
+            add(path + ".dataReview", "policy_mismatch", "Data-steward review is only valid for a non_medical_reference release.");
 
         var ingredientEvidence = (evidence.Ingredients ?? []).GroupBy(x => x.IngredientCode, StringComparer.Ordinal)
             .ToDictionary(x => x.Key, x => x.First(), StringComparer.Ordinal);
@@ -390,6 +409,98 @@ public static class CatalogReleaseValidator
         if (string.IsNullOrWhiteSpace(authorization.AuthorizedBy)) add(authorizationPath + ".authorizedBy", "required", "Release authority identity is required.");
         if (authorization.AuthorizedAt == default) add(authorizationPath + ".authorizedAt", "required", "Authorization time is required.");
         if (authorization.Decision != "approved") add(authorizationPath + ".decision", "not_approved", "Release authorization must be approved.");
+    }
+
+    private static void ValidateReviewPolicy(
+        CatalogBundle bundle,
+        CatalogReleaseEvidence evidence,
+        bool nonMedical,
+        string releaseProfile,
+        Action<string, string, string> add)
+    {
+        if (evidence.ReviewPolicy is not (null or NonMedicalReferencePolicy or SourceAndClinicalPolicy))
+            add("evidence.review_policy", "unsupported", "Review policy must be source_and_clinical or non_medical_reference.");
+        if (!nonMedical)
+        {
+            if (bundle.ReviewPolicy == NonMedicalReferencePolicy ||
+                evidence.KnowledgeReview?.ReviewPolicy == NonMedicalReferencePolicy ||
+                (bundle.Recipes ?? []).Any(x => x?.Payload?.ReviewPolicy == NonMedicalReferencePolicy))
+                add("evidence.review_policy", "policy_mismatch", "Non-medical bundle content needs non_medical_reference release evidence.");
+            return;
+        }
+        // Non-medical reference is limited to the healthy-adult baseline and is never a public production release.
+        if (releaseProfile != "adult_baseline_v1")
+            add("evidence.releaseProfile", "non_medical_profile", "A non_medical_reference release must use adult_baseline_v1.");
+        ValidateNonMedicalMetadata(evidence, "evidence", add);
+        ValidateNonMedicalMetadata(bundle, "bundle", add);
+        if (evidence.KnowledgeReview is not null)
+            ValidateNonMedicalMetadata(evidence.KnowledgeReview, "evidence.knowledgeReview", add);
+        var recipes = bundle.Recipes ?? [];
+        for (var index = 0; index < recipes.Length; index++)
+            if (recipes[index]?.Payload is { } recipe)
+                ValidateNonMedicalMetadata(recipe, $"recipes[{index}]", add);
+    }
+
+    private static void ValidateNonMedicalMetadata(ReleaseReviewMetadata metadata, string path, Action<string, string, string> add)
+    {
+        if (metadata.ReviewPolicy != NonMedicalReferencePolicy ||
+            metadata.IntendedUse != "academic_reference_non_medical" ||
+            metadata.ClinicalReviewPerformed != false ||
+            metadata.IndependentClinicalReview != false ||
+            metadata.ProductionPublicRelease != false ||
+            metadata.ClinicalReviewNotPerformedReason != "no_clinical_reviewer_non_medical_reference")
+            add(path + ".review_policy", "review_metadata_inconsistent", "Non-medical reference metadata is missing or inconsistent.");
+    }
+
+    private static void ValidateDataReview(CatalogDataReview? review, string path, Action<string, string, string> add)
+    {
+        if (review is null)
+        {
+            add(path, "data_review_required", "Every recipe needs an approved data-steward review.");
+            return;
+        }
+        if (review.Decision != "approved") add(path + ".decision", "not_approved", "Data-steward review decision must be approved.");
+        if (review.ReviewerRole != DataStewardRole) add(path + ".reviewerRole", "unsupported", "Recipe reviewer role must be data_steward.");
+        if (string.IsNullOrWhiteSpace(review.ReviewerId)) add(path + ".reviewerId", "required", "Data reviewer ID is required.");
+        if (review.ReviewedAt == default) add(path + ".reviewedAt", "required", "Data review time is required.");
+    }
+
+    private static void ValidateNonMedicalKnowledgeReview(
+        CatalogKnowledgeReview? review,
+        CatalogRecipeEvidence[] recipeEvidence,
+        Action<string, string, string> add)
+    {
+        const string path = "evidence.knowledgeReview";
+        if (review is null)
+        {
+            add(path, "knowledge_review_required", "A reviewed candidate graph is required before release.");
+            return;
+        }
+        if (review.SchemaVersion != 1) add(path + ".schemaVersion", "unsupported", "Only knowledge review schema version 1 is supported.");
+        if (!IsSha256(review.CandidateGraphSha256)) add(path + ".candidateGraphSha256", "invalid_digest", "Candidate graph SHA-256 is required.");
+        if (!IsSha256(review.DecisionLedgerSha256)) add(path + ".decisionLedgerSha256", "invalid_digest", "Decision ledger SHA-256 is required.");
+        if (!IsSha256(review.ReviewedGraphSha256)) add(path + ".reviewedGraphSha256", "invalid_digest", "Reviewed graph SHA-256 is required.");
+        if (review.CandidateCount <= 0 || review.ApprovedCount != review.CandidateCount || review.PendingCount != 0 || review.RejectedCount != 0)
+            add(path, "review_incomplete", "Every candidate must be approved with no pending or rejected item.");
+        if (review.Decision != "approved") add(path + ".decision", "not_approved", "Knowledge review decision must be approved.");
+        if (review.Sources is not { Length: > 0 } ||
+            review.Sources.Any(x => x is null || string.IsNullOrWhiteSpace(x.SourceRevisionId) || x.RightsStatus != "permitted"))
+            add(path + ".sources", "source_not_permitted", "Every knowledge source must be a permitted revision.");
+        if ((review.ClinicalReviewerIds ?? []).Length > 0)
+            add(path + ".clinicalReviewerIds", "clinical_review_forbidden", "A non_medical_reference release cannot list clinical reviewers.");
+        if ((review.ReleaseAuthorityIds ?? []).Length > 0)
+            add(path + ".releaseAuthorityIds", "policy_mismatch", "Release authorities belong to the source-reference profile only.");
+        if (review.DataReviewerIds is not { Length: > 0 } || review.DataReviewerIds.Any(string.IsNullOrWhiteSpace))
+        {
+            add(path + ".dataReviewerIds", "required", "At least one data reviewer ID is required.");
+            return;
+        }
+        foreach (var reviewerId in recipeEvidence
+                     .Select(x => x?.DataReview?.ReviewerId)
+                     .Where(x => !string.IsNullOrWhiteSpace(x))
+                     .Distinct(StringComparer.Ordinal))
+            if (!review.DataReviewerIds.Contains(reviewerId!, StringComparer.Ordinal))
+                add(path + ".dataReviewerIds", "reviewer_mismatch", "Every recipe data reviewer must be bound to the decision ledger.");
     }
 
     private static bool IsSha256(string? value) => !string.IsNullOrWhiteSpace(value) && Regex.IsMatch(value, "^[A-Fa-f0-9]{64}$");

@@ -34,6 +34,18 @@ class AuthRepository {
     return AuthResponse.fromJson(resp.data ?? {});
   }
 
+  Future<AuthResponse> loginWithFirebaseGoogleToken(String idToken) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/login/firebase/google',
+        data: {'idToken': idToken});
+    return AuthResponse.fromJson(response.data ?? {});
+  }
+
+  Future<void> revokeDetachedSession(AuthResponse response) async {
+    await _dio.postWithBearer('/auth/logout', response.accessToken,
+        data: {'refreshToken': response.refreshToken});
+  }
+
   // ── Đăng ký tài khoản mới → POST /auth/register ───────────────────────────
   Future<AuthResponse> register(RegisterRequest request) async {
     final resp = await _dio.post<Map<String, dynamic>>(

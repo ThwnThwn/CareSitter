@@ -37,7 +37,7 @@ class OtpDigitField extends StatelessWidget {
           counterText: '',
           filled: true,
           fillColor:
-              isFocused ? AppColors.primaryContainer : AppColors.cardBackground,
+              isFocused ? AppColors.primaryContainer : AppInputStyle.fillColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(

@@ -18,8 +18,8 @@ void main() {
   });
 
   const scenarios = [
-    _Scenario('confirmed', 'Chờ ghép CSV',
-        caregiverId: null, expectWaiting: true),
+    _Scenario('confirmed', 'Chờ ghép chăm sóc viên',
+        caregiverId: null, expectWaiting: true, tab: 'Chưa ghép'),
     _Scenario('confirmed', 'Đã xác nhận'),
     _Scenario('caregiver_accepted', 'Đã nhận ca', caregiverId: null),
     _Scenario('pending_payment', 'Chờ thanh toán'),
@@ -67,6 +67,10 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
+      if (scenario.tab == 'Chưa ghép' || scenario.tab == 'Đã hủy') {
+        await tester.drag(find.byType(TabBar), const Offset(-250, 0));
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.text(scenario.tab));
       await tester.pumpAndSettle();
 

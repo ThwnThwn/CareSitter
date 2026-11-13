@@ -1,6 +1,7 @@
 import 'meal_ingredient_model.dart';
 import 'nutrition_json.dart';
 import 'nutrition_source_model.dart';
+import 'nutrition_recipe_image_model.dart';
 
 class NutritionMealModel {
   NutritionMealModel.fromJson(Map<String, dynamic> json)
@@ -12,6 +13,12 @@ class NutritionMealModel {
       (_json['recipeVersionId'] ?? _json['versionId'])?.toString() ?? '';
   String? get imageUrl => _optionalString('imageUrl');
   String? get imageAlt => _optionalString('imageAlt');
+  List<NutritionRecipeImageModel> get images =>
+      nutritionJsonObjects(_json['images'])
+          .map(NutritionRecipeImageModel.fromJson)
+          .where((image) => image.hasHttpsImage)
+          .take(3)
+          .toList();
   String? get sourceRecipeNote => _optionalString('sourceRecipeNote');
   num? get servings =>
       _json['servings'] is num ? _json['servings'] as num : null;

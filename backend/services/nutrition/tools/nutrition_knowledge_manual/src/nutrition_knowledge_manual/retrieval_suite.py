@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .corpus_freeze import validate_retrieval_corpus_binding
 from .errors import ManualGraphError
+from .review_policy import DEFAULT
 from .graph_retriever import GraphRetriever
 from .jsonio import content_sha256
 from .retrieval_eval import load_retrieval_chunks
@@ -17,7 +18,7 @@ CONFIG_V2_KEYS = CONFIG_KEYS | {"graph_support_weight", "graph_hop_decay"}
 
 def create_suite(*, chunks_path: Path, corpus_freeze: dict, config: dict,
                  encoder=None, index: dict | None = None, candidate: dict | None = None,
-                 ledger: dict | None = None, graph: dict | None = None) -> tuple[list[dict], dict, dict]:
+                 ledger: dict | None = None, graph: dict | None = None, review_policy=DEFAULT) -> tuple[list[dict], dict, dict]:
     validate_retrieval_corpus_binding(corpus_freeze=corpus_freeze, chunks_path=chunks_path)
     version = config.get("schema_version")
     expected_keys = {1: CONFIG_KEYS, 2: CONFIG_V2_KEYS}.get(version) if type(version) is int else None
@@ -39,7 +40,7 @@ def create_suite(*, chunks_path: Path, corpus_freeze: dict, config: dict,
             raise ManualGraphError("graph strategy requires hybrid, candidate, ledger and reviewed graph")
         retrievers["graph"] = GraphRetriever(retrievers["hybrid"], chunks, corpus_freeze,
             candidate, ledger, graph, config["graph_hops"], config["graph_max_nodes"], config["graph_max_edges"],
-            rrf_k=config["rrf_k"], support_weight=graph_weight, hop_decay=graph_decay)
+            rrf_k=config["rrf_k"], support_weight=graph_weight, hop_decay=graph_decay, review_policy=review_policy)
     retrievers = {name: SourceEditionGuard(retriever, corpus_freeze["source_revision_id"])
                   for name, retriever in retrievers.items()}
     bindings = {"corpus_freeze_sha256": corpus_freeze["content_sha256"],

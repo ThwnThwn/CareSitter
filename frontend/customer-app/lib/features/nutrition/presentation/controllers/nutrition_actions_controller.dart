@@ -44,9 +44,13 @@ class NutritionActionsController {
                 .first,
       });
   Future<NutritionResourceModel> save(
-          String recommendationId, int revision, ApiCancellation token) =>
-      _write('meal-plans', revision, token,
-          {'recommendationId': recommendationId});
+          String recommendationId, int revision, ApiCancellation token,
+          {DateTime? plannedDate}) =>
+      _write('meal-plans', revision, token, {
+        'recommendationId': recommendationId,
+        if (plannedDate != null)
+          'plannedDate': plannedDate.toIso8601String().split('T').first,
+      });
   Future<NutritionResourceModel> replace(
           String recommendationId,
           String recipeVersionId,
@@ -59,8 +63,11 @@ class NutritionActionsController {
           String recommendationId, String mealType, ApiCancellation token) =>
       repository.replacementOptions(
           beneficiaryId, recommendationId, mealType, token);
-  Future<List<MealPlanSummaryModel>> plans(ApiCancellation token) =>
-      repository.savedPlans(beneficiaryId, token).timeout(planLoadTimeout);
+  Future<List<MealPlanSummaryModel>> plans(ApiCancellation token,
+          {DateTime? weekStart}) =>
+      repository
+          .savedPlans(beneficiaryId, token, weekStart: weekStart)
+          .timeout(planLoadTimeout);
   Future<NutritionResourceModel?> latestPlan(ApiCancellation token) async {
     final saved = await plans(token);
     if (saved.isEmpty || saved.first.id.isEmpty) return null;

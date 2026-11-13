@@ -23,6 +23,9 @@
   --z-sidebar: 10;
   --z-backdrop: 40;
   --z-drawer: 50;
+  --z-confirm-backdrop: 60;
+  --z-confirm: 70;
+  --z-toast: 80;
 }
 
 * { box-sizing: border-box; }
@@ -394,6 +397,25 @@ input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: va
   .detail-list div { grid-template-columns: 110px minmax(0, 1fr); }
   .pagination { align-items: flex-start; flex-direction: column; }
 }
+
+
+.confirmation-backdrop { position: fixed; z-index: var(--z-confirm-backdrop); inset: 0; padding: 20px; background: rgba(8,42,35,.48); display: grid; place-items: center; }
+.confirmation-dialog { z-index: var(--z-confirm); width: min(440px, 100%); padding: 22px; border-radius: 14px; background: #fff; box-shadow: 0 8px 14px rgba(8,42,35,.22); display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 14px; }
+.confirmation-dialog h2 { margin: 1px 0 7px; font-size: 18px; }
+.confirmation-dialog p { margin: 0; color: var(--muted); white-space: pre-line; line-height: 1.6; }
+.confirmation-icon { width: 42px; height: 42px; border-radius: 10px; color: var(--red); background: var(--red-soft); display: grid; place-items: center; }
+.confirmation-icon--primary { color: var(--green-dark); background: var(--green-soft); }
+.confirmation-actions { grid-column: 1 / -1; margin-top: 6px; display: flex; justify-content: flex-end; gap: 10px; }
+.toast-region { position: fixed; z-index: var(--z-toast); bottom: 24px; right: 24px; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; }
+.app-toast { pointer-events: auto; min-width: 280px; max-width: min(400px, calc(100vw - 48px)); border-radius: 11px; padding: 13px 14px; display: flex; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.45; box-shadow: 0 4px 8px rgba(8,42,35,.16); animation: toast-in .22s cubic-bezier(.22,.75,.18,1); }
+.app-toast--success { color: #035738; background: #e5f7ef; border: 1px solid #b4e2cd; }
+.app-toast--error { color: #7a2420; background: #fff2f1; border: 1px solid #f2b8b4; }
+.app-toast > svg { flex: 0 0 auto; margin-top: 1px; }
+.app-toast > span { flex: 1 1 auto; font-weight: 600; }
+.app-toast-close { flex: 0 0 auto; margin: -4px -6px -4px auto; width: 28px; height: 28px; border: 0; border-radius: 7px; color: inherit; background: transparent; display: grid; place-items: center; opacity: .65; }
+.app-toast-close:hover { opacity: 1; background: rgba(0,0,0,.06); }
+@keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
+@media (max-width: 760px) { .toast-region { bottom: 16px; right: 16px; left: 16px; } .app-toast { min-width: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

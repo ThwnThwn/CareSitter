@@ -6,8 +6,9 @@ import { qs } from '../api';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, formatDate, shortId } from '../components/Common';
 import { AdminUser } from '../types';
 import { usePagedResource } from '../useResource';
+import type { ShowToast } from '../useToast';
 
-export function UsersPage() {
+export function UsersPage({ showToast = () => undefined }: { showToast?: ShowToast }) {
   const { filters, roles } = useAdminMetadata();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
@@ -19,7 +20,7 @@ export function UsersPage() {
     const timer = window.setTimeout(() => { setDebouncedQuery(query); setPage(1); }, 250);
     return () => window.clearTimeout(timer);
   }, [query]);
-  const { data: result, loading: fetching, error, reload: load } = usePagedResource<AdminUser>(`/api/v1/admin/users${qs({ query: debouncedQuery, role, status, page, pageSize: 20 })}`, page, setPage);
+  const { data: result, loading: fetching, error, hasLoaded, reload: load } = usePagedResource<AdminUser>(`/api/v1/admin/users${qs({ query: debouncedQuery, role, status, page, pageSize: 20 })}`, page, setPage);
   const loading = fetching || query !== debouncedQuery;
 
   return <>
@@ -30,11 +31,11 @@ export function UsersPage() {
       <label>Trạng thái<select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>{filters.userStatuses.options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
     </section>
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
-    <section className="data-panel">{loading ? <LoadingTable rows={8} columns={6} /> : error ? null : result.items.length === 0
+    <section className="data-panel">{loading && !hasLoaded ? <LoadingTable rows={8} columns={6} /> : error && !hasLoaded ? null : result.items.length === 0
       ? <EmptyState title="Không tìm thấy tài khoản" description="Thử đổi từ khóa hoặc bộ lọc tài khoản." />
       : <div className="table-wrap"><table className="data-table"><thead><tr><th>Tài khoản</th><th>Liên hệ</th><th>Vai trò</th><th>Đăng nhập gần nhất</th><th>Trạng thái</th><th /></tr></thead><tbody>
         {result.items.map((user) => <tr key={user.id}><td><strong>{user.displayName || user.fullName || 'Chưa cập nhật tên'}</strong><small>{shortId(user.id)}</small></td><td><strong>{user.email}</strong><small>{user.phone || 'Chưa có số điện thoại'}</small></td><td><div className="tag-row">{user.roles.map((item) => <span key={item}>{optionLabel(roles, item)}</span>)}</div></td><td>{formatDate(user.lastLoginAt)}</td><td><StatusChip value={user.status} /></td><td><button className="row-action" onClick={() => setSelected(user)}>Quản lý</button></td></tr>)}</tbody></table></div>}
-      {!loading && !error && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}</section>
-    {selected && <UserDrawer key={selected.id} user={selected} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />}
+      {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}</section>
+    {selected && <UserDrawer key={selected.id} user={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </>;
 }

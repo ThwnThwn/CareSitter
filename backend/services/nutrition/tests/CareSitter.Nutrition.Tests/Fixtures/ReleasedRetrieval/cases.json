@@ -1,0 +1,106 @@
+[
+  {
+    "case_id": "synthetic-q00",
+    "question": "ĐẬU xanh"
+  },
+  {
+    "case_id": "synthetic-q01",
+    "question": "đậu xanh"
+  },
+  {
+    "case_id": "synthetic-q02",
+    "question": "dau xanh"
+  },
+  {
+    "case_id": "synthetic-q03",
+    "question": "robot 42"
+  },
+  {
+    "case_id": "synthetic-q04",
+    "question": "alpha_beta"
+  },
+  {
+    "case_id": "synthetic-q05",
+    "question": "identical"
+  },
+  {
+    "case_id": "synthetic-q06",
+    "question": "Tie zeta"
+  },
+  {
+    "case_id": "synthetic-q07",
+    "question": ""
+  },
+  {
+    "case_id": "synthetic-q08",
+    "question": "!!!"
+  },
+  {
+    "case_id": "synthetic-q09",
+    "question": "unknownword"
+  },
+  {
+    "case_id": "synthetic-q10",
+    "question": "excludedword"
+  },
+  {
+    "case_id": "synthetic-q11",
+    "question": "robot robot ROBOT"
+  },
+  {
+    "case_id": "synthetic-q12",
+    "question": "cửa hàng"
+  },
+  {
+    "case_id": "synthetic-q13",
+    "question": "đậu đỏ"
+  },
+  {
+    "case_id": "synthetic-q14",
+    "question": "chạy"
+  },
+  {
+    "case_id": "synthetic-threshold",
+    "minimum_score": 10000,
+    "question": "robot"
+  },
+  {
+    "case_id": "synthetic-top1",
+    "question": "identical",
+    "top_k": 1
+  },
+  {
+    "case_id": "synthetic-filter",
+    "filter_revision": true,
+    "question": "robot",
+    "source_revision_id": "other"
+  },
+  {
+    "case_id": "synthetic-edition-2019",
+    "edition_guard": true,
+    "question": "robot phiên bản 2019",
+    "source_revision_id": "synthetic-2019@fixture"
+  },
+  {
+    "case_id": "synthetic-edition-2024",
+    "edition_guard": true,
+    "question": "robot phiên bản 2024",
+    "source_revision_id": "synthetic-2019@fixture"
+  },
+  {
+    "case_id": "synthetic-edition-missing",
+    "edition_guard": true,
+    "question": "robot phiên bản ",
+    "source_revision_id": "synthetic-2019@fixture"
+  },
+  {
+    "case_id": "synthetic-round-accept",
+    "minimum_score": 1.151352,
+    "question": "alpha_beta"
+  },
+  {
+    "case_id": "synthetic-round-reject",
+    "minimum_score": 1.1513521,
+    "question": "alpha_beta"
+  }
+]

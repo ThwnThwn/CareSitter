@@ -165,6 +165,30 @@ public static class CatalogBundleValidator
 
     private static void ValidateImage(Recipe recipe, string path, Action<string, string, string> add)
     {
+        if (recipe.Images is { } images)
+        {
+            if (images.Length is < 1 or > 3)
+                add(path + ".images", "range", "A meal can have one to three attributed component images.");
+            for (var index = 0; index < images.Length; index++)
+            {
+                var image = images[index];
+                var imagePath = $"{path}.images[{index}]";
+                if (image is null)
+                {
+                    add(imagePath, "required", "Image metadata is required.");
+                    continue;
+                }
+                foreach (var url in new[] { image.Url, image.SourceUrl })
+                    if (url?.Length > 2048 || !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                        uri.Scheme != Uri.UriSchemeHttps || string.IsNullOrEmpty(uri.Host))
+                        add(imagePath, "https_required", "Image and source must have absolute HTTPS URLs.");
+                if (string.IsNullOrWhiteSpace(image.DishName) || image.DishName.Length > 200 ||
+                    string.IsNullOrWhiteSpace(image.Attribution) || image.Attribution.Length > 300)
+                    add(imagePath, "required", "Dish name and image attribution are required within display limits.");
+                if (image.MatchKind is not ("dish" or "related_dish"))
+                    add(imagePath + ".matchKind", "unsupported", "Use dish or related_dish image matching.");
+            }
+        }
         if (string.IsNullOrWhiteSpace(recipe.ImageUrl))
         {
             if (!string.IsNullOrWhiteSpace(recipe.ImageAlt))

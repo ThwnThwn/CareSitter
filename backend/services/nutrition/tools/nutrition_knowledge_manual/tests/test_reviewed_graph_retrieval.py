@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from test_retrieval_review import _Fixture
 from nutrition_knowledge_manual.errors import ManualGraphError
@@ -58,6 +59,36 @@ class ReviewedGraphTests(unittest.TestCase):
         limited = GraphRetriever(Seed(self.chunks[0]), self.chunks, self.freeze, self.candidate, ledger,
                                  graph, max_nodes=1, max_edges=1)
         self.assertEqual(1, len(limited.search("fixture")))
+
+    def test_graph_support_can_promote_a_chunk_into_top_five(self):
+        chunks = [{"chunk_id": f"seed-{i}", "source_revision_id": "synthetic",
+                   "source_locator": f"page:{i}", "pdf_page": i, "printed_page": i}
+                  for i in range(1, 8)]
+
+        class RankedSeed:
+            def search(self, question, top_k=5, filters=None):
+                return [cited_hit(chunk, 1.0 / rank, "synthetic", {})
+                        for rank, chunk in enumerate(chunks[:6], 1)]
+
+        graph = {"content_sha256": "synthetic-graph", "nodes": [
+            *[{"id": f"node-{i}", "type": "chunk", "chunk_id": f"seed-{i}"}
+              for i in range(1, 8)],
+            {"id": "topic", "type": "topic"}],
+            "edges": [{"id": "edge-1", "from": "node-1", "to": "topic"},
+                      {"id": "edge-2", "from": "topic", "to": "node-7"}]}
+        # Only the constructor's evidence check is mocked; the traversal and
+        # fusion operate on this synthetic graph without changing production gates.
+        with patch("nutrition_knowledge_manual.graph_retriever.materialize_graph", return_value=graph):
+            promoted = GraphRetriever(RankedSeed(), chunks, {}, {}, {}, graph)
+            seed_only = GraphRetriever(RankedSeed(), chunks, {}, {}, {}, graph,
+                                       support_weight=0)
+
+        self.assertNotIn("seed-7", [hit["chunk_id"] for hit in seed_only.search("synthetic")])
+        hits = promoted.search("synthetic")
+        self.assertIn("seed-7", [hit["chunk_id"] for hit in hits])
+        added = next(hit for hit in hits if hit["chunk_id"] == "seed-7")
+        self.assertEqual(1, added["provenance"]["support_rank"])
+        self.assertEqual(2, len(added["provenance"]["edge_path"]))
 
     def test_rejected_endpoint_prevents_materialization_of_approved_edge(self):
         ledger = approve_graph(self.candidate, self.freeze)

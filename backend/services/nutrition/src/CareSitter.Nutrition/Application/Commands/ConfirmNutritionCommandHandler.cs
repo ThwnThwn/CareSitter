@@ -13,6 +13,7 @@ internal sealed class ConfirmNutritionCommandHandler(NutritionWriteScope scope)
     private static async Task<Result<ResourceResponse>> ConfirmAsync(INutritionSession session,
         ConfirmNutritionCommand request, BeneficiaryHealthSnapshot snapshot, CancellationToken ct)
     {
+        if (snapshot.Revision != request.Input.ExpectedHealthRevision) return NutritionAccessRules.Changed();
         var resource = await session.GetAsync("assessment", request.BeneficiaryId, request.AssessmentId, ct);
         if (resource is null) return NutritionAccessRules.Missing();
         if (resource.HealthRevision != snapshot.Revision) return NutritionAccessRules.Changed();

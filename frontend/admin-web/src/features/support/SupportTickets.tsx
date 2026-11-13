@@ -27,6 +27,7 @@ export function SupportTickets() {
     data: result,
     loading,
     error,
+    hasLoaded,
     reload: load,
   } = usePagedResource<SupportTicket>(
     `/api/v1/support/tickets${qs({ status, type, priority, page, pageSize: 20 })}`,
@@ -97,9 +98,9 @@ export function SupportTickets() {
       </section>
       {error && <ErrorBanner message={error} onRetry={() => void load()} />}
       <section className="data-panel">
-        {loading ? (
+        {loading && !hasLoaded ? (
           <LoadingTable rows={7} columns={6} />
-        ) : error ? null : result.items.length === 0 ? (
+        ) : error && !hasLoaded ? null : result.items.length === 0 ? (
           <EmptyState
             title="Không có ticket phù hợp"
             description="Hãy đổi bộ lọc hoặc kiểm tra lại sau."
@@ -145,7 +146,7 @@ export function SupportTickets() {
             </table>
           </div>
         )}
-        {!loading && !error && (
+        {hasLoaded && (
           <Pagination
             page={result.page}
             pageSize={result.pageSize}

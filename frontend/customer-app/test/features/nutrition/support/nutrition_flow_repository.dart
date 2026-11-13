@@ -16,6 +16,7 @@ class NutritionFlowRepository extends NutritionRepository {
   final _responses = <String, NutritionResourceModel>{};
   String assessmentStatus = 'awaiting_confirmation';
   bool assessmentRetryable = true;
+  bool parsedAssessment = false;
   bool loseAssessmentResponse = false;
   bool loseRecommendationResponse = false;
   bool catalogChanged = false;
@@ -28,6 +29,8 @@ class NutritionFlowRepository extends NutritionRepository {
   final savedHistory = <NutritionResourceModel>[];
   bool uniqueWeeklyMenus = true;
   int healthCalls = 0;
+  int _healthRevision = 7;
+  String? _generalNote;
 
   @override
   bool get isConfigured => true;
@@ -45,7 +48,8 @@ class NutritionFlowRepository extends NutritionRepository {
   Future<HealthProfileModel> health(String id, ApiCancellation token) async {
     healthCalls++;
     return HealthProfileModel.fromJson({
-      'revision': 7,
+      'revision': _healthRevision,
+      'generalNote': _generalNote,
       'allergyStatus': 'reported_none',
       'healthHistory': {
         'nutrition': {
@@ -62,10 +66,20 @@ class NutritionFlowRepository extends NutritionRepository {
   }
 
   @override
+  Future<HealthProfileModel> patch(String id, int revision,
+      Map<String, dynamic> changes, ApiCancellation token) async {
+    if (revision != _healthRevision) throw StateError('Stale profile revision');
+    _generalNote = changes['generalNote'] as String?;
+    _healthRevision++;
+    return health(id, token);
+  }
+
+  @override
   Future<List<MealPlanSummaryModel>> savedPlans(
     String id,
-    ApiCancellation token,
-  ) async {
+    ApiCancellation token, {
+    DateTime? weekStart,
+  }) async {
     if (pendingWeekList != null) await pendingWeekList!.future;
     return [
       if (saved != null) MealPlanSummaryModel.fromJson(saved!.toJson()),
@@ -121,12 +135,13 @@ class NutritionFlowRepository extends NutritionRepository {
     if (cached != null) {
       return catalogChanged ? cached.withStatus('stale') : cached;
     }
-    final NutritionResourceModel response;
+    NutritionResourceModel response;
     if (route == 'nutrition-assessments') {
-      response = resource('assessment-${_responses.length}', assessmentStatus,
-          data: {
-            if (assessmentStatus == 'failed') 'retryable': assessmentRetryable
-          });
+      response =
+          resource('assessment-${_responses.length}', assessmentStatus, data: {
+        if (parsedAssessment) 'parserSchemaVersion': 1,
+        if (assessmentStatus == 'failed') 'retryable': assessmentRetryable
+      });
     } else if (route.endsWith('/confirm')) {
       if (confirmationError != null) throw confirmationError!;
       response =
@@ -160,6 +175,10 @@ class NutritionFlowRepository extends NutritionRepository {
     } else {
       throw StateError('Unexpected write: $route');
     }
+    response = NutritionResourceModel.fromJson({
+      ...response.toJson(),
+      'healthRevision': _healthRevision,
+    });
     _responses[key] = response;
     if (route == 'nutrition-assessments' && loseAssessmentResponse) {
       loseAssessmentResponse = false;

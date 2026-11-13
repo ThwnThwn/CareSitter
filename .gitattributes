@@ -2,3 +2,6 @@
 *.sh text eol=lf
 Caddyfile* text eol=lf
 deploy/ops/systemd/* text eol=lf
+
+# Retrieval fixtures are verified against byte-level SHA-256 digests.
+backend/services/nutrition/tests/CareSitter.Nutrition.Tests/Fixtures/ReleasedRetrieval/** text eol=lf

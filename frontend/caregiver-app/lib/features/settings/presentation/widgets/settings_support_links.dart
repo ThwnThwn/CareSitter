@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/config/legal_links.dart';
 import 'settings_section.dart';
@@ -48,7 +49,8 @@ class SettingsSupportLinks extends StatelessWidget {
   ) async {
     final opened = await open();
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
           content: Text(
               'Chưa cấu hình đường dẫn chính sách. Vui lòng liên hệ hỗ trợ.'),

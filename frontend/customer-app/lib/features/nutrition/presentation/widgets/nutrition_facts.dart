@@ -1,6 +1,7 @@
 import '../../data/models/nutrition_decision_model.dart';
 import '../../data/models/nutrition_result_model.dart';
 import '../models/nutrition_question_copy.dart';
+import 'nutrition_fact_alerts.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -48,33 +49,8 @@ class NutritionFacts extends StatelessWidget {
       widgets.add(const Text(
           'Các nguồn thông tin đang khác nhau. Vui lòng kiểm tra lại hồ sơ; hệ thống giữ các hạn chế đã báo cáo.'));
     }
-    if (state == 'needs_information') {
-      final allergies = health?['allergies'];
-      if (allergies is List) {
-        for (final field in decision.missingFields) {
-          final match = RegExp(r'^allergies/(\d+)$').firstMatch(field);
-          final index = match == null ? null : int.tryParse(match.group(1)!);
-          if (index == null || index >= allergies.length) continue;
-          final item = allergies[index];
-          final label = item is String
-              ? item
-              : item is Map
-                  ? (item['label'] ?? item['code'])?.toString()
-                  : null;
-          if (label == null || label.trim().isEmpty) continue;
-          widgets.add(Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Text(
-                'Chưa nhận diện được dị ứng “$label”. Thông tin vẫn được lưu; chưa thể gợi ý thực đơn cho đến khi mục này được hỗ trợ.',
-                style: const TextStyle(color: AppColors.error)),
-          ));
-        }
-      }
-    }
-    if (state == 'needs_professional_guidance') {
-      widgets.add(const Text(
-          'Hồ sơ cần thêm hướng dẫn chuyên biệt hoặc đang ngoài phạm vi nội dung được hỗ trợ. Không tự đổi sang ăn mềm hay đặt giới hạn dinh dưỡng.'));
-    }
+    widgets.add(
+        NutritionFactAlerts(decision: decision, state: state, health: health));
     if (data.facts.isNotEmpty && state != 'stale') {
       widgets.add(Padding(
           padding: const EdgeInsets.only(top: AppSpacing.md),

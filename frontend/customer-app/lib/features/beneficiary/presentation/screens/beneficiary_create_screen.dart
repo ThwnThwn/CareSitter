@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/widgets/gallery_image_picker.dart';
 import '../widgets/beneficiary_form_fields.dart';
 
@@ -25,7 +26,8 @@ class BeneficiaryCreateScreen extends ConsumerStatefulWidget {
       _BeneficiaryCreateScreenState();
 }
 
-class _BeneficiaryCreateScreenState extends ConsumerState<BeneficiaryCreateScreen> {
+class _BeneficiaryCreateScreenState
+    extends ConsumerState<BeneficiaryCreateScreen> {
   late BeneficiaryFormController _formController;
   ProviderSubscription<BeneficiaryFormController>? _formSubscription;
   void _bindController() {
@@ -84,8 +86,10 @@ class _BeneficiaryCreateScreenState extends ConsumerState<BeneficiaryCreateScree
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
+        AppToast.showLegacy(
+            context,
+            const SnackBar(
+                content: Text('Không chọn được ảnh. Vui lòng thử lại.')));
       }
     }
   }
@@ -120,12 +124,16 @@ class _BeneficiaryCreateScreenState extends ConsumerState<BeneficiaryCreateScree
     );
     if (!mounted) return;
     if (result is BeneficiaryFormMessage) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message), backgroundColor: AppColors.error));
+      AppToast.showLegacy(
+          context,
+          SnackBar(
+              content: Text(result.message), backgroundColor: AppColors.error));
     } else if (result is BeneficiaryFormSaved) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Đã thêm hồ sơ người thân thành công!'),
-          backgroundColor: AppColors.success));
+      AppToast.showLegacy(
+          context,
+          const SnackBar(
+              content: Text('✅ Đã thêm hồ sơ người thân thành công!'),
+              backgroundColor: AppColors.success));
       if (context.canPop()) {
         context.pop(result.id);
       } else {
@@ -146,5 +154,4 @@ class _BeneficiaryCreateScreenState extends ConsumerState<BeneficiaryCreateScree
       hasChanges: () => _hasUnsavedChanges,
     );
   }
-
 }

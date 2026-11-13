@@ -18,7 +18,7 @@ export function ServiceDrawer({
 }: {
   service: CatalogService | null;
   onClose: () => void;
-  onChanged: () => void;
+  onChanged: (message: string) => void;
 }) {
   const { constraints } = useAdminMetadata();
   const {

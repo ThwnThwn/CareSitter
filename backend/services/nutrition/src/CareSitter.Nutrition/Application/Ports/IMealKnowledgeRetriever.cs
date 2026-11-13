@@ -9,8 +9,9 @@ public sealed record MealKnowledgeRequest(string[] Conditions, string[] Nutrient
     string[] Ingredients, string DietaryPattern, string NutritionGoal);
 
 public sealed record MealKnowledgeResult(bool Available, string? Revision, string? Strategy,
-    MealRecommendationEvidence[] Evidence, string[] Warnings)
+    MealRecommendationEvidence[] Evidence, string[] Warnings, string ReleaseStatus = "demo", string? ReviewPolicy = null, string? IntendedUse = null)
 {
+    public string GraphRole { get; init; } = "none";
     public static MealKnowledgeResult Unavailable(string warning) =>
         new(false, null, null, [], [warning]);
 }

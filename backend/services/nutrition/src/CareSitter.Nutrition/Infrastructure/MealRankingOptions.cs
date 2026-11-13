@@ -11,7 +11,7 @@ internal sealed record MealRankingOptions
     public string ApiKey { get; init; } = "";
     public string ApiKeyFile { get; init; } = "";
     public bool DataProcessingApproved { get; init; }
-    public int TimeoutSeconds { get; init; } = 20;
+    public int TimeoutSeconds { get; init; } = 10;
     public int MaxOutputTokens { get; init; } = 1536;
     public int MaxAttempts { get; init; } = 2;
     public int MaxConcurrency { get; init; } = 4;

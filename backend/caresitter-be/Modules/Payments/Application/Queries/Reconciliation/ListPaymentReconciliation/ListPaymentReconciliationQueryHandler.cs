@@ -5,8 +5,9 @@ namespace CareSitter.Modules.Payments.Application;
 
 internal sealed class ListPaymentReconciliationQueryHandler(
     IPaymentReconciliationProcessor processor)
-    : IRequestHandler<ListPaymentReconciliationQuery, IReadOnlyList<PaymentReconciliationItem>>
+    : IRequestHandler<ListPaymentReconciliationQuery, PaymentPage<PaymentReconciliationItem>>
 {
-    public Task<IReadOnlyList<PaymentReconciliationItem>> Handle(
-        ListPaymentReconciliationQuery request, CancellationToken ct) => processor.ListAsync(ct);
+    public Task<PaymentPage<PaymentReconciliationItem>> Handle(
+        ListPaymentReconciliationQuery request, CancellationToken ct) =>
+        processor.ListAsync(request.Page, request.PageSize, ct);
 }

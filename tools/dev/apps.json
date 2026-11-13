@@ -1,0 +1,30 @@
+{
+  "apps": {
+    "caregiver": {
+      "displayName": "Caregiver",
+      "dir": "frontend/caregiver-app",
+      "envFile": ".env.local",
+      "bundleId": "vn.caresitter.caregiver"
+    },
+    "customer": {
+      "displayName": "Customer",
+      "dir": "frontend/customer-app",
+      "envFile": ".env.local",
+      "bundleId": "vn.caresitter.customer"
+    }
+  },
+  "backend": {
+    "composeFile": "backend/docker-compose.yml",
+    "project": "backend/orchestration/CareSitter.AppHost/CareSitter.AppHost.csproj",
+    "workingDirectory": "backend/orchestration/CareSitter.AppHost",
+    "apiUrl": "http://localhost:5033",
+    "nutritionUrl": "http://localhost:5035",
+    "ngrokInspectUrl": "http://localhost:4040"
+  },
+  "xcross": {
+    "relativeLocalAppDataPath": "xcross-caresitter-patched/bin/xcross.exe",
+    "fallbackPaths": [
+      "D:/EXE/tools/xcross-caresitter-patched/bin/xcross.exe"
+    ]
+  }
+}

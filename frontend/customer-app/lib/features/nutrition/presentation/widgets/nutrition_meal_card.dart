@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../models/nutrition_meal_presentation.dart';
 import 'nutrition_meal_details.dart';
+import 'nutrition_meal_reasons.dart';
+import '../../data/models/nutrition_recommendation_trace_model.dart';
 
 /// Card hiển thị một bữa ăn theo layout compact: section header (meal type)
 /// + từng món dạng row thumbnail-left / tên-right, giống tham khảo Meal Plan.
@@ -14,12 +16,14 @@ class NutritionMealCard extends StatelessWidget {
     required this.loading,
     required this.canReplace,
     required this.onReplace,
+    this.trace,
   });
 
   final NutritionMealModel meal;
   final bool loading;
   final bool canReplace;
   final VoidCallback onReplace;
+  final NutritionRecommendationTraceModel? trace;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -30,6 +34,7 @@ class NutritionMealCard extends StatelessWidget {
           loading: loading,
           canReplace: canReplace,
           onReplace: onReplace,
+          trace: trace,
         ),
       );
 }
@@ -42,12 +47,14 @@ class _MealCompactRow extends StatelessWidget {
     required this.loading,
     required this.canReplace,
     required this.onReplace,
+    required this.trace,
   });
 
   final NutritionMealModel meal;
   final bool loading;
   final bool canReplace;
   final VoidCallback onReplace;
+  final NutritionRecommendationTraceModel? trace;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +64,7 @@ class _MealCompactRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.compact),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -68,7 +75,12 @@ class _MealCompactRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _CompactMealRow(meal: meal),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.inset),
+                  child: _CompactMealRow(meal: meal),
+                ),
+                const Divider(height: 1),
+                NutritionMealReasons(meal: meal, trace: trace),
                 if (canReplace)
                   Padding(
                     padding: const EdgeInsets.only(
@@ -89,17 +101,13 @@ class _MealCompactRow extends StatelessWidget {
                       label: const Text('Chọn món thay thế'),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: _CompactMealRow._thumbSize + AppSpacing.compact,
-                  ),
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: NutritionMealDetails(meal: meal),
-                    ),
+                const Divider(height: 1),
+                Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: NutritionMealDetails(meal: meal),
                   ),
                 ),
               ],
@@ -116,7 +124,7 @@ class _CompactMealRow extends StatelessWidget {
 
   final NutritionMealModel meal;
 
-  static const double _thumbSize = 56;
+  static const double _thumbSize = 64;
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +148,10 @@ class _CompactMealRow extends StatelessWidget {
             children: [
               Text(
                 meal.name,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
               ),
@@ -175,6 +183,39 @@ class _MealThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final images = meal.images;
+    if (images.isNotEmpty) {
+      Widget photo(int index) => Image.network(
+            images[index].url,
+            fit: BoxFit.cover,
+            semanticLabel: 'Ảnh tham khảo ${images[index].dishName}',
+            errorBuilder: (_, __, ___) => ColoredBox(
+              color: AppColors.primaryContainer,
+              child: Icon(metadata.icon, color: AppColors.primary, size: 20),
+            ),
+          );
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: photo(0)),
+          if (images.length > 1) ...[
+            const SizedBox(width: 2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: photo(1)),
+                  if (images.length > 2) ...[
+                    const SizedBox(height: 2),
+                    Expanded(child: photo(2)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    }
     final imageUrl = _httpsImageUrl(meal.imageUrl);
     final semanticLabel =
         meal.imageAlt ?? 'Ảnh minh hoạ ${metadata.label.toLowerCase()}';

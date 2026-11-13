@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/shift_tracking_caregiver_content.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,8 @@ class ShiftTrackingScreenCaregiverCard extends StatelessWidget {
           bk: bk,
           statusLabel: statusLabel,
           callbackAction1: () => context.push(AppRoutes.bookingChat(bk.id)),
-          callbackAction2: () => ScaffoldMessenger.of(context).showSnackBar(
+          callbackAction2: () => AppToast.showLegacy(
+                context,
                 const SnackBar(
                   content:
                       Text('🚨 Đang kích hoạt tín hiệu SOS khẩn cấp 24/7...'),

@@ -182,6 +182,16 @@ public sealed class AuthController : ControllerBase
         return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
     }
 
+    [AllowAnonymous]
+    [HttpPost("login/firebase/google")]
+    [EnableRateLimiting("auth-login")]
+    [ProducesResponseType(typeof(GoogleLoginResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> FirebaseGoogle([FromBody] GoogleLoginRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new FirebaseGoogleLoginCommand(request.IdToken), ct);
+        return result.IsSuccess ? Ok(result.Value) : HandleFailure(result.Error);
+    }
+
     private IActionResult HandleFailure(Error error) => error.Type switch
     {
         ErrorType.Validation  => BadRequest(CreateProblem(error)),

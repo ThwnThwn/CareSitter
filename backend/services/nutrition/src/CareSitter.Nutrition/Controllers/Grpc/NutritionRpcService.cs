@@ -1,17 +1,68 @@
 using System.Globalization;
+using System.Text.Json;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Grpc.V1;
 using CareSitter.Nutrition.Primitives;
+using CareSitter.Nutrition.Infrastructure;
 using Google.Protobuf.WellKnownTypes;
 using global::Grpc.Core;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace CareSitter.Nutrition.Controllers.Grpc;
 
 [Authorize(Roles = "CUSTOMER")]
-public sealed class NutritionRpcService(IMediator mediator) : NutritionRpc.NutritionRpcBase
+public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSearch knowledge, LocalKnowledgeAnswer localAnswer,
+    GeminiKnowledgeAnswer gemini, IOptions<KnowledgeAnswerAiOptions> aiOptions) : NutritionRpc.NutritionRpcBase
 {
+    public override async Task<KnowledgeSearchResponse> SearchKnowledge(KnowledgeSearchRequest request, ServerCallContext context)
+    {
+        var query = request.Query.Trim();
+        if (query.Length is < 3 or > 160) throw InvalidRequest();
+        try
+        {
+            var localDemo = request.LocalDemo && knowledge.SupportsLocalDemo;
+            var hits = await knowledge.FindAsync(query, context.CancellationToken, localDemo);
+            var response = new KnowledgeSearchResponse { Query = query, LocalDemo = localDemo };
+            if (localDemo)
+            {
+                if (aiOptions.Value.Enabled)
+                {
+                    var answer = await gemini.AnswerAsync(query, hits, context.CancellationToken);
+                    response.AnswerStatus = answer.Status;
+                    response.AnswerProvider = "Gemini";
+                    response.AnswerChunkIds.AddRange(answer.ChunkIds);
+                    foreach (var block in answer.Blocks)
+                    {
+                        var mapped = new CareSitter.Nutrition.Grpc.V1.KnowledgeAnswerBlock { Text = block.Text };
+                        mapped.ChunkIds.AddRange(block.ChunkIds);
+                        response.AnswerBlocks.Add(mapped);
+                    }
+                }
+                else
+                {
+                    var answer = await localAnswer.SelectEvidenceAsync(query, hits, context.CancellationToken);
+                    response.AnswerStatus = answer.Status;
+                    response.AnswerProvider = "Ollama";
+                    response.AnswerChunkIds.AddRange(answer.ChunkIds);
+                }
+                if (response.AnswerChunkIds.FirstOrDefault() is { } answerId) response.AnswerChunkId = answerId;
+            }
+            response.Results.AddRange(hits.Select(hit => new CareSitter.Nutrition.Grpc.V1.KnowledgeHit
+            {
+                ChunkId = hit.ChunkId, Heading = hit.Heading, PdfPage = hit.PdfPage,
+                PrintedPage = hit.PrintedPage ?? "", SourceTitle = hit.SourceTitle,
+                SourceRevisionId = hit.SourceRevisionId, Excerpt = hit.Excerpt ?? ""
+            }));
+            return response;
+        }
+        catch (Exception error) when (error is InvalidOperationException or IOException or JsonException or
+            UnauthorizedAccessException or KeyNotFoundException or FormatException)
+        {
+            throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
+        }
+    }
     public override async Task<CapabilitiesResponse> GetCapabilities(Empty request, ServerCallContext context)
     {
         var value = await mediator.Send(new NutritionCapabilitiesQuery(), context.CancellationToken);
@@ -19,7 +70,9 @@ public sealed class NutritionRpcService(IMediator mediator) : NutritionRpc.Nutri
         {
             Enabled = value.Enabled, AssessmentsEnabled = value.AssessmentsEnabled,
             RecommendationsEnabled = value.RecommendationsEnabled,
-            FreeTextParserReady = value.FreeTextParserReady
+            FreeTextParserReady = value.FreeTextParserReady,
+            Disclaimer = value.Disclaimer,
+            DisclaimerVersion = value.DisclaimerVersion
         };
     }
 
@@ -64,7 +117,14 @@ public sealed class NutritionRpcService(IMediator mediator) : NutritionRpc.Nutri
 
     public override async Task<ResourceListResult> ListMealPlans(BeneficiaryRequest request, ServerCallContext context)
     {
-        var result = await mediator.Send(new ListMealPlansQuery(Id(request.BeneficiaryId)), context.CancellationToken);
+        DateOnly? weekStart = null;
+        if (request.HasWeekStart)
+        {
+            if (!DateOnly.TryParseExact(request.WeekStart, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var date)) throw InvalidRequest();
+            weekStart = date;
+        }
+        var result = await mediator.Send(new ListMealPlansQuery(Id(request.BeneficiaryId), weekStart), context.CancellationToken);
         if (result.IsFailure) return new ResourceListResult { Failure = Failure(result.Error) };
         var list = new ResourceList();
         list.Resources.AddRange(result.Value.Select(Map));

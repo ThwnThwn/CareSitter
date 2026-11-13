@@ -1,7 +1,6 @@
+import 'nutrition_allergy_tag_input.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-
-import 'nutrition_allergy_tag_input.dart';
 
 class NutritionAllergyTagField extends StatefulWidget {
   const NutritionAllergyTagField({
@@ -67,49 +66,46 @@ class _NutritionAllergyTagFieldState extends State<NutritionAllergyTagField> {
       _sync(includeDraft: true);
       return;
     }
-    final parts = _split(value);
-    setState(() {
-      for (final part in parts) {
-        _addUnique(part);
-      }
-      _input.clear();
-    });
-    _sync();
+    _commitDraft(value);
   }
 
   void _commitDraft([String? submitted]) {
     final value = (submitted ?? _input.text).trim();
     if (value.isEmpty) return;
-    setState(() {
-      for (final part in _split(value)) {
-        _addUnique(part);
-      }
-      _input.clear();
-    });
+    final next = _tagsWithDraft(value);
+    if (next.join('; ').length > widget.maxLength) {
+      _sync(includeDraft: true);
+      return;
+    }
+    _tags
+      ..clear()
+      ..addAll(next);
+    _input.clear();
     _sync();
   }
 
-  void _addUnique(String value) {
-    final normalized = value.toLowerCase();
-    if (_tags.any((tag) => tag.toLowerCase() == normalized)) return;
-    final next = [..._tags, value].join('; ');
-    if (next.length <= widget.maxLength) _tags.add(value);
+  List<String> _tagsWithDraft(String draft) {
+    final keys = _tags.map((tag) => tag.toLowerCase()).toSet();
+    return [
+      ..._tags,
+      ..._split(draft).where((tag) => keys.add(tag.toLowerCase()))
+    ];
   }
 
   void _remove(String value) {
-    setState(() => _tags.remove(value));
+    _tags.remove(value);
     _sync(includeDraft: true);
   }
 
   void _sync({bool includeDraft = false}) {
-    final values = [..._tags];
-    final draft = _input.text.trim();
-    if (includeDraft && draft.isNotEmpty) values.add(draft);
+    final values = includeDraft ? _tagsWithDraft(_input.text) : _tags;
     final serialized = values.join('; ');
-    widget.controller.value = TextEditingValue(
-      text: serialized,
-      selection: TextSelection.collapsed(offset: serialized.length),
-    );
+    setState(() {
+      widget.controller.value = TextEditingValue(
+        text: serialized,
+        selection: TextSelection.collapsed(offset: serialized.length),
+      );
+    });
     widget.onChanged(serialized);
   }
 
@@ -124,7 +120,11 @@ class _NutritionAllergyTagFieldState extends State<NutritionAllergyTagField> {
   @override
   Widget build(BuildContext context) {
     final currentLength = widget.controller.text.length;
-    final hasError = widget.errorText != null;
+    final overflow = currentLength > widget.maxLength;
+    final error = overflow
+        ? 'Danh sách dị nguyên vượt ${widget.maxLength} ký tự. Vui lòng rút gọn.'
+        : widget.errorText;
+    final hasError = error != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -152,15 +152,13 @@ class _NutritionAllergyTagFieldState extends State<NutritionAllergyTagField> {
           focusNode: _focusNode,
           enabled: widget.enabled,
           hasError: hasError,
-          maxLength: widget.maxLength,
           onChanged: _handleInput,
           onSubmitted: _commitDraft,
           onRemove: _remove,
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          widget.errorText ??
-              'Nhấn Enter, dấu phẩy hoặc dấu chấm phẩy để thêm thực phẩm.',
+          error ?? 'Nhấn Enter, dấu phẩy hoặc dấu chấm phẩy để thêm thực phẩm.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: hasError ? AppColors.error : AppColors.textSecondary,
               ),
