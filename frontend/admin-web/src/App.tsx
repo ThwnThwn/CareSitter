@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminMetadataProvider } from './adminMetadata';
 import { api, logoutSession, TOKEN_KEY } from './api';
+import { ToastRegion } from './components/AppToast';
+import { ConfirmationProvider } from './components/ConfirmationDialog';
 import { Shell } from './components/Shell';
 import { Login } from './features/auth/Login';
 import { pageFromHash, pageRenderers } from './routes';
 import { AdminMetadata, PageKey } from './types';
+import { useToast } from './useToast';
 
 export function AdminApp({ onLogout }: { onLogout: () => void }) {
+  const { toasts, showToast, dismissToast } = useToast();
   const [page, setPage] = useState<PageKey>(pageFromHash);
   const [metadata, setMetadata] = useState<AdminMetadata | null>(null);
   const [metadataError, setMetadataError] = useState('');
@@ -81,10 +85,13 @@ export function AdminApp({ onLogout }: { onLogout: () => void }) {
 
   return (
     <AdminMetadataProvider value={metadata}>
-      {/* key=page reset ErrorBoundary khi chuyển trang — tránh state lỗi của page cũ */}
-      <Shell key={page} page={page} onNavigate={navigate} onLogout={onLogout} pageLabel={allowedItem.label}>
-        {pageRenderers[page](navigate)}
-      </Shell>
+      <ConfirmationProvider>
+        {/* key=page reset ErrorBoundary khi chuyển trang — tránh state lỗi của page cũ */}
+        <Shell key={page} page={page} onNavigate={navigate} onLogout={onLogout} pageLabel={allowedItem.label}>
+          {pageRenderers[page](navigate, showToast)}
+        </Shell>
+      </ConfirmationProvider>
+      <ToastRegion toasts={toasts} onDismiss={dismissToast} />
     </AdminMetadataProvider>
   );
 }

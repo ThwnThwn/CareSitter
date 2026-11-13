@@ -79,7 +79,11 @@ class PaymentResultController extends StateNotifier<PaymentResultState> {
     );
     if (state.outcome == PaymentOutcome.syncing && ++_attempts < 5) {
       _timer = Timer(pollInterval, () => unawaited(refresh()));
-    } else if (state.outcome == PaymentOutcome.success) {
+    } else if (const {
+      PaymentOutcome.success,
+      PaymentOutcome.unmatched,
+      PaymentOutcome.refunded,
+    }.contains(state.outcome)) {
       unawaited(onConfirmed().catchError((_) {}));
     }
   }

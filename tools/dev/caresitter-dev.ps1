@@ -113,11 +113,11 @@ function Test-HealthContent {
             return $false
         }
         if ($response -is [string]) {
-            return $response.Trim().ToLowerInvariant() -in @('ok', 'healthy')
+            return $response.Trim().ToLowerInvariant() -in @('ok', 'healthy', 'ready', 'up')
         }
         $statusProperty = $response.PSObject.Properties['status']
         if ($null -ne $statusProperty) {
-            return ([string]$statusProperty.Value).Trim().ToLowerInvariant() -in @('ok', 'healthy')
+            return ([string]$statusProperty.Value).Trim().ToLowerInvariant() -in @('ok', 'healthy', 'ready', 'up')
         }
         return $false
     }
@@ -246,6 +246,50 @@ function Test-DevPreflight {
     return $xcrossPath
 }
 
+function Stop-ManagedDotnetProcess {
+    param(
+        [Parameter(Mandatory)][string]$StateFileName,
+        [Parameter(Mandatory)][string]$DisplayName,
+        [switch]$Quiet
+    )
+
+    $statePath = Join-Path $script:StateDirectory $StateFileName
+    if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
+        if (-not $Quiet) {
+            Write-DevLog "Không có $DisplayName nào do công cụ ghi nhận để dừng." 'WARN'
+        }
+        return $false
+    }
+
+    try {
+        $processState = Get-Content -LiteralPath $statePath -Raw -Encoding utf8 |
+            ConvertFrom-Json
+        $savedPid = [int]$processState.processId
+        $savedStartTicks = [long]$processState.startTimeUtcTicks
+        $process = Get-Process -Id $savedPid -ErrorAction SilentlyContinue
+        $isOwnedProcess =
+            $null -ne $process -and
+            $process.ProcessName -eq 'dotnet' -and
+            $process.StartTime.ToUniversalTime().Ticks -eq $savedStartTicks
+        if ($isOwnedProcess) {
+            Stop-Process -Id $savedPid -Force -ErrorAction Stop
+            Write-DevLog "Đã dừng $DisplayName do công cụ khởi động." 'OK'
+            return $true
+        }
+        if ($null -ne $process) {
+            Write-DevLog "Không dừng PID đã lưu vì tiến trình hiện tại không khớp $DisplayName do tool tạo." 'WARN'
+        }
+        return $false
+    }
+    catch {
+        Write-DevLog "State $DisplayName không hợp lệ; không dừng bất kỳ process nào." 'WARN'
+        return $false
+    }
+    finally {
+        Remove-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Start-BackendStack {
     param(
         [Parameter(Mandatory)]$Configuration,
@@ -255,6 +299,8 @@ function Start-BackendStack {
     $composePath = Resolve-RepoPath -RelativePath ([string]$Configuration.backend.composeFile)
     $apiBaseUrl = ([string]$Configuration.backend.apiUrl).TrimEnd('/')
     $localHealthUrl = "$apiBaseUrl/health/live"
+    $nutritionBaseUrl = ([string]$Configuration.backend.nutritionUrl).TrimEnd('/')
+    $nutritionHealthUrl = "$nutritionBaseUrl/health/ready"
 
     $null = & docker info 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -267,10 +313,27 @@ function Start-BackendStack {
         throw "Không bật được Docker stack. Hãy chạy docker compose thủ công để xem chi tiết."
     }
 
-    if (Test-HealthContent -Url $localHealthUrl) {
-        Write-DevLog 'API local đã chạy sẵn; không mở tiến trình thứ hai.' 'OK'
+    $apiIsReady = Test-HealthContent -Url $localHealthUrl
+    $nutritionIsReady = Test-HealthContent -Url $nutritionHealthUrl
+    if ($apiIsReady -and $nutritionIsReady) {
+        Write-DevLog 'API và Nutrition local đã chạy sẵn; không mở tiến trình thứ hai.' 'OK'
         return
     }
+
+    if ($apiIsReady -and -not $nutritionIsReady) {
+        $null = Stop-ManagedDotnetProcess -StateFileName 'api-process.json' `
+            -DisplayName 'ApiHost cũ' -Quiet
+        Start-Sleep -Seconds 1
+        if (Test-HealthContent -Url $localHealthUrl) {
+            throw 'Port API 5033 đang do tiến trình khác sử dụng. Hãy dừng ApiHost cũ rồi chạy lại để AppHost bật cả Nutrition.'
+        }
+    }
+    if (-not $apiIsReady -and $nutritionIsReady) {
+        throw 'Port Nutrition 5035 đang do tiến trình khác sử dụng. Hãy dừng Nutrition cũ rồi chạy lại.'
+    }
+
+    $null = Stop-ManagedDotnetProcess -StateFileName 'apphost-process.json' `
+        -DisplayName 'CareSitter AppHost cũ' -Quiet
 
     $projectPath = Resolve-RepoPath -RelativePath ([string]$Configuration.backend.project)
     $workingDirectory = Resolve-RepoPath -RelativePath ([string]$Configuration.backend.workingDirectory)
@@ -278,45 +341,44 @@ function Start-BackendStack {
         $null = New-Item -ItemType Directory -Path $script:StateDirectory
     }
 
-    Write-DevLog 'Đang bật CareSitter ApiHost ở chế độ local...'
-    $previousNutrition = $env:NutritionGateway__Enabled
+    Write-DevLog 'Đang bật CareSitter API và Nutrition ở chế độ local...'
+    $previousRuntimePasswordManagement = $env:NutritionDatabase__ManageLocalRuntimePassword
     $previousBookingChat = $env:BookingChat__Enabled
     try {
-        $env:NutritionGateway__Enabled = 'false'
+        $env:NutritionDatabase__ManageLocalRuntimePassword = 'true'
         $env:BookingChat__Enabled = 'true'
         $startProcessArguments = @{
             FilePath = 'dotnet'
             ArgumentList = @(
                 'run',
                 '--project',
-                ('"{0}"' -f $projectPath),
-                '--urls',
-                'http://0.0.0.0:5033'
+                ('"{0}"' -f $projectPath)
             )
             WorkingDirectory = $workingDirectory
             WindowStyle = 'Hidden'
             PassThru = $true
         }
-        $apiProcess = Start-Process @startProcessArguments
+        $appHostProcess = Start-Process @startProcessArguments
     }
     finally {
-        $env:NutritionGateway__Enabled = $previousNutrition
+        $env:NutritionDatabase__ManageLocalRuntimePassword = $previousRuntimePasswordManagement
         $env:BookingChat__Enabled = $previousBookingChat
     }
 
     $processState = [ordered]@{
-        processId = $apiProcess.Id
-        startTimeUtcTicks = $apiProcess.StartTime.ToUniversalTime().Ticks
+        processId = $appHostProcess.Id
+        startTimeUtcTicks = $appHostProcess.StartTime.ToUniversalTime().Ticks
     }
     $processState | ConvertTo-Json | Set-Content `
-        -LiteralPath (Join-Path $script:StateDirectory 'api-process.json') `
+        -LiteralPath (Join-Path $script:StateDirectory 'apphost-process.json') `
         -Encoding utf8
     try {
+        Wait-HealthContent -Url $nutritionHealthUrl -DisplayName 'Nutrition local' -Retries $Retries
         Wait-HealthContent -Url $localHealthUrl -DisplayName 'API local' -Retries $Retries
     }
     catch {
-        if (-not $apiProcess.HasExited) {
-            Stop-Process -Id $apiProcess.Id -Force -ErrorAction SilentlyContinue
+        if (-not $appHostProcess.HasExited) {
+            Stop-Process -Id $appHostProcess.Id -Force -ErrorAction SilentlyContinue
         }
         throw
     }
@@ -561,23 +623,43 @@ function Start-XcrossApp {
 
     $appConfig = $Configuration.apps.$AppName
     $appDirectory = Resolve-RepoPath -RelativePath ([string]$appConfig.dir)
+    $xcrossConfigPath = Join-Path $script:StateDirectory 'xcross-config.yaml'
+    $previousConfig = $env:XCROSS_CONFIG
+    $previousCache = $env:XCROSS_CACHE_DIR
 
     Write-DevLog "Đang chạy $($appConfig.displayName). Giữ iPhone mở khóa; bấm q để thoát."
     Push-Location $appDirectory
     try {
-        # Explorer/Windows Terminal có thể còn giữ giá trị cũ sau khi biến môi trường
-        # XCROSS_CACHE_DIR đã bị gỡ. Xóa riêng khỏi process hiện tại để xcross dùng
-        # cache mặc định, nơi Darwin SDK đã được cài.
-        Remove-Item Env:XCROSS_CACHE_DIR -ErrorAction SilentlyContinue
-        & $XcrossPath flutter run --debug --usb --dart-define-from-file=.env.local
+        # Dùng chung cấu hình SDK giữa CMD và Codex, vốn có thể thấy AppData khác nhau.
+        if ([string]::IsNullOrWhiteSpace($previousConfig) -and
+            (Test-Path -LiteralPath $xcrossConfigPath -PathType Leaf)) {
+            $env:XCROSS_CONFIG = $xcrossConfigPath
+        }
+        # Dùng cache đã xác nhận build FirebaseFirestore trên iPhone.
+        $env:XCROSS_CACHE_DIR = Join-Path $env:USERPROFILE '.xcross-cache'
+        $runArguments = @('flutter', 'run', '--debug', '--usb', '--dart-define-from-file=.env.local')
+        if ($AppName -eq 'customer') {
+            $runArguments += '--dart-define=LAB3_DEMO_ENABLED=true'
+            $runArguments += '--dart-entrypoint-args=-FIRDebugEnabled'
+            Write-DevLog 'Đã bật mục Kiểm chứng Lab3 cho Customer debug.'
+            Write-DevLog 'Đã bật Firebase Analytics DebugView trên iPhone.'
+        }
+        & $XcrossPath @runArguments
         $exitCode = $LASTEXITCODE
     }
     finally {
+        $env:XCROSS_CONFIG = $previousConfig
+        if ([string]::IsNullOrEmpty($previousCache)) {
+            Remove-Item Env:XCROSS_CACHE_DIR -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:XCROSS_CACHE_DIR = $previousCache
+        }
         Pop-Location
     }
 
     if ($exitCode -ne 0) {
-        throw "$($appConfig.displayName) không chạy được. Kiểm tra iPhone đã mở khóa, Trust, bật Developer Mode và còn kết nối USB."
+        throw "$($appConfig.displayName) không chạy được. xcross thoát với mã $exitCode. Xem lỗi chi tiết phía trên."
     }
     Write-DevLog "Đã kết thúc phiên $($appConfig.displayName)." 'OK'
 }
@@ -585,35 +667,12 @@ function Start-XcrossApp {
 function Stop-CareSitterDev {
     param([Parameter(Mandatory)]$Configuration)
 
-    $statePath = Join-Path $script:StateDirectory 'api-process.json'
-    if (Test-Path -LiteralPath $statePath -PathType Leaf) {
-        try {
-            $processState = Get-Content -LiteralPath $statePath -Raw -Encoding utf8 |
-                ConvertFrom-Json
-            $savedPid = [int]$processState.processId
-            $savedStartTicks = [long]$processState.startTimeUtcTicks
-            $process = Get-Process -Id $savedPid -ErrorAction SilentlyContinue
-            $isOwnedProcess =
-                $null -ne $process -and
-                $process.ProcessName -eq 'dotnet' -and
-                $process.StartTime.ToUniversalTime().Ticks -eq $savedStartTicks
-            if ($isOwnedProcess) {
-                Stop-Process -Id $savedPid -Force -ErrorAction Stop
-                Write-DevLog 'Đã dừng ApiHost do công cụ khởi động.' 'OK'
-            }
-            elseif ($null -ne $process) {
-                Write-DevLog 'Không dừng PID đã lưu vì tiến trình hiện tại không khớp ApiHost do tool tạo.' 'WARN'
-            }
-        }
-        catch {
-            Write-DevLog 'State ApiHost không hợp lệ; không dừng bất kỳ process nào.' 'WARN'
-        }
-        finally {
-            Remove-Item -LiteralPath $statePath -Force
-        }
-    }
-    else {
-        Write-DevLog 'Không có ApiHost nào do công cụ ghi nhận để dừng.' 'WARN'
+    $stoppedAppHost = Stop-ManagedDotnetProcess `
+        -StateFileName 'apphost-process.json' -DisplayName 'CareSitter AppHost' -Quiet
+    $stoppedLegacyApi = Stop-ManagedDotnetProcess `
+        -StateFileName 'api-process.json' -DisplayName 'ApiHost cũ' -Quiet
+    if (-not $stoppedAppHost -and -not $stoppedLegacyApi) {
+        Write-DevLog 'Không có backend nào do công cụ ghi nhận để dừng.' 'WARN'
     }
 
     if (Test-CommandAvailable -Name 'docker') {
@@ -638,7 +697,7 @@ function Show-DryRunPlan {
     Write-DevLog 'Dry-run: không bật process, không sửa env và không chạy app.' 'OK'
     Write-DevLog "xcross: $XcrossPath"
     if (-not $SkipBackend) {
-        Write-DevLog 'Kế hoạch: bật db/redis/kafka/ngrok, chỉ mở ApiHost nếu health local chưa đạt.'
+        Write-DevLog 'Kế hoạch: bật db/redis/kafka/ngrok, rồi mở AppHost cho API và Nutrition nếu health local chưa đạt.'
     }
     foreach ($appName in $AppNames) {
         $appConfig = $Configuration.apps.$appName
@@ -654,7 +713,7 @@ function Invoke-CareSitterDev {
 
     if ($Stop) {
         if ($DryRun) {
-            Write-DevLog 'Dry-run: sẽ chỉ dừng ApiHost do công cụ quản lý và container ngrok; DB/Redis/Kafka được giữ nguyên.' 'OK'
+            Write-DevLog 'Dry-run: sẽ chỉ dừng AppHost/backend do công cụ quản lý và container ngrok; DB/Redis/Kafka được giữ nguyên.' 'OK'
             return
         }
         if (-not $DryRun) {
@@ -707,7 +766,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     }
     catch {
         Write-DevLog $_.Exception.Message 'ERROR'
-        Write-Host 'Gợi ý: chạy lại với -DryRun để kiểm tra, hoặc mở khóa iPhone và xác nhận Trust/Developer Mode.' -ForegroundColor Yellow
+        Write-Host 'Gợi ý: xem lỗi phía trên hoặc chạy lại với -DryRun để kiểm tra launcher.' -ForegroundColor Yellow
         exit 1
     }
 }

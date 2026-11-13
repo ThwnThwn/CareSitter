@@ -53,12 +53,14 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(content: Text('Đã thêm địa chỉ mới')),
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
           content: Text('Không thêm được địa chỉ. Vui lòng thử lại.'),
           backgroundColor: AppColors.error,
@@ -108,7 +110,8 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
           .read(addressStoreProvider.notifier)
           .setDefaultAddress(address.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         SnackBar(
           content: Text('Đã đặt "${address.displayLabel}" làm mặc định'),
           backgroundColor: AppColors.primary,
@@ -116,7 +119,8 @@ class _SavedAddressesScreenState extends ConsumerState<SavedAddressesScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
           content: Text('Không thể cập nhật. Vui lòng thử lại.'),
           backgroundColor: AppColors.error,

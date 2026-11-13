@@ -1,6 +1,7 @@
 import '../../data/models/nutrition_decision_model.dart';
 import '../../data/models/nutrition_result_model.dart';
 import '../models/nutrition_question_copy.dart';
+import 'nutrition_fact_alerts.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -9,10 +10,12 @@ class NutritionFacts extends StatelessWidget {
       {super.key,
       required this.decision,
       required this.data,
-      required this.state});
+      required this.state,
+      this.health});
   final NutritionDecisionModel decision;
   final NutritionResultModel data;
   final String state;
+  final Map<String, dynamic>? health;
   @override
   Widget build(BuildContext context) {
     const fields = {
@@ -46,10 +49,8 @@ class NutritionFacts extends StatelessWidget {
       widgets.add(const Text(
           'Các nguồn thông tin đang khác nhau. Vui lòng kiểm tra lại hồ sơ; hệ thống giữ các hạn chế đã báo cáo.'));
     }
-    if (state == 'needs_professional_guidance') {
-      widgets.add(const Text(
-          'Hồ sơ cần thêm hướng dẫn chuyên biệt hoặc đang ngoài phạm vi nội dung được hỗ trợ. Không tự đổi sang ăn mềm hay đặt giới hạn dinh dưỡng.'));
-    }
+    widgets.add(
+        NutritionFactAlerts(decision: decision, state: state, health: health));
     if (data.facts.isNotEmpty && state != 'stale') {
       widgets.add(Padding(
           padding: const EdgeInsets.only(top: AppSpacing.md),

@@ -145,7 +145,13 @@ void main() {
 
     expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('23'));
+    await tester.scrollUntilVisible(find.text('23'), 120,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).last,
+              matching: find.byType(Scrollable),
+            )
+            .first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('23'));
     await tester.pumpAndSettle();
@@ -169,6 +175,13 @@ void main() {
     await tester.tap(find.byTooltip('Cập nhật thông tin dinh dưỡng'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(find.byType(NutritionHealthForm), 120,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).last,
+              matching: find.byType(Scrollable),
+            )
+            .first);
     expect(find.byType(NutritionHealthForm), findsOneWidget);
   });
 }
@@ -250,7 +263,8 @@ class _NutritionRepository extends NutritionRepository {
 
   @override
   Future<List<MealPlanSummaryModel>> savedPlans(
-      String id, ApiCancellation token) async {
+      String id, ApiCancellation token,
+      {DateTime? weekStart}) async {
     if (!withSavedPlan) return const [];
     return [
       MealPlanSummaryModel.fromJson({

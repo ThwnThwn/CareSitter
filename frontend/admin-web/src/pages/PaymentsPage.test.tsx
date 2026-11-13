@@ -15,7 +15,7 @@ const review: PaymentReview = {
 };
 
 it('shows extra/late payOS money without allowing a closed booking to be approved again', async () => {
-  const fetch = vi.fn(async () => Response.json([review]));
+  const fetch = vi.fn(async () => Response.json({ items: [review], total: 1, page: 1, pageSize: 20 }));
   vi.stubGlobal('fetch', fetch);
   render(<PaymentsPage />);
   await userEvent.click(await screen.findByRole('button', { name: 'Xem đối soát' }));
@@ -27,8 +27,8 @@ it('shows extra/late payOS money without allowing a closed booking to be approve
 });
 
 it('keeps manual resolution available for a pending payOS booking in review', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => Response.json([{ ...review,
-    bookingStatus: 'needs_manual_review', intentStatus: 'PENDING', canResolve: true }])));
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ items: [{ ...review,
+    bookingStatus: 'needs_manual_review', intentStatus: 'PENDING', canResolve: true }], total: 1, page: 1, pageSize: 20 })));
   render(<PaymentsPage />);
   await userEvent.click(await screen.findByRole('button', { name: 'Xử lý' }));
   expect(screen.getByRole('button', { name: 'Xác nhận đã thanh toán' })).toBeTruthy();
@@ -45,7 +45,7 @@ it('requires external provider evidence before confirming a manual payOS refund'
   };
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    if (url.includes('/api/v1/admin/payment-reconciliation')) return Response.json([]);
+    if (url.includes('/api/v1/admin/payment-reconciliation')) return Response.json({ items: [], total: 0, page: 1, pageSize: 20 });
     if (url.includes('/api/v1/admin/refunds/refund-123/confirm')) return new Response(null, { status: 204 });
     if (url.includes('/api/v1/admin/refunds')) return Response.json({ items: [refund], total: 1, page: 1, pageSize: 20 });
     throw new Error(`Unexpected request: ${url} ${init?.method || 'GET'}`);

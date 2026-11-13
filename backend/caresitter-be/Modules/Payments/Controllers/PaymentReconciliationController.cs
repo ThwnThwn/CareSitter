@@ -18,8 +18,9 @@ public sealed class PaymentReconciliationController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct) =>
-        Ok(await _mediator.Send(new ListPaymentReconciliationQuery(), ct));
+    public async Task<IActionResult> List(
+        int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+        Ok(await _mediator.Send(new ListPaymentReconciliationQuery(page, pageSize), ct));
 
     [HttpPost("{intentId:guid}/resolve")]
     public async Task<IActionResult> Resolve(

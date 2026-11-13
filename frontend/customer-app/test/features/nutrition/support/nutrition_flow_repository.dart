@@ -16,14 +16,21 @@ class NutritionFlowRepository extends NutritionRepository {
   final _responses = <String, NutritionResourceModel>{};
   String assessmentStatus = 'awaiting_confirmation';
   bool assessmentRetryable = true;
+  bool parsedAssessment = false;
   bool loseAssessmentResponse = false;
   bool loseRecommendationResponse = false;
   bool catalogChanged = false;
   AppApiException? planReadError;
+  AppApiException? confirmationError;
   Completer<NutritionResourceModel>? pendingAssessmentRead;
+  Completer<void>? pendingWeekList;
   NutritionResourceModel? recommendation;
   NutritionResourceModel? saved;
+  final savedHistory = <NutritionResourceModel>[];
+  bool uniqueWeeklyMenus = true;
   int healthCalls = 0;
+  int _healthRevision = 7;
+  String? _generalNote;
 
   @override
   bool get isConfigured => true;
@@ -41,7 +48,8 @@ class NutritionFlowRepository extends NutritionRepository {
   Future<HealthProfileModel> health(String id, ApiCancellation token) async {
     healthCalls++;
     return HealthProfileModel.fromJson({
-      'revision': 7,
+      'revision': _healthRevision,
+      'generalNote': _generalNote,
       'allergyStatus': 'reported_none',
       'healthHistory': {
         'nutrition': {
@@ -58,13 +66,30 @@ class NutritionFlowRepository extends NutritionRepository {
   }
 
   @override
+  Future<HealthProfileModel> patch(String id, int revision,
+      Map<String, dynamic> changes, ApiCancellation token) async {
+    if (revision != _healthRevision) throw StateError('Stale profile revision');
+    _generalNote = changes['generalNote'] as String?;
+    _healthRevision++;
+    return health(id, token);
+  }
+
+  @override
   Future<List<MealPlanSummaryModel>> savedPlans(
     String id,
-    ApiCancellation token,
-  ) async =>
-      [
-        if (saved != null) MealPlanSummaryModel.fromJson(saved!.toJson()),
-      ];
+    ApiCancellation token, {
+    DateTime? weekStart,
+  }) async {
+    if (pendingWeekList != null) await pendingWeekList!.future;
+    return [
+      if (saved != null) MealPlanSummaryModel.fromJson(saved!.toJson()),
+      ...savedHistory
+          .where((plan) => plan.id != saved?.id)
+          .toList()
+          .reversed
+          .map((plan) => MealPlanSummaryModel.fromJson(plan.toJson())),
+    ];
+  }
 
   @override
   Future<NutritionResourceModel> read(
@@ -79,7 +104,10 @@ class NutritionFlowRepository extends NutritionRepository {
     }
     if (route.startsWith('meal-plans/')) {
       if (planReadError != null) throw planReadError!;
-      if (saved != null) return saved!;
+      if (saved != null && route.endsWith(saved!.id)) return saved!;
+      for (final plan in savedHistory) {
+        if (route.endsWith(plan.id)) return plan;
+      }
     }
     throw StateError('Unexpected read: $route');
   }
@@ -107,21 +135,28 @@ class NutritionFlowRepository extends NutritionRepository {
     if (cached != null) {
       return catalogChanged ? cached.withStatus('stale') : cached;
     }
-    final NutritionResourceModel response;
+    NutritionResourceModel response;
     if (route == 'nutrition-assessments') {
-      response = resource('assessment-${_responses.length}', assessmentStatus,
-          data: {
-            if (assessmentStatus == 'failed') 'retryable': assessmentRetryable
-          });
+      response =
+          resource('assessment-${_responses.length}', assessmentStatus, data: {
+        if (parsedAssessment) 'parserSchemaVersion': 1,
+        if (assessmentStatus == 'failed') 'retryable': assessmentRetryable
+      });
     } else if (route.endsWith('/confirm')) {
+      if (confirmationError != null) throw confirmationError!;
       response =
           resource(route.split('/')[1], 'confirmed', decision: 'eligible');
     } else if (route == 'meal-recommendations') {
+      final suffix = uniqueWeeklyMenus ? '-${data['plannedDate']}' : '';
       response =
           resource('recommendation-${_responses.length}', 'suggested', data: {
         'assessmentId': data['assessmentId'],
         'plannedDate': data['plannedDate'] ?? '2026-01-01',
-        'meals': [meal('breakfast', 'Cháo yến mạch')],
+        'meals': [
+          meal('breakfast', 'Cháo yến mạch$suffix', suffix),
+          meal('lunch', 'Cơm rau$suffix', suffix),
+          meal('dinner', 'Canh bí$suffix', suffix),
+        ],
       });
       recommendation = response;
     } else if (route.endsWith('/replacements')) {
@@ -136,9 +171,14 @@ class NutritionFlowRepository extends NutritionRepository {
           decision: 'suggested',
           data: recommendation!.payload.cast<String, dynamic>());
       saved = response;
+      savedHistory.add(response);
     } else {
       throw StateError('Unexpected write: $route');
     }
+    response = NutritionResourceModel.fromJson({
+      ...response.toJson(),
+      'healthRevision': _healthRevision,
+    });
     _responses[key] = response;
     if (route == 'nutrition-assessments' && loseAssessmentResponse) {
       loseAssessmentResponse = false;
@@ -163,8 +203,10 @@ class NutritionFlowRepository extends NutritionRepository {
         },
       });
 
-  static Map<String, dynamic> meal(String type, String name) => {
-        'versionId': 'recipe-$type',
+  static Map<String, dynamic> meal(String type, String name,
+          [String suffix = '']) =>
+      {
+        'versionId': 'recipe-$type$suffix',
         'mealType': type,
         'name': name,
         'servings': 1,

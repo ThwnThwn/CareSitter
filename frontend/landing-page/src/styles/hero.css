@@ -4,14 +4,15 @@
   --hero-distance: 150px;
   background: var(--paper);
   overflow: hidden;
-  padding: clamp(4.5rem, 8vw, 7rem) 0 clamp(4rem, 7vw, 6rem);
+  padding: clamp(3rem, 4.5vw, 4.75rem) 0 clamp(4rem, 7vw, 6rem);
 }
 
 .hero__grid {
   align-items: center;
   display: grid;
-  gap: clamp(3rem, 5vw, 6rem);
-  grid-template-columns: minmax(0, 1.04fr) minmax(400px, 0.96fr);
+  gap: clamp(3rem, 4vw, 5rem);
+  grid-template-columns: minmax(0, 0.9fr) minmax(520px, 1.1fr);
+  max-width: 1480px;
 }
 
 .hero__copy {
@@ -340,4 +341,59 @@
     box-shadow: 0 8px 8px color-mix(in srgb, var(--green-dark) 16%, transparent);
     scale: 1.025;
   }
+}
+
+/* Video story stage */
+.hero-story {
+  align-self: start;
+  isolation: isolate;
+  margin-top: clamp(4.5rem, 5vw, 5rem);
+  min-width: 0;
+  position: relative;
+}
+
+.hero-story__ornaments {
+  inset: -20% -3% -19% -11%;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.hero-story__ornaments img {
+  filter: saturate(0.76);
+  object-fit: fill;
+  opacity: 0.88;
+}
+
+.hero-story__stage {
+  aspect-ratio: 16 / 9;
+  background: var(--paper);
+  border-radius: 16px;
+  box-shadow: 0 8px 8px color-mix(in srgb, var(--green-dark) 17%, transparent);
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-story__stage::after {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--green-dark) 16%, transparent) 0%,
+    transparent 24%,
+    transparent 68%,
+    color-mix(in srgb, var(--green-dark) 32%, transparent) 100%
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.hero-story video {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }

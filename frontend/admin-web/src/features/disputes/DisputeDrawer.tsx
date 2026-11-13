@@ -1,19 +1,21 @@
 import { Gavel, XCircle } from 'lucide-react';
 import { optionLabel, useAdminMetadata } from '../../adminMetadata';
 import { DetailList, Drawer, ErrorBanner, LoadingTable, StatusChip, formatDate, formatMoney, shortId } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { Dispute } from '../../types';
 import { useDisputeReview } from './useDisputeReview';
 
-export function DisputeDrawer({ dispute: selected, onClose, onChanged }: { dispute: Dispute; onClose: () => void; onChanged: () => void }) {
+export function DisputeDrawer({ dispute: selected, onClose, onChanged }: { dispute: Dispute; onClose: () => void; onChanged: (message: string) => void }) {
   const { disputeDecisions } = useAdminMetadata();
+  const confirm = useConfirmation();
   const { dispute, booking, decision, chooseDecision, refundAmount, setRefundAmount, penaltyAmount, setPenaltyAmount,
     busy, error, loading, loadError, actionable, allocation, validation, reloadDetails,
     resolve: submitResolution, cancel: submitCancellation } = useDisputeReview(selected, onChanged);
   async function resolve() {
     if (!allocation) return;
-    await submitResolution(() => window.confirm(`Xác nhận phán quyết ${optionLabel(disputeDecisions, decision)}?\nHoàn khách: ${formatMoney(allocation.refund)}\nPhí nền tảng: ${formatMoney(allocation.fee)}\nChế tài: ${formatMoney(allocation.penalty)}\nCaregiver nhận: ${formatMoney(allocation.earning)}`));
+    await submitResolution(() => confirm({ title: `Xác nhận phán quyết ${optionLabel(disputeDecisions, decision)}`, message: `Hoàn khách: ${formatMoney(allocation.refund)}\nPhí nền tảng: ${formatMoney(allocation.fee)}\nChế tài: ${formatMoney(allocation.penalty)}\nCaregiver nhận: ${formatMoney(allocation.earning)}`, confirmLabel: 'Ghi nhận phán quyết', tone: 'primary' }));
   }
-  async function cancel() { await submitCancellation(() => window.confirm('Hủy hồ sơ khiếu nại này? Thao tác hiện tại chỉ đóng hồ sơ, không tự hoàn tiền hoặc khôi phục trạng thái booking.')); }
+  async function cancel() { await submitCancellation(() => confirm({ title: 'Hủy hồ sơ khiếu nại?', message: 'Thao tác này chỉ đóng hồ sơ, không tự hoàn tiền hoặc khôi phục trạng thái booking.', confirmLabel: 'Hủy khiếu nại' })); }
   return <Drawer title={dispute.reason || 'Khiếu nại booking'} subtitle={shortId(dispute.id)} busy={!!busy} onClose={onClose}
     footer={actionable && <><button className="danger" disabled={!!busy} onClick={() => void cancel()}><XCircle size={17} /> {busy === 'cancel' ? 'Đang hủy…' : 'Hủy khiếu nại'}</button>
       <button className="primary" disabled={!!busy || !allocation || booking?.status !== 'disputed'} onClick={() => void resolve()}><Gavel size={17} /> {busy === 'resolve' ? 'Đang ghi nhận…' : 'Ghi nhận phán quyết'}</button></>}>

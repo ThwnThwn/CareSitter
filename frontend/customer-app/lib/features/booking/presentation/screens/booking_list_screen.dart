@@ -3,6 +3,7 @@ import '../widgets/booking_list.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_top_padding_unread_count_content.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_list_sliver_tab_bar_delegate.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import 'package:caresitter_customer/features/booking/domain/booking_status_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
@@ -21,12 +22,17 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final tabTextScale =
+        MediaQuery.textScalerOf(context).scale(AppFontSizes.s14) /
+            AppFontSizes.s14;
+    final useScrollableTabs = screenWidth < 360 || tabTextScale > 1.2;
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -39,6 +45,12 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
             delegate: BookingListSliverTabBarDelegate(
               TabBar(
                 controller: _tabController,
+                isScrollable: useScrollableTabs,
+                tabAlignment:
+                    useScrollableTabs ? TabAlignment.start : TabAlignment.fill,
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: useScrollableTabs ? 16 : 4,
+                ),
                 indicatorColor: AppColors.primary,
                 indicatorWeight: 2.5,
                 labelColor: AppColors.primary,
@@ -50,6 +62,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                 tabs: const [
                   Tab(text: 'Sắp tới'),
                   Tab(text: 'Hoàn tất'),
+                  Tab(text: 'Chưa ghép'),
                   Tab(text: 'Đã hủy'),
                 ],
               ),
@@ -59,26 +72,10 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
         body: TabBarView(
           controller: _tabController,
           children: const [
-            BookingList(statuses: [
-              'draft',
-              'pending',
-              'pending_payment',
-              'payment_reconciliation_pending',
-              'needs_manual_review',
-              'confirmed',
-              'caregiver_accepted',
-              'caregiver_en_route',
-              'in_progress',
-              'checkout_pending_review',
-              'crisis',
-            ]),
-            BookingList(statuses: ['completed']),
-            BookingList(statuses: [
-              'cancelled',
-              'matching_failed',
-              'disputed',
-              'refunded'
-            ]),
+            BookingList(category: BookingListCategory.upcoming),
+            BookingList(category: BookingListCategory.completed),
+            BookingList(category: BookingListCategory.unmatched),
+            BookingList(category: BookingListCategory.cancelled),
           ],
         ),
       ),

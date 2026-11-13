@@ -8,6 +8,7 @@ class AppNotification {
   final DateTime createdAt;
   final Map<String, dynamic> data;
   final bool isRead;
+  final String source;
 
   const AppNotification({
     required this.id,
@@ -17,6 +18,7 @@ class AppNotification {
     required this.createdAt,
     required this.data,
     required this.isRead,
+    this.source = 'backend',
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) =>
@@ -34,6 +36,7 @@ class AppNotification {
 
   AppNotification copyWith({bool? isRead}) => AppNotification(
         id: id,
+        source: source,
         type: type,
         title: title,
         body: body,

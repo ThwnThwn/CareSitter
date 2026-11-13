@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256, file_sha256
 from .retrieval_artifacts import sign, verify
 from .retrieval_eval import load_retrieval_chunks
@@ -82,7 +83,8 @@ def build_graph_review_export(*, candidate: dict[str, Any], corpus_freeze: dict[
 
 
 def plan_review_import(*, target: dict[str, Any], corpus_freeze: dict[str, Any],
-                       ledger: dict[str, Any], batch: dict[str, Any], batch_path: Path) -> dict[str, Any]:
+                       ledger: dict[str, Any], batch: dict[str, Any], batch_path: Path, review_policy=DEFAULT) -> dict[str, Any]:
+    check(review_policy, ledger, batch, role=batch.get("reviewer_role"))
     if not isinstance(batch, dict) or batch.get("schema_version") != 1 or batch.get("mode") != BATCH_MODE:
         raise ManualGraphError("invalid review decision batch")
     unsigned_batch_hash = content_sha256({key: value for key, value in batch.items()
@@ -155,7 +157,7 @@ def plan_review_import(*, target: dict[str, Any], corpus_freeze: dict[str, Any],
         problems["unchanged"] = [row.get(id_key) for row in decisions if isinstance(row, dict)]
     normalized = {key: sorted(set(value)) for key, value in problems.items()}
     return sign({
-        "schema_version": 1, "mode": PLAN_MODE, "target_kind": kind,
+        **metadata(review_policy), **metadata(review_policy), "schema_version": 1, "mode": PLAN_MODE, "target_kind": kind,
         "batch_content_sha256": unsigned_batch_hash, "batch_file_sha256": batch_file_hash,
         "batch_path": batch_file.as_posix(), "ledger_content_sha256": ledger["content_sha256"],
         "reviewer_id": reviewer_id, "reviewer_role": role, "outcomes": normalized,
@@ -166,10 +168,11 @@ def plan_review_import(*, target: dict[str, Any], corpus_freeze: dict[str, Any],
 
 def apply_review_import(*, target: dict[str, Any], corpus_freeze: dict[str, Any],
                         ledger: dict[str, Any], batch: dict[str, Any], batch_path: Path,
-                        plan: dict[str, Any], imported_at_utc: str | None = None) -> dict[str, Any]:
+                        plan: dict[str, Any], imported_at_utc: str | None = None, review_policy=DEFAULT) -> dict[str, Any]:
+    check(review_policy, ledger, batch, role=batch.get("reviewer_role"))
     verify(plan, PLAN_MODE)
     current = plan_review_import(target=target, corpus_freeze=corpus_freeze, ledger=ledger,
-                                 batch=batch, batch_path=batch_path)
+                                 batch=batch, batch_path=batch_path, review_policy=review_policy)
     if current != plan:
         raise ManualGraphError("review import changed after dry-run")
     if not plan["can_apply"]:
@@ -202,6 +205,8 @@ def apply_review_import(*, target: dict[str, Any], corpus_freeze: dict[str, Any]
     if not any(item.get("batch_content_sha256") == plan["batch_content_sha256"]
                and item.get("batch_file_sha256") == plan["batch_file_sha256"] for item in receipts):
         receipts.append(receipt)
+    if review_policy == REFERENCE:
+        result.update(metadata(review_policy))
     result["import_receipts"] = receipts
     result = sign(result)
     _target_records(kind, target, corpus_freeze, result)

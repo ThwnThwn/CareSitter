@@ -6,6 +6,55 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class MealRecommendationEngineTests
 {
+    [Fact]
+    public async Task Condition_reason_records_actual_daily_total_and_the_applied_rule_sources()
+    {
+        var recipes = new[] { Recipe("breakfast", 100), Recipe("lunch", 200), Recipe("dinner", 150) }
+            .Select(recipe => recipe with { Nutrients = new() { ["sodium_mg"] = 10 } }).ToArray();
+        var fact = new HealthFact("condition", "HYPERTENSION", "Tăng huyết áp", "present", "current", "chronicConditions/0", "fixture", "beneficiary");
+        var rule = new DietaryRule(Guid.NewGuid(), fact.Code, [], [], new() { ["sodium_mg"] = 40 }, ["source-fixture"]);
+        var engine = new MealRecommendationEngine(new UnavailableMealKnowledgeRetriever(), new UnavailableMealCandidateRanker());
+        var result = await engine.RecommendAsync(new(7, recipes, [fact], [rule], "regular", "maintain"), CancellationToken.None);
+        var reason = Assert.Single(result.Trace.VerifiedReasons, item => item.Code == "condition_rule");
+        Assert.Equal(Guid.Empty, reason.RecipeVersionId);
+        Assert.Equal(rule.VersionId, reason.RuleVersionId);
+        Assert.Equal(rule.Sources, reason.SourceIds);
+        Assert.Equal(fact.SourceKey, reason.SourceField);
+        Assert.Contains("= 30", reason.Detail);
+        Assert.Contains("= 40", reason.Detail);
+        var noRule = await engine.RecommendAsync(new(7, recipes, [fact], [], "regular", "maintain"), CancellationToken.None);
+        Assert.DoesNotContain(noRule.Trace.VerifiedReasons, item => item.Code == "condition_rule");
+    }
+
+    [Fact]
+    public async Task Vegetarian_reason_is_recorded_only_for_a_matching_vegetarian_menu()
+    {
+        var recipes = new[] { Recipe("breakfast", 100), Recipe("lunch", 200), Recipe("dinner", 150) }
+            .Select(recipe => recipe with { DietaryPatterns = ["vegetarian"] }).ToArray();
+        var engine = new MealRecommendationEngine(new UnavailableMealKnowledgeRetriever(), new UnavailableMealCandidateRanker());
+        var vegetarian = await engine.RecommendAsync(new(7, recipes, [], [], "vegetarian", "maintain"), CancellationToken.None);
+        var regular = await engine.RecommendAsync(new(7, recipes, [], [], "regular", "maintain"), CancellationToken.None);
+        Assert.Equal(3, vegetarian.Trace.VerifiedReasons.Count(reason => reason.Code == "dietary_pattern"));
+        Assert.DoesNotContain(regular.Trace.VerifiedReasons, reason => reason.Code == "dietary_pattern");
+    }
+
+    [Fact]
+    public async Task Verified_allergy_reasons_only_describe_a_filter_that_was_applied()
+    {
+        var recipes = new[] { Recipe("breakfast", 100), Recipe("lunch", 200), Recipe("dinner", 150) };
+        var facts = new[] { new HealthFact("food_allergy", "SHRIMP", "Tôm", "present", "current", "allergies/0", "Tôm", "beneficiary") };
+        var engine = new MealRecommendationEngine(new UnavailableMealKnowledgeRetriever(), new UnavailableMealCandidateRanker());
+        var result = await engine.RecommendAsync(new(7, recipes, facts, [], "regular", "maintain"), CancellationToken.None);
+        var allergyReasons = result.Trace.VerifiedReasons.Where(reason => reason.Code == "declared_allergy_filter").ToArray();
+        Assert.Equal(3, allergyReasons.Length);
+        Assert.All(allergyReasons, reason => {
+            Assert.Equal("declared_allergy_filter", reason.Code);
+            Assert.Equal("Tôm", reason.Detail);
+            Assert.Contains(recipes, recipe => recipe.VersionId == reason.RecipeVersionId);
+            Assert.Equal("allergies/0", reason.SourceField);
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -40,6 +89,38 @@ public sealed class MealRecommendationEngineTests
         var facts = new[] { new HealthFact("food_allergy", "SHRIMP", "Tôm", "present", "current", "allergies/0", "Tôm", "beneficiary") };
         var sets = MealConstraintPolicy.CandidateSets([.. old, unsafeMeal], facts, [], recentMeals: old);
         Assert.Equal(old.Select(meal => meal.VersionId), Assert.Single(sets).Select(meal => meal.VersionId));
+    }
+
+    [Fact]
+    public void Soft_preferences_rank_dry_and_liked_foods_before_disliked_soup()
+    {
+        var soup = Recipe("breakfast", 100) with { Name = "Cháo tôm bí đỏ" };
+        var dry = Recipe("breakfast", 100) with { Name = "Cơm cá hấp" };
+        var preferences = new MealPreferences("prefer_dry", ["cá"], ["tôm"]);
+
+        var sets = MealConstraintPolicy.CandidateSets(
+            [soup, dry, Recipe("lunch", 200), Recipe("dinner", 150)],
+            [], [], maximum: 1, preferences: preferences);
+
+        Assert.Equal(dry.VersionId, Assert.Single(sets)[0].VersionId);
+    }
+
+    [Fact]
+    public void A_new_day_uses_a_different_complete_menu_when_safe_choices_exist()
+    {
+        var breakfasts = Enumerable.Range(0, 2).Select(index => Recipe("breakfast", 100) with { Name = $"Breakfast {index}" }).ToArray();
+        var lunches = Enumerable.Range(0, 2).Select(index => Recipe("lunch", 200) with { Name = $"Lunch {index}" }).ToArray();
+        var dinners = Enumerable.Range(0, 2).Select(index => Recipe("dinner", 150) with { Name = $"Dinner {index}" }).ToArray();
+        var recipes = breakfasts.Concat(lunches).Concat(dinners).ToArray();
+        var previous = new List<Recipe[]>();
+        for (var day = 0; day < 7; day++)
+        {
+            var selected = Assert.Single(MealConstraintPolicy.CandidateSets(recipes, [], [],
+                maximum: 1, previousMenus: previous));
+            Assert.DoesNotContain(previous, menu => menu.Select(meal => meal.VersionId)
+                .SequenceEqual(selected.Select(meal => meal.VersionId)));
+            previous.Add(selected);
+        }
     }
 
     [Fact]
@@ -187,6 +268,7 @@ public sealed class MealRecommendationEngineTests
             new(7, recipes, [], [], "regular", "maintain"), CancellationToken.None);
 
         Assert.Equal(useAi, result.Trace.UsedAi);
+        Assert.Equal(useAi ? "graph_grounded_ai_ranked" : "graph_grounded_rule", result.Trace.Strategy);
         Assert.Equal(MealGroundingOptions.OwnerAuthorizedGraphDemoMode, result.Trace.GroundingStrategy);
         Assert.Contains("independent_clinical_review_not_claimed", result.Trace.Warnings);
         Assert.True(MealConstraintPolicy.Matches(result.Meals!, [], []));

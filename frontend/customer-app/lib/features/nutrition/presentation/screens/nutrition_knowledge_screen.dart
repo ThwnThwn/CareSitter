@@ -1,10 +1,12 @@
 import 'package:caresitter_customer/core/error/app_exception.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
+import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../controllers/nutrition_knowledge_controller.dart';
-import '../../data/models/nutrition_knowledge_model.dart';
+import '../widgets/nutrition_knowledge_results.dart';
 
 class NutritionKnowledgeScreen extends ConsumerStatefulWidget {
   const NutritionKnowledgeScreen({super.key});
@@ -14,7 +16,8 @@ class NutritionKnowledgeScreen extends ConsumerStatefulWidget {
       _NutritionKnowledgeScreenState();
 }
 
-class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScreen> {
+class _NutritionKnowledgeScreenState
+    extends ConsumerState<NutritionKnowledgeScreen> {
   final _query = TextEditingController();
 
   @override
@@ -26,16 +29,21 @@ class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScr
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(nutritionKnowledgeControllerProvider);
+    final search = result.valueOrNull;
     final canSearch = _query.text.trim().length >= 3 &&
-        _query.text.trim().length <= 160 && !result.isLoading;
+        _query.text.trim().length <= 160 &&
+        !result.isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Tra cứu tài liệu dinh dưỡng')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.nutrition),
+        title: const Text('Tra cứu tài liệu dinh dưỡng'),
+      ),
       body: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            Text('Tìm theo nội dung sách',
+            Text('Hỏi kiến thức dinh dưỡng',
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.sm),
             const Text(
@@ -48,7 +56,9 @@ class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScr
               maxLength: 160,
               textInputAction: TextInputAction.search,
               onChanged: (_) => setState(() {}),
-              onSubmitted: (_) { if (canSearch) _search(); },
+              onSubmitted: (_) {
+                if (canSearch) _search();
+              },
               decoration: const InputDecoration(
                 labelText: 'Bạn muốn tìm hiểu điều gì?',
                 hintText: 'Ví dụ: chất xơ trong khẩu phần',
@@ -63,7 +73,8 @@ class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScr
             ),
             const SizedBox(height: AppSpacing.lg),
             if (result.isLoading)
-              const LinearProgressIndicator(semanticsLabel: 'Đang tra cứu tài liệu')
+              const LinearProgressIndicator(
+                  semanticsLabel: 'Đang tra cứu tài liệu')
             else if (result.hasError)
               _SearchMessage(
                 icon: Icons.cloud_off_outlined,
@@ -72,25 +83,18 @@ class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScr
                     : 'Chưa tra cứu được tài liệu. Vui lòng thử lại.',
                 onRetry: _search,
               )
-            else if (result.valueOrNull == null)
+            else if (search == null)
               const _SearchMessage(
                 icon: Icons.auto_stories_outlined,
-                text: 'Nhập chủ đề bạn quan tâm để xem đoạn liên quan và trang sách.',
+                text: 'Nhập chủ đề bạn quan tâm để xem mục và trang nguồn.',
               )
-            else if (result.valueOrNull!.results.isEmpty)
+            else if (search.results.isEmpty && !search.localDemo)
               const _SearchMessage(
                 icon: Icons.search_off_rounded,
-                text: 'Chưa tìm thấy đoạn phù hợp. Hãy thử từ khóa khác.',
+                text: 'Chưa tìm thấy mục phù hợp. Hãy thử từ khóa khác.',
               )
-            else ...[
-              Text('Kết quả cho “${result.valueOrNull!.query}”',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              for (final hit in result.valueOrNull!.results) ...[
-                _KnowledgeResult(hit: hit),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-            ],
+            else
+              NutritionKnowledgeResults(search: search),
           ],
         ),
       ),
@@ -101,37 +105,6 @@ class _NutritionKnowledgeScreenState extends ConsumerState<NutritionKnowledgeScr
     FocusScope.of(context).unfocus();
     ref.read(nutritionKnowledgeControllerProvider.notifier).search(_query.text);
   }
-}
-
-class _KnowledgeResult extends StatelessWidget {
-  const _KnowledgeResult({required this.hit});
-
-  final NutritionKnowledgeHitModel hit;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(hit.heading,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w700,
-                      )),
-              const SizedBox(height: AppSpacing.sm),
-              SelectableText(hit.excerpt),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '${hit.sourceTitle} · Trang PDF ${hit.pdfPage}'
-                '${hit.printedPage == null ? '' : ' · Trang in ${hit.printedPage}'}',
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      );
 }
 
 class _SearchMessage extends StatelessWidget {

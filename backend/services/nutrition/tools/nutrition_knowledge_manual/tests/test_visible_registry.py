@@ -184,6 +184,21 @@ class RepairInventoryTests(unittest.TestCase):
         self.assertNotIn("verification", result)  # old test counts are not carried to new code
         self.assertEqual(result, self._build())
 
+    def test_builds_inventory_with_explicit_file_kinds(self):
+        alternate_freeze = "evaluation/x.freeze.v1.json"
+        alternate_index = "indexes/x.embeddings.v1.json"
+        (self.root / alternate_freeze).parent.mkdir(parents=True, exist_ok=True)
+        (self.root / self.FREEZE_PATH).replace(self.root / alternate_freeze)
+        (self.root / self.INDEX_PATH).replace(self.root / alternate_index)
+        self.base = sign({"schema_version": 1, "mode": INVENTORY_MODE,
+                          "files": [{"path": alternate_freeze, "sha256": file_sha256(self.root / alternate_freeze),
+                                     "kind": "corpus_freeze"},
+                                    {"path": alternate_index, "sha256": file_sha256(self.root / alternate_index),
+                                     "kind": "embedding_index"}],
+                          "code": {}, "pending_graph_records": 4186, "release_ready": False})
+        result = self._build()
+        self.assertTrue(result["checks"]["index_matches_corpus_freeze"])
+
     def test_next_inventory_revision_does_not_duplicate_same_registry_path(self):
         first = self._build()
         second = build_repair_inventory(self.root, first, self.registry_path)

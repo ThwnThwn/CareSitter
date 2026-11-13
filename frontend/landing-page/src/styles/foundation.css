@@ -396,6 +396,12 @@ html.lenis {
   border-radius: 14px;
   margin-top: 1.3rem;
   padding: 1.1rem;
+  scroll-margin-block: 1rem;
+}
+
+.ai-assistant__result--clarification {
+  background: var(--white);
+  border-color: var(--line);
 }
 
 .ai-assistant__result-label {
@@ -429,6 +435,11 @@ html.lenis {
 
 .ai-assistant__result-meta span:first-child {
   font-weight: 700;
+}
+
+.ai-assistant__result--explanation .ai-assistant__result-meta span:first-child,
+.ai-assistant__result--clarification .ai-assistant__result-meta span:first-child {
+  font-weight: 400;
 }
 
 .spin {

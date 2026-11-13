@@ -21,6 +21,25 @@ void main() {
     expect(status, 'caregiver_accepted');
     expect(BookingStatusRules.isLiveStatus(status), isFalse);
   });
+  test('confirmed without caregiver and matching failure share unmatched tab',
+      () {
+    expect(
+        BookingStatusRules.belongsToList(
+            BookingListCategory.unmatched, 'confirmed', false),
+        isTrue);
+    expect(
+        BookingStatusRules.belongsToList(
+            BookingListCategory.upcoming, 'confirmed', false),
+        isFalse);
+    expect(
+        BookingStatusRules.belongsToList(
+            BookingListCategory.upcoming, 'confirmed', true),
+        isTrue);
+    expect(
+        BookingStatusRules.belongsToList(
+            BookingListCategory.unmatched, 'matching_failed', false),
+        isTrue);
+  });
   test('cancellation metadata wins over an old live status', () {
     expect(
         BookingStatusRules.presentationStatusAt(

@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsDayLabel extends StatelessWidget {
@@ -16,7 +15,7 @@ class HomeEarningsDayLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         labels[idx],
-        style: GoogleFonts.beVietnamPro(
+        style: TextStyle(fontFamily: 'Inter',
           fontSize: AppFontSizes.s11,
           fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
           color: isToday ? AppColors.primary : AppColors.textSecondary,

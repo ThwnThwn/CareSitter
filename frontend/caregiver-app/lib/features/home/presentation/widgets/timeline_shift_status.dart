@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class TimelineShiftStatus extends StatelessWidget {
@@ -29,7 +28,7 @@ class TimelineShiftStatus extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Text(
                 time,
-                style: GoogleFonts.beVietnamPro(
+                style: TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s11,
                   fontWeight: FontWeight.w700,
                   color: isActive ? AppColors.primary : AppColors.textSecondary,
@@ -46,7 +45,7 @@ class TimelineShiftStatus extends StatelessWidget {
             ),
             child: Text(
               statusLabel,
-              style: GoogleFonts.beVietnamPro(
+              style: TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s11,
                 fontWeight: FontWeight.w600,
                 color: statusColor,

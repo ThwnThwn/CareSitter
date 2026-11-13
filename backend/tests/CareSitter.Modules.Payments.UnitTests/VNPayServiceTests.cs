@@ -42,7 +42,7 @@ public sealed class VNPayServiceTests
     }
 
     [Fact]
-    public void BuildPaymentUrl_UsesBookingCustomerNameForOrderInfo()
+    public void BuildPaymentUrl_UsesPlainOrderInfo()
     {
         var intent = CreatePendingIntent();
         var url = new VNPayService(new HttpClient()).BuildPaymentUrl(
@@ -50,7 +50,7 @@ public sealed class VNPayServiceTests
 
         var query = ParseQuery(new Uri(url).Query);
 
-        Assert.Equal("Thanh toán đơn hàng của khách hàng Nguyen Van Hung", query["vnp_OrderInfo"]);
+        Assert.Equal("Thanh toán đơn hàng", query["vnp_OrderInfo"]);
         Assert.DoesNotContain(intent.ProviderOrderRef!, query["vnp_OrderInfo"]);
     }
 

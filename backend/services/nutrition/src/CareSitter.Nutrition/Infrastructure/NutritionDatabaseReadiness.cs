@@ -30,6 +30,10 @@ internal static class NutritionDatabaseReadiness
               ('meal_plans','created_at','timestamptz'),('meal_plans','updated_at','timestamptz'),
               ('preferences','beneficiary_id','uuid'),('preferences','customer_id','uuid'),('preferences','revision','int8'),
               ('preferences','payload','jsonb'),('preferences','updated_at','timestamptz'),
+              ('beneficiary_deletions','customer_id','uuid'),('beneficiary_deletions','beneficiary_id','uuid'),
+              ('beneficiary_deletions','event_id','uuid'),('beneficiary_deletions','deleted_at','timestamptz'),
+              ('beneficiary_deletion_inbox','event_id','uuid'),('beneficiary_deletion_inbox','customer_id','uuid'),
+              ('beneficiary_deletion_inbox','beneficiary_id','uuid'),('beneficiary_deletion_inbox','processed_at','timestamptz'),
               ('concepts','code','text'),('concepts','kind','text'),('concepts','aliases','jsonb'),('concepts','version','int4'),
               ('recipe_versions','id','uuid'),('recipe_versions','recipe_id','uuid'),('recipe_versions','version','int4'),
               ('recipe_versions','status','text'),('recipe_versions','payload','jsonb'),('recipe_versions','reviewed_by','text'),
@@ -82,6 +86,9 @@ internal static class NutritionDatabaseReadiness
                   AND NOT has_table_privilege(r.oid,'SELECT'))
               AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('assessments','assessment_jobs','recommendations','meal_plans','preferences')
                 AND (NOT has_table_privilege(r.oid,'INSERT') OR NOT has_table_privilege(r.oid,'UPDATE') OR NOT has_table_privilege(r.oid,'DELETE')))
+              AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('beneficiary_deletions','beneficiary_deletion_inbox')
+                AND (NOT has_table_privilege(r.oid,'SELECT') OR NOT has_table_privilege(r.oid,'INSERT') OR
+                     has_table_privilege(r.oid,'UPDATE') OR has_table_privilege(r.oid,'DELETE')))
               AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('recipe_versions','rule_versions','concepts','recipe_source_citations','local_demo_catalog')
                 AND (has_table_privilege(r.oid,'INSERT') OR has_table_privilege(r.oid,'UPDATE') OR has_table_privilege(r.oid,'DELETE')))
               AND NOT EXISTS (SELECT 1 FROM relations r WHERE r.relname IN ('catalog_packages','catalog_package_entries','catalog_audit','catalog_release_evidence')
@@ -91,6 +98,9 @@ internal static class NutritionDatabaseReadiness
               AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                 WHERE n.nspname='nutrition' AND p.proname IN ('import_catalog_bundle','review_catalog_bundle','publish_catalog_bundle','retire_catalog_bundle','record_catalog_release_evidence','import_local_demo_catalog')
                   AND has_function_privilege(p.oid,'EXECUTE'))
+              AND EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                WHERE n.nspname='nutrition' AND p.proname='published_catalog_integrity'
+                  AND p.pronargs=0 AND p.prosecdef AND has_function_privilege(p.oid,'EXECUTE'))
               AND EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
                 JOIN pg_namespace n ON n.oid=c.relnamespace
                 WHERE n.nspname='nutrition' AND c.relname='catalog_release_evidence'
@@ -104,8 +114,8 @@ internal static class NutritionDatabaseReadiness
         if (!requirePublishedCatalog) return true;
 
         command.CommandText = """
-            SELECT
-              EXISTS (SELECT 1 FROM nutrition.recipe_versions
+            SELECT nutrition.published_catalog_integrity()
+              AND EXISTS (SELECT 1 FROM nutrition.recipe_versions
                 WHERE status='published' AND payload->>'mealType'='breakfast'
                   AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL AND published_at IS NOT NULL)
               AND EXISTS (SELECT 1 FROM nutrition.recipe_versions

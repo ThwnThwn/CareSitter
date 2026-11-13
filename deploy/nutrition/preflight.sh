@@ -37,4 +37,10 @@ for name in api nutrition; do
     openssl x509 -in "$work_dir/$name.pem" -checkend 604800 -noout >/dev/null || fail 'An internal TLS certificate expires within seven days; renew it before deployment.'
 done
 sh "$script_dir/compose.sh" --profile baseline-legacy --profile nutrition-migrate --profile nutrition-ops --profile nutrition-smoke config --quiet
+sh "$script_dir/compose.sh" run --rm nutrition-catalog-check
+if [ "${NUTRITION_CHECK_AI_EGRESS:-false}" = true ]; then
+    sh "$script_dir/compose.sh" exec -T nutrition sh -s < "$script_dir/check-ai-egress.sh"
+else
+    echo 'AI runtime egress not checked. After startup, set NUTRITION_CHECK_AI_EGRESS=true to probe from Nutrition.'
+fi
 echo 'Nutrition deployment preflight passed. Runtime checks still require the target host.'

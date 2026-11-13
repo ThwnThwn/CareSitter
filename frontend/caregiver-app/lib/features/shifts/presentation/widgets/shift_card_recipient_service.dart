@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/core/widgets/beneficiary_avatar.dart';
@@ -27,7 +26,7 @@ class ShiftCardRecipientService extends StatelessWidget {
               children: [
                 Text(
                   shift.beneficiaryName,
-                  style: GoogleFonts.beVietnamPro(
+                  style: const TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -36,7 +35,7 @@ class ShiftCardRecipientService extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   shift.serviceName,
-                  style: GoogleFonts.beVietnamPro(
+                  style: const TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s14,
                     color: AppColors.textSecondary,
                   ),

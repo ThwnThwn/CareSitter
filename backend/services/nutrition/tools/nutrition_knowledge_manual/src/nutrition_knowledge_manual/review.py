@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256
 
 
@@ -18,8 +19,9 @@ def empty_decision_ledger(graph: dict[str, Any]) -> dict[str, Any]:
 
 def append_decision(
     *, graph: dict[str, Any], ledger: dict[str, Any], candidate_id: str, decision: str,
-    reviewer_id: str, reviewer_role: str, comment: str, policy: dict[str, Any]
+    reviewer_id: str, reviewer_role: str, comment: str, policy: dict[str, Any], review_policy=DEFAULT
 ) -> dict[str, Any]:
+    check(review_policy, ledger)
     _bind(graph, ledger)
     if decision not in {"approve", "reject"}:
         raise ManualGraphError("decision must be approve or reject")
@@ -30,7 +32,8 @@ def append_decision(
     if candidate is None:
         raise ManualGraphError(f"candidate does not exist: {candidate_id}")
     allowed = set((policy.get("roles") or {}).get(reviewer_role) or [])
-    if candidate["kind"] not in allowed:
+    check(review_policy, role=reviewer_role)
+    if candidate["kind"] not in allowed and not (review_policy == REFERENCE and reviewer_role == "data_steward"):
         raise ManualGraphError(f"reviewer role {reviewer_role!r} cannot decide candidate kind {candidate['kind']!r}")
     decisions = [item for item in ledger.get("decisions", []) if item.get("candidate_id") != candidate_id]
     decisions.append({
@@ -46,7 +49,8 @@ def append_decision(
     return {**ledger, "decisions": decisions}
 
 
-def materialize_reviewed_graph(graph: dict[str, Any], ledger: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
+def materialize_reviewed_graph(graph: dict[str, Any], ledger: dict[str, Any], policy: dict[str, Any], review_policy=DEFAULT) -> dict[str, Any]:
+    check(review_policy, ledger)
     _bind(graph, ledger)
     candidates = {item["candidate_id"]: item for item in graph["candidates"]}
     decisions = ledger.get("decisions") or []
@@ -63,7 +67,7 @@ def materialize_reviewed_graph(graph: dict[str, Any], ledger: dict[str, Any], po
         if not str(decision.get("reviewer_id") or "").strip() or not str(decision.get("comment") or "").strip():
             raise ManualGraphError(f"review identity or comment is missing: {candidate_id}")
         allowed = set((policy.get("roles") or {}).get(decision.get("reviewer_role")) or [])
-        if candidate["kind"] not in allowed:
+        if candidate["kind"] not in allowed and not (review_policy == REFERENCE and decision.get("reviewer_role") == "data_steward"):
             raise ManualGraphError(f"review role is insufficient for candidate: {candidate_id}")
         by_candidate[candidate_id] = decision
 
@@ -86,6 +90,7 @@ def materialize_reviewed_graph(graph: dict[str, Any], ledger: dict[str, Any], po
         })
     records.sort(key=lambda item: item["candidate_id"])
     result = {
+        **metadata(review_policy),
         "schema_version": 1,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_graph_sha256": graph["content_sha256"],

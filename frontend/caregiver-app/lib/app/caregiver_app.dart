@@ -47,7 +47,8 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
   }
 
   Future<void> _announceNewChat() async {
-    if (!mounted || ref.read(authStateProvider).value?.isAuthenticated != true) {
+    if (!mounted ||
+        ref.read(authStateProvider).value?.isAuthenticated != true) {
       return;
     }
     final newMessages =
@@ -77,6 +78,8 @@ class _CaregiverAppState extends ConsumerState<CaregiverApp>
     unawaited(ref.read(careSignalRProvider).connect());
     unawaited(ref.read(shiftsProvider.notifier).refresh());
     unawaited(ref.read(notificationsProvider.notifier).refresh());
+    unawaited(
+        ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
   }
 
   @override

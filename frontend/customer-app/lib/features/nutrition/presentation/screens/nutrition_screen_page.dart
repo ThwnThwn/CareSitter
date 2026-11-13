@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/nutrition_controller.dart';
 import '../widgets/nutrition_empty_state.dart';
+import '../widgets/nutrition_disclaimer_banner.dart';
 import '../widgets/nutrition_menu_view.dart';
 import '../widgets/nutrition_plan_loading.dart';
 import '../widgets/nutrition_profile_editor.dart';
@@ -16,11 +17,16 @@ class NutritionScreenPage extends StatelessWidget {
     required this.state,
     required this.actions,
     required this.controller,
+    this.userId,
+    this.disclaimer,
+    this.disclaimerVersion,
   });
 
   final NutritionScreenPageState state;
   final NutritionScreenPageActions actions;
   final NutritionFlowController controller;
+  final String? userId;
+  final String? disclaimer, disclaimerVersion;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +39,7 @@ class NutritionScreenPage extends StatelessWidget {
             controller: controller,
             plannedDate: state.selectedDate,
             onReplace: actions.onReplace,
+            onConfirm: actions.onConfirm,
           );
     final menuResult = NutritionResult(
       flow: state.flow,
@@ -40,10 +47,19 @@ class NutritionScreenPage extends StatelessWidget {
       plannedDate: state.selectedDate,
       menuOnly: state.flow.resource?.status == 'saved',
       onReplace: actions.onReplace,
+      onConfirm: actions.onConfirm,
     );
     return Scaffold(
       appBar: _buildAppBar(),
-      body: _buildBody(profileResult, menuResult),
+      body: Column(children: [
+        NutritionDisclaimerBanner(
+          userId: userId,
+          trace: state.flow.resource?.result.recommendationTrace,
+          defaultDisclaimer: disclaimer,
+          defaultVersion: disclaimerVersion,
+        ),
+        Expanded(child: _buildBody(profileResult, menuResult)),
+      ]),
     );
   }
 
@@ -93,6 +109,7 @@ class NutritionScreenPage extends StatelessWidget {
       dateError: state.dateError,
       onRetryDate: actions.onRetryDate,
       onCreatePlan: actions.onCreatePlan,
+      onCreateWeek: actions.onCreateWeek,
       onDateSelected: actions.onDateSelected,
       result: menuResult,
     );

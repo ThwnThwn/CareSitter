@@ -8,7 +8,7 @@ services:
       NutritionGateway__Enabled: "true"
       NutritionGateway__GrpcUrl: https://nutrition:8443/
       NutritionGateway__TrustedRootCertificatePath: /run/secrets/internal_ca
-      NutritionGateway__TimeoutSeconds: "15"
+      NutritionGateway__TimeoutSeconds: "30"
     entrypoint: [sh, /nutrition-entrypoint.sh, api]
     volumes:
       - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro
@@ -56,6 +56,40 @@ services:
         condition: service_healthy
     networks: [nutrition-data]
 
+  nutrition-catalog-check:
+    profiles: [nutrition-catalog]
+    build:
+      context: ./nutrition
+      dockerfile: Dockerfile.ops
+    restart: "no"
+    environment:
+      PGHOST: nutrition-db
+      PGDATABASE: nutrition
+      PGUSER: nutrition_app
+      PGPASSWORD_FILE: /run/secrets/nutrition_db_app
+    secrets: [nutrition_db_app]
+    networks: [nutrition-data]
+    entrypoint: [sh, /ops/check-published-catalog.sh]
+    depends_on:
+      nutrition-db:
+        condition: service_healthy
+
+  nutrition-catalog:
+    build:
+      context: ../backend/services/nutrition
+      dockerfile: tools/CareSitter.Nutrition.CatalogTool/Dockerfile
+    profiles: [nutrition-catalog]
+    restart: "no"
+    entrypoint: [sh, /catalog-tool-entrypoint.sh]
+    volumes:
+      - ./nutrition/catalog-tool-entrypoint.sh:/catalog-tool-entrypoint.sh:ro
+      - ${NUTRITION_CATALOG_DIRECTORY:-./nutrition-catalog}:/catalog:ro
+    secrets: [nutrition_catalog_connection]
+    networks: [nutrition-data]
+    depends_on:
+      nutrition-db:
+        condition: service_healthy
+
   nutrition:
     build:
       context: ../backend/services/nutrition
@@ -63,6 +97,7 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:?Set APP_ENVIRONMENT}
+      NutritionCatalog__LocalDemoEnabled: "false"
       Kestrel__Endpoints__Http__Url: http://127.0.0.1:8080
       Kestrel__Endpoints__Http__Protocols: Http1
       Kestrel__Endpoints__Grpc__Url: https://0.0.0.0:8443
@@ -93,7 +128,7 @@ services:
     volumes:
       - ./nutrition/entrypoint.sh:/nutrition-entrypoint.sh:ro
     secrets: [nutrition_db_app, nutrition_gateway_key, nutrition_people_key, internal_ca, nutrition_tls, tls_password]
-    networks: [nutrition-data]
+    networks: [nutrition-data, nutrition-egress]
     depends_on:
       nutrition-db:
         condition: service_healthy
@@ -152,6 +187,8 @@ services:
     entrypoint: [sh, /ops/smoke.sh]
 
 secrets:
+  nutrition_catalog_connection:
+    file: ./secrets/nutrition/catalog-connection
   nutrition_db_admin:
     file: ./secrets/nutrition/db-admin-password
   nutrition_db_app:
@@ -178,6 +215,8 @@ secrets:
 networks:
   nutrition-data:
     internal: true
+  nutrition-egress:
+    internal: false
 
 volumes:
   nutrition_pgdata:

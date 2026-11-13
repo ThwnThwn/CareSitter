@@ -41,8 +41,12 @@ public sealed class NutritionGatewayController(INutritionGateway gateway) : Cont
     public async Task<IActionResult> Plan(Guid beneficiaryId, Guid id, CancellationToken ct) =>
         Present(await gateway.ReadAsync(Read(ResourceKind.Plan, beneficiaryId, id), ct));
     [HttpGet("meal-plans")]
-    public async Task<IActionResult> Plans(Guid beneficiaryId, CancellationToken ct) =>
-        Present(await gateway.PlansAsync(new BeneficiaryRequest { BeneficiaryId = beneficiaryId.ToString() }, ct));
+    public async Task<IActionResult> Plans(Guid beneficiaryId, CancellationToken ct, [FromQuery] DateOnly? weekStart = null)
+    {
+        var request = new BeneficiaryRequest { BeneficiaryId = beneficiaryId.ToString() };
+        if (weekStart is { } date) request.WeekStart = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return Present(await gateway.PlansAsync(request, ct));
+    }
 
     private static CommandRequest Command(CommandOperation operation, Guid beneficiary, NutritionWriteRequest request, Guid? id = null)
     {

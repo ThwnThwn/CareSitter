@@ -35,8 +35,10 @@ public sealed class OwnerAuthorizedCorpusMealKnowledgeRetrieverTests : IDisposab
         Assert.Contains("independent_clinical_review_not_claimed", result.Warnings);
     }
 
-    [Fact]
-    public async Task Demo_mode_is_rejected_outside_development()
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    public async Task Demo_mode_is_rejected_outside_development(string environment)
     {
         Directory.CreateDirectory(_directory);
         var corpus = Write("corpus.jsonl", """
@@ -44,7 +46,7 @@ public sealed class OwnerAuthorizedCorpusMealKnowledgeRetrieverTests : IDisposab
             """ + Environment.NewLine);
         var authorization = Authorization(corpus, independent: false);
         var retriever = new OwnerAuthorizedCorpusMealKnowledgeRetriever(
-            Options.Create(OptionsFor(authorization, corpus)), new TestEnvironment("Production"));
+            Options.Create(OptionsFor(authorization, corpus)), new TestEnvironment(environment));
 
         var result = await retriever.RetrieveAsync(new MealKnowledgeRequest(
             ["Tăng huyết áp"], [], [], "regular", "maintain"), CancellationToken.None);

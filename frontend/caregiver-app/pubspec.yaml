@@ -48,7 +48,6 @@ dependencies:
   image_cropper: ^8.0.2
 
   # UI / Design
-  google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
@@ -78,6 +77,7 @@ dependencies:
   app_links: ^7.2.1
 
 dev_dependencies:
+  google_fonts: ^6.2.1 # Existing widget test helpers only; runtime uses bundled Inter.
   analyzer: 7.6.0
   flutter_test:
     sdk: flutter
@@ -94,6 +94,7 @@ flutter:
     - assets/animations/
     - assets/icons/
     - assets/images/
+    - assets/images/onboarding-illustration.png
 
   fonts:
     - family: Inter

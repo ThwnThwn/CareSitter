@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 export 'package:caregiver_app/core/theme/app_colors.dart';
 export 'package:caregiver_app/core/theme/app_spacing.dart';
 export 'package:caregiver_app/core/theme/app_radius.dart';
+export 'package:caregiver_app/core/theme/app_input_style.dart';
 export 'package:caregiver_app/core/theme/app_shadows.dart';
 
 import 'package:caregiver_app/core/theme/app_colors.dart';

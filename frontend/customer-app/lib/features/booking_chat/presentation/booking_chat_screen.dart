@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:caresitter_customer/core/router/app_routes.dart';
+import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/booking_chat/data/booking_chat_repository.dart';
@@ -190,13 +192,8 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 filled: true,
-                fillColor: canSend
-                    ? AppColors.primaryContainer.withValues(alpha: 0.5)
-                    : AppColors.surfaceVariant,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
-                ),
+                fillColor: AppInputStyle.fillColor,
+                border: AppInputStyle.enabledBorder,
               ),
             ),
           ),

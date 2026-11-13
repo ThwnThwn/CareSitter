@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,18 +11,30 @@ export 'package:caresitter_customer/core/error/app_exception.dart';
 
 // baseUrl đọc từ --dart-define=BASE_URL=http://localhost:5033/api/v1
 // Nếu không truyền → dùng giá trị mặc định trong api_constants.dart
-const String _baseUrl = kBaseUrl;
+final String _baseUrl = kBaseUrl;
+
+Map<String, String> _tunnelHeaders(String baseUrl) {
+  final host = Uri.tryParse(baseUrl)?.host.toLowerCase() ?? '';
+  if (host.endsWith('.ngrok-free.app') ||
+      host.endsWith('.ngrok-free.dev') ||
+      host.endsWith('.ngrok.app')) {
+    return const {'ngrok-skip-browser-warning': '1'};
+  }
+  return const {};
+}
 
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
 final authRefreshClientProvider = Provider<Dio>((ref) {
   final client = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30)));
+      receiveTimeout: const Duration(seconds: 30),
+      headers: _tunnelHeaders(_baseUrl)));
   ref.onDispose(() => client.close(force: true));
   return client;
 });
-final _authInterceptorProvider = Provider<_AuthInterceptor>(_AuthInterceptor.new);
+final _authInterceptorProvider =
+    Provider<_AuthInterceptor>(_AuthInterceptor.new);
 
 class DioClient {
   late final Dio _dio;
@@ -39,6 +52,7 @@ class DioClient {
         // và 'multipart/form-data' cho FormData.
         'Accept': 'application/json',
         'Accept-Language': 'vi',
+        ..._tunnelHeaders(baseUrl ?? _baseUrl),
       },
     ));
     if (adapter != null) _dio.httpClientAdapter = adapter;
@@ -58,6 +72,12 @@ class DioClient {
           data: data,
           options: Options(headers: {'Idempotency-Key': idempotencyKey})));
 
+  Future<Response<dynamic>> postWithBearer(String path, String token,
+          {dynamic data}) =>
+      _request(() => _ref.read(authRefreshClientProvider).post(path,
+          data: data,
+          options: Options(headers: {'Authorization': 'Bearer $token'})));
+
   Future<Response<T>> put<T>(String path, {dynamic data}) =>
       _request(() => _dio.put<T>(path, data: data));
 
@@ -65,9 +85,15 @@ class DioClient {
       _request(() => _dio.patch<T>(path, data: data));
 
   Future<Response<T>> getCancelable<T>(String path,
-          {Map<String, dynamic>? query, required CancelToken cancelToken}) =>
-      _request(
-          () => _dio.get<T>(path, queryParameters: query, cancelToken: cancelToken));
+          {Map<String, dynamic>? query,
+          required CancelToken cancelToken,
+          Duration? receiveTimeout}) =>
+      _request(() => _dio.get<T>(path,
+          queryParameters: query,
+          cancelToken: cancelToken,
+          options: receiveTimeout == null
+              ? null
+              : Options(receiveTimeout: receiveTimeout)));
   Future<Response<T>> postCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
       _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
@@ -81,10 +107,32 @@ class DioClient {
           {required CancelToken cancelToken}) =>
       _request(() => _dio.delete<T>(path, cancelToken: cancelToken));
 
-  Future<Response<T>> delete<T>(String path) => _request(() => _dio.delete<T>(path));
+  Future<Response<T>> delete<T>(String path) =>
+      _request(() => _dio.delete<T>(path));
 
-  Future<Response<T>> postForm<T>(String path, FormData data) =>
-      _request(() => _dio.post<T>(path, data: data));
+  Future<Response<T>> postForm<T>(
+    String path,
+    FormData data, {
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+    String? idempotencyKey,
+  }) =>
+      _request(() => _dio.post<T>(path,
+          data: data,
+          cancelToken: cancelToken,
+          onSendProgress: onSendProgress,
+          options: Options(
+              headers: idempotencyKey == null
+                  ? null
+                  : {'Idempotency-Key': idempotencyKey},
+              receiveTimeout: const Duration(seconds: 75))));
+
+  Future<Uint8List> getBytes(String path) async {
+    final response = await _request(() => _dio.get<List<int>>(path,
+        options: Options(responseType: ResponseType.bytes)));
+    return Uint8List.fromList(response.data ?? []);
+  }
+
   Future<Response<T>> _request<T>(Future<Response<T>> Function() action) async {
     try {
       return await action();
@@ -143,7 +191,8 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+  Future<void> onError(
+      DioException err, ErrorInterceptorHandler handler) async {
     final path = err.requestOptions.path;
     final isAuthEndpoint =
         path.endsWith('/auth/refresh') || path.endsWith('/auth/logout');
@@ -169,7 +218,8 @@ class _AuthInterceptor extends Interceptor {
         final activeEpoch = _epoch;
         if (_refreshing == null || _refreshEpoch != activeEpoch) {
           _refreshEpoch = activeEpoch;
-          final operation = _refreshAsync(activeEpoch, notifier.sessionGeneration);
+          final operation =
+              _refreshAsync(activeEpoch, notifier.sessionGeneration);
           _refreshing = operation;
           operation.then((_) {
             if (identical(_refreshing, operation)) _refreshing = null;
@@ -179,6 +229,8 @@ class _AuthInterceptor extends Interceptor {
       }
       if (!current() || token == null) return handler.next(err);
       err.requestOptions.headers['Authorization'] = 'Bearer $token';
+      final body = err.requestOptions.data;
+      if (body is FormData) err.requestOptions.data = body.clone();
       final retried =
           await _ref.read(authRefreshClientProvider).fetch(err.requestOptions);
       if (!current()) return handler.next(err);
@@ -210,7 +262,8 @@ class _AuthInterceptor extends Interceptor {
       if (access.isEmpty || nextRefresh.isEmpty) {
         throw StateError('Invalid refresh response');
       }
-      await notifier.updateTokens(accessToken: access, refreshToken: nextRefresh);
+      await notifier.updateTokens(
+          accessToken: access, refreshToken: nextRefresh);
       return epoch == _epoch && generation == notifier.sessionGeneration
           ? access
           : null;

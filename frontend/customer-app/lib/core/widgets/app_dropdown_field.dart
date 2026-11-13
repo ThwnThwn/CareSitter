@@ -121,37 +121,20 @@ class _AppDropdownFieldState<T> extends FormFieldState<T> {
   }
 
   InputDecoration _fieldDecoration(ThemeData theme, bool isEnabled) {
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      borderSide: const BorderSide(color: AppColors.border),
-    );
-    final focusedBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-    );
-    final errorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      borderSide: const BorderSide(color: AppColors.error),
-    );
-    final focusedErrorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-    );
-
     return _field.decoration.applyDefaults(theme.inputDecorationTheme).copyWith(
           enabled: isEnabled,
           filled: true,
-          fillColor: isEnabled ? AppColors.surface : AppColors.surfaceVariant,
+          fillColor: AppInputStyle.fillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.inset,
           ),
-          border: border,
-          enabledBorder: border,
-          disabledBorder: border,
-          focusedBorder: focusedBorder,
-          errorBorder: errorBorder,
-          focusedErrorBorder: focusedErrorBorder,
+          border: AppInputStyle.enabledBorder,
+          enabledBorder: AppInputStyle.enabledBorder,
+          disabledBorder: AppInputStyle.enabledBorder,
+          focusedBorder: AppInputStyle.focusedBorder,
+          errorBorder: AppInputStyle.errorBorder,
+          focusedErrorBorder: AppInputStyle.errorBorder,
         );
   }
 }

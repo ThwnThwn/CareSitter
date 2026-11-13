@@ -1,4 +1,4 @@
-export type PageKey = 'dashboard' | 'bookings' | 'kyc' | 'payments' | 'support' | 'disputes' | 'services' | 'promotions' | 'users';
+export type PageKey = 'dashboard' | 'bookings' | 'kyc' | 'payments' | 'support' | 'disputes' | 'services' | 'promotions' | 'users' | 'crash-reports';
 
 export type AdminPromotion = {
   id: string; code: string; title: string; summary: string; description?: string;
@@ -443,4 +443,14 @@ export type CursorPage<T> = { items: T[]; nextCursor: string | null };
 export type BookingChatMessagePage = {
   items: BookingChatAdminMessage[];
   nextBeforeSequence: number | null;
+};
+
+export type CrashReportItem = {
+  eventId: string; issueId: string; occurredAt: string; errorType: string;
+  appVersion: string; buildVersion: string; platform: string; screen: string; demoRunId: string;
+};
+export type CrashReportPage = {
+  sourceStatus: 'ready' | 'not_configured'; exportMode: 'batch' | 'streaming';
+  queriedAt: string; windowEnd: string; days: number; page: number; pageSize: number;
+  hasMore: boolean; items: CrashReportItem[];
 };

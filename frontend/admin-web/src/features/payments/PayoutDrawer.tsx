@@ -1,10 +1,12 @@
 import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate, formatMoney } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { Payout } from '../../types';
 import { usePayoutReview } from './usePayoutReview';
 
-export function PayoutDrawer({ item, onClose, onChanged }: { item: Payout; onClose: () => void; onChanged: () => void }) {
+export function PayoutDrawer({ item, onClose, onChanged }: { item: Payout; onClose: () => void; onChanged: (message: string) => void }) {
   const { reason, setReason, busy, error, reviewable, decide: submit } = usePayoutReview(item, onChanged);
-  async function decide(approved: boolean) { await submit(approved, () => window.confirm(`Duyệt yêu cầu ${formatMoney(item.amount)} cho ${item.accountHolderName}? Yêu cầu sẽ được đưa vào hàng đợi payOS; hệ thống chỉ ghi nhận đã trả sau khi provider xác nhận thành công.`)); }
+  const confirm = useConfirmation();
+  async function decide(approved: boolean) { await submit(approved, () => confirm({ title: 'Duyệt yêu cầu rút tiền?', message: `${formatMoney(item.amount)} cho ${item.accountHolderName}.\nYêu cầu sẽ được đưa vào hàng đợi payOS; hệ thống chỉ ghi nhận đã trả sau khi provider xác nhận thành công.`, confirmLabel: 'Duyệt yêu cầu', tone: 'primary' })); }
   return <Drawer title={formatMoney(item.amount)} subtitle="Yêu cầu rút tiền" busy={!!busy} onClose={onClose}
     footer={reviewable && <><button className="danger" disabled={!!busy} onClick={() => void decide(false)}>Từ chối yêu cầu</button><button className="primary" disabled={!!busy} onClick={() => void decide(true)}>Duyệt yêu cầu</button></>}>
     <div className="drawer-status"><StatusChip value={item.status} /><span>{formatDate(item.requestedAt)}</span></div>{error && <ErrorBanner message={error} />}

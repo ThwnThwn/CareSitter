@@ -28,15 +28,12 @@ final pushNotificationServiceProvider =
 
 class FirebasePushNotifications {
   static bool _initialized = false;
-  static bool _initializationFailed = false;
 
   static Future<bool> initialize() async {
     if (_initialized) return true;
-    if (_initializationFailed) return false;
 
     try {
       if (kIsWeb) {
-        _initializationFailed = true;
         return false;
       }
       if (Firebase.apps.isEmpty) {
@@ -46,7 +43,6 @@ class FirebasePushNotifications {
       _initialized = true;
       return true;
     } catch (e) {
-      _initializationFailed = true;
       debugPrint('Firebase disabled: $e');
       return false;
     }
@@ -73,41 +69,54 @@ class PushNotificationService {
     final auth = _ref.read(authStateProvider).value;
     if (auth?.isAuthenticated != true) return;
 
-    final ready = await FirebasePushNotifications.initialize();
-    if (!ready) return;
+    try {
+      final ready = await FirebasePushNotifications.initialize();
+      if (!ready) return;
 
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      final messaging = FirebaseMessaging.instance;
+      _tokenRefreshSub ??= messaging.onTokenRefresh.listen((newToken) {
+        unawaited(_registerToken(newToken));
+      });
+      _foregroundMessageSub ??=
+          FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      _openedMessageSub ??=
+          FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
 
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      return;
-    }
-
-    final token = await messaging.getToken();
-    if (token != null) {
-      await _registerToken(token);
-    }
-
-    _tokenRefreshSub ??= messaging.onTokenRefresh.listen((newToken) {
-      unawaited(_registerToken(newToken));
-    });
-
-    _foregroundMessageSub ??=
-        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    _openedMessageSub ??=
-        FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
-
-    if (!_initialMessageHandled) {
-      _initialMessageHandled = true;
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        await _handleOpenedMessage(initialMessage);
+      if (!_initialMessageHandled) {
+        _initialMessageHandled = true;
+        final initialMessage = await messaging.getInitialMessage();
+        if (initialMessage != null) {
+          await _handleOpenedMessage(initialMessage);
+        }
       }
+
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+
+      if (defaultTargetPlatform == TargetPlatform.iOS &&
+          !await _waitForApnsToken(messaging)) {
+        debugPrint('APNs token is not available yet; registration will retry.');
+        return;
+      }
+      final token = await messaging.getToken();
+      if (token != null) {
+        await _registerToken(token);
+      }
+    } catch (e) {
+      debugPrint('FCM synchronization failed: $e');
     }
+  }
+
+  Future<bool> _waitForApnsToken(FirebaseMessaging messaging) async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      if (await messaging.getAPNSToken() != null) return true;
+      await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+    }
+    return false;
   }
 
   Future<void> _registerToken(String token) async {

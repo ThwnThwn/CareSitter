@@ -2,7 +2,7 @@
 	encode zstd gzip
 
 	# Worker endpoints are reachable only on the internal API network.
-	@private path /internal/*
+	@private path_regexp (?i)^/internal(?:/|$)
 	respond @private 404
 
 	@backend path /api/* /hubs/* /health /health/* /hangfire /hangfire/*

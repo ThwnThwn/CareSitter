@@ -1,0 +1,95 @@
+{
+  "format": "caresitter.recipe-source-candidates.v1",
+  "candidateOrigin": {
+    "kind": "public_website_reference",
+    "authority": "untrusted_candidate_only",
+    "reviewedOn": "2026-11-11",
+    "website": "https://monngonmoingay.com/",
+    "displayName": "Món Ngon Mỗi Ngày",
+    "organization": "Ajinomoto Việt Nam",
+    "attribution": "Tham khảo công thức từ Món Ngon Mỗi Ngày — Ajinomoto Việt Nam",
+    "permissionStatus": "pending_owner_request",
+    "permissionNote": "Chủ dự án cho phép chuẩn bị dữ liệu và sẽ tự xin quyền; chưa có bằng chứng cấp phép của bên sở hữu nguồn."
+  },
+  "discoverySections": [
+    { "kind": "home", "url": "https://monngonmoingay.com/" },
+    { "kind": "nutrition_menus", "url": "https://monngonmoingay.com/thuc-don-dinh-duong/" },
+    { "kind": "vegetarian_collection", "url": "https://monngonmoingay.com/cac-mon-chay-ngon/" },
+    { "kind": "cooking_tips", "url": "https://monngonmoingay.com/danh-muc-thong-tin-huu-ich/mach-nho/meo-hay-nau-chuan/" },
+    { "kind": "nutrition_articles", "url": "https://monngonmoingay.com/danh-muc-thong-tin-huu-ich/mach-nho/thuong-thuc-dinh-duong/" },
+    { "kind": "cooking_planner", "url": "https://monngonmoingay.com/ke-hoach-nau-an/" }
+  ],
+  "scope": {
+    "inventoryComplete": false,
+    "clinicalClaimsVerified": false,
+    "note": "Khảo sát các nhóm nội dung và bốn trang món mẫu; chưa thu thập toàn bộ website. Nhãn nhu cầu dinh dưỡng của nguồn không được chuyển thành quy tắc theo bệnh."
+  },
+  "entries": [
+    {
+      "id": "mnmn-lau-thai-chua-cay",
+      "displayName": "Lẩu Thái Chua Cay",
+      "sourceUrl": "https://monngonmoingay.com/lau-thai-chua-cay/",
+      "verificationStatus": "partial_factual_intake",
+      "sourceServings": 4,
+      "sourceTimeMinutes": 10,
+      "ingredients": [
+        { "name": "Tôm", "amount": 200, "unit": "g", "basis": "unverified" },
+        { "name": "Mực", "amount": 150, "unit": "g", "basis": "unverified" },
+        { "name": "Thịt bò fillet", "amount": 50, "unit": "g", "basis": "unverified" },
+        { "name": "Rau muống", "amount": 200, "unit": "g", "basis": "unverified" },
+        { "name": "Cải thìa", "amount": 200, "unit": "g", "basis": "unverified" },
+        { "name": "Bắp chuối", "amount": 250, "unit": "g", "basis": "unverified" },
+        { "name": "Nấm linh chi trắng", "amount": 250, "unit": "g", "basis": "unverified" },
+        { "name": "Bún", "amount": 500, "unit": "g", "basis": "unverified" },
+        { "name": "Nước", "amount": 1500, "unit": "ml", "basis": "as_added" },
+        { "name": "Aji-Quick Xốt hoàn chỉnh Lẩu Thái", "amount": 1, "unit": "packet", "basis": "unverified", "massGrams": null }
+      ],
+      "preparationSummary": "Làm sạch nguyên liệu. Đun nước với xốt, nấu hải sản và rau nấm; thêm bò sau cùng, nấu chín. Chia phần ăn với bún.",
+      "summaryAuthorship": "caresitter_paraphrase",
+      "nutrients": null,
+      "allergenDataComplete": false,
+      "reviewBlockers": [
+        "Xác minh khối lượng phần ăn được và trạng thái sống/chín của từng nguyên liệu.",
+        "Xác minh khối lượng, thành phần, dưỡng chất và dị nguyên trong gói xốt.",
+        "Làm rõ đơn vị khẩu phần của bảng dinh dưỡng gốc; không tự dùng số liệu đó cho một người.",
+        "Chuẩn hóa khẩu phần, tính dưỡng chất và kiểm duyệt trước khi chuyển sang catalog."
+      ]
+    },
+    {
+      "id": "mnmn-dau-hu-nhoi-xot-me",
+      "displayName": "Đậu Hũ Nhồi Xốt Me",
+      "sourceUrl": "https://monngonmoingay.com/dau-hu-nhoi-xot-me/",
+      "verificationStatus": "reference_reviewed",
+      "nutrients": null,
+      "allergenDataComplete": false,
+      "reviewBlockers": [
+        "Có thịt xay và nước mắm; không suy ra món chay từ tên đậu hũ.",
+        "Cần thu đủ định lượng từ cả phần nguyên liệu và bước nấu, xác định dầu và gia vị chưa định lượng."
+      ]
+    },
+    {
+      "id": "mnmn-canh-hen-nau-me",
+      "displayName": "Canh Hến Nấu Mẻ",
+      "sourceUrl": "https://monngonmoingay.com/canh-hen-nau-me/",
+      "verificationStatus": "reference_reviewed",
+      "nutrients": null,
+      "allergenDataComplete": false,
+      "reviewBlockers": [
+        "Bước nấu có sả, hành lá, hạt nêm và nước mắm ngoài danh sách nguyên liệu chính; cần hợp nhất trước khi tính.",
+        "Cần quy đổi trái, củ và muỗng sang khối lượng có căn cứ; kiểm tra dị nguyên của hến và gia vị."
+      ]
+    },
+    {
+      "id": "mnmn-salad-uc-ga-xot-viet-quat",
+      "displayName": "Salad Ức Gà Xốt Việt Quất",
+      "sourceUrl": "https://monngonmoingay.com/salad-uc-ga-xot-viet-quat/",
+      "verificationStatus": "reference_reviewed",
+      "nutrients": null,
+      "allergenDataComplete": false,
+      "reviewBlockers": [
+        "Bước nấu có mayonnaise và nước cốt tắc ngoài danh sách chính; lượng mayonnaise chưa rõ.",
+        "Cần làm rõ dầu, khối lượng sữa chua và gia vị; kiểm tra sữa, hạnh nhân và thành phần mayonnaise."
+      ]
+    }
+  ]
+}

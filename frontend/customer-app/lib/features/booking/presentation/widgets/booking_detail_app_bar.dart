@@ -10,9 +10,10 @@ class BookingDetailAppBar extends StatelessWidget
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
   const BookingDetailAppBar(
-      {super.key, required this.statusConfig, this.onMoreOptions});
+      {super.key, required this.statusConfig, this.onMoreOptions, this.onReports});
   final BookingStatusPresentation statusConfig;
   final VoidCallback? onMoreOptions;
+  final VoidCallback? onReports;
   @override
   Widget build(BuildContext context) => AppBar(
         title: const Text(
@@ -30,6 +31,8 @@ class BookingDetailAppBar extends StatelessWidget
         shadowColor: AppColors.shadow,
         leading: const AppBackButton(fallbackRoute: AppRoutes.bookings),
         actions: [
+          IconButton(tooltip: 'Báo cáo lịch hẹn', onPressed: onReports,
+            icon: const Icon(Icons.description_outlined)),
           Tooltip(
             message: statusConfig.label,
             child: Center(

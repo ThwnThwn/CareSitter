@@ -18,6 +18,9 @@ services:
       - ../../init-db/nutrition-service/07-catalog-knowledge-review-gate.sql:/docker-entrypoint-initdb.d/07-catalog-knowledge-review-gate.sql:ro
       - ../../init-db/nutrition-service/08-local-demo-catalog.sql:/docker-entrypoint-initdb.d/08-local-demo-catalog.sql:ro
       - ../../init-db/nutrition-service/09-knowledge-chunks.sql:/docker-entrypoint-initdb.d/09-knowledge-chunks.sql:ro
+      - ../../init-db/nutrition-service/10-published-catalog-integrity.sql:/docker-entrypoint-initdb.d/10-published-catalog-integrity.sql:ro
+      - ../../init-db/nutrition-service/11-catalog-review-policy.sql:/docker-entrypoint-initdb.d/11-catalog-review-policy.sql:ro
+      - ../../init-db/nutrition-service/12-beneficiary-deletion.sql:/docker-entrypoint-initdb.d/12-beneficiary-deletion.sql:ro
     healthcheck:
       test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d nutrition"]
       interval: 5s

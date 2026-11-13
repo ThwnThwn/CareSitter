@@ -15,6 +15,7 @@ public sealed class CatalogDbContext : ModuleDbContext
 
     protected override string Schema => SchemaName;
 
+    public DbSet<ReportUpload> ReportUploads => Set<ReportUpload>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<Address> Addresses => Set<Address>();
     public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
@@ -24,6 +25,25 @@ public sealed class CatalogDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ReportUpload>(b =>
+        {
+            b.ToTable("report_uploads"); b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id");
+            b.Property(x => x.OwnerUserId).HasColumnName("owner_user_id");
+            b.Property(x => x.BookingId).HasColumnName("booking_id");
+            b.Property(x => x.IdempotencyKey).HasColumnName("idempotency_key");
+            b.Property(x => x.Checksum).HasColumnName("checksum");
+            b.Property(x => x.SizeBytes).HasColumnName("size_bytes");
+            b.Property(x => x.CloudName).HasColumnName("cloud_name");
+            b.Property(x => x.StorageProvider).HasColumnName("storage_provider");
+            b.Property(x => x.ObjectKey).HasColumnName("object_key");
+            b.Property(x => x.Status).HasColumnName("status");
+            b.Property(x => x.LeaseToken).HasColumnName("lease_token");
+            b.Property(x => x.LeaseUntil).HasColumnName("lease_until");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.HasIndex(x => new { x.OwnerUserId, x.IdempotencyKey }).IsUnique();
+        });
 
         modelBuilder.Entity<MediaAsset>(b =>
         {

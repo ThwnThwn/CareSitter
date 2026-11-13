@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
@@ -28,15 +29,18 @@ class RegisterScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(AppSpacing.section, 0,
                     AppSpacing.section, AppSpacing.formBottom),
                 sliver: SliverList.list(children: [
-                  const FadeSlideStaggered(index: 1, child: RegisterScreenTitle()),
+                  const FadeSlideStaggered(
+                      index: 1, child: RegisterScreenTitle()),
                   RegistrationForm(onRegistered: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content:
-                          Text('Đăng ký tài khoản thành công! Vui lòng đăng nhập.'),
-                      backgroundColor: AppColors.primary,
-                      behavior: SnackBarBehavior.floating,
-                      duration: Duration(seconds: 4),
-                    ));
+                    AppToast.showLegacy(
+                        context,
+                        const SnackBar(
+                          content: Text(
+                              'Đăng ký tài khoản thành công! Vui lòng đăng nhập.'),
+                          backgroundColor: AppColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 4),
+                        ));
                     context.go(AppRoutes.login);
                   }),
                 ]),

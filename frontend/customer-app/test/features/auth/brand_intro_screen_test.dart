@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('logo mark scales in and intro completes after its reveal',
+  testWidgets('brand asset animates in and intro completes after its reveal',
       (tester) async {
     var finished = false;
     await tester.pumpWidget(
@@ -12,16 +12,22 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-
-    final mark = tester.widget<Transform>(
-      find.byKey(const ValueKey('caresitter-logo-mark-scale')),
+    expect(
+      tester
+          .widget<Image>(
+            find.byKey(const ValueKey('caresitter-logo-image')),
+          )
+          .image,
+      isA<AssetImage>().having(
+        (image) => image.assetName,
+        'assetName',
+        'assets/images/logo.png',
+      ),
     );
-    expect(mark.transform.getMaxScaleOnAxis(), greaterThan(0.38));
     expect(find.byKey(const ValueKey('caresitter-logo-name')), findsOneWidget);
     expect(finished, isFalse);
 
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
     expect(finished, isTrue);
   });
 

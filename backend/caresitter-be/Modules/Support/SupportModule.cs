@@ -1,3 +1,5 @@
+using CareSitter.Modules.Support.Application.Diagnostics;
+using CareSitter.Modules.Support.Infrastructure.Diagnostics;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Support.Application;
 using CareSitter.Modules.Support.Domain;
@@ -34,6 +36,17 @@ public sealed class SupportModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SupportModule>());
         services.AddValidatorsFromAssemblyContaining<SupportModule>();
         services.AddScoped<ISupportRepository, SupportRepository>();
+        services.AddOptions<CrashReportOptions>().Bind(configuration.GetSection("CrashReports"))
+            .Validate(x => x.IsValid, "CrashReports configuration is invalid.").ValidateOnStart();
+        services.AddSingleton<ICrashQueryTokenProvider, CrashQueryTokenProvider>();
+        services.AddHttpClient<ICrashReportSource, BigQueryCrashReportSource>()
+            .RemoveAllLoggers().ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddScoped<CrashReportService>();
+        services.AddRateLimiter(options => options.AddPolicy("crash-reports-read", context =>
+            RateLimitPartition.GetFixedWindowLimiter(context.User.FindFirst("sub")?.Value
+                ?? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0, AutoReplenishment = true })));
         services.AddScoped<IConsultationRequestStore, ConsultationRequestStore>();
         services.AddRateLimiter(options => options.AddPolicy("consultation-request", context =>
             RateLimitPartition.GetFixedWindowLimiter(

@@ -36,13 +36,15 @@ internal sealed class NutritionResourceQueryHandler(IPeopleHealthClient access, 
     public async Task<Result<IReadOnlyList<ResourceResponse>>> Handle(ListMealPlansQuery request, CancellationToken ct)
     {
         if (NutritionAccessRules.Check(user, features) is { } error) return error;
+        if (request.WeekStart is { } start && start.DayNumber > DateOnly.MaxValue.DayNumber - 6)
+            return Error.Validation("nutrition.request", "Tuần được chọn không hợp lệ.");
         var observation = await access.ReadAsync(user.UserId!.Value, request.BeneficiaryId, ct);
         if (observation is null) return NutritionAccessRules.Missing();
         var response = await store.InOwnerScopeAsync<Result<IReadOnlyList<ResourceResponse>>>(user.UserId.Value, async session =>
         {
             var recipes = await session.RecipesAsync(ct); var rules = await session.RulesAsync(ct);
             var catalogRevision = await session.CatalogRevisionAsync(ct);
-            return (await session.PlansAsync(request.BeneficiaryId, ct)).Select(r =>
+            return (await session.PlansAsync(request.BeneficiaryId, ct, request.WeekStart, request.WeekStart?.AddDays(6))).Select(r =>
             {
                 var mapped = ResourceMapping.Map(r, observation.Revision);
                 return NutritionJson.Read<MealPayload>(r.Payload).CatalogRevision == catalogRevision && ContentCurrent(r, recipes, rules) ? mapped : mapped with { Status = "stale" };

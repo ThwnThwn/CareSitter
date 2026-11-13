@@ -1,17 +1,41 @@
-using CareSitter.Nutrition.Domain;
+﻿using CareSitter.Nutrition.Domain;
 
 namespace CareSitter.Nutrition.Application;
 
 public static class MealConstraintPolicy
 {
+    // Composite or processed ingredients without pinned commercial allergen/composition specifications.
+    private static readonly HashSet<string> UnverifiedCompositeIngredients =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "CHILI_SAUCE",
+            "FERMENTED_SOYBEAN_RICE",
+            "TOFU_BOILED",
+            "RICE_NOODLE_READY",
+            "GLASS_NOODLE_DRY"
+        };
+
+    // Defense in depth: filtering must still work if a catalog recipe forgets the derived allergen label.
+    private static readonly IReadOnlyDictionary<string, HashSet<string>> AllergenIngredientCodes =
+        new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["PEANUT"] = new(StringComparer.OrdinalIgnoreCase) { "PEANUT_OIL" },
+            ["BEEF"] = new(StringComparer.OrdinalIgnoreCase) { "BEEF_LEAN_RAW" },
+            ["CHICKEN"] = new(StringComparer.OrdinalIgnoreCase) { "CHICKEN_RAW" }
+        };
+
     public static bool ValidRecipe(Recipe r) => r.MealType is "breakfast" or "lunch" or "dinner" &&
-        !string.IsNullOrWhiteSpace(r.Name) && r.Servings == 1 && r.Ingredients is { Length: > 0 } &&
+        !string.IsNullOrWhiteSpace(r.Name) &&
+        r.Servings == 1 && r.Ingredients is { Length: > 0 } &&
         r.Allergens is not null && r.AllergenDataComplete && r.Nutrients is not null &&
         r.PreparationSteps is { Length: > 0 } && r.PreparationSteps.All(s => !string.IsNullOrWhiteSpace(s)) &&
         r.Allergens.All(s => !string.IsNullOrWhiteSpace(s)) &&
         r.Sources is { Length: > 0 } && r.Sources.All(s => !string.IsNullOrWhiteSpace(s)) &&
-        r.Ingredients.All(i => i is not null && !string.IsNullOrWhiteSpace(i.Code) && !string.IsNullOrWhiteSpace(i.Name) && i.Amount > 0 &&
-            i.Unit is "g" or "ml" && i.Basis is "raw" or "cooked") && r.Nutrients.All(p => p.Value is null || p.Value >= 0);
+        r.Ingredients.All(i => i is not null && !string.IsNullOrWhiteSpace(i.Code) &&
+            !UnverifiedCompositeIngredients.Contains(i.Code) &&
+            !string.IsNullOrWhiteSpace(i.Name) && i.Amount > 0 &&
+            i.Unit is "g" or "ml" && i.Basis is "raw" or "cooked") &&
+        r.Nutrients.All(p => p.Value is null || p.Value >= 0);
 
     public static bool Matches(IReadOnlyList<Recipe> meals, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular")
@@ -19,8 +43,11 @@ public static class MealConstraintPolicy
         if (meals.Count != 3 || meals.Select(m => m.MealType).Distinct().Count() != 3 || meals.Any(m => !ValidRecipe(m))) return false;
         if (!MatchesDietaryPattern(meals, dietaryPattern)) return false;
         var allergies = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "food_allergy" &&
-            f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code).ToHashSet();
+            f.Assertion != "absent" && f.Temporality != "past").Select(f => f.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (meals.Any(m => m.Allergens.Any(allergies.Contains))) return false;
+        if (allergies.Any(allergy => AllergenIngredientCodes.TryGetValue(allergy, out var ingredientCodes) &&
+                meals.Any(meal => meal.Ingredients.Any(ingredient => ingredientCodes.Contains(ingredient.Code))))) return false;
         var conditions = facts.Where(f => f.Subject == "beneficiary" && f.Kind == "condition" &&
             f.Assertion == "present" && f.Temporality == "current").Select(f => f.Code).ToHashSet();
         foreach (var rule in rules.Where(r => conditions.Contains(r.ConditionCode)))
@@ -55,7 +82,8 @@ public static class MealConstraintPolicy
 
     public static Recipe[][] CandidateSets(IReadOnlyList<Recipe> recipes, IReadOnlyList<HealthFact> facts,
         IReadOnlyList<DietaryRule> rules, string dietaryPattern = "regular", string nutritionGoal = "maintain",
-        int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null)
+        int maximum = 12, IReadOnlyList<Recipe>? recentMeals = null,
+        IReadOnlyList<Recipe[]>? previousMenus = null, MealPreferences? preferences = null)
     {
         if (maximum < 1) throw new ArgumentOutOfRangeException(nameof(maximum));
         // Bounded catalog avoids unbounded combinations. No constraint is dropped to find a result.
@@ -66,6 +94,14 @@ public static class MealConstraintPolicy
                 foreach (var c in usable.Where(r => r.MealType == "dinner").Take(30))
                     if (Matches([a, b, c], facts, rules, dietaryPattern)) candidates.Add([a, b, c]);
         if (candidates.Count == 0) return [];
+        if (previousMenus is { Count: > 0 })
+        {
+            var previousIds = previousMenus.Select(MenuIds).ToHashSet(StringComparer.Ordinal);
+            var previousNames = previousMenus.Select(MenuNames).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var newMenus = candidates.Where(set => !previousIds.Contains(MenuIds(set)) &&
+                !previousNames.Contains(MenuNames(set))).ToList();
+            if (newMenus.Count > 0) candidates = newMenus;
+        }
         // Apply variety before the shortlist: otherwise all twelve sets can repeat yesterday's meals.
         // Never relax allergies, dietary pattern or nutrient constraints to achieve variety.
         if (recentMeals is { Count: > 0 })
@@ -77,31 +113,55 @@ public static class MealConstraintPolicy
             var minimumRepeats = candidates.Min(Repeats);
             candidates = candidates.Where(set => Repeats(set) == minimumRepeats).ToList();
         }
+        candidates = candidates
+            .Select((meals, index) => new
+            {
+                Meals = meals,
+                Penalty = PreferencePenalty(meals, preferences),
+                Index = index
+            })
+            .OrderBy(value => value.Penalty)
+            .ThenBy(value => value.Index)
+            .Select(value => value.Meals)
+            .ToList();
         var ranked = candidates
-            .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals), index))
+            .Select((meals, index) => new RankedCandidate(meals, TotalEnergy(meals),
+                PreferencePenalty(meals, preferences), index))
             .Where(value => value.Energy is not null)
             .ToArray();
         if (ranked.Length == 0) return candidates.Take(maximum).ToArray();
         var ordered = nutritionGoal switch
         {
-            "lose" => ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index),
-            "gain" => ranked.OrderByDescending(value => value.Energy).ThenBy(value => value.Index),
+            "lose" => ranked.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy)
+                .ThenBy(value => value.Index),
+            "gain" => ranked.OrderBy(value => value.PreferencePenalty).ThenByDescending(value => value.Energy)
+                .ThenBy(value => value.Index),
             _ => OrderAroundMedian(ranked)
         };
         return ordered.Take(maximum).Select(value => value.Meals).ToArray();
     }
 
-    public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal)
+    public static IEnumerable<Recipe> OrderForGoal(IEnumerable<Recipe> recipes, string nutritionGoal,
+        MealPreferences? preferences = null)
     {
-        var values = recipes.Select((recipe, index) => new { Recipe = recipe, Energy = Energy(recipe), Index = index }).ToArray();
+        var values = recipes.Select((recipe, index) => new
+        {
+            Recipe = recipe,
+            Energy = Energy(recipe),
+            PreferencePenalty = PreferencePenalty([recipe], preferences),
+            Index = index
+        }).ToArray();
         var known = values.Where(value => value.Energy is not null).OrderBy(value => value.Energy).ToArray();
         if (known.Length == 0) return values.OrderBy(value => value.Index).Select(value => value.Recipe);
         var median = known[known.Length / 2].Energy!.Value;
         return nutritionGoal switch
         {
-            "lose" => values.OrderBy(value => value.Energy is null).ThenBy(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
-            "gain" => values.OrderBy(value => value.Energy is null).ThenByDescending(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
-            _ => values.OrderBy(value => value.Energy is null).ThenBy(value => value.Energy is null ? decimal.MaxValue : Math.Abs(value.Energy.Value - median))
+            "lose" => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenBy(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
+            "gain" => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenByDescending(value => value.Energy).ThenBy(value => value.Index).Select(value => value.Recipe),
+            _ => values.OrderBy(value => value.PreferencePenalty).ThenBy(value => value.Energy is null)
+                .ThenBy(value => value.Energy is null ? decimal.MaxValue : Math.Abs(value.Energy.Value - median))
                 .ThenBy(value => value.Index).Select(value => value.Recipe)
         };
     }
@@ -133,11 +193,61 @@ public static class MealConstraintPolicy
         var sorted = ranked.OrderBy(value => value.Energy).ThenBy(value => value.Index).ToArray();
         var baseline = sorted[sorted.Length / 2];
         var median = baseline.Energy!.Value;
-        return ranked.OrderBy(value => value.Index == baseline.Index ? 0 : 1)
+        return ranked.OrderBy(value => value.PreferencePenalty)
+            .ThenBy(value => value.Index == baseline.Index ? 0 : 1)
             .ThenBy(value => Math.Abs(value.Energy!.Value - median)).ThenBy(value => value.Index);
     }
 
-    private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy, int Index);
+    private sealed record RankedCandidate(Recipe[] Meals, decimal? Energy,
+        int PreferencePenalty, int Index);
+
+    private static int PreferencePenalty(IEnumerable<Recipe> meals, MealPreferences? preferences)
+    {
+        if (preferences is null) return 0;
+        var penalty = 0;
+        foreach (var meal in meals)
+        {
+            var liquid = IsLiquidMeal(meal.Name);
+            if (preferences.MealFormatPreference == "prefer_dry" && liquid) penalty += 8;
+            if (preferences.MealFormatPreference == "prefer_soup" && !liquid) penalty += 8;
+            var searchable = Normalize(string.Join(' ', meal.Name,
+                string.Join(' ', meal.Ingredients.Select(ingredient => ingredient.Name))));
+            penalty += preferences.DislikedFoods.Count(value => Contains(searchable, value)) * 20;
+            penalty -= preferences.PreferredFoods.Count(value => Contains(searchable, value)) * 3;
+        }
+        return penalty;
+    }
+
+    private static bool IsLiquidMeal(string name)
+    {
+        var normalized = Normalize(name);
+        return new[] { "chao", "sup", "soup", "canh", "pho", "hu tieu", "mien nuoc", "bun nuoc" }
+            .Any(keyword => normalized.Contains(keyword, StringComparison.Ordinal));
+    }
+
+    private static bool Contains(string searchable, string preference)
+    {
+        var normalized = Normalize(preference);
+        return normalized.Length >= 2 && searchable.Contains(normalized, StringComparison.Ordinal);
+    }
+
+    private static string Normalize(string value)
+    {
+        var decomposed = value.Trim().ToLowerInvariant()
+            .Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(decomposed.Length);
+        foreach (var character in decomposed)
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) !=
+                System.Globalization.UnicodeCategory.NonSpacingMark)
+                builder.Append(character == 'đ' ? 'd' : character);
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+
+    private static string MenuIds(IEnumerable<Recipe> meals) =>
+        string.Join("|", meals.OrderBy(meal => meal.MealType).Select(meal => meal.VersionId));
+
+    private static string MenuNames(IEnumerable<Recipe> meals) =>
+        string.Join("|", meals.OrderBy(meal => meal.MealType).Select(meal => CanonicalName(meal.Name)));
 
     private static string CanonicalName(string name) => name.Trim().StartsWith("[DEMO]", StringComparison.OrdinalIgnoreCase)
         ? name.Trim()[6..].Trim() : name.Trim();

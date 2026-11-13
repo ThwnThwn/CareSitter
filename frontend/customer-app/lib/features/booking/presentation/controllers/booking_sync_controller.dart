@@ -17,10 +17,21 @@ class BookingSyncController {
     if (!store.active || store.userId == null) return;
     final generation = ++_refreshGeneration;
     try {
-      final result = await repository.getBookings(pageSize: 50);
+      const pageSize = 50;
+      final first = await repository.getBookings(pageSize: pageSize);
       if (!store.active || generation != _refreshGeneration) return;
-      store.replace(result.items);
-      _cursor = result.syncCursor;
+      final bookings = <BookingModel>[...first.items];
+      var page = 2;
+      while (bookings.length < first.total && first.items.isNotEmpty) {
+        final next =
+            await repository.getBookings(page: page, pageSize: pageSize);
+        if (!store.active || generation != _refreshGeneration) return;
+        if (next.items.isEmpty) break;
+        bookings.addAll(next.items);
+        page++;
+      }
+      store.replace(bookings);
+      _cursor = first.syncCursor;
     } catch (_) {
       // Giữ cache và cursor để lần refresh tiếp theo có thể phục hồi.
     }

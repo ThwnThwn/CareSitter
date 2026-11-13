@@ -8,9 +8,9 @@ internal sealed class NutritionSession(
     NpgsqlConnection connection,
     NpgsqlTransaction transaction,
     Guid owner,
-    LocalDemoCatalogOptions localDemo) : INutritionSession
+    LocalDemoCatalogOptions localDemo, bool allowNonMedicalReference = false) : INutritionSession
 {
-    private readonly NutritionCatalogReader _catalog = new(connection, transaction, localDemo);
+    private readonly NutritionCatalogReader _catalog = new(connection, transaction, localDemo, allowNonMedicalReference);
 
     private static string Table(string kind) => kind switch
     {
@@ -39,8 +39,12 @@ internal sealed class NutritionSession(
     }
     public async Task InsertAsync(string kind, NutritionResource value, CancellationToken ct)
     {
-        await using var c = Command($"INSERT INTO {Table(kind)} (id,customer_id,beneficiary_id,health_revision,status,payload,idempotency_key,fingerprint) VALUES (@id,@owner,@beneficiary,@revision,@status,@payload::jsonb,@key,@fingerprint)");
-        Bind(c, value); await c.ExecuteNonQueryAsync(ct);
+        // The People deletion event leaves a tombstone. It prevents an in-flight request
+        // from recreating health data after the purge has committed.
+        await using var c = Command($"INSERT INTO {Table(kind)} (id,customer_id,beneficiary_id,health_revision,status,payload,idempotency_key,fingerprint) SELECT @id,@owner,@beneficiary,@revision,@status,@payload::jsonb,@key,@fingerprint WHERE NOT EXISTS (SELECT 1 FROM nutrition.beneficiary_deletions WHERE customer_id=@owner AND beneficiary_id=@beneficiary)");
+        Bind(c, value);
+        if (await c.ExecuteNonQueryAsync(ct) != 1)
+            throw new InvalidOperationException("Beneficiary health data has been deleted.");
         if (kind == "assessment")
         {
             await using var job = Command("INSERT INTO nutrition.assessment_jobs(assessment_id,customer_id,beneficiary_id) VALUES (@id,@owner,@beneficiary)");
@@ -73,10 +77,23 @@ internal sealed class NutritionSession(
         await using var c = Command("SELECT count(*)::int FROM nutrition.assessments WHERE customer_id=@owner AND created_at>now()-interval '24 hours'");
         c.Parameters.AddWithValue("owner", owner); return (int)(await c.ExecuteScalarAsync(ct))!;
     }
-    public async Task<IReadOnlyList<NutritionResource>> PlansAsync(Guid beneficiary, CancellationToken ct)
+    public async Task<IReadOnlyList<NutritionResource>> PlansAsync(Guid beneficiary, CancellationToken ct,
+        DateOnly? from = null, DateOnly? through = null)
     {
-        await using var c = Command($"SELECT {Columns} FROM nutrition.meal_plans WHERE customer_id=@owner AND beneficiary_id=@beneficiary ORDER BY created_at DESC LIMIT 20");
-        c.Parameters.AddWithValue("owner", owner); c.Parameters.AddWithValue("beneficiary", beneficiary);
+        const string ownerFilter = "customer_id=@owner AND beneficiary_id=@beneficiary";
+        const string date = "payload->>'plannedDate'";
+        var sql = from is null
+            ? $"SELECT {Columns} FROM nutrition.meal_plans WHERE {ownerFilter} ORDER BY created_at DESC LIMIT 20"
+            : $"SELECT DISTINCT ON ({date}) {Columns} FROM nutrition.meal_plans WHERE {ownerFilter} " +
+              $"AND {date} BETWEEN @from AND @through ORDER BY {date}, created_at DESC, id DESC";
+        await using var c = Command(sql);
+        c.Parameters.AddWithValue("owner", owner);
+        c.Parameters.AddWithValue("beneficiary", beneficiary);
+        if (from is { } start)
+        {
+            c.Parameters.AddWithValue("from", start.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+            c.Parameters.AddWithValue("through", (through ?? start).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        }
         await using var r = await c.ExecuteReaderAsync(ct); var results = new List<NutritionResource>();
         while (await r.ReadAsync(ct)) results.Add(Read(r)); return results;
     }

@@ -22,7 +22,8 @@ class RegisterScreenPasswordField extends StatefulWidget {
       _RegisterScreenPasswordFieldState();
 }
 
-class _RegisterScreenPasswordFieldState extends State<RegisterScreenPasswordField> {
+class _RegisterScreenPasswordFieldState
+    extends State<RegisterScreenPasswordField> {
   bool _obscure = true;
   @override
   Widget build(BuildContext context) {
@@ -44,40 +45,28 @@ class _RegisterScreenPasswordFieldState extends State<RegisterScreenPasswordFiel
             color: AppColors.primary, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            _obscure
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: AppColors.textHint,
             size: 20,
           ),
           tooltip: _obscure
               ? 'Hiện ${widget.label.toLowerCase()}'
               : 'Ẩn ${widget.label.toLowerCase()}',
-          onPressed:
-              widget.enabled ? () => setState(() => _obscure = !_obscure) : null,
+          onPressed: widget.enabled
+              ? () => setState(() => _obscure = !_obscure)
+              : null,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppInputStyle.fillColor,
         contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.md),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-        ),
+        border: AppInputStyle.enabledBorder,
+        enabledBorder: AppInputStyle.enabledBorder,
+        focusedBorder: AppInputStyle.focusedBorder,
+        errorBorder: AppInputStyle.errorBorder,
+        focusedErrorBorder: AppInputStyle.errorBorder,
       ),
     );
   }

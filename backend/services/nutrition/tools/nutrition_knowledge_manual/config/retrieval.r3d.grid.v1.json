@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "seed": 20261110,
+  "selection_rule": ["scope_multihop_wins_desc", "scope_singlehop_regressions_asc", "scope_p95_asc", "config_id_asc"],
+  "variants": [
+    {"id": "sp-w025-d050", "parameters": {"support_weight": 0.25, "low_confidence_margin": 0.03, "edge_decay": {"MENTIONS": 0.8, "SUPPORTED_BY": 0.7, "continuation": 0.5, "outline_ancestor": 0.3}}},
+    {"id": "sp-w050-d050", "parameters": {"support_weight": 0.5, "low_confidence_margin": 0.03, "edge_decay": {"MENTIONS": 0.8, "SUPPORTED_BY": 0.7, "continuation": 0.5, "outline_ancestor": 0.3}}},
+    {"id": "sp-w025-d070", "parameters": {"support_weight": 0.25, "low_confidence_margin": 0.08, "edge_decay": {"MENTIONS": 0.9, "SUPPORTED_BY": 0.8, "continuation": 0.7, "outline_ancestor": 0.5}}},
+    {"id": "sp-w050-d070", "parameters": {"support_weight": 0.5, "low_confidence_margin": 0.08, "edge_decay": {"MENTIONS": 0.9, "SUPPORTED_BY": 0.8, "continuation": 0.7, "outline_ancestor": 0.5}}}
+  ]
+}

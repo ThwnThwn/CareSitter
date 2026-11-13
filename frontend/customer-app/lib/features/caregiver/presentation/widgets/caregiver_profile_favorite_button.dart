@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 
 class CaregiverProfileFavoriteButton extends StatefulWidget {
@@ -21,7 +22,8 @@ class _FavoriteButtonState extends State<CaregiverProfileFavoriteButton> {
       ),
       onPressed: () {
         setState(() => _isFav = !_isFav);
-        ScaffoldMessenger.of(context).showSnackBar(
+        AppToast.showLegacy(
+          context,
           SnackBar(
             content: Text(_isFav
                 ? 'Đã thêm ${widget.caregiverName} vào yêu thích'

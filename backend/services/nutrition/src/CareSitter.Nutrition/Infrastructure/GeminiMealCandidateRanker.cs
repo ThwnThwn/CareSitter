@@ -18,57 +18,60 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
         if (!_options.Enabled) return MealCandidateRankingResult.Unavailable("meal_ranking_not_configured");
         if (request.Evidence.Length == 0 || request.CandidateSets.Length < 2)
             return MealCandidateRankingResult.Unavailable("meal_ranking_insufficient_context");
-        using var concurrency = await guard.EnterAsync(ct);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
-        var requestBody = BuildRequest(request);
-        for (var attempt = 1; attempt <= _options.MaxAttempts; attempt++)
+        try
         {
-            if (!guard.TryConsumeAttempt())
-                return MealCandidateRankingResult.Unavailable("meal_ranking_budget_exhausted");
-            try
+            using var concurrency = await guard.EnterAsync(timeout.Token);
+            var requestBody = BuildRequest(request);
+            for (var attempt = 1; attempt <= _options.MaxAttempts; attempt++)
             {
-                using var message = new HttpRequestMessage(HttpMethod.Post,
-                    $"models/{Uri.EscapeDataString(_options.Model)}:generateContent")
+                if (!guard.TryConsumeAttempt())
+                    return MealCandidateRankingResult.Unavailable("meal_ranking_budget_exhausted");
+                try
                 {
-                    Content = new ByteArrayContent(requestBody)
-                };
-                message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                message.Headers.Add("x-goog-api-key", _options.ReadApiKey());
-                using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead,
-                    timeout.Token);
-                if (Transient(response.StatusCode) && attempt < _options.MaxAttempts)
+                    using var message = new HttpRequestMessage(HttpMethod.Post,
+                        $"models/{Uri.EscapeDataString(_options.Model)}:generateContent")
+                    {
+                        Content = new ByteArrayContent(requestBody)
+                    };
+                    message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    message.Headers.Add("x-goog-api-key", _options.ReadApiKey());
+                    using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead,
+                        timeout.Token);
+                    if (Transient(response.StatusCode) && attempt < _options.MaxAttempts)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(200), timeout.Token);
+                        continue;
+                    }
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        logger.LogWarning(
+                            "Nutrition meal ranker failed: Model={Model}, StatusCode={StatusCode}, Attempt={Attempt}.",
+                            _options.Model, (int)response.StatusCode, attempt);
+                        return MealCandidateRankingResult.Unavailable(response.StatusCode == HttpStatusCode.TooManyRequests
+                            ? "meal_ranking_rate_limited" : "meal_ranking_unavailable");
+                    }
+                    var body = await ReadLimitedAsync(response.Content, _options.MaxResponseBytes, timeout.Token);
+                    return ParseResponse(body, request);
+                }
+                catch (HttpRequestException) when (attempt < _options.MaxAttempts)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(200), timeout.Token);
-                    continue;
                 }
-                if (!response.IsSuccessStatusCode)
+                catch (HttpRequestException)
                 {
-                    logger.LogWarning(
-                        "Nutrition meal ranker failed: Model={Model}, StatusCode={StatusCode}, Attempt={Attempt}.",
-                        _options.Model, (int)response.StatusCode, attempt);
-                    return MealCandidateRankingResult.Unavailable(response.StatusCode == HttpStatusCode.TooManyRequests
-                        ? "meal_ranking_rate_limited" : "meal_ranking_unavailable");
+                    return MealCandidateRankingResult.Unavailable("meal_ranking_unavailable");
                 }
-                var body = await ReadLimitedAsync(response.Content, _options.MaxResponseBytes, timeout.Token);
-                return ParseResponse(body, request);
+                catch (JsonException)
+                {
+                    return MealCandidateRankingResult.Unavailable("meal_ranking_invalid_output");
+                }
             }
-            catch (HttpRequestException) when (attempt < _options.MaxAttempts)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(200), timeout.Token);
-            }
-            catch (HttpRequestException)
-            {
-                return MealCandidateRankingResult.Unavailable("meal_ranking_unavailable");
-            }
-            catch (JsonException)
-            {
-                return MealCandidateRankingResult.Unavailable("meal_ranking_invalid_output");
-            }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-            {
-                return MealCandidateRankingResult.Unavailable("meal_ranking_timeout");
-            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return MealCandidateRankingResult.Unavailable("meal_ranking_timeout");
         }
         return MealCandidateRankingResult.Unavailable("meal_ranking_unavailable");
     }
@@ -85,6 +88,7 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
                     text = "You rank only the supplied, pre-validated meal sets. Select exactly one complete set. " +
                            "Never invent, replace, or mix recipeVersionIds across sets. Use only supplied evidenceIds. " +
                            "Prefer the set best aligned with the stated goal and evidence. Consider recentMeals to favor variety. " +
+                           "Treat preferences as soft ranking signals after all supplied health constraints. " +
                            "Return concise Vietnamese explanations."
                 }
             }
@@ -103,6 +107,12 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
                             catalogRevision = request.CatalogRevision,
                             dietaryPattern = request.DietaryPattern,
                             nutritionGoal = request.NutritionGoal,
+                            preferences = request.Preferences is null ? null : new
+                            {
+                                mealFormat = request.Preferences.MealFormatPreference,
+                                preferredFoods = request.Preferences.PreferredFoods,
+                                dislikedFoods = request.Preferences.DislikedFoods
+                            },
                             recentMeals = (request.RecentMeals ?? []).Select(meal => new { meal.Name, meal.MealType }),
                             healthFacts = request.Facts.Where(fact => fact.Subject == "beneficiary")
                                 .Select(fact => new { fact.Kind, fact.Code, fact.Label, fact.Assertion, fact.Temporality }),
@@ -128,7 +138,7 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
                             evidence = request.Evidence.Select(item => new
                             {
                                 evidenceId = item.Id, item.Title, item.Chapter, item.PrintedPages,
-                                item.Locator, item.Excerpt
+                                item.Locator
                             })
                         }, NutritionJson.Options)
                     }

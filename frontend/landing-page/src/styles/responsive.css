@@ -147,6 +147,17 @@
     width: 100%;
   }
 
+  .hero-story {
+    margin-inline: auto;
+    margin-top: 0.5rem;
+    max-width: 720px;
+    width: 100%;
+  }
+
+  .hero-story__ornaments {
+    inset: -12% -4% -13%;
+  }
+
   .hero-journey__photo {
     right: 3%;
     width: 84%;
@@ -330,6 +341,14 @@
     width: 100%;
   }
 
+  .hero-story__stage {
+    border-radius: 12px;
+  }
+
+  .hero-story__ornaments {
+    display: none;
+  }
+
   .stat {
     min-height: 126px;
     padding: 1.5rem 0.9rem;
@@ -496,16 +515,8 @@
   }
 
   .hero__copy[data-hero-entered] > * {
-    animation: none !important;
-  }
-
-  .hero-journey [data-journey-layer] {
-    transform: none !important;
-    will-change: auto;
-  }
-
-  .hero-journey__path-line {
-    stroke-dashoffset: 0 !important;
+    /* The landing entrance remains active even with reduced motion enabled. */
+    animation-duration: var(--hero-duration) !important;
   }
 
   /* The requested reference navigation remains animated with page motion. */

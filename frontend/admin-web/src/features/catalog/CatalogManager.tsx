@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit3, Plus, RefreshCw } from 'lucide-react';
+import { Edit3, Plus } from 'lucide-react';
 import {
   EmptyState,
   ErrorBanner,
@@ -12,13 +12,15 @@ import { currentPricingRule } from '../../operations';
 import { useResource } from '../../useResource';
 import { catalogPaths } from './catalogApi';
 import { ServiceDrawer } from './ServiceDrawer';
+import type { ShowToast } from '../../useToast';
 
-export function CatalogManager() {
+export function CatalogManager({ showToast }: { showToast: ShowToast }) {
   const [selected, setSelected] = useState<CatalogService | 'new' | null>(null);
   const {
     data: services,
     loading,
     error,
+    hasLoaded,
     reload: load,
   } = useResource<CatalogService[]>(catalogPaths.services, []);
   return (
@@ -29,18 +31,15 @@ export function CatalogManager() {
           <p>Chỉ gói đang hoạt động mới xuất hiện trong luồng đặt lịch.</p>
         </div>
         <div className="toolbar">
-          <button className="secondary" onClick={() => void load()} disabled={loading}>
-            <RefreshCw size={16} /> Làm mới
-          </button>
           <button className="primary" onClick={() => setSelected('new')}>
             <Plus size={16} /> Thêm dịch vụ
           </button>
         </div>
       </div>
       {error && <ErrorBanner message={error} onRetry={() => void load()} />}
-      {loading ? (
+      {loading && !hasLoaded ? (
         <LoadingTable rows={5} columns={6} />
-      ) : error ? null : services.length === 0 ? (
+      ) : error && !hasLoaded ? null : services.length === 0 ? (
         <EmptyState
           title="Chưa có gói dịch vụ"
           description="Tạo gói đầu tiên để bắt đầu cấu hình giá và checklist."
@@ -106,9 +105,10 @@ export function CatalogManager() {
         <ServiceDrawer
           service={selected === 'new' ? null : selected}
           onClose={() => setSelected(null)}
-          onChanged={() => {
+        onChanged={(msg) => {
             setSelected(null);
             void load();
+            showToast(msg);
           }}
         />
       )}

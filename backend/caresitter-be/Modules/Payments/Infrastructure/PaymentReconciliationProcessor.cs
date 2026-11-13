@@ -15,16 +15,19 @@ internal sealed class PaymentReconciliationProcessor(
     IPaymentOutboxDispatcher outbox,
     IAuditLogger auditLogger) : IPaymentReconciliationProcessor
 {
-    public async Task<IReadOnlyList<PaymentReconciliationItem>> ListAsync(
-        CancellationToken ct = default)
+    public async Task<PaymentPage<PaymentReconciliationItem>> ListAsync(
+        int page, int pageSize, CancellationToken ct = default)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var intents = await paymentsDb.PaymentIntents.AsNoTracking()
             .Where(x => x.ManualReviewReason != null && (x.Status == "PENDING" || x.Provider == "PAYOS"))
-            .OrderBy(x => x.ReconciliationStartedAt).Take(100).ToListAsync(ct);
+            .OrderBy(x => x.ReconciliationStartedAt).ToListAsync(ct);
         var bookingIds = intents.Select(x => x.BookingId).Distinct().ToArray();
         var reviewBookings = await bookings.GetManualReviewBookingsAsync(bookingIds, ct);
 
-        return intents.Where(x => reviewBookings.ContainsKey(x.BookingId) || x.Provider == "PAYOS").Select(x =>
+        var eligible = intents.Where(x => reviewBookings.ContainsKey(x.BookingId) || x.Provider == "PAYOS").ToArray();
+        var items = eligible.Skip((page - 1) * pageSize).Take(pageSize).Select(x =>
             new PaymentReconciliationItem(x.Id, x.BookingId, x.CustomerId, x.Amount,
                 x.Currency, x.ProviderOrderRef, x.ProviderTransactionId,
                 x.ReconciliationAttempts, x.ReconciliationStartedAt,
@@ -32,6 +35,7 @@ internal sealed class PaymentReconciliationProcessor(
                 x.ManualReviewReason, reviewBookings.ContainsKey(x.BookingId) ? "needs_manual_review" : "closed_or_changed",
                 reviewBookings.GetValueOrDefault(x.BookingId)?.PaymentDeadline,
                 x.Provider, x.Status, x.Status == "PENDING" && reviewBookings.ContainsKey(x.BookingId))).ToArray();
+        return new PaymentPage<PaymentReconciliationItem>(items, eligible.Length, page, pageSize);
     }
 
     public async Task<Result<PaymentReviewResolution>> ResolveAsync(

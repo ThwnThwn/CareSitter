@@ -1,4 +1,8 @@
+import 'package:caresitter_customer/core/diagnostics/lab_demo_policy.dart';
+import 'package:caresitter_customer/features/lab_diagnostics/presentation/screens/lab_diagnostics_screen.dart';
+import 'package:caresitter_customer/features/reports/presentation/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:caresitter_customer/features/auth/presentation/screens/password_recovery_screen.dart';
 import 'package:caresitter_customer/features/auth/presentation/screens/recovery_email_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +50,8 @@ import 'package:caresitter_customer/core/router/auth_route_redirect.dart';
 import 'package:caresitter_customer/app/router/shell_scaffold.dart';
 import 'package:caresitter_customer/app/screens/not_found_screen.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
+import 'package:caresitter_customer/app/onboarding/onboarding_screen.dart';
+import 'package:caresitter_customer/app/onboarding/onboarding_status.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -131,16 +137,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: kIsWeb ? AppRoutes.home : AppRoutes.onboarding,
     errorBuilder: (context, state) => const NotFoundScreen(),
     refreshListenable: refreshSignal,
-    redirect: (context, state) => authSessionRouteRedirect(
-      location: state.uri.toString(),
-      isAuthenticated: ref
-          .read(authStateProvider.future)
-          .then((session) => session.isAuthenticated),
-    ),
+    redirect: (context, state) {
+      final auth = ref.read(authStateProvider);
+      // A state listener runs before AsyncNotifier replaces its completed
+      // .future. Prefer the published session so the first Google login does
+      // not redirect with the previous anonymous session (and vice versa).
+      final authenticated = auth.isLoading
+          ? ref
+              .read(authStateProvider.future)
+              .then((session) => session.isAuthenticated)
+          : Future<bool>.value(
+              !auth.hasError && auth.valueOrNull?.isAuthenticated == true);
+      return authSessionRouteRedirect(
+        location: state.uri.toString(),
+        isAuthenticated: authenticated,
+        hasCompletedOnboarding: state.uri.path == AppRoutes.onboarding
+            ? OnboardingStatus.hasCompleted()
+            : null,
+      );
+    },
     routes: [
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(
+          registerRoute: AppRoutes.register,
+          loginRoute: AppRoutes.login,
+        ),
+      ),
       GoRoute(
         path: AppRoutes.root,
         redirect: (_, __) => AppRoutes.home,
@@ -301,6 +327,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      if (LabDemoPolicy.enabled)
+        GoRoute(
+            path: AppRoutes.labDiagnostics,
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (_, __) => const LabDiagnosticsScreen()),
       // ── Booking ──────────────────────────────────
       GoRoute(
         path: AppRoutes.bookingNew,
@@ -334,6 +365,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             result: state.uri.queryParameters['result'] ?? 'failed',
           ),
         ),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${AppRoutes.bookings}/:id/reports',
+        pageBuilder: (_, state) => _slideUpPage(
+            pageKey: state.pageKey,
+            child: ReportsScreen(bookingId: state.pathParameters['id']!)),
       ),
       // ── Shift Tracking ───────────────────────
       GoRoute(

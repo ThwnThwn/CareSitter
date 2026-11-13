@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
     <ProjectReference Include="..\..\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Contracts\CareSitter.Contracts.csproj" />
     <ProjectReference Include="..\..\Shared\CareSitter.Infrastructure\CareSitter.Infrastructure.csproj" />

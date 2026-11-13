@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256, file_sha256, load_json
 from .review import materialize_reviewed_graph
 from .rights import resolve_citation_sources, resolve_source
@@ -15,8 +16,9 @@ CLINICAL_KINDS = {"recipe", "rule", "clinical_edge"}
 
 def prepare_release(
     *, workspace: Path, manifest_path: Path, bundle_source_id: str, evidence_path: Path,
-    graph: dict[str, Any], ledger: dict[str, Any], policy: dict[str, Any]
+    graph: dict[str, Any], ledger: dict[str, Any], policy: dict[str, Any], review_policy=DEFAULT
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    check(review_policy, ledger)
     source, bundle_path = resolve_source(
         workspace=workspace, manifest_path=manifest_path, source_id=bundle_source_id
     )
@@ -30,6 +32,7 @@ def prepare_release(
 
     bundle = load_json(bundle_path)
     evidence = load_json(evidence_path)
+    check(review_policy, evidence)
     bundle_hash = file_sha256(bundle_path)
     if evidence.get("packageKey") != bundle.get("packageKey"):
         raise ManualGraphError("release evidence packageKey does not match the bundle")
@@ -45,7 +48,7 @@ def prepare_release(
     if any(item["rights_status"] != "permitted" for item in citation_sources):
         raise ManualGraphError("release preparation requires every cited source to be permitted")
 
-    reviewed = materialize_reviewed_graph(graph, ledger, policy)
+    reviewed = materialize_reviewed_graph(graph, ledger, policy, review_policy)
     if reviewed["pending_count"] != 0 or reviewed["rejected_count"] != 0 or reviewed["blocked_edge_candidate_ids"]:
         raise ManualGraphError("every candidate must be approved before release preparation")
     if reviewed["record_count"] != graph["candidate_count"]:
@@ -53,22 +56,36 @@ def prepare_release(
 
     candidates = {item["candidate_id"]: item for item in graph["candidates"]}
     clinical_reviewers: set[str] = set()
+    data_reviewers: set[str] = set()
     reviewer_roles: dict[str, set[str]] = {}
     for decision in ledger.get("decisions") or []:
         candidate = candidates[decision["candidate_id"]]
         reviewer_id = decision["reviewer_id"]
         role = decision["reviewer_role"]
         reviewer_roles.setdefault(reviewer_id, set()).add(role)
-        if candidate["kind"] in CLINICAL_KINDS:
+        if review_policy == REFERENCE and role == "data_steward":
+            data_reviewers.add(reviewer_id)
+        if review_policy != REFERENCE and candidate["kind"] in CLINICAL_KINDS:
             if role not in CLINICAL_ROLES:
                 raise ManualGraphError("clinical candidates require a dietitian or physician")
             clinical_reviewers.add(reviewer_id)
-    if not clinical_reviewers:
-        raise ManualGraphError("at least one clinical reviewer is required")
-    clinical_review = evidence.get("clinicalReview") or {}
-    clinical_reviewer_id = str(clinical_review.get("reviewerId") or "").strip()
-    if not clinical_reviewer_id or clinical_reviewer_id not in clinical_reviewers:
-        raise ManualGraphError("clinicalReview.reviewerId must identify a clinical candidate reviewer")
+    if review_policy != REFERENCE:
+        if not clinical_reviewers:
+            raise ManualGraphError("at least one clinical reviewer is required")
+        clinical_review = evidence.get("clinicalReview") or {}
+        clinical_reviewer_id = str(clinical_review.get("reviewerId") or "").strip()
+        if not clinical_reviewer_id or clinical_reviewer_id not in clinical_reviewers:
+            raise ManualGraphError("clinicalReview.reviewerId must identify a clinical candidate reviewer")
+    else:
+        if evidence.get("clinicalReview"):
+            raise ManualGraphError("non_medical_reference evidence cannot carry a clinical review")
+        for row in evidence.get("recipes") or []:
+            data_review = row.get("dataReview") or {}
+            reviewer_id = str(data_review.get("reviewerId") or "").strip()
+            if data_review.get("decision") != "approved" or data_review.get("reviewerRole") != "data_steward" \
+                    or not reviewer_id:
+                raise ManualGraphError("every recipe requires an approved data-steward review")
+            data_reviewers.add(reviewer_id)
 
     source_reviews = [{
         "sourceRevisionId": source["revision_id"], "rightsStatus": source["rights_status"]
@@ -80,6 +97,7 @@ def prepare_release(
         raise ManualGraphError("release sources must have unique revision ids")
     source_reviews.sort(key=lambda item: item["sourceRevisionId"])
     knowledge_review = {
+        **metadata(review_policy),
         "schemaVersion": 1,
         "candidateGraphSha256": graph["content_sha256"],
         "decisionLedgerSha256": content_sha256(ledger),
@@ -92,8 +110,11 @@ def prepare_release(
         "clinicalReviewerIds": sorted(clinical_reviewers),
         "decision": "approved",
     }
-    output_evidence = {**evidence, "knowledgeReview": knowledge_review}
+    if review_policy == REFERENCE:
+        knowledge_review["dataReviewerIds"] = sorted(data_reviewers)
+    output_evidence = {**evidence, **metadata(review_policy), "knowledgeReview": knowledge_review}
     authorization = {
+        **metadata(review_policy),
         "schema_version": 1,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "package_key": bundle["packageKey"],

@@ -53,7 +53,11 @@ class ToastMessageContent extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ToastLeading(accent: accent, icon: icon),
+              _ToastLeading(
+                accent: accent,
+                icon: icon,
+                isLoading: type == AppToastType.loading,
+              ),
               const SizedBox(width: AppSpacing.compact),
               Expanded(
                 child: _ToastCopy(
@@ -85,10 +89,15 @@ class ToastMessageContent extends StatelessWidget {
 }
 
 class _ToastLeading extends StatelessWidget {
-  const _ToastLeading({required this.accent, required this.icon});
+  const _ToastLeading({
+    required this.accent,
+    required this.icon,
+    required this.isLoading,
+  });
 
   final Color accent;
   final IconData icon;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
@@ -98,7 +107,16 @@ class _ToastLeading extends StatelessWidget {
           margin: const EdgeInsets.only(top: AppSpacing.micro),
           alignment: Alignment.center,
           decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-          child: Icon(icon, color: AppColors.onPrimary, size: 16),
+          child: isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onPrimary,
+                  ),
+                )
+              : Icon(icon, color: AppColors.onPrimary, size: 16),
         ),
       );
 }

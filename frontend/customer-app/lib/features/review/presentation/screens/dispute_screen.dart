@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/review/presentation/widgets/dispute_booking_fmt_list.dart';
 import 'package:caresitter_customer/features/review/presentation/widgets/dispute_layout.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
@@ -38,7 +39,8 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
 
   Future<void> _pickImage() async {
     if (_attachments.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
             content: Text('Chỉ được đính kèm tối đa 5 hình ảnh/tệp.')),
       );
@@ -54,7 +56,8 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
 
   Future<void> _pickVideo() async {
     if (_attachments.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
             content: Text('Chỉ được đính kèm tối đa 5 hình ảnh/tệp.')),
       );
@@ -143,7 +146,8 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         popOrGo(context, fallbackRoute: AppRoutes.bookings);
-        ScaffoldMessenger.of(context).showSnackBar(
+        AppToast.showLegacy(
+          context,
           const SnackBar(
             content: Text(
                 '✅ Khiếu nại đã được ghi nhận. Chúng tôi sẽ liên hệ bạn sớm.'),
@@ -154,7 +158,8 @@ class _DisputeScreenState extends ConsumerState<DisputeScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
+        AppToast.showLegacy(
+          context,
           SnackBar(
             content: Text('Lỗi gửi khiếu nại: $e'),
             backgroundColor: AppColors.error,

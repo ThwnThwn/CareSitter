@@ -10,7 +10,8 @@ internal static class HealthProfilePatch
         "allergies", "chronicConditions", "medications", "foodAllergyStatus", "nutritionProfile"];
     private static readonly HashSet<string> NutritionFields = ["conditionsStatus", "medicationsStatus",
         "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction",
-        "dietaryPattern", "nutritionGoal", "guidance", "symptoms"];
+        "dietaryPattern", "nutritionGoal", "mealFormatPreference", "preferredFoods",
+        "dislikedFoods", "guidance", "symptoms"];
 
     public static Result Validate(JsonElement changes)
     {
@@ -92,6 +93,8 @@ internal static class HealthProfilePatch
                 "fluidRestriction" or "electrolyteRestriction" => text is "unknown" or "none" or "present",
                 "dietaryPattern" => text is "regular" or "vegetarian",
                 "nutritionGoal" => text is "maintain" or "gain" or "lose",
+                "mealFormatPreference" => text is "no_preference" or "prefer_dry" or "prefer_soup",
+                "preferredFoods" or "dislikedFoods" => text!.Length <= 800,
                 _ => text!.Length <= 4000
             };
         });

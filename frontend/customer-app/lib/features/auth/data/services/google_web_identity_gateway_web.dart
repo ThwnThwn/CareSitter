@@ -33,9 +33,10 @@ class GoogleWebIdentityGateway implements GoogleIdentityGateway {
     final requestId = List.generate(32, (_) => random.nextInt(256))
         .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
         .join();
-    final apiBase = Uri.parse(EnvConfig.apiBaseUrl);
+    final authBaseUrl = EnvConfig.googleAuthBaseUrl;
+    final apiBase = Uri.parse(authBaseUrl);
     final endpoint = Uri.parse(
-      '${EnvConfig.apiBaseUrl.replaceAll(RegExp(r'/+$'), '')}/auth/google/customer/web/start',
+      '$authBaseUrl/auth/google/customer/web/start',
     ).replace(queryParameters: {
       'origin': web.window.location.origin,
       'requestId': requestId,

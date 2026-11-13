@@ -18,13 +18,20 @@ static async Task<int> RunAsync(string[] arguments)
         return arguments[0] switch
         {
             "validate" when arguments.Length == 2 => await ValidateAsync(arguments[1]),
+            "audit" => await CatalogAudit.RunAsync(arguments[1..]),
             "release-check" when arguments.Length == 3 => await ReleaseCheckAsync(arguments[1], arguments[2]),
             "import" when arguments.Length == 3 && arguments[2] == "--dry-run" =>
                 await ImportDryRunAsync(arguments[1]),
             "import" when arguments.Length == 3 => await ImportAsync(arguments[1], arguments[2]),
             "prepare-demo" when arguments.Length == 3 => await PrepareLocalDemoAsync(arguments[1], arguments[2]),
             "import-demo" when arguments.Length == 2 => await ImportLocalDemoAsync(arguments[1]),
-            "review" when arguments.Length == 5 => await ReviewAsync(arguments[1], arguments[2], arguments[3], arguments[4]),
+            "review" when arguments.Length == 5 => await ReviewAsync(arguments[1], arguments[2], arguments[3], arguments[4],
+                CatalogReleaseValidator.SourceAndClinicalPolicy),
+            "review" when arguments.Length == 7 && arguments[5] == "--review-policy" =>
+                await ReviewAsync(arguments[1], arguments[2], arguments[3], arguments[4], arguments[6]),
+            "review-policy" when arguments.Length == 1 => await ShowReviewPolicyAsync(),
+            "set-review-policy" when arguments.Length == 4 && arguments[2] == "--reason" =>
+                await SetReviewPolicyAsync(arguments[1], arguments[3]),
             "publish" when arguments.Length == 3 => await TransitionAsync("publish_catalog_bundle", arguments[1], arguments[2]),
             "retire" when arguments.Length == 3 => await RetireAsync(arguments[1], arguments[2]),
             _ => Usage()
@@ -34,6 +41,12 @@ static async Task<int> RunAsync(string[] arguments)
     {
         Write(new { ok = false, error = error.Message });
         return error.ExitCode;
+    }
+    catch (Exception error) when (arguments.FirstOrDefault() == "audit" &&
+        error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException)
+    {
+        Write(new { ok = false, error = "Catalog audit/input operation failed. Check input metadata, output path and access permissions." });
+        return 2;
     }
     catch (PostgresException error)
     {
@@ -89,11 +102,15 @@ static async Task<(CatalogBundle Bundle, CatalogReleaseEvidence Evidence, string
     }
 }
 
-static async Task<int> ReviewAsync(string idText, string digest, string bundlePath, string evidencePath)
+static async Task<int> ReviewAsync(string idText, string digest, string bundlePath, string evidencePath, string reviewPolicy)
 {
     if (!Guid.TryParse(idText, out var id) || id == Guid.Empty) throw new CatalogToolException("Package ID must be a non-empty UUID.", 2);
     if (digest.Length != 64 || digest.Any(character => !Uri.IsHexDigit(character))) throw new CatalogToolException("Digest must be a SHA-256 hexadecimal value.", 2);
+    RequireReviewPolicy(reviewPolicy);
     var (bundle, evidence, _, result) = await ReadReleaseAsync(bundlePath, evidencePath);
+    // The policy must be chosen explicitly on the command line; evidence alone cannot opt in.
+    if ((evidence.ReviewPolicy ?? CatalogReleaseValidator.SourceAndClinicalPolicy) != reviewPolicy)
+        throw new CatalogToolException("Evidence review_policy must match --review-policy.", 2);
     if (!result.IsReleaseReady)
     {
         Write(new { ok = false, releaseReady = false, issues = result.Issues });
@@ -101,6 +118,11 @@ static async Task<int> ReviewAsync(string idText, string digest, string bundlePa
     }
     await using var connection = await OpenAsync();
     await using var transaction = await connection.BeginTransactionAsync();
+    await using (var current = new NpgsqlCommand("SELECT nutrition.current_catalog_review_policy()", connection, transaction))
+    {
+        if (await current.ExecuteScalarAsync() as string != reviewPolicy)
+            throw new CatalogToolException("Database catalog review policy differs from --review-policy; ask the migration owner to change it with a reason.", 3);
+    }
     await using (var record = new NpgsqlCommand("SELECT nutrition.record_catalog_release_evidence(@id,@digest,@bundle,@evidence)", connection, transaction))
     {
         record.Parameters.AddWithValue("id", id);
@@ -115,6 +137,37 @@ static async Task<int> ReviewAsync(string idText, string digest, string bundlePa
     var value = await review.ExecuteScalarAsync();
     await transaction.CommitAsync();
     WriteJson(value);
+    return 0;
+}
+
+static void RequireReviewPolicy(string reviewPolicy)
+{
+    if (reviewPolicy is not (CatalogReleaseValidator.SourceAndClinicalPolicy or CatalogReleaseValidator.NonMedicalReferencePolicy))
+        throw new CatalogToolException("Review policy must be source_and_clinical or non_medical_reference.", 2);
+}
+
+static async Task<int> ShowReviewPolicyAsync()
+{
+    await using var connection = await OpenAsync();
+    await using var command = new NpgsqlCommand(
+        "SELECT nutrition.current_catalog_review_policy(), nutrition.published_catalog_review_policies()", connection);
+    await using var reader = await command.ExecuteReaderAsync();
+    await reader.ReadAsync();
+    Write(new { ok = true, reviewPolicy = reader.GetString(0), publishedPolicies = reader.GetFieldValue<string[]>(1) });
+    return 0;
+}
+
+// Requires the migration-owner connection: reviewer/publisher roles have no update grant.
+static async Task<int> SetReviewPolicyAsync(string reviewPolicy, string reason)
+{
+    RequireReviewPolicy(reviewPolicy);
+    if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 5)
+        throw new CatalogToolException("Policy change reason must contain at least five characters.", 2);
+    await using var connection = await OpenAsync();
+    await using var command = new NpgsqlCommand("SELECT nutrition.set_catalog_review_policy(@policy,@reason)", connection);
+    command.Parameters.AddWithValue("policy", reviewPolicy);
+    command.Parameters.AddWithValue("reason", reason.Trim());
+    Write(new { ok = true, reviewPolicy = await command.ExecuteScalarAsync() as string });
     return 0;
 }
 
@@ -259,7 +312,7 @@ static void Write<T>(T value) => Console.WriteLine(JsonSerializer.Serialize(valu
 
 static int Usage()
 {
-    Console.Error.WriteLine("Usage: catalog-tool validate <bundle.json> | release-check <bundle.json> <evidence.json> | import <bundle.json> --dry-run | import <bundle.json> <evidence.json> | prepare-demo <bundle.json> <output.json> | import-demo <bundle.json> | review <package-id> <digest> <bundle.json> <evidence.json> | publish <package-id> <digest> | retire <package-id> <reason>");
+    Console.Error.WriteLine("Usage: catalog-tool audit (--bundle <bundle.json> | --active [--demo-key <key>]) [--output <directory>] | validate <bundle.json> | release-check <bundle.json> <evidence.json> | import <bundle.json> --dry-run | import <bundle.json> <evidence.json> | prepare-demo <bundle.json> <output.json> | import-demo <bundle.json> | review <package-id> <digest> <bundle.json> <evidence.json> [--review-policy source_and_clinical|non_medical_reference] | review-policy | set-review-policy <policy> --reason <text> | publish <package-id> <digest> | retire <package-id> <reason>");
     return 1;
 }
 

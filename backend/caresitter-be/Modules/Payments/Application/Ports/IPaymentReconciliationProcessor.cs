@@ -5,7 +5,8 @@ namespace CareSitter.Modules.Payments.Application;
 
 public interface IPaymentReconciliationProcessor
 {
-    Task<IReadOnlyList<PaymentReconciliationItem>> ListAsync(CancellationToken ct = default);
+    Task<PaymentPage<PaymentReconciliationItem>> ListAsync(
+        int page, int pageSize, CancellationToken ct = default);
     Task<Result<PaymentReviewResolution>> ResolveAsync(
         ResolvePaymentReviewCommand command, CancellationToken ct = default);
 }

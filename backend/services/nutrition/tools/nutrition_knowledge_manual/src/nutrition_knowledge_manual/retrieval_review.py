@@ -11,6 +11,7 @@ from .corpus_freeze import (
     validate_retrieval_corpus_freeze_document,
 )
 from .errors import ManualGraphError
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .jsonio import content_sha256
 from .retrieval_eval import load_retrieval_chunks
 from .retrieval_contract import validate_answerability_and_citations
@@ -80,8 +81,10 @@ def record_retrieval_case_review(
     reviewer_role: str,
     comment: str,
     reviewed_at_utc: str | None = None,
+    review_policy=DEFAULT,
 ) -> dict[str, Any]:
     """Record the review that the caller's role is permitted to make for one case."""
+    check(review_policy, ledger, role=reviewer_role)
     case_hashes = validate_retrieval_review_ledger(
         cases=cases, corpus_freeze=corpus_freeze, ledger=ledger
     )
@@ -105,6 +108,8 @@ def record_retrieval_case_review(
         "comment": _required_text(comment, "comment"),
         "reviewed_at_utc": _timestamp(reviewed_at_utc),
     }
+    if review_policy == REFERENCE:
+        result.update(metadata(review_policy))
     return _sign_ledger(result)
 
 
@@ -143,9 +148,10 @@ def validate_retrieval_review_ledger(
 
 
 def retrieval_review_status(
-    *, cases: dict[str, Any], corpus_freeze: dict[str, Any], ledger: dict[str, Any]
+    *, cases: dict[str, Any], corpus_freeze: dict[str, Any], ledger: dict[str, Any], review_policy=DEFAULT
 ) -> dict[str, Any]:
     """Summarize review progress. This never changes an evaluation set's release state."""
+    check(review_policy, ledger)
     case_hashes = validate_retrieval_review_ledger(
         cases=cases, corpus_freeze=corpus_freeze, ledger=ledger
     )
@@ -167,7 +173,7 @@ def retrieval_review_status(
             counts[key] += 1
     all_approved = (
         counts["source_locator_approved"] == len(case_hashes)
-        and counts["clinical_relevance_approved"] == len(case_hashes)
+        and (review_policy == REFERENCE or counts["clinical_relevance_approved"] == len(case_hashes))
     )
     return {
         "schema_version": 1,

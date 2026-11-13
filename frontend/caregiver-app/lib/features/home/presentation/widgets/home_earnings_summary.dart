@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeEarningsSummary extends StatelessWidget {
@@ -24,7 +23,7 @@ class HomeEarningsSummary extends StatelessWidget {
                 avgLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.beVietnamPro(
+                style: const TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s11,
                   color: AppColors.textSecondary,
                 ),
@@ -32,9 +31,9 @@ class HomeEarningsSummary extends StatelessWidget {
             }),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          const Text(
             'Đã trả vào Ví CareSitter',
-            style: GoogleFonts.beVietnamPro(
+            style: TextStyle(fontFamily: 'Inter',
               fontSize: AppFontSizes.s11,
               fontWeight: FontWeight.w500,
               color: AppColors.primary,

@@ -6,7 +6,7 @@ import { Booking, Dispute } from '../../types';
 import { useResource } from '../../useResource';
 import { cancelDispute, resolveDispute } from './disputeApi';
 
-export function useDisputeReview(selected: Dispute, onChanged: () => void) {
+export function useDisputeReview(selected: Dispute, onChanged: (message: string) => void) {
   const { reviewableStatuses } = useAdminMetadata();
   const detail = useResource<Dispute>(`/api/v1/admin/disputes/${selected.id}`, selected);
   const dispute = detail.data;
@@ -26,15 +26,15 @@ export function useDisputeReview(selected: Dispute, onChanged: () => void) {
   }
   function reloadDetails() { void detail.reload(); void booking.reload(); }
   function chooseDecision(value: string) { setDecision(value); setRefundAmount(0); setPenaltyAmount(0); }
-  async function resolve(confirm: () => boolean) {
-    if (mutation.busy || !actionable || !allocation || booking.data?.status !== 'disputed' || !confirm()) return;
+  async function resolve(confirm: () => boolean | Promise<boolean>) {
+    if (mutation.busy || !actionable || !allocation || booking.data?.status !== 'disputed' || !(await confirm())) return;
     const resolution = { decision, refundAmount: allocation.refund, caregiverPenaltyAmount: allocation.penalty };
     await mutation.run('resolve', signal => resolveDispute(dispute.id, resolution, signal),
-      'Không thể giải quyết khiếu nại.', onChanged, reloadDetails);
+      'Không thể giải quyết khiếu nại.', onChanged, 'Phán quyết đã được ghi nhận.', reloadDetails);
   }
-  async function cancel(confirm: () => boolean) {
-    if (mutation.busy || !actionable || !confirm()) return;
-    await mutation.run('cancel', signal => cancelDispute(dispute.id, signal), 'Không thể hủy khiếu nại.', onChanged);
+  async function cancel(confirm: () => boolean | Promise<boolean>) {
+    if (mutation.busy || !actionable || !(await confirm())) return;
+    await mutation.run('cancel', signal => cancelDispute(dispute.id, signal), 'Không thể hủy khiếu nại.', onChanged, 'Hủy khiếu nại thành công.');
   }
   return { dispute, booking: booking.data, decision, chooseDecision, refundAmount, setRefundAmount, penaltyAmount, setPenaltyAmount,
     loading, loadError, actionable, allocation, validation, reloadDetails, busy: mutation.busy, error: mutation.error, resolve, cancel };

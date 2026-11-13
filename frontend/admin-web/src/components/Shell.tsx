@@ -2,12 +2,13 @@ import { ReactNode } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import {
   CalendarCheck, ClipboardList, HandCoins, Headphones,
-  LayoutDashboard, LogOut, Package, ShieldCheck, TicketPercent, UsersRound,
+  Bug, LayoutDashboard, LogOut, Package, ShieldCheck, TicketPercent, UsersRound,
 } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 import { PageKey } from '../types';
 
 const pageIcons: Record<PageKey, typeof LayoutDashboard> = {
+  'crash-reports': Bug,
   dashboard: LayoutDashboard,
   bookings: CalendarCheck,
   kyc: ShieldCheck,

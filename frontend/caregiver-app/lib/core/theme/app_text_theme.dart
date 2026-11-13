@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_colors.dart';
 
 /// Text theme dùng Be Vietnam Pro và helper tạo TextStyle.
 abstract final class AppTextTheme {
+  static TextTheme applyBundledFont(TextTheme theme) =>
+      theme.apply(fontFamily: 'Inter');
   static TextTheme build() {
-    return GoogleFonts.beVietnamProTextTheme(
+    return AppTextTheme.applyBundledFont(
       TextTheme(
         // display-lg: 32/700, -0.02em
         displayLarge: textStyle(32, AppColors.textPrimary,

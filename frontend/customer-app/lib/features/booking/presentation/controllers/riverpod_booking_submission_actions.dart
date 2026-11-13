@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/core/analytics/app_analytics.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/features/booking/data/models/booking_list_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../beneficiary/presentation/controllers/beneficiary_controller.dart';
@@ -13,7 +15,8 @@ class RiverpodBookingSubmissionActions implements BookingSubmissionActions {
           String addressId) =>
       ref.read(selfRecipientProvider.notifier).resolve(addressId);
   @override
-  bool get selfComplete => ref.read(selfRecipientProvider).requireValue.isComplete;
+  bool get selfComplete =>
+      ref.read(selfRecipientProvider).requireValue.isComplete;
   @override
   void publishSelf(BeneficiaryModel profile) {
     ref.invalidate(bookingRecipientsProvider);
@@ -23,8 +26,32 @@ class RiverpodBookingSubmissionActions implements BookingSubmissionActions {
   @override
   void reloadSelf() => ref.read(selfRecipientProvider.notifier).load();
   @override
-  Future<BookingModel> createBooking(BookingDraft draft) =>
-      ref.read(bookingStoreProvider.notifier).createBooking(draft);
+  Future<BookingModel> createBooking(BookingDraft draft) async {
+    final generation = ref.read(authStateProvider.notifier).sessionGeneration;
+    void record(BookingModel booking) {
+      if (generation !=
+          ref.read(authStateProvider.notifier).sessionGeneration) {
+        return;
+      }
+      ref
+          .read(appAnalyticsProvider)
+          .logOnce(AnalyticsEvent.bookingCreated, booking.id, {
+        'service_category': 'care_service',
+        'match_mode': draft.isSystemMatched ? 'system' : 'selected'
+      });
+    }
+
+    try {
+      final booking =
+          await ref.read(bookingStoreProvider.notifier).createBooking(draft);
+      record(booking);
+      return booking;
+    } on BookingCreatedException catch (error) {
+      record(error.booking);
+      rethrow;
+    }
+  }
+
   @override
   Future<BookingListResponse> getBookings(
           {required int page, required int pageSize}) =>

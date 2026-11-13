@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
@@ -30,7 +29,7 @@ class KpiItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.beVietnamPro(
+          style: const TextStyle(fontFamily: 'Inter',
             fontSize: AppFontSizes.s12,
             color: AppColors.textSecondary,
           ),
@@ -44,7 +43,7 @@ class KpiItem extends StatelessWidget {
               children: [
                 Text(
                   value ?? '',
-                  style: GoogleFonts.beVietnamPro(
+                  style: TextStyle(fontFamily: 'Inter',
                     fontSize:
                         unit != null ? AppFontSizes.s24 : AppFontSizes.s18,
                     fontWeight: FontWeight.w700,
@@ -57,7 +56,7 @@ class KpiItem extends StatelessWidget {
                   const SizedBox(width: AppSpacing.micro),
                   Text(
                     unit!,
-                    style: GoogleFonts.beVietnamPro(
+                    style: const TextStyle(fontFamily: 'Inter',
                       fontSize: AppFontSizes.s11,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondary,
@@ -77,7 +76,7 @@ class KpiItem extends StatelessWidget {
             ),
             child: Text(
               badge!,
-              style: GoogleFonts.beVietnamPro(
+              style: const TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s10,
                 fontWeight: FontWeight.w600,
                 color: AppColors.primary,

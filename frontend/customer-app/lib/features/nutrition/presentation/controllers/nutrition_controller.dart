@@ -8,6 +8,7 @@ import '../../data/models/nutrition_resource_model.dart';
 import '../../data/models/recipe_option_model.dart';
 import '../../data/models/meal_plan_summary_model.dart';
 import '../models/nutrition_failure_model.dart';
+import '../models/nutrition_week_generation_result.dart';
 import 'nutrition_operation_scope.dart';
 import 'nutrition_assessment_poller.dart';
 import 'nutrition_actions_controller.dart';
@@ -52,7 +53,9 @@ final nutritionFlowProvider =
           retryAllowed: resource?.result.decision.allows('retry') ?? false),
       selectedDate: request.selectedDate,
       dateLoading: request.dateLoading,
-      dateError: request.dateError);
+      dateError: request.dateError,
+      weekProgress: request.weekProgress,
+      planTargetDays: request.planTargetDays);
 });
 
 class NutritionFlowController extends StateNotifier<NutritionRequestState> {
@@ -67,6 +70,8 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   final NutritionSnapshotStore _cache;
   final bool _ownsCache;
   int _dateRequestGeneration = 0;
+  DateTime? _automaticRecommendationDate;
+  bool _advancingAutomatically = false;
   NutritionFlowController(this.repository, this.id, this.user,
       {NutritionSnapshotStore? cache})
       : _cache = cache ?? NutritionSnapshotStore(),
@@ -94,6 +99,8 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
       selectedDate: state.selectedDate,
       dateLoading: state.dateLoading,
       dateError: state.dateError,
+      weekProgress: state.weekProgress,
+      planTargetDays: state.planTargetDays,
     );
   }
 
@@ -111,7 +118,9 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
         recommendationsEnabled: value.recommendationsEnabled,
         selectedDate: state.selectedDate,
         dateLoading: state.dateLoading,
-        dateError: state.dateError);
+        dateError: state.dateError,
+        weekProgress: state.weekProgress,
+        planTargetDays: state.planTargetDays);
   }
 
   int get revision => view.health?.revision ?? 0;
@@ -123,6 +132,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   bool _current(int generation) => mounted && _scope.current(generation);
 
   Future<void> load({bool restorePlan = true}) async {
+    _automaticRecommendationDate = null;
     _cancel();
     final generation = _generation;
     _publish(const NutritionFlow(loading: true));
@@ -150,7 +160,9 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
           restoringPlan: true,
           recommendationsEnabled: flags.recommendationsEnabled));
       try {
-        final plan = await _actions.latestPlan(_token);
+        final plan = await _actions
+            .latestPlan(_token)
+            .timeout(NutritionActionsController.planLoadTimeout);
         if (!_current(generation)) return;
         _publish(NutritionFlow(
             health: health,
@@ -158,9 +170,12 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
             recommendationsEnabled: flags.recommendationsEnabled));
       } catch (error) {
         if (!_current(generation)) return;
+        if (error is TimeoutException) _cancel();
         _publish(NutritionFlow(
             health: health,
-            error: NutritionFailureModel(error).message,
+            error: error is TimeoutException
+                ? 'Không tải kịp thực đơn đã lưu. Vui lòng thử lại.'
+                : NutritionFailureModel(error).message,
             recommendationsEnabled: flags.recommendationsEnabled));
       }
     } catch (e) {
@@ -180,6 +195,64 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
           health: health, recommendationsEnabled: view.recommendationsEnabled);
     });
     if (_current(generation) && view.error == null) _actions.healthChanged();
+  }
+
+  Future<void> saveHealthAndAssess(Map<String, dynamic> changes,
+      {DateTime? plannedDate}) async {
+    if (!mounted || view.loading || revision == 0) return;
+    if (changes.isNotEmpty) {
+      final saving = saveHealth(changes);
+      final generation = _generation;
+      await saving;
+      if (!_current(generation) || view.error != null || view.health == null) {
+        return;
+      }
+    }
+    _automaticRecommendationDate = plannedDate;
+    await assess();
+    if (plannedDate != null) {
+      await _advanceAutomaticRecommendation(_generation);
+    }
+  }
+
+  Future<void> _advanceAutomaticRecommendation(int generation) async {
+    if (_advancingAutomatically ||
+        !_current(generation) ||
+        _automaticRecommendationDate == null ||
+        view.error != null) {
+      return;
+    }
+    final resource = view.resource;
+    if (resource == null || resource.healthRevision != revision) {
+      return;
+    }
+    if (NutritionAssessmentRules.pending(resource.status)) {
+      return;
+    }
+    if (resource.status != 'awaiting_confirmation' ||
+        resource.payload['parserSchemaVersion'] != null ||
+        !resource.result.decision.allows('confirm') ||
+        !view.recommendationsEnabled) {
+      _automaticRecommendationDate = null;
+      return;
+    }
+    _advancingAutomatically = true;
+    final date = _automaticRecommendationDate!;
+    try {
+      await confirm();
+      if (!_current(generation) || view.error != null) {
+        return;
+      }
+      final confirmed = view.resource;
+      if (confirmed?.status != 'confirmed' ||
+          confirmed?.result.decision.allows('recommend') != true) {
+        return;
+      }
+      await recommend(plannedDate: date);
+    } finally {
+      _automaticRecommendationDate = null;
+      _advancingAutomatically = false;
+    }
   }
 
   Future<void> assess({bool retryFailed = false}) async {
@@ -232,6 +305,218 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
         _sameDate(resultDate, _dateOnly(plannedDate));
   }
 
+  Future<NutritionWeekGenerationResult> generateWeek(DateTime startDate,
+      {int days = 7}) async {
+    if (!const {3, 5, 7}.contains(days)) {
+      return NutritionWeekGenerationResult(
+          createdDays: 0,
+          existingDays: 0,
+          targetDays: days,
+          error: 'Khoảng thời gian tạo thực đơn không hợp lệ.');
+    }
+    const unavailable =
+        'Hãy lưu và kiểm tra hồ sơ dinh dưỡng trước khi tạo thực đơn tuần.';
+    if (!mounted ||
+        view.loading ||
+        view.restoringPlan ||
+        !view.recommendationsEnabled ||
+        revision == 0) {
+      return NutritionWeekGenerationResult(
+          createdDays: 0,
+          existingDays: 0,
+          targetDays: days,
+          error: unavailable,
+          needsProfile: true);
+    }
+    final starting = view;
+    final resource = starting.resource;
+    final assessmentId = resource?.status == 'confirmed'
+        ? resource?.id
+        : resource?.result.assessmentId;
+    if (resource == null ||
+        resource.status == 'stale' ||
+        resource.healthRevision != revision ||
+        assessmentId == null ||
+        assessmentId.isEmpty) {
+      return NutritionWeekGenerationResult(
+          createdDays: 0,
+          existingDays: 0,
+          targetDays: days,
+          error: unavailable,
+          needsProfile: true);
+    }
+
+    _automaticRecommendationDate = null;
+    _cancel();
+    final generation = _generation;
+    final healthRevision = revision;
+    final firstDate = _dateOnly(startDate);
+    var created = 0;
+    var existing = 0;
+    String? failure;
+    NutritionFailureModel? requestFailure;
+    var stale = false;
+    NutritionResourceModel? firstPlan;
+    final usedIds = <String>{};
+    final usedNames = <String>{};
+    _setWeekProgress(0, targetDays: days);
+    _publish(NutritionFlow(
+        health: starting.health,
+        resource: resource,
+        loading: true,
+        recommendationsEnabled: starting.recommendationsEnabled));
+    try {
+      final savedPlans = await _actions.plans(_token, weekStart: firstDate);
+      if (!_current(generation)) {
+        return NutritionWeekGenerationResult(
+            createdDays: created, existingDays: existing, targetDays: days);
+      }
+      final byDate = <String, NutritionResourceModel>{};
+      final lastDate =
+          DateTime(firstDate.year, firstDate.month, firstDate.day + days - 1);
+      for (final plan in savedPlans) {
+        final date = DateTime.tryParse(plan.plannedDate);
+        if (plan.id.isEmpty ||
+            date == null ||
+            date.isBefore(firstDate) ||
+            date.isAfter(lastDate) ||
+            byDate.containsKey(plan.plannedDate)) {
+          continue;
+        }
+        final stored = await _actions.openPlan(plan.id, _token);
+        if (!_current(generation)) break;
+        final signatures = _menuSignatures(stored);
+        stale =
+            stored.status == 'stale' || stored.healthRevision != healthRevision;
+        if (stored.status != 'saved' ||
+            stale ||
+            !_sameDate(
+                DateTime.tryParse(stored.result.plannedDate ?? ''), date) ||
+            signatures == null ||
+            usedIds.contains(signatures.$1) ||
+            usedNames.contains(signatures.$2)) {
+          failure =
+              'Thực đơn ngày ${date.day}/${date.month} cần được kiểm tra lại.';
+          break;
+        }
+        byDate[plan.plannedDate] = stored;
+        usedIds.add(signatures.$1);
+        usedNames.add(signatures.$2);
+      }
+      existing = byDate.length;
+      _setWeekProgress(existing, targetDays: days);
+      for (var day = 0; day < days && failure == null; day++) {
+        if (!_current(generation)) break;
+        final date =
+            DateTime(firstDate.year, firstDate.month, firstDate.day + day);
+        final dateKey = _apiDate(date);
+        final previous = byDate[dateKey];
+        NutritionResourceModel plan;
+        if (previous != null) {
+          plan = previous;
+        } else {
+          final suggestion = await _actions.recommend(
+              assessmentId, healthRevision, _token,
+              plannedDate: date);
+          if (!_current(generation)) break;
+          stale = suggestion.status == 'stale' ||
+              suggestion.healthRevision != healthRevision;
+          if (suggestion.status != 'suggested' ||
+              stale ||
+              !_sameDate(DateTime.tryParse(suggestion.result.plannedDate ?? ''),
+                  date) ||
+              !suggestion.result.decision.allows('save')) {
+            failure =
+                'Chưa tìm được thực đơn phù hợp cho ngày ${date.day}/${date.month}.';
+            break;
+          }
+          final signatures = _menuSignatures(suggestion);
+          if (signatures == null ||
+              usedIds.contains(signatures.$1) ||
+              usedNames.contains(signatures.$2)) {
+            failure =
+                'Chưa tìm được thực đơn khác các ngày trước cho ngày ${date.day}/${date.month}.';
+            break;
+          }
+          plan = await _actions.save(suggestion.id, healthRevision, _token,
+              plannedDate: date);
+          if (!_current(generation)) break;
+          stale =
+              plan.status == 'stale' || plan.healthRevision != healthRevision;
+          if (plan.status != 'saved' ||
+              stale ||
+              !_sameDate(
+                  DateTime.tryParse(plan.result.plannedDate ?? ''), date)) {
+            failure = 'Chưa lưu được thực đơn ngày ${date.day}/${date.month}.';
+            break;
+          }
+        }
+        final signatures = _menuSignatures(plan);
+        if (signatures == null ||
+            (previous == null &&
+                (usedIds.contains(signatures.$1) ||
+                    usedNames.contains(signatures.$2)))) {
+          failure =
+              'Thực đơn ngày ${date.day}/${date.month} trùng hoặc thiếu bữa.';
+          break;
+        }
+        usedIds.add(signatures.$1);
+        usedNames.add(signatures.$2);
+        firstPlan ??= plan;
+        if (previous == null) created++;
+        _setWeekProgress(created + existing, targetDays: days);
+      }
+    } catch (error) {
+      if (_current(generation)) {
+        requestFailure = NutritionFailureModel(error);
+        failure = requestFailure.message;
+      }
+    } finally {
+      if (_current(generation)) {
+        _setWeekProgress(null);
+        final denied = requestFailure?.denied == true;
+        final changed = stale || requestFailure?.stale == true;
+        final result = firstPlan ?? resource;
+        _publish(NutritionFlow(
+            health: denied ? null : starting.health,
+            resource: denied
+                ? null
+                : changed
+                    ? result.withStatus('stale')
+                    : result,
+            error: failure,
+            recommendationsEnabled: starting.recommendationsEnabled));
+      }
+    }
+    return NutritionWeekGenerationResult(
+        createdDays: created,
+        existingDays: existing,
+        targetDays: days,
+        error: failure);
+  }
+
+  (String, String)? _menuSignatures(NutritionResourceModel resource) {
+    final meals = resource.result.meals.toList()
+      ..sort((a, b) => a.mealType.compareTo(b.mealType));
+    if (meals.length != 3 ||
+        !meals
+            .map((meal) => meal.mealType)
+            .toSet()
+            .containsAll(const {'breakfast', 'lunch', 'dinner'}) ||
+        meals.any((meal) =>
+            meal.recipeVersionId.isEmpty || meal.name.trim().isEmpty)) {
+      return null;
+    }
+    return (
+      meals.map((meal) => '${meal.mealType}:${meal.recipeVersionId}').join('|'),
+      meals
+          .map((meal) => '${meal.mealType}:${meal.name.trim().toLowerCase()}')
+          .join('|'),
+    );
+  }
+
+  String _apiDate(DateTime date) => date.toIso8601String().split('T').first;
+
   Future<void> reassess() async {
     if (!mounted || view.loading || view.restoringPlan) return;
     final refresh = load(restorePlan: false);
@@ -250,11 +535,12 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
           view.resource!.id, recipeVersionId, mealType, revision, _token));
   Future<List<RecipeOptionModel>?> options(String mealType) =>
       _list(() => _actions.options(view.resource!.id, mealType, _token));
-  Future<List<MealPlanSummaryModel>?> plans() =>
-      _list(() => _actions.plans(_token));
+  Future<List<MealPlanSummaryModel>?> plans({DateTime? weekStart}) =>
+      _list(() => _actions.plans(_token, weekStart: weekStart));
 
   void selectDate(DateTime date) {
     if (!mounted || state.dateLoading) return;
+    _automaticRecommendationDate = null;
     _setDateState(selectedDate: _dateOnly(date), clearError: true);
   }
 
@@ -275,7 +561,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
       final currentDate =
           DateTime.tryParse(view.resource?.result.plannedDate ?? '');
       if (_sameDate(currentDate, selectedDate)) return true;
-      final availablePlans = await plans();
+      final availablePlans = await plans(weekStart: selectedDate);
       if (!_currentDateRequest(requestGeneration)) return false;
       if (availablePlans == null) {
         _setDateState(dateError: view.error ?? _dateLoadFailure);
@@ -327,7 +613,27 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
         recommendationsEnabled: state.recommendationsEnabled,
         selectedDate: selectedDate ?? state.selectedDate,
         dateLoading: loading ?? state.dateLoading,
-        dateError: clearError ? null : dateError ?? state.dateError);
+        dateError: clearError ? null : dateError ?? state.dateError,
+        weekProgress: state.weekProgress,
+        planTargetDays: state.planTargetDays);
+  }
+
+  void _setWeekProgress(int? progress, {int? targetDays}) {
+    if (!mounted) return;
+    state = NutritionRequestState(
+        beneficiaryId: state.beneficiaryId,
+        healthRevision: state.healthRevision,
+        resourceId: state.resourceId,
+        loading: state.loading,
+        restoringPlan: state.restoringPlan,
+        error: state.error,
+        recommendationsEnabled: state.recommendationsEnabled,
+        selectedDate: state.selectedDate,
+        dateLoading: state.dateLoading,
+        dateError: state.dateError,
+        weekProgress: progress,
+        planTargetDays:
+            progress == null ? null : targetDays ?? state.planTargetDays);
   }
 
   DateTime _dateOnly(DateTime date) =>
@@ -344,6 +650,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
 
   Future<void> openPlan(String planId) async {
     if (!mounted || view.loading || view.restoringPlan) return;
+    _automaticRecommendationDate = null;
     // A result from the previous assessment must not replace this saved plan.
     _cancel();
     final generation = _generation;
@@ -425,10 +732,15 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
     _poller.start(
         active: () => _current(generation),
         read: () => _actions.readAssessment(assessment, token),
-        publish: (resource) => _publish(NutritionFlow(
-            health: view.health,
-            resource: resource,
-            recommendationsEnabled: view.recommendationsEnabled)),
+        publish: (resource) {
+          _publish(NutritionFlow(
+              health: view.health,
+              resource: resource,
+              recommendationsEnabled: view.recommendationsEnabled));
+          if (!NutritionAssessmentRules.pending(resource.status)) {
+            unawaited(_advanceAutomaticRecommendation(generation));
+          }
+        },
         timedOut: (resource) => _publish(NutritionFlow(
             health: view.health,
             resource: resource,
@@ -459,6 +771,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   }
 
   void suspend() {
+    _automaticRecommendationDate = null;
     _cancel();
   }
 

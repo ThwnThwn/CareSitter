@@ -53,7 +53,7 @@
     "BOK_CHOY_FRESH": [],
     "MALABAR_SPINACH_FRESH": [],
     "POMELO_FRESH": [],
-    "PEANUT_OIL": [],
+    "PEANUT_OIL": ["PEANUT"],
     "GRASS_CARP_RAW": ["FISH"],
     "CHICKEN_EGG_RAW": ["EGG"],
     "SAUROPUS_FRESH": [],
@@ -65,7 +65,7 @@
   ],
   "daily_targets": {},
   "input_file_sha256": {
-    "draft": "bc5332320216b1ec80ba87c39ead3c956e7e8bef66915787553d339f27a273f2",
+    "draft": "4779de0c769ef3cc75c55db48d762fb6f5352ac35ae638e3334a04c170b143d0",
     "food_snapshot": "aedf9204031eebb9555f7b804ff72c20215e5a18b4a308c9f000cd76083d915f"
   },
   "blockers": [

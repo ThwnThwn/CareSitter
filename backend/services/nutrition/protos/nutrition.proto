@@ -13,6 +13,7 @@ service NutritionRpc {
   rpc GetResource(ResourceRequest) returns (ResourceResult);
   rpc ListMealPlans(BeneficiaryRequest) returns (ResourceListResult);
   rpc GetReplacementOptions(ReplacementOptionsRequest) returns (RecipeListResult);
+  rpc SearchKnowledge(KnowledgeSearchRequest) returns (KnowledgeSearchResponse);
 }
 
 enum CommandOperation {
@@ -47,6 +48,8 @@ message CapabilitiesResponse {
   bool assessments_enabled = 2;
   bool recommendations_enabled = 3;
   bool free_text_parser_ready = 4;
+  string disclaimer = 5;
+  string disclaimer_version = 6;
 }
 
 message CommandRequest {
@@ -68,7 +71,10 @@ message ResourceRequest {
   string resource_id = 3;
 }
 
-message BeneficiaryRequest { string beneficiary_id = 1; }
+message BeneficiaryRequest {
+  string beneficiary_id = 1;
+  optional string week_start = 2;
+}
 message ReplacementOptionsRequest {
   string beneficiary_id = 1;
   string recommendation_id = 2;
@@ -103,3 +109,24 @@ message RecipeList { repeated RecipeOption recipes = 1; }
 message RecipeListResult {
   oneof outcome { RecipeList items = 1; Failure failure = 2; }
 }
+message KnowledgeSearchRequest { string query = 1; bool local_demo = 2; }
+message KnowledgeHit {
+  string chunk_id = 1;
+  string heading = 2;
+  int32 pdf_page = 3;
+  string printed_page = 4;
+  string source_title = 5;
+  string source_revision_id = 6;
+  optional string excerpt = 7;
+}
+message KnowledgeSearchResponse {
+  string query = 1;
+  repeated KnowledgeHit results = 2;
+  optional string answer_chunk_id = 3;
+  bool local_demo = 4;
+  repeated string answer_chunk_ids = 5;
+  string answer_status = 6;
+  repeated KnowledgeAnswerBlock answer_blocks = 7;
+  string answer_provider = 8;
+}
+message KnowledgeAnswerBlock { string text = 1; repeated string chunk_ids = 2; }

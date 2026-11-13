@@ -4,11 +4,13 @@ import argparse
 from pathlib import Path
 from typing import Any, Callable
 
+from .review_policy import add_argument
 from .corpus_freeze import freeze_retrieval_corpus
 from .jsonio import load_json, write_json
 from .retrieval_eval import load_retrieval_chunks, run_retrieval_eval, validate_retrieval_eval
 from .retrieval_holdout import seal_independent_holdout
 from .retrieval_pipeline_cli import dispatch_pipeline_command, register_pipeline_commands
+from .runtime_authorization import dispatch_runtime_command, register_runtime_commands
 from .retrieval_review import (
     build_retrieval_review_packet,
     empty_retrieval_review,
@@ -21,6 +23,7 @@ Handler = Callable[[argparse.Namespace, Path], dict[str, Any]]
 
 
 def register_retrieval_commands(commands: argparse._SubParsersAction) -> None:
+    register_runtime_commands(commands)
     register_pipeline_commands(commands)
     validate = commands.add_parser("validate-retrieval-eval")
     validate.add_argument("--cases", type=Path, required=True)
@@ -58,11 +61,13 @@ def register_retrieval_commands(commands: argparse._SubParsersAction) -> None:
     )
     review_case.add_argument("--comment", required=True)
 
+    add_argument(review_case)
     status = commands.add_parser("retrieval-review-status")
     status.add_argument("--cases", type=Path, required=True)
     status.add_argument("--corpus-freeze", type=Path, required=True)
     status.add_argument("--ledger", type=Path, required=True)
 
+    add_argument(status)
     packet = commands.add_parser("build-retrieval-review-packet")
     packet.add_argument("--cases", type=Path, required=True)
     packet.add_argument("--corpus-freeze", type=Path, required=True)
@@ -81,6 +86,9 @@ def dispatch_retrieval_command(
     args: argparse.Namespace, workspace: Path
 ) -> tuple[bool, dict[str, Any] | None]:
     handler = _HANDLERS.get(args.command)
+    handled, result = dispatch_runtime_command(args, workspace)
+    if handled:
+        return handled, result
     return dispatch_pipeline_command(args, workspace) if handler is None else (True, handler(args, workspace))
 
 
@@ -152,7 +160,7 @@ def _review_case(args: argparse.Namespace, _: Path) -> dict[str, Any]:
         case_id=args.case_id,
         decision=args.decision,
         reviewer_id=args.reviewer_id,
-        reviewer_role=args.reviewer_role,
+        reviewer_role=args.reviewer_role, review_policy=args.review_policy,
         comment=args.comment,
     )
     write_json(args.ledger, result)
@@ -169,7 +177,7 @@ def _review_status(args: argparse.Namespace, _: Path) -> dict[str, Any]:
     return retrieval_review_status(
         cases=load_json(args.cases),
         corpus_freeze=load_json(args.corpus_freeze),
-        ledger=load_json(args.ledger),
+        ledger=load_json(args.ledger), review_policy=args.review_policy,
     )
 
 

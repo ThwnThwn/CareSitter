@@ -72,7 +72,7 @@ class NotificationItemDetails extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  notificationsRelativeTime(notification.createdAt),
+                  '${notificationsRelativeTime(notification.createdAt)}${notification.source == 'console_local' ? ' • Firebase Console, lưu trên thiết bị' : ''}',
                   style: const TextStyle(
                     color: AppColors.textHint,
                     fontSize: AppFontSizes.s11,

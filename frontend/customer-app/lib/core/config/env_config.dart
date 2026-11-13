@@ -11,6 +11,8 @@ abstract final class EnvConfig {
   );
   static const _definedCartoApiKey = String.fromEnvironment('CARTO_API_KEY');
   static const _definedMapProvider = String.fromEnvironment('MAP_PROVIDER');
+  static const _definedGoogleAuthBaseUrl =
+      String.fromEnvironment('GOOGLE_AUTH_BASE_URL');
 
   static String get cartoApiKey => _definedCartoApiKey.trim();
 
@@ -20,10 +22,29 @@ abstract final class EnvConfig {
     return const {'carto', 'google', 'osm'}.contains(value) ? value : 'carto';
   }
 
-  static const apiBaseUrl = String.fromEnvironment(
+  static const _configuredApiBaseUrl = String.fromEnvironment(
     'BASE_URL',
     defaultValue: 'http://localhost:5033/api/v1',
   );
+
+  static String get apiBaseUrl {
+    if (const bool.fromEnvironment('dart.vm.product') &&
+        (_configuredApiBaseUrl.isEmpty ||
+            _configuredApiBaseUrl.startsWith('http://localhost') ||
+            _configuredApiBaseUrl.startsWith('http://127.0.0.1'))) {
+      throw StateError('BASE_URL must be configured for release.');
+    }
+    return _configuredApiBaseUrl;
+  }
+
+  /// Web OAuth must start and finish on the same backend origin so its
+  /// correlation cookie and popup message origin match the configured callback.
+  /// Local knowledge requests can still use BASE_URL on the LAN.
+  static String get googleAuthBaseUrl {
+    final configured = _definedGoogleAuthBaseUrl.trim();
+    return (configured.isEmpty ? apiBaseUrl : configured)
+        .replaceAll(RegExp(r'/+$'), '');
+  }
 
   // Khóa dành cho ứng dụng khách; cấu hình bằng maps.local.json và giới hạn
   // theo package/SHA-1, bundle ID hoặc website trong Google Cloud.

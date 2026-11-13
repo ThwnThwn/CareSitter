@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { requestRecommendation } from "./client";
-import type { Recommendation } from "./contract";
+import type { AssistantReply } from "./contract";
 
 export function useCareAssistant() {
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [reply, setReply] = useState<AssistantReply | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const pending = useRef<AbortController | null>(null);
@@ -17,10 +17,10 @@ export function useCareAssistant() {
     pending.current = request;
     setLoading(true);
     setError("");
-    setRecommendation(null);
+    setReply(null);
     try {
       const value = await requestRecommendation(message, request.signal);
-      if (!request.signal.aborted) setRecommendation(value);
+      if (!request.signal.aborted) setReply(value);
     } catch (cause) {
       if (!request.signal.aborted)
         setError(cause instanceof Error ? cause.message : "Không thể nhận gợi ý lúc này.");
@@ -36,5 +36,5 @@ export function useCareAssistant() {
     setLoading(false);
   }
 
-  return { recommendation, error, loading, submit, cancel };
+  return { reply, error, loading, submit, cancel };
 }

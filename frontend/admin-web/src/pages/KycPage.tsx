@@ -7,13 +7,14 @@ import { qs } from '../api';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, formatDate, shortId } from '../components/Common';
 import { KycProfile } from '../types';
 import { usePagedResource } from '../useResource';
+import type { ShowToast } from '../useToast';
 
-export function KycPage() {
+export function KycPage({ showToast = () => undefined }: { showToast?: ShowToast }) {
   const { filters } = useAdminMetadata();
   const [status, setStatus] = useState(filters.kyc.defaultValue);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<KycProfile | null>(null);
-  const { data: result, loading, error, reload: load } = usePagedResource<KycProfile>(`/api/v1/caregivers/kyc${qs({ status, page, pageSize: 20 })}`, page, setPage);
+  const { data: result, loading, error, hasLoaded, reload: load } = usePagedResource<KycProfile>(`/api/v1/caregivers/kyc${qs({ status, page, pageSize: 20 })}`, page, setPage);
 
   return <>
     <PageHeader title="Nhân sự & KYC" description="Kiểm tra giấy tờ trước khi caregiver được phép nhận ca."
@@ -23,7 +24,7 @@ export function KycPage() {
     </select></label></section>
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
     <section className="data-panel">
-      {loading ? <LoadingTable rows={7} columns={5} /> : error ? null : result.items.length === 0
+      {loading && !hasLoaded ? <LoadingTable rows={7} columns={5} /> : error && !hasLoaded ? null : result.items.length === 0
         ? <EmptyState title="Không có hồ sơ phù hợp" description="Hàng đợi KYC ở trạng thái này hiện đang trống." />
         : <div className="table-wrap"><table className="data-table"><thead><tr><th>Caregiver</th><th>Ngày sinh</th><th>Tài liệu</th><th>Cập nhật</th><th>Trạng thái</th><th /></tr></thead>
           <tbody>{result.items.map((item) => <tr key={item.id}>
@@ -32,8 +33,8 @@ export function KycPage() {
             <td>{[item.cccdFrontMediaId, item.cccdBackMediaId, ...(item.certificateMediaIds || [])].filter(Boolean).length} tệp{item.requiresSecureResubmission && <small>Cần chuyển tài liệu cũ</small>}</td><td>{formatDate(item.updatedAt)}</td>
             <td><StatusChip value={item.kycStatus} /></td><td><button className="row-action" onClick={() => setSelected(item)}>Kiểm tra hồ sơ</button></td>
           </tr>)}</tbody></table></div>}
-      {!loading && !error && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
+      {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     </section>
-    {selected && <KycDrawer key={selected.id} profile={selected} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />}
+    {selected && <KycDrawer key={selected.id} profile={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </>;
 }

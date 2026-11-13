@@ -33,6 +33,7 @@ class NutritionEntryScreen extends ConsumerWidget {
           actions: [
             IconButton(
               tooltip: 'Tra cứu tài liệu dinh dưỡng',
+              color: AppColors.textHint,
               onPressed: () => context.push(AppRoutes.nutritionKnowledge),
               icon: const Icon(Icons.menu_book_outlined),
             ),
@@ -78,6 +79,7 @@ class NutritionEntryScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Tra cứu tài liệu dinh dưỡng',
+            color: AppColors.textHint,
             onPressed: () => context.push(AppRoutes.nutritionKnowledge),
             icon: const Icon(Icons.menu_book_outlined),
           ),

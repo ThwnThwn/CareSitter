@@ -1,0 +1,17 @@
+{
+  "clinical_review_performed": true,
+  "comment": "Dữ liệu tổng hợp; không phải phê duyệt phát hành thật.",
+  "content_sha256": "1333b9b5e1430089412e887ae1270e7ee73dfafbf6034abe93d1f015b7cedfaa",
+  "environment": "Staging",
+  "independent_clinical_review": true,
+  "intended_use": "reviewed_nutrition_reference",
+  "manifest_sha256": "e38906f967bc313c5cf96033f536831c93a594dc181c7322e4f6c69cfcafa3d7",
+  "mode": "runtime-integration-authorization",
+  "production_public_release": false,
+  "review_policy": "source_and_clinical",
+  "reviewer_id": "synthetic-fixture-only",
+  "role": "data_steward",
+  "schema_version": 1,
+  "selected_strategy": "hybrid",
+  "timestamp": "2026-11-10T00:00:00+00:00"
+}

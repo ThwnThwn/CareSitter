@@ -1,12 +1,14 @@
 import { ShieldCheck, ShieldX } from 'lucide-react';
 import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate, shortId } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { KycProfile } from '../../types';
 import { KycDocument } from './KycDocument';
 import { useKycReview } from './useKycReview';
 
-export function KycDrawer({ profile, onClose, onChanged }: { profile: KycProfile; onClose: () => void; onChanged: () => void }) {
+export function KycDrawer({ profile, onClose, onChanged }: { profile: KycProfile; onClose: () => void; onChanged: (message: string) => void }) {
   const { reason, setReason, busy, error, reviewable, secureDocuments, decide: submit } = useKycReview(profile, onChanged);
-  async function decide(approved: boolean) { await submit(approved, () => window.confirm(`Duyệt hồ sơ của ${profile.fullName || 'caregiver này'}?`)); }
+  const confirm = useConfirmation();
+  async function decide(approved: boolean) { await submit(approved, () => confirm({ title: 'Duyệt hồ sơ KYC?', message: profile.fullName || 'Caregiver này', confirmLabel: 'Duyệt KYC', tone: 'primary' })); }
 
   const documents = [
     { label: 'CCCD mặt trước', mediaId: profile.cccdFrontMediaId }, { label: 'CCCD mặt sau', mediaId: profile.cccdBackMediaId },

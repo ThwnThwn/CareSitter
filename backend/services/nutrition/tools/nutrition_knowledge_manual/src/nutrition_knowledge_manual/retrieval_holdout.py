@@ -5,6 +5,7 @@ from typing import Any
 import unicodedata
 
 from .corpus_freeze import validate_retrieval_corpus_freeze_document
+from .review_policy import DEFAULT, REFERENCE, check, metadata
 from .errors import ManualGraphError
 from .jsonio import content_sha256
 from .retrieval_contract import validate_answerability_and_citations
@@ -19,6 +20,7 @@ def seal_independent_holdout(
     corpus_freeze: dict[str, Any],
     visible_evaluations: list[dict[str, Any]],
     minimum_cases: int = 10,
+    review_policy=DEFAULT,
 ) -> dict[str, Any]:
     """Seal a newly authored holdout manifest without evaluating or consuming it.
 
@@ -36,7 +38,7 @@ def seal_independent_holdout(
     if submission.get("holdout_status") != "pending_seal":
         raise ManualGraphError("independent holdout submission must be pending_seal")
     _validate_corpus_binding(submission=submission, corpus_freeze=corpus_freeze)
-    _validate_independence_attestation(submission.get("independence"))
+    _validate_independence_attestation(submission.get("independence"), review_policy)
     cases = _validate_holdout_cases(
         cases=submission.get("cases"), corpus_freeze=corpus_freeze, minimum_cases=minimum_cases
     )
@@ -49,6 +51,7 @@ def seal_independent_holdout(
 
     submission_hash = content_sha256(submission)
     sealed = {
+        **metadata(review_policy),
         "schema_version": 1,
         "mode": "sealed_independent_retrieval_holdout",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -63,7 +66,7 @@ def seal_independent_holdout(
 
 
 def validate_sealed_independent_holdout(
-    *, sealed_holdout: dict[str, Any], submission: dict[str, Any], corpus_freeze: dict[str, Any]
+    *, sealed_holdout: dict[str, Any], submission: dict[str, Any], corpus_freeze: dict[str, Any], review_policy=DEFAULT
 ) -> dict[str, Any]:
     """Verify the marker still binds the exact unconsumed independent submission."""
     validate_retrieval_corpus_freeze_document(corpus_freeze)
@@ -86,7 +89,7 @@ def validate_sealed_independent_holdout(
     if sealed_holdout.get("holdout_submission_content_sha256") != content_sha256(submission):
         raise ManualGraphError("sealed holdout submission is stale or tampered")
     _validate_corpus_binding(submission=submission, corpus_freeze=corpus_freeze)
-    _validate_independence_attestation(submission.get("independence"))
+    _validate_independence_attestation(submission.get("independence"), review_policy)
     cases = _validate_holdout_cases(
         cases=submission.get("cases"), corpus_freeze=corpus_freeze, minimum_cases=10
     )
@@ -111,14 +114,16 @@ def _validate_corpus_binding(*, submission: dict[str, Any], corpus_freeze: dict[
         raise ManualGraphError("independent holdout is bound to a different corpus freeze")
 
 
-def _validate_independence_attestation(value: Any) -> None:
+def _validate_independence_attestation(value: Any, review_policy=DEFAULT) -> None:
     if not isinstance(value, dict):
         raise ManualGraphError("independent holdout attestation is required")
     author_id = value.get("author_id")
     if not isinstance(author_id, str) or not author_id.strip():
         raise ManualGraphError("independent holdout author_id is required")
-    if value.get("author_role") not in _CLINICAL_AUTHOR_ROLES:
-        raise ManualGraphError("independent holdout author must be a dietitian or physician")
+    check(review_policy, value)
+    roles = {"data_steward", "independent_author", "lecturer"} if review_policy == REFERENCE else _CLINICAL_AUTHOR_ROLES
+    if value.get("author_role") not in roles:
+        raise ManualGraphError("independent holdout author role is invalid for this review policy")
     if value.get("independently_authored") is not True:
         raise ManualGraphError("independent holdout requires an independently_authored attestation")
     note = value.get("attestation_note")

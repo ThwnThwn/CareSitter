@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_caregiver_content.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -39,7 +40,8 @@ class BookingDetailScreenCaregiverHeroCard extends StatelessWidget {
               caregiverName: caregiverName,
               callbackAction1: onChat,
               callbackAction2: () {
-                ScaffoldMessenger.of(context).showSnackBar(
+                AppToast.showLegacy(
+                  context,
                   SnackBar(
                     content:
                         Text('Đang chuẩn bị cuộc gọi với $caregiverName...'),

@@ -2,6 +2,7 @@ using CareSitter.Infrastructure.Persistence;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.People.Domain;
 using Microsoft.EntityFrameworkCore;
+using CareSitter.Messaging.Persistence.Outbox;
 
 namespace CareSitter.Modules.People.Infrastructure;
 
@@ -22,6 +23,7 @@ public sealed class PeopleDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyKafkaOutbox(SchemaName);
 
         modelBuilder.Entity<Beneficiary>(b =>
         {

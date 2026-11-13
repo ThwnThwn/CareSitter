@@ -15,22 +15,22 @@ import { AdminPromotion } from '../types';
 import { usePagedResource } from '../useResource';
 import { promotionsEndpoint as endpoint } from '../features/promotions/promotionApi';
 import { PromotionDrawer } from '../features/promotions/PromotionDrawer';
+import type { ShowToast } from '../useToast';
 
-export function PromotionsPage() {
+export function PromotionsPage({ showToast = () => undefined }: { showToast?: ShowToast }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-  const [notice, setNotice] = useState('');
-  const { data, loading, error, reload } = usePagedResource<AdminPromotion>(
+  const { data, loading, error, hasLoaded, reload } = usePagedResource<AdminPromotion>(
     endpoint + qs({ search: query, status, page, pageSize: 20 }),
     page,
     setPage,
   );
   function changed(message: string) {
     setSelected(null);
-    setNotice(message);
+    showToast(message);
     void reload();
   }
   return (
@@ -42,7 +42,6 @@ export function PromotionsPage() {
           <button
             className="primary"
             onClick={() => {
-              setNotice('');
               setSelected('new');
             }}
           >
@@ -50,11 +49,6 @@ export function PromotionsPage() {
           </button>
         }
       />
-      {notice && (
-        <div className="notice" role="status">
-          {notice}
-        </div>
-      )}
       <form
         className="filter-bar"
         onSubmit={(event) => {
@@ -112,9 +106,9 @@ export function PromotionsPage() {
             {loading ? 'Đang tải…' : `${data.total} chiến dịch`}
           </span>
         </div>
-        {loading ? (
+        {loading && !hasLoaded ? (
           <LoadingTable rows={5} columns={6} />
-        ) : error ? null : data.items.length === 0 ? (
+        ) : error && !hasLoaded ? null : data.items.length === 0 ? (
           <EmptyState
             title={query || status ? 'Không tìm thấy chiến dịch' : 'Chưa có chiến dịch ưu đãi'}
             description={
@@ -145,7 +139,6 @@ export function PromotionsPage() {
                           className="promotion-title"
                           aria-label={`Mở chiến dịch ${promotion.code}`}
                           onClick={() => {
-                            setNotice('');
                             setSelected(promotion.id);
                           }}
                         >
@@ -188,7 +181,6 @@ export function PromotionsPage() {
                         className="row-action"
                         aria-label={`Xem và sửa ${promotion.code}`}
                         onClick={() => {
-                          setNotice('');
                           setSelected(promotion.id);
                         }}
                       >
@@ -201,7 +193,7 @@ export function PromotionsPage() {
             </table>
           </div>
         )}
-        {!loading && !error && (
+        {hasLoaded && (
           <Pagination page={page} pageSize={data.pageSize} total={data.total} onChange={setPage} />
         )}
       </section>

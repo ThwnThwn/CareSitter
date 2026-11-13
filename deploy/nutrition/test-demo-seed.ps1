@@ -55,7 +55,7 @@ try {
     $seedArguments = @('run','--rm','--network',$networkName,
         '-e',"PGHOST=$databaseName",'-e','PGDATABASE=nutrition','-e','PGUSER=postgres',
         '-e',"FIXTURE_PASSWORD=$fixturePassword",'-e','NUTRITION_DEMO_CATALOG_PATH=/demo/catalog.json',
-        '-e',"NUTRITION_DEMO_CATALOG_SHA256=$catalogHash",'-e','NUTRITION_DEMO_EXPECTED_RECIPES=60',
+        '-e',"NUTRITION_DEMO_CATALOG_SHA256=$catalogHash",'-e','NUTRITION_DEMO_EXPECTED_RECIPES=78',
         '-e','NUTRITION_DEMO_PACKAGE_KEY=adult-baseline-p2a-v1-local-demo',
         '-v',"${preparedCatalog}:/demo/catalog.json:ro",$imageName,'-c',$seedCommand)
     Invoke-Docker $seedArguments
@@ -63,10 +63,10 @@ try {
 
     $query = "select revision || ':' || jsonb_array_length(payload->'recipes') from nutrition.local_demo_catalog where package_key='adult-baseline-p2a-v1-local-demo'"
     $result = (& docker exec $databaseName psql -U postgres -d nutrition -Atc $query).Trim()
-    if ($LASTEXITCODE -ne 0 -or $result -ne '1:60') {
+    if ($LASTEXITCODE -ne 0 -or $result -ne '1:78') {
         throw "Idempotent demo seed verification failed: $result"
     }
-    Write-Output 'PASS: catalog preparation and two real PostgreSQL seed runs preserve revision 1 with 60 recipes.'
+    Write-Output 'PASS: catalog preparation and two real PostgreSQL seed runs preserve revision 1 with 78 recipes.'
 }
 finally {
     if ($databaseStarted) { & docker rm -f $databaseName *> $null }

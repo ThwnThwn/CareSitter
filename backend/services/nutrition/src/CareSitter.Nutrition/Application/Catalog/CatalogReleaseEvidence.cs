@@ -1,3 +1,5 @@
+using CareSitter.Nutrition.Domain;
+
 namespace CareSitter.Nutrition.Application.Catalog;
 
 public sealed record CatalogReleaseEvidence(
@@ -13,13 +15,21 @@ public sealed record CatalogReleaseEvidence(
     string? ReleaseProfile = null,
     CatalogKnowledgeReview? KnowledgeReview = null,
     CatalogSourcePublicationReview? SourcePublication = null,
-    CatalogReleaseAuthorization? ReleaseAuthorization = null);
+    CatalogReleaseAuthorization? ReleaseAuthorization = null) : ReleaseReviewMetadata;
 
 public sealed record CatalogRecipeEvidence(
     Guid RecipeVersionId,
     CatalogIngredientEvidence[] Ingredients,
     CatalogNutrientEvidence[] Nutrients,
-    string[] UnresolvedItems);
+    string[] UnresolvedItems,
+    CatalogDataReview? DataReview = null);
+
+// Data-steward review for a non_medical_reference catalog. It is not a clinical review.
+public sealed record CatalogDataReview(
+    string Decision,
+    string ReviewerRole,
+    string ReviewerId,
+    DateTimeOffset ReviewedAt);
 
 public sealed record CatalogIngredientEvidence(
     string IngredientCode,
@@ -65,7 +75,8 @@ public sealed record CatalogKnowledgeReview(
     CatalogKnowledgeSourceReview[] Sources,
     string[] ClinicalReviewerIds,
     string Decision,
-    string[]? ReleaseAuthorityIds = null);
+    string[]? ReleaseAuthorityIds = null,
+    string[]? DataReviewerIds = null) : ReleaseReviewMetadata;
 
 public sealed record CatalogSourcePublicationReview(
     string SourceId,

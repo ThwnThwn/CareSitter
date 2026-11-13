@@ -20,6 +20,7 @@ import 'package:caresitter_customer/features/nutrition/domain/nutrition_assessme
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> settle() async {
   for (var i = 0; i < 10; i++) {
@@ -28,6 +29,25 @@ Future<void> settle() async {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({
+        'nutrition_disclaimer_ack:owner:nutrition-reference-2026-11-10-v1':
+            true,
+      }));
+  testWidgets('save then assess uses new revision and stops on save failure',
+      (tester) async {
+    final repository = _Repository();
+    final controller = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(controller.dispose);
+    await tester.pump();
+    await controller.saveHealthAndAssess({'generalNote': 'fixture'});
+    expect(repository.patches, hasLength(1));
+    expect(repository.writes.single.route, 'nutrition-assessments');
+    expect(repository.writes.single.data['expectedHealthRevision'], 8);
+    repository.patchError = _error(503);
+    await controller.saveHealthAndAssess({'generalNote': 'second'});
+    expect(repository.writes, hasLength(1));
+    expect(controller.view.error, isNotNull);
+  });
   test('assessment start policy allows only actionable failed retries', () {
     expect(
         NutritionAssessmentRules.canStart(
@@ -165,7 +185,8 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check =
+        find.widgetWithText(FilledButton, 'Tạo thực đơn');
     await tester.scrollUntilVisible(check, 250);
     expect(tester.widget<FilledButton>(check).onPressed, isNotNull);
   });
@@ -198,8 +219,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ăn qua ống').last);
     await tester.pumpAndSettle();
-    final save =
-        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+    final save = find.widgetWithText(FilledButton, 'Lưu thông tin');
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
@@ -212,7 +232,7 @@ void main() {
   });
 
   testWidgets(
-      'dietary pattern and nutrition goal are saved in one profile patch',
+      'dietary pattern goal and food preferences are saved in one profile patch',
       (tester) async {
     Map<String, dynamic>? changes;
     await tester.pumpWidget(MaterialApp(
@@ -235,7 +255,7 @@ void main() {
 
     expect(find.byType(NutritionExpansionCard), findsNWidgets(3));
 
-    final preferences = find.text('Kiểu ăn và mục tiêu');
+    final preferences = find.text('Kiểu ăn, mục tiêu và sở thích');
     await tester.ensureVisible(preferences);
     await tester.tap(preferences);
     await tester.pumpAndSettle();
@@ -255,16 +275,47 @@ void main() {
     await tester.tap(find.text('Tăng cân').last);
     await tester.pumpAndSettle();
 
+    final mealFormat =
+        find.byKey(const ValueKey('nutrition-mealFormatPreference'));
+    await tester.ensureVisible(mealFormat);
+    await tester.tap(mealFormat);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ưu tiên món khô').last);
+    await tester.pumpAndSettle();
+
+    final preferredFoods = find.descendant(
+      of: find.byKey(const ValueKey('nutrition-preferredFoods')),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(preferredFoods);
+    await tester.enterText(preferredFoods, 'cá hấp');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final dislikedFoods = find.descendant(
+      of: find.byKey(const ValueKey('nutrition-dislikedFoods')),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(dislikedFoods);
+    await tester.enterText(dislikedFoods, 'cháo');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
     final save =
         find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
-    await tester.ensureVisible(save);
+    await tester.scrollUntilVisible(save, 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(save);
     await tester.pumpAndSettle();
 
     expect(changes, {
       'nutritionProfile': {
         'dietaryPattern': 'vegetarian',
-        'nutritionGoal': 'gain'
+        'nutritionGoal': 'gain',
+        'mealFormatPreference': 'prefer_dry',
+        'preferredFoods': 'cá hấp',
+        'dislikedFoods': 'cháo'
       }
     });
     expect(tester.takeException(), isNull);
@@ -403,7 +454,8 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check =
+        find.widgetWithText(FilledButton, 'Tạo thực đơn');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
     await tester.pumpAndSettle();
@@ -498,6 +550,30 @@ void main() {
     expect(c.view.resource?.id, plan.id);
   });
 
+  test(
+      'committed stale write keeps resource identity and blocks automatic follow-up',
+      () async {
+    final repository = _Repository();
+    final c = NutritionFlowController(repository, 'first', 'owner');
+    addTearDown(c.dispose);
+    await settle();
+    repository.result = {
+      ..._resource('stale', {'meals': []}),
+      'id': 'committed-resource',
+      'healthRevision': 7,
+    };
+    await c.assess();
+    expect(c.view.resource?.status, 'stale');
+    expect(c.view.resource?.id, 'committed-resource');
+    expect(c.view.resource?.healthRevision, 7);
+    expect(c.view.error, isNull);
+    expect(c.view.loading, isFalse);
+    expect(repository.writes, hasLength(1));
+    expect(await c.recommendForDateUsingConfirmedHealth(DateTime(2027, 1, 3)),
+        isFalse);
+    expect(repository.writes, hasLength(1));
+  });
+
   test('profile or catalog conflict marks previous recommendation stale',
       () async {
     final repository = _Repository();
@@ -562,7 +638,8 @@ void main() {
       await tester.scrollUntilVisible(find.text('Dị ứng thực phẩm'), 150,
           scrollable: find.byType(Scrollable).first);
       expect(find.text('Dị ứng thực phẩm'), findsOneWidget);
-      final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+      final check =
+          find.widgetWithText(FilledButton, 'Tạo thực đơn');
       await tester.scrollUntilVisible(check, 250);
       await tester.pumpAndSettle();
       await tester.ensureVisible(check);
@@ -597,7 +674,8 @@ void main() {
             const MaterialApp(home: NutritionScreen(beneficiaryId: 'first'))));
     await tester.pumpAndSettle();
     await _openProfileEditor(tester);
-    final check = find.widgetWithText(FilledButton, 'Kiểm tra thông tin');
+    final check =
+        find.widgetWithText(FilledButton, 'Tạo thực đơn');
     await tester.scrollUntilVisible(check, 250);
     await tester.tap(check);
     await tester.pumpAndSettle();
@@ -671,12 +749,11 @@ void main() {
     expect(
         tester
             .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Kiểm tra thông tin'))
+                find.widgetWithText(FilledButton, 'Lưu thông tin'))
             .onPressed,
-        isNull);
+        isNotNull);
     repository.patchError = _error(503);
-    final save =
-        find.widgetWithText(OutlinedButton, 'Lưu phần thông tin đã cập nhật');
+    final save = find.widgetWithText(FilledButton, 'Lưu thông tin');
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
@@ -748,7 +825,8 @@ class _Repository extends NutritionRepository {
 
   @override
   Future<List<MealPlanSummaryModel>> savedPlans(
-      String id, ApiCancellation token) async {
+      String id, ApiCancellation token,
+      {DateTime? weekStart}) async {
     return plansPending == null
         ? const <MealPlanSummaryModel>[]
         : await plansPending!.future;

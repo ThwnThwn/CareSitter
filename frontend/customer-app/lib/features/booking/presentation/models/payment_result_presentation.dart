@@ -48,8 +48,8 @@ class PaymentResultPresentation {
           iconBackground: AppColors.errorLight,
           title: 'Thanh toán chưa hoàn tất',
           message:
-              'Giao dịch hoặc lịch hẹn đã đóng. Hãy mở chi tiết lịch hẹn để kiểm tra trước khi thanh toán lại.',
-          label: 'CẦN THANH TOÁN LẠI',
+              'Giao dịch chưa hoàn tất. Hãy mở chi tiết lịch hẹn và kiểm tra lịch sử chuyển khoản trước khi thử lại.',
+          label: 'CHƯA HOÀN TẤT',
           labelColor: AppColors.error,
           labelBackground: AppColors.errorLight,
           highlights: [
@@ -57,6 +57,40 @@ class PaymentResultPresentation {
                 'Kiểm tra lịch sử chuyển khoản tại ngân hàng của bạn.'),
             PaymentResultHighlight(Icons.support_agent_outlined,
                 'Nếu tiền đã bị trừ, hãy liên hệ hỗ trợ để được đối soát.'),
+          ],
+        ),
+      PaymentOutcome.unmatched => const PaymentResultDetails(
+          icon: Icons.person_search_outlined,
+          iconColor: AppColors.info,
+          iconBackground: AppColors.infoLight,
+          title: 'Đã thanh toán, chưa tìm được người chăm sóc',
+          message:
+              'CareSitter đã ghi nhận thanh toán nhưng chưa tìm được người chăm sóc phù hợp. Không thanh toán lại cho lịch hẹn này.',
+          label: 'ĐÃ THANH TOÁN',
+          labelColor: AppColors.info,
+          labelBackground: AppColors.infoLight,
+          highlights: [
+            PaymentResultHighlight(Icons.receipt_long_outlined,
+                'Mở chi tiết lịch hẹn để kiểm tra trạng thái xử lý và hoàn tiền.'),
+            PaymentResultHighlight(Icons.support_agent_outlined,
+                'Liên hệ hỗ trợ nếu cần kiểm tra khoản thanh toán.'),
+          ],
+        ),
+      PaymentOutcome.refunded => const PaymentResultDetails(
+          icon: Icons.receipt_long_outlined,
+          iconColor: AppColors.info,
+          iconBackground: AppColors.infoLight,
+          title: 'Khoản thanh toán đã được hoàn tiền',
+          message:
+              'Hệ thống đã xác nhận hoàn tiền cho lịch hẹn này. Bạn không cần thanh toán lại.',
+          label: 'ĐÃ HOÀN TIỀN',
+          labelColor: AppColors.info,
+          labelBackground: AppColors.infoLight,
+          highlights: [
+            PaymentResultHighlight(Icons.receipt_long_outlined,
+                'Mở chi tiết lịch hẹn và kiểm tra lịch sử nhận tiền.'),
+            PaymentResultHighlight(Icons.support_agent_outlined,
+                'Liên hệ hỗ trợ nếu chưa thấy khoản hoàn tiền.'),
           ],
         ),
       PaymentOutcome.review => const PaymentResultDetails(

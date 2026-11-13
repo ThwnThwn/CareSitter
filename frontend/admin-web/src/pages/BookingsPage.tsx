@@ -1,19 +1,34 @@
 import { BookingDrawer } from '../features/bookings/BookingDrawer';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 import { qs } from '../api';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, formatDate, formatMoney, shortId } from '../components/Common';
 import { Booking } from '../types';
 import { usePagedResource } from '../useResource';
+import { useResource } from '../useResource';
+import { hashParam } from '../routes';
+import type { ShowToast } from '../useToast';
 
-export function BookingsPage() {
+export function BookingsPage({ showToast = () => undefined }: { showToast?: ShowToast }) {
   const { filters } = useAdminMetadata();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState(filters.bookings.defaultValue);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Booking | null>(null);
-  const { data: result, loading, error, reload: load } = usePagedResource<Booking>(`/api/v1/bookings${qs({ status, page, pageSize: 20 })}`, page, setPage);
+  const [linkedId] = useState(() => hashParam('id'));
+  const linked = useResource<Booking | null>(linkedId ? `/api/v1/bookings/${encodeURIComponent(linkedId)}` : null, null);
+  const { data: result, loading, error, hasLoaded, reload: load } = usePagedResource<Booking>(`/api/v1/bookings${qs({ status, page, pageSize: 20 })}`, page, setPage);
+
+  useEffect(() => { if (linked.data) setSelected(linked.data); }, [linked.data]);
+  function openBooking(item: Booking) {
+    setSelected(item);
+    window.history.replaceState(null, '', `#/bookings?id=${encodeURIComponent(item.id)}`);
+  }
+  function closeBooking() {
+    setSelected(null);
+    window.history.replaceState(null, '', '#/bookings');
+  }
 
   const items = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -30,19 +45,20 @@ export function BookingsPage() {
       <label><span className="sr-only">Lọc trạng thái</span><select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>{filters.bookings.options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
     </section>
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
+    {linked.error && <ErrorBanner message={`Không mở được booking từ liên kết: ${linked.error}`} onRetry={() => void linked.reload()} />}
     <section className="data-panel">
-      {loading ? <LoadingTable rows={8} columns={6} /> : error ? null : items.length === 0
+      {loading && !hasLoaded ? <LoadingTable rows={8} columns={6} /> : error && !hasLoaded ? null : items.length === 0
         ? <EmptyState title="Không tìm thấy booking" description="Từ khóa chỉ lọc trang hiện tại. Thử đổi trang hoặc trạng thái." />
         : <div className="table-wrap"><table className="data-table booking-table"><thead><tr><th>Booking</th><th>Dịch vụ</th><th>Người được chăm sóc</th><th>Caregiver</th><th>Lịch thực hiện</th><th>Trạng thái</th><th /></tr></thead>
           <tbody>{items.map((item) => <tr key={item.id}>
-            <td><button className="entity-link" onClick={() => setSelected(item)}>{shortId(item.id)}</button><small>{formatMoney(item.escrowAmount)}</small></td>
+            <td><button className="entity-link" onClick={() => openBooking(item)}>{shortId(item.id)}</button><small>{formatMoney(item.escrowAmount)}</small></td>
             <td><strong>{item.serviceName || 'Dịch vụ chăm sóc'}</strong><small>{item.addressText || 'Chưa có địa chỉ'}</small></td>
             <td>{item.beneficiaryName || shortId(item.beneficiaryId)}</td><td>{item.caregiverName || 'Chưa phân công'}</td>
             <td><strong>{formatDate(item.scheduledStart)}</strong><small>đến {formatDate(item.scheduledEnd)}</small></td>
-            <td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => setSelected(item)}>Xem chi tiết</button></td>
+            <td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => openBooking(item)}>Xem chi tiết</button></td>
           </tr>)}</tbody></table></div>}
-      {!loading && !error && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
+      {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     </section>
-    {selected && <BookingDrawer key={selected.id} booking={selected} onClose={() => setSelected(null)} onChanged={() => { setSelected(null); void load(); }} />}
+    {selected && <BookingDrawer key={selected.id} booking={selected} onClose={closeBooking} onChanged={(msg) => { closeBooking(); void load(); showToast(msg); }} />}
   </>;
 }

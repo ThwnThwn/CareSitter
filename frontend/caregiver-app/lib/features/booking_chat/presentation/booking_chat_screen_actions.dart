@@ -47,7 +47,8 @@ extension on _BookingChatScreenState {
           const SizedBox(width: 8),
           Expanded(
             child: Text(meta.readOnlyMessage,
-                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textPrimary)),
           ),
           if (meta.isBlockedByMe)
             TextButton(
@@ -78,8 +79,8 @@ extension on _BookingChatScreenState {
       }
     }
     if (evidence == null) {
-      AppToast.error(context,
-          'Chưa có tin nhắn của người này để gửi kèm làm bằng chứng.');
+      AppToast.error(
+          context, 'Chưa có tin nhắn của người này để gửi kèm làm bằng chứng.');
       return;
     }
     final reason = await _pickReportReason(
@@ -172,17 +173,15 @@ extension on _BookingChatScreenState {
                     minLines: 1,
                     maxLines: 4,
                     onSubmitted: (_) => _send(),
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Nhập tin nhắn...',
                       hintStyle:
-                          const TextStyle(color: AppColors.textSecondary),
+                          TextStyle(color: AppColors.textSecondary),
                       filled: true,
-                      fillColor: AppColors.background,
-                      contentPadding: const EdgeInsets.symmetric(
+                      fillColor: AppInputStyle.fillColor,
+                      contentPadding: EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none),
+                      border: AppInputStyle.enabledBorder,
                     ),
                   ),
                 ),

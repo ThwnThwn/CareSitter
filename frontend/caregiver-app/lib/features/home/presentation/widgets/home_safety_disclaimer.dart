@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeSafetyDisclaimer extends StatelessWidget {
@@ -25,9 +24,9 @@ class HomeSafetyDisclaimer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Cam kết an toàn & phi y tế',
-                  style: GoogleFonts.beVietnamPro(
+                  style: TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -35,25 +34,25 @@ class HomeSafetyDisclaimer extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.beVietnamPro(
+                  text: const TextSpan(
+                    style: TextStyle(fontFamily: 'Inter',
                       fontSize: AppFontSizes.s12,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                     children: [
-                      const TextSpan(
+                      TextSpan(
                           text:
                               'Lưu ý: Luôn tuân thủ quy tắc hỗ trợ phi y tế. Tuyệt đối không can thiệp nghiệp vụ y khoa. '),
                       TextSpan(
                         text: 'Gọi ngay 115',
-                        style: GoogleFonts.beVietnamPro(
+                        style: TextStyle(fontFamily: 'Inter',
                           fontSize: AppFontSizes.s12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.error,
                         ),
                       ),
-                      const TextSpan(
+                      TextSpan(
                           text: ' khi xảy ra sự cố sức khỏe đột xuất.'),
                     ],
                   ),

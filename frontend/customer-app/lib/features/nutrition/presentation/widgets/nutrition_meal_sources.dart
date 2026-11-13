@@ -3,6 +3,9 @@ import 'package:caresitter_customer/core/utils/date_formatter.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_source_model.dart';
 import 'package:flutter/material.dart';
 
+import 'nutrition_reference_text.dart';
+import '../models/nutrition_source_copy.dart';
+
 class NutritionMealSources extends StatelessWidget {
   const NutritionMealSources({
     super.key,
@@ -16,24 +19,31 @@ class NutritionMealSources extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (sources.isEmpty) {
-      if (sourceIds.isEmpty) return const SizedBox.shrink();
+      if (sourceIds.isEmpty) return const Text('Chưa có thông tin nguồn');
       return Text('Mã nguồn: ${sourceIds.join('; ')}');
     }
 
     return Semantics(
       container: true,
-      label: 'Nguồn đã đối chiếu cho món ăn',
+      label: 'Nguồn tham khảo của món ăn',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Nguồn đã đối chiếu',
+            'Nguồn tham khảo',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
           for (final source in sources) ...[
-            _SourceRow(source: source),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.compact),
+              decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(AppRadius.compact)),
+              child: _SourceRow(source: source),
+            ),
             if (source != sources.last)
               const SizedBox(height: AppSpacing.compact),
           ],
@@ -56,11 +66,13 @@ class _SourceRow extends StatelessWidget {
     ].where((value) => value.isNotEmpty).join(' · ');
     final location = [
       if (source.edition.isNotEmpty) 'Ấn bản ${source.edition}',
-      if (source.chapter.isNotEmpty) source.chapter,
+      if (source.chapter.isNotEmpty && !NutritionSourceCopy.isAdapted(source))
+        source.chapter,
       if (source.printedPages.isNotEmpty) 'Trang in ${source.printedPages}',
       if (source.pdfPages.isNotEmpty) 'Trang PDF ${source.pdfPages}',
     ].join(' · ');
     final verifiedOn = source.verifiedOn;
+    final reference = NutritionSourceCopy.reference(source);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,28 +90,31 @@ class _SourceRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(NutritionSourceCopy.role(source),
+                  style: Theme.of(context).textTheme.labelSmall),
               Text(
-                source.title.isEmpty ? source.id : source.title,
+                NutritionSourceCopy.title(source),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
               ),
+              const SizedBox(height: AppSpacing.xs),
               if (attribution.isNotEmpty)
                 Text(attribution, style: Theme.of(context).textTheme.bodySmall),
               if (location.isNotEmpty)
                 Text(location, style: Theme.of(context).textTheme.bodySmall),
-              if (source.locator.isNotEmpty)
+              if (source.locator.isNotEmpty &&
+                  !NutritionSourceCopy.isInternalPath(source.locator))
                 Text(source.locator,
                     style: Theme.of(context).textTheme.bodySmall),
-              if (source.reference.isNotEmpty)
+              if (reference.isNotEmpty) NutritionReferenceText(reference),
+              if (NutritionSourceCopy.isComposition(source))
                 Text(
-                  source.reference,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  overflow: TextOverflow.visible,
-                ),
+                    'Dùng để tính thành phần nguyên liệu; không xác nhận công thức này là thực đơn do Viện Dinh dưỡng biên soạn.',
+                    style: Theme.of(context).textTheme.bodySmall),
               if (verifiedOn != null)
                 Text(
-                  'Đối chiếu ngày ${formatDate(verifiedOn, padded: true)}',
+                  'Ngày ghi nhận nguồn: ${formatDate(verifiedOn, padded: true)}',
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
             ],

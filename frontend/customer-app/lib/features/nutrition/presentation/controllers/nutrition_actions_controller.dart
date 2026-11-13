@@ -9,6 +9,7 @@ import '../../data/repositories/nutrition_repository.dart';
 /// Các thao tác dinh dưỡng và khóa retry, độc lập với lifecycle/UI của flow.
 class NutritionActionsController {
   NutritionActionsController(this.repository, this.beneficiaryId);
+  static const planLoadTimeout = Duration(seconds: 10);
   final NutritionRepository repository;
   final String beneficiaryId;
   final Map<String, String> _keys = {};
@@ -43,9 +44,13 @@ class NutritionActionsController {
                 .first,
       });
   Future<NutritionResourceModel> save(
-          String recommendationId, int revision, ApiCancellation token) =>
-      _write('meal-plans', revision, token,
-          {'recommendationId': recommendationId});
+          String recommendationId, int revision, ApiCancellation token,
+          {DateTime? plannedDate}) =>
+      _write('meal-plans', revision, token, {
+        'recommendationId': recommendationId,
+        if (plannedDate != null)
+          'plannedDate': plannedDate.toIso8601String().split('T').first,
+      });
   Future<NutritionResourceModel> replace(
           String recommendationId,
           String recipeVersionId,
@@ -58,11 +63,25 @@ class NutritionActionsController {
           String recommendationId, String mealType, ApiCancellation token) =>
       repository.replacementOptions(
           beneficiaryId, recommendationId, mealType, token);
-  Future<List<MealPlanSummaryModel>> plans(ApiCancellation token) =>
-      repository.savedPlans(beneficiaryId, token);
+  Future<List<MealPlanSummaryModel>> plans(ApiCancellation token,
+          {DateTime? weekStart}) =>
+      repository
+          .savedPlans(beneficiaryId, token, weekStart: weekStart)
+          .timeout(planLoadTimeout);
   Future<NutritionResourceModel?> latestPlan(ApiCancellation token) async {
     final saved = await plans(token);
     if (saved.isEmpty || saved.first.id.isEmpty) return null;
+    final now = DateTime.now();
+    for (final plan in saved) {
+      final date = DateTime.tryParse(plan.plannedDate);
+      if (date != null &&
+          date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day &&
+          plan.id.isNotEmpty) {
+        return openPlan(plan.id, token);
+      }
+    }
     return openPlan(saved.first.id, token);
   }
 

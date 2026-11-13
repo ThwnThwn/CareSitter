@@ -100,6 +100,8 @@ builder.Services.AddSingleton<INutritionFeatures, NutritionFeatures>();
 builder.Services.AddSingleton(localDemoCatalog);
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Nutrition")
     ?? throw new InvalidOperationException("ConnectionStrings:Nutrition is required.")));
+builder.Services.AddSingleton(_ => new RecommendationLockDataSource(builder.Configuration.GetConnectionString("Nutrition")
+    ?? throw new InvalidOperationException("ConnectionStrings:Nutrition is required.")));
 builder.Services.AddScoped<INutritionStore, NutritionStore>();
 builder.Services.AddSingleton<IValidateOptions<HealthParserOptions>, HealthParserOptionsValidator>();
 builder.Services.AddOptions<HealthParserOptions>()
@@ -141,6 +143,7 @@ builder.Services.AddScoped<NutritionWriteScope>();
 builder.Services.AddScoped<MealPreparationService>();
 builder.Services.AddScoped<UnavailableMealKnowledgeRetriever>();
 builder.Services.AddScoped<ReleasedGraphMealKnowledgeRetriever>();
+builder.Services.AddScoped<ReleasedRetrievalMealKnowledgeRetriever>();
 builder.Services.AddScoped<OwnerAuthorizedCorpusMealKnowledgeRetriever>();
 builder.Services.AddScoped<OwnerAuthorizedGraphMealKnowledgeRetriever>();
 builder.Services.AddScoped<IMealKnowledgeRetriever>(services =>
@@ -149,6 +152,7 @@ builder.Services.AddScoped<IMealKnowledgeRetriever>(services =>
     if (!options.Enabled) return services.GetRequiredService<UnavailableMealKnowledgeRetriever>();
     return options.Mode switch
     {
+        MealGroundingOptions.ReleasedRetrievalMode => services.GetRequiredService<ReleasedRetrievalMealKnowledgeRetriever>(),
         MealGroundingOptions.OwnerAuthorizedCorpusDemoMode => services.GetRequiredService<OwnerAuthorizedCorpusMealKnowledgeRetriever>(),
         MealGroundingOptions.OwnerAuthorizedGraphDemoMode => services.GetRequiredService<OwnerAuthorizedGraphMealKnowledgeRetriever>(),
         _ => services.GetRequiredService<ReleasedGraphMealKnowledgeRetriever>()
@@ -166,6 +170,31 @@ builder.Services.AddScoped<IMealCandidateRanker>(services =>
         ? services.GetRequiredService<GeminiMealCandidateRanker>()
         : services.GetRequiredService<UnavailableMealCandidateRanker>());
 builder.Services.AddScoped<IMealRecommendationEngine, MealRecommendationEngine>();
+builder.Services.AddScoped<NutritionKnowledgeSearch>();
+builder.Services.AddOptions<KnowledgeAnswerAiOptions>()
+    .Bind(builder.Configuration.GetSection(KnowledgeAnswerAiOptions.SectionName))
+    .Validate(options => !options.Enabled || options.DataProcessingApproved && !string.IsNullOrWhiteSpace(options.ApiKey),
+        "NutritionKnowledgeAi requires an API key and approved external processing when enabled.")
+    .Validate(options => !options.UseWindowsCurl || builder.Environment.IsDevelopment() && OperatingSystem.IsWindows(),
+        "NutritionKnowledgeAi Windows transport is restricted to Windows Development.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<GeminiKnowledgeAnswer>(client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/");
+    client.Timeout = Timeout.InfiniteTimeSpan;
+}).ConfigurePrimaryHttpMessageHandler(services =>
+    services.GetRequiredService<IOptions<KnowledgeAnswerAiOptions>>().Value.UseWindowsCurl
+        ? new WindowsGeminiDemoHandler()
+        : new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHttpClient<LocalKnowledgeAnswer>(client =>
+{
+    client.BaseAddress = new Uri("http://127.0.0.1:11434/");
+    client.Timeout = TimeSpan.FromSeconds(12);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false,
+    UseProxy = false
+});
 builder.Services.AddHttpClient<IPeopleHealthClient, PeopleHealthClient>(client =>
 {
     client.BaseAddress = new Uri(peopleUrl.TrimEnd('/') + '/');
@@ -180,6 +209,14 @@ builder.Services.AddHttpClient<IIdentitySessionClient, IdentitySessionClient>(cl
 }).ConfigurePrimaryHttpMessageHandler(() =>
     InternalCertificateTrust.CreateHandler(builder.Configuration["People:TrustedRootCertificatePath"]));
 builder.Services.AddHostedService<NutritionWorker>();
+if (builder.Configuration.GetValue<bool>("BeneficiaryEvents:Enabled"))
+{
+    foreach (var key in new[] { "BootstrapServers", "Topic", "ConsumerGroup", "DlqTopic" })
+        if (string.IsNullOrWhiteSpace(builder.Configuration[$"BeneficiaryEvents:{key}"]))
+            throw new InvalidOperationException($"BeneficiaryEvents:{key} is required when enabled.");
+    builder.Services.AddSingleton<BeneficiaryDeletionProcessor>();
+    builder.Services.AddHostedService<BeneficiaryDeletionConsumer>();
+}
 builder.Services.AddMediatR(c => c.RegisterServicesFromAssemblyContaining<AssessmentProcessor>());
 builder.Services.AddControllers(); builder.Services.AddExceptionHandler<NutritionExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -202,11 +239,22 @@ var app = builder.Build(); app.UseExceptionHandler(); app.UseCors();
 app.UseMiddleware<NutritionGatewayAuthenticationMiddleware>();
 app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter();
 app.MapGet("/health/live", () => Results.Ok(new { status = "up" })).AllowAnonymous();
-app.MapGet("/health/ready", async (NpgsqlDataSource db, INutritionFeatures features, CancellationToken ct) =>
+app.MapGet("/health/ready", async (NpgsqlDataSource db, INutritionFeatures features,
+    IOptions<MealGroundingOptions> groundingOptions, IMealKnowledgeRetriever retriever, CancellationToken ct) =>
 {
     var requirePublishedCatalog = features.RecommendationsEnabled && !localDemoCatalog.Enabled;
-    return await NutritionDatabaseReadiness.CheckAsync(db, ct, requirePublishedCatalog)
-        ? Results.Ok(new { status = "ready" }) : Results.StatusCode(503);
+    var grounding = await MealGroundingReadiness.CheckAsync(groundingOptions, retriever, ct);
+    if (!grounding.Available)
+        return Results.Json(new { status = "unavailable", grounding = grounding.Status,
+            groundingReasons = grounding.Reasons }, statusCode: 503);
+    var databaseReady = await NutritionDatabaseReadiness.CheckAsync(db, ct, requirePublishedCatalog);
+    if (databaseReady && requirePublishedCatalog &&
+        await MealGroundingReadiness.CatalogPolicyFailureAsync(db, groundingOptions.Value.AllowNonMedicalReference, ct) is { } policyFailure)
+        return Results.Json(new { status = "unavailable", grounding = "grounding unavailable",
+            groundingReasons = new[] { policyFailure } }, statusCode: 503);
+    return Results.Json(new { status = databaseReady && grounding.Available ? "ready" : "unavailable",
+        grounding = grounding.Status, groundingReasons = grounding.Reasons },
+        statusCode: databaseReady && grounding.Available ? 200 : 503);
 }).AllowAnonymous();
 app.MapControllers(); app.MapGrpcService<NutritionRpcService>(); app.Run();
 public partial class Program;

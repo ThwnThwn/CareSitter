@@ -90,6 +90,14 @@ try {
         'Không chọn xcross dự phòng khi file chính bị thiếu.'
 
     $configuration = Read-DevConfiguration
+    Assert-Equal $true `
+        ([string]$configuration.backend.project).EndsWith('CareSitter.AppHost.csproj') `
+        'Launcher phải chạy AppHost để bật đồng thời API và Nutrition.'
+    Assert-Equal 'backend/orchestration/CareSitter.AppHost' `
+        ([string]$configuration.backend.workingDirectory) `
+        'Launcher phải chạy từ thư mục AppHost để dùng đúng .NET 10 SDK.'
+    Assert-Equal 'http://localhost:5035' ([string]$configuration.backend.nutritionUrl) `
+        'Launcher thiếu health URL của Nutrition.'
     $stableXcrossPath = [System.IO.Path]::GetFullPath(
         [string]$configuration.xcross.fallbackPaths[0]
     )
@@ -102,29 +110,76 @@ try {
 
     $toolSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'caresitter-dev.ps1') -Raw
     Assert-Equal $true `
-        ($toolSource.Contains('Remove-Item Env:XCROSS_CACHE_DIR -ErrorAction SilentlyContinue')) `
-        'Launcher phải xóa XCROSS_CACHE_DIR cũ được Explorer giữ lại trước khi chạy xcross.'
-    Assert-Equal $false ($toolSource -match '\$env:XCROSS_CACHE_DIR\s*=') `
-        'Launcher không được gán XCROSS_CACHE_DIR vì sẽ che Darwin SDK lúc flutter run.'
+        ($toolSource.Contains("`$env:XCROSS_CACHE_DIR = Join-Path `$env:USERPROFILE '.xcross-cache'")) `
+        'Launcher phải dùng cache SwiftPM đã build FirebaseFirestore thành công.'
+    Assert-Equal $false ($toolSource -match "NutritionGateway__Enabled\s*=\s*'false'") `
+        'Launcher không được tắt Nutrition gateway.'
+    Assert-Equal $true ($toolSource.Contains("NutritionDatabase__ManageLocalRuntimePassword = 'true'")) `
+        'Launcher phải đồng bộ role Nutrition local trước khi mở service.'
+    Assert-Equal $true ($toolSource.Contains("'ok', 'healthy', 'ready', 'up'")) `
+        'Health checker phải chấp nhận trạng thái ready/up của Nutrition.'
 
-    $expectedLaunchers = [ordered]@{
-        'run-customer-iphone.cmd' = 'customer'
-        'run-caregiver-iphone.cmd' = 'caregiver'
-        'run-both-iphone.cmd' = 'both'
+    $xcrossFixture = Join-Path $temporaryRoot 'xcross-config-probe.cmd'
+    $observedConfig = Join-Path $temporaryRoot 'observed-config.txt'
+    $observedCache = Join-Path $temporaryRoot 'observed-cache.txt'
+    $observedArguments = Join-Path $temporaryRoot 'observed-arguments.txt'
+    [System.IO.File]::WriteAllText($xcrossFixture, @'
+@echo off
+set XCROSS_CONFIG > "%~dp0observed-config.txt" 2>nul
+set XCROSS_CACHE_DIR > "%~dp0observed-cache.txt" 2>nul
+echo %* > "%~dp0observed-arguments.txt"
+if errorlevel 1 echo XCROSS_CONFIG missing> "%~dp0observed-config.txt"
+exit /b 0
+'@)
+    $previousStateDirectory = $script:StateDirectory
+    $previousConfig = $env:XCROSS_CONFIG
+    $previousCache = $env:XCROSS_CACHE_DIR
+    try {
+        $script:StateDirectory = $temporaryRoot
+        $xcrossConfigPath = Join-Path $temporaryRoot 'xcross-config.yaml'
+        [System.IO.File]::WriteAllText($xcrossConfigPath, 'roots: {}')
+        Remove-Item Env:XCROSS_CONFIG -ErrorAction SilentlyContinue
+        $env:XCROSS_CACHE_DIR = Join-Path $temporaryRoot 'stale-cache'
+        Start-XcrossApp -Configuration $configuration -AppName customer -XcrossPath $xcrossFixture
+        Assert-Equal "XCROSS_CONFIG=$xcrossConfigPath" `
+            (Get-Content -LiteralPath $observedConfig -Raw).Trim() `
+            'Launcher phải truyền file cấu hình chung cho xcross khi CMD không có XCROSS_CONFIG.'
+        Assert-Equal $true ([string]::IsNullOrEmpty($env:XCROSS_CONFIG)) `
+            'Launcher phải khôi phục XCROSS_CONFIG của tiến trình gọi.'
+        Assert-Equal "XCROSS_CACHE_DIR=$(Join-Path $env:USERPROFILE '.xcross-cache')" `
+            (Get-Content -LiteralPath $observedCache -Raw).Trim() `
+            'Launcher phải thay cache cũ bằng cache SwiftPM đã kiểm chứng.'
+        Assert-Equal $true `
+            ((Get-Content -LiteralPath $observedArguments -Raw).Contains('--dart-define=LAB3_DEMO_ENABLED=true')) `
+            'Customer CMD phải bật mục Kiểm chứng Lab3 trong bản debug.'
+        Assert-Equal $true `
+            ((Get-Content -LiteralPath $observedArguments -Raw).Contains('--dart-entrypoint-args=-FIRDebugEnabled')) `
+            'Customer CMD phải bật Firebase Analytics DebugView trên iPhone.'
+        Assert-Equal (Join-Path $temporaryRoot 'stale-cache') $env:XCROSS_CACHE_DIR `
+            'Launcher phải khôi phục XCROSS_CACHE_DIR sau phiên chạy.'
+
+        $env:XCROSS_CONFIG = Join-Path $temporaryRoot 'custom-config.yaml'
+        Start-XcrossApp -Configuration $configuration -AppName customer -XcrossPath $xcrossFixture
+        Assert-Equal "XCROSS_CONFIG=$env:XCROSS_CONFIG" `
+            (Get-Content -LiteralPath $observedConfig -Raw).Trim() `
+            'Launcher phải tôn trọng XCROSS_CONFIG được chỉ định riêng.'
     }
-    foreach ($launcherName in $expectedLaunchers.Keys) {
-        $launcherPath = Join-Path $PSScriptRoot $launcherName
-        Assert-Equal $true (Test-Path -LiteralPath $launcherPath -PathType Leaf) `
-            "Thiếu launcher một cú bấm: $launcherName"
-        $launcherText = Get-Content -LiteralPath $launcherPath -Raw
-        Assert-Equal $true ($launcherText -match '(?im)^pwsh\.exe\b') `
-            "$launcherName phải gọi PowerShell 7 để đọc đúng UTF-8."
-        Assert-Equal $true ($launcherText -match '(?im)^pause\s*$') `
-            "$launcherName phải giữ cửa sổ lại để người dùng đọc lỗi."
-        $appArgument = "-App $($expectedLaunchers[$launcherName])"
-        Assert-Equal $true ($launcherText.Contains($appArgument)) `
-            "$launcherName chọn sai app."
+    finally {
+        $script:StateDirectory = $previousStateDirectory
+        $env:XCROSS_CONFIG = $previousConfig
+        $env:XCROSS_CACHE_DIR = $previousCache
     }
+
+    $launchers = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.cmd' -File)
+    Assert-Equal 1 $launchers.Count 'Phải có đúng một launcher CMD.'
+    Assert-Equal 'CareSitter.cmd' $launchers[0].Name 'Tên launcher không đúng.'
+    $launcherText = Get-Content -LiteralPath $launchers[0].FullName -Raw
+    foreach ($argument in @('-App customer', '-App caregiver', '-App both', '-Stop')) {
+        Assert-Equal $true ($launcherText.Contains($argument)) `
+            "Launcher thiếu lựa chọn $argument."
+    }
+    Assert-Equal $true ($launcherText -match '(?im)^pause\s*$') `
+        'Launcher phải giữ cửa sổ lại để người dùng đọc lỗi.'
 
     Write-Host 'PASS: CareSitter dev tool tests.' -ForegroundColor Green
 }

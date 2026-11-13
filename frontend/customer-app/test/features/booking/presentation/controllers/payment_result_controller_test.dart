@@ -3,8 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/booking/domain/payment_outcome.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/payment_result_controller.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/payment_result_state.dart';
+import 'package:caresitter_customer/features/booking/presentation/models/payment_result_presentation.dart';
 
 void main() {
+  test(
+      'successful payment with failed matching never asks customer to pay again',
+      () async {
+    final controller = PaymentResultController(
+      args: (bookingId: 'booking', intentId: 'intent'),
+      readBookingStatus: (_) async => 'matching_failed',
+      readIntentStatus: (_) async => 'SUCCEEDED',
+      onConfirmed: () async {},
+    );
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    final details = PaymentResultPresentation.details(controller.state.outcome);
+    expect(details.title, 'Đã thanh toán, chưa tìm được người chăm sóc');
+    expect(details.label, 'ĐÃ THANH TOÁN');
+    expect(details.message, contains('Không thanh toán lại'));
+  });
+
   test('provider success alone keeps the result syncing until booking confirms',
       () async {
     final states = <PaymentResultState>[];
@@ -96,6 +114,6 @@ void main() {
         PaymentOutcome.review);
     expect(
         paymentOutcome(bookingStatus: 'cancelled', intentStatus: 'SUCCEEDED'),
-        PaymentOutcome.failure);
+        PaymentOutcome.review);
   });
 }

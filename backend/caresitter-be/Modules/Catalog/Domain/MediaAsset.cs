@@ -1,4 +1,4 @@
-﻿using CareSitter.SharedKernel.Domain;
+using CareSitter.SharedKernel.Domain;
 using CareSitter.SharedKernel.Results;
 
 namespace CareSitter.Modules.Catalog.Domain;
@@ -65,6 +65,12 @@ public sealed class MediaAsset : Entity
     public string? DocumentType { get; private set; }
     public string? DeliveryType { get; private set; }
     public string? FileFormat { get; private set; }
+
+    public static MediaAsset CreateSecureReport(Guid id, Guid owner, Guid booking, string cloud,
+        string objectKey, long sizeBytes, string checksum, string storageProvider = "CLOUDINARY") =>
+        new MediaAsset(id, storageProvider, cloud, objectKey, "DOCUMENT", owner, booking,
+            null, "application/pdf", sizeBytes, checksum, true, null, null)
+        { DeliveryType = storageProvider == "FIREBASE" ? "private" : "authenticated", FileFormat = "pdf" };
 
     public static MediaAsset CreateSecureKyc(Guid id, Guid owner, string cloudName,
         string objectKey, string format, string documentType, long sizeBytes)

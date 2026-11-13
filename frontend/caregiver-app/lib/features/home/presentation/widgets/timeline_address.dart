@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class TimelineAddress extends StatelessWidget {
@@ -15,7 +14,7 @@ class TimelineAddress extends StatelessWidget {
           Expanded(
             child: Text(
               address,
-              style: GoogleFonts.beVietnamPro(
+              style: const TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s12,
                 color: AppColors.textSecondary,
               ),

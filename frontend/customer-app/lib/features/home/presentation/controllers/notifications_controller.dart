@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/push/push_receipt_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
@@ -23,11 +24,16 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   NotificationRepository get _repository =>
       ref.read(notificationRepositoryProvider);
 
+  int _revision = 0;
+  String? _owner;
   @override
   Future<List<AppNotification>> build() {
-    final isAuthenticated =
-        ref.watch(authStateProvider).value?.isAuthenticated ?? false;
-    return isAuthenticated ? _fetch() : Future.value(const []);
+    final auth = ref.watch(authStateProvider.select(
+        (s) => (s.valueOrNull?.userId, s.valueOrNull?.isAuthenticated)));
+    _owner = auth.$2 == true ? auth.$1 : null;
+    _revision++;
+    ref.onDispose(() => _revision++);
+    return _owner == null ? Future.value(const []) : _fetch(_owner!);
   }
 
   int get unreadCount => (state.valueOrNull ?? const [])
@@ -35,11 +41,16 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
       .length;
 
   Future<void> refresh() async {
+    final revision = _revision;
+    final owner = _owner;
+    if (owner == null) return;
     try {
-      state = AsyncData(await _fetch());
+      final items = await _fetch(owner);
+      if (revision != _revision) return;
+      state = AsyncData(items);
     } catch (error, stackTrace) {
       // Keep a usable inbox and badge visible when a background refresh fails.
-      if (!state.hasValue) {
+      if (revision == _revision && !state.hasValue) {
         state = AsyncError(error, stackTrace);
       }
     }
@@ -48,6 +59,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   /// Called by the chat realtime signal after the inbox has been persisted.
   /// Only newly arrived, unread chat items produce an in-app toast.
   Future<void> refreshForNewChat() async {
+    final revision = _revision;
     final previous = state.valueOrNull;
     if (previous == null) {
       await refresh();
@@ -56,7 +68,7 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     final knownIds = previous.map((notification) => notification.id).toSet();
     await refresh();
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current == null || revision != _revision) return;
     for (final notification in current.reversed) {
       if (notification.id.isEmpty ||
           knownIds.contains(notification.id) ||
@@ -75,6 +87,9 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
   }
 
   Future<void> markAllRead() async {
+    final revision = _revision;
+    final owner = _owner;
+    if (owner == null) return;
     final previous = state.valueOrNull ?? const [];
     if (previous.isEmpty ||
         previous.every((notification) => notification.isRead)) {
@@ -86,13 +101,20 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     ]);
     try {
       await _repository.markAllRead();
+      if (revision != _revision) return;
+      for (final item in previous.where((n) => n.id.startsWith('console:'))) {
+        await ref.read(pushReceiptStoreProvider).markRead(owner, item.id);
+      }
     } catch (_) {
-      state = AsyncData(previous);
+      if (revision == _revision) state = AsyncData(previous);
       rethrow;
     }
   }
 
   Future<void> markRead(String id) async {
+    final revision = _revision;
+    final owner = _owner;
+    if (owner == null) return;
     if (id.isEmpty) return;
     final previous = state.valueOrNull ?? const [];
     final index = previous.indexWhere((notification) => notification.id == id);
@@ -105,12 +127,35 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
             : notification,
     ]);
     try {
-      await _repository.markRead(id);
+      if (id.startsWith('console:')) {
+        await ref.read(pushReceiptStoreProvider).markRead(owner, id);
+      } else {
+        await _repository.markRead(id);
+      }
     } catch (_) {
-      state = AsyncData(previous);
+      if (revision == _revision) state = AsyncData(previous);
       rethrow;
     }
   }
 
-  Future<List<AppNotification>> _fetch() => _repository.getNotifications();
+  Future<List<AppNotification>> _fetch(String owner) async {
+    final receipts = ref.read(pushReceiptStoreProvider);
+    final server = await _repository.getNotifications();
+    final local = await receipts.list(owner);
+    final result = [
+      ...server,
+      for (final receipt in local)
+        AppNotification(
+            id: receipt.id,
+            type: receipt.data['type']?.toString() ?? 'INFO',
+            title: receipt.title,
+            body: receipt.body,
+            createdAt: receipt.sentAt.toLocal(),
+            data: receipt.data,
+            isRead: receipt.isRead,
+            source: 'console_local')
+    ];
+    result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return result;
+  }
 }

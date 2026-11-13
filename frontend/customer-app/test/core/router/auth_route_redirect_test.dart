@@ -107,10 +107,54 @@ void main() {
       '/bookings/new?service-id=service-1',
       '/beneficiaries/new',
       '/bookings/booking-1',
+      '/settings/lab3-diagnostics',
     ]) {
       expect(authRouteRedirect(location: path, isAuthenticated: false),
           '/auth/login');
       expect(authRouteRedirect(location: path, isAuthenticated: true), isNull);
     }
+  });
+
+  test('first launch shows onboarding but does not intercept auth deep links',
+      () {
+    expect(
+      authRouteRedirect(
+        location: '/onboarding',
+        isAuthenticated: false,
+        hasCompletedOnboarding: false,
+      ),
+      isNull,
+    );
+    expect(
+      authRouteRedirect(
+        location: '/onboarding',
+        isAuthenticated: false,
+        hasCompletedOnboarding: true,
+      ),
+      '/auth/login',
+    );
+    expect(
+      authRouteRedirect(
+        location: '/onboarding',
+        isAuthenticated: true,
+        hasCompletedOnboarding: false,
+      ),
+      '/home',
+    );
+    expect(
+      authRouteRedirect(
+        location: '/auth/register',
+        isAuthenticated: false,
+        hasCompletedOnboarding: false,
+      ),
+      isNull,
+    );
+  });
+  test('private report deep link requires login and restores its destination',
+      () {
+    const report = '/bookings/booking-1/reports';
+    final login = authRouteRedirect(location: report, isAuthenticated: false)!;
+    expect(Uri.parse(login).path, '/auth/login');
+    expect(authRouteRedirect(location: login, isAuthenticated: true), report);
   });
 }

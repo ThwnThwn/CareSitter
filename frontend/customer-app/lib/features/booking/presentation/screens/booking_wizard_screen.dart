@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 import '../controllers/booking_wizard_controller.dart';
 import '../controllers/booking_wizard_state.dart';
@@ -34,21 +35,19 @@ class BookingWizardScreen extends ConsumerWidget {
     if (!context.mounted) return;
     switch (result) {
       case BookingSubmitted(:final id, :final message):
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(message), backgroundColor: AppColors.success));
+        AppToast.success(context, message);
         context.pushReplacement(AppRoutes.bookingDetail(id));
       case BookingSubmitMessage(:final message, :final caregiverConflict):
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(message),
-            backgroundColor: AppColors.error,
-            action: caregiverConflict
-                ? SnackBarAction(
-                    label: 'Chọn lại',
-                    textColor: Colors.white,
-                    onPressed: () => ref
-                        .read(bookingWizardProvider(args).notifier)
-                        .chooseCaregiverAgain())
-                : null));
+        AppToast.error(
+          context,
+          message,
+          actionLabel: caregiverConflict ? 'Chọn lại' : null,
+          onAction: caregiverConflict
+              ? () => ref
+                  .read(bookingWizardProvider(args).notifier)
+                  .chooseCaregiverAgain()
+              : null,
+        );
       case BookingSubmitIgnored():
         break;
     }

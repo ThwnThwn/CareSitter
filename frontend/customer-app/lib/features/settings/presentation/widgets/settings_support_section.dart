@@ -1,3 +1,5 @@
+import 'package:caresitter_customer/core/diagnostics/lab_demo_policy.dart';
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/config/legal_links.dart';
@@ -18,6 +20,10 @@ class SettingsSupportSection extends ConsumerWidget {
     return SettingsSection(
       title: 'Hỗ trợ & Điều khoản',
       items: [
+        if (LabDemoPolicy.enabled) SettingsSettingsItem(icon: Icons.bug_report_outlined,
+          iconBackgroundColor: AppColors.primaryContainer, iconColor: AppColors.primary,
+          title: 'Kiểm chứng Lab3', subtitle: 'Crashlytics và cấu hình demo',
+          onTap: () => context.push(AppRoutes.labDiagnostics)),
         SettingsSettingsItem(
           icon: Icons.chat_bubble_outline,
           iconBackgroundColor: AppColors.primaryContainer,
@@ -78,7 +84,8 @@ class SettingsSupportSection extends ConsumerWidget {
   ) async {
     final opened = await open();
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      AppToast.showLegacy(
+        context,
         const SnackBar(
           content: Text(
               'Chưa cấu hình đường dẫn chính sách. Vui lòng liên hệ hỗ trợ.'),

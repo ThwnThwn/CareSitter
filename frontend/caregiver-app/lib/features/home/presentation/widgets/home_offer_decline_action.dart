@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeOfferDeclineAction extends StatelessWidget {
@@ -27,11 +26,11 @@ class HomeOfferDeclineAction extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.close_rounded, size: 18),
-            label: FittedBox(
+            label: const FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 'Từ chối',
-                style: GoogleFonts.beVietnamPro(
+                style: TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s15,
                   fontWeight: FontWeight.w600,
                 ),

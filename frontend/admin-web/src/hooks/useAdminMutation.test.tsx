@@ -62,7 +62,7 @@ it('shows a failed write, releases the lock, and supports an explicit next attem
   const onFailure = vi.fn();
   const { result } = renderHook(() => useAdminMutation<'save'>());
   let work!: Promise<boolean>;
-  act(() => { work = result.current.run('save', () => pending.promise, 'Lỗi', onChanged, onFailure); });
+  act(() => { work = result.current.run('save', () => pending.promise, 'Lỗi', onChanged, undefined, onFailure); });
   await act(async () => { pending.reject(new Error('Dữ liệu đã thay đổi')); expect(await work).toBe(false); });
   expect(result.current.error).toBe('Dữ liệu đã thay đổi');
   expect(result.current.busy).toBe('');

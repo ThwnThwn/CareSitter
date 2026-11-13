@@ -2,19 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
+import 'package:caresitter_customer/features/booking/domain/booking_status_rules.dart';
 import 'package:caresitter_customer/core/widgets/fade_slide_staggered.dart';
 import 'booking_card.dart';
 import 'booking_list_screen_empty_state.dart';
 
 class BookingList extends ConsumerWidget {
-  const BookingList({super.key, required this.statuses});
-  final List<String> statuses;
+  const BookingList({super.key, required this.category});
+  final BookingListCategory category;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(bookingStoreProvider);
     final now = DateTime.now();
     final filtered = bookings
-        .where((b) => statuses.contains(b.presentationStatusAt(now)))
+        .where((b) => BookingStatusRules.belongsToList(
+            category, b.presentationStatusAt(now), b.caregiverId != null))
         .toList();
 
     return RefreshIndicator(
@@ -35,7 +37,7 @@ class BookingList extends ConsumerWidget {
               ),
             )
           : ListView.separated(
-              key: PageStorageKey(statuses.join(',')),
+              key: PageStorageKey(category),
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),

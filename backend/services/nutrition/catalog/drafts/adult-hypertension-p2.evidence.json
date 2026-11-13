@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "packageKey": "adult-hypertension-p2-technical-draft",
-  "bundleFileSha256": "bc5332320216b1ec80ba87c39ead3c956e7e8bef66915787553d339f27a273f2",
+  "bundleFileSha256": "4779de0c769ef3cc75c55db48d762fb6f5352ac35ae638e3334a04c170b143d0",
   "contentStatus": "technical_draft",
   "calculationBasis": "Cộng từng nguyên liệu theo khối lượng ghi trong công thức và giá trị trên 100 g từ snapshot Viện Dinh dưỡng; làm tròn 2 chữ số thập phân.",
   "requiredNutrients": [

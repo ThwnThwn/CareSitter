@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tabs } from '../components/Common';
+import { PageHeader, Tabs } from '../components/Common';
 import { ConsultationInbox } from '../features/support/ConsultationInbox';
 import { SupportTickets } from '../features/support/SupportTickets';
 import { SupportConversations } from '../features/support/SupportConversations';
@@ -9,6 +9,10 @@ export function SupportPage() {
   const [tab, setTab] = useState('tickets');
   return (
     <section className="support-page">
+      <PageHeader
+        title="Hỗ trợ"
+        description="Theo dõi ticket, tư vấn, chat hỗ trợ và trò chuyện trong booking."
+      />
       <Tabs
         value={tab}
         onChange={setTab}

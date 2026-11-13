@@ -178,7 +178,7 @@ def allergens(ingredient_codes: list[str]) -> list[str]:
     result = []
     if any(code in ingredient_codes for code in ("TOFU_BOILED", "SOYBEAN_DRY")):
         result.append("SOY")
-    if "PEANUT_DRY" in ingredient_codes:
+    if any(code in ingredient_codes for code in ("PEANUT_DRY", "PEANUT_OIL")):
         result.append("PEANUT")
     if "SESAME_DRY" in ingredient_codes:
         result.append("SESAME")

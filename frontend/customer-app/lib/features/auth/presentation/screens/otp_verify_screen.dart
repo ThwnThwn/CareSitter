@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/auth/presentation/widgets/otp_verification_content.dart';
 import '../controllers/otp_controller.dart';
 import 'dart:async';
@@ -55,9 +56,11 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     final email = widget.email;
     final sent = await ref.read(otpControllerProvider(email).notifier).resend();
     if (mounted && widget.email == email && sent) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
-          backgroundColor: AppColors.primary));
+      AppToast.showLegacy(
+          context,
+          const SnackBar(
+              content: Text('Mã OTP mới đã được gửi đến email của bạn.'),
+              backgroundColor: AppColors.primary));
     }
   }
 

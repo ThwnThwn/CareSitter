@@ -18,6 +18,7 @@ class NutritionKnowledgeRepository {
       '/nutrition/knowledge',
       query: {'q': query},
       cancelToken: cancellation.transportToken,
+      receiveTimeout: const Duration(seconds: 45),
     );
     return NutritionKnowledgeSearchModel.fromJson(response.data!);
   }

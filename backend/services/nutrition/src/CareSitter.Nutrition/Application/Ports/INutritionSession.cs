@@ -10,7 +10,8 @@ public interface INutritionSession
     Task<bool> UpdateAsync(string kind, NutritionResource resource, Guid? leaseToken, CancellationToken ct);
     Task<IReadOnlyList<Recipe>> RecipesAsync(CancellationToken ct);
     Task<IReadOnlyList<DietaryRule>> RulesAsync(CancellationToken ct);
-    Task<IReadOnlyList<NutritionResource>> PlansAsync(Guid beneficiary, CancellationToken ct);
+    Task<IReadOnlyList<NutritionResource>> PlansAsync(Guid beneficiary, CancellationToken ct,
+        DateOnly? from = null, DateOnly? through = null);
     Task<int> AssessmentCountAsync(CancellationToken ct);
     Task<IReadOnlyList<NutritionConcept>> ConceptsAsync(CancellationToken ct);
     Task<long> CatalogRevisionAsync(CancellationToken ct);

@@ -1,3 +1,6 @@
+import 'package:caresitter_customer/core/runtime_config/runtime_config_controller.dart';
+import 'diagnostics/crash_session_integration.dart';
+import 'auth/session_integrations.dart';
 import 'package:caresitter_customer/core/widgets/app_messenger.dart';
 import 'dart:async';
 
@@ -19,12 +22,17 @@ class CareSitterApp extends ConsumerStatefulWidget {
   ConsumerState<CareSitterApp> createState() => _CareSitterAppState();
 }
 
-class _CareSitterAppState extends ConsumerState<CareSitterApp> {
+class _CareSitterAppState extends ConsumerState<CareSitterApp>
+    with WidgetsBindingObserver {
   StreamSubscription<InAppNotificationEvent>? _inAppNotificationSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    ref.read(runtimeConfigControllerProvider);
+    ref.read(sessionIntegrationsProvider);
+    ref.read(crashSessionIntegrationProvider);
     ref.read(notificationDeepLinkServiceProvider);
     _inAppNotificationSubscription =
         ref.read(inAppNotificationEventsProvider).stream.listen((event) {
@@ -42,14 +50,24 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
       );
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+      unawaited(
+          ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _inAppNotificationSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(
+          ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+    }
   }
 
   @override
@@ -57,8 +75,9 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp> {
     ref.listen(authStateProvider, (_, next) {
       final isAuthenticated = next.value?.isAuthenticated ?? false;
       if (isAuthenticated) {
-        unawaited(
-            ref.read(pushNotificationServiceProvider).syncTokenForCurrentUser());
+        unawaited(ref
+            .read(pushNotificationServiceProvider)
+            .syncTokenForCurrentUser());
         unawaited(ref.read(notificationDeepLinkServiceProvider).flushPending());
       }
     });

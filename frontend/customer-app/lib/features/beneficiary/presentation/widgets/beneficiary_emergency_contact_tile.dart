@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,7 +16,8 @@ class BeneficiaryEmergencyContactTile extends StatelessWidget {
             await launchUrl(uri);
           } else {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              AppToast.showLegacy(
+                context,
                 SnackBar(content: Text('Gọi đến ${c.phone}')),
               );
             }

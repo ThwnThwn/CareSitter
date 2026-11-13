@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import '../models/home_offer_display_model.dart';
@@ -30,7 +29,7 @@ class HomeOfferRecipientLocation extends StatelessWidget {
               children: [
                 Text(
                   booking.beneficiaryName,
-                  style: GoogleFonts.beVietnamPro(
+                  style: const TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -45,7 +44,7 @@ class HomeOfferRecipientLocation extends StatelessWidget {
                     Expanded(
                       child: Text(
                         HomeOfferDisplayModel.locationLabel(booking),
-                        style: GoogleFonts.beVietnamPro(
+                        style: const TextStyle(fontFamily: 'Inter',
                           fontSize: AppFontSizes.s12,
                           color: AppColors.textSecondary,
                         ),

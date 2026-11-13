@@ -24,7 +24,7 @@ void main() {
   Future<void> open(WidgetTester tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 844);
-    await tester.pumpWidget(ProviderScope(
+    final container = ProviderContainer(
       overrides: [
         authStateProvider.overrideWith(_SignedInAuth.new),
         bookingStoreProvider.overrideWith(_BookingStore.new),
@@ -32,6 +32,12 @@ void main() {
           return repository = _CancelRepository(DioClient(ref));
         }),
       ],
+    );
+    addTearDown(container.dispose);
+    // Luồng hủy lịch bắt đầu sau khi phiên đăng nhập đã được khôi phục.
+    await container.read(authStateProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         theme: AppTheme.lightTheme,
         home: const BookingDetailScreen(id: 'booking-1'),

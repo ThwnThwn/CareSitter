@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 import math
 
 from .errors import ManualGraphError
+from .review_policy import DEFAULT
 from .retrieval_graph import materialize_graph
 from .retrievers import Retriever, accepts, cited_hit, threshold, validate_query
 
@@ -12,10 +13,26 @@ class GraphRetriever:
     def __init__(self, seed: Retriever, chunks: list[dict], corpus_freeze: dict,
                  candidate: dict, ledger: dict, graph: dict, hops: int = 2,
                  max_nodes: int = 200, max_edges: int = 500, rrf_k: int = 60,
-                 support_weight: float = 1.0, hop_decay: float = 0.8):
-        expected = materialize_graph(candidate, corpus_freeze, ledger)
+                 support_weight: float = 1.0, hop_decay: float = 0.8, review_policy=DEFAULT):
+        expected = materialize_graph(candidate, corpus_freeze, ledger, review_policy)
         if graph != expected:
             raise ManualGraphError("reviewed graph does not match its review evidence")
+        self._initialize(seed, chunks, graph, hops, max_nodes, max_edges, rrf_k,
+                         support_weight, hop_decay)
+
+    @classmethod
+    def from_authorized_candidate(cls, *, seed, chunks, corpus_freeze, candidate_path,
+                                  chunks_path, authorization, **limits):
+        from .candidate_benchmark import validate_candidate_authorization
+        candidate = validate_candidate_authorization(
+            authorization=authorization, candidate_path=candidate_path,
+            chunks_path=chunks_path, corpus_freeze=corpus_freeze)
+        instance = cls.__new__(cls)
+        instance._initialize(seed, chunks, candidate, **limits)
+        return instance
+
+    def _initialize(self, seed, chunks, graph, hops=2, max_nodes=200, max_edges=500,
+                    rrf_k=60, support_weight=1.0, hop_decay=0.8):
         if (any(isinstance(v, bool) or not isinstance(v, int) for v in (hops, max_nodes, max_edges))
                 or not 1 <= hops <= 2 or not 1 <= max_nodes <= 1000 or not 1 <= max_edges <= 5000):
             raise ManualGraphError("graph traversal limits are invalid")

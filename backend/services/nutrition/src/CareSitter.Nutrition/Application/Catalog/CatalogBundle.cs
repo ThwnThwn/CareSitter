@@ -9,7 +9,7 @@ public sealed record CatalogBundle(
     CatalogCitation[] Citations,
     NutritionConcept[] Concepts,
     CatalogRecipeVersion[] Recipes,
-    CatalogRuleVersion[] Rules);
+    CatalogRuleVersion[] Rules) : ReleaseReviewMetadata;
 
 public sealed record CatalogSupportedScope(
     string Code,

@@ -78,7 +78,8 @@ class ShiftTrackingBottomActionBar extends ConsumerWidget {
         child: ShiftTrackingBottomActionBarFields(
             callbackAction1: () =>
                 context.push(AppRoutes.bookingChat(bookingId)),
-            callbackAction2: () => ScaffoldMessenger.of(context).showSnackBar(
+            callbackAction2: () => AppToast.showLegacy(
+                  context,
                   const SnackBar(
                     content:
                         Text('⚠️ Đang kết nối tổng đài giám sát viên 24/7...'),

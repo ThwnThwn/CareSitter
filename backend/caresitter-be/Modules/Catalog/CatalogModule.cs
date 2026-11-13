@@ -34,6 +34,16 @@ public sealed class CatalogModule : IModule
         services.AddScoped<ICatalogAdminRepository, CatalogAdminRepository>();
         services.AddScoped<IBookingMediaStore, BookingMediaStore>();
         services.AddScoped<IKycMediaStore, KycMediaStore>();
+        services.AddScoped<IReportUploadStore, ReportUploadStore>();
+        services.AddScoped<ReportService>();
+        services.AddScoped<FirebaseReportService>();
+        services.AddScoped<IReportDocumentGateway, ReportDocumentGateway>();
+        services.AddHttpClient<CloudinaryReportDocumentGateway>(client =>
+            client.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddHttpClient<IFirebaseReportStorage, FirebaseReportStorage>(client =>
+            client.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddScoped<IServiceChecklistCatalog, ServiceChecklistCatalog>();
 
         // Catalog cung cap bao gia cho Booking (cross-module qua Contracts).

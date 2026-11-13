@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class TimelineDirectionsAction extends StatelessWidget {
@@ -14,16 +13,16 @@ class TimelineDirectionsAction extends StatelessWidget {
             child: RichText(
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              text: TextSpan(
-                style: GoogleFonts.beVietnamPro(
+              text: const TextSpan(
+                style: TextStyle(fontFamily: 'Inter',
                   fontSize: AppFontSizes.s12,
                   color: AppColors.textSecondary,
                 ),
                 children: [
-                  const TextSpan(text: 'Bắt đầu sau: '),
+                  TextSpan(text: 'Bắt đầu sau: '),
                   TextSpan(
                     text: '25 phút',
-                    style: GoogleFonts.beVietnamPro(
+                    style: TextStyle(fontFamily: 'Inter',
                       fontSize: AppFontSizes.s12,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
@@ -41,15 +40,15 @@ class TimelineDirectionsAction extends StatelessWidget {
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.navigation_rounded,
+                Icon(Icons.navigation_rounded,
                     color: Colors.white, size: 14),
-                const SizedBox(width: AppSpacing.xs),
+                SizedBox(width: AppSpacing.xs),
                 Text(
                   'Chỉ đường',
-                  style: GoogleFonts.beVietnamPro(
+                  style: TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s12,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,

@@ -107,18 +107,27 @@ def evaluate_strategy(retriever, cases: list[dict], chunks: list[dict]) -> dict:
 
 
 def benchmark(*, cases: dict, chunks: list[dict], retrievers: dict, bindings: dict,
-              holdout: bool = False) -> dict:
+              holdout: bool = False, graph_candidate: bool = False) -> dict:
+    from .candidate_benchmark import CANDIDATE_MODE, CANDIDATE_REVIEW_STATUS
+    if graph_candidate:
+        if holdout or not bindings.get("candidate_demo_authorization_sha256"):
+            raise ManualGraphError("candidate benchmark requires authorization and visible cases")
+        if set(retrievers) != {"keyword", "vector", "hybrid", "graph-candidate"}:
+            raise ManualGraphError("candidate benchmark requires its complete technical matrix")
+    elif bindings.get("candidate_demo_authorization_sha256") or "graph-candidate" in retrievers:
+        raise ManualGraphError("candidate retrievers require the technical benchmark mode")
     frozen_code = code_identity()
     validate_cases(cases["cases"], chunks, {"holdout"} if holdout else {"development", "validation"})
     reports = {}
-    names = sorted(retrievers) if holdout else STRATEGIES
+    names = sorted(retrievers) if holdout or graph_candidate else STRATEGIES
     for name in names:
         retriever = retrievers.get(name)
         reports[name] = ({"status": "not_run", "reason": "required_artifacts_or_review_missing"}
                          if retriever is None else evaluate_strategy(retriever, cases["cases"], chunks))
     if code_identity() != frozen_code:
         raise ManualGraphError("retrieval code changed during benchmark; results are invalid")
-    return sign({"schema_version": 1, "mode": "paired_retrieval_benchmark",
+    return sign({"schema_version": 1, "mode": CANDIDATE_MODE if graph_candidate else "paired_retrieval_benchmark",
+                 **({"review_status": CANDIDATE_REVIEW_STATUS} if graph_candidate else {}),
                  "dataset_kind": "holdout" if holdout else "visible",
                  "evaluation_sha256": content_sha256(cases), "bindings": bindings,
                  "code": frozen_code, "environment": {"python": platform.python_version(),

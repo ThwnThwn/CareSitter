@@ -1,6 +1,5 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 
 class HomeOfferHeading extends StatelessWidget {
@@ -23,10 +22,10 @@ class HomeOfferHeading extends StatelessWidget {
                 color: AppColors.primary, size: 16),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(
+          const Expanded(
             child: Text(
               'Có lịch mới cần xác nhận!',
-              style: GoogleFonts.beVietnamPro(
+              style: TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -48,7 +47,7 @@ class HomeOfferHeading extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   isExpired ? 'Đang cập nhật' : countdownLabel ?? 'Đang chờ',
-                  style: GoogleFonts.beVietnamPro(
+                  style: const TextStyle(fontFamily: 'Inter',
                     fontSize: AppFontSizes.s11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.error,

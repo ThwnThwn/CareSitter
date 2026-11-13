@@ -1,18 +1,21 @@
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useAdminMetadata } from '../../adminMetadata';
 import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { AdminUser } from '../../types';
 import { useUserEditor } from './useUserEditor';
 
-export function UserDrawer({ user, onClose, onChanged }: { user: AdminUser; onClose: () => void; onChanged: () => void }) {
+export function UserDrawer({ user, onClose, onChanged }: { user: AdminUser; onClose: () => void; onChanged: (message: string) => void }) {
   const { roles: roleOptions, userStatuses } = useAdminMetadata();
+  const confirm = useConfirmation();
   const { roles, toggleRole, busy, error, saveRoles: submitRoles, setStatus: submitStatus } = useUserEditor(user, onChanged);
   async function saveRoles() {
-    await submitRoles(() => window.confirm(`${roles.includes('ADMIN') ? 'Cấp' : 'Thu hồi'} quyền quản trị cho ${user.email}? Các phiên đăng nhập hiện tại sẽ bị thu hồi.`));
+    const action = roles.includes('ADMIN') ? 'Cấp' : 'Thu hồi';
+    await submitRoles(() => confirm({ title: `${action} quyền quản trị cho ${user.email}?`, message: 'Các phiên đăng nhập hiện tại sẽ bị thu hồi.', confirmLabel: `${action} quyền` }));
   }
   async function setStatus(status: string) {
     const action = userStatuses.find(option => option.value === status)?.actionLabel?.toLowerCase() || 'cập nhật';
-    await submitStatus(status, () => window.confirm(`Xác nhận ${action} tài khoản ${user.email}?`));
+    await submitStatus(status, () => confirm({ title: `Xác nhận ${action} tài khoản ${user.email}?`, message: 'Thay đổi có hiệu lực ngay sau khi xác nhận.', confirmLabel: userStatuses.find(option => option.value === status)?.actionLabel || 'Xác nhận', tone: status === 'ACTIVE' ? 'primary' : 'danger' }));
   }
   return <Drawer title={user.displayName || user.fullName || user.email} subtitle="Quản lý tài khoản" busy={!!busy} onClose={onClose}>
     <div className="drawer-status"><StatusChip value={user.status} />{user.roles.map((role) => <StatusChip key={role} value={role} />)}</div>{error && <ErrorBanner message={error} />}

@@ -43,9 +43,38 @@ def _is_heading(text: str) -> bool:
     letters = [character for character in stripped if character.isalpha()]
     uppercase_ratio = sum(character.isupper() for character in letters) / max(1, len(letters))
     numbered = HEADING_NUMBER_PATTERN.match(stripped) is not None
-    if numbered and len(stripped.split()) > 12:
+    if numbered and len(stripped.split()) > 12 and uppercase_ratio < 0.9:
         return False
     return numbered or (len(letters) >= 4 and uppercase_ratio >= 0.72)
+
+
+def _wrapped_numbered_heading(lines: list[str], index: int) -> tuple[str, int] | None:
+    """Join a wrapped all-caps numbered title before classifying its tail."""
+    following_index = index + 1
+    if following_index < len(lines) and not lines[following_index].strip():
+        following_index += 1
+    if following_index >= len(lines):
+        return None
+    first, following = (" ".join(lines[position].split()) for position in (index, following_index))
+    letters = [char for char in first if char.isalpha()]
+    if (not HEADING_NUMBER_PATTERN.match(first) or len(first.split()) <= 12
+            or not letters or sum(char.isupper() for char in letters) / len(letters) < 0.9
+            or not following or HEADING_NUMBER_PATTERN.match(following)):
+        return None
+    combined = f"{first} {following}"
+    return (combined, following_index) if len(combined) <= 150 and _is_heading(combined) else None
+
+
+def _flowchart_caption_index(lines: list[str]) -> int | None:
+    """Keep diagram box labels out of the heading list when a flowchart is evident."""
+    for index, line in enumerate(lines):
+        if not re.match(r"^\s*Sơ đồ\b", line, re.IGNORECASE):
+            continue
+        preceding = "\n".join(lines[:index]).casefold()
+        cues = sum(marker in preceding for marker in ("có", "không", "nguy cơ", "can thiệp", "giám sát"))
+        if cues >= 3:
+            return index
+    return None
 
 
 def _is_table_block(lines: list[str]) -> bool:
@@ -125,35 +154,47 @@ def _page_blocks(layout_text: str) -> tuple[list[dict[str, str]], str | None]:
             continue
         retained.append(raw_line)
 
+    diagram_end = _flowchart_caption_index(retained)
     groups: list[list[str]] = []
     current: list[str] = []
-    for line in retained:
+    position = 0
+    while position < len(retained):
+        line = retained[position]
         if not line.strip():
             if current:
                 groups.append(current)
                 current = []
+            position += 1
             continue
         stripped = re.sub(r"\s+", " ", line.strip())
-        if _is_heading(stripped):
+        wrapped = _wrapped_numbered_heading(retained, position)
+        if wrapped:
+            stripped, position = wrapped
+        if (diagram_end is None or position > diagram_end) and _is_heading(stripped):
             if current:
                 groups.append(current)
                 current = []
             groups.append([stripped])
+            position += 1
             continue
         current.append(line)
+        position += 1
     if current:
         groups.append(current)
 
     blocks: list[dict[str, str]] = []
+    before_diagram_caption = diagram_end is not None
     for lines in groups:
         cleaned = [re.sub(r"\s+", " ", line.strip()) for line in lines if line.strip()]
         if not cleaned:
             continue
-        kind = "heading" if len(cleaned) == 1 and _is_heading(cleaned[0]) else (
+        kind = "heading" if not before_diagram_caption and len(cleaned) == 1 and _is_heading(cleaned[0]) else (
             "table_candidate" if _is_table_block(lines) else "paragraph"
         )
         separator = "\n" if kind == "table_candidate" else " "
         blocks.append({"kind": kind, "text": separator.join(cleaned)})
+        if any(re.match(r"^Sơ đồ\b", line, re.IGNORECASE) for line in cleaned):
+            before_diagram_caption = False
     return blocks, printed_page
 
 

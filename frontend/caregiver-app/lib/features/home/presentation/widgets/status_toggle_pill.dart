@@ -1,7 +1,6 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/profile/presentation/controllers/profile_controller.dart';
@@ -45,7 +44,7 @@ class StatusTogglePill extends ConsumerWidget {
             const SizedBox(width: AppSpacing.tight),
             Text(
               isAvailable ? 'Rảnh ✓' : 'Bận',
-              style: GoogleFonts.beVietnamPro(
+              style: TextStyle(fontFamily: 'Inter',
                 fontSize: AppFontSizes.s11,
                 fontWeight: FontWeight.w700,
                 color: isAvailable ? AppColors.primary : AppColors.textHint,

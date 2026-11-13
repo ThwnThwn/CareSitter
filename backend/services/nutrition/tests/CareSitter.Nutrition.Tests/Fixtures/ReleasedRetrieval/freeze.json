@@ -1,0 +1,7 @@
+{
+  "chunks_sha256": "09f9962cbe0deeb5cd1b3e891abfb4dfc5212d891d98bcf1330ad6919ba8f207",
+  "content_sha256": "6d7747fa578afafafd2ee738565828175048e85328cae27a95787c6546d8efba",
+  "mode": "local_retrieval_corpus_freeze",
+  "schema_version": 1,
+  "source_revision_id": "synthetic-2019@fixture"
+}

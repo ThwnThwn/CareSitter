@@ -193,7 +193,10 @@ try {
         'init-db/nutrition-service/06-catalog-release-evidence.sql',
         'init-db/nutrition-service/07-catalog-knowledge-review-gate.sql',
         'init-db/nutrition-service/08-local-demo-catalog.sql',
-        'init-db/nutrition-service/09-knowledge-chunks.sql')) {
+        'init-db/nutrition-service/09-knowledge-chunks.sql',
+        'init-db/nutrition-service/10-published-catalog-integrity.sql',
+        'init-db/nutrition-service/11-catalog-review-policy.sql',
+        'init-db/nutrition-service/12-beneficiary-deletion.sql')) {
         Invoke-AdminPsql -Database $databaseName -File (Join-Path $backendRoot $migration) | Out-Null
     }
     Invoke-AdminPsql -Database $databaseName -Sql @"

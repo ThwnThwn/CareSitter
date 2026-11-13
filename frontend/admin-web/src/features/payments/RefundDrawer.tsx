@@ -1,14 +1,14 @@
 import { BadgeCheck } from 'lucide-react';
 import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate, formatMoney, shortId } from '../../components/Common';
+import { useConfirmation } from '../../components/ConfirmationDialog';
 import { RefundRequest } from '../../types';
 import { useRefundConfirmation } from './useRefundConfirmation';
 
-export function RefundDrawer({ item, onClose, onChanged }: { item: RefundRequest; onClose: () => void; onChanged: () => void }) {
+export function RefundDrawer({ item, onClose, onChanged }: { item: RefundRequest; onClose: () => void; onChanged: (message: string) => void }) {
   const state = useRefundConfirmation(item, onChanged);
+  const confirmAction = useConfirmation();
   async function confirm() {
-    await state.confirm(() => window.confirm(
-      `Xác nhận đã hoàn ${formatMoney(item.amount)} qua ${item.provider} cho booking ${shortId(item.bookingId)}?\n` +
-      'Chỉ tiếp tục khi merchant portal hoặc ngân hàng đã xác nhận giao dịch hoàn tiền thành công.'));
+    await state.confirm(() => confirmAction({ title: 'Xác nhận đã hoàn tiền?', message: `${formatMoney(item.amount)} qua ${item.provider} · Booking ${shortId(item.bookingId)}\nChỉ tiếp tục khi merchant portal hoặc ngân hàng đã xác nhận giao dịch hoàn tiền thành công.`, confirmLabel: 'Xác nhận đã hoàn', tone: 'primary' }));
   }
 
   return <Drawer title={formatMoney(item.amount)} subtitle="Refund về phương thức thanh toán gốc" busy={!!state.busy} onClose={onClose}

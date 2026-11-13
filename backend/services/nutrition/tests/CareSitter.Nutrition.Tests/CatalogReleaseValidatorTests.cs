@@ -276,6 +276,120 @@ public sealed class CatalogReleaseValidatorTests
         Assert.Contains(result.Issues, issue => issue.Code == "reviewer_mismatch");
     }
 
+    [Fact]
+    public void Non_medical_reference_baseline_uses_data_steward_reviews_without_clinical_review()
+    {
+        var (bundle, evidence) = NonMedicalPackage();
+
+        var result = CatalogReleaseValidator.Validate(bundle, evidence, Digest);
+
+        Assert.True(result.IsReleaseReady, string.Join(Environment.NewLine, result.Issues.Select(x => $"{x.Path}: {x.Code}")));
+    }
+
+    [Fact]
+    public void Non_medical_reference_rejects_clinical_claims_missing_reviews_and_condition_profile()
+    {
+        var (bundle, evidence) = NonMedicalPackage();
+        var (_, clinical) = Package();
+        evidence = evidence with
+        {
+            ReleaseProfile = "adult_condition_v1",
+            ClinicalReview = clinical.ClinicalReview,
+            Recipes = [evidence.Recipes[0] with { DataReview = null }, evidence.Recipes[1] with
+            {
+                DataReview = evidence.Recipes[1].DataReview! with { ReviewerRole = "dietitian" }
+            }, .. evidence.Recipes[2..]],
+            KnowledgeReview = evidence.KnowledgeReview! with
+            {
+                ClinicalReviewerIds = ["clinical-reviewer-1"],
+                DataReviewerIds = ["someone-else"]
+            }
+        };
+
+        var codes = CatalogReleaseValidator.Validate(bundle, evidence, Digest).Issues.Select(x => x.Code).ToHashSet();
+
+        Assert.Contains("non_medical_profile", codes);
+        Assert.Contains("clinical_review_forbidden", codes);
+        Assert.Contains("data_review_required", codes);
+        Assert.Contains("unsupported", codes);
+        Assert.Contains("reviewer_mismatch", codes);
+    }
+
+    [Fact]
+    public void Non_medical_metadata_must_be_consistent_and_cannot_mix_with_clinical_policy()
+    {
+        var (bundle, evidence) = NonMedicalPackage();
+        var inconsistent = CatalogReleaseValidator.Validate(
+            bundle with { ProductionPublicRelease = true }, evidence, Digest);
+        Assert.Contains(inconsistent.Issues, x => x.Code == "review_metadata_inconsistent" && x.Path.StartsWith("bundle", StringComparison.Ordinal));
+
+        var (clinicalBundle, clinicalEvidence) = Package();
+        var mixed = CatalogReleaseValidator.Validate(
+            clinicalBundle with { ReviewPolicy = CatalogReleaseValidator.NonMedicalReferencePolicy },
+            clinicalEvidence with { Recipes = [clinicalEvidence.Recipes[0] with { DataReview = evidence.Recipes[0].DataReview }, .. clinicalEvidence.Recipes[1..]] },
+            Digest);
+        Assert.Contains(mixed.Issues, x => x.Code == "policy_mismatch" && x.Path == "evidence.review_policy");
+        Assert.Contains(mixed.Issues, x => x.Code == "policy_mismatch" && x.Path.EndsWith(".dataReview", StringComparison.Ordinal));
+    }
+
+    // Synthetic data-steward fixture only; nobody signs as a dietitian or physician.
+    private static (CatalogBundle Bundle, CatalogReleaseEvidence Evidence) NonMedicalPackage()
+    {
+        const string reviewerId = "data-steward-fixture";
+        var (bundle, evidence) = Package();
+        bundle = NonMedical(bundle with
+        {
+            SupportedScopes = [bundle.SupportedScopes[0] with { ConditionCodes = [] }],
+            Rules = [],
+            Recipes = bundle.Recipes.Select(recipe => recipe with { Payload = NonMedical(recipe.Payload) }).ToArray()
+        });
+        evidence = NonMedical(evidence with
+        {
+            ReleaseProfile = "adult_baseline_v1",
+            Rules = [],
+            ClinicalReview = null,
+            Recipes = evidence.Recipes.Select(recipe => recipe with
+            {
+                DataReview = new("approved", CatalogReleaseValidator.DataStewardRole, reviewerId,
+                    new DateTimeOffset(2026, 11, 10, 8, 0, 0, TimeSpan.FromHours(7)))
+            }).ToArray(),
+            KnowledgeReview = NonMedical(evidence.KnowledgeReview! with
+            {
+                ClinicalReviewerIds = [],
+                DataReviewerIds = [reviewerId]
+            })
+        });
+        return (bundle, evidence);
+    }
+
+    private static CatalogBundle NonMedical(CatalogBundle value) => value with
+    {
+        ReviewPolicy = CatalogReleaseValidator.NonMedicalReferencePolicy, IntendedUse = "academic_reference_non_medical",
+        ClinicalReviewPerformed = false, IndependentClinicalReview = false, ProductionPublicRelease = false,
+        ClinicalReviewNotPerformedReason = "no_clinical_reviewer_non_medical_reference"
+    };
+
+    private static Recipe NonMedical(Recipe value) => value with
+    {
+        ReviewPolicy = CatalogReleaseValidator.NonMedicalReferencePolicy, IntendedUse = "academic_reference_non_medical",
+        ClinicalReviewPerformed = false, IndependentClinicalReview = false, ProductionPublicRelease = false,
+        ClinicalReviewNotPerformedReason = "no_clinical_reviewer_non_medical_reference"
+    };
+
+    private static CatalogReleaseEvidence NonMedical(CatalogReleaseEvidence value) => value with
+    {
+        ReviewPolicy = CatalogReleaseValidator.NonMedicalReferencePolicy, IntendedUse = "academic_reference_non_medical",
+        ClinicalReviewPerformed = false, IndependentClinicalReview = false, ProductionPublicRelease = false,
+        ClinicalReviewNotPerformedReason = "no_clinical_reviewer_non_medical_reference"
+    };
+
+    private static CatalogKnowledgeReview NonMedical(CatalogKnowledgeReview value) => value with
+    {
+        ReviewPolicy = CatalogReleaseValidator.NonMedicalReferencePolicy, IntendedUse = "academic_reference_non_medical",
+        ClinicalReviewPerformed = false, IndependentClinicalReview = false, ProductionPublicRelease = false,
+        ClinicalReviewNotPerformedReason = "no_clinical_reviewer_non_medical_reference"
+    };
+
     private static (CatalogBundle Bundle, CatalogReleaseEvidence Evidence) Package()
     {
         const string sourceId = "VIEN_DINH_DUONG_2019";

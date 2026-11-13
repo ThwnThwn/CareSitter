@@ -135,7 +135,8 @@ public sealed class GetAdminMetadataQueryHandler(
                 new AdminNavigation("disputes", "Khiếu nại", ["DISPUTE"]),
                 new AdminNavigation("services", "Dịch vụ", []),
                 new AdminNavigation("promotions", "Ưu đãi", []),
-                new AdminNavigation("users", "Tài khoản", [])
+                new AdminNavigation("users", "Tài khoản", []),
+                new AdminNavigation("crash-reports", "Lỗi ứng dụng", [])
             },
             statusDefinitions,
             filters = new

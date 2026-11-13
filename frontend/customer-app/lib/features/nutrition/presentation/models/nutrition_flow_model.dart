@@ -11,6 +11,8 @@ class NutritionFlow {
   final bool dateLoading;
   final String? error;
   final String? dateError;
+  final int? weekProgress;
+  final int? planTargetDays;
   const NutritionFlow(
       {this.health,
       this.resource,
@@ -21,7 +23,9 @@ class NutritionFlow {
       this.canAssess = false,
       this.selectedDate,
       this.dateLoading = false,
-      this.dateError});
+      this.dateError,
+      this.weekProgress,
+      this.planTargetDays});
 
   NutritionPersonalizationReadiness get readiness {
     final profile = _nutritionProfile(health?['healthHistory']);

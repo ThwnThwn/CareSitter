@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/widgets/app_toast.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_progress_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +40,8 @@ class BookingDetailScreenProgressTracker extends StatelessWidget {
           steps: steps,
           callbackAction1: () {
             Clipboard.setData(ClipboardData(text: booking.id));
-            ScaffoldMessenger.of(context).showSnackBar(
+            AppToast.showLegacy(
+              context,
               const SnackBar(
                 content: Text('Đã sao chép mã đặt lịch'),
                 duration: Duration(seconds: 1),

@@ -8,5 +8,7 @@
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/CareSitter.Nutrition/CareSitter.Nutrition.csproj" />
     <ProjectReference Include="../../tools/CareSitter.Nutrition.ParserEval/CareSitter.Nutrition.ParserEval.csproj" />
+    <ProjectReference Include="../../tools/CareSitter.Nutrition.CatalogTool/CareSitter.Nutrition.CatalogTool.csproj" />
   </ItemGroup>
+  <ItemGroup><None Update="Fixtures/ReleasedRetrieval/**" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

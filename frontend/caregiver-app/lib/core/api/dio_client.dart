@@ -1,14 +1,17 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/core/config/env_config.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
 
-const String _baseUrl = EnvConfig.baseUrl;
+final String _baseUrl = EnvConfig.baseUrl;
 
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
+final authRefreshClientProvider = Provider<Dio>((ref) {
+  final client = Dio(BaseOptions(baseUrl: _baseUrl));
+  ref.onDispose(() => client.close(force: true));
+  return client;
+});
 
 class DioClient {
   late final Dio _dio;
@@ -43,7 +46,8 @@ class DioClient {
 
   Future<Response<T>> postIdempotent<T>(String path,
           {dynamic data, required String idempotencyKey}) =>
-      _request(() => _dio.post<T>(path, data: data,
+      _request(() => _dio.post<T>(path,
+          data: data,
           options: Options(headers: {'Idempotency-Key': idempotencyKey})));
 
   Future<Response<T>> put<T>(String path, {dynamic data}) =>
@@ -87,28 +91,29 @@ class DioClient {
   }
 }
 
-/// Giữ thông tin một request đang chờ token refresh
-class _PendingRequest {
-  final RequestOptions options;
-  final Completer<Response<dynamic>> _completer = Completer();
-
-  _PendingRequest(this.options);
-
-  Future<Response<dynamic>> get future => _completer.future;
-  void complete(Response<dynamic> response) => _completer.complete(response);
-  void completeError(Object error) => _completer.completeError(error);
-}
-
 class _AuthInterceptor extends Interceptor {
   final Ref _ref;
-  bool _isRefreshing = false;
-  final List<_PendingRequest> _pendingRequests = [];
+  Future<String?>? _refreshing;
+  int _epoch = 0, _refreshEpoch = -1, _refreshGeneration = -1;
+  bool _active = true;
 
-  _AuthInterceptor(this._ref);
+  _AuthInterceptor(this._ref) {
+    _ref.onDispose(() => _active = false);
+    _ref.listen(authStateProvider, (previous, next) {
+      if (previous?.valueOrNull?.userId != next.valueOrNull?.userId ||
+          previous?.valueOrNull?.isAuthenticated !=
+              next.valueOrNull?.isAuthenticated) {
+        _epoch++;
+      }
+    });
+  }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = _ref.read(authStateProvider).value?.accessToken;
+    final token = _ref.read(authStateProvider).valueOrNull?.accessToken;
+    options.extra['authSessionEpoch'] = _epoch;
+    options.extra['authSessionGeneration'] =
+        _ref.read(authStateProvider.notifier).sessionGeneration;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -121,73 +126,87 @@ class _AuthInterceptor extends Interceptor {
     final path = err.requestOptions.path;
     final isAuthEndpoint =
         path.endsWith('/auth/refresh') || path.endsWith('/auth/logout');
+    if (!_active) return handler.next(err);
 
-    if (err.response?.statusCode == 401 && !isAuthEndpoint) {
-      final authNotifier = _ref.read(authStateProvider.notifier);
-      final refreshToken = authNotifier.refreshToken;
-
-      if (refreshToken == null) {
-        await authNotifier.logout();
-        return handler.next(err);
-      }
-
-      // Nếu đang refresh, xếp request này vào hàng chờ
-      if (_isRefreshing) {
-        final pending = _PendingRequest(err.requestOptions);
-        _pendingRequests.add(pending);
-        try {
-          final response = await pending.future;
-          handler.resolve(response);
-        } catch (_) {
-          handler.next(err);
+    final authNotifier = _ref.read(authStateProvider.notifier);
+    final epoch = err.requestOptions.extra['authSessionEpoch'];
+    final generation = err.requestOptions.extra['authSessionGeneration'];
+    bool current() =>
+        _active &&
+        epoch == _epoch &&
+        generation == authNotifier.sessionGeneration &&
+        _ref.read(authStateProvider).valueOrNull?.isAuthenticated == true &&
+        err.requestOptions.cancelToken?.isCancelled != true;
+    if (err.response?.statusCode != 401 || isAuthEndpoint || !current()) {
+      return handler.next(err);
+    }
+    try {
+      var token = authNotifier.accessToken;
+      // Request khác có thể đã refresh trước khi response 401 này về.
+      if (token == null ||
+          err.requestOptions.headers['Authorization'] == 'Bearer $token') {
+        final activeEpoch = _epoch;
+        final activeGeneration = authNotifier.sessionGeneration;
+        if (_refreshing == null ||
+            _refreshEpoch != activeEpoch ||
+            _refreshGeneration != activeGeneration) {
+          _refreshEpoch = activeEpoch;
+          _refreshGeneration = activeGeneration;
+          final operation = _refreshAsync(activeEpoch, activeGeneration);
+          _refreshing = operation;
+          operation.then((_) {
+            if (identical(_refreshing, operation)) _refreshing = null;
+          });
         }
-        return;
+        token = await _refreshing;
       }
-
-      _isRefreshing = true;
-      try {
-        final dio = Dio(BaseOptions(baseUrl: _baseUrl));
-        // Chỉ cần refreshToken; backend tra session DB, không cần accessToken.
-        final resp = await dio
-            .post('/auth/refresh', data: {'refreshToken': refreshToken});
-        final newAccess = resp.data['accessToken'] as String;
-        final newRefresh = resp.data['refreshToken'] as String;
-
-        await authNotifier.updateTokens(
-          accessToken: newAccess,
-          refreshToken: newRefresh,
-        );
-
-        // Retry original request
-        err.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-        final retried = await dio.fetch(err.requestOptions);
-
-        // Retry toàn bộ pending requests
-        for (final pending in _pendingRequests) {
-          try {
-            pending.options.headers['Authorization'] = 'Bearer $newAccess';
-            final retriedPending = await dio.fetch(pending.options);
-            pending.complete(retriedPending);
-          } catch (e) {
-            pending.completeError(e);
-          }
-        }
-        _pendingRequests.clear();
-
-        handler.resolve(retried);
-      } catch (_) {
-        // Refresh thất bại → reject toàn bộ pending, logout
-        for (final pending in _pendingRequests) {
-          pending.completeError(err);
-        }
-        _pendingRequests.clear();
-        await authNotifier.logout();
-        handler.next(err);
-      } finally {
-        _isRefreshing = false;
-      }
-    } else {
+      if (!current() || token == null) return handler.next(err);
+      err.requestOptions.headers['Authorization'] = 'Bearer $token';
+      final body = err.requestOptions.data;
+      if (body is FormData) err.requestOptions.data = body.clone();
+      final retried =
+          await _ref.read(authRefreshClientProvider).fetch(err.requestOptions);
+      if (!current()) return handler.next(err);
+      handler.resolve(retried);
+    } on DioException catch (retryError) {
+      handler.next(retryError);
+    } catch (_) {
       handler.next(err);
+    }
+  }
+
+  Future<String?> _refreshAsync(int epoch, int generation) async {
+    final authNotifier = _ref.read(authStateProvider.notifier);
+    final refresh = authNotifier.refreshToken;
+    bool current() =>
+        _active &&
+        epoch == _epoch &&
+        generation == authNotifier.sessionGeneration &&
+        authNotifier.refreshToken == refresh;
+    try {
+      if (refresh == null) throw StateError('Missing refresh token');
+      // Backend tra phiên bằng refresh token, không cần access token.
+      final response = await _ref
+          .read(authRefreshClientProvider)
+          .post('/auth/refresh', data: {'refreshToken': refresh});
+      if (!current()) return null;
+      final access = response.data['accessToken'] as String;
+      final nextRefresh = response.data['refreshToken'] as String;
+      if (access.isEmpty || nextRefresh.isEmpty) {
+        throw StateError('Invalid refresh response');
+      }
+      await authNotifier.updateTokens(
+          accessToken: access, refreshToken: nextRefresh);
+      return epoch == _epoch && generation == authNotifier.sessionGeneration
+          ? access
+          : null;
+    } catch (_) {
+      if (current()) {
+        try {
+          await authNotifier.logout();
+        } catch (_) {/* Giữ lỗi 401 ban đầu. */}
+      }
+      return null;
     }
   }
 }

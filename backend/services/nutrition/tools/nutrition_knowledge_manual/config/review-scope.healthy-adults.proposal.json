@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "status": "proposal_owner_edit_required",
+  "description": "Đề xuất theo tên chương cho người lớn khỏe mạnh; không phải quyết định duyệt. Chủ dự án sửa danh sách trước khi giao phiếu. Không bao gồm chương bệnh lý, trẻ em, thai kỳ hoặc người cao tuổi.",
+  "chapters": [
+    "DINH DƯỠNG, SỨC KHOẺ VÀ BỆNH TẬT",
+    "XÂY DỰNG KHẨU PHẦN",
+    "SỬ DỤNG ĐƠN VỊ CHUYỂN ĐỔI THỰC PHẨM TRONG TƯ VẤN DINH DƯỠNG",
+    "PHỤ LỤC 4: NHU CẦU NĂNG LƯỢNG VÀ CÁC CHẤT DINH DƯỠNG"
+  ]
+}

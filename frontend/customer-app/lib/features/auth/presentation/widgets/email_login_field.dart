@@ -17,28 +17,19 @@ class EmailLoginField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           labelText: 'Địa chỉ Email',
           hintText: 'example@gmail.com',
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.email_outlined,
             color: AppColors.textSecondary,
             size: 22,
           ),
           filled: true,
-          fillColor: AppColors.cardBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
+          fillColor: AppInputStyle.fillColor,
+          border: AppInputStyle.enabledBorder,
+          enabledBorder: AppInputStyle.enabledBorder,
+          focusedBorder: AppInputStyle.focusedBorder,
         ),
       );
 }

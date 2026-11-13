@@ -50,7 +50,7 @@ public static class HealthSnapshotNormalizer
                 unresolved.Add("healthHistory/nutrition/schemaVersion");
             if (nutrition.EnumerateObject().Select(p => p.Name).Distinct().Count() != nutrition.EnumerateObject().Count())
                 unresolved.Add("healthHistory/nutrition");
-            var known = new HashSet<string> { "schemaVersion", "conditionsStatus", "medicationsStatus", "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction", "dietaryPattern", "nutritionGoal", "guidance", "symptoms" };
+            var known = new HashSet<string> { "schemaVersion", "conditionsStatus", "medicationsStatus", "feedingRoute", "swallowingStatus", "fluidRestriction", "electrolyteRestriction", "dietaryPattern", "nutritionGoal", "mealFormatPreference", "preferredFoods", "dislikedFoods", "guidance", "symptoms" };
             foreach (var prop in nutrition.EnumerateObject())
             {
                 if (!known.Contains(prop.Name)) { unresolved.Add("healthHistory/nutrition/" + prop.Name); continue; }
@@ -65,6 +65,8 @@ public static class HealthSnapshotNormalizer
                     "fluidRestriction" or "electrolyteRestriction" => v is "none" or "present",
                     "dietaryPattern" => v is "regular" or "vegetarian",
                     "nutritionGoal" => v is "maintain" or "gain" or "lose",
+                    "mealFormatPreference" => v is "no_preference" or "prefer_dry" or "prefer_soup",
+                    "preferredFoods" or "dislikedFoods" => v.Length <= 800,
                     _ => true
                 };
                 if (!valid) unresolved.Add("healthHistory/nutrition/" + prop.Name);

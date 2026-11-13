@@ -4,20 +4,22 @@ import { CatalogService } from '../../types';
 import { useResource } from '../../useResource';
 import { catalogPaths } from './catalogApi';
 import { ChecklistEditor } from './ChecklistEditor';
+import type { ShowToast } from '../../useToast';
 
-export function ChecklistManager() {
+export function ChecklistManager({ showToast }: { showToast: ShowToast }) {
   const {
     data: services,
     loading,
     error,
+    hasLoaded,
     reload,
   } = useResource<CatalogService[]>(catalogPaths.services, []);
   const [selectedId, setSelectedId] = useState('');
   const [policies, setPolicies] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const selectedService = services.find((service) => service.id === selectedId) || services[0];
-  if (loading) return <LoadingTable rows={5} columns={4} />;
-  if (error) return <ErrorBanner message={error} onRetry={() => void reload()} />;
+  if (loading && !hasLoaded) return <LoadingTable rows={5} columns={4} />;
+  if (error && !hasLoaded) return <ErrorBanner message={error} onRetry={() => void reload()} />;
   if (!selectedService)
     return (
       <EmptyState
@@ -26,7 +28,9 @@ export function ChecklistManager() {
       />
     );
   return (
-    <div className="checklist-layout tab-panel">
+    <>
+      {error && <ErrorBanner message={error} onRetry={() => void reload()} />}
+      <div className="checklist-layout tab-panel">
       <aside className="service-rail">
         <h2>Gói dịch vụ</h2>
         {services.map((service) => (
@@ -51,7 +55,9 @@ export function ChecklistManager() {
         onPolicyChanged={(value) =>
           setPolicies((current) => ({ ...current, [selectedService.id]: value }))
         }
+        onChanged={showToast}
       />
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// App composition supplies routing; core and feature UI depend on this port.
-final notificationDeepLinkServiceProvider = Provider<NotificationDeepLinkService>(
-  (_) => throw StateError('Notification navigation must be configured by the app.'),
+final notificationDeepLinkServiceProvider =
+    Provider<NotificationDeepLinkService>(
+  (_) => throw StateError(
+      'Notification navigation must be configured by the app.'),
 );
 
 abstract interface class NotificationDeepLinkService {

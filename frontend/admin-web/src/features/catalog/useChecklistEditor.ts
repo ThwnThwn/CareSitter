@@ -14,6 +14,7 @@ export function useChecklistEditor(
   service: CatalogService,
   onBusy: (value: boolean) => void,
   onPolicyChanged: (value: boolean) => void,
+  onChanged: (message: string) => void,
 ) {
   const { defaults } = useAdminMetadata();
   const {
@@ -43,7 +44,7 @@ export function useChecklistEditor(
     setEditing(null);
     setForm(initialForm());
   }
-  async function mutate(action: string, operation: () => Promise<unknown>) {
+  async function mutate(action: string, operation: () => Promise<unknown>, successMessage: string) {
     if (disabled) return;
     setBusy(action);
     onBusy(true);
@@ -57,6 +58,7 @@ export function useChecklistEditor(
         reset();
         await reload();
       }
+      onChanged(successMessage);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể cập nhật checklist.');
     } finally {
@@ -70,15 +72,16 @@ export function useChecklistEditor(
       saveChecklistTemplate(service.id, editing?.id, {
         ...form,
         sortOrder: form.sortOrder ?? nextSortOrder,
-      }),
+      }), editing ? 'Đã cập nhật công việc trong checklist.' : 'Đã thêm công việc vào checklist.',
     );
   }
   const togglePolicy = () =>
-    mutate('policy', () => saveChecklistPolicy(service.id, !allowAdHocTasks));
+    mutate('policy', () => saveChecklistPolicy(service.id, !allowAdHocTasks), 'Đã cập nhật chính sách checklist.');
   const toggleTemplate = (template: ChecklistTemplate) =>
-    mutate(template.id, () => setChecklistActive(service.id, template.id, !template.isActive));
+    mutate(template.id, () => setChecklistActive(service.id, template.id, !template.isActive),
+      template.isActive ? 'Đã tắt công việc trong checklist.' : 'Đã bật công việc trong checklist.');
   const removeTemplate = (template: ChecklistTemplate) =>
-    mutate(template.id, () => deleteChecklistTemplate(service.id, template.id));
+    mutate(template.id, () => deleteChecklistTemplate(service.id, template.id), 'Đã xóa công việc khỏi checklist.');
   const editTemplate = (template: ChecklistTemplate) => {
     setEditing(template);
     setForm({

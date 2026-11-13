@@ -1,6 +1,7 @@
 using Aspire.Hosting.ApplicationModel;
 using CareSitter.AppHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 var builder = DistributedApplication.CreateBuilder(args);
 var appHostDirectory = builder.AppHostDirectory;
@@ -76,11 +77,18 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("NutritionCatalog__LocalDemoEnabled", builder.Configuration.GetValue("NutritionCatalog:LocalDemoEnabled", false).ToString())
     .WithEnvironment("NutritionCatalog__LocalDemoPackageKey", builder.Configuration["NutritionCatalog:LocalDemoPackageKey"] ?? "adult-baseline-p2a-v1-local-demo")
     .WithEnvironment("MealGrounding__Enabled", builder.Configuration.GetValue("MealGrounding:Enabled", false).ToString())
+    .WithEnvironment("MealGrounding__AllowNonMedicalReference", "true")
     .WithEnvironment("MealGrounding__Mode", builder.Configuration["MealGrounding:Mode"] ?? "released_graph")
     .WithEnvironment("MealGrounding__ManifestPath", builder.Configuration["MealGrounding:ManifestPath"] ?? "")
     .WithEnvironment("MealGrounding__ManifestSha256", builder.Configuration["MealGrounding:ManifestSha256"] ?? "")
+    .WithEnvironment("MealGrounding__RuntimeAuthorizationPath", builder.Configuration["MealGrounding:RuntimeAuthorizationPath"] ?? "")
+    .WithEnvironment("MealGrounding__RuntimeAuthorizationSha256", builder.Configuration["MealGrounding:RuntimeAuthorizationSha256"] ?? "")
+    .WithEnvironment("MealGrounding__CorpusFreezePath", builder.Configuration["MealGrounding:CorpusFreezePath"] ?? "")
+    .WithEnvironment("MealGrounding__CorpusFreezeSha256", builder.Configuration["MealGrounding:CorpusFreezeSha256"] ?? "")
     .WithEnvironment("MealGrounding__ReviewedGraphPath", builder.Configuration["MealGrounding:ReviewedGraphPath"] ?? "")
     .WithEnvironment("MealGrounding__ReviewedGraphSha256", builder.Configuration["MealGrounding:ReviewedGraphSha256"] ?? "")
+    .WithEnvironment("MealGrounding__ExplanationIndexPath", builder.Configuration["MealGrounding:ExplanationIndexPath"] ?? "")
+    .WithEnvironment("MealGrounding__ExplanationIndexSha256", builder.Configuration["MealGrounding:ExplanationIndexSha256"] ?? "")
     .WithEnvironment("MealGrounding__DemoGraphPath", builder.Configuration["MealGrounding:DemoGraphPath"] ?? "")
     .WithEnvironment("MealGrounding__DemoGraphSha256", builder.Configuration["MealGrounding:DemoGraphSha256"] ?? "")
     .WithEnvironment("MealGrounding__DemoAuthorizationPath", builder.Configuration["MealGrounding:DemoAuthorizationPath"] ?? "")
@@ -88,11 +96,15 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("MealGrounding__CorpusPath", builder.Configuration["MealGrounding:CorpusPath"] ?? "")
     .WithEnvironment("MealGrounding__CorpusSha256", builder.Configuration["MealGrounding:CorpusSha256"] ?? "")
     .WithEnvironment("MealGrounding__TopK", builder.Configuration.GetValue("MealGrounding:TopK", 5).ToString())
+    .WithEnvironment("NutritionKnowledgeAi__Enabled", builder.Configuration.GetValue("NutritionKnowledgeAi:Enabled", false).ToString())
+    .WithEnvironment("NutritionKnowledgeAi__DataProcessingApproved", builder.Configuration.GetValue("NutritionKnowledgeAi:DataProcessingApproved", false).ToString())
+    .WithEnvironment("NutritionKnowledgeAi__Model", builder.Configuration["NutritionKnowledgeAi:Model"] ?? mealRankingModel)
+    .WithEnvironment("NutritionKnowledgeAi__UseWindowsCurl", builder.Configuration.GetValue("NutritionKnowledgeAi:UseWindowsCurl", false).ToString())
     .WithEnvironment("MealRanking__Enabled", builder.Configuration.GetValue("MealRanking:Enabled", false).ToString())
     .WithEnvironment("MealRanking__Model", mealRankingModel)
     .WithEnvironment("MealRanking__BaseUrl", mealRankingBaseUrl)
     .WithEnvironment("MealRanking__DataProcessingApproved", builder.Configuration.GetValue("MealRanking:DataProcessingApproved", false).ToString())
-    .WithEnvironment("MealRanking__TimeoutSeconds", builder.Configuration.GetValue("MealRanking:TimeoutSeconds", 20).ToString())
+    .WithEnvironment("MealRanking__TimeoutSeconds", builder.Configuration.GetValue("MealRanking:TimeoutSeconds", 10).ToString())
     .WithEnvironment("MealRanking__MaxOutputTokens", builder.Configuration.GetValue("MealRanking:MaxOutputTokens", 1536).ToString())
     .WithEnvironment("MealRanking__MaxAttempts", builder.Configuration.GetValue("MealRanking:MaxAttempts", 2).ToString())
     .WithEnvironment("MealRanking__MaxConcurrency", builder.Configuration.GetValue("MealRanking:MaxConcurrency", 4).ToString())
@@ -115,15 +127,35 @@ var nutrition = builder.AddProject<Projects.CareSitter_Nutrition>("nutrition", l
     .WithEnvironment("Kestrel__Endpoints__Grpc__Protocols", "Http2")
     .WithHttpHealthCheck("/health/ready", endpointName: "http");
 
+// Some local networks advertise IPv6 but cannot reach Google's signing-key host.
+// Set the runtime switch before child processes start; loading it in ApiHost's
+// .env can be too late once System.Net has initialized. TLS validation is unchanged.
+if (builder.Environment.IsDevelopment() && builder.Configuration.GetValue<bool>("AppHost:DisableIpv6"))
+{
+    api.WithEnvironment("DOTNET_SYSTEM_NET_DISABLEIPV6", "1");
+    nutrition.WithEnvironment("DOTNET_SYSTEM_NET_DISABLEIPV6", "1");
+}
+
 var nutritionConnection = builder.Configuration.GetConnectionString("Nutrition");
 if (string.IsNullOrWhiteSpace(nutritionConnection) &&
     builder.Configuration.GetValue("NutritionDatabase:UseCareSitterServer", false))
 {
+    var nutritionDatabaseName = builder.Configuration["NutritionDatabase:Name"] ?? "nutrition";
+    var nutritionDatabaseUsername = builder.Configuration["NutritionDatabase:Username"] ?? "nutrition_app";
+    var nutritionRuntimePassword = Required("Parameters:nutrition-runtime-password");
+    if (builder.Configuration.GetValue("NutritionDatabase:ManageLocalRuntimePassword", false))
+    {
+        await NutritionDatabaseConfiguration.ConfigureSharedServerRuntimeRoleAsync(
+            coreConnectionValue,
+            nutritionDatabaseName,
+            nutritionDatabaseUsername,
+            nutritionRuntimePassword);
+    }
     nutritionConnection = NutritionDatabaseConfiguration.BuildSharedServerConnection(
         coreConnectionValue,
-        builder.Configuration["NutritionDatabase:Name"] ?? "nutrition",
-        builder.Configuration["NutritionDatabase:Username"] ?? "nutrition_app",
-        Required("Parameters:nutrition-runtime-password"));
+        nutritionDatabaseName,
+        nutritionDatabaseUsername,
+        nutritionRuntimePassword);
 }
 
 if (!string.IsNullOrWhiteSpace(nutritionConnection))
@@ -157,6 +189,12 @@ else
             "/docker-entrypoint-initdb.d/08-local-demo-catalog.sql", isReadOnly: true)
         .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/09-knowledge-chunks.sql"),
             "/docker-entrypoint-initdb.d/09-knowledge-chunks.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/10-published-catalog-integrity.sql"),
+            "/docker-entrypoint-initdb.d/10-published-catalog-integrity.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/11-catalog-review-policy.sql"),
+            "/docker-entrypoint-initdb.d/11-catalog-review-policy.sql", isReadOnly: true)
+        .WithBindMount(Path.Combine(repository, "backend/init-db/nutrition-service/12-beneficiary-deletion.sql"),
+            "/docker-entrypoint-initdb.d/12-beneficiary-deletion.sql", isReadOnly: true)
         .WithDataVolume(builder.Configuration["AppHost:NutritionDataVolume"] ?? "caresitter-apphost-nutrition");
     var nutritionDatabase = postgres.AddDatabase("nutrition-store", databaseName: "nutrition");
     nutrition
@@ -184,10 +222,29 @@ if (builder.Configuration.GetValue<bool>("MealRanking:Enabled"))
             throw new InvalidOperationException("Missing MealRanking:ApiKey (or Gemini HealthParser:ApiKey fallback).")));
 }
 
+if (builder.Configuration.GetValue<bool>("NutritionKnowledgeAi:Enabled"))
+{
+    var knowledgeApiKey = builder.Configuration["NutritionKnowledgeAi:ApiKey"];
+    if (string.IsNullOrWhiteSpace(knowledgeApiKey) && healthParserIsGemini)
+        knowledgeApiKey = builder.Configuration["HealthParser:ApiKey"];
+    nutrition.WithEnvironment("NutritionKnowledgeAi__ApiKey", Secret("nutrition-knowledge-gemini-api-key",
+        knowledgeApiKey ?? throw new InvalidOperationException("Missing NutritionKnowledgeAi:ApiKey.")));
+}
+
 nutrition.WithEnvironment("Kestrel__Endpoints__Http__Url", nutrition.GetEndpoint("http"));
 nutrition.WithEnvironment("Kestrel__Endpoints__Grpc__Url", nutrition.GetEndpoint("grpc"));
 api.WithEnvironment("NutritionGateway__GrpcUrl", nutrition.GetEndpoint("grpc"));
 api.WaitFor(nutrition);
+
+if (builder.Configuration.GetValue<bool>("KAFKA_ENABLED") &&
+    builder.Configuration.GetValue<bool>("KAFKA_FLOW_NUTRITION_ENABLED"))
+{
+    nutrition.WithEnvironment("BeneficiaryEvents__Enabled", "true")
+        .WithEnvironment("BeneficiaryEvents__BootstrapServers", Required("KAFKA_BOOTSTRAP_SERVERS"))
+        .WithEnvironment("BeneficiaryEvents__Topic", builder.Configuration["KAFKA_TOPIC_NUTRITION"] ?? "caresitter.nutrition.events.v1")
+        .WithEnvironment("BeneficiaryEvents__ConsumerGroup", "nutrition-beneficiary-deletion-v1")
+        .WithEnvironment("BeneficiaryEvents__DlqTopic", builder.Configuration["KAFKA_TOPIC_NUTRITION_DLQ"] ?? "caresitter.nutrition.events.v1.dlq");
+}
 
 if (builder.Configuration.GetValue<bool>("KAFKA_ENABLED") && builder.Configuration.GetValue<bool>("KAFKA_FLOW_NOTIFICATIONS_ENABLED"))
 {
@@ -200,8 +257,9 @@ if (builder.Configuration.GetValue<bool>("KAFKA_ENABLED") && builder.Configurati
     foreach (var key in new[] { "KAFKA_ENABLED", "KAFKA_FLOW_NOTIFICATIONS_ENABLED", "KAFKA_BOOTSTRAP_SERVERS", "KAFKA_CLIENT_ID", "KAFKA_TOPIC_NOTIFICATIONS", "KAFKA_TOPIC_PAYMENTS",
                  "KAFKA_TOPIC_NUTRITION", "KAFKA_INTERNAL_SERVICE_KEY", "Firebase:ServiceAccountPath", "Firebase:ServiceAccountJson", "Smtp:Host",
                  "Smtp:Port", "Smtp:UserName", "Smtp:Password", "Smtp:FromName", "Smtp:TimeoutSeconds" })
-        if (builder.Configuration[key] is { } value)
+        if (!string.IsNullOrWhiteSpace(builder.Configuration[key]))
         {
+            var value = builder.Configuration[key]!;
             var sensitive = key is "KAFKA_INTERNAL_SERVICE_KEY" or "Firebase:ServiceAccountJson" or "Smtp:Password";
             if (sensitive) worker.WithEnvironment(key.Replace(":", "__"), Secret("worker-" + key.ToLowerInvariant().Replace(":", "-").Replace("_", "-"), value));
             else worker.WithEnvironment(key.Replace(":", "__"), value);

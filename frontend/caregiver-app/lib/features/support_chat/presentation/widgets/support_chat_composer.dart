@@ -46,22 +46,13 @@ class SupportChatComposer extends StatelessWidget {
                       semanticCounterText: '${value.text.length}/2000 ký tự',
                       counterText: '',
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: AppInputStyle.fillColor,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.inset),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          borderSide:
-                              const BorderSide(color: AppColors.border)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          borderSide:
-                              const BorderSide(color: AppColors.border)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          borderSide: const BorderSide(
-                              color: AppColors.primary, width: 1.5)),
+                      border: AppInputStyle.enabledBorder,
+                      enabledBorder: AppInputStyle.enabledBorder,
+                      focusedBorder: AppInputStyle.focusedBorder,
                     ),
                   ),
                 ),
