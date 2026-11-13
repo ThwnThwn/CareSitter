@@ -92,6 +92,23 @@ try {
     $ports = @(Invoke-Docker @('port', $application))
     if ($ports.Count -ne 1 -or $ports[0] -notmatch '^10000/tcp -> 127\.0\.0\.1:') { throw 'Unexpected public port mapping.' }
     Write-Output 'PASS: Only the public API port is published.'
+    foreach ($healthPath in @('live', 'ready')) {
+        $code = Invoke-Docker @('exec', $application, 'curl', '--silent', '--show-error',
+            '--max-time', '10', '-o', '/dev/null', '-w', '%{http_code}',
+            "http://127.0.0.1:10000/health/$healthPath")
+        if ($code -ne '200') { throw "Public HTTP health/$healthPath returned $code instead of 200." }
+    }
+    Write-Output 'PASS: Public HTTP health probes execute checks without HTTPS redirects.'
+    $redirectCode = Invoke-Docker @('exec', $application, 'curl', '--silent', '--show-error',
+        '--max-time', '5', '-o', '/dev/null', '-w', '%{http_code}',
+        'http://127.0.0.1:10000/api/v1/nutrition/capabilities')
+    if ($redirectCode -ne '307') { throw 'HTTPS redirect must remain active for application endpoints.' }
+    Invoke-Docker @('stop', '--time', '5', $database) | Out-Null
+    $unhealthyCode = Invoke-Docker @('exec', $application, 'curl', '--silent', '--show-error',
+        '--max-time', '15', '-o', '/dev/null', '-w', '%{http_code}',
+        'http://127.0.0.1:10000/health/ready')
+    if ($unhealthyCode -ne '503') { throw "Database outage returned $unhealthyCode instead of 503." }
+    Write-Output 'PASS: Database outage makes the public readiness probe return 503.'
     $processes = Invoke-Docker @('top', $application, '-eo', 'pid,args')
     $nutritionLine = $processes | Where-Object { $_ -match 'dotnet CareSitter.Nutrition.dll' }
     if (@($nutritionLine).Count -ne 1) { throw 'Expected one Nutrition process.' }
