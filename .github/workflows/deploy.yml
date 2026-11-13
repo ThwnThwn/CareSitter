@@ -1,6 +1,7 @@
 name: Deploy
 
-# Staging: automatically after CI passes on main.
+# VM staging: opt in with repository variable VM_DEPLOY_ENABLED=true after SSH setup.
+# Render deployments use the service's native Git integration.
 # Production: manual only, and gated by the "production" GitHub Environment
 # (configure Required reviewers in Settings → Environments → production).
 on:
@@ -30,7 +31,9 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && vars.VM_DEPLOY_ENABLED == 'true')
     name: Deploy to ${{ github.event.inputs.environment || 'staging' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
