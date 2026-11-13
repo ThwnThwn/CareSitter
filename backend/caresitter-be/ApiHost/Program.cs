@@ -490,7 +490,9 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // Render probes the HTTP port and treats redirects as healthy; execute health checks directly.
+    app.UseWhen(context => context.Request.Path != "/health/live" && context.Request.Path != "/health/ready",
+        branch => branch.UseHttpsRedirection());
 }
 
 app.Use(async (context, next) =>
