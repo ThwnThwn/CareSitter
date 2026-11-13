@@ -39,7 +39,7 @@ public sealed class ReportsController(ReportService service, FirebaseReportServi
     [Authorize(Roles = "CUSTOMER")]
     [RequestSizeLimit(ReportPdfPolicy.MaxBytes + 65536)]
     [RequestFormLimits(MultipartBodyLengthLimit = ReportPdfPolicy.MaxBytes + 65536)]
-    public async Task<IActionResult> Upload(Guid bookingId, [FromForm] IFormFile file,
+    public async Task<IActionResult> Upload(Guid bookingId, IFormFile file,
         [FromHeader(Name = "Idempotency-Key")] string key, CancellationToken ct)
     {
         PrivateHeaders();

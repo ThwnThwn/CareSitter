@@ -2,6 +2,7 @@
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, Star } from "lucide-react";
 import MotionWords from "./MotionWords";
 
@@ -29,17 +30,23 @@ export default function CaregiversSection() {
       <div className="shell">
         <div className="caregivers-section__heading">
           <div>
-            <p className="section-label section-label--ink">Những người CareSitter tin cậy</p>
-            <h2 className="display display--section" data-scroll-reveal="heading">
+            <p className="section-label section-label--ink">
+              Tìm người đồng hành phù hợp
+            </p>
+            <h2
+              className="display display--section"
+              data-scroll-reveal="heading"
+            >
               <MotionWords>
-              Kinh nghiệm là quan trọng.
-              <em>Sự phù hợp cũng vậy.</em>
+                Kinh nghiệm là quan trọng.
+                <em>Sự phù hợp cũng vậy.</em>
               </MotionWords>
             </h2>
           </div>
           <p>
             Mỗi hồ sơ cho biết rõ kinh nghiệm, kỹ năng và đánh giá để gia đình
-            chọn người phù hợp với nếp sống của người thân.
+            chọn người phù hợp với nếp sống của người thân. Các hồ sơ và đánh
+            giá bên dưới là nội dung minh họa.
           </p>
         </div>
 
@@ -47,29 +54,29 @@ export default function CaregiversSection() {
           <article className="caregiver-featured" data-scroll-reveal="card">
             <figure>
               <Image
-                alt="Caregiver Hải Đường"
+                alt="Chăm sóc viên Hải Đường"
                 fill
                 sizes="(max-width: 850px) 100vw, 47vw"
                 src="/images/caregiver-1.jpg"
               />
               <span>
                 <BadgeCheck size={17} aria-hidden="true" />
-                Hồ sơ đã xác minh
+                Hồ sơ minh họa
               </span>
             </figure>
             <div className="caregiver-featured__body">
               <span className="caregiver-role">Đồng hành người cao tuổi</span>
               <h3>Hải Đường</h3>
               <p>
-                Kiên nhẫn, nhẹ nhàng và hiểu nếp sinh hoạt gia đình. 7 năm
-                kinh nghiệm đồng hành cùng người lớn tuổi tại nhà.
+                Kiên nhẫn, nhẹ nhàng và hiểu nếp sinh hoạt gia đình. 7 năm kinh
+                nghiệm đồng hành cùng người lớn tuổi tại nhà.
               </p>
               <div className="caregiver-meta">
                 <span>
                   <Star size={16} fill="currentColor" aria-hidden="true" />
                   5,0 • 68 đánh giá
                 </span>
-                <span>Sẵn sàng hôm nay</span>
+                <span>Thông tin minh họa</span>
               </div>
               <button
                 className="inline-link"
@@ -85,10 +92,14 @@ export default function CaregiversSection() {
 
           <div className="caregiver-list">
             {caregivers.map((caregiver) => (
-              <article className="caregiver-row" data-scroll-reveal="card" key={caregiver.name}>
+              <article
+                className="caregiver-row"
+                data-scroll-reveal="card"
+                key={caregiver.name}
+              >
                 <figure>
                   <Image
-                    alt={"Caregiver " + caregiver.name}
+                    alt={"Chăm sóc viên " + caregiver.name}
                     fill
                     sizes="160px"
                     src={caregiver.image}
@@ -116,6 +127,12 @@ export default function CaregiversSection() {
             ))}
           </div>
         </div>
+        <p className="caregiver-interest-link">
+          Bạn muốn mang sự tận tâm đến các gia đình?{" "}
+          <Link href="/tro-thanh-nguoi-cham-soc">
+            Trở thành người chăm sóc cùng CareSitter ↗
+          </Link>
+        </p>
       </div>
     </section>
   );

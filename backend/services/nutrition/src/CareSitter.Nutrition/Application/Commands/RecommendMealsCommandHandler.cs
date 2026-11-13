@@ -56,16 +56,21 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
 
         var start = DateOnly.FromDayNumber(Math.Max(0, meal.PlannedDate.DayNumber - 6));
         var history = await session.PlansAsync(request.BeneficiaryId, ct, start, meal.PlannedDate);
-        var previousMenus = history.Select(plan => NutritionJson.Read<MealPayload>(plan.Payload))
+        var priorPlans = history.Select(plan => NutritionJson.Read<MealPayload>(plan.Payload))
+            .Where(plan => plan.PlannedDate < meal.PlannedDate)
             .OrderByDescending(plan => plan.PlannedDate)
-            .Take(6)
-            .Select(plan => plan.Meals).ToArray();
+            .DistinctBy(plan => plan.PlannedDate)
+            .Take(6).ToArray();
+        var previousMenus = priorPlans.Select(plan => plan.Meals).ToArray();
+        var yesterday = meal.PlannedDate.DayNumber - 1;
+        var yesterdayMeals = priorPlans.FirstOrDefault(plan => plan.PlannedDate.DayNumber == yesterday)?.Meals;
         var recentMeals = previousMenus.Take(3).SelectMany(plan => plan).ToArray();
         var input = new MealRecommendationRequest(
             meal.CatalogRevision, meal.Recipes, meal.Analyzed.Facts, meal.Rules,
             meal.Health.Evidence.GetValueOrDefault("dietaryPattern", "regular"),
             meal.Health.Evidence.GetValueOrDefault("nutritionGoal", "maintain"), recentMeals,
-            previousMenus, MealPreferences.FromEvidence(meal.Health.Evidence));
+            previousMenus, MealPreferences.FromEvidence(meal.Health.Evidence), yesterdayMeals,
+            $"{request.BeneficiaryId:N}|{meal.PlannedDate:yyyy-MM-dd}|{meal.CatalogRevision}");
         return new PreparedRecommendation(null, meal, input);
     }
 

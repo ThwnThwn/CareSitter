@@ -20,14 +20,26 @@
 }
 
 .hero__copy[data-hero-entered] > * {
-  animation: hero-rise-in var(--hero-duration) var(--hero-delay, 0ms) cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: hero-rise-in var(--hero-duration) var(--hero-delay, 0ms)
+    cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.hero__kicker { --hero-delay: 200ms; }
-.hero__copy h1 { --hero-delay: 400ms; --hero-distance: 170px; }
-.hero__lead { --hero-delay: 600ms; }
-.hero__actions { --hero-delay: 800ms; }
-.hero__proof { --hero-delay: 1000ms; }
+.hero__kicker {
+  --hero-delay: 200ms;
+}
+.hero__copy h1 {
+  --hero-delay: 400ms;
+  --hero-distance: 170px;
+}
+.hero__lead {
+  --hero-delay: 600ms;
+}
+.hero__actions {
+  --hero-delay: 800ms;
+}
+.hero__proof {
+  --hero-delay: 1000ms;
+}
 
 .hero__kicker {
   align-items: center;

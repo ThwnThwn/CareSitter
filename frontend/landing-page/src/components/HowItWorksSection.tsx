@@ -10,7 +10,7 @@ const steps = [
   {
     number: "02",
     title: "Xem hồ sơ và lựa chọn",
-    text: "So sánh kinh nghiệm, kỹ năng, mức phí và đánh giá. Gia đình luôn là người quyết định caregiver nào sẽ nhận ca.",
+    text: "So sánh kinh nghiệm, kỹ năng, mức phí và đánh giá. Gia đình luôn là người quyết định chăm sóc viên nào sẽ nhận ca.",
   },
   {
     number: "03",
@@ -29,7 +29,7 @@ export default function HowItWorksSection() {
             <h2 className="display display--section" data-scroll-reveal="heading">
               <MotionWords>
               Từ nhu cầu đến ca chăm sóc
-              <em>trong vài phút.</em>
+              <em>với từng bước rõ ràng.</em>
               </MotionWords>
             </h2>
           </div>
@@ -54,7 +54,7 @@ export default function HowItWorksSection() {
 
           <div className="care-timeline" data-scroll-reveal="image" aria-label="Minh họa tiến trình một ca chăm sóc">
             <div className="care-timeline__top">
-              <span>Ca hôm nay</span>
+              <span>Minh họa một ca chăm sóc</span>
               <strong>14:00 — 18:00</strong>
             </div>
             <div className="care-timeline__person">
@@ -70,7 +70,7 @@ export default function HowItWorksSection() {
                 <CheckCircle2 size={18} aria-hidden="true" />
                 <div>
                   <strong>13:52</strong>
-                  <span>Caregiver đã đến điểm hẹn</span>
+                  <span>Chăm sóc viên đã đến điểm hẹn</span>
                 </div>
               </li>
               <li>

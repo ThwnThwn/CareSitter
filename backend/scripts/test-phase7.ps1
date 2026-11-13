@@ -37,8 +37,9 @@ $apiProcess = $null
 function Get-SourceFingerprint {
     # Content hashes identify the tested dirty worktree without exporting a diff
     # or credentials. Generated/ignored dependencies and reports are excluded.
-    $paths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard --
-        .gitignore .github global.json vercel.json backend deploy frontend) | Sort-Object -Unique
+    $sourcePaths = @('.gitignore', '.github', 'global.json', 'vercel.json', 'backend', 'deploy', 'frontend')
+    $paths = @(& git -C $repoRoot ls-files --cached --others --exclude-standard -- @sourcePaths) |
+        Sort-Object -Unique
     if ($LASTEXITCODE -ne 0) { throw 'Cannot fingerprint the source worktree.' }
     $lines = foreach ($path in $paths) {
         $absolutePath = Join-Path $repoRoot $path

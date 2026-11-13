@@ -15,6 +15,22 @@ recovery_dir="$repo_dir/deploy/secrets/nutrition-recovery"
 for file in "$main_env" "$nutrition_env"; do
     [ "$(stat -c '%a' "$file")" = 600 ] || fail 'Deployment env files must have permission 0600.'
 done
+# AI providers: fail here with a clear message instead of a crash-looping container.
+nutrition_value() { sed -n "s/^$1=//p" "$nutrition_env" | tail -n 1; }
+for feature in HEALTH_PARSER MEAL_RANKING; do
+    [ "$(nutrition_value "NUTRITION_${feature}_ENABLED")" = true ] || continue
+    key=$(nutrition_value "NUTRITION_${feature}_API_KEY")
+    [ "${#key}" -ge 20 ] || fail "NUTRITION_${feature}_ENABLED=true needs NUTRITION_${feature}_API_KEY (20+ characters)."
+    [ "$(nutrition_value "NUTRITION_${feature}_DATA_PROCESSING_APPROVED")" = true ] ||
+        fail "NUTRITION_${feature}_ENABLED=true needs NUTRITION_${feature}_DATA_PROCESSING_APPROVED=true (owner sign-off)."
+done
+if [ "$(nutrition_value NUTRITION_MEAL_RANKING_ENABLED)" = true ] &&
+    [ "$(nutrition_value NUTRITION_RECOMMENDATIONS_ENABLED)" != true ]; then
+    fail 'NUTRITION_MEAL_RANKING_ENABLED=true has no effect while NUTRITION_RECOMMENDATIONS_ENABLED=false.'
+fi
+if [ "$(nutrition_value NUTRITION_RECOMMENDATIONS_ENABLED)" = true ]; then
+    echo 'NOTE: recommendations are on; /health/ready fails until a reviewed catalog is published (CatalogTool publish).' >&2
+fi
 # The standalone staging package is intended for a Linux host.
 for directory in "$secret_dir" "$recovery_dir"; do
     [ -d "$directory" ] && [ "$(stat -c '%a' "$directory")" = 700 ] || fail 'Nutrition secret directories must have permission 0700.'
