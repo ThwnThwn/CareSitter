@@ -665,9 +665,14 @@ try {
                 # VSTest's shared prefix/timestamp can overwrite reports when
                 # several assemblies finish in the same second on Linux.
                 $projectResults = Join-Path $testResultsDirectory $testProject.BaseName
+                $providerFilter = @()
+                if ($testProject.BaseName -eq 'CareSitter.IntegrationTests' -and $env:LAB3_PROVIDER_SMOKE -ne '1') {
+                    # This opt-in smoke writes a temporary PDF to a real Cloudinary account.
+                    $providerFilter = @('--filter', 'Category!=CloudinaryLive')
+                }
                 Invoke-CheckedCommand `
                     -FilePath 'dotnet' `
-                    -Arguments @(
+                    -Arguments (@(
                         'test', $testProject.FullName,
                         '--configuration', 'Release',
                         '--no-build',
@@ -675,7 +680,7 @@ try {
                         '--nologo',
                         '--results-directory', $projectResults,
                         '--logger', 'trx;LogFileName=results.trx'
-                    ) `
+                    ) + $providerFilter) `
                     -WorkingDirectory $repoRoot `
                     -LogPath (Join-Path $ArtifactsDirectory "dotnet-test-$($testProject.BaseName)-run-$run.log") `
                     -Description "Run $($testProject.BaseName) ($run/$Repeat)"
