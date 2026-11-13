@@ -56,8 +56,8 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
 
         var start = DateOnly.FromDayNumber(Math.Max(0, meal.PlannedDate.DayNumber - 6));
         var history = await session.PlansAsync(request.BeneficiaryId, ct, start, meal.PlannedDate);
+        // A fresh request for the same date should also consider its saved menu.
         var priorPlans = history.Select(plan => NutritionJson.Read<MealPayload>(plan.Payload))
-            .Where(plan => plan.PlannedDate < meal.PlannedDate)
             .OrderByDescending(plan => plan.PlannedDate)
             .DistinctBy(plan => plan.PlannedDate)
             .Take(6).ToArray();
