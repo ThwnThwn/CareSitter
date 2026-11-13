@@ -10,6 +10,7 @@
 !/.github/
 !/.github/**
 !/global.json
+!/README.md
 !/vercel.json
 !/MEAL_RECOMMENDATION_PLAN.md
 !/backend/
