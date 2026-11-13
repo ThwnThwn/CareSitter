@@ -26,20 +26,8 @@ class NutritionEntryScreen extends ConsumerWidget {
             .where((beneficiary) => beneficiary.id == selectedId)
             .firstOrNull;
     if (selected.isLoading && beneficiaries.isNotEmpty) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Thực đơn dinh dưỡng'),
-          actions: [
-            IconButton(
-              tooltip: 'Tra cứu tài liệu dinh dưỡng',
-              color: AppColors.textHint,
-              onPressed: () => context.push(AppRoutes.nutritionKnowledge),
-              icon: const Icon(Icons.menu_book_outlined),
-            ),
-          ],
-        ),
-        body: const Center(
+      return const _NutritionEntryScaffold(
+        body: Center(
           child: CircularProgressIndicator(
             semanticsLabel: 'Đang mở thực đơn gần nhất',
           ),
@@ -72,6 +60,27 @@ class NutritionEntryScreen extends ConsumerWidget {
           ),
         )
         .toList(growable: false);
+    return _NutritionEntryScaffold(
+      body: NutritionEntryBody(
+        profiles: profiles,
+        isLoading: loadState.isLoading || selected.isLoading,
+        hasError: loadState.hasError,
+        onCreateProfile: () => context.push(AppRoutes.beneficiaryNew),
+        onSelect: (id) =>
+            ref.read(nutritionSelectedBeneficiaryProvider.notifier).select(id),
+        onRetry: () => ref.read(beneficiaryStoreProvider.notifier).reload(),
+      ),
+    );
+  }
+}
+
+class _NutritionEntryScaffold extends StatelessWidget {
+  const _NutritionEntryScaffold({required this.body});
+
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -85,15 +94,7 @@ class NutritionEntryScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: NutritionEntryBody(
-        profiles: profiles,
-        isLoading: loadState.isLoading || selected.isLoading,
-        hasError: loadState.hasError,
-        onCreateProfile: () => context.push(AppRoutes.beneficiaryNew),
-        onSelect: (id) =>
-            ref.read(nutritionSelectedBeneficiaryProvider.notifier).select(id),
-        onRetry: () => ref.read(beneficiaryStoreProvider.notifier).reload(),
-      ),
+      body: body,
     );
   }
 }
