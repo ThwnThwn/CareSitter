@@ -28,6 +28,7 @@ cleanup() {
         kill "$watchdog" 2>/dev/null || true
         wait "$watchdog" 2>/dev/null || true
     fi
+    rm -f /tmp/caresitter-render-ca.path
     rm -rf -- "$runtime_dir"
 }
 trap cleanup EXIT
@@ -44,6 +45,7 @@ if [[ "${RENDER_NUTRITION_ENABLED:-false}" == true ]]; then
     container_tls_password=$(openssl rand -hex 32)
     source /app/render/certificates.sh
     issue_loopback_certificate "$runtime_dir"
+    printf '%s\n' "$runtime_dir/ca.pem" > /tmp/caresitter-render-ca.path
     export NutritionGateway__Enabled=true
     export NutritionGateway__GrpcUrl=https://localhost:8444/
     export NutritionGateway__TrustedRootCertificatePath="$runtime_dir/ca.pem"

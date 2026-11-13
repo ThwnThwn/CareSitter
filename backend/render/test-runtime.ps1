@@ -84,7 +84,9 @@ try {
         throw "Container did not become ready: $($logs -join [Environment]::NewLine)"
     }
     Write-Output 'PASS: Production API and Nutrition ready through verified HTTP/2 TLS within 512 MB.'
-    $grpcProbe = 'set -eu; ca=(/tmp/caresitter-render.*/ca.pem); curl --http2 --cacert "${ca[0]}" -sS -D /tmp/grpc-headers -o /dev/null -X POST -H "Content-Type: application/grpc" https://localhost:8444/caresitter.nutrition.v1.NutritionRpc/GetCapabilities; grep -qi "grpc-status: 16" /tmp/grpc-headers'
+    Invoke-Docker @('exec', $application, 'bash', '-c', 'mkdir /tmp/caresitter-render.stale-test; echo stale > /tmp/caresitter-render.stale-test/ca.pem; bash /app/render/healthcheck.sh') | Out-Null
+    Write-Output 'PASS: Stale certificate directories from an interrupted run do not break readiness.'
+    $grpcProbe = 'set -eu; read -r ca < /tmp/caresitter-render-ca.path; curl --http2 --cacert "$ca" -sS -D /tmp/grpc-headers -o /dev/null -X POST -H "Content-Type: application/grpc" https://localhost:8444/caresitter.nutrition.v1.NutritionRpc/GetCapabilities; grep -qi "grpc-status: 16" /tmp/grpc-headers'
     Invoke-Docker @('exec', $application, 'bash', '-c', $grpcProbe) | Out-Null
     Write-Output 'PASS: gRPC rejects requests without internal service credentials.'
     $ports = @(Invoke-Docker @('port', $application))
