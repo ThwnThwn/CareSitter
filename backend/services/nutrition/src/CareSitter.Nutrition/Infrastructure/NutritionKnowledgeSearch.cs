@@ -37,6 +37,13 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
         var evidence = SupportsLocalDemo
             ? Fuse(result.Evidence, new KeywordMealKnowledgeIndex(bytes).Search(topic, 100, 0, ct: ct))
             : result.Evidence;
+        return MapHits(query, bytes, evidence, options.Value.TopK, localDemo && SupportsLocalDemo);
+    }
+
+    internal static IReadOnlyList<KnowledgeSearchHit> MapHits(string query, byte[] bytes,
+        MealRecommendationEvidence[] evidence, int topK, bool showExcerpts)
+    {
+        var plan = KnowledgeQueryPlan.Create(query);
         if (evidence.Length == 0) return [];
         var ids = evidence.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
         var chunks = new Dictionary<string, (int PdfPage, string? PrintedPage, string Revision, string Text, string Headings)>(StringComparer.Ordinal);
@@ -65,9 +72,10 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
             var excerpt = RelevantPassage(plan, chunk.Text, chunk.Headings, query);
             if (excerpt is null && !Matches(plan, item.Title, query)) return null;
             return new KnowledgeSearchHit(item.Id, item.Title, chunk.PdfPage, chunk.PrintedPage,
-                item.SourceTitle ?? "", chunk.Revision, localDemo && SupportsLocalDemo ? excerpt : null)
+                item.SourceTitle ?? "", chunk.Revision, showExcerpts ? excerpt : null)
                 { ContextHeading = chunk.Headings };
-        }).OfType<KnowledgeSearchHit>().Take(options.Value.TopK).ToArray();
+        }).OfType<KnowledgeSearchHit>().Where(hit => !showExcerpts || hit.Excerpt is { Length: > 0 })
+            .Take(topK).ToArray();
     }
 
     private static bool Matches(KnowledgeQueryPlan plan, string text, string question)
@@ -91,6 +99,24 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
         const int maxExcerptLength = 640;
         var continuous = Regex.Replace(text.Trim(), @"\s+", " ");
         var sentences = Regex.Split(continuous, @"(?<=[.!?])\s+");
+        if (WeightLossDietScore(question, "thực phẩm") > 0)
+        {
+            var windows = new List<string>();
+            for (var start = 0; start < sentences.Length; start++)
+            {
+                var window = "";
+                for (var offset = 0; offset < 3 && start + offset < sentences.Length; offset++)
+                {
+                    window = (window + " " + sentences[start + offset]).Trim();
+                    if (window.Length > maxExcerptLength) break;
+                    if (window.Length >= 18 && plan.MentionsConcept(window) && Matches(plan, headings + " " + window, question))
+                        windows.Add(window);
+                }
+            }
+            var relevant = windows.OrderByDescending(window => WeightLossDietScore(question, window))
+                .ThenBy(window => window.Length).FirstOrDefault();
+            if (relevant is not null && WeightLossDietScore(question, relevant) > 0) return relevant;
+        }
         foreach (var sentence in sentences)
         {
             var normalized = Regex.Replace(sentence.Trim(), @"\s+", " ");
@@ -113,7 +139,18 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
         return null;
     }
 
-    private static MealRecommendationEvidence[] Fuse(MealRecommendationEvidence[] graph,
+    // Query intent affects ranking only, never adds facts or changes the source text.
+    internal static int WeightLossDietScore(string query, string text)
+    {
+        if (!Regex.IsMatch(KeywordMealKnowledgeIndex.Fold(query), @"\b(?:giam can|an kieng)\b")) return 0;
+        var folded = KeywordMealKnowledgeIndex.Fold(text);
+        var score = new[] { "che do an", "thuc pham", "nang luong", "protein", "chat xo", "rau", "khau phan" }
+            .Sum(term => Regex.IsMatch(folded, $@"\b{term}\b") ? 3 : 0);
+        if (Regex.IsMatch(folded, @"\b(?:tre em|ung thu|tai lieu tham khao)\b")) score -= 20;
+        return score;
+    }
+
+    internal static MealRecommendationEvidence[] Fuse(MealRecommendationEvidence[] graph,
         MealRecommendationEvidence[] lexical) => graph.Select((item, rank) => (Item: item, Score: 1d / (60 + rank)))
         .Concat(lexical.Select((item, rank) => (Item: item, Score: 1d / (60 + rank))))
         .GroupBy(item => item.Item.Id, StringComparer.Ordinal)

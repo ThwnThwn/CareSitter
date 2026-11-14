@@ -14,7 +14,8 @@ namespace CareSitter.Nutrition.Controllers.Grpc;
 
 [Authorize(Roles = "CUSTOMER")]
 public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSearch knowledge, LocalKnowledgeAnswer localAnswer,
-    GeminiKnowledgeAnswer gemini, IOptions<KnowledgeAnswerAiOptions> aiOptions) : NutritionRpc.NutritionRpcBase
+    GeminiKnowledgeAnswer gemini, IOptions<KnowledgeAnswerAiOptions> aiOptions,
+    INutritionReferenceLibrary referenceLibrary) : NutritionRpc.NutritionRpcBase
 {
     public override async Task<KnowledgeSearchResponse> SearchKnowledge(KnowledgeSearchRequest request, ServerCallContext context)
     {
@@ -26,9 +27,13 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             {
                 if (request.LocalDemo || !aiOptions.Value.GeneralKnowledgeEnabled)
                     throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
-                // This path never reads the local book corpus or a beneficiary's health profile.
-                var general = new KnowledgeSearchResponse { Query = query, GeneralKnowledge = true };
-                ApplyAnswer(general, await gemini.AnswerAsync(query, [], context.CancellationToken));
+                // Published reference retrieval is separately enabled; beneficiary health is never sent.
+                var referenceHits = await referenceLibrary.FindAsync(query, context.CancellationToken);
+                var general = new KnowledgeSearchResponse { Query = query, GeneralKnowledge = referenceHits is null,
+                    ReferenceKnowledge = referenceHits is not null };
+                ApplyAnswer(general, await gemini.AnswerAsync(query, referenceHits ?? [], context.CancellationToken));
+                if (general.AnswerChunkIds.FirstOrDefault() is { } primaryId) general.AnswerChunkId = primaryId;
+                if (referenceHits is not null) general.Results.AddRange(referenceHits.Select(MapHit));
                 return general;
             }
             var localDemo = request.LocalDemo && knowledge.SupportsLocalDemo;
@@ -50,20 +55,22 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
                 }
                 if (response.AnswerChunkIds.FirstOrDefault() is { } answerId) response.AnswerChunkId = answerId;
             }
-            response.Results.AddRange(hits.Select(hit => new CareSitter.Nutrition.Grpc.V1.KnowledgeHit
-            {
-                ChunkId = hit.ChunkId, Heading = hit.Heading, PdfPage = hit.PdfPage,
-                PrintedPage = hit.PrintedPage ?? "", SourceTitle = hit.SourceTitle,
-                SourceRevisionId = hit.SourceRevisionId, Excerpt = hit.Excerpt ?? ""
-            }));
+            response.Results.AddRange(hits.Select(MapHit));
             return response;
         }
         catch (Exception error) when (error is InvalidOperationException or IOException or JsonException or
-            UnauthorizedAccessException or KeyNotFoundException or FormatException)
+            UnauthorizedAccessException or KeyNotFoundException or FormatException or Npgsql.NpgsqlException)
         {
             throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
         }
     }
+
+    private static CareSitter.Nutrition.Grpc.V1.KnowledgeHit MapHit(KnowledgeSearchHit hit) => new()
+    {
+        ChunkId = hit.ChunkId, Heading = hit.Heading, PdfPage = hit.PdfPage,
+        PrintedPage = hit.PrintedPage ?? "", SourceTitle = hit.SourceTitle,
+        SourceRevisionId = hit.SourceRevisionId, Excerpt = hit.Excerpt ?? ""
+    };
 
     private static void ApplyAnswer(KnowledgeSearchResponse response, KnowledgeAiAnswer answer)
     {

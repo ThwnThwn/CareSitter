@@ -129,5 +129,6 @@ message KnowledgeSearchResponse {
   repeated KnowledgeAnswerBlock answer_blocks = 7;
   string answer_provider = 8;
   bool general_knowledge = 9;
+  bool reference_knowledge = 10;
 }
 message KnowledgeAnswerBlock { string text = 1; repeated string chunk_ids = 2; }

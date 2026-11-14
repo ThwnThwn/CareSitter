@@ -89,7 +89,7 @@ class _NutritionKnowledgeScreenState
                 text: 'Nhập chủ đề bạn quan tâm để xem mục và trang nguồn.',
               )
             else if (search.results.isEmpty &&
-                !search.localDemo &&
+                !search.canShowSources &&
                 !search.generalKnowledge)
               const _SearchMessage(
                 icon: Icons.search_off_rounded,

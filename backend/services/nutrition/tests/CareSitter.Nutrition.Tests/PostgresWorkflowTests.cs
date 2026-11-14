@@ -54,6 +54,8 @@ public sealed partial class PostgresWorkflowTests : IAsyncLifetime
         await using (var reviewPolicy = new NpgsqlCommand(await File.ReadAllTextAsync(reviewPolicyPath), db)) await reviewPolicy.ExecuteNonQueryAsync();
         var deletionPath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/12-beneficiary-deletion.sql"));
         await using (var deletion = new NpgsqlCommand(await File.ReadAllTextAsync(deletionPath), db)) await deletion.ExecuteNonQueryAsync();
+        var referencePath = Path.GetFullPath(Path.Combine(ServiceArchitectureTests.FindRoot(), "../../init-db/nutrition-service/13-reference-knowledge-library.sql"));
+        await using (var reference = new NpgsqlCommand(await File.ReadAllTextAsync(referencePath), db)) await reference.ExecuteNonQueryAsync();
         var password = Guid.NewGuid().ToString("N");
         _rolePassword = password;
         var importerPassword = Guid.NewGuid().ToString("N");
@@ -72,6 +74,7 @@ public sealed partial class PostgresWorkflowTests : IAsyncLifetime
             GRANT SELECT,INSERT,UPDATE,DELETE ON nutrition.assessments,nutrition.assessment_jobs,nutrition.recommendations,nutrition.meal_plans,nutrition.preferences TO "{_role}";
             GRANT SELECT,INSERT ON nutrition.beneficiary_deletions,nutrition.beneficiary_deletion_inbox TO "{_role}";
             GRANT SELECT ON nutrition.concepts,nutrition.rule_versions,nutrition.recipe_versions,nutrition.recipe_source_citations,nutrition.local_demo_catalog TO "{_role}";
+            GRANT SELECT ON nutrition.reference_knowledge_releases TO "{_role}";
             GRANT SELECT,UPDATE(id) ON nutrition.catalog_state TO "{_role}";
             """, db)) await role.ExecuteNonQueryAsync();
         _dataSource = NpgsqlDataSource.Create(new NpgsqlConnectionStringBuilder(_database) { Username = _role, Password = password }.ConnectionString);

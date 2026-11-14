@@ -40,6 +40,46 @@ Map<String, dynamic> fixture({bool local = true, bool invalid = false}) => {
     };
 
 void main() {
+  testWidgets(
+      'online reference shows book excerpts and matching answer citations',
+      (tester) async {
+    final data = fixture(local: false)..['referenceKnowledge'] = true;
+    final search = NutritionKnowledgeSearchModel.fromJson(data);
+    expect(search.answerSources.length, 5);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: NutritionKnowledgeResults(search: search)))));
+    expect(find.text('Câu trả lời từ tài liệu · Gemini'), findsOneWidget);
+    expect(find.text('[1] Mục nguồn 1'), findsOneWidget);
+    expect(find.text('Nội dung liên quan của nguồn 1.'), findsOneWidget);
+    expect(find.text('Nguồn đã dùng'), findsOneWidget);
+  });
+
+  testWidgets(
+      'online fallback keeps related passages separate from AI suggestion',
+      (tester) async {
+    final data = fixture(local: false)
+      ..addAll({
+        'referenceKnowledge': true,
+        'answerStatus': 'ai_suggestion',
+        'answerChunkIds': [],
+        'answerBlocks': [
+          {'text': 'Gợi ý chung chưa đối chiếu tài liệu.', 'chunkIds': []}
+        ],
+      });
+    final search = NutritionKnowledgeSearchModel.fromJson(data);
+    expect(search.isAiSuggestion, isTrue);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: NutritionKnowledgeResults(search: search)))));
+    expect(find.text('AI đề xuất · Gemini'), findsOneWidget);
+    expect(find.text('Đoạn liên quan để đối chiếu'), findsOneWidget);
+    expect(find.text('Nguồn đã dùng'), findsNothing);
+    expect(find.text('[1] Mục nguồn 1'), findsNothing);
+  });
+
   testWidgets('online general answer renders without local corpus or citations',
       (tester) async {
     final data = <String, dynamic>{

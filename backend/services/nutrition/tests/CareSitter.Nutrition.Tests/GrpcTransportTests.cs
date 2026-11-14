@@ -19,6 +19,23 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class GrpcTransportTests
 {
+    [Fact]
+    public async Task Online_book_reference_returns_generated_answer_with_exact_passage_and_page()
+    {
+        await using var fixture = new Fixture(generalKnowledge: true, reference: true);
+        var response = await fixture.Client.SearchKnowledgeAsync(new KnowledgeSearchRequest
+            { Query = "What is fiber?", GeneralKnowledge = true }, fixture.Headers());
+        Assert.True(response.ReferenceKnowledge);
+        Assert.False(response.GeneralKnowledge); Assert.False(response.LocalDemo);
+        Assert.Equal("answered", response.AnswerStatus);
+        Assert.Equal("book-passage", Assert.Single(response.AnswerChunkIds));
+        var source = Assert.Single(response.Results);
+        Assert.Equal(42, source.PdfPage); Assert.Equal("41", source.PrintedPage);
+        Assert.Equal("This is a synthetic book passage.", source.Excerpt);
+        Assert.Single(response.AnswerBlocks);
+        Assert.Equal(Guid.Empty, fixture.People.LastOwner);
+    }
+
     [Theory]
     [InlineData(true, true)]
     [InlineData(true, false)]
@@ -112,7 +129,7 @@ public sealed class GrpcTransportTests
         public People People { get; } = new();
         public NutritionRpc.NutritionRpcClient Client { get; }
         public AiHandler Ai { get; } = new();
-        public Fixture(bool generalKnowledge = false, bool approved = true)
+        public Fixture(bool generalKnowledge = false, bool approved = true, bool reference = false)
         {
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(web =>
             {
@@ -131,6 +148,11 @@ public sealed class GrpcTransportTests
                     services.RemoveAll<IIdentitySessionClient>(); services.AddSingleton<IIdentitySessionClient>(Identity);
                     services.RemoveAll<IPeopleHealthClient>(); services.AddSingleton<IPeopleHealthClient>(People);
                     services.AddHttpClient<GeminiKnowledgeAnswer>().ConfigurePrimaryHttpMessageHandler(() => Ai);
+                    if (reference)
+                    {
+                        services.RemoveAll<INutritionReferenceLibrary>();
+                        services.AddSingleton<INutritionReferenceLibrary>(new ReferenceFixture());
+                    }
                 });
             });
             _channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions { HttpHandler = _factory.Server.CreateHandler() });
@@ -155,16 +177,27 @@ public sealed class GrpcTransportTests
     private sealed class AiHandler : HttpMessageHandler
     {
         public int Calls;
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Calls++;
-            const string output = """{"status":"ai_suggestion","blocks":[{"text":"General nutrition fixture answer.","evidence":[]}]}""";
-            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            using var body = System.Text.Json.JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+            using var input = System.Text.Json.JsonDocument.Parse(body.RootElement.GetProperty("contents")[0]
+                .GetProperty("parts")[0].GetProperty("text").GetString()!);
+            var output = input.RootElement.GetProperty("sources").GetArrayLength() > 0
+                ? """{"status":"answered","blocks":[{"text":"Synthetic answer from the supplied book passage.","evidence":[{"index":1,"quote":"This is a synthetic book passage."}]}]}"""
+                : """{"status":"ai_suggestion","blocks":[{"text":"General nutrition fixture answer.","evidence":[]}]}""";
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
                 Content = JsonContent.Create(new { candidates = new[] { new { finishReason = "STOP",
                     content = new { parts = new[] { new { text = output } } } } } })
-            });
+            };
         }
+    }
+    private sealed class ReferenceFixture : INutritionReferenceLibrary
+    {
+        public Task<IReadOnlyList<KnowledgeSearchHit>?> FindAsync(string query, CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<KnowledgeSearchHit>?>([new("book-passage", "Fixture section", 42, "41",
+                "Synthetic book", "synthetic-r1", "This is a synthetic book passage.")]);
     }
     private sealed class Identity : IIdentitySessionClient
     {
