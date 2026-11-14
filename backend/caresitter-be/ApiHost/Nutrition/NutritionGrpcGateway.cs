@@ -66,10 +66,13 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             return new(200, value.Items.Recipes.Select(recipe => Json(recipe.DataJson)).ToArray());
         }, ct);
 
-    public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false) =>
+    public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false,
+        bool generalKnowledge = false) =>
         CallAsync((headers, deadline) => _client!.SearchKnowledgeAsync(
-            new KnowledgeSearchRequest { Query = query, LocalDemo = localDemo }, headers, deadline, ct), value =>
+            new KnowledgeSearchRequest { Query = query, LocalDemo = localDemo, GeneralKnowledge = generalKnowledge }, headers, deadline, ct), value =>
         {
+            if (generalKnowledge) return PresentGeneralKnowledge(query, value);
+            if (value.GeneralKnowledge) throw new InvalidDataException();
             if (value.Query != query || value.Results.Count > 10 ||
                 value.Results.Select(hit => hit.ChunkId).Distinct(StringComparer.Ordinal).Count() != value.Results.Count || value.Results.Any(hit =>
                     string.IsNullOrWhiteSpace(hit.ChunkId) || hit.Heading.Length > 500 ||
@@ -104,6 +107,24 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
                 blocks.Select(block => new NutritionKnowledgeAnswerBlockResponse(block.Text, block.ChunkIds.ToArray())).ToArray(),
                 showPassages && value.AnswerProvider is "Gemini" or "Ollama" ? value.AnswerProvider : null));
         }, ct, _options.KnowledgeTimeoutSeconds);
+
+    private static NutritionGatewayResponse PresentGeneralKnowledge(string query, KnowledgeSearchResponse value)
+    {
+        // General answers carry no corpus text, source IDs or purported book citations.
+        var blocks = value.AnswerBlocks.ToArray();
+        if (value.Query != query || !value.GeneralKnowledge || value.LocalDemo || value.Results.Count != 0 ||
+            !string.IsNullOrEmpty(value.AnswerChunkId) || value.AnswerChunkIds.Count != 0 ||
+            value.AnswerProvider != "Gemini" ||
+            value.AnswerStatus is not ("ai_suggestion" or "insufficient_evidence" or "unavailable" or
+                "not_configured" or "rate_limited" or "timeout" or "invalid_output") ||
+            blocks.Length > 4 || (value.AnswerStatus == "ai_suggestion" ? blocks.Length == 0 : blocks.Length != 0) ||
+            blocks.Any(block => block.Text.Trim().Length < 10 || block.Text.Length > 1200 || block.ChunkIds.Count != 0))
+            throw new InvalidDataException();
+        return new(200, new NutritionKnowledgeSearchResponse(query, [], AnswerChunkIds: [],
+            AnswerStatus: value.AnswerStatus, AnswerBlocks: blocks.Select(block =>
+                new NutritionKnowledgeAnswerBlockResponse(block.Text, [])).ToArray(),
+            AnswerProvider: "Gemini", GeneralKnowledge: true));
+    }
 
     private async Task<NutritionGatewayResponse> CallAsync<T>(Func<Metadata, DateTime, AsyncUnaryCall<T>> call,
         Func<T, NutritionGatewayResponse> present, CancellationToken ct, int? timeoutSeconds = null)

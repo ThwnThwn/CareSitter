@@ -1,9 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Net.Http.Json;
 using CareSitter.Nutrition.Application;
 using CareSitter.Nutrition.Contracts;
 using CareSitter.Nutrition.Grpc.V1;
+using CareSitter.Nutrition.Infrastructure;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -17,6 +19,33 @@ namespace CareSitter.Nutrition.Tests;
 
 public sealed class GrpcTransportTests
 {
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task General_knowledge_needs_explicit_enablement_and_consent_without_reading_health_or_books(
+        bool enabled, bool approved)
+    {
+        await using var fixture = new Fixture(enabled, approved);
+        var call = fixture.Client.SearchKnowledgeAsync(new KnowledgeSearchRequest
+            { Query = "What is fiber?", GeneralKnowledge = true }, fixture.Headers()).ResponseAsync;
+        if (!enabled)
+        {
+            await AssertRpcAsync(StatusCode.Unavailable, () => call);
+            Assert.Equal(0, fixture.Ai.Calls);
+            return;
+        }
+        var response = await call;
+        Assert.True(response.GeneralKnowledge);
+        Assert.False(response.LocalDemo);
+        Assert.Empty(response.Results);
+        Assert.Empty(response.AnswerChunkIds);
+        Assert.Equal(approved ? "ai_suggestion" : "not_configured", response.AnswerStatus);
+        Assert.Equal(approved ? 1 : 0, response.AnswerBlocks.Count);
+        Assert.Equal(approved ? 1 : 0, fixture.Ai.Calls);
+        Assert.Equal(Guid.Empty, fixture.People.LastOwner);
+    }
+
     [Fact]
     public async Task Gateway_key_and_durable_customer_session_are_both_required()
     {
@@ -82,7 +111,8 @@ public sealed class GrpcTransportTests
         public Identity Identity { get; } = new();
         public People People { get; } = new();
         public NutritionRpc.NutritionRpcClient Client { get; }
-        public Fixture()
+        public AiHandler Ai { get; } = new();
+        public Fixture(bool generalKnowledge = false, bool approved = true)
         {
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(web =>
             {
@@ -91,10 +121,16 @@ public sealed class GrpcTransportTests
                 web.UseSetting("People:BaseUrl", "https://people.example.test/"); web.UseSetting("People:ServiceKey", Guid.NewGuid().ToString("N"));
                 web.UseSetting("ConnectionStrings:Nutrition", "Host=127.0.0.1;Port=1;Database=unused;Username=unused");
                 web.UseSetting("Nutrition:Enabled", "true"); web.UseSetting("Nutrition:AssessmentsEnabled", "true");
+                web.UseSetting("MealGrounding:Enabled", "false");
+                web.UseSetting("NutritionKnowledgeAi:Enabled", approved.ToString());
+                web.UseSetting("NutritionKnowledgeAi:GeneralKnowledgeEnabled", generalKnowledge.ToString());
+                web.UseSetting("NutritionKnowledgeAi:DataProcessingApproved", approved.ToString());
+                web.UseSetting("NutritionKnowledgeAi:ApiKey", "fixture-key");
                 web.ConfigureServices(services =>
                 {
                     services.RemoveAll<IIdentitySessionClient>(); services.AddSingleton<IIdentitySessionClient>(Identity);
                     services.RemoveAll<IPeopleHealthClient>(); services.AddSingleton<IPeopleHealthClient>(People);
+                    services.AddHttpClient<GeminiKnowledgeAnswer>().ConfigurePrimaryHttpMessageHandler(() => Ai);
                 });
             });
             _channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions { HttpHandler = _factory.Server.CreateHandler() });
@@ -115,6 +151,20 @@ public sealed class GrpcTransportTests
             return headers;
         }
         public async ValueTask DisposeAsync() { _channel.Dispose(); await _factory.DisposeAsync(); }
+    }
+    private sealed class AiHandler : HttpMessageHandler
+    {
+        public int Calls;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Calls++;
+            const string output = """{"status":"ai_suggestion","blocks":[{"text":"General nutrition fixture answer.","evidence":[]}]}""";
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new { candidates = new[] { new { finishReason = "STOP",
+                    content = new { parts = new[] { new { text = output } } } } } })
+            });
+        }
     }
     private sealed class Identity : IIdentitySessionClient
     {

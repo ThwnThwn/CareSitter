@@ -22,6 +22,15 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
         if (query.Length is < 3 or > 160) throw InvalidRequest();
         try
         {
+            if (request.GeneralKnowledge)
+            {
+                if (request.LocalDemo || !aiOptions.Value.GeneralKnowledgeEnabled)
+                    throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
+                // This path never reads the local book corpus or a beneficiary's health profile.
+                var general = new KnowledgeSearchResponse { Query = query, GeneralKnowledge = true };
+                ApplyAnswer(general, await gemini.AnswerAsync(query, [], context.CancellationToken));
+                return general;
+            }
             var localDemo = request.LocalDemo && knowledge.SupportsLocalDemo;
             var hits = await knowledge.FindAsync(query, context.CancellationToken, localDemo);
             var response = new KnowledgeSearchResponse { Query = query, LocalDemo = localDemo };
@@ -30,15 +39,7 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
                 if (aiOptions.Value.Enabled)
                 {
                     var answer = await gemini.AnswerAsync(query, hits, context.CancellationToken);
-                    response.AnswerStatus = answer.Status;
-                    response.AnswerProvider = "Gemini";
-                    response.AnswerChunkIds.AddRange(answer.ChunkIds);
-                    foreach (var block in answer.Blocks)
-                    {
-                        var mapped = new CareSitter.Nutrition.Grpc.V1.KnowledgeAnswerBlock { Text = block.Text };
-                        mapped.ChunkIds.AddRange(block.ChunkIds);
-                        response.AnswerBlocks.Add(mapped);
-                    }
+                    ApplyAnswer(response, answer);
                 }
                 else
                 {
@@ -61,6 +62,19 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             UnauthorizedAccessException or KeyNotFoundException or FormatException)
         {
             throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
+        }
+    }
+
+    private static void ApplyAnswer(KnowledgeSearchResponse response, KnowledgeAiAnswer answer)
+    {
+        response.AnswerStatus = answer.Status;
+        response.AnswerProvider = "Gemini";
+        response.AnswerChunkIds.AddRange(answer.ChunkIds);
+        foreach (var block in answer.Blocks)
+        {
+            var mapped = new CareSitter.Nutrition.Grpc.V1.KnowledgeAnswerBlock { Text = block.Text };
+            mapped.ChunkIds.AddRange(block.ChunkIds);
+            response.AnswerBlocks.Add(mapped);
         }
     }
     public override async Task<CapabilitiesResponse> GetCapabilities(Empty request, ServerCallContext context)

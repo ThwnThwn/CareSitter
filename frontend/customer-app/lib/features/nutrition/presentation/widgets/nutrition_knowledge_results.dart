@@ -15,9 +15,9 @@ class NutritionKnowledgeResults extends StatelessWidget {
     final sources = hasAnswer ? search.answerSources : search.results;
     final theme = Theme.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (search.localDemo) ...[
+      if (search.localDemo || search.generalKnowledge) ...[
         Text(
-            search.isAiSuggestion
+            search.isAiSuggestion || search.generalKnowledge
                 ? 'AI đề xuất · Gemini'
                 : 'Câu trả lời từ tài liệu${search.answerProvider == 'Gemini' ? ' · Gemini' : ' · Demo local'}',
             style: theme.textTheme.titleMedium),

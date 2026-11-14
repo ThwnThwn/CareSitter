@@ -49,6 +49,13 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         _apiHost = await new HostBuilder().UseEnvironment("Development").ConfigureWebHost(web => web.UseTestServer().ConfigureServices(services =>
         {
             services.AddLogging(); services.AddHttpContextAccessor();
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = 429;
+                options.AddPolicy("nutrition-knowledge", context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown", _ => new()
+                    { PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+            });
             services.AddJwtAuthentication(configuration); services.AddSingleton<IAccessSessionValidator>(new Sessions());
             services.Configure<NutritionGatewayOptions>(configuration.GetSection("NutritionGateway"));
             services.Configure<NutritionKnowledgeOptions>(options =>
@@ -66,7 +73,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
                 context.Connection.RemoteIpAddress = IPAddress.Parse("192.168.55.20");
                 await next();
             });
-            app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.UseEndpoints(endpoints => endpoints.MapControllers());
+            app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter(); app.UseEndpoints(endpoints => endpoints.MapControllers());
         })).StartAsync();
         _http = _apiHost.GetTestClient();
     }
@@ -150,6 +157,55 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.Equal(expectedDemo ? 1 : 0, result.AnswerBlocks?.Count);
         Assert.Equal(expectedDemo ? "Fixture source passage." : null, Assert.Single(result.Results).Excerpt);
         Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Online_general_knowledge_is_explicit_and_never_exposes_corpus(bool forgedCitation)
+    {
+        _apiHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<NutritionKnowledgeOptions>>()
+            .Value.GeneralKnowledgeEnabled = true;
+        _stub.ForgeGeneralCitation = forgedCitation;
+        Authenticate();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
+        request.Headers.Host = "customer.example";
+        request.Headers.Add("X-Forwarded-For", "203.0.113.10");
+        using var response = await _http.SendAsync(request);
+        Assert.True(_stub.KnowledgeRequest?.GeneralKnowledge);
+        Assert.False(_stub.KnowledgeRequest?.LocalDemo);
+        if (forgedCitation)
+        {
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            Assert.DoesNotContain("General nutrition answer.", await response.Content.ReadAsStringAsync());
+            return;
+        }
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("generalKnowledge").GetBoolean());
+        Assert.False(body.GetProperty("localDemo").GetBoolean());
+        Assert.Empty(body.GetProperty("results").EnumerateArray());
+        Assert.Empty(body.GetProperty("answerChunkIds").EnumerateArray());
+        Assert.Equal("ai_suggestion", body.GetProperty("answerStatus").GetString());
+        Assert.Equal("General nutrition answer.", body.GetProperty("answerBlocks")[0].GetProperty("text").GetString());
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    [Fact]
+    public async Task Knowledge_has_a_per_customer_budget_and_a_clear_disabled_response()
+    {
+        Authenticate();
+        _apiHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<NutritionKnowledgeOptions>>()
+            .Value.Enabled = false;
+        for (var index = 0; index < 6; index++)
+        {
+            var response = await _http.GetAsync("/api/v1/nutrition/knowledge?q=fiber");
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            Assert.Contains("NUTRITION_KNOWLEDGE_UNAVAILABLE", await response.Content.ReadAsStringAsync());
+        }
+        Assert.Equal(HttpStatusCode.TooManyRequests,
+            (await _http.GetAsync("/api/v1/nutrition/knowledge?q=fiber")).StatusCode);
+        Assert.Null(_stub.KnowledgeRequest);
     }
 
     [Theory]
@@ -431,6 +487,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         public string[] BlockIds = ["demo"];
         public int KnowledgeSources = 1;
         public string AnswerStatus = "answered";
+        public bool ForgeGeneralCitation;
         public string? ListBeneficiary, MealType, WeekStart;
         public Failure? Failure;
         public Status? TransportError;
@@ -490,6 +547,15 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         {
             await ObserveAsync(context);
             KnowledgeRequest = request;
+            if (request.GeneralKnowledge)
+            {
+                var general = new KnowledgeSearchResponse { Query = request.Query, GeneralKnowledge = true,
+                    AnswerStatus = "ai_suggestion", AnswerProvider = "Gemini" };
+                var answer = new KnowledgeAnswerBlock { Text = "General nutrition answer." };
+                if (ForgeGeneralCitation) answer.ChunkIds.Add("private-book");
+                general.AnswerBlocks.Add(answer);
+                return general;
+            }
             var result = new KnowledgeSearchResponse { Query = request.Query, LocalDemo = true, AnswerChunkId = AnswerStatus == "ai_suggestion" ? "" : "demo",
                 AnswerStatus = AnswerStatus, AnswerProvider = "Gemini" };
             result.AnswerChunkIds.AddRange(AnswerIds);

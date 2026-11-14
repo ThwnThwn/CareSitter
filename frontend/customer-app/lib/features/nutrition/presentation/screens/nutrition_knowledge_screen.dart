@@ -47,7 +47,7 @@ class _NutritionKnowledgeScreenState
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.sm),
             const Text(
-              'Tra cứu thông tin dinh dưỡng và xem trang nguồn để đối chiếu. Nội dung không thay thế tư vấn của chuyên gia y tế.',
+              'Hỏi kiến thức dinh dưỡng và xem nguồn đối chiếu khi có. Câu hỏi có thể được gửi đến Google Gemini; không nhập thông tin định danh cá nhân. Nội dung không thay thế tư vấn của chuyên gia y tế.',
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -88,7 +88,9 @@ class _NutritionKnowledgeScreenState
                 icon: Icons.auto_stories_outlined,
                 text: 'Nhập chủ đề bạn quan tâm để xem mục và trang nguồn.',
               )
-            else if (search.results.isEmpty && !search.localDemo)
+            else if (search.results.isEmpty &&
+                !search.localDemo &&
+                !search.generalKnowledge)
               const _SearchMessage(
                 icon: Icons.search_off_rounded,
                 text: 'Chưa tìm thấy mục phù hợp. Hãy thử từ khóa khác.',

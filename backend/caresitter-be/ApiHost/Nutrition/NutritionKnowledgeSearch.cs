@@ -2,12 +2,14 @@ using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CareSitter.ApiHost.Nutrition;
 
 public sealed class NutritionKnowledgeOptions
 {
     public bool Enabled { get; set; }
+    public bool GeneralKnowledgeEnabled { get; set; }
     public string? LocalDemoLanAddress { get; set; }
 }
 
@@ -17,21 +19,25 @@ public sealed record NutritionKnowledgeAnswerBlockResponse(string Text, IReadOnl
 public sealed record NutritionKnowledgeSearchResponse(string Query,
     IReadOnlyList<NutritionKnowledgeHitResponse> Results, string? AnswerChunkId = null, bool LocalDemo = false,
     IReadOnlyList<string>? AnswerChunkIds = null, string? AnswerStatus = null,
-    IReadOnlyList<NutritionKnowledgeAnswerBlockResponse>? AnswerBlocks = null, string? AnswerProvider = null);
+    IReadOnlyList<NutritionKnowledgeAnswerBlockResponse>? AnswerBlocks = null, string? AnswerProvider = null,
+    bool GeneralKnowledge = false);
 
 [ApiController, Authorize(Roles = "CUSTOMER")]
 [Route("api/v1/nutrition/knowledge")]
 public sealed class NutritionKnowledgeController(INutritionGateway gateway,
     IOptions<NutritionKnowledgeOptions> options, IHostEnvironment environment) : ControllerBase
 {
-    [HttpGet, ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [HttpGet, EnableRateLimiting("nutrition-knowledge"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Get([FromQuery] string? q, CancellationToken ct)
     {
-        if (!options.Value.Enabled) return NotFound();
+        if (!options.Value.Enabled)
+            return StatusCode(503, new { code = "NUTRITION_KNOWLEDGE_UNAVAILABLE", message = "Tra cứu dinh dưỡng chưa được mở trên máy chủ." });
         var query = q?.Trim() ?? "";
         if (query.Length is < 3 or > 160)
             return BadRequest(new { code = "NUTRITION_KNOWLEDGE_QUERY_INVALID", message = "Nhập từ 3 đến 160 ký tự để tra cứu." });
-        var result = await gateway.KnowledgeAsync(query, ct, IsDirectDemoConnection());
+        var localDemo = IsDirectDemoConnection();
+        var result = await gateway.KnowledgeAsync(query, ct, localDemo,
+            !localDemo && options.Value.GeneralKnowledgeEnabled);
         if (result.StatusCode == 200) return Ok(result.Body);
         if (result.StatusCode == 503)
             return StatusCode(503, new { code = "NUTRITION_KNOWLEDGE_UNAVAILABLE", message = "Chưa tải được tài liệu dinh dưỡng." });
