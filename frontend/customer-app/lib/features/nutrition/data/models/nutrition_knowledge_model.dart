@@ -37,6 +37,7 @@ class NutritionKnowledgeSearchModel {
     required this.results,
     this.localDemo = false,
     this.generalKnowledge = false,
+    this.referenceKnowledge = false,
     this.answerChunkId,
     this.answerChunkIds = const [],
     this.answerStatus,
@@ -48,6 +49,8 @@ class NutritionKnowledgeSearchModel {
   final List<NutritionKnowledgeHitModel> results;
   final bool localDemo;
   final bool generalKnowledge;
+  final bool referenceKnowledge;
+  bool get canShowSources => localDemo || referenceKnowledge;
   final String? answerChunkId;
   final List<String> answerChunkIds;
   final String? answerStatus;
@@ -55,7 +58,7 @@ class NutritionKnowledgeSearchModel {
   final String? answerProvider;
 
   bool get isAiSuggestion =>
-      (localDemo || (generalKnowledge && results.isEmpty)) &&
+      (canShowSources || (generalKnowledge && results.isEmpty)) &&
       answerProvider == 'Gemini' &&
       answerStatus == 'ai_suggestion' &&
       answerChunkId == null &&
@@ -68,7 +71,7 @@ class NutritionKnowledgeSearchModel {
           block.chunkIds.isEmpty);
 
   List<NutritionKnowledgeAnswerBlockModel> get groundedAnswerBlocks {
-    if (!localDemo || answerBlocks.length > 4) return const [];
+    if (!canShowSources || answerBlocks.length > 4) return const [];
     final ids = answerSources.map((hit) => hit.chunkId).toSet();
     if (answerBlocks.any((block) =>
         block.text.trim().isEmpty ||
@@ -81,7 +84,7 @@ class NutritionKnowledgeSearchModel {
   }
 
   List<NutritionKnowledgeHitModel> get answerSources {
-    if (!localDemo) return const [];
+    if (!canShowSources) return const [];
     final ids = answerChunkIds.isNotEmpty
         ? answerChunkIds
         : [if (answerChunkId != null) answerChunkId!];
@@ -105,6 +108,7 @@ class NutritionKnowledgeSearchModel {
         query: json['query'] as String? ?? '',
         localDemo: json['localDemo'] == true,
         generalKnowledge: json['generalKnowledge'] == true,
+        referenceKnowledge: json['referenceKnowledge'] == true,
         answerChunkId: json['answerChunkId'] as String?,
         answerChunkIds: (json['answerChunkIds'] as List<dynamic>? ?? const [])
             .whereType<String>()

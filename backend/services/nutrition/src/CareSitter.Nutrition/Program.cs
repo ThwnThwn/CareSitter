@@ -171,6 +171,9 @@ builder.Services.AddScoped<IMealCandidateRanker>(services =>
         : services.GetRequiredService<UnavailableMealCandidateRanker>());
 builder.Services.AddScoped<IMealRecommendationEngine, MealRecommendationEngine>();
 builder.Services.AddScoped<NutritionKnowledgeSearch>();
+builder.Services.AddOptions<NutritionReferenceOptions>()
+    .Bind(builder.Configuration.GetSection("NutritionKnowledgeCorpus"));
+builder.Services.AddSingleton<INutritionReferenceLibrary, NutritionReferenceLibrary>();
 builder.Services.AddOptions<KnowledgeAnswerAiOptions>()
     .Bind(builder.Configuration.GetSection(KnowledgeAnswerAiOptions.SectionName))
     .Validate(options => !options.Enabled || options.DataProcessingApproved && !string.IsNullOrWhiteSpace(options.ApiKey),

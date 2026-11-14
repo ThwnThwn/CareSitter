@@ -209,6 +209,27 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Online_reference_returns_bound_book_passages_and_keeps_fallback_distinct(bool suggestion)
+    {
+        _apiHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<NutritionKnowledgeOptions>>()
+            .Value.GeneralKnowledgeEnabled = true;
+        _stub.OnlineReference = true;
+        if (suggestion) { _stub.AnswerStatus = "ai_suggestion"; _stub.AnswerIds = []; _stub.BlockIds = []; }
+        Authenticate();
+        var response = await _http.GetAsync("/api/v1/nutrition/knowledge?q=fiber");
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("referenceKnowledge").GetBoolean());
+        Assert.False(body.GetProperty("localDemo").GetBoolean());
+        Assert.False(body.GetProperty("generalKnowledge").GetBoolean());
+        Assert.Equal("Fixture source passage.", body.GetProperty("results")[0].GetProperty("excerpt").GetString());
+        Assert.Equal(suggestion ? "ai_suggestion" : "answered", body.GetProperty("answerStatus").GetString());
+        Assert.Equal(suggestion ? 0 : 1, body.GetProperty("answerChunkIds").GetArrayLength());
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -233,6 +254,18 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.Equal(forwarded ? null : "ai_suggestion", body.AnswerStatus);
         Assert.Equal(forwarded ? 0 : 1, body.AnswerBlocks!.Count);
         if (!forwarded) Assert.Empty(Assert.Single(body.AnswerBlocks).ChunkIds);
+    }
+
+    [Fact]
+    public async Task Online_reference_rejects_an_answer_citing_a_passage_not_in_the_retrieval()
+    {
+        _apiHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<NutritionKnowledgeOptions>>()
+            .Value.GeneralKnowledgeEnabled = true;
+        _stub.OnlineReference = true; _stub.BlockIds = ["unrelated-book-passage"];
+        Authenticate();
+        var response = await _http.GetAsync("/api/v1/nutrition/knowledge?q=fiber");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.DoesNotContain("Gemini generated fixture answer", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -488,6 +521,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         public int KnowledgeSources = 1;
         public string AnswerStatus = "answered";
         public bool ForgeGeneralCitation;
+        public bool OnlineReference;
         public string? ListBeneficiary, MealType, WeekStart;
         public Failure? Failure;
         public Status? TransportError;
@@ -547,7 +581,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         {
             await ObserveAsync(context);
             KnowledgeRequest = request;
-            if (request.GeneralKnowledge)
+            if (request.GeneralKnowledge && !OnlineReference)
             {
                 var general = new KnowledgeSearchResponse { Query = request.Query, GeneralKnowledge = true,
                     AnswerStatus = "ai_suggestion", AnswerProvider = "Gemini" };
@@ -558,6 +592,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             }
             var result = new KnowledgeSearchResponse { Query = request.Query, LocalDemo = true, AnswerChunkId = AnswerStatus == "ai_suggestion" ? "" : "demo",
                 AnswerStatus = AnswerStatus, AnswerProvider = "Gemini" };
+            if (request.GeneralKnowledge && OnlineReference) { result.LocalDemo = false; result.ReferenceKnowledge = true; }
             result.AnswerChunkIds.AddRange(AnswerIds);
             for (var index = 1; index <= KnowledgeSources; index++)
                 result.Results.Add(new KnowledgeHit { ChunkId = index == 1 ? "demo" : $"demo{index}", Heading = "Fixture",

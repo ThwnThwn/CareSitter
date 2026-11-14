@@ -10,6 +10,25 @@ namespace CareSitter.Nutrition.Tests;
 public sealed class NutritionKnowledgeSearchTests
 {
     [Theory]
+    [InlineData("ăn giảm cân")]
+    [InlineData("ăn gì để giảm cân")]
+    public async Task Weight_management_short_query_matches_obesity_section_without_extra_inference(string query)
+    {
+        var path = Path.GetTempFileName();
+        const string passage = "Đây là đoạn dữ liệu thử nghiệm về khẩu phần của người béo phì.";
+        try
+        {
+            await File.WriteAllTextAsync(path, Chunk(passage, heading: "1. Béo phì"));
+            var bytes = await File.ReadAllBytesAsync(path);
+            var search = new NutritionKnowledgeSearch(new ReleasedRetriever(), Options.Create(new MealGroundingOptions
+            { Enabled = true, CorpusPath = path, CorpusSha256 = Convert.ToHexString(SHA256.HashData(bytes)),
+                Mode = MealGroundingOptions.OwnerAuthorizedCorpusDemoMode }),
+                new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" });
+            Assert.Equal(passage, Assert.Single(await search.FindAsync(query, default, true)).Excerpt);
+        }
+        finally { File.Delete(path); }
+    }
+    [Theory]
     [InlineData("trái cây tốt cho người cao huyết áp")]
     [InlineData("trai cay tot cho nguoi cao huyet ap")]
     [InlineData("người tăng huyết áp nên ăn hoa quả nào?")]
