@@ -61,8 +61,10 @@ void main() {
         cancelToken: CancelToken(),
         receiveTimeout: const Duration(seconds: 45));
     expect(server.lastRequest!.receiveTimeout, const Duration(seconds: 45));
+    expect(server.lastRequest!.connectTimeout, const Duration(seconds: 45));
     await client.get('/test');
     expect(server.lastRequest!.receiveTimeout, const Duration(seconds: 30));
+    expect(server.lastRequest!.connectTimeout, const Duration(seconds: 10));
   });
   test('ngrok API requests skip the browser interstitial only on ngrok hosts',
       () async {
