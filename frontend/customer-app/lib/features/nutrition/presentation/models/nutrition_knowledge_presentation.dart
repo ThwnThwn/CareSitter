@@ -40,9 +40,13 @@ class NutritionKnowledgePresentation {
           'Gemini đang giới hạn lượt gọi. Vui lòng thử lại sau.',
         'not_configured' =>
           'Chức năng trả lời bằng AI chưa được cấu hình trên máy chủ.',
+        'unavailable' when search.generalKnowledge =>
+          'Chưa kết nối được Gemini. Vui lòng thử tra cứu lại sau.',
         'unavailable' => search.answerProvider == 'Gemini'
             ? 'Chưa kết nối được Gemini. Bạn có thể xem các đoạn liên quan bên dưới hoặc tra cứu lại.'
             : 'AI local chưa phản hồi. Bạn có thể xem các đoạn liên quan bên dưới hoặc tra cứu lại.',
+        _ when search.generalKnowledge =>
+          'Chưa có câu trả lời phù hợp. Hãy hỏi về dinh dưỡng hoặc ăn uống.',
         _ =>
           'Chưa tìm được đoạn tài liệu trả lời trực tiếp câu hỏi này. Hãy thử nêu chủ đề cụ thể hơn.',
       };

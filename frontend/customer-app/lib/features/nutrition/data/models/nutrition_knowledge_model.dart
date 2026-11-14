@@ -36,6 +36,7 @@ class NutritionKnowledgeSearchModel {
     required this.query,
     required this.results,
     this.localDemo = false,
+    this.generalKnowledge = false,
     this.answerChunkId,
     this.answerChunkIds = const [],
     this.answerStatus,
@@ -46,6 +47,7 @@ class NutritionKnowledgeSearchModel {
   final String query;
   final List<NutritionKnowledgeHitModel> results;
   final bool localDemo;
+  final bool generalKnowledge;
   final String? answerChunkId;
   final List<String> answerChunkIds;
   final String? answerStatus;
@@ -53,7 +55,7 @@ class NutritionKnowledgeSearchModel {
   final String? answerProvider;
 
   bool get isAiSuggestion =>
-      localDemo &&
+      (localDemo || (generalKnowledge && results.isEmpty)) &&
       answerProvider == 'Gemini' &&
       answerStatus == 'ai_suggestion' &&
       answerChunkId == null &&
@@ -102,6 +104,7 @@ class NutritionKnowledgeSearchModel {
       NutritionKnowledgeSearchModel(
         query: json['query'] as String? ?? '',
         localDemo: json['localDemo'] == true,
+        generalKnowledge: json['generalKnowledge'] == true,
         answerChunkId: json['answerChunkId'] as String?,
         answerChunkIds: (json['answerChunkIds'] as List<dynamic>? ?? const [])
             .whereType<String>()

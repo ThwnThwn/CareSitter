@@ -9,6 +9,7 @@ public sealed record KnowledgeAnswerAiOptions
 {
     public const string SectionName = "NutritionKnowledgeAi";
     public bool Enabled { get; init; }
+    public bool GeneralKnowledgeEnabled { get; init; }
     public bool DataProcessingApproved { get; init; }
     public string ApiKey { get; init; } = "";
     public string Model { get; init; } = "gemini-3.5-flash-lite";
