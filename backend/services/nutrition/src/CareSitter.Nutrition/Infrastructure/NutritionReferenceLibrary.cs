@@ -84,9 +84,10 @@ internal sealed class ReferenceKnowledgeIndex
         if (plan.IsEmpty) return [];
         var graph = _graph.Retrieve(new MealKnowledgeRequest([], [], [], "", plan.SearchText), 30, ct).Evidence;
         var evidence = NutritionKnowledgeSearch.Fuse(graph, _lexical.Search(plan.SearchText, 100, 0, ct: ct));
-        return NutritionKnowledgeSearch.MapHits(query, _corpus, evidence, 100, true)
-            .OrderByDescending(hit => NutritionKnowledgeSearch.WeightLossDietScore(query,
-                hit.Heading + " " + hit.ContextHeading + " " + hit.Excerpt))
-            .Take(5).ToArray();
+        // Rank bounded summaries before the expensive sentence-window extraction, then stop at five hits.
+        // This keeps first-byte latency within budget on the small Render instance.
+        var ranked = evidence.OrderByDescending(item => NutritionKnowledgeSearch.WeightLossDietScore(query,
+            item.Title + " " + item.Chapter + " " + item.Excerpt)).ToArray();
+        return NutritionKnowledgeSearch.MapHits(query, _corpus, ranked, 5, true);
     }
 }

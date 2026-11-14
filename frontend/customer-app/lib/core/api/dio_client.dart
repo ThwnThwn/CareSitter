@@ -85,15 +85,18 @@ class DioClient {
       _request(() => _dio.patch<T>(path, data: data));
 
   Future<Response<T>> getCancelable<T>(String path,
-          {Map<String, dynamic>? query,
-          required CancelToken cancelToken,
-          Duration? receiveTimeout}) =>
-      _request(() => _dio.get<T>(path,
-          queryParameters: query,
-          cancelToken: cancelToken,
-          options: receiveTimeout == null
-              ? null
-              : Options(receiveTimeout: receiveTimeout)));
+      {Map<String, dynamic>? query,
+      required CancelToken cancelToken,
+      Duration? receiveTimeout}) {
+    final request = Options(method: 'GET', receiveTimeout: receiveTimeout)
+        .compose(_dio.options, path,
+            queryParameters: query, cancelToken: cancelToken);
+    // The browser adapter includes waiting for the first response in its connection timer.
+    // Keep an explicit long-read budget on this request without mutating shared defaults.
+    if (receiveTimeout != null) request.connectTimeout = receiveTimeout;
+    return _request(() => _dio.fetch<T>(request));
+  }
+
   Future<Response<T>> postCancelable<T>(String path,
           {dynamic data, required CancelToken cancelToken}) =>
       _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
