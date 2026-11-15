@@ -114,12 +114,20 @@ public sealed class BookingMealsPostgresTests : IAsyncLifetime
     [PostgresFact]
     public async Task Wrong_day_wrong_beneficiary_and_unassigned_caregiver_are_rejected()
     {
-        var seed = await SeedAsync(); var plan = Snapshot(seed);
+        var seed = await SeedAsync(new DateTimeOffset(2026, 1, 2, 16, 30, 0, TimeSpan.Zero));
+        var plan = Snapshot(seed);
         await using (var db = Db())
         {
-            var wrongDay = plan with { PlannedDate = plan.PlannedDate.AddDays(1) };
-            Assert.True((await Handler(db, seed, seed.Owner, "CUSTOMER", wrongDay)
-                .Handle(new ShareBookingMealPlanCommand(seed.Booking, plan.Id), default)).IsFailure);
+            // The fixture runs from 22:30 to 00:30 in Vietnam.
+            var nextDay = plan with { PlannedDate = plan.PlannedDate.AddDays(1) };
+            var shared = await Handler(db, seed, seed.Owner, "CUSTOMER", nextDay)
+                .Handle(new ShareBookingMealPlanCommand(seed.Booking, plan.Id), default);
+            Assert.True(shared.IsSuccess, shared.Error.Message);
+
+            var outsideShift = plan with { PlannedDate = nextDay.PlannedDate.AddDays(1) };
+            var rejected = await Handler(db, seed, seed.Owner, "CUSTOMER", outsideShift)
+                .Handle(new ShareBookingMealPlanCommand(seed.Booking, plan.Id), default);
+            Assert.Equal("booking.meals.request", rejected.Error.Code);
         }
         await using (var db = Db())
         {
@@ -256,10 +264,11 @@ public sealed class BookingMealsPostgresTests : IAsyncLifetime
         }
     }
     private static MealPlanSnapshot Snapshot(Seed seed) => new(Guid.NewGuid(), seed.Beneficiary,
-        BookingMealPolicy.VietnamDate(DateTimeOffset.UtcNow), [new SharedMeal(Guid.NewGuid(), "Cháo thử nghiệm",
+        BookingMealPolicy.VietnamDate(seed.ObservedAt), [new SharedMeal(Guid.NewGuid(), "Cháo thử nghiệm",
             "lunch", 1, [new("Gạo", 50, "g")], ["Nấu chín."], [])], seed.HealthRevision);
-    private async Task<Seed> SeedAsync()
+    private async Task<Seed> SeedAsync(DateTimeOffset? observedAt = null)
     {
+        var now = observedAt ?? DateTimeOffset.UtcNow;
         await using var conn = await database.OpenConnectionAsync();
         await using var cmd = new NpgsqlCommand("""
             WITH template AS (
@@ -280,17 +289,19 @@ public sealed class BookingMealsPostgresTests : IAsyncLifetime
               INSERT INTO booking.bookings(customer_id, beneficiary_id, caregiver_id, address_id,
                 service_type_id, scheduled_start, scheduled_end, actual_start, status)
               SELECT b.customer_id,b.id,c.id,t.address_id,t.service_type_id,
-                now() - interval '1 hour',now() + interval '1 hour',now() - interval '30 minutes','IN_PROGRESS'
+                 @observed_at - interval '1 hour',@observed_at + interval '1 hour',@observed_at - interval '30 minutes','IN_PROGRESS'
               FROM beneficiary b CROSS JOIN caregiver c CROSS JOIN template t
               RETURNING id,customer_id,beneficiary_id,caregiver_id)
             SELECT i.id,i.customer_id,i.beneficiary_id,i.caregiver_id,c.user_id,b.health_profile_revision
             FROM inserted i JOIN caregiver c ON c.id=i.caregiver_id JOIN beneficiary b ON b.id=i.beneficiary_id
             """, conn);
+        cmd.Parameters.AddWithValue("observed_at", now);
         await using var reader = await cmd.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
-        return new(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetGuid(3), reader.GetGuid(4), reader.GetInt64(5));
+        return new(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetGuid(3), reader.GetGuid(4), reader.GetInt64(5), now);
     }
-    private sealed record Seed(Guid Booking, Guid Owner, Guid Beneficiary, Guid Caregiver, Guid CaregiverUser, long HealthRevision);
+    private sealed record Seed(Guid Booking, Guid Owner, Guid Beneficiary, Guid Caregiver, Guid CaregiverUser,
+        long HealthRevision, DateTimeOffset ObservedAt);
     private sealed class SnapshotReader(MealPlanSnapshot plan) : IMealPlanSnapshotReader
     {
         public Task<Result<MealPlanSnapshot>> ReadAsync(Guid beneficiary, Guid planId, CancellationToken ct) =>
