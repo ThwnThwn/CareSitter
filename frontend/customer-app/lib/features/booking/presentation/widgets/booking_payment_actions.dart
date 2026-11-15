@@ -22,13 +22,13 @@ class BookingPaymentActions extends StatelessWidget {
           children: [
             const BookingDetailScreenStatusBanner(
                 message:
-                    'Đơn đang chờ bạn thanh toán ký quỹ (Escrow) để kích hoạt và thông báo cho người chăm sóc.'),
+                    'Vui lòng xem thông tin thanh toán và hoàn tiền trước khi xác nhận. Người chăm sóc sẽ được thông báo sau khi thanh toán thành công.'),
             const SizedBox(height: AppSpacing.control),
             ElevatedButton.icon(
               onPressed: onPay,
               icon: const Icon(Icons.payment_rounded),
               label: Text(
-                  'Thanh toán ký quỹ (${formatVnd(booking.totalPrice, suffix: '')}đ)'),
+                  'Thanh toán và gửi yêu cầu (${formatVnd(booking.payableAmount, suffix: '')}đ)'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
                 backgroundColor: AppColors.primary,

@@ -19,6 +19,8 @@ internal sealed class CreateServiceCommandHandler(
             request.DefaultDurationMinutes, request.IsActive, request.ImageUrl);
         if (created.IsFailure) return created.Error;
 
+        var needs = created.Value.SetRequiredCaregiverSkills(request.RequiredCaregiverSkills);
+        if (needs.IsFailure) return needs.Error;
         repository.Add(created.Value);
         await repository.SaveChangesAsync(ct);
         var response = CatalogAdminMapper.ToResponse(created.Value);

@@ -13,6 +13,17 @@ internal sealed class PeopleLookupService(
     PeopleDbContext db,
     IUserProfileReader userProfiles) : IPeopleLookupService
 {
+    public async Task<IReadOnlyList<string>> GetRequiredCaregiverSkillsAsync(Guid beneficiaryId, Guid customerId,
+        CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT set_config('app.current_user_id', {customerId.ToString()}, true)", ct);
+        return await db.Beneficiaries.AsNoTracking().Where(x => x.Id == beneficiaryId &&
+            x.CustomerId == customerId && x.DeletedAt == null).Select(x => x.RequiredCaregiverSkills)
+            .SingleOrDefaultAsync(ct) ?? [];
+    }
+
     /// <summary>
     /// Kiểm tra xem một người thân (Beneficiary) có thuộc về
     /// khách hàng (<paramref name="customerId"/>) hay không.

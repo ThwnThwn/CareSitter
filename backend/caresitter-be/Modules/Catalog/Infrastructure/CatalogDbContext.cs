@@ -108,6 +108,7 @@ public sealed class CatalogDbContext : ModuleDbContext
             b.Property(x => x.Description).HasColumnName("description");
             b.Property(x => x.ImageUrl).HasColumnName("image_url");
             b.Property(x => x.DefaultDurationMinutes).HasColumnName("default_duration_minutes");
+            b.Property(x => x.RequiredCaregiverSkills).HasColumnName("required_caregiver_skills").HasColumnType("text[]");
             b.Property(x => x.IsActive).HasColumnName("is_active");
             b.Property(x => x.AllowAdHocTasks).HasColumnName("allow_ad_hoc_tasks");
             // Bang service_types khong co created_at/updated_at.

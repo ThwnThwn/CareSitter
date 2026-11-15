@@ -214,6 +214,7 @@ public static class MealConstraintPolicy
                 string.Join(' ', meal.Ingredients.Select(ingredient => ingredient.Name))));
             penalty += preferences.DislikedFoods.Count(value => Contains(searchable, value)) * 20;
             penalty -= preferences.PreferredFoods.Count(value => Contains(searchable, value)) * 3;
+            penalty -= MealPantryPolicy.Matches(meal, preferences.AvailableIngredients).Length * 5;
         }
         return penalty;
     }
@@ -240,7 +241,9 @@ public static class MealConstraintPolicy
             if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) !=
                 System.Globalization.UnicodeCategory.NonSpacingMark)
                 builder.Append(character == 'đ' ? 'd' : character);
-        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        var normalized = builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        return string.Join(' ', new string(normalized.Select(character => char.IsLetterOrDigit(character)
+            ? character : ' ').ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static string MenuIds(IEnumerable<Recipe> meals) =>

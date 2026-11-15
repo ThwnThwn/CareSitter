@@ -12,7 +12,7 @@ public sealed class NutritionKnowledgeOptions
 }
 
 public sealed record NutritionKnowledgeHitResponse(string ChunkId, string Heading, int PdfPage,
-    string? PrintedPage, string SourceTitle, string SourceRevisionId, string? Excerpt = null);
+    string? PrintedPage, string SourceTitle, string SourceRevisionId, string? Excerpt = null, string? Summary = null);
 public sealed record NutritionKnowledgeAnswerBlockResponse(string Text, IReadOnlyList<string> ChunkIds);
 public sealed record NutritionKnowledgeSearchResponse(string Query,
     IReadOnlyList<NutritionKnowledgeHitResponse> Results, string? AnswerChunkId = null, bool LocalDemo = false,

@@ -4,6 +4,15 @@ namespace CareSitter.Modules.Catalog.UnitTests;
 
 public sealed class ServiceCatalogDomainTests
 {
+    [Fact]
+    public void Declared_requirements_are_normalized_and_invalid_updates_preserve_the_previous_set()
+    {
+        var service = ServiceType.Create("COMPANION", "Đồng hành").Value;
+        Assert.True(service.SetRequiredCaregiverSkills(["  HO TRO  DI CHUYEN ", "ho tro di chuyen"]).IsSuccess);
+        Assert.Equal(new[] { "ho tro di chuyen" }, service.RequiredCaregiverSkills);
+        Assert.True(service.SetRequiredCaregiverSkills([""]).IsFailure);
+        Assert.Equal(new[] { "ho tro di chuyen" }, service.RequiredCaregiverSkills);
+    }
     [Theory]
     [InlineData(14)]
     [InlineData(1441)]

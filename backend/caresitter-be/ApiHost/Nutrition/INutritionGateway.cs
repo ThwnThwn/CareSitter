@@ -18,4 +18,4 @@ public sealed record NutritionResourceResponse(Guid Id, Guid BeneficiaryId, long
     string Status, JsonElement Data, DateTimeOffset CreatedAt);
 public sealed record NutritionWriteRequest(long ExpectedHealthRevision, Guid IdempotencyKey,
     Guid? AssessmentId = null, DateOnly? PlannedDate = null, Guid? RecommendationId = null,
-    Guid? RecipeVersionId = null, string? MealType = null);
+    Guid? RecipeVersionId = null, string? MealType = null, string[]? AvailableIngredients = null);

@@ -47,6 +47,8 @@ internal sealed class CreateSelfBeneficiaryCommandHandler(IPeopleRepository repo
             request.CareInstructions, request.CareLevel, request.AvatarUrl,
             request.EmergencyContacts?.GetRawText(), null);
         if (updated.IsFailure) return updated.Error;
+        var needs = entity.SetRequiredCaregiverSkills(request.RequiredCaregiverSkills);
+        if (needs.IsFailure) return needs.Error;
         var marked = entity.MarkAsSelf();
         if (marked.IsFailure) return marked.Error;
         repository.AddBeneficiary(entity);

@@ -18,7 +18,7 @@ class BookingResolvedActions extends StatelessWidget {
           children: [
             BookingDetailScreenStatusBanner(
               message: status == 'confirmed'
-                  ? 'Lịch hẹn đã được xác nhận. Bạn sẽ nhận thông báo khi chăm sóc viên cập nhật tiến trình ca.'
+                  ? 'Đã thanh toán và gửi yêu cầu. Chăm sóc viên chưa nhận ca; bạn sẽ nhận thông báo khi có phản hồi.'
                   : 'Ca đã được nhận. Vui lòng chờ caregiver bắt đầu di chuyển hoặc check-in từ ứng dụng caregiver.',
             ),
             const SizedBox(height: AppSpacing.control),

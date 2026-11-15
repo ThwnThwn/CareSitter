@@ -21,6 +21,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
                 x.ImageUrl,
                 x.DefaultDurationMinutes,
                 x.AllowAdHocTasks,
+                x.RequiredCaregiverSkills,
                 Pricing = db.PricingRules.AsNoTracking()
                     .Where(p => p.ServiceTypeId == x.Id && p.IsActive &&
                         p.EffectiveFrom <= now && (p.EffectiveTo == null || p.EffectiveTo > now))
@@ -43,7 +44,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             x.AllowAdHocTasks, x.Pricing?.BaseHourlyPrice ?? 0,
             x.Pricing?.PlatformFeePercent ?? 0m,
             plans.Where(plan => plan.ServiceTypeId == x.Id)
-                .Select(CatalogAdminMapper.ToResponse).ToArray())).ToArray();
+                .Select(CatalogAdminMapper.ToResponse).ToArray(), x.RequiredCaregiverSkills)).ToArray();
     }
 
     public async Task<ServiceCatalogResponse?> GetActiveServiceAsync(
@@ -59,7 +60,8 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
                 x.Description,
                 x.ImageUrl,
                 x.DefaultDurationMinutes,
-                x.AllowAdHocTasks
+                x.AllowAdHocTasks,
+                x.RequiredCaregiverSkills
             })
             .SingleOrDefaultAsync(ct);
         if (item is null) return null;
@@ -82,7 +84,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             item.ImageUrl,
             item.DefaultDurationMinutes, item.AllowAdHocTasks,
             pricing?.BaseHourlyPrice ?? 0, pricing?.PlatformFeePercent ?? 0m,
-            plans.Select(CatalogAdminMapper.ToResponse).ToArray());
+            plans.Select(CatalogAdminMapper.ToResponse).ToArray(), item.RequiredCaregiverSkills);
     }
 
     public async Task<IReadOnlyList<AddressResponse>> ListOwnedAddressesAsync(
@@ -121,7 +123,7 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             prices.Where(x => x.ServiceTypeId == service.Id)
                 .Select(CatalogAdminMapper.ToResponse).ToArray(),
             plans.Where(x => x.ServiceTypeId == service.Id)
-                .Select(CatalogAdminMapper.ToResponse).ToArray())).ToArray();
+                .Select(CatalogAdminMapper.ToResponse).ToArray(), service.RequiredCaregiverSkills)).ToArray();
     }
 
     public async Task<AdminServiceResponse?> GetAdminServiceAsync(
@@ -145,6 +147,6 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             service.Id, service.Code, service.Name, service.Description, service.ImageUrl,
             service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks,
             prices.Select(CatalogAdminMapper.ToResponse).ToArray(),
-            plans.Select(CatalogAdminMapper.ToResponse).ToArray());
+            plans.Select(CatalogAdminMapper.ToResponse).ToArray(), service.RequiredCaregiverSkills);
     }
 }

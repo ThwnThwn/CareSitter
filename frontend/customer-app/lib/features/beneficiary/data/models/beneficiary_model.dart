@@ -54,6 +54,7 @@ class BeneficiaryModel {
       {BeneficiaryModel? previous, String? avatarUrl}) {
     final fields = <String, dynamic>{
       'FullName': name,
+      'RequiredCaregiverSkills': requiredCaregiverSkills,
       'DefaultAddressId': defaultAddressId,
       'DateOfBirth': dateOfBirth?.toIso8601String().split('T').first,
       'Gender': gender,
@@ -93,6 +94,7 @@ class BeneficiaryModel {
   final String address;
   final String? defaultAddressId;
   final List<EmergencyContact> emergencyContacts;
+  final List<String> requiredCaregiverSkills;
   final String? avatarPath;
 
   const BeneficiaryModel({
@@ -115,6 +117,7 @@ class BeneficiaryModel {
     required this.address,
     this.defaultAddressId,
     this.emergencyContacts = const [],
+    this.requiredCaregiverSkills = const [],
     this.avatarPath,
   });
 
@@ -154,6 +157,7 @@ class BeneficiaryModel {
       address: address ?? this.address,
       defaultAddressId: defaultAddressId ?? this.defaultAddressId,
       emergencyContacts: emergencyContacts ?? this.emergencyContacts,
+      requiredCaregiverSkills: requiredCaregiverSkills,
       avatarPath: avatarPath ?? this.avatarPath,
     );
   }
@@ -195,6 +199,9 @@ class BeneficiaryModel {
 
     return BeneficiaryModel(
       id: id,
+      requiredCaregiverSkills:
+          (map['requiredCaregiverSkills'] as List<dynamic>? ?? const [])
+              .cast<String>(),
       isSelf: (map['isSelf'] ?? map['IsSelf']) == true,
       name: fullName,
       dateOfBirth: dateOfBirth,

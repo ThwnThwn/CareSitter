@@ -1,6 +1,7 @@
 import '../controllers/payment_checkout_controller.dart';
+import '../controllers/booking_payment_summary_controller.dart';
 import '../widgets/payment_provider_choices.dart';
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
+import '../widgets/payment_checkout_information.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -53,6 +54,7 @@ class _PaymentCheckoutSheetState extends ConsumerState<PaymentCheckoutSheet> {
     final flow =
         ref.watch(paymentCheckoutControllerProvider(widget.booking.id));
     final providers = ref.watch(paymentProvidersProvider);
+    final summary = ref.watch(bookingPaymentSummaryProvider(widget.booking.id));
     return PopScope(
       canPop: !flow.busy,
       child: SafeArea(
@@ -70,13 +72,17 @@ class _PaymentCheckoutSheetState extends ConsumerState<PaymentCheckoutSheet> {
                   icon: const Icon(Icons.close_rounded)),
             ]),
             const SizedBox(height: AppSpacing.compact),
-            Text('${_formatAmount(widget.booking.payableAmount)} ₫',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.primary, fontWeight: FontWeight.w800)),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-                'Thanh toán trước để xác nhận lịch hẹn. Hãy kiểm tra số tiền và người nhận trên trang thanh toán.',
-                style: TextStyle(color: AppColors.textSecondary, height: 1.5)),
+            summary.when(
+                data: (value) => PaymentCheckoutInformation(summary: value),
+                loading: () => const Text(
+                    'Đang kiểm tra số tiền và điều kiện thanh toán…'),
+                error: (_, __) => Column(children: [
+                      const Text('Chưa tải được thông tin thanh toán.'),
+                      TextButton(
+                          onPressed: () => ref.invalidate(
+                              bookingPaymentSummaryProvider(widget.booking.id)),
+                          child: const Text('Kiểm tra lại')),
+                    ])),
             const SizedBox(height: AppSpacing.lg),
             PaymentProviderChoices(
                 providers: providers,
@@ -99,7 +105,11 @@ class _PaymentCheckoutSheetState extends ConsumerState<PaymentCheckoutSheet> {
             SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: flow.selected == null || flow.busy ? null : _pay,
+                  onPressed: flow.selected == null ||
+                          flow.busy ||
+                          summary.asData?.value.canPay != true
+                      ? null
+                      : _pay,
                   child: flow.busy
                       ? const SizedBox(
                           width: 22,
@@ -113,6 +123,4 @@ class _PaymentCheckoutSheetState extends ConsumerState<PaymentCheckoutSheet> {
       ),
     );
   }
-
-  String _formatAmount(int amount) => formatVnd(amount, suffix: '');
 }

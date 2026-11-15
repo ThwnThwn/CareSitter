@@ -35,6 +35,15 @@ public sealed class ServiceType : Entity
     public int DefaultDurationMinutes { get; private set; }
     public bool IsActive { get; private set; }
     public bool AllowAdHocTasks { get; private set; }
+    public string[] RequiredCaregiverSkills { get; private set; } = [];
+    public Result SetRequiredCaregiverSkills(IEnumerable<string>? skills)
+    {
+        var normalized = CareSitter.SharedKernel.ValueObjects.CareSkillSet.Normalize(skills);
+        if (normalized.IsFailure) return normalized.Error;
+        RequiredCaregiverSkills = normalized.Value;
+        return Result.Success();
+    }
+
 
     public void SetAllowAdHocTasks(bool allowAdHocTasks) => AllowAdHocTasks = allowAdHocTasks;
 

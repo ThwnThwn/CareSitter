@@ -18,11 +18,13 @@ public sealed class PeopleDbContext : ModuleDbContext
 
     public DbSet<Beneficiary> Beneficiaries => Set<Beneficiary>();
     public DbSet<FamilyContact> FamilyContacts => Set<FamilyContact>();
+    public DbSet<MealTasteFeedback> MealTasteFeedback => Set<MealTasteFeedback>();
     public DbSet<CaregiverProfile> CaregiverProfiles => Set<CaregiverProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new MealTasteFeedbackConfiguration());
         modelBuilder.ApplyKafkaOutbox(SchemaName);
 
         modelBuilder.Entity<Beneficiary>(b =>
@@ -51,6 +53,7 @@ public sealed class PeopleDbContext : ModuleDbContext
             b.Property(x => x.ChronicConditions).HasColumnName("chronic_conditions").HasColumnType("jsonb");
             b.Property(x => x.CareInstructions).HasColumnName("care_instructions");
             b.Property(x => x.CareLevel).HasColumnName("care_level").HasMaxLength(20);
+            b.Property(x => x.RequiredCaregiverSkills).HasColumnName("required_caregiver_skills").HasColumnType("text[]");
             b.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
             b.Property(x => x.EmergencyContacts).HasColumnName("emergency_contacts").HasColumnType("jsonb");
             b.Property(x => x.Medications).HasColumnName("medications").HasColumnType("jsonb");

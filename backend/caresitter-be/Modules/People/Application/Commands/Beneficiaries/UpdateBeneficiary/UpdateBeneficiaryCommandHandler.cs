@@ -34,6 +34,11 @@ internal sealed class UpdateBeneficiaryCommandHandler(
         if (entity is null) return PeopleErrors.NotFound();
         var result = ApplyRequest(entity, request);
         if (result.IsFailure) return result.Error;
+        if (request.RequiredCaregiverSkills is not null || request.ProvidedFields?.Contains(nameof(request.RequiredCaregiverSkills)) == true)
+        {
+            var needs = entity.SetRequiredCaregiverSkills(request.RequiredCaregiverSkills);
+            if (needs.IsFailure) return needs.Error;
+        }
         await repository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return PeopleResponseMapper.ToResponse(entity);

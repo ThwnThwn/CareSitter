@@ -53,7 +53,8 @@ internal sealed record MealPreparation(Guid AssessmentId, DateOnly PlannedDate, 
         if (Eligibility.State != "eligible") return new(1, AssessmentId, PlannedDate, [], [], Eligibility);
         var decision = NutritionDecision.Create(meals is not null ? "suggested" : Recipes.Length == 0 ? "no_content" : "no_match",
             meals is not null ? [] : [Recipes.Length == 0 ? "catalog_unavailable" : "constraints_not_matched"]);
-        var payload = new MealPayload(1, AssessmentId, PlannedDate, meals ?? [], ActiveRules, decision, CatalogRevision);
+        var payload = new MealPayload(1, AssessmentId, PlannedDate, meals ?? [], ActiveRules, decision, CatalogRevision)
+        { AvailableIngredients = Previous?.AvailableIngredients ?? [] };
         if (meals is null || Previous?.RecommendationTrace is not { } trace) return payload;
         if (Previous.Meals.Select(meal => meal.VersionId).SequenceEqual(meals.Select(meal => meal.VersionId)))
             return payload with { RecommendationTrace = trace };

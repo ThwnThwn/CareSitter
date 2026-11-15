@@ -38,7 +38,6 @@ class NutritionMenuView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final staleProfile = flow.resource?.status == 'stale';
     final showPlan = !isLoadingSelectedDate &&
         hasPlanForSelectedDate &&
         flow.resource != null;
@@ -83,14 +82,13 @@ class NutritionMenuView extends StatelessWidget {
         ] else if (flow.error != null) ...[
           const SizedBox(height: AppSpacing.compact),
           NutritionInlineError(message: flow.error!),
-        ] else if (staleProfile && !showPlan) ...[
-          const SizedBox(height: AppSpacing.compact),
-          result,
         ] else if (!showPlan) ...[
           const SizedBox(height: AppSpacing.compact),
           _NoPlanNotice(
             date: selectedDate,
-            onCreatePlan: flow.loading ? null : onCreatePlan,
+            onCreatePlan: flow.loading || !flow.recommendationsEnabled
+                ? null
+                : onCreatePlan,
           ),
         ],
         if (flow.loading && !isLoadingSelectedDate) ...[
@@ -149,15 +147,16 @@ class _NoPlanNotice extends StatelessWidget {
                         ),
                   ),
                   if (onCreatePlan != null) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    TextButton.icon(
-                      onPressed: onCreatePlan,
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('Tạo thực đơn cho ngày này'),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 40),
-                        alignment: Alignment.centerLeft,
+                    const SizedBox(height: AppSpacing.sm),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: FilledButton.icon(
+                        onPressed: onCreatePlan,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text(
+                          'Tạo thực đơn cho ngày này',
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ],

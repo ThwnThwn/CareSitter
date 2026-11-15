@@ -22,6 +22,11 @@ internal sealed class UpdateServiceCommandHandler(
         var updated = service.Update(code, request.Name, request.Description, request.ImageUrl,
             request.DefaultDurationMinutes);
         if (updated.IsFailure) return updated.Error;
+        if (request.RequiredCaregiverSkills is not null)
+        {
+            var needs = service.SetRequiredCaregiverSkills(request.RequiredCaregiverSkills);
+            if (needs.IsFailure) return needs.Error;
+        }
         service.SetActive(request.IsActive);
         await repository.SaveChangesAsync(ct);
 

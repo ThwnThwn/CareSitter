@@ -111,4 +111,10 @@ public sealed class BeneficiaryUpdateRequest
         get => _medications;
         init { _medications = value; _providedFields.Add(nameof(Medications)); }
     }
+    private IReadOnlyList<string>? _requiredCaregiverSkills;
+    public IReadOnlyList<string>? RequiredCaregiverSkills
+    {
+        get => _requiredCaregiverSkills;
+        init { _requiredCaregiverSkills = value; _providedFields.Add(nameof(RequiredCaregiverSkills)); }
+    }
 }

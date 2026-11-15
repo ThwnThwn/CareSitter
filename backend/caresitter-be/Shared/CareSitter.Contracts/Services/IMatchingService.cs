@@ -27,13 +27,18 @@ public sealed record MatchingCandidate(
     int Rank,
     decimal Score,
     int? DistanceMeters,
-    IReadOnlyDictionary<string, decimal> ScoreBreakdown);
+    IReadOnlyDictionary<string, decimal> ScoreBreakdown,
+    int? YearsOfExperience = null, decimal RatingAverage = 0, int RatingCount = 0,
+    string? AvailabilityStatus = null, IReadOnlyList<string>? MatchReasons = null);
 
 /// <summary>People-owned read boundary used by the Booking matching policy.</summary>
 public interface IMatchingCaregiverReader
 {
     Task<IReadOnlyList<MatchingCaregiverProfile>> ListAvailableAsync(
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<MatchingCaregiverProfile>> ListForScheduledBookingAsync(
+        CancellationToken ct = default) => ListAvailableAsync(ct);
 }
 
 /// <summary>Catalog-owned read boundary used by the Booking matching policy.</summary>

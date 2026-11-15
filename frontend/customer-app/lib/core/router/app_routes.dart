@@ -47,6 +47,7 @@ class AppRoutes {
   static String bookingReports(String id) => '${bookingDetail(id)}/reports';
   static String bookingTracking(String id) => '${bookingDetail(id)}/tracking';
   static String bookingTimeline(String id) => '${bookingDetail(id)}/timeline';
+  static String bookingMeals(String id) => '${bookingDetail(id)}/meals';
   static String bookingReview(String id) => '${bookingDetail(id)}/review';
   static String bookingChat(String id, {String? title}) => _withQuery(
         '${bookingDetail(id)}/chat',

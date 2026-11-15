@@ -99,7 +99,8 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
                 value.Results.Select(hit => new NutritionKnowledgeHitResponse(hit.ChunkId, hit.Heading,
                     hit.PdfPage, string.IsNullOrEmpty(hit.PrintedPage) ? null : hit.PrintedPage,
                     hit.SourceTitle, hit.SourceRevisionId,
-                    showPassages && hit.Excerpt.Length is > 0 and <= 640 ? hit.Excerpt : null)).ToArray(),
+                    showPassages && hit.Excerpt.Length is > 0 and <= 640 ? hit.Excerpt : null,
+                    showPassages && hit.Summary.Length is > 0 and <= 560 ? hit.Summary : null)).ToArray(),
                 answerIds.FirstOrDefault(), showPassages, answerIds, status,
                 blocks.Select(block => new NutritionKnowledgeAnswerBlockResponse(block.Text, block.ChunkIds.ToArray())).ToArray(),
                 showPassages && value.AnswerProvider is "Gemini" or "Ollama" ? value.AnswerProvider : null));

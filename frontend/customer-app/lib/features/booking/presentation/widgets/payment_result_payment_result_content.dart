@@ -11,7 +11,8 @@ class PaymentResultPaymentResultContent extends StatelessWidget {
       required this.onOpenBooking,
       required this.onOpenBookings,
       required this.onRetry,
-      required this.refreshing});
+      required this.refreshing,
+      this.bookingStatus});
 
   final PaymentOutcome state;
   final String? bookingId;
@@ -19,10 +20,12 @@ class PaymentResultPaymentResultContent extends StatelessWidget {
   final VoidCallback onOpenBookings;
   final VoidCallback? onRetry;
   final bool refreshing;
+  final String? bookingStatus;
 
   @override
   Widget build(BuildContext context) {
-    final details = PaymentResultPresentation.details(state);
+    final details =
+        PaymentResultPresentation.details(state, bookingStatus: bookingStatus);
     final isFailure = state == PaymentOutcome.failure;
     final isSyncing = state == PaymentOutcome.syncing;
 

@@ -12,6 +12,7 @@ public sealed record KnowledgeSearchHit(string ChunkId, string Heading, int PdfP
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Excerpt = null)
 {
     [JsonIgnore] public string? ContextHeading { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Summary { get; init; }
 }
 
 /// <summary>Retrieves only through the authorized grounding release and returns source metadata.</summary>
@@ -39,7 +40,7 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
             : result.Evidence;
         if (evidence.Length == 0) return [];
         var ids = evidence.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
-        var chunks = new Dictionary<string, (int PdfPage, string? PrintedPage, string Revision, string Text, string Headings)>(StringComparer.Ordinal);
+        var chunks = new Dictionary<string, (int PdfPage, string? PrintedPage, string Revision, string Text, string[] Headings)>(StringComparer.Ordinal);
         foreach (var line in Encoding.UTF8.GetString(bytes).Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             using var json = JsonDocument.Parse(line.TrimEnd('\r'));
@@ -55,18 +56,24 @@ public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
             if (!chunks.TryAdd(id, (page, printed, root.GetProperty("source_revision_id").GetString() ?? "",
                     root.GetProperty("text").GetString() ?? "",
                     root.TryGetProperty("headings", out var headings) && headings.ValueKind == JsonValueKind.Array
-                        ? string.Join(" · ", headings.EnumerateArray().Select(heading => heading.GetString())) : "")))
+                        ? headings.EnumerateArray().Select(heading => heading.GetString() ?? "").ToArray() : [])))
                 throw new InvalidOperationException("Released evidence ID is duplicated.");
         }
         return evidence.Select(item =>
         {
             if (!chunks.TryGetValue(item.Id, out var chunk))
                 throw new InvalidOperationException("Released evidence is missing from the corpus.");
-            var excerpt = RelevantPassage(plan, chunk.Text, chunk.Headings, query);
-            if (excerpt is null && !Matches(plan, item.Title, query)) return null;
-            return new KnowledgeSearchHit(item.Id, item.Title, chunk.PdfPage, chunk.PrintedPage,
-                item.SourceTitle ?? "", chunk.Revision, localDemo && SupportsLocalDemo ? excerpt : null)
-                { ContextHeading = chunk.Headings };
+            var sections = KnowledgeSectionContent.Split(chunk.Text, chunk.Headings, item.Title);
+            var matched = sections.Select(section => (Section: section,
+                Excerpt: RelevantPassage(plan, section.Text, section.ContextHeading, query)))
+                .Where(value => value.Excerpt is not null || Matches(plan, value.Section.Heading, query))
+                .OrderByDescending(value => value.Section.Heading == item.Title)
+                .FirstOrDefault();
+            if (matched.Section is null) return null;
+            var showText = localDemo && SupportsLocalDemo;
+            return new KnowledgeSearchHit(item.Id, matched.Section.Heading, chunk.PdfPage, chunk.PrintedPage,
+                item.SourceTitle ?? "", chunk.Revision, showText ? matched.Excerpt : null)
+                { ContextHeading = matched.Section.ContextHeading, Summary = showText ? matched.Section.Summary() : null };
         }).OfType<KnowledgeSearchHit>().Take(options.Value.TopK).ToArray();
     }
 

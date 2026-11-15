@@ -35,6 +35,8 @@ internal sealed class CreateBeneficiaryCommandHandler(
         var updated = ApplyRequest(created.Value, request);
         if (updated.IsFailure) return updated.Error;
 
+        var needs = created.Value.SetRequiredCaregiverSkills(request.RequiredCaregiverSkills);
+        if (needs.IsFailure) return needs.Error;
         repository.AddBeneficiary(created.Value);
         await repository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);

@@ -6,19 +6,30 @@ import '../models/payment_result_highlight.dart';
 
 class PaymentResultPresentation {
   const PaymentResultPresentation._();
-  static PaymentResultDetails details(PaymentOutcome state) {
+  static PaymentResultDetails details(PaymentOutcome state,
+      {String? bookingStatus}) {
     return switch (state) {
-      PaymentOutcome.success => const PaymentResultDetails(
+      PaymentOutcome.success => PaymentResultDetails(
           icon: Icons.check_rounded,
           iconColor: AppColors.success,
           iconBackground: AppColors.successLight,
           title: 'Thanh toán thành công',
-          message:
-              'Khoản thanh toán đã được xác nhận. Bạn có thể xem trạng thái mới nhất trong chi tiết lịch hẹn.',
-          label: 'ĐÃ XÁC NHẬN',
+          message: bookingStatus == 'confirmed'
+              ? 'Đã ghi nhận tiền thanh toán. Đang chờ người chăm sóc xác nhận nhận ca; bạn chưa cần thanh toán thêm.'
+              : const {
+                  'caregiver_accepted',
+                  'caregiver_en_route',
+                  'in_progress',
+                  'checkout_pending_review',
+                  'completed',
+                  'crisis'
+                }.contains(bookingStatus)
+                  ? 'Đã ghi nhận tiền thanh toán và người chăm sóc đã nhận ca. Mở chi tiết lịch để xem tiến độ mới nhất.'
+                  : 'Đã ghi nhận tiền thanh toán. Mở chi tiết lịch để kiểm tra người chăm sóc đã nhận ca hay chưa.',
+          label: 'ĐÃ THANH TOÁN',
           labelColor: AppColors.success,
           labelBackground: AppColors.successLight,
-          highlights: [
+          highlights: const [
             PaymentResultHighlight(Icons.verified_user_outlined,
                 'CareSitter đã ghi nhận khoản thanh toán của bạn.'),
             PaymentResultHighlight(Icons.person_search_outlined,

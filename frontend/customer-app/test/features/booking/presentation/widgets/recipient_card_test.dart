@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows the gender and age default avatar when URL is missing',
+  testWidgets(
+      'the default avatar fills the circle when the recipient is selected',
       (tester) async {
     final beneficiary = BeneficiaryModel(
       id: 'relative-female',
@@ -20,17 +21,17 @@ void main() {
       address: '',
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: RecipientCard(
-            beneficiary: beneficiary,
-            isSelected: false,
-            onTap: () {},
+    Widget card({required bool selected}) => MaterialApp(
+          home: Scaffold(
+            body: RecipientCard(
+              beneficiary: beneficiary,
+              isSelected: selected,
+              onTap: () {},
+            ),
           ),
-        ),
-      ),
-    );
+        );
+
+    await tester.pumpWidget(card(selected: false));
 
     expect(find.byType(Image), findsOneWidget);
     final image = tester.widget<Image>(find.byType(Image));
@@ -43,5 +44,10 @@ void main() {
       ),
     );
     expect(find.text('ĐLT'), findsNothing);
+
+    await tester.pumpWidget(card(selected: true));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(Image)), const Size.square(48));
+    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 }

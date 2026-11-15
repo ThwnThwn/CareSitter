@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'booking_submission_controller.dart';
 import 'booking_reconciliation_controller.dart';
 import 'riverpod_booking_submission_actions.dart';
@@ -13,7 +14,7 @@ import 'self_recipient_controller.dart';
 import 'booking_wizard_state.dart';
 import '../../../catalog/presentation/controllers/service_controller.dart';
 import '../../../catalog/presentation/controllers/address_controller.dart';
-import '../../../caregiver/presentation/controllers/caregiver_controller.dart';
+import 'booking_candidate_controller.dart';
 import 'booking_submit_result.dart';
 
 final bookingWizardProvider = AutoDisposeNotifierProvider.family<
@@ -161,11 +162,37 @@ class BookingWizardController
           .valueOrNull
           ?.where((b) => b.id == state.beneficiaryId && !b.isSelf)
           .firstOrNull;
-  CaregiverModel? get _caregiver => ref
-      .read(caregiverStoreProvider)
-      .valueOrNull
-      ?.where((c) => c.id == state.caregiverId)
-      .firstOrNull;
+  CaregiverModel? get _caregiver {
+    if (state.date == null ||
+        state.startMinutes == null ||
+        state.addressId == null ||
+        state.serviceId == null) {
+      return null;
+    }
+    final start = ScheduleRules.at(state.date!, state.startMinutes!);
+    final self =
+        state.forSelf ? ref.read(selfRecipientProvider).valueOrNull : null;
+    final input = (
+      beneficiaryId:
+          self?.kind == SelfRecipientKind.draft ? null : _recipient?.id,
+      addressId: state.addressId!,
+      serviceTypeId: state.serviceId!,
+      start: start,
+      end: start.add(Duration(hours: state.duration)),
+      requiredSkillsJson: jsonEncode(({
+        ..._service?.requiredCaregiverSkills ?? <String>[],
+        ..._recipient?.requiredCaregiverSkills ?? <String>[]
+      }.toList()
+        ..sort()))
+    );
+    return ref
+        .read(bookingCandidateRequestProvider(input))
+        .asData
+        ?.value
+        .where((c) => c.id == state.caregiverId)
+        .firstOrNull;
+  }
+
   bool get canContinue {
     final recipient = state.forSelf
         ? state.selfDateValid &&
@@ -220,6 +247,7 @@ class BookingWizardController
       final outcome = await _submission.submit(snapshot,
           recipient: recipient,
           serviceId: serviceId,
+          serviceRequiredSkills: _service!.requiredCaregiverSkills,
           caregiverId: caregiverId,
           current: () => _current(generation),
           progress: (label) {

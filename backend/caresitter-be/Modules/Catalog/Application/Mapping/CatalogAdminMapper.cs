@@ -8,7 +8,7 @@ internal static class CatalogAdminMapper
 {
     public static AdminServiceResponse ToResponse(ServiceType service) => new(
         service.Id, service.Code, service.Name, service.Description, service.ImageUrl,
-        service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks, [], []);
+        service.DefaultDurationMinutes, service.IsActive, service.AllowAdHocTasks, [], [], service.RequiredCaregiverSkills);
 
     public static PricingRuleResponse ToResponse(PricingRule rule) => new(
         rule.Id, rule.ServiceTypeId, rule.Name, rule.BaseHourlyPrice,

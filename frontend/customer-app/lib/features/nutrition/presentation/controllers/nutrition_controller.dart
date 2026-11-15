@@ -12,6 +12,8 @@ import '../models/nutrition_week_generation_result.dart';
 import 'nutrition_operation_scope.dart';
 import 'nutrition_assessment_poller.dart';
 import 'nutrition_actions_controller.dart';
+import 'nutrition_pantry_controller.dart';
+import '../../domain/pantry_ingredients.dart';
 export 'nutrition_session_controller.dart';
 export '../models/nutrition_flow_model.dart';
 import 'package:caresitter_customer/core/api/api_cancellation.dart';
@@ -23,12 +25,15 @@ import '../../data/repositories/nutrition_repository.dart';
 final nutritionControllerProvider = StateNotifierProvider.autoDispose
     .family<NutritionFlowController, NutritionRequestState, String>((ref, id) {
   ref.watch(nutritionSessionProvider);
+  ref.watch(nutritionPantryProvider(id).notifier);
   final user =
       ref.watch(authStateProvider.select((s) => s.valueOrNull?.userId));
   final cache = ref.watch(nutritionSnapshotProvider(id).notifier);
   return NutritionFlowController(
       ref.read(nutritionRepositoryProvider), id, user,
-      cache: cache);
+      cache: cache,
+      pantry: () =>
+          PantryIngredients.parse(ref.read(nutritionPantryProvider(id))));
 });
 final nutritionFlowProvider =
     Provider.autoDispose.family<NutritionFlow, String>((ref, id) {
@@ -69,12 +74,15 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   int get _generation => _scope.generation;
   final NutritionSnapshotStore _cache;
   final bool _ownsCache;
+  final List<String> Function() _pantry;
   int _dateRequestGeneration = 0;
   DateTime? _automaticRecommendationDate;
-  bool _advancingAutomatically = false;
+  DateTime? _singleDayRequest;
+  String? _confirmedAssessmentId;
   NutritionFlowController(this.repository, this.id, this.user,
-      {NutritionSnapshotStore? cache})
-      : _cache = cache ?? NutritionSnapshotStore(),
+      {NutritionSnapshotStore? cache, List<String> Function()? pantry})
+      : _pantry = pantry ?? (() => const []),
+        _cache = cache ?? NutritionSnapshotStore(),
         _ownsCache = cache == null,
         super(NutritionRequestState(beneficiaryId: id, loading: true)) {
     Future.microtask(() {
@@ -106,11 +114,29 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
 
   void _publish(NutritionFlow value) {
     if (!mounted || !_cache.mounted) return;
+    final healthRevision = value.health?.revision ?? 0;
+    if (healthRevision != state.healthRevision) _confirmedAssessmentId = null;
+    final resource = value.resource;
+    if (resource != null && resource.healthRevision == healthRevision) {
+      // Opening a historical menu must not discard the current assessment.
+      final assessmentId = switch (resource.status) {
+        'confirmed' when resource.result.decision.allows('recommend') =>
+          resource.id,
+        'saved' || 'suggested' => resource.result.assessmentId,
+        _ => null,
+      };
+      if (assessmentId != null && assessmentId.isNotEmpty) {
+        _confirmedAssessmentId = assessmentId;
+      } else if (resource.status == 'needs_information' ||
+          resource.status == 'needs_professional_guidance') {
+        _confirmedAssessmentId = null;
+      }
+    }
     _cache.replace(
         NutritionSnapshot(health: value.health, resource: value.resource));
     state = NutritionRequestState(
         beneficiaryId: id,
-        healthRevision: value.health?.revision ?? 0,
+        healthRevision: healthRevision,
         resourceId: value.resource?.id,
         loading: value.loading,
         restoringPlan: value.restoringPlan,
@@ -124,6 +150,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   }
 
   int get revision => view.health?.revision ?? 0;
+  DateTime? get singleDayRequest => _singleDayRequest;
   void _cancel() {
     _scope.cancel();
     _poller.stop();
@@ -133,6 +160,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
 
   Future<void> load({bool restorePlan = true}) async {
     _automaticRecommendationDate = null;
+    _singleDayRequest = null;
     _cancel();
     final generation = _generation;
     _publish(const NutritionFlow(loading: true));
@@ -209,56 +237,37 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
       }
     }
     _automaticRecommendationDate = plannedDate;
-    await assess();
+    final assessment = assess();
+    final generation = _generation;
+    await assessment;
     if (plannedDate != null) {
-      await _advanceAutomaticRecommendation(_generation);
+      await _advanceAutomaticRecommendation(generation);
     }
   }
 
   Future<void> _advanceAutomaticRecommendation(int generation) async {
-    if (_advancingAutomatically ||
-        !_current(generation) ||
-        _automaticRecommendationDate == null ||
-        view.error != null) {
-      return;
-    }
+    final date = _automaticRecommendationDate;
+    if (!_current(generation) || date == null || view.error != null) return;
     final resource = view.resource;
-    if (resource == null || resource.healthRevision != revision) {
+    if (resource == null ||
+        resource.healthRevision != revision ||
+        NutritionAssessmentRules.pending(resource.status)) {
       return;
     }
-    if (NutritionAssessmentRules.pending(resource.status)) {
-      return;
-    }
-    if (resource.status != 'awaiting_confirmation' ||
-        resource.payload['parserSchemaVersion'] != null ||
-        !resource.result.decision.allows('confirm') ||
-        !view.recommendationsEnabled) {
-      _automaticRecommendationDate = null;
-      return;
-    }
-    _advancingAutomatically = true;
-    final date = _automaticRecommendationDate!;
-    try {
-      await confirm();
-      if (!_current(generation) || view.error != null) {
-        return;
-      }
-      final confirmed = view.resource;
-      if (confirmed?.status != 'confirmed' ||
-          confirmed?.result.decision.allows('recommend') != true) {
-        return;
-      }
+    _automaticRecommendationDate = null;
+    if (!view.recommendationsEnabled) return;
+    if (resource.status == 'confirmed' &&
+        resource.result.decision.allows('recommend')) {
       await recommend(plannedDate: date);
-    } finally {
-      _automaticRecommendationDate = null;
-      _advancingAutomatically = false;
+    } else if (resource.payload['parserSchemaVersion'] == null) {
+      await confirmForDate(date);
     }
   }
 
   Future<void> assess({bool retryFailed = false}) async {
     if (!mounted || !view.canAssess) return;
     if (view.resource?.status == 'stale') {
-      await reassess();
+      await reassess(plannedDate: _automaticRecommendationDate);
       return;
     }
     final retryOf = retryFailed || view.resource?.status == 'failed'
@@ -279,30 +288,58 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
       () => _actions.confirm(view.resource!.id, revision, _token));
   Future<void> recommend({required DateTime plannedDate}) => _withResource(() =>
       _actions.recommend(view.resource!.id, revision, _token,
-          plannedDate: plannedDate));
+          plannedDate: plannedDate, availableIngredients: _pantry()));
 
-  Future<bool> recommendForDateUsingConfirmedHealth(
-      DateTime plannedDate) async {
-    if (!mounted || view.loading || view.restoringPlan || revision == 0) {
-      return false;
+  Future<void> confirmForDate(DateTime plannedDate) async {
+    if (!mounted ||
+        view.loading ||
+        view.dateLoading ||
+        !view.recommendationsEnabled) {
+      return;
     }
-    final current = view.resource;
-    if (current == null || current.healthRevision != revision) return false;
-    final assessmentId = current.status == 'confirmed'
-        ? current.id
-        : current.result.assessmentId;
-    if (assessmentId == null || assessmentId.isEmpty) return false;
-    await _withResource(() => _actions.recommend(
-          assessmentId,
-          revision,
-          _token,
-          plannedDate: plannedDate,
-        ));
-    final result = view.resource;
-    final resultDate = DateTime.tryParse(result?.result.plannedDate ?? '');
-    return view.error == null &&
-        result?.status == 'suggested' &&
-        _sameDate(resultDate, _dateOnly(plannedDate));
+    final assessment = view.resource;
+    if (assessment == null ||
+        assessment.status != 'awaiting_confirmation' ||
+        assessment.healthRevision != revision ||
+        !assessment.result.decision.allows('confirm')) {
+      return;
+    }
+    final generation = _generation;
+    await confirm();
+    if (!_current(generation) || view.error != null) return;
+    final confirmed = view.resource;
+    if (confirmed?.status == 'confirmed' &&
+        confirmed?.result.decision.allows('recommend') == true) {
+      await recommend(plannedDate: plannedDate);
+    }
+  }
+
+  Future<void> suggestForDate(DateTime plannedDate) async {
+    if (!mounted ||
+        view.loading ||
+        view.restoringPlan ||
+        view.dateLoading ||
+        !view.recommendationsEnabled ||
+        revision == 0) {
+      return;
+    }
+    selectDate(plannedDate);
+    _singleDayRequest = _dateOnly(plannedDate);
+    final assessmentId = _confirmedAssessmentId;
+    if (assessmentId == null) {
+      await saveHealthAndAssess(const {}, plannedDate: plannedDate);
+      return;
+    }
+    _cancel();
+    final generation = _generation;
+    final failure = await _withResource(() => _actions.recommend(
+        assessmentId, revision, _token,
+        plannedDate: plannedDate, availableIngredients: _pantry()));
+    if (_current(generation) &&
+        (failure?.stale == true ||
+            (failure == null && view.resource?.status == 'stale'))) {
+      await reassess(plannedDate: plannedDate);
+    }
   }
 
   Future<NutritionWeekGenerationResult> generateWeek(DateTime startDate,
@@ -350,6 +387,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
     _cancel();
     final generation = _generation;
     final healthRevision = revision;
+    final availableIngredients = List<String>.of(_pantry());
     final firstDate = _dateOnly(startDate);
     var created = 0;
     var existing = 0;
@@ -417,7 +455,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
         } else {
           final suggestion = await _actions.recommend(
               assessmentId, healthRevision, _token,
-              plannedDate: date);
+              plannedDate: date, availableIngredients: availableIngredients);
           if (!_current(generation)) break;
           stale = suggestion.status == 'stale' ||
               suggestion.healthRevision != healthRevision;
@@ -517,15 +555,17 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
 
   String _apiDate(DateTime date) => date.toIso8601String().split('T').first;
 
-  Future<void> reassess() async {
+  Future<void> reassess({DateTime? plannedDate}) async {
     if (!mounted || view.loading || view.restoringPlan) return;
+    final singleDay = _singleDayRequest;
     final refresh = load(restorePlan: false);
     final generation = _generation;
     await refresh;
     if (!_current(generation) || view.health == null || view.error != null) {
       return;
     }
-    await assess();
+    _singleDayRequest = singleDay;
+    await saveHealthAndAssess(const {}, plannedDate: plannedDate ?? singleDay);
   }
 
   Future<void> save() =>
@@ -541,6 +581,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   void selectDate(DateTime date) {
     if (!mounted || state.dateLoading) return;
     _automaticRecommendationDate = null;
+    _singleDayRequest = null;
     _setDateState(selectedDate: _dateOnly(date), clearError: true);
   }
 
@@ -556,6 +597,10 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
     if (!mounted || state.dateLoading) return false;
     final requestGeneration = ++_dateRequestGeneration;
     final selectedDate = _dateOnly(date);
+    if (!_sameDate(_automaticRecommendationDate, selectedDate)) {
+      _automaticRecommendationDate = null;
+    }
+    if (!_sameDate(_singleDayRequest, selectedDate)) _singleDayRequest = null;
     _setDateState(selectedDate: selectedDate, loading: true, clearError: true);
     try {
       final currentDate =
@@ -651,6 +696,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
   Future<void> openPlan(String planId) async {
     if (!mounted || view.loading || view.restoringPlan) return;
     _automaticRecommendationDate = null;
+    _singleDayRequest = null;
     // A result from the previous assessment must not replace this saved plan.
     _cancel();
     final generation = _generation;
@@ -688,7 +734,7 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
     }
   }
 
-  Future<void> _withResource(
+  Future<NutritionFailureModel?> _withResource(
           Future<NutritionResourceModel> Function() action) =>
       _run(() async {
         final resource = await action();
@@ -698,8 +744,9 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
             recommendationsEnabled: view.recommendationsEnabled);
       });
 
-  Future<void> _run(Future<NutritionFlow> Function() action) async {
-    if (!mounted || view.loading || revision == 0) return;
+  Future<NutritionFailureModel?> _run(
+      Future<NutritionFlow> Function() action) async {
+    if (!mounted || view.loading || revision == 0) return null;
     final generation = _generation;
     final previous = view;
     _publish(NutritionFlow(
@@ -723,8 +770,10 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
                     : previous.resource,
             error: failure.message,
             recommendationsEnabled: previous.recommendationsEnabled));
+        return failure;
       }
     }
+    return null;
   }
 
   void _schedule(String assessment, int generation) {

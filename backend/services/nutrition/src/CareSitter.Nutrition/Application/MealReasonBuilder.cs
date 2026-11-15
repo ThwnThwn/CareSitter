@@ -13,6 +13,8 @@ internal static class MealReasonBuilder
         var reasons = new List<MealVerifiedReason>();
         foreach (var meal in meals)
         {
+            foreach (var ingredient in MealPantryPolicy.Matches(meal, request.Preferences?.AvailableIngredients))
+                reasons.Add(new(meal.VersionId, "available_ingredient_match", ingredient) { SourceField = "availableIngredients" });
             foreach (var fact in request.Facts.Where(f => f.Subject == "beneficiary" && f.Kind == "food_allergy" &&
                          f.Assertion != "absent" && f.Temporality != "past" && !string.IsNullOrWhiteSpace(f.Label)))
                 reasons.Add(new(meal.VersionId, "declared_allergy_filter", fact.Label) { SourceField = fact.SourceKey });

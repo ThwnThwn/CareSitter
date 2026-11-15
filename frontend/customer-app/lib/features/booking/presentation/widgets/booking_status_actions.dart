@@ -1,4 +1,3 @@
-import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'booking_detail_screen_status_banner.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_completed_actions.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_review_actions.dart';
@@ -65,7 +64,7 @@ class BookingStatusActions extends StatelessWidget {
             ] else if (isWaitingCaregiver) ...[
               const BookingDetailScreenStatusBanner(
                   message:
-                      'Đã thanh toán ký quỹ. Lịch hẹn đang được gửi sang ứng dụng caregiver để người chăm sóc nhận ca.'),
+                      'Đã thanh toán. Hệ thống đang tìm người chăm sóc phù hợp; bạn sẽ nhận thông báo khi có người nhận ca.'),
               const SizedBox(height: AppSpacing.control),
               cancelButton,
             ] else if (status == 'confirmed' ||
@@ -81,16 +80,14 @@ class BookingStatusActions extends StatelessWidget {
                 cancelButton: cancelButton,
               ),
               if (onChat != null) _ChatFloatButton(onChat: onChat!),
-            ]
-            else if (status == 'in_progress') ...[
+            ] else if (status == 'in_progress') ...[
               BookingActiveActions(onTrack: onTrack, onExtend: onExtend),
               if (onChat != null) _ChatFloatButton(onChat: onChat!),
-            ]
-            else if (status == 'checkout_pending_review') ...[
-              BookingCompletedActions(onComplete: onComplete, onDispute: onDispute),
+            ] else if (status == 'checkout_pending_review') ...[
+              BookingCompletedActions(
+                  onComplete: onComplete, onDispute: onDispute),
               if (onChat != null) _ChatFloatButton(onChat: onChat!),
-            ]
-            else if (status == 'completed')
+            ] else if (status == 'completed')
               BookingReviewActions(
                   booking: booking, onReview: onReview, onRebook: onRebook)
             else if (status == 'disputed') ...[
@@ -98,9 +95,9 @@ class BookingStatusActions extends StatelessWidget {
                   message:
                       'Ca đang được đánh dấu có vấn đề. Ghi nhận tài chính sẽ chờ xử lý tranh chấp.'),
             ] else if (status == 'refunded') ...[
-              BookingDetailScreenStatusBanner(
+              const BookingDetailScreenStatusBanner(
                   message:
-                      'Đã hoàn ${formatVnd(booking.totalPrice, suffix: '')}đ vào Ví CareSitter vì chưa tìm được người chăm sóc phù hợp.'),
+                      'Khoản hoàn đã được xác nhận qua phương thức thanh toán ban đầu. Thời gian tiền hiển thị phụ thuộc đơn vị thanh toán.'),
             ],
           ],
         ),
@@ -125,8 +122,8 @@ class _ChatFloatButton extends StatelessWidget {
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
             padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ),

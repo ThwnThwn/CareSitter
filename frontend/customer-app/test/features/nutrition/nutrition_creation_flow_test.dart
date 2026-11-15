@@ -229,6 +229,28 @@ void main() {
     expect(find.text('Lưu thực đơn'), findsOneWidget);
   });
 
+  testWidgets('a stale saved plan does not warn on an empty date',
+      (tester) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final otherDay = DateTime(today.year, today.month,
+        today.day + (today.weekday == DateTime.sunday ? -1 : 1));
+    final repository = NutritionFlowRepository()
+      ..saved = NutritionFlowRepository.resource('saved-plan', 'stale', data: {
+        'isSavedPlan': true,
+        'plannedDate': _apiDate(otherDay),
+      });
+    await _mount(tester, repository, width: 390);
+
+    expect(find.text('Chưa có thực đơn'), findsOneWidget);
+    expect(find.text('Kiểm tra lại hồ sơ'), findsNothing);
+    expect(find.text('Phản hồi món đã ăn'), findsNothing);
+    expect(find.text('Tạo thực đơn cho ngày này'), findsOneWidget);
+
+    await _press(tester, '${otherDay.day}');
+    expect(find.text('Kiểm tra lại hồ sơ'), findsOneWidget);
+    expect(find.text('Phản hồi món đã ăn'), findsOneWidget);
+  });
+
   testWidgets('stale content can be reassessed without editing health data',
       (tester) async {
     final repository = NutritionFlowRepository();
@@ -364,17 +386,50 @@ void main() {
     expect(repository.writes, hasLength(1));
   });
 
-  testWidgets('creation actions stay usable at width 320 with large text',
+  testWidgets('one tap suggests the selected day at width 320 with large text',
       (tester) async {
     final repository = NutritionFlowRepository();
     await _mount(tester, repository, width: 320, textScale: 2);
-    await _selectAnotherDay(tester);
+    final date = await _selectAnotherDay(tester);
     await _press(tester, 'Tạo thực đơn cho ngày này');
-    await _press(tester, 'Tạo thực đơn');
+
+    expect(repository.recommendation?.result.plannedDate, _apiDate(date));
+    expect(find.text('Cập nhật dinh dưỡng'), findsNothing);
     await _press(tester, 'Lưu thực đơn');
 
-    expect(repository.saved, isNotNull);
+    expect(repository.saved?.result.plannedDate, _apiDate(date));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('single-day creation confirms parsed facts for that same day',
+      (tester) async {
+    final repository = NutritionFlowRepository()..parsedAssessment = true;
+    await _mount(tester, repository, width: 390);
+    final date = await _selectAnotherDay(tester);
+    await _press(tester, 'Tạo thực đơn cho ngày này');
+
+    expect(repository.writes.single.route, 'nutrition-assessments');
+    expect(find.text('Cập nhật dinh dưỡng'), findsNothing);
+    await _press(tester, 'Tạo thực đơn');
+
+    expect(repository.recommendation?.result.plannedDate, _apiDate(date));
+    expect(find.byKey(const ValueKey('nutrition-plan-days-3')), findsNothing);
+    expect(find.text('Lưu thực đơn'), findsOneWidget);
+  });
+
+  testWidgets('single-day creation offers the editor when information is missing',
+      (tester) async {
+    final repository = NutritionFlowRepository()
+      ..assessmentStatus = 'needs_information';
+    await _mount(tester, repository, width: 390);
+    await _selectAnotherDay(tester);
+    await _press(tester, 'Tạo thực đơn cho ngày này');
+
+    expect(repository.recommendation, isNull);
+    expect(find.text('Cần bổ sung thông tin'), findsOneWidget);
+    expect(find.text('Cập nhật dinh dưỡng'), findsNothing);
+    await _press(tester, 'Bổ sung hồ sơ');
+    expect(find.text('Cập nhật dinh dưỡng'), findsOneWidget);
   });
 
   testWidgets('plan setup sheet fits width 320 with large text',
@@ -392,21 +447,46 @@ void main() {
   });
 
   testWidgets(
-      'a confirmed health assessment is reused when creating another day',
+      'opening an old plan preserves the current assessment for another day',
       (tester) async {
-    final repository = NutritionFlowRepository();
+    final today = DateUtils.dateOnly(DateTime.now());
+    final start =
+        DateTime(today.year, today.month, today.day - today.weekday + 1);
+    final otherDates = [
+      for (var day = 0; day < 7; day++)
+        if (day != today.weekday - 1)
+          DateTime(start.year, start.month, start.day + day),
+    ];
+    final oldDate = otherDates[0];
+    final selectedDate = otherDates[1];
+    const assessmentId = 'current-assessment';
+    final repository = NutritionFlowRepository()
+      ..saved = NutritionFlowRepository.resource(
+        'current-plan',
+        'saved',
+        decision: 'suggested',
+        data: {
+          'assessmentId': assessmentId,
+          'plannedDate': _apiDate(today),
+        },
+      );
+    repository.savedHistory.add(NutritionFlowRepository.resource(
+      'old-plan',
+      'stale',
+      data: {'isSavedPlan': true, 'plannedDate': _apiDate(oldDate)},
+    ));
     await _mount(tester, repository, width: 390);
-    await _assess(tester);
-    await _press(tester, 'Lưu thực đơn');
-    final originalAssessmentId = repository.saved!.payload['assessmentId'];
 
-    final selectedDate = await _selectAnotherDay(tester);
+    await _press(tester, '${oldDate.day}');
+    expect(find.text('Kiểm tra lại hồ sơ'), findsOneWidget);
+    await _press(tester, '${selectedDate.day}');
     await _press(tester, 'Tạo thực đơn cho ngày này');
 
     expect(find.text('Tạo thực đơn'), findsNothing);
-    expect(repository.writes.last.route, 'meal-recommendations');
-    expect(repository.writes.last.data['assessmentId'], originalAssessmentId);
-    expect(repository.writes.last.data['plannedDate'], _apiDate(selectedDate));
+    final recommendation = repository.writes.single;
+    expect(recommendation.route, 'meal-recommendations');
+    expect(recommendation.data['assessmentId'], assessmentId);
+    expect(recommendation.data['plannedDate'], _apiDate(selectedDate));
     expect(find.text('Lưu thực đơn'), findsOneWidget);
   });
 

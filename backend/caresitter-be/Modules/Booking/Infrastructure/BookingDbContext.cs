@@ -24,6 +24,9 @@ public sealed class BookingDbContext : ModuleDbContext
     public DbSet<CareTimelineEvent> TimelineEvents => Set<CareTimelineEvent>();
     public DbSet<GpsTrack> GpsTracks => Set<GpsTrack>();
     public DbSet<BookingSyncEvent> BookingSyncEvents => Set<BookingSyncEvent>();
+    public DbSet<BookingMealPlan> BookingMealPlans => Set<BookingMealPlan>();
+    public DbSet<BookingMealRecord> BookingMealRecords => Set<BookingMealRecord>();
+    public DbSet<BookingMealCorrection> BookingMealCorrections => Set<BookingMealCorrection>();
     public DbSet<BookingChatConversation> BookingChatConversations => Set<BookingChatConversation>();
     public DbSet<BookingChatEpoch> BookingChatEpochs => Set<BookingChatEpoch>();
     public DbSet<BookingChatMessage> BookingChatMessages => Set<BookingChatMessage>();
@@ -38,6 +41,9 @@ public sealed class BookingDbContext : ModuleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfiguration(new BookingMealPlanConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingMealRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new BookingMealCorrectionConfiguration());
         modelBuilder.ApplyConfiguration(new LiveLocationConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatConversationConfiguration());
         modelBuilder.ApplyConfiguration(new BookingChatEpochConfiguration());

@@ -16,6 +16,7 @@ public sealed record MealRecommendationRequest(long CatalogRevision, Recipe[] Ca
 public sealed record MealPreferences(string MealFormatPreference, string[] PreferredFoods,
     string[] DislikedFoods)
 {
+    public string[] AvailableIngredients { get; init; } = [];
     public static MealPreferences FromEvidence(IReadOnlyDictionary<string, string> evidence) => new(
         evidence.GetValueOrDefault("mealFormatPreference", "no_preference"),
         Split(evidence.GetValueOrDefault("preferredFoods", string.Empty)),

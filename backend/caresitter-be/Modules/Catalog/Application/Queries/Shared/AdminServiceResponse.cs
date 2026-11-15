@@ -12,4 +12,4 @@ public sealed record AdminServiceResponse(
     bool IsActive,
     bool AllowAdHocTasks,
     IReadOnlyList<PricingRuleResponse> PricingRules,
-    IReadOnlyList<ServicePlanResponse> Plans);
+    IReadOnlyList<ServicePlanResponse> Plans, IReadOnlyList<string>? RequiredCaregiverSkills = null);

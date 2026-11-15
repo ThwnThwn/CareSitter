@@ -31,6 +31,8 @@ public sealed class PeopleModule : IModule
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PeopleModule>());
         services.AddValidatorsFromAssemblyContaining<PeopleModule>();
         services.AddScoped<IPeopleRepository, PeopleRepository>();
+        services.AddScoped<IMealTasteFeedbackStore, MealTasteFeedbackStore>();
+        services.AddScoped<IMealTasteFeedbackService, MealTasteFeedbackService>();
         services.AddScoped<IBeneficiaryDeletionEventWriter, BeneficiaryDeletionEventWriter>();
         services.AddModuleOutbox<PeopleDbContext>(configuration, PeopleDbContext.SchemaName,
             string.Equals(configuration["KAFKA_ENABLED"], "true", StringComparison.OrdinalIgnoreCase));

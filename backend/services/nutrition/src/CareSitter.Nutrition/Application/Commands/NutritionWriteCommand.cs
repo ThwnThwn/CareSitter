@@ -10,7 +10,8 @@ public abstract record NutritionWriteCommand(Guid BeneficiaryId, NutritionWriteI
 }
 
 public sealed record NutritionWriteInput(long ExpectedHealthRevision, Guid IdempotencyKey,
-    Guid? AssessmentId = null, DateOnly? PlannedDate = null, Guid? RecipeVersionId = null, string? MealType = null)
+    Guid? AssessmentId = null, DateOnly? PlannedDate = null, Guid? RecipeVersionId = null, string? MealType = null,
+    string[]? AvailableIngredients = null)
 {
     // Earlier gRPC commands included this optional field in the persisted hash
     // even for assessment/recommendation requests that do not use a resource.

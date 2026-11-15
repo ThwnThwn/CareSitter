@@ -324,6 +324,7 @@ export type CatalogService = {
   allowAdHocTasks: boolean;
   pricingRules: PricingRule[];
   plans?: ServicePlan[];
+  requiredCaregiverSkills?: string[];
 };
 
 export type ChecklistTemplate = {

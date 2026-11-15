@@ -75,7 +75,7 @@ public sealed class BeneficiariesController : ControllerBase
             request.MobilityNote, request.GeneralNote, request.HealthHistory,
             request.Allergies, request.ChronicConditions, request.CareInstructions,
             request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
-            request.Medications);
+            request.Medications, request.RequiredCaregiverSkills);
 
     private static UpdateBeneficiaryCommand ToUpdateCommand(
         Guid id, BeneficiaryUpdateRequest request) =>
@@ -84,5 +84,5 @@ public sealed class BeneficiariesController : ControllerBase
             request.MobilityNote, request.GeneralNote, request.HealthHistory,
             request.Allergies, request.ChronicConditions, request.CareInstructions,
             request.CareLevel, request.AvatarUrl, request.EmergencyContacts,
-            request.Medications, request.ProvidedFields);
+            request.Medications, request.ProvidedFields, request.RequiredCaregiverSkills);
 }

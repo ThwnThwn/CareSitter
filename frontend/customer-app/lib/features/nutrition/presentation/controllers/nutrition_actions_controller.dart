@@ -34,9 +34,12 @@ class NutritionActionsController {
       _write('nutrition-assessments/$assessmentId/confirm', revision, token);
   Future<NutritionResourceModel> recommend(
           String assessmentId, int revision, ApiCancellation token,
-          {required DateTime plannedDate}) =>
+          {required DateTime plannedDate,
+          List<String> availableIngredients = const []}) =>
       _write('meal-recommendations', revision, token, {
         'assessmentId': assessmentId,
+        if (availableIngredients.isNotEmpty)
+          'availableIngredients': availableIngredients,
         'plannedDate':
             DateTime(plannedDate.year, plannedDate.month, plannedDate.day)
                 .toIso8601String()

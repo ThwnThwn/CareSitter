@@ -20,7 +20,7 @@ void main() {
   const scenarios = [
     _Scenario('confirmed', 'Chờ ghép chăm sóc viên',
         caregiverId: null, expectWaiting: true, tab: 'Chưa ghép'),
-    _Scenario('confirmed', 'Đã xác nhận'),
+    _Scenario('confirmed', 'Chờ nhận ca'),
     _Scenario('caregiver_accepted', 'Đã nhận ca', caregiverId: null),
     _Scenario('pending_payment', 'Chờ thanh toán'),
     _Scenario('draft', 'Bản nháp'),
@@ -111,10 +111,15 @@ void main() {
           findsNothing,
         );
         expect(
-          find.text('Lịch hẹn đã được xác nhận. Bạn sẽ nhận thông báo khi '
-              'chăm sóc viên cập nhật tiến trình ca.'),
+          find.text('Đã thanh toán và gửi yêu cầu. Chăm sóc viên chưa nhận ca; '
+              'bạn sẽ nhận thông báo khi có phản hồi.'),
           findsOneWidget,
         );
+      }
+      if (scenario.status == 'refunded') {
+        expect(find.textContaining('phương thức thanh toán ban đầu'),
+            findsOneWidget);
+        expect(find.textContaining('Ví CareSitter'), findsNothing);
       }
       expect(tester.takeException(), isNull);
 

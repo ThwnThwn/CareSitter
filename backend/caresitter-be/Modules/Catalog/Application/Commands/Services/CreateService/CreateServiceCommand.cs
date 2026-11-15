@@ -10,4 +10,4 @@ public sealed record CreateServiceCommand(
     string? Description,
     string? ImageUrl,
     int DefaultDurationMinutes,
-    bool IsActive) : IRequest<Result<AdminServiceResponse>>;
+    bool IsActive, IReadOnlyList<string>? RequiredCaregiverSkills = null) : IRequest<Result<AdminServiceResponse>>;

@@ -81,10 +81,12 @@ class _PaymentResultScreenState extends ConsumerState<PaymentResultScreen>
               child: PaymentResultPaymentResultContent(
                 state: state,
                 refreshing: flow.refreshing,
+                bookingStatus: flow.bookingStatus,
                 bookingId: widget.bookingId,
                 onOpenBooking: widget.bookingId == null
                     ? null
-                    : () => context.go(AppRoutes.bookingDetail(widget.bookingId!)),
+                    : () =>
+                        context.go(AppRoutes.bookingDetail(widget.bookingId!)),
                 onOpenBookings: () => context.go(AppRoutes.bookings),
                 onRetry: flow.refreshing
                     ? null

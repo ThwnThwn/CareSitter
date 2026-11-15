@@ -12,4 +12,4 @@ public sealed record ServiceCatalogResponse(
     bool AllowAdHocTasks,
     long BaseHourlyPrice,
     decimal PlatformFeePercent,
-    IReadOnlyList<ServicePlanResponse> Plans);
+    IReadOnlyList<ServicePlanResponse> Plans, IReadOnlyList<string>? RequiredCaregiverSkills = null);

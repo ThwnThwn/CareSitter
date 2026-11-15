@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/nutrition/data/models/nutrition_resource_model.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/models/nutrition_flow_model.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/widgets/nutrition_menu_view.dart';
@@ -110,34 +111,54 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('missing-plan notice fits a narrow screen with larger text',
+  testWidgets('filled create button aligns to the right at narrow width',
       (tester) async {
     tester.view.physicalSize = const Size(320, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MediaQuery(
-      data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
-      child: MaterialApp(
-        home: Scaffold(
-          body: NutritionMenuView(
-            beneficiaryName: 'Trần Thị Loan',
-            flow: const NutritionFlow(),
-            selectedDate: DateTime(2026, 10, 23),
-            hasPlanForSelectedDate: false,
-            result: const SizedBox.shrink(),
-            onCreatePlan: () {},
-          ),
+    var createRequests = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.lightTheme,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: const TextScaler.linear(1.5)),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: NutritionMenuView(
+          beneficiaryName: 'Trần Thị Loan',
+          flow: const NutritionFlow(recommendationsEnabled: true),
+          selectedDate: DateTime(2026, 10, 23),
+          hasPlanForSelectedDate: false,
+          result: const SizedBox.shrink(),
+          onCreatePlan: () => createRequests++,
         ),
       ),
     ));
     await tester.pump(const Duration(milliseconds: 200));
 
-    final notice = find.text('Chưa có thực đơn cho ngày 23/10/2026');
-    await tester.scrollUntilVisible(notice, 120);
-    expect(notice, findsOneWidget);
+    final label = find.text('Tạo thực đơn cho ngày này');
+    final button = find.ancestor(
+      of: label,
+      matching: find.bySubtype<FilledButton>(),
+    );
+    await tester.scrollUntilVisible(button, 120);
+    await tester.pumpAndSettle();
+    expect(button, findsOneWidget);
+    expect(tester.getRect(button).right,
+        closeTo(320 - AppSpacing.section - AppSpacing.md, 1));
+    await tester.tap(label);
+    expect(createRequests, 1);
     expect(tester.takeException(), isNull);
+
+    tester.view.physicalSize = const Size(520, 844);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(button);
+    final rect = tester.getRect(button);
+    expect(rect.right, closeTo(520 - AppSpacing.section - AppSpacing.md, 1));
+    expect(rect.center.dx, greaterThan(260));
   });
 
   testWidgets('loading a new date hides the previously opened menu',

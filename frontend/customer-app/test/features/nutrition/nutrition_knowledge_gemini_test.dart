@@ -118,7 +118,7 @@ void main() {
             'Câu trả lời được tổng hợp từ tài liệu. [1][5]\n\nPhần giải thích bổ sung có nguồn. [3]'),
         findsOneWidget);
     expect(find.text('[5] Mục nguồn 5'), findsOneWidget);
-    expect(find.text('Nội dung liên quan'), findsNWidgets(5));
+    expect(find.text('Đoạn khớp câu hỏi'), findsNWidgets(5));
     expect(find.text('Nội dung liên quan của nguồn 1.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

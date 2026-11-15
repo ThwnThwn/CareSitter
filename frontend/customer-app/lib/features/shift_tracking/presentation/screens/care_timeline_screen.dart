@@ -1,9 +1,14 @@
+import '../controllers/booking_timeline_controller.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import '../../data/models/booking_timeline_event_model.dart';
+import 'package:caresitter_customer/core/utils/date_formatter.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_item_is_last_event_content.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_item_event_is_last_fields.dart';
 import 'package:caresitter_customer/features/shift_tracking/presentation/widgets/care_timeline_timeline_event.dart';
-import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
+import '../widgets/care_timeline_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/navigation_helpers.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -22,7 +27,27 @@ class CareTimelineScreen extends ConsumerWidget {
           body: Center(child: Text('Không tìm thấy booking')));
     }
     final bk = matches.first;
-    final events = _buildEvents(bk);
+    final timeline = ref.watch(bookingTimelineProvider(bookingId));
+    final events = timeline.when(
+        data: _buildEvents,
+        loading: () => [
+              const CareTimelineTimelineEvent(
+                  '',
+                  'Đang tải nhật ký',
+                  'Đang lấy các ghi nhận thực tế của ca.',
+                  Icons.history,
+                  AppColors.textSecondary,
+                  false)
+            ],
+        error: (_, __) => [
+              const CareTimelineTimelineEvent(
+                  '',
+                  'Chưa tải được nhật ký',
+                  'Vui lòng kéo xuống để thử lại.',
+                  Icons.info_outline,
+                  AppColors.warning,
+                  false)
+            ]);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -30,126 +55,68 @@ class CareTimelineScreen extends ConsumerWidget {
         title: const Text('Nhật ký hỗ trợ'),
         leading:
             AppBackButton(fallbackRoute: AppRoutes.bookingDetail(bookingId)),
+        actions: [
+          IconButton(
+            tooltip: 'Bữa ăn trong ca',
+            onPressed: () => context.push(AppRoutes.bookingMeals(bookingId)),
+            icon: const Icon(Icons.restaurant_menu_rounded),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // Summary bar
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            color: AppColors.cardBackground,
-            child: Row(children: [
-              CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppColors.primaryContainer,
-                  child: Text(bk.caregiverAvatar ?? bk.caregiverInitials,
-                      style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: AppFontSizes.s11,
-                          fontWeight: FontWeight.w800))),
-              const SizedBox(width: AppSpacing.compact),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(bk.caregiverName ?? 'Người chăm sóc',
-                        style: const TextStyle(
-                            fontSize: AppFontSizes.s14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary)),
-                    Text('${bk.date} · ${bk.time}',
-                        style: const TextStyle(
-                            fontSize: AppFontSizes.s12,
-                            color: AppColors.textSecondary)),
-                  ])),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.control, vertical: 5),
-                decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.compact)),
-                child: Text(bk.duration,
-                    style: const TextStyle(
-                        fontSize: AppFontSizes.s12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary)),
-              ),
-            ]),
-          ),
+          CareTimelineSummary(
+              avatar: bk.caregiverAvatar ?? bk.caregiverInitials,
+              name: bk.caregiverName ?? 'Người chăm sóc',
+              schedule: '${bk.date} · ${bk.time}',
+              duration: bk.duration),
           const Divider(height: 1),
 
           // Timeline
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: events.length,
-              itemBuilder: (_, i) =>
-                  _buildTimelineItem(events[i], i == events.length - 1),
-            ),
+            child: RefreshIndicator(
+                onRefresh: () => ref
+                    .refresh(bookingTimelineProvider(bookingId).future)
+                    .then<void>((_) {}),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: events.length,
+                  itemBuilder: (_, i) =>
+                      _buildTimelineItem(events[i], i == events.length - 1),
+                )),
           ),
         ],
       ),
     );
   }
 
-  List<CareTimelineTimelineEvent> _buildEvents(BookingModel bk) {
-    if (bk.tasks.isEmpty) {
+  List<CareTimelineTimelineEvent> _buildEvents(
+      List<BookingTimelineEventModel> events) {
+    if (events.isEmpty) {
       return [
-        CareTimelineTimelineEvent(
-          'Bắt đầu',
-          'Check-in ca chăm sóc',
-          bk.actualStart != null
-              ? 'Caregiver đã có mặt và bắt đầu ca trực.'
-              : 'Đang chờ caregiver check-in tại địa chỉ.',
-          Icons.login_outlined,
-          bk.actualStart != null ? AppColors.success : AppColors.warning,
-          bk.actualStart != null,
-        ),
-        CareTimelineTimelineEvent(
-          'Ca trực',
-          'Thực hiện các hoạt động chăm sóc',
-          bk.status == 'in_progress' || bk.status == 'completed'
-              ? 'Caregiver đang thực hiện nhiệm vụ chăm sóc.'
-              : 'Chưa bắt đầu.',
-          Icons.task_alt,
-          bk.status == 'in_progress' || bk.status == 'completed'
-              ? AppColors.success
-              : AppColors.warning,
-          bk.status == 'in_progress' || bk.status == 'completed',
-        ),
-        CareTimelineTimelineEvent(
-          'Kết thúc',
-          'Check-out & Báo cáo',
-          bk.isCompleted
-              ? 'Ca chăm sóc đã hoàn tất thành công.'
-              : 'Dự kiến khi hết thời gian ca trực.',
-          Icons.logout_outlined,
-          bk.isCompleted ? AppColors.success : AppColors.warning,
-          bk.isCompleted,
-        ),
+        const CareTimelineTimelineEvent(
+            '',
+            'Chưa có ghi nhận',
+            'Các cập nhật sẽ xuất hiện khi ca được thực hiện.',
+            Icons.history,
+            AppColors.textSecondary,
+            false)
       ];
     }
-
-    return bk.tasks.asMap().entries.map((entry) {
-      final task = entry.value;
-      final isFirst = entry.key == 0;
-      final isLast = entry.key == bk.tasks.length - 1;
-      final title = task.title as String? ?? 'Nhiệm vụ ${entry.key + 1}';
-      final isCompleted = (task.isCompleted as bool?) ?? false;
-      return CareTimelineTimelineEvent(
-        'B${entry.key + 1}',
-        title,
-        isCompleted
-            ? 'Caregiver đã cập nhật hoàn thành nhiệm vụ.'
-            : 'Đang chờ caregiver cập nhật trong ca chăm sóc.',
-        isFirst
-            ? Icons.login_outlined
-            : isLast
-                ? Icons.logout_outlined
-                : Icons.task_alt,
-        isCompleted ? AppColors.success : AppColors.warning,
-        isCompleted,
-      );
-    }).toList(growable: false);
+    return events
+        .map((event) => CareTimelineTimelineEvent(
+            formatClock(event.recordedAt.toUtc().add(const Duration(hours: 7))),
+            event.title ?? 'Cập nhật ca chăm sóc',
+            event.note ?? '',
+            event.eventType == 'SOS' ? Icons.warning_amber : Icons.task_alt,
+            event.eventType == 'SOS'
+                ? AppColors.error
+                : event.eventType == 'CHECKIN_OUTSIDE_GEOFENCE'
+                    ? AppColors.warning
+                    : AppColors.success,
+            true))
+        .toList(growable: false);
   }
 
   Widget _buildTimelineItem(CareTimelineTimelineEvent event, bool isLast) {

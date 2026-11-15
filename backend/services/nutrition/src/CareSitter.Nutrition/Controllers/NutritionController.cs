@@ -47,7 +47,7 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     private static NutritionWriteInput Input(NutritionWriteRequest r) =>
-        new(r.ExpectedHealthRevision, r.IdempotencyKey, r.AssessmentId, r.PlannedDate, r.RecipeVersionId, r.MealType);
+        new(r.ExpectedHealthRevision, r.IdempotencyKey, r.AssessmentId, r.PlannedDate, r.RecipeVersionId, r.MealType, r.AvailableIngredients);
     private IActionResult Present(Result<ResourceResponse> result, bool queued = false) => result.IsFailure ? Failure(result.Error) :
         queued ? Accepted($"/api/v1/beneficiaries/{result.Value.BeneficiaryId}/nutrition-assessments/{result.Value.Id}", result.Value) : Ok(result.Value);
     private IActionResult Failure(Error error) => StatusCode(error.Type switch

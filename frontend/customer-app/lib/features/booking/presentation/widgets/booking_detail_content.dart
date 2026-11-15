@@ -18,11 +18,13 @@ class BookingDetailContent extends StatelessWidget {
       required this.statusConfig,
       required this.onRefresh,
       required this.onChat,
+      this.onMeals,
       required this.actions});
   final BookingModel booking;
   final BookingStatusPresentation statusConfig;
   final Future<void> Function() onRefresh;
   final VoidCallback onChat;
+  final VoidCallback? onMeals;
   final Widget actions;
 
   @override
@@ -68,6 +70,14 @@ class BookingDetailContent extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   BookingAppointmentSummary(booking: booking),
                   const SizedBox(height: AppSpacing.compact),
+                  if (onMeals != null) ...[
+                    OutlinedButton.icon(
+                      onPressed: onMeals,
+                      icon: const Icon(Icons.restaurant_menu_rounded),
+                      label: const Text('Bữa ăn trong ca'),
+                    ),
+                    const SizedBox(height: AppSpacing.compact),
+                  ],
                   BookingPaymentSummary(booking: booking),
                   if (booking.presentationStatusAt(DateTime.now()) ==
                       'completed')

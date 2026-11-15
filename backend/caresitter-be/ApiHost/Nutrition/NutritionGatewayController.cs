@@ -60,6 +60,8 @@ public sealed class NutritionGatewayController(INutritionGateway gateway) : Cont
         if (request.PlannedDate.HasValue) result.PlannedDate = request.PlannedDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         if (request.RecipeVersionId.HasValue) result.RecipeVersionId = request.RecipeVersionId.Value.ToString();
         if (request.MealType is not null) result.MealType = request.MealType;
+        if (request.AvailableIngredients is not null)
+            result.AvailableIngredients.AddRange(request.AvailableIngredients.Select(value => value ?? string.Empty));
         return result;
     }
 

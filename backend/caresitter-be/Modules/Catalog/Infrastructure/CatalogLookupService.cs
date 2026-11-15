@@ -5,6 +5,10 @@ namespace CareSitter.Modules.Catalog.Infrastructure;
 
 internal sealed class CatalogLookupService(CatalogDbContext db) : ICatalogLookupService
 {
+
+    public async Task<IReadOnlyList<string>> GetRequiredCaregiverSkillsAsync(Guid serviceTypeId, CancellationToken ct = default) =>
+        await db.ServiceTypes.AsNoTracking().Where(x => x.Id == serviceTypeId && x.IsActive).Select(x => x.RequiredCaregiverSkills).SingleOrDefaultAsync(ct) ?? [];
+
     public Task<bool> AddressBelongsToAsync(Guid addressId, Guid customerId,
         CancellationToken ct = default) => db.Addresses.AsNoTracking()
         .AnyAsync(x => x.Id == addressId && x.OwnerUserId == customerId, ct);

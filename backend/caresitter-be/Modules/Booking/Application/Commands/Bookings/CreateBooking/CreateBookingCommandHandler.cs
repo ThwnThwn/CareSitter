@@ -74,13 +74,16 @@ internal sealed class CreateBookingCommandHandler(
                 return Error.Validation("booking.caregiver_selection_flow",
                     "Vui long tao booking truoc, sau do chon caregiver qua PUT /api/v1/bookings/{id}/caregiver.");
 
+            var needs = await BookingCareRequirements.ResolveAsync(customerId, request.BeneficiaryId,
+                request.ServiceTypeId, request.RequiredSkills, people, catalog, operationCt);
+            if (needs.IsFailure) return needs.Error;
             var paymentDeadlineMinutes = Math.Clamp(
                 paymentOptions.Value.BookingPaymentDeadlineMinutes, 5, 180);
             var created = Domain.Booking.Create(customerId, request.BeneficiaryId, request.AddressId,
                 request.ServiceTypeId, request.ScheduledStart, request.ScheduledEnd,
                 paymentDeadline: clock.UtcNow.AddMinutes(paymentDeadlineMinutes),
-                requiredSkills: request.RequiredSkills is { Count: > 0 }
-                    ? JsonSerializer.Serialize(request.RequiredSkills)
+                requiredSkills: needs.Value.Length > 0
+                    ? JsonSerializer.Serialize(needs.Value)
                     : null);
             if (created.IsFailure) return created.Error;
 

@@ -10,6 +10,39 @@ import 'package:caresitter_customer/features/booking/presentation/controllers/bo
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_submit_result.dart';
 
 void main() {
+  test(
+      'service and profile needs survive booking creation and changing needs changes its retry key',
+      () async {
+    final actions = _Actions()..unknown = true;
+    final controller = BookingSubmissionController(actions);
+    final recipientWithNeeds = BeneficiaryModel.fromBackend({
+      'id': 'recipient',
+      'fullName': 'Người nhận',
+      'requiredCaregiverSkills': ['ho tro di chuyen']
+    });
+    Future<void> submit(List<String> serviceNeeds) async {
+      await controller.submit(
+          BookingWizardState(
+              step: 5,
+              addressId: 'address',
+              date: DateTime(2026, 11, 16),
+              startMinutes: 420),
+          recipient: recipientWithNeeds,
+          serviceId: 'service',
+          serviceRequiredSkills: serviceNeeds,
+          caregiverId: null,
+          current: () => true,
+          progress: (_) {});
+    }
+
+    await submit(['chuan bi bua an']);
+    final first = actions.draft!;
+    expect(first.requiredSkills, ['chuan bi bua an', 'ho tro di chuyen']);
+    await submit(['chuan bi bua an']);
+    expect(actions.draft!.idempotencyKey, first.idempotencyKey);
+    await submit(['ho tro ve sinh ca nhan']);
+    expect(actions.draft!.idempotencyKey, isNot(first.idempotencyKey));
+  });
   final recipient = BeneficiaryModel.fromBackend(
       {'id': 'recipient', 'fullName': 'Người nhận', 'isSelf': true});
   BookingWizardState snapshot({bool forSelf = false}) => BookingWizardState(

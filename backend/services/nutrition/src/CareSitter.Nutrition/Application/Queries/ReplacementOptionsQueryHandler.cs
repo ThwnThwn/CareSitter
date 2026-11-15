@@ -45,7 +45,7 @@ internal sealed class ReplacementOptionsQueryHandler(IPeopleHealthClient people,
                 !meal.Meals.Any(m => m.VersionId == r.VersionId) &&
                 MealConstraintPolicy.Matches(meal.Meals.Select(m => m.MealType == request.MealType ? r : m).ToArray(), analyzed.Facts, rules, dietaryPattern));
             return MealConstraintPolicy.OrderForGoal(candidates, nutritionGoal,
-                MealPreferences.FromEvidence(health.Evidence)).Take(20).ToArray();
+                MealPreferences.FromEvidence(health.Evidence) with { AvailableIngredients = meal.AvailableIngredients }).Take(20).ToArray();
         }, ct);
         var current = await people.ReadAsync(user.UserId.Value, request.BeneficiaryId, ct);
         if (current is null) return NutritionAccessRules.Missing();

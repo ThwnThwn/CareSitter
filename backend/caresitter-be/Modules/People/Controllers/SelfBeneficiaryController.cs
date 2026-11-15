@@ -20,7 +20,7 @@ public sealed class SelfBeneficiaryController(IMediator mediator) : ControllerBa
         var result = await mediator.Send(new CreateSelfBeneficiaryCommand(request.FullName,
             request.DateOfBirth, request.Gender, request.Phone, request.AvatarUrl,
             request.DefaultAddressId, request.CareLevel, request.GeneralNote,
-            request.CareInstructions, request.EmergencyContacts), ct);
+            request.CareInstructions, request.EmergencyContacts, request.RequiredCaregiverSkills), ct);
         return result.ToActionResult(this, value => value.Created
             ? Created($"/api/v1/beneficiaries/{value.Beneficiary.Id}", value.Beneficiary)
             : Ok(value.Beneficiary));

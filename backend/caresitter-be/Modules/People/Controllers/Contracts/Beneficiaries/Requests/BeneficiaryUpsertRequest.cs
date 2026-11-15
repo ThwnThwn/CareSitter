@@ -11,4 +11,4 @@ public sealed record BeneficiaryUpsertRequest(string FullName, DateOnly? DateOfB
     string? MobilityNote, string? GeneralNote, JsonElement? HealthHistory,
     JsonElement? Allergies, JsonElement? ChronicConditions, string? CareInstructions,
     string? CareLevel, string? AvatarUrl, JsonElement? EmergencyContacts,
-    JsonElement? Medications);
+    JsonElement? Medications, IReadOnlyList<string>? RequiredCaregiverSkills = null);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:caresitter_customer/features/booking/data/models/booking_payment_summary_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,6 +31,23 @@ class FakePayments extends BookingRepository {
   Completer<PaymentIntentModel>? pending;
   BookingModel current = booking();
   String intentStatus = 'PENDING';
+  @override
+  Future<BookingPaymentSummaryModel> getPaymentSummary(String id) async =>
+      BookingPaymentSummaryModel(
+          bookingId: id,
+          amountDue: 75000,
+          canPay: true,
+          canCancel: true,
+          refundIfCancelledNow: 0,
+          paymentExplanation: 'Thanh toán số tiền sau ưu đãi.',
+          settlementExplanation:
+              'Tiền được giữ đến khi ca hoàn tất và hết thời hạn phản ánh.',
+          matchingExplanation: 'Không ghép được người sẽ xử lý hoàn tiền.',
+          cancellationExplanation:
+              'Điều kiện hủy được kiểm tra trước khi xác nhận.',
+          refundAfterPaymentIfCancelledNow: 75000,
+          afterPaymentCancellationExplanation:
+              'Khoản hoàn sau thanh toán được kiểm tra lại lúc hủy.');
   @override
   Future<List<PaymentProviderModel>> getPaymentProviders() async {
     providerLoads++;
@@ -224,6 +242,19 @@ void main() {
         find.byType(SingleChildScrollView), const Offset(0, -400));
     await tester.pumpAndSettle();
     expect(find.text('Tiếp tục thanh toán'), findsOneWidget);
+  });
+  testWidgets(
+      'checkout exposes after-payment refund before paying and details open inline',
+      (tester) async {
+    await pump(tester, PaymentCheckoutSheet(booking: booking()));
+    expect(find.textContaining('dự kiến hoàn 75.000'), findsOneWidget);
+    expect(find.text('Điều kiện hủy được kiểm tra trước khi xác nhận.'),
+        findsNothing);
+    expect(find.textContaining('Tiền được giữ đến'), findsNothing);
+    await tester.tap(find.text('Chi tiết giữ tiền và hoàn tiền'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Tiền được giữ đến'), findsOneWidget);
+    expect(repository.creates, 0);
   });
 }
 

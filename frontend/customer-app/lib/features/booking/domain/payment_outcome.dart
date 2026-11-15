@@ -19,6 +19,11 @@ PaymentOutcome paymentOutcome({String? bookingStatus, String? intentStatus}) {
       .contains(bookingStatus)) {
     return PaymentOutcome.review;
   }
+  // Booking đang đối soát có thể chưa nhận callback của giao dịch đã hết hạn ở cổng.
+  // Trạng thái cũ của intent không được thúc giục người dùng thanh toán lại.
+  if (bookingStatus == 'payment_reconciliation_pending') {
+    return PaymentOutcome.syncing;
+  }
   if (const {'FAILED', 'EXPIRED', 'CANCELLED', 'SUPERSEDED'}
       .contains(intentStatus)) {
     return PaymentOutcome.failure;

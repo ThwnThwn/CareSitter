@@ -63,6 +63,7 @@ message CommandRequest {
   optional string planned_date = 7;
   optional string recipe_version_id = 8;
   optional string meal_type = 9;
+  repeated string available_ingredients = 10;
 }
 
 message ResourceRequest {
@@ -118,6 +119,7 @@ message KnowledgeHit {
   string source_title = 5;
   string source_revision_id = 6;
   optional string excerpt = 7;
+  optional string summary = 8;
 }
 message KnowledgeSearchResponse {
   string query = 1;

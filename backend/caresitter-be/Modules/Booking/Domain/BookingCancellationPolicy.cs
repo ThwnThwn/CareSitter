@@ -12,17 +12,25 @@ public static class BookingCancellationPolicy
 {
     public static Result<BookingCancellationDecision> Evaluate(
         Booking booking,
-        DateTimeOffset cancelledAt)
+        DateTimeOffset cancelledAt) => EvaluateCore(booking, cancelledAt, booking.Status);
+
+    public static Result<BookingCancellationDecision> PreviewAfterPayment(
+        Booking booking, DateTimeOffset cancelledAt) =>
+        EvaluateCore(booking, cancelledAt, booking.Status == BookingStatus.PendingPayment
+            ? BookingStatus.Confirmed : booking.Status);
+
+    private static Result<BookingCancellationDecision> EvaluateCore(
+        Booking booking, DateTimeOffset cancelledAt, BookingStatus status)
     {
-        if (booking.Status is BookingStatus.InProgress or
+        if (status is BookingStatus.InProgress or
             BookingStatus.CheckoutPendingReview or BookingStatus.Completed or
             BookingStatus.Crisis or BookingStatus.Disputed)
             return RequiresDispute();
 
-        var noServiceCanBeDelivered = booking.Status == BookingStatus.MatchingFailed ||
-            (booking.Status == BookingStatus.Confirmed && booking.CaregiverId is null);
+        var noServiceCanBeDelivered = status == BookingStatus.MatchingFailed ||
+            (status == BookingStatus.Confirmed && booking.CaregiverId is null);
         var beforeStart = cancelledAt < booking.ScheduledStart;
-        var paidBooking = booking.Status is BookingStatus.Confirmed or
+        var paidBooking = status is BookingStatus.Confirmed or
             BookingStatus.MatchingFailed or BookingStatus.CaregiverAccepted or
             BookingStatus.CaregiverEnRoute;
 

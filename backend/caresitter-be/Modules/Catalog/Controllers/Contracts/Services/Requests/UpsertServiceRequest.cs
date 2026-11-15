@@ -8,4 +8,4 @@ public sealed record UpsertServiceRequest(
     string? Description,
     string? ImageUrl,
     int DefaultDurationMinutes = 60,
-    bool IsActive = true);
+    bool IsActive = true, IReadOnlyList<string>? RequiredCaregiverSkills = null);

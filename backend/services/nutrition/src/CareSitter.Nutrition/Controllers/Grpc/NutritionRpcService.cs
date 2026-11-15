@@ -53,7 +53,7 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             {
                 ChunkId = hit.ChunkId, Heading = hit.Heading, PdfPage = hit.PdfPage,
                 PrintedPage = hit.PrintedPage ?? "", SourceTitle = hit.SourceTitle,
-                SourceRevisionId = hit.SourceRevisionId, Excerpt = hit.Excerpt ?? ""
+                SourceRevisionId = hit.SourceRevisionId, Excerpt = hit.Excerpt ?? "", Summary = hit.Summary ?? ""
             }));
             return response;
         }
@@ -86,11 +86,13 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             plannedDate = date;
         }
         if (request.HasMealType && request.MealType.Length > 32) throw InvalidRequest();
+        if (!MealPantryPolicy.Valid(request.AvailableIngredients)) throw InvalidRequest();
         var beneficiary = Id(request.BeneficiaryId);
         var resource = OptionalId(request.HasResourceId, request.ResourceId);
         var input = new NutritionWriteInput(request.ExpectedHealthRevision, Id(request.IdempotencyKey),
             OptionalId(request.HasAssessmentId, request.AssessmentId), plannedDate,
-            OptionalId(request.HasRecipeVersionId, request.RecipeVersionId), request.HasMealType ? request.MealType : null)
+            OptionalId(request.HasRecipeVersionId, request.RecipeVersionId), request.HasMealType ? request.MealType : null,
+            request.AvailableIngredients.ToArray())
         { FingerprintResourceId = resource };
         NutritionWriteCommand command = request.Operation switch
         {

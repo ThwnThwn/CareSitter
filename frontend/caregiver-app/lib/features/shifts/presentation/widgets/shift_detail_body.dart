@@ -13,6 +13,7 @@ import 'shift_safety_card.dart';
 import 'shift_detail_offer_actions.dart';
 import 'shift_detail_en_route_banner.dart';
 import 'shift_detail_completed_card.dart';
+import 'shift_meal_link.dart';
 import 'shift_section_heading.dart';
 
 class ShiftDetailBody extends StatelessWidget {
@@ -49,6 +50,7 @@ class ShiftDetailBody extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         ShiftDetailLocationCard(booking: booking),
         const SizedBox(height: AppSpacing.md),
+        ShiftMealLink(shift: booking),
         const ShiftSectionHeading(title: 'Công việc cần làm'),
         const SizedBox(height: AppSpacing.sm),
         ShiftDetailChecklistCard(

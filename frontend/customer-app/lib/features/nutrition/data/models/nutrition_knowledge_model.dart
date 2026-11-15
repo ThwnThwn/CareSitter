@@ -9,6 +9,7 @@ class NutritionKnowledgeHitModel {
     required this.sourceTitle,
     required this.sourceRevisionId,
     this.excerpt,
+    this.summary,
   });
 
   final String chunkId;
@@ -18,6 +19,7 @@ class NutritionKnowledgeHitModel {
   final String sourceTitle;
   final String sourceRevisionId;
   final String? excerpt;
+  final String? summary;
 
   factory NutritionKnowledgeHitModel.fromJson(Map<String, dynamic> json) =>
       NutritionKnowledgeHitModel(
@@ -28,6 +30,7 @@ class NutritionKnowledgeHitModel {
         sourceTitle: json['sourceTitle'] as String? ?? '',
         sourceRevisionId: json['sourceRevisionId'] as String? ?? '',
         excerpt: json['excerpt'] as String?,
+        summary: json['summary'] as String?,
       );
 }
 

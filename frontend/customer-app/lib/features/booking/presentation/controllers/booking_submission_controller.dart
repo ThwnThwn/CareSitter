@@ -20,6 +20,7 @@ class BookingSubmissionController {
   Future<BookingSubmissionOutcome> submit(BookingWizardState snapshot,
       {required BeneficiaryModel recipient,
       required String serviceId,
+      List<String> serviceRequiredSkills = const [],
       required String? caregiverId,
       required bool Function() current,
       required void Function(String) progress}) async {
@@ -42,17 +43,24 @@ class BookingSubmissionController {
       if (!current()) return _outcome(const BookingSubmitIgnored());
       progress('Đang đặt lịch…');
       final start = ScheduleRules.at(snapshot.date!, snapshot.startMinutes!);
+      final requiredSkills = {
+        ...serviceRequiredSkills,
+        ...recipient.requiredCaregiverSkills
+      }.toList()
+        ..sort();
       final key = _keys.putIfAbsent(
           jsonEncode([
             recipient.id,
             serviceId,
             snapshot.addressId,
             start.toUtc().toIso8601String(),
-            snapshot.duration
+            snapshot.duration,
+            requiredSkills
           ]),
           () => const Uuid().v4());
       draft = BookingDraft(
           idempotencyKey: key,
+          requiredSkills: requiredSkills,
           beneficiaryId: recipient.id,
           serviceTypeId: serviceId,
           caregiverId: caregiverId,
@@ -62,8 +70,8 @@ class BookingSubmissionController {
           scheduledEnd: start.add(Duration(hours: snapshot.duration)));
       final booking = await actions.createBooking(draft);
       return _outcome(current()
-          ? BookingSubmitted(
-              booking.id, 'Đã tạo booking • đang chờ caregiver nhận ca')
+          ? BookingSubmitted(booking.id,
+              'Đã tạo lịch. Vui lòng thanh toán để gửi yêu cầu nhận ca.')
           : const BookingSubmitIgnored());
     } on BookingCreatedException catch (error) {
       return _outcome(current()

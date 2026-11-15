@@ -45,6 +45,15 @@ public sealed class Beneficiary : AggregateRoot
     public string? ChronicConditions { get; private set; }
     public string? CareInstructions { get; private set; }
     public string? CareLevel { get; private set; }
+    public string[] RequiredCaregiverSkills { get; private set; } = [];
+    public Result SetRequiredCaregiverSkills(IEnumerable<string>? skills)
+    {
+        var normalized = CareSitter.SharedKernel.ValueObjects.CareSkillSet.Normalize(skills);
+        if (normalized.IsFailure) return normalized.Error;
+        RequiredCaregiverSkills = normalized.Value;
+        return Result.Success();
+    }
+
     public string? AvatarUrl { get; private set; }
 
     /// <summary>jsonb: gom emergency_contacts.</summary>

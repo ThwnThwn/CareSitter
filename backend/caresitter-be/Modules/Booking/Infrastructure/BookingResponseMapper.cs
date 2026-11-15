@@ -83,7 +83,8 @@ public sealed class BookingResponseMapper(
             candidate.Score,
             candidate.DistanceMeters,
             travelTimeMinutes == 0m ? null : travelTimeMinutes,
-            candidate.ScoreBreakdown);
+            candidate.ScoreBreakdown, candidate.YearsOfExperience, candidate.RatingAverage,
+            candidate.RatingCount, candidate.AvailabilityStatus, candidate.MatchReasons);
     }
 
     private static async Task<T> LookupOnce<T>(Dictionary<Guid, T> cache,

@@ -9,6 +9,7 @@ public sealed class MatchingOptions
     public int RouteCandidateLimit { get; set; } = 10;
     public int MaxDistanceMeters { get; set; } = 10000;
     public decimal MinimumRating { get; set; } = 3.5m;
+    public int ScheduledBookingLeadHours { get; set; } = 24;
     public MatchingWeights Weights { get; set; } = new();
 }
 

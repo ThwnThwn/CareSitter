@@ -4,6 +4,8 @@ namespace CareSitter.Contracts.Services;
 
 public interface IPeopleLookupService
 {
+    Task<IReadOnlyList<string>> GetRequiredCaregiverSkillsAsync(Guid beneficiaryId, Guid customerId,
+        CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
     Task<bool> BeneficiaryBelongsToAsync(Guid beneficiaryId, Guid customerId, CancellationToken ct = default);
     Task<bool> CaregiverIsAvailableAsync(Guid caregiverId, DateTimeOffset start, DateTimeOffset end,
         CancellationToken ct = default);
@@ -17,6 +19,8 @@ public interface IPeopleLookupService
 
 public interface ICatalogLookupService
 {
+    Task<IReadOnlyList<string>> GetRequiredCaregiverSkillsAsync(Guid serviceTypeId,
+        CancellationToken ct = default) => Task.FromResult<IReadOnlyList<string>>([]);
     Task<bool> AddressBelongsToAsync(Guid addressId, Guid customerId, CancellationToken ct = default);
     Task<bool> AddressIsVerifiedForBookingAsync(Guid addressId, Guid customerId, CancellationToken ct = default);
     Task<bool> ServiceIsActiveAsync(Guid serviceTypeId, CancellationToken ct = default);

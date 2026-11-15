@@ -31,6 +31,8 @@ internal sealed class NutritionWriteScope(IPeopleHealthClient access, INutrition
         if (NutritionAccessRules.Check(user, features, true) is { } error) return error;
         if (request.Input.ExpectedHealthRevision < 1 || request.IdempotencyKey == Guid.Empty)
             return Error.Validation("nutrition.request", "Phiên bản hồ sơ và khóa thao tác là bắt buộc.");
+        if (!MealPantryPolicy.Valid(request.Input.AvailableIngredients))
+            return Error.Validation("nutrition.pantry_invalid", "Nhập tối đa 20 nguyên liệu, mỗi nguyên liệu từ 2 đến 80 ký tự.");
         if (requiresRecommendations && !features.RecommendationsEnabled)
             return Error.Unavailable("nutrition.recommendations_disabled", "Gợi ý thực đơn chưa được mở.");
 

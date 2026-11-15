@@ -12,10 +12,12 @@ internal static class MatchingPolicy
         MatchingCaregiverProfile profile,
         Domain.Booking booking,
         MatchingAddress address,
-        IEnumerable<CaregiverBookingWindow> conflicts, MatchingOptions config)
+        IEnumerable<CaregiverBookingWindow> conflicts, MatchingOptions config,
+        bool scheduledBooking = false)
     {
         if (profile.DeletedAt is not null || profile.KycStatus != "APPROVED" ||
-            profile.AvailabilityStatus != "ONLINE")
+            !(profile.AvailabilityStatus == "ONLINE" ||
+                (scheduledBooking && profile.AvailabilityStatus is "OFFLINE" or "BUSY")))
             return false;
         if (conflicts.Any(x => x.BookingId != booking.Id &&
             x.ScheduledStart < booking.ScheduledEnd && x.ScheduledEnd > booking.ScheduledStart))
@@ -60,9 +62,7 @@ internal static class MatchingPolicy
     internal static decimal SkillMatchScore(IReadOnlySet<string> required, IReadOnlySet<string> actual)
     {
         if (required.Count == 0) return 1m;
-        var matched = required.Count(skill => actual.Any(candidate =>
-            candidate.Contains(skill, StringComparison.OrdinalIgnoreCase) ||
-            skill.Contains(candidate, StringComparison.OrdinalIgnoreCase)));
+        var matched = required.Count(skill => actual.Contains(skill));
         return (decimal)matched / required.Count;
     }
 
@@ -143,7 +143,8 @@ internal static class MatchingPolicy
         Guid CaregiverId, Guid BookingId, DateTimeOffset ScheduledStart, DateTimeOffset ScheduledEnd);
     internal sealed record EligibleCandidate(
         Guid CaregiverId, GeoPoint? Origin, int? StraightLineDistanceMeters,
-        decimal RatingScore, decimal SkillMatchScore, decimal ExperienceScore);
+        decimal RatingScore, decimal SkillMatchScore, decimal ExperienceScore,
+        MatchingCaregiverProfile? Profile = null, bool HasRequiredSkills = false);
     internal sealed record ScoredCandidate(
         Guid CaregiverId, decimal Score, int? DistanceMeters, int? DurationSeconds,
         IReadOnlyDictionary<string, decimal> ScoreBreakdown);
@@ -153,7 +154,7 @@ internal static class MatchingPolicy
         profile.Id, profile.ServiceCenter, DistanceMeters(profile.ServiceCenter, address.Location),
         profile.RatingCount == 0 ? 0.5m : Math.Clamp(profile.RatingAverage / 5m, 0m, 1m),
         SkillMatchScore(requiredSkills, ParseSkills(profile.Skills)),
-        Math.Clamp((profile.YearsOfExperience ?? 0) / 10m, 0m, 1m));
+        Math.Clamp((profile.YearsOfExperience ?? 0) / 10m, 0m, 1m), profile, requiredSkills.Count > 0);
 
     internal static EligibleCandidate[] Shortlist(IEnumerable<EligibleCandidate> eligible, MatchingOptions config) =>
         eligible.Where(x => x.Origin is not null)
@@ -164,6 +165,7 @@ internal static class MatchingPolicy
         IReadOnlyList<RouteMatrixItem> routes, MatchingOptions config)
     {
         var routeByOrigin = routes.ToDictionary(x => x.OriginIndex);
+        var eligibleById = shortlist.ToDictionary(x => x.CaregiverId);
         return shortlist.Select((candidate, index) =>
             {
                 routeByOrigin.TryGetValue(index, out var route);
@@ -173,8 +175,17 @@ internal static class MatchingPolicy
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.DurationSeconds ?? int.MaxValue)
             .ThenBy(x => x.DistanceMeters ?? int.MaxValue)
-            .Select((x, index) => new MatchingCandidate(
-                x.CaregiverId, index + 1, decimal.Round(x.Score, 4),
-                x.DistanceMeters, x.ScoreBreakdown)).ToArray();
+            .Select((x, index) =>
+            {
+                var candidate = eligibleById[x.CaregiverId];
+                var profile = candidate.Profile;
+                string[] reasons = candidate.HasRequiredSkills
+                    ? ["no_booking_conflict", "service_area_match", "required_skills_match"]
+                    : ["no_booking_conflict", "service_area_match"];
+                return new MatchingCandidate(x.CaregiverId, index + 1, decimal.Round(x.Score, 4),
+                    x.DistanceMeters, x.ScoreBreakdown, profile?.YearsOfExperience,
+                    profile?.RatingAverage ?? 0, profile?.RatingCount ?? 0,
+                    profile?.AvailabilityStatus, reasons);
+            }).ToArray();
     }
 }

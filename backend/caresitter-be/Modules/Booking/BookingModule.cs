@@ -42,6 +42,8 @@ public sealed class BookingModule : IModule
     {
         services.AddOptions<MatchingOptions>()
             .Bind(configuration.GetSection(MatchingOptions.SectionName))
+            .Validate(options => options.ScheduledBookingLeadHours is >= 1 and <= 168,
+                "Matching scheduled booking lead hours must be between 1 and 168.")
             .Validate(options => options.InitialOfferCount > 0 && options.ExpansionOfferCount > 0,
                 "Matching offer counts must be positive.")
             .Validate(options => options.MaxDistanceMeters > 0 && options.RouteCandidateLimit > 0,
@@ -143,6 +145,7 @@ public sealed class BookingModule : IModule
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
         services.AddScoped<IServiceChecklistReader, ServiceChecklistReader>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();
+        services.AddScoped<IBookingMealStore, BookingMealStore>();
         services.AddScoped<IBookingTrackingNotifier, BookingTrackingNotifier>();
         services.AddScoped<ILiveLocationStore, LiveLocationStore>();
         services.AddScoped(sp => new LiveLocationCleanupJob(sp.GetRequiredService<ILiveLocationStore>()));
@@ -150,6 +153,7 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingReadStore, BookingReadStore>();
         services.AddScoped<IBookingPaymentGateway, BookingPaymentGateway>();
         services.AddScoped<IMatchingService, MatchingService>();
+        services.AddScoped<IBookingMatchingPreview, MatchingService>();
         services.AddScoped<IBookingJobsService, BookingJobsService>();
         services.AddScoped<IBookingCheckoutStore, BookingCheckoutStore>();
         services.AddScoped<BookingCheckoutJobs>();

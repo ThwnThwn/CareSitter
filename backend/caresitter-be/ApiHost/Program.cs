@@ -54,6 +54,7 @@ builder.Services.AddOptions<NutritionGatewayOptions>().Bind(builder.Configuratio
         "NutritionGateway requires an internal gRPC endpoint, service credential and a bounded timeout.")
     .ValidateOnStart();
 builder.Services.AddSingleton<INutritionGateway, NutritionGrpcGateway>();
+builder.Services.AddScoped<CareSitter.Contracts.Nutrition.IMealPlanSnapshotReader, MealPlanSnapshotReader>();
 builder.Services.AddHttpClient<NutritionReadinessHealthCheck>()
     .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
         InternalCertificateTrust.CreateHandler(serviceProvider

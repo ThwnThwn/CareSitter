@@ -116,6 +116,7 @@ class SelfRecipientController extends StateNotifier<AsyncValue<SelfRecipient>> {
         if (includeRelation) 'relation': profile.relation,
         'condition': profile.condition,
         'careLevel': profile.careLevel,
+        'requiredCaregiverSkills': profile.requiredCaregiverSkills,
         'notes': profile.notes,
         'defaultAddressId': profile.defaultAddressId,
         'emergencyContacts':

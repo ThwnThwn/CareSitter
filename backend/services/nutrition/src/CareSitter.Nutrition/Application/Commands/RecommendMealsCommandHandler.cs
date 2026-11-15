@@ -14,6 +14,8 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
 
     private async Task<Result<ResourceResponse>> RecommendAsync(RecommendMealsCommand request, CancellationToken ct)
     {
+        if (!MealPantryPolicy.Valid(request.Input.AvailableIngredients))
+            return Error.Validation("nutrition.pantry_invalid", "Nhập tối đa 20 nguyên liệu, mỗi nguyên liệu từ 2 đến 80 ký tự.");
         var prepared = await scope.ExecuteWithSnapshotAsync<PreparedRecommendation>(request, true,
             (session, snapshot) => PrepareAsync(session, request, snapshot, ct), ct,
             value => value.Replay is { } replay
@@ -26,7 +28,11 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
         // Retrieval and remote ranking can be slow. Keep them outside the owner transaction.
         var recommendation = prepared.Value.Input is { } input
             ? await recommendations.RecommendAsync(input, ct) : null;
-        var payload = meal.Complete(recommendation?.Meals) with { RecommendationTrace = recommendation?.Trace };
+        var payload = meal.Complete(recommendation?.Meals) with
+        {
+            RecommendationTrace = recommendation?.Trace,
+            AvailableIngredients = MealPantryPolicy.Normalize(request.Input.AvailableIngredients)
+        };
         var draft = new NutritionResourceDraft(payload.Decision.State, NutritionJson.Write(payload));
 
         return await scope.ExecuteAsync(request, true, (session, snapshot) =>
@@ -65,7 +71,8 @@ internal sealed class RecommendMealsCommandHandler(NutritionWriteScope scope, Me
             meal.CatalogRevision, meal.Recipes, meal.Analyzed.Facts, meal.Rules,
             meal.Health.Evidence.GetValueOrDefault("dietaryPattern", "regular"),
             meal.Health.Evidence.GetValueOrDefault("nutritionGoal", "maintain"), recentMeals,
-            previousMenus, MealPreferences.FromEvidence(meal.Health.Evidence));
+            previousMenus, MealPreferences.FromEvidence(meal.Health.Evidence) with
+            { AvailableIngredients = MealPantryPolicy.Normalize(request.Input.AvailableIngredients) });
         return new PreparedRecommendation(null, meal, input);
     }
 

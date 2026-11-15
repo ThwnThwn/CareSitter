@@ -111,7 +111,8 @@ internal sealed class GeminiMealCandidateRanker(HttpClient http, IOptions<MealRa
                             {
                                 mealFormat = request.Preferences.MealFormatPreference,
                                 preferredFoods = request.Preferences.PreferredFoods,
-                                dislikedFoods = request.Preferences.DislikedFoods
+                                dislikedFoods = request.Preferences.DislikedFoods,
+                                availableIngredients = request.Preferences.AvailableIngredients
                             },
                             recentMeals = (request.RecentMeals ?? []).Select(meal => new { meal.Name, meal.MealType }),
                             healthFacts = request.Facts.Where(fact => fact.Subject == "beneficiary")

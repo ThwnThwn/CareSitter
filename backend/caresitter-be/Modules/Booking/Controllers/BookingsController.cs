@@ -104,6 +104,27 @@ public sealed class BookingsController : ControllerBase
         return result.ToActionResult(this);
     }
 
+    [HttpPost("caregiver-suggestions")]
+    [Authorize(Roles = "CUSTOMER")]
+    [RequestSizeLimit(8192)]
+    public async Task<IActionResult> PreviewCaregiverSuggestions(
+        [FromBody] PreviewCaregiverSuggestionsRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new PreviewCaregiverSuggestionsQuery(
+            request.BeneficiaryId, request.AddressId, request.ServiceTypeId,
+            request.ScheduledStart, request.ScheduledEnd, request.RequiredSkills, request.Limit), ct);
+        return result.ToActionResult(this);
+    }
+
+    [HttpGet("{id:guid}/payment-summary")]
+    [Authorize(Roles = "CUSTOMER")]
+    public async Task<IActionResult> PaymentSummary(Guid id, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        var result = await _mediator.Send(new GetBookingPaymentSummaryQuery(id), ct);
+        return result.ToActionResult(this);
+    }
+
     /// <summary>Hủy booking. Customer có thể hủy ở trạng thái phù hợp; gồm ghi lại lý do.</summary>
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Roles = "CUSTOMER")]

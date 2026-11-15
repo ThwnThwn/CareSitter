@@ -1,10 +1,11 @@
+import 'dart:convert';
 import '../../domain/booking_step_rules.dart';
-import '../../domain/caregiver_match_rules.dart';
+import 'booking_candidate_controller.dart';
+export 'booking_candidate_controller.dart' show bookingCandidateRequestProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../beneficiary/presentation/controllers/beneficiary_controller.dart';
 import '../../../catalog/presentation/controllers/service_controller.dart';
 import '../../../catalog/presentation/controllers/address_controller.dart';
-import '../../../caregiver/presentation/controllers/caregiver_controller.dart';
 import '../../../catalog/data/models/service_model.dart';
 import '../../../caregiver/data/models/caregiver_model.dart';
 import 'self_recipient_controller.dart';
@@ -37,9 +38,10 @@ final wizardCaregiverProvider = Provider.autoDispose
   final id =
       ref.watch(bookingWizardProvider(args).select((s) => s.caregiverId));
   return ref
-      .watch(caregiverStoreProvider)
-      .valueOrNull
-      ?.where((s) => s.id == id)
+      .watch(wizardCandidatesProvider(args))
+      .asData
+      ?.value
+      .where((s) => s.id == id)
       .firstOrNull;
 });
 final wizardCanContinueProvider =
@@ -68,10 +70,39 @@ final wizardCanContinueProvider =
 });
 
 final wizardCandidatesProvider = Provider.autoDispose
-    .family<AsyncValue<List<CaregiverModel>>, BookingWizardArgs>((ref, args) =>
-        ref.watch(caregiverStoreProvider).whenData((items) =>
-            CaregiverMatchRules.rankOnline(items,
-                isOnline: (c) => c.isOnline, rating: (c) => c.ratingAvg)));
+    .family<AsyncValue<List<CaregiverModel>>, BookingWizardArgs>((ref, args) {
+  final input = ref.watch(bookingWizardProvider(args).select(
+      (s) => (s.serviceId, s.addressId, s.date, s.startMinutes, s.duration)));
+  final forSelf =
+      ref.watch(bookingWizardProvider(args).select((s) => s.forSelf));
+  final self = forSelf ? ref.watch(selfRecipientProvider).valueOrNull : null;
+  final recipientId = self?.kind == SelfRecipientKind.draft
+      ? null
+      : ref.watch(wizardRecipientProvider(args))?.id;
+  if (input.$1 == null ||
+      input.$2 == null ||
+      input.$3 == null ||
+      input.$4 == null ||
+      (!forSelf && recipientId == null)) {
+    return const AsyncData([]);
+  }
+  final start = ScheduleRules.at(input.$3!, input.$4!);
+  return ref.watch(bookingCandidateRequestProvider((
+    beneficiaryId: recipientId,
+    addressId: input.$2!,
+    serviceTypeId: input.$1!,
+    start: start,
+    end: start.add(Duration(hours: input.$5)),
+    requiredSkillsJson: jsonEncode(({
+      ...ref.watch(wizardServiceProvider(args))?.requiredCaregiverSkills ??
+          <String>[],
+      ...ref.watch(wizardRecipientProvider(args))?.requiredCaregiverSkills ??
+          <String>[]
+    }.toList()
+      ..sort()))
+  )));
+});
+
 final wizardScheduleValidProvider =
     Provider.autoDispose.family<bool, BookingWizardArgs>((ref, args) {
   final schedule = ref.watch(

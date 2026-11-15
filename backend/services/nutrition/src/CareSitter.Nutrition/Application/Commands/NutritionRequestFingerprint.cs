@@ -22,7 +22,11 @@ internal static class NutritionRequestFingerprint
         var identity = new PersistedRequestIdentity(operation, command.BeneficiaryId,
             input.ExpectedHealthRevision, input.IdempotencyKey, resourceId, input.AssessmentId,
             input.PlannedDate, input.RecipeVersionId, input.MealType);
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(NutritionJson.Write(identity))));
+        var serialized = NutritionJson.Write(identity);
+        // Empty pantry preserves all persisted fingerprints from previous clients.
+        if (input.AvailableIngredients is { Length: > 0 })
+            serialized += "|pantry:" + NutritionJson.Write(MealPantryPolicy.Normalize(input.AvailableIngredients));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(serialized)));
     }
 
     private sealed record PersistedRequestIdentity(string Operation, Guid BeneficiaryId, long ExpectedHealthRevision,

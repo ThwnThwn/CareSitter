@@ -26,7 +26,7 @@ internal sealed class MatchingService(
     IUserNotificationService notifications,
     IHubContext<CareTrackingHub> hub,
     IOptions<MatchingOptions> options,
-    ILogger<MatchingService> logger) : IMatchingService
+    ILogger<MatchingService> logger, IClock clock) : IMatchingService, IBookingMatchingPreview
 {
     private MatchingOptions Config => options.Value;
 
@@ -47,11 +47,19 @@ internal sealed class MatchingService(
             !CanRankCaregiversForStatus(booking.Status, allowPrePayment))
             return Array.Empty<MatchingCandidate>();
 
+        return await PreviewAsync(booking, ct);
+    }
+
+    public async Task<IReadOnlyList<MatchingCandidate>> PreviewAsync(Domain.Booking booking, CancellationToken ct)
+    {
+        var bookingId = booking.Id;
         var address = await addresses.GetAsync(booking.AddressId, ct);
         if (address?.Location is null)
             return Array.Empty<MatchingCandidate>();
 
-        var profiles = await caregivers.ListAvailableAsync(ct);
+        var scheduled = booking.ScheduledStart >= clock.UtcNow.AddHours(Config.ScheduledBookingLeadHours);
+        var profiles = scheduled ? await caregivers.ListForScheduledBookingAsync(ct)
+            : await caregivers.ListAvailableAsync(ct);
         if (profiles.Count == 0)
             return Array.Empty<MatchingCandidate>();
 
@@ -67,6 +75,11 @@ internal sealed class MatchingService(
             .Select(x => new CaregiverBookingWindow(
                 x.CaregiverId!.Value, x.Id, x.ScheduledStart, x.ScheduledEnd))
             .ToListAsync(ct);
+        var held = await bookingDb.CaregiverSlotHolds.AsNoTracking()
+            .Where(x => x.BookingId != bookingId && caregiverIds.Contains(x.CaregiverId)
+                && (x.Status == "COMMITTED" || (x.Status == "HELD" && x.ExpiresAt > clock.UtcNow))
+                && x.ScheduledStart < booking.ScheduledEnd && x.ScheduledEnd > booking.ScheduledStart)
+            .Select(x => x.CaregiverId).ToListAsync(ct);
         var rejected = (await bookingDb.BookingAssignments.AsNoTracking()
             .Where(x => x.BookingId == bookingId && x.Status == "REJECTED")
             .Select(x => x.CaregiverId)
@@ -76,9 +89,9 @@ internal sealed class MatchingService(
         var eligible = new List<EligibleCandidate>();
         foreach (var profile in profiles)
         {
-            if (rejected.Contains(profile.Id) || !IsEligible(
+            if (held.Contains(profile.Id) || rejected.Contains(profile.Id) || !IsEligible(
                     profile, booking, address,
-                    conflicts.Where(x => x.CaregiverId == profile.Id), Config))
+                    conflicts.Where(x => x.CaregiverId == profile.Id), Config, scheduled))
                 continue;
 
             eligible.Add(PrepareCandidate(profile, address, requiredSkills));

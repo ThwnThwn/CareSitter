@@ -1,24 +1,31 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'nutrition_pantry_field.dart';
+import '../controllers/nutrition_pantry_controller.dart';
+import '../../domain/pantry_ingredients.dart';
 
 import '../../../../core/utils/date_formatter.dart';
 
-class NutritionPlanSetupSheet extends StatefulWidget {
+class NutritionPlanSetupSheet extends ConsumerStatefulWidget {
   const NutritionPlanSetupSheet({
     super.key,
     required this.startDate,
     this.beneficiaryName,
+    this.beneficiaryId,
   });
 
   final DateTime startDate;
   final String? beneficiaryName;
+  final String? beneficiaryId;
 
   @override
-  State<NutritionPlanSetupSheet> createState() =>
+  ConsumerState<NutritionPlanSetupSheet> createState() =>
       _NutritionPlanSetupSheetState();
 }
 
-class _NutritionPlanSetupSheetState extends State<NutritionPlanSetupSheet> {
+class _NutritionPlanSetupSheetState
+    extends ConsumerState<NutritionPlanSetupSheet> {
   int _days = 5;
 
   @override
@@ -57,12 +64,21 @@ class _NutritionPlanSetupSheetState extends State<NutritionPlanSetupSheet> {
               ),
               const SizedBox(height: AppSpacing.compact),
               _PlanSummary(days: _days),
+              if (widget.beneficiaryId != null)
+                NutritionPantryField(
+                    beneficiaryId: widget.beneficiaryId!, enabled: true),
               const SizedBox(height: AppSpacing.lg),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   key: const ValueKey('nutrition-create-plan-submit'),
-                  onPressed: () => Navigator.of(context).pop(_days),
+                  onPressed: widget.beneficiaryId != null &&
+                          PantryIngredients.error(ref.watch(
+                                  nutritionPantryProvider(
+                                      widget.beneficiaryId!))) !=
+                              null
+                      ? null
+                      : () => Navigator.of(context).pop(_days),
                   icon: const Icon(Icons.auto_awesome_rounded, size: 18),
                   label: Text('Tạo thực đơn $_days ngày'),
                 ),

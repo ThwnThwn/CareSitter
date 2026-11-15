@@ -20,7 +20,7 @@ class BookingPaymentRow extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
           flex: 2,
-          child: Text(amount == 0 ? 'Miễn phí' : '${formatVnd(amount)}đ',
+          child: Text(amount == 0 ? 'Miễn phí' : formatVnd(amount),
               textAlign: TextAlign.right,
               style: TextStyle(
                   color:
