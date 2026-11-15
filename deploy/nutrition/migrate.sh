@@ -15,6 +15,9 @@ trap 'exit 1' HUP INT TERM
 
 cat > "$work_dir/migrate.sql" <<'SQL'
 \set ON_ERROR_STOP on
+-- Poolers may ignore PGOPTIONS; enforce logging protection in the actual SQL session.
+SET log_statement = 'none';
+SET log_min_error_statement = 'panic';
 \getenv app_password NUTRITION_DB_APP_PASSWORD
 SELECT pg_advisory_lock(hashtextextended('caresitter.nutrition.schema', 0));
 CREATE TABLE IF NOT EXISTS public.nutrition_schema_migrations (

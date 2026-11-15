@@ -2,11 +2,7 @@
 import { useConsultation } from "@/features/consultation/ConsultationProvider";
 
 import Image from "next/image";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useEffect, useRef } from "react";
 import CareAssistant from "./CareAssistant";
 
@@ -18,7 +14,9 @@ export default function HeroSection() {
     const hero = heroRef.current;
     if (!hero) return;
 
-    const groups = Array.from(hero.querySelectorAll<HTMLElement>("[data-hero-entrance]"));
+    const groups = Array.from(
+      hero.querySelectorAll<HTMLElement>("[data-hero-entrance]"),
+    );
     const visibleGroups = new Set<HTMLElement>();
 
     const revealReadyGroups = () => {
@@ -31,16 +29,20 @@ export default function HeroSection() {
       }
     };
 
-    const observer = "IntersectionObserver" in window
-      ? new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            const group = entry.target as HTMLElement;
-            if (entry.isIntersecting) visibleGroups.add(group);
-            else visibleGroups.delete(group);
-          }
-          revealReadyGroups();
-        }, { threshold: 0.12 })
-      : null;
+    const observer =
+      "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                const group = entry.target as HTMLElement;
+                if (entry.isIntersecting) visibleGroups.add(group);
+                else visibleGroups.delete(group);
+              }
+              revealReadyGroups();
+            },
+            { threshold: 0.12 },
+          )
+        : null;
 
     for (const group of groups) {
       if (observer) observer.observe(group);
@@ -62,7 +64,7 @@ export default function HeroSection() {
         <div className="hero__copy" data-hero-entrance="copy">
           <div className="hero__kicker">
             <ShieldCheck size={15} aria-hidden="true" />
-            Caregiver được xác minh trước khi nhận ca
+            Chăm sóc viên được xác minh trước khi nhận ca
           </div>
 
           <h1 className="display display--hero">
@@ -71,9 +73,9 @@ export default function HeroSection() {
           </h1>
 
           <p className="hero__lead">
-            Tìm người đồng hành phù hợp cho cha mẹ ngay tại nhà — hồ sơ rõ
-            ràng, lịch trình minh bạch và gia đình luôn biết ca chăm sóc đang
-            diễn ra thế nào.
+            Tìm người đồng hành phù hợp cho cha mẹ ngay tại nhà — hồ sơ rõ ràng,
+            lịch trình minh bạch và gia đình luôn biết ca chăm sóc đang diễn ra
+            thế nào.
           </p>
 
           <div className="hero__actions">
@@ -115,20 +117,22 @@ export default function HeroSection() {
           </div>
         </div>
 
-        <div className="hero-story" aria-label="Câu chuyện một ca chăm sóc CareSitter">
+        <div
+          className="hero-story"
+          aria-label="Câu chuyện một ca chăm sóc CareSitter"
+        >
           <div className="hero-story__ornaments" aria-hidden="true">
             <Image
+              src="/images/hero-story-ornaments.png"
               alt=""
               fill
               priority
               sizes="(max-width: 820px) 100vw, 58vw"
-              src="/images/hero-story-ornaments.png"
             />
           </div>
-
           <div className="hero-story__stage">
             <video
-              aria-label="Caregiver đã xác minh đến nhà, đồng hành cùng người cao tuổi và gửi cập nhật cho gia đình"
+              aria-label="Chăm sóc viên đã xác minh đến nhà, đồng hành cùng người cao tuổi và gửi cập nhật cho gia đình"
               autoPlay
               loop
               muted
@@ -138,9 +142,7 @@ export default function HeroSection() {
               <source src="/videos/care-story.mp4" type="video/mp4" />
               Trình duyệt của bạn chưa hỗ trợ video HTML5.
             </video>
-
           </div>
-
         </div>
       </div>
     </section>

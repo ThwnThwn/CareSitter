@@ -6,9 +6,17 @@ x-postgis: &postgis
     context: ./postgis
     dockerfile: Dockerfile
 
+# Bounded container logs: a single VM must never fill its disk with stdout.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
 services:
   db:
-    <<: *postgis
+    <<: [*postgis, *logging]
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in deploy/.env}
@@ -24,6 +32,7 @@ services:
       retries: 10
 
   redis:
+    <<: *logging
     image: redis:7-alpine
     restart: unless-stopped
     environment:
@@ -77,6 +86,9 @@ services:
     networks: [data]
 
   api:
+    <<: *logging
+    # deploy/deploy.sh tags each release by commit so rollback needs no rebuild.
+    image: caresitter-api:${RELEASE_TAG:-local}
     build:
       context: ../backend
       dockerfile: Dockerfile
@@ -98,6 +110,8 @@ services:
     networks: [edge, data]
 
   admin:
+    <<: *logging
+    image: caresitter-admin:${RELEASE_TAG:-local}
     build:
       context: ../frontend/admin-web
       dockerfile: Dockerfile
@@ -105,6 +119,7 @@ services:
     networks: [edge]
 
   proxy:
+    <<: *logging
     image: caddy:2-alpine
     restart: unless-stopped
     environment:

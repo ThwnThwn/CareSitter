@@ -66,16 +66,24 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             return new(200, value.Items.Recipes.Select(recipe => Json(recipe.DataJson)).ToArray());
         }, ct);
 
-    public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false) =>
+    public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false,
+        bool generalKnowledge = false) =>
         CallAsync((headers, deadline) => _client!.SearchKnowledgeAsync(
-            new KnowledgeSearchRequest { Query = query, LocalDemo = localDemo }, headers, deadline, ct), value =>
+            new KnowledgeSearchRequest { Query = query, LocalDemo = localDemo, GeneralKnowledge = generalKnowledge }, headers, deadline, ct), value =>
         {
+            var onlineReference = generalKnowledge && value.ReferenceKnowledge && !value.LocalDemo && !value.GeneralKnowledge;
+            if (generalKnowledge && !onlineReference) return PresentGeneralKnowledge(query, value);
+            if (value.GeneralKnowledge || value.ReferenceKnowledge && !onlineReference) throw new InvalidDataException();
             if (value.Query != query || value.Results.Count > 10 ||
                 value.Results.Select(hit => hit.ChunkId).Distinct(StringComparer.Ordinal).Count() != value.Results.Count || value.Results.Any(hit =>
                     string.IsNullOrWhiteSpace(hit.ChunkId) || hit.Heading.Length > 500 ||
                     hit.SourceTitle.Length > 500 || hit.SourceRevisionId.Length > 200))
                 throw new InvalidDataException();
-            var showPassages = localDemo && value.LocalDemo;
+            var showLocalDemo = localDemo && value.LocalDemo;
+            var showPassages = showLocalDemo || onlineReference;
+            if (onlineReference && (value.AnswerProvider != "Gemini" || value.Results.Any(hit => hit.PdfPage < 1 || string.IsNullOrWhiteSpace(hit.SourceTitle) ||
+                string.IsNullOrWhiteSpace(hit.SourceRevisionId) || hit.Excerpt.Length is < 18 or > 640)))
+                throw new InvalidDataException();
             var answerIds = showPassages
                 ? (value.AnswerChunkIds.Count > 0 ? value.AnswerChunkIds.ToArray() :
                     string.IsNullOrEmpty(value.AnswerChunkId) ? [] : new[] { value.AnswerChunkId })
@@ -100,11 +108,30 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
                     hit.PdfPage, string.IsNullOrEmpty(hit.PrintedPage) ? null : hit.PrintedPage,
                     hit.SourceTitle, hit.SourceRevisionId,
                     showPassages && hit.Excerpt.Length is > 0 and <= 640 ? hit.Excerpt : null,
-                    showPassages && hit.Summary.Length is > 0 and <= 560 ? hit.Summary : null)).ToArray(),
-                answerIds.FirstOrDefault(), showPassages, answerIds, status,
+                    showLocalDemo && hit.Summary.Length is > 0 and <= 560 ? hit.Summary : null)).ToArray(),
+                answerIds.FirstOrDefault(), showLocalDemo, answerIds, status,
                 blocks.Select(block => new NutritionKnowledgeAnswerBlockResponse(block.Text, block.ChunkIds.ToArray())).ToArray(),
-                showPassages && value.AnswerProvider is "Gemini" or "Ollama" ? value.AnswerProvider : null));
+                showPassages && value.AnswerProvider is "Gemini" or "Ollama" ? value.AnswerProvider : null,
+                ReferenceKnowledge: onlineReference));
         }, ct, _options.KnowledgeTimeoutSeconds);
+
+    private static NutritionGatewayResponse PresentGeneralKnowledge(string query, KnowledgeSearchResponse value)
+    {
+        // General answers carry no corpus text, source IDs or purported book citations.
+        var blocks = value.AnswerBlocks.ToArray();
+        if (value.Query != query || !value.GeneralKnowledge || value.ReferenceKnowledge || value.LocalDemo || value.Results.Count != 0 ||
+            !string.IsNullOrEmpty(value.AnswerChunkId) || value.AnswerChunkIds.Count != 0 ||
+            value.AnswerProvider != "Gemini" ||
+            value.AnswerStatus is not ("ai_suggestion" or "insufficient_evidence" or "unavailable" or
+                "not_configured" or "rate_limited" or "timeout" or "invalid_output") ||
+            blocks.Length > 4 || (value.AnswerStatus == "ai_suggestion" ? blocks.Length == 0 : blocks.Length != 0) ||
+            blocks.Any(block => block.Text.Trim().Length < 10 || block.Text.Length > 1200 || block.ChunkIds.Count != 0))
+            throw new InvalidDataException();
+        return new(200, new NutritionKnowledgeSearchResponse(query, [], AnswerChunkIds: [],
+            AnswerStatus: value.AnswerStatus, AnswerBlocks: blocks.Select(block =>
+                new NutritionKnowledgeAnswerBlockResponse(block.Text, [])).ToArray(),
+            AnswerProvider: "Gemini", GeneralKnowledge: true));
+    }
 
     private async Task<NutritionGatewayResponse> CallAsync<T>(Func<Metadata, DateTime, AsyncUnaryCall<T>> call,
         Func<T, NutritionGatewayResponse> present, CancellationToken ct, int? timeoutSeconds = null)

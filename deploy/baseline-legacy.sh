@@ -82,7 +82,8 @@ SQL
 count=0
 while IFS= read -r relative; do
     name=${relative##*/}
-    case "$name" in *-seed*.sql|*-demo*.sql) continue ;; esac
+    # Keep in sync with migrate.sh: 51 is the live catalog baseline, not demo data.
+    case "$name" in 51-non-medical-demo-services.sql) ;; *-seed*.sql|*-demo*.sql) continue ;; esac
     checksum=$(sed 's/\r$//' "$sql_dir/$relative" | sha256sum | cut -d ' ' -f 1)
     printf "INSERT INTO public.schema_migrations(filename, checksum_sha256) VALUES ('%s', '%s');\n" \
         "$name" "$checksum" >> "$work_dir/baseline.sql"

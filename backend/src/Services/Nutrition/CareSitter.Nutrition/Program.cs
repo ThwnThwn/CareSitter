@@ -161,6 +161,9 @@ builder.Services.AddScoped<IMealCandidateRanker>(services =>
         : services.GetRequiredService<UnavailableMealCandidateRanker>());
 builder.Services.AddScoped<IMealRecommendationEngine, MealRecommendationEngine>();
 builder.Services.AddScoped<NutritionKnowledgeSearch>();
+builder.Services.AddOptions<NutritionReferenceOptions>()
+    .Bind(builder.Configuration.GetSection("NutritionKnowledgeCorpus"));
+builder.Services.AddSingleton<INutritionReferenceLibrary, NutritionReferenceLibrary>();
 builder.Services.AddHttpClient<GeminiKnowledgeAnswer>(client =>
 {
     client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/");

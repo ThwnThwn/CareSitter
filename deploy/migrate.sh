@@ -64,6 +64,10 @@ while IFS= read -r relative; do
     file=$sql_dir/$relative
     name=${relative##*/}
     case "$name" in
+        51-non-medical-demo-services.sql)
+            # Despite its name, 51 creates the live service types (f1–f4) that
+            # 56 prices and templates. It contains no accounts or bookings.
+            ;;
         *-seed*.sql|*-demo*.sql)
             echo "Skipping demo data: $name"
             continue

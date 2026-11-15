@@ -6,7 +6,7 @@ namespace CareSitter.Nutrition.Infrastructure;
 internal static class NutritionEnvironmentConfiguration
 {
     private static readonly string[] Sections = ["Nutrition", "NutritionCatalog", "MealGrounding", "HealthParser",
-        "MealRanking", "NutritionKnowledgeAi", "Jwt", "Gateway", "People", "Cors", "BeneficiaryEvents"];
+        "MealRanking", "NutritionKnowledgeAi", "NutritionKnowledgeCorpus", "Jwt", "Gateway", "People", "Cors", "BeneficiaryEvents"];
     private static readonly HashSet<string> SharedKeys = new(StringComparer.OrdinalIgnoreCase)
     {
         "ConnectionStrings:Nutrition", "KAFKA_ENABLED", "KAFKA_FLOW_NUTRITION_ENABLED",

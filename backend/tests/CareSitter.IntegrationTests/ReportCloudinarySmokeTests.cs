@@ -11,6 +11,7 @@ namespace CareSitter.IntegrationTests;
 public sealed class ReportCloudinarySmokeTests
 {
     [ProviderFact]
+    [Trait("Category", "CloudinaryLive")]
     public async Task Real_authenticated_raw_pdf_roundtrips_without_public_access()
     {
         var settings = new CloudinarySettings {

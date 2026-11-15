@@ -33,11 +33,14 @@ public sealed class NutritionEnvironmentConfigurationTests : IDisposable
         var previous = Environment.GetEnvironmentVariable("HealthParser__ApiKey");
         using var configuration = Load("HealthParser__ApiKey=synthetic-fixture-key\n" +
             "MealRanking__TimeoutSeconds=12\nConnectionStrings__Nutrition=fixture-nutrition-db\n" +
+            "NutritionKnowledgeCorpus__Enabled=true\nNutritionKnowledgeCorpus__ReleaseKey=fixture-reference\n" +
             "ConnectionStrings__CareSitter=excluded-core-db\nPayments__PayOS__ApiKey=excluded-payment-key\nSmtp__Password=excluded-mail-password\n");
 
         Assert.Equal("synthetic-fixture-key", configuration["HealthParser:ApiKey"]);
         Assert.Equal("12", configuration["MealRanking:TimeoutSeconds"]);
         Assert.Equal("fixture-nutrition-db", configuration.GetConnectionString("Nutrition"));
+        Assert.True(configuration.GetValue<bool>("NutritionKnowledgeCorpus:Enabled"));
+        Assert.Equal("fixture-reference", configuration["NutritionKnowledgeCorpus:ReleaseKey"]);
         Assert.Null(configuration.GetConnectionString("CareSitter"));
         Assert.Null(configuration["Payments:PayOS:ApiKey"]);
         Assert.Null(configuration["Smtp:Password"]);

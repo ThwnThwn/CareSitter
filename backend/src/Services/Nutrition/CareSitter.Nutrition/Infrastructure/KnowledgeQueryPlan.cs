@@ -12,10 +12,12 @@ internal sealed class KnowledgeQueryPlan(string[][] concepts)
         ["trai cay", "hoa qua", "qua chin", "rau qua", "rau va qua", "rau cu qua"],
         ["protein", "chat dam", "protid"],
         ["chat xo", "xo thuc pham"],
+        ["beo phi", "giam can", "thua can", "kiem soat can nang"],
+        ["thuc pham", "mon an"],
         ["dua", "trai thom", "qua thom", "khom"]
     ];
     private static readonly HashSet<string> QuestionWords = new(
-        "va cua trong cho ve co o tot nguoi benh nen an uong nao gi nhung cac loai phu hop voi duoc khong la the nhu the nao tac dung loi ich cong dung vai tro toi muon biet tim hieu suc khoe khau phan hay giup".Split(' '),
+        "va cua trong cho ve co o tot nguoi benh nen an uong nao gi nhung cac loai phu hop voi duoc khong la the nhu the nao tac dung loi ich cong dung vai tro toi muon biet tim hieu suc khoe khau phan hay giup de cach sach tai lieu nhac den cap liet ke".Split(' '),
         StringComparer.Ordinal);
 
     public string SearchText => string.Join(' ', concepts.Select(concept => concept[0]));
@@ -35,6 +37,7 @@ internal sealed class KnowledgeQueryPlan(string[][] concepts)
     public static KnowledgeQueryPlan Create(string query)
     {
         var remaining = Regex.Replace(KeywordMealKnowledgeIndex.Fold(query), @"\s+", " ");
+        remaining = Regex.Replace(remaining, @"\b(?:dinh duong lam sang|dinh duong lam san)\b", " ");
         var concepts = new List<string[]>();
         foreach (var aliases in Aliases)
         {

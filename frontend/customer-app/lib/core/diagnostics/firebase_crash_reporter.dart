@@ -3,6 +3,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'crash_reporter.dart';
 import 'guarded_crash_reporter.dart';
+import 'lab_demo_policy.dart';
 
 class FirebaseCrashReporter implements CrashReporter {
   FirebaseCrashReporter(this._sdk);
@@ -20,8 +21,8 @@ class FirebaseCrashReporter implements CrashReporter {
       final sdk = FirebaseCrashlytics.instance;
       await sdk.setUserIdentifier('');
       await sdk.setCrashlyticsCollectionEnabled(
-          kReleaseMode || const bool.fromEnvironment('LAB3_DEMO_ENABLED'));
-      if (const bool.fromEnvironment('LAB3_DEMO_ENABLED')) {
+          kReleaseMode || LabDemoPolicy.enabled);
+      if (LabDemoPolicy.enabled) {
         final previousCrash = await sdk.didCrashOnPreviousExecution();
         debugPrint('[Crashlytics] previous crash: $previousCrash; '
             'collection: ${sdk.isCrashlyticsCollectionEnabled}');

@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, IBM_Plex_Mono, Noto_Serif_Display } from "next/font/google";
+import {
+  Be_Vietnam_Pro,
+  IBM_Plex_Mono,
+  Noto_Serif_Display,
+} from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -29,7 +33,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "CareSitter — Người thân được chăm, bạn được an lòng",
   description:
-    "Kết nối gia đình với người chăm sóc tại nhà đã được xác minh. Đặt ca minh bạch, theo dõi rõ ràng và hỗ trợ xuyên suốt.",
+    "Kết nối gia đình với người chăm sóc phù hợp. Khám phá An Nhiên, An Khang, Thân Trí và hành trình tham gia CareSitter.",
   keywords: [
     "CareSitter",
     "chăm sóc người cao tuổi",
@@ -41,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "CareSitter — Người thân được chăm, bạn được an lòng",
     description:
-      "Tìm người chăm sóc tại nhà phù hợp, đã được xác minh và có quy trình theo dõi minh bạch.",
+      "Dịch vụ chăm sóc tại nhà theo nhu cầu, thông tin rõ ràng và hành trình đồng hành cùng gia đình.",
     type: "website",
     locale: "vi_VN",
   },

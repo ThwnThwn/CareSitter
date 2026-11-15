@@ -162,11 +162,26 @@ CREATE TABLE people.caregiver_profiles(id integer PRIMARY KEY, hourly_rate_expec
         if ($LASTEXITCODE -ne 0) {
             throw "Real SQL bootstrap failed: $($realOutput | Select-Object -Last 8 | Out-String)"
         }
-        if ((Query 'SELECT count(*) FROM public.schema_migrations' 'fixture_real') -ne '54' -or
-            (Query 'SELECT count(*) FROM identity.users' 'fixture_real') -ne '0') {
-            throw 'Real SQL bootstrap ledger or demo-account exclusion is incorrect.'
+        $expectedMigrations = @(Get-Content -LiteralPath (Join-Path $repository 'backend/init-db/00-init.sql') |
+            Where-Object { $_ -match '^\\ir modules/' } |
+            ForEach-Object { ($_ -split '/')[-1].Trim() } |
+            Where-Object { $_ -eq '51-non-medical-demo-services.sql' -or $_ -notmatch '-(seed|demo)' }).Count
+        if ((Query 'SELECT count(*) FROM public.schema_migrations' 'fixture_real') -ne "$expectedMigrations" -or
+            (Query 'SELECT count(*) FROM identity.users' 'fixture_real') -ne '0' -or
+            (Query 'SELECT count(*) FROM booking.bookings' 'fixture_real') -ne '0') {
+            throw 'Real SQL bootstrap ledger or demo-data exclusion is incorrect.'
         }
-        Write-Output 'PASS: all 54 real schema migrations apply to a disposable database without demo accounts.'
+        $pricedServices = Query @'
+SELECT count(DISTINCT s.id) FROM catalog.service_types s
+JOIN catalog.pricing_rules p ON p.service_type_id = s.id AND p.is_active
+WHERE s.is_active
+'@ 'fixture_real'
+        # The current home-care catalog includes 15 active services with pricing.
+        $expectedPricedServices = '15'
+        if ($pricedServices -ne $expectedPricedServices) {
+            throw "Expected $expectedPricedServices active priced services, found $pricedServices."
+        }
+        Write-Output "PASS: all $expectedMigrations real schema migrations apply to a disposable database with the live catalog and no demo accounts or bookings."
 
         Invoke-Docker @('exec', $databaseContainer, 'createdb', '-U', 'postgres', 'fixture_bootstrap')
         Invoke-Docker @('exec', '-e', 'PGOPTIONS=-c client_min_messages=warning', $databaseContainer,
@@ -198,7 +213,8 @@ CREATE TABLE people.caregiver_profiles(id integer PRIMARY KEY, hourly_rate_expec
         }
         finally { $ErrorActionPreference = 'Stop' }
         if ($LASTEXITCODE -ne 0 -or
-            (Query 'SELECT count(*) FROM public.schema_migrations' 'fixture_bootstrap') -ne '54' -or
+            (Query 'SELECT count(*) FROM public.schema_migrations' 'fixture_bootstrap') -ne "$expectedMigrations" -or
+            @($replayOutput -cmatch '^Applied ').Count -ne 0 -or
             (Query "SELECT count(*) FROM public.schema_migrations WHERE filename='00-init.sql'" 'fixture_bootstrap') -ne '0') {
             throw "Legacy DB could not replay after baseline: $($replayOutput | Select-Object -Last 8 | Out-String)"
         }

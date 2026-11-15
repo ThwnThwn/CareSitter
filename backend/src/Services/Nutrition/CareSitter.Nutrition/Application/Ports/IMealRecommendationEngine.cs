@@ -11,7 +11,8 @@ public interface IMealRecommendationEngine
 public sealed record MealRecommendationRequest(long CatalogRevision, Recipe[] CandidateRecipes,
     IReadOnlyList<HealthFact> Facts, IReadOnlyList<DietaryRule> Rules,
     string DietaryPattern, string NutritionGoal, Recipe[]? RecentMeals = null,
-    Recipe[][]? PreviousMenus = null, MealPreferences? Preferences = null);
+    Recipe[][]? PreviousMenus = null, MealPreferences? Preferences = null,
+    Recipe[]? YesterdayMeals = null, string? VarietySeed = null);
 
 public sealed record MealPreferences(string MealFormatPreference, string[] PreferredFoods,
     string[] DislikedFoods)

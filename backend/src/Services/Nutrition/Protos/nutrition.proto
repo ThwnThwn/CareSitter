@@ -110,7 +110,7 @@ message RecipeList { repeated RecipeOption recipes = 1; }
 message RecipeListResult {
   oneof outcome { RecipeList items = 1; Failure failure = 2; }
 }
-message KnowledgeSearchRequest { string query = 1; bool local_demo = 2; }
+message KnowledgeSearchRequest { string query = 1; bool local_demo = 2; bool general_knowledge = 3; }
 message KnowledgeHit {
   string chunk_id = 1;
   string heading = 2;
@@ -130,5 +130,7 @@ message KnowledgeSearchResponse {
   string answer_status = 6;
   repeated KnowledgeAnswerBlock answer_blocks = 7;
   string answer_provider = 8;
+  bool general_knowledge = 9;
+  bool reference_knowledge = 10;
 }
 message KnowledgeAnswerBlock { string text = 1; repeated string chunk_ids = 2; }

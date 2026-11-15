@@ -1,9 +1,10 @@
-
-
-
 import type { Metadata } from "next";
+import AboutSection from "@/components/AboutSection";
 import CaregiversSection from "@/components/CaregiversSection";
 import DownloadCTASection from "@/components/DownloadCTASection";
+import StatsSection from "@/components/StatsSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
+import ServiceCatalogSection from "@/components/ServiceCatalogSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -11,8 +12,6 @@ import HeroSection from "@/components/HeroSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import ConsultationProvider from "@/features/consultation/ConsultationProvider";
 import ScrollMotion from "@/components/ScrollMotion";
-import StatsSection from "@/components/StatsSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -30,8 +29,10 @@ export default function LandingPage() {
       <main id="main-content">
         <HeroSection />
         <StatsSection />
+        <AboutSection />
         <FeaturesSection />
         <HowItWorksSection />
+        <ServiceCatalogSection />
         <CaregiversSection />
         <TestimonialsSection />
         <DownloadCTASection />

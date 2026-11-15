@@ -281,6 +281,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCareSitterSwagger();
 builder.Services.AddRateLimiter(options =>
 {
+    options.AddPolicy("nutrition-knowledge", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
     options.AddPolicy("auth-session", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
             ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -491,7 +498,9 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // Render probes the HTTP port and treats redirects as healthy; execute health checks directly.
+    app.UseWhen(context => context.Request.Path != "/health/live" && context.Request.Path != "/health/ready",
+        branch => branch.UseHttpsRedirection());
 }
 
 app.Use(async (context, next) =>

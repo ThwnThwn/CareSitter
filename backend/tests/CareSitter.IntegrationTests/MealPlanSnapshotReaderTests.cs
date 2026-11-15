@@ -54,7 +54,8 @@ public sealed class MealPlanSnapshotReaderTests
         public Task<NutritionGatewayResponse> ExecuteAsync(CommandRequest request, CancellationToken ct) => throw new NotSupportedException();
         public Task<NutritionGatewayResponse> PlansAsync(BeneficiaryRequest request, CancellationToken ct) => throw new NotSupportedException();
         public Task<NutritionGatewayResponse> ReplacementsAsync(ReplacementOptionsRequest request, CancellationToken ct) => throw new NotSupportedException();
-        public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false) => throw new NotSupportedException();
+        public Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false,
+            bool generalKnowledge = false) => throw new NotSupportedException();
     }
 
     [Fact]

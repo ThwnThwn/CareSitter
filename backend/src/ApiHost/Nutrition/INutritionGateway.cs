@@ -10,7 +10,8 @@ public interface INutritionGateway
     Task<NutritionGatewayResponse> ReadAsync(ResourceRequest request, CancellationToken ct);
     Task<NutritionGatewayResponse> PlansAsync(BeneficiaryRequest request, CancellationToken ct);
     Task<NutritionGatewayResponse> ReplacementsAsync(ReplacementOptionsRequest request, CancellationToken ct);
-    Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false);
+    Task<NutritionGatewayResponse> KnowledgeAsync(string query, CancellationToken ct, bool localDemo = false,
+        bool generalKnowledge = false);
 }
 
 public sealed record NutritionGatewayResponse(int StatusCode, object Body);
