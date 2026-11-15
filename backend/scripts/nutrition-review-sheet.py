@@ -13,7 +13,7 @@ from pathlib import Path
 import sys
 
 REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "backend/services/nutrition/tools/nutrition_knowledge_manual/src"))
+sys.path.insert(0, str(REPO / "backend/src/Services/Nutrition/tools/nutrition_knowledge_manual/src"))
 
 from nutrition_knowledge_manual.errors import ManualGraphError  # noqa: E402
 from nutrition_knowledge_manual.jsonio import file_sha256, load_json  # noqa: E402

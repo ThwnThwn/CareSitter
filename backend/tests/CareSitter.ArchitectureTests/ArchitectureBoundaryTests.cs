@@ -7,9 +7,9 @@ public sealed class ArchitectureBoundaryTests
 {
     private static readonly string RepositoryRoot = FindRepositoryRoot();
     private static readonly string ModulesRoot = Path.Combine(
-        RepositoryRoot, "backend", "caresitter-be", "Modules");
+        RepositoryRoot, "backend", "src", "Modules");
     private static readonly string ApiHostRoot = Path.Combine(
-        RepositoryRoot, "backend", "caresitter-be", "ApiHost");
+        RepositoryRoot, "backend", "src", "ApiHost");
 
     private static readonly string[] ForbiddenDomainDependencies =
     {
@@ -224,7 +224,7 @@ public sealed class ArchitectureBoundaryTests
     [Fact]
     public void Sql_is_the_only_runtime_schema_migration_mechanism()
     {
-        var runtimeRoot = Path.Combine(RepositoryRoot, "backend", "caresitter-be");
+        var runtimeRoot = Path.Combine(RepositoryRoot, "backend", "src");
         var forbidden = new Regex(
             @"Microsoft\.EntityFrameworkCore\.Migrations|:\s*(?:Migration|ModelSnapshot)\b|" +
             @"\.Database\s*\.\s*(?:Migrate|MigrateAsync|EnsureCreated|EnsureCreatedAsync)\s*\(");
@@ -373,7 +373,7 @@ public sealed class ArchitectureBoundaryTests
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (Directory.Exists(Path.Combine(current.FullName, "backend", "caresitter-be", "Modules")))
+            if (Directory.Exists(Path.Combine(current.FullName, "backend", "src", "Modules")))
                 return current.FullName;
             current = current.Parent;
         }

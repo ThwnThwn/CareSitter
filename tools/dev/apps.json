@@ -15,8 +15,8 @@
   },
   "backend": {
     "composeFile": "backend/docker-compose.yml",
-    "project": "backend/orchestration/CareSitter.AppHost/CareSitter.AppHost.csproj",
-    "workingDirectory": "backend/orchestration/CareSitter.AppHost",
+    "project": "backend/src/AppHost/CareSitter.AppHost.csproj",
+    "workingDirectory": "backend/src/AppHost",
     "apiUrl": "http://localhost:5033",
     "nutritionUrl": "http://localhost:5035",
     "ngrokInspectUrl": "http://localhost:4040"

@@ -46,6 +46,30 @@ public sealed class MatchingPolicyTests
     }
 
     [Fact]
+    public void Scheduled_matching_can_consider_offline_profiles_without_weakening_other_filters()
+    {
+        var profile = Profile() with { AvailabilityStatus = "OFFLINE" };
+        var booking = Booking();
+        Assert.False(IsEligible(profile, booking, Address, [], new MatchingOptions()));
+        Assert.True(IsEligible(profile, booking, Address, [], new MatchingOptions(), scheduledBooking: true));
+        Assert.False(IsEligible(profile with { KycStatus = "PENDING" }, booking, Address, [],
+            new MatchingOptions(), scheduledBooking: true));
+        Assert.False(IsEligible(profile, booking, Address,
+            [new(profile.Id, Guid.NewGuid(), booking.ScheduledStart, booking.ScheduledEnd)],
+            new MatchingOptions(), scheduledBooking: true));
+    }
+
+    [Fact]
+    public void Reasons_never_claim_skills_without_declared_requirements_or_invent_experience()
+    {
+        var candidate = PrepareCandidate(Profile() with { YearsOfExperience = null }, Address, ParseSkills(null));
+        var ranked = Assert.Single(Rank([candidate], [new(0, 1000, 120)], new MatchingOptions()));
+        Assert.Null(ranked.YearsOfExperience);
+        Assert.Contains("no_booking_conflict", ranked.MatchReasons!);
+        Assert.DoesNotContain("required_skills_match", ranked.MatchReasons!);
+    }
+
+    [Fact]
     public void Shortlist_excludes_missing_origin_and_orders_nearest_with_limit()
     {
         var far = PrepareCandidate(Profile() with { ServiceCenter = new GeoPoint(10.81, 106.7) },
@@ -94,13 +118,14 @@ public sealed class MatchingPolicyTests
         => Assert.Equal(expected, CanRankCaregiversForStatus(status, prepay));
 
     [Fact]
-    public void Skills_keep_legacy_json_and_delimited_matching_behavior()
+    public void Skills_support_legacy_encodings_but_require_exact_normalized_matches()
     {
         var skills = ParseSkills("[{\"label\":\" Elderly  Care \"},\"DEMENTIA\"]");
         Assert.Contains("elderly care", skills);
         Assert.Contains("dementia", skills);
         Assert.Equal(0.5m, SkillMatchScore(ParseSkills("elderly care, injection"), skills));
-        Assert.Equal(1m, SkillMatchScore(ParseSkills("care"), skills));
+        Assert.Equal(0m, SkillMatchScore(ParseSkills("care"), skills));
+        Assert.Equal(0m, SkillMatchScore(ParseSkills("meal"), ParseSkills("no meal preparation")));
         Assert.Equal(1m, SkillMatchScore(ParseSkills(null), skills));
         Assert.Equal(0, DistanceMeters(Address.Location, Address.Location));
     }

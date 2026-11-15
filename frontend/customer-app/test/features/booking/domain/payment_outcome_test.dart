@@ -2,6 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/booking/domain/payment_outcome.dart';
 
 void main() {
+  test('provider expiry does not override a booking being reconciled', () {
+    for (final intent in ['EXPIRED', 'FAILED', 'CANCELLED', 'SUCCEEDED']) {
+      expect(
+          paymentOutcome(
+              bookingStatus: 'payment_reconciliation_pending',
+              intentStatus: intent),
+          PaymentOutcome.syncing);
+    }
+  });
   for (final intent in [null, 'SUCCEEDED', 'PENDING', 'EXPIRED', 'FAILED']) {
     test('failed matching stays separate from charge failure with $intent', () {
       expect(

@@ -42,8 +42,12 @@ abstract final class EnvConfig {
   /// Local knowledge requests can still use BASE_URL on the LAN.
   static String get googleAuthBaseUrl {
     final configured = _definedGoogleAuthBaseUrl.trim();
-    return (configured.isEmpty ? apiBaseUrl : configured)
+    final base = (configured.isEmpty ? apiBaseUrl : configured)
         .replaceAll(RegExp(r'/+$'), '');
+    final uri = Uri.parse(base);
+    // Accept a backend origin as well as the versioned API base. The popup
+    // route is registered under /api/v1 even when it uses a separate host.
+    return uri.path.isEmpty ? uri.replace(path: '/api/v1').toString() : base;
   }
 
   // Khóa dành cho ứng dụng khách; cấu hình bằng maps.local.json và giới hạn

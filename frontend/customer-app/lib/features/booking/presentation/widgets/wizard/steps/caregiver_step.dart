@@ -23,7 +23,7 @@ class CaregiverStep extends ConsumerWidget {
                 padding: EdgeInsets.all(AppSpacing.xl),
                 child: CircularProgressIndicator())),
         error: (_, __) => TextButton(
-            onPressed: () => ref.invalidate(wizardCandidatesProvider(args)),
+            onPressed: () => ref.invalidate(bookingCandidateRequestProvider),
             child: const Text('Thử lại')),
         data: (items) =>
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -33,7 +33,7 @@ class CaregiverStep extends ConsumerWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: AppSpacing.xs),
-              Text('${items.length} chăm sóc viên đang trực tuyến',
+              Text('${items.length} chăm sóc viên phù hợp với lịch và khu vực',
                   style: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 13)),
               const SizedBox(height: AppSpacing.md),
@@ -54,7 +54,7 @@ class CaregiverStep extends ConsumerWidget {
                               style: TextStyle(
                                   color: AppColors.textPrimary,
                                   fontWeight: FontWeight.w700)),
-                          Text('Hệ thống sẽ chọn người phù hợp nhất cho bạn',
+                          Text('Tìm người phù hợp và chờ họ xác nhận nhận ca',
                               style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 12)),
@@ -80,7 +80,7 @@ class CaregiverStep extends ConsumerWidget {
                         .selectCaregiver(caregiver.id)),
               if (items.isEmpty)
                 const Text(
-                    'Chưa có chăm sóc viên trực tuyến. Bạn có thể để hệ thống tự ghép.'),
+                    'Chưa có gợi ý phù hợp với khung giờ và địa chỉ này. Bạn có thể đổi lịch hoặc để hệ thống tiếp tục tìm.'),
             ]));
   }
 }
@@ -127,10 +127,11 @@ class _CaregiverCard extends StatelessWidget {
           Row(children: [
             const Icon(Icons.star, size: 12, color: AppColors.warning),
             const SizedBox(width: AppSpacing.tiny),
-            Text(
-                '${caregiver.ratingAvg.toStringAsFixed(1)} • ${caregiver.yearsOfExperience ?? 3} năm',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12)),
+            Flexible(
+                child: Text(
+                    '${caregiver.ratingCount == 0 ? 'Chưa có đánh giá' : caregiver.ratingAvg.toStringAsFixed(1)} • ${caregiver.experienceLabel}',
+                    style: const TextStyle(
+                        color: AppColors.textSecondary, fontSize: 12))),
           ]),
           if (caregiver.hourlyRateExpected != null)
             Text('${formatVnd(caregiver.hourlyRateExpected!)} / giờ',

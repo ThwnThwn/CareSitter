@@ -18,6 +18,7 @@ import 'package:caregiver_app/features/home/presentation/screens/home_screen.dar
 import 'package:caregiver_app/features/home/presentation/screens/notifications_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_list_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_detail_screen.dart';
+import 'package:caregiver_app/features/meals/presentation/screens/booking_meals_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_active_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_map_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_summary_screen.dart';
@@ -228,6 +229,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return _detailPage(
               pageKey: state.pageKey, child: ShiftDetailScreen(id: id));
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/shifts/:id/meals',
+        pageBuilder: (_, state) => _detailPage(
+          pageKey: state.pageKey,
+          child: BookingMealsScreen(bookingId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

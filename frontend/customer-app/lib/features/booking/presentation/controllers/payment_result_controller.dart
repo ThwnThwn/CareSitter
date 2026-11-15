@@ -11,7 +11,8 @@ typedef PaymentResultArgs = ({String? bookingId, String? intentId});
 final paymentResultControllerProvider = StateNotifierProvider.autoDispose
     .family<PaymentResultController, PaymentResultState, PaymentResultArgs>(
         (ref, args) {
-  ref.watch(authStateProvider.select((s) => s.valueOrNull?.userId));
+  ref.watch(authStateProvider
+      .select((s) => (s.valueOrNull?.userId, s.valueOrNull?.isAuthenticated)));
   final repository = ref.watch(bookingRepositoryProvider);
   final controller = PaymentResultController(
     args: args,
@@ -31,6 +32,7 @@ class PaymentResultController extends StateNotifier<PaymentResultState> {
     required this.readIntentStatus,
     required this.onConfirmed,
     this.pollInterval = const Duration(seconds: 2),
+    this.maxPollAttempts = 15,
   }) : super(const PaymentResultState());
 
   final PaymentResultArgs args;
@@ -38,6 +40,7 @@ class PaymentResultController extends StateNotifier<PaymentResultState> {
   final Future<String> Function(String) readIntentStatus;
   final Future<void> Function() onConfirmed;
   final Duration pollInterval;
+  final int maxPollAttempts;
   Timer? _timer;
   int _generation = 0;
   int _attempts = 0;
@@ -77,7 +80,8 @@ class PaymentResultController extends StateNotifier<PaymentResultState> {
       bookingStatus: bookingStatus,
       intentStatus: intentStatus,
     );
-    if (state.outcome == PaymentOutcome.syncing && ++_attempts < 5) {
+    if (state.outcome == PaymentOutcome.syncing &&
+        ++_attempts < maxPollAttempts) {
       _timer = Timer(pollInterval, () => unawaited(refresh()));
     } else if (const {
       PaymentOutcome.success,

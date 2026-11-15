@@ -37,7 +37,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
       );
     case 'confirmed':
       return (
-        label: 'Đã xác nhận',
+        label: 'Chờ nhận ca',
         foreground: AppColors.warning,
         background: AppColors.secondaryContainer,
       );

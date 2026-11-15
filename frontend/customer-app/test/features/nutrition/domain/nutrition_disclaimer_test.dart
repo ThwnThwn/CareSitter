@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('disclaimers and versions exactly match the backend constants', () {
-    final source = File('../../backend/services/nutrition/src/'
+    final source = File('../../backend/src/Services/Nutrition/'
             'CareSitter.Nutrition/Application/NutritionDisclaimer.cs')
         .readAsStringSync();
     for (final entry in {

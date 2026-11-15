@@ -9,6 +9,7 @@ import 'nutrition_screen_actions.dart';
 import 'nutrition_screen_page.dart';
 import 'nutrition_screen_page_actions.dart';
 import 'nutrition_screen_page_state.dart';
+import '../widgets/nutrition_meal_feedback_panel.dart';
 
 class NutritionScreen extends ConsumerStatefulWidget {
   const NutritionScreen({
@@ -185,11 +186,34 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
         onRetryDate: flow.loading || flow.dateLoading
             ? null
             : () => _openPlanForDate(controller, selectedDate),
-        onCreatePlan: () => _createPlan(controller, selectedDate),
+        onCreatePlan: () => controller.suggestForDate(selectedDate),
         onCreateWeek: () => _createWeek(controller, selectedDate),
-        onConfirm: () =>
-            _createWeek(controller, selectedDate, confirmFirst: true),
+        onConfirm: () {
+          final day = controller.singleDayRequest;
+          if (day != null) {
+            controller.confirmForDate(day);
+          } else {
+            _createWeek(controller, selectedDate, confirmFirst: true);
+          }
+        },
+        onMealFeedback: () => _mealFeedback(controller),
       );
+
+  Future<void> _mealFeedback(NutritionFlowController controller) async {
+    final plan = controller.view.resource;
+    if (plan?.isSavedPlan != true) return;
+    final beneficiary = widget.beneficiaryId;
+    final session = ref.read(nutritionSessionProvider);
+    await NutritionScreenActions.showSheet<void>(
+        context: context,
+        onCloseSheetChanged: (close) => _closeSheet = close,
+        builder: (context) => SafeArea(
+            child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * .85,
+                child: NutritionMealFeedbackPanel(
+                    scope: (beneficiaryId: beneficiary, planId: plan!.id)))));
+    if (_isCurrent(beneficiary, session)) await controller.load();
+  }
 
   Future<void> _createWeek(
       NutritionFlowController controller, DateTime selectedDate,
@@ -201,6 +225,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
       startDate: selectedDate,
       beneficiaryName: widget.beneficiaryName,
       onCloseSheetChanged: (close) => _closeSheet = close,
+      beneficiaryId: widget.beneficiaryId,
     );
     if (!mounted || days == null || !_isCurrent(beneficiary, session)) {
       return;
@@ -214,20 +239,6 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
       isCurrent: () => _isCurrent(beneficiary, session),
       onNeedsProfile: () => setState(() => _editingProfile = true),
     );
-  }
-
-  Future<void> _createPlan(
-    NutritionFlowController controller,
-    DateTime selectedDate,
-  ) async {
-    final beneficiary = widget.beneficiaryId;
-    final session = ref.read(nutritionSessionProvider);
-    final created =
-        await controller.recommendForDateUsingConfirmedHealth(selectedDate);
-    if (!_isCurrent(beneficiary, session)) {
-      return;
-    }
-    if (!created) setState(() => _editingProfile = true);
   }
 
   Future<void> _replace(NutritionFlowController c, String mealType) async {

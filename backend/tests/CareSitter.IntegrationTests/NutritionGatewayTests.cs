@@ -156,6 +156,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.Equal(expectedDemo ? "Gemini" : null, result.AnswerProvider);
         Assert.Equal(expectedDemo ? 1 : 0, result.AnswerBlocks?.Count);
         Assert.Equal(expectedDemo ? "Fixture source passage." : null, Assert.Single(result.Results).Excerpt);
+        Assert.Equal(expectedDemo ? "Fixture section summary." : null, Assert.Single(result.Results).Summary);
         Assert.True(response.Headers.CacheControl?.NoStore);
     }
 
@@ -225,6 +226,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.False(body.GetProperty("localDemo").GetBoolean());
         Assert.False(body.GetProperty("generalKnowledge").GetBoolean());
         Assert.Equal("Fixture source passage.", body.GetProperty("results")[0].GetProperty("excerpt").GetString());
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("results")[0].GetProperty("summary").ValueKind);
         Assert.Equal(suggestion ? "ai_suggestion" : "answered", body.GetProperty("answerStatus").GetString());
         Assert.Equal(suggestion ? 0 : 1, body.GetProperty("answerChunkIds").GetArrayLength());
     }
@@ -427,11 +429,12 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Authenticate(); var id = Guid.NewGuid(); var assessment = Guid.NewGuid(); var recipe = Guid.NewGuid();
         var response = await _http.PostAsJsonAsync($"/api/v1/beneficiaries/{_beneficiary}/{route.Replace("{id}", id.ToString())}",
             new { expectedHealthRevision = 7, idempotencyKey = Guid.NewGuid(), assessmentId = assessment,
-                recommendationId = id, recipeVersionId = recipe, mealType = "breakfast" });
+                recommendationId = id, recipeVersionId = recipe, mealType = "breakfast", availableIngredients = new[] { "cá", "bí đỏ" } });
         Assert.Equal(operation == CommandOperation.Assess ? 202 : 200, (int)response.StatusCode);
         Assert.Equal(operation, _stub.Command!.Operation); Assert.Equal(assessment.ToString(), _stub.Command.AssessmentId);
         Assert.Equal(recipe.ToString(), _stub.Command.RecipeVersionId); Assert.Equal("breakfast", _stub.Command.MealType);
         Assert.False(_stub.Command.HasPlannedDate);
+        Assert.Equal(new[] { "cá", "bí đỏ" }, _stub.Command.AvailableIngredients);
         if (operation is CommandOperation.Confirm or CommandOperation.Replace or CommandOperation.Save) Assert.Equal(id.ToString(), _stub.Command.ResourceId);
         else Assert.False(_stub.Command.HasResourceId);
     }
@@ -596,7 +599,8 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
             result.AnswerChunkIds.AddRange(AnswerIds);
             for (var index = 1; index <= KnowledgeSources; index++)
                 result.Results.Add(new KnowledgeHit { ChunkId = index == 1 ? "demo" : $"demo{index}", Heading = "Fixture",
-                    SourceTitle = "Test", PdfPage = index + 3, SourceRevisionId = "v1", Excerpt = "Fixture source passage." });
+                    SourceTitle = "Test", PdfPage = index + 3, SourceRevisionId = "v1", Excerpt = "Fixture source passage.",
+                    Summary = "Fixture section summary." });
             var block = new KnowledgeAnswerBlock { Text = "Gemini generated fixture answer." };
             block.ChunkIds.AddRange(BlockIds);
             result.AnswerBlocks.Add(block);

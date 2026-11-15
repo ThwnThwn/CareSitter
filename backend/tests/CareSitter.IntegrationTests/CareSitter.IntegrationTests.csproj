@@ -22,9 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\caresitter-be\ApiHost\CareSitter.ApiHost.csproj" />
-    <Compile Include="..\..\orchestration\CareSitter.AppHost\LocalConfiguration.cs" Link="TestedSources\AppHostLocalConfiguration.cs" />
-    <Compile Include="..\..\orchestration\CareSitter.AppHost\NutritionDatabaseConfiguration.cs" Link="TestedSources\NutritionDatabaseConfiguration.cs" />
+    <ProjectReference Include="..\..\src\ApiHost\CareSitter.ApiHost.csproj" />
+    <Compile Include="..\..\src\AppHost\LocalConfiguration.cs" Link="TestedSources\AppHostLocalConfiguration.cs" />
+    <Compile Include="..\..\src\AppHost\NutritionDatabaseConfiguration.cs" Link="TestedSources\NutritionDatabaseConfiguration.cs" />
   </ItemGroup>
 
 </Project>

@@ -16,7 +16,7 @@ $backendRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot = Split-Path -Parent $backendRoot
 $migrationDirectory = Join-Path $backendRoot 'init-db'
 $solution = Join-Path $backendRoot 'CareSitter.sln'
-$apiHostDirectory = Join-Path (Join-Path $backendRoot 'caresitter-be') 'ApiHost'
+$apiHostDirectory = Join-Path $backendRoot 'src/ApiHost'
 $apiAssembly = Join-Path $apiHostDirectory 'bin/Release/net8.0/CareSitter.ApiHost.dll'
 $smokeScript = Join-Path $PSScriptRoot 'smoke-test.ps1'
 $updateDbScript = Join-Path $PSScriptRoot 'update-db.ps1'
@@ -669,6 +669,10 @@ try {
                 if ($testProject.BaseName -eq 'CareSitter.IntegrationTests' -and $env:LAB3_PROVIDER_SMOKE -ne '1') {
                     # This opt-in smoke writes a temporary PDF to a real Cloudinary account.
                     $providerFilter = @('--filter', 'Category!=CloudinaryLive')
+                }
+                elseif ($testProject.BaseName -eq 'CareSitter.Nutrition.Tests' -and
+                    $env:CARESITTER_SYNTHETIC_GEMINI_TEST -ne '1') {
+                    $providerFilter = @('--filter', 'Category!=GeminiLive')
                 }
                 Invoke-CheckedCommand `
                     -FilePath 'dotnet' `

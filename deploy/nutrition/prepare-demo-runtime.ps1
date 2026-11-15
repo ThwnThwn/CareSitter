@@ -88,7 +88,7 @@ if ($authorizationPayload.mode -ne 'owner_authorized_graph_demo' -or
     throw 'GraphRAG demo authorization does not match the requested use and artifact hashes.'
 }
 
-$catalog = Join-Path $repository 'backend/services/nutrition/catalog/drafts/adult-baseline-variety-demo.bundle.json'
+$catalog = Join-Path $repository 'backend/src/Services/Nutrition/catalog/drafts/adult-baseline-variety-demo.bundle.json'
 $expectedRecipes = 78
 if (-not (Test-Path -LiteralPath $catalog -PathType Leaf)) { throw 'The demo catalog bundle is missing.' }
 $catalogPayload = Get-Content -LiteralPath $catalog -Raw | ConvertFrom-Json
@@ -104,7 +104,7 @@ if ($apiKeys.Count -ne 1 -or $apiKeys[0].Length -lt 20 -or $apiKeys[0].Length -g
 $runtime = Join-Path $deployRoot 'runtime/nutrition'
 New-Item -ItemType Directory -Path $runtime -Force | Out-Null
 $preparedCatalog = Join-Path $runtime 'catalog.import.bundle.json'
-$catalogTool = Join-Path $repository 'backend/services/nutrition/tools/CareSitter.Nutrition.CatalogTool/CareSitter.Nutrition.CatalogTool.csproj'
+$catalogTool = Join-Path $repository 'backend/src/Services/Nutrition/tools/CareSitter.Nutrition.CatalogTool/CareSitter.Nutrition.CatalogTool.csproj'
 & dotnet run -c Release --project $catalogTool -- prepare-demo $catalog $preparedCatalog
 if ($LASTEXITCODE -ne 0) { throw 'CatalogTool failed to prepare the deployment-safe local demo bundle.' }
 $preparedPayload = Get-Content -LiteralPath $preparedCatalog -Raw | ConvertFrom-Json

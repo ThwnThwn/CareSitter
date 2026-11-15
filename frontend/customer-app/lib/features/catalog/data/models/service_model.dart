@@ -64,6 +64,7 @@ class ServiceModel {
   final int baseHourlyPrice;
   final double platformFeePercent;
   final List<ServicePlanModel> plans;
+  final List<String> requiredCaregiverSkills;
 
   const ServiceModel({
     required this.id,
@@ -75,6 +76,7 @@ class ServiceModel {
     this.baseHourlyPrice = 0,
     this.platformFeePercent = 0,
     this.plans = const [],
+    this.requiredCaregiverSkills = const [],
   });
 
   /// Icon tương ứng với code gói
@@ -128,6 +130,9 @@ class ServiceModel {
                     json['PlatformFeePercent'] as num?)
                 ?.toDouble() ??
             0,
+        requiredCaregiverSkills:
+            (json['requiredCaregiverSkills'] as List<dynamic>? ?? const [])
+                .cast<String>(),
         plans: ((json['plans'] ?? json['Plans']) as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(ServicePlanModel.fromJson)

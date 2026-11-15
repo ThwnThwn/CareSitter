@@ -20,8 +20,8 @@ function Invoke-Docker([string[]]$arguments) {
 
 try {
     New-Item -ItemType Directory -Path $state | Out-Null
-    $catalogTool = Join-Path $repository 'backend/services/nutrition/tools/CareSitter.Nutrition.CatalogTool/CareSitter.Nutrition.CatalogTool.csproj'
-    $sourceCatalog = Join-Path $repository 'backend/services/nutrition/catalog/drafts/adult-baseline-variety-demo.bundle.json'
+    $catalogTool = Join-Path $repository 'backend/src/Services/Nutrition/tools/CareSitter.Nutrition.CatalogTool/CareSitter.Nutrition.CatalogTool.csproj'
+    $sourceCatalog = Join-Path $repository 'backend/src/Services/Nutrition/catalog/drafts/adult-baseline-variety-demo.bundle.json'
     & dotnet run -c Release --project $catalogTool -- prepare-demo $sourceCatalog $preparedCatalog | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Unable to prepare the fixture demo catalog.' }
     $catalogHash = (Get-FileHash -LiteralPath $preparedCatalog -Algorithm SHA256).Hash

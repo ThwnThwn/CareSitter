@@ -1,5 +1,7 @@
 using System.Text.Json;
 using CareSitter.Contracts.Services;
+using CareSitter.Messaging.Contracts.Events;
+using CareSitter.Messaging.Kafka;
 using CareSitter.Modules.People;
 using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Application.Commands.SelfBeneficiary;
@@ -74,8 +76,15 @@ public sealed class SelfBeneficiaryTests : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton(_dataSource);
-        new PeopleModule().RegisterServices(services, new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:CareSitter"] = _connection }).Build());
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:CareSitter"] = _connection,
+                ["KAFKA_ENABLED"] = "false"
+            }).Build();
+        services.AddKafkaMessaging(configuration, (events, options) =>
+            events.Add<BeneficiaryDeleted>("caresitter.people.beneficiary-deleted", 1, options.NutritionTopic));
+        new PeopleModule().RegisterServices(services, configuration);
         services.UseFixtureProvider<PeopleDbContext>();
         services.AddSingleton<ICurrentUser>(new Actor(owner, role));
         services.AddSingleton<ICatalogLookupService>(new Catalog(_owner, _address, verified));

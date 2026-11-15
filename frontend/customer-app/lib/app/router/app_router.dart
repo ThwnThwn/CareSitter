@@ -26,6 +26,7 @@ import 'package:caresitter_customer/features/catalog/presentation/screens/servic
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_wizard_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_detail_screen.dart';
+import 'package:caresitter_customer/features/meals/presentation/screens/booking_meals_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/payment_result_screen.dart';
 import 'package:caresitter_customer/features/caregiver/presentation/screens/caregiver_list_screen.dart';
 import 'package:caresitter_customer/features/caregiver/presentation/screens/caregiver_profile_screen.dart';
@@ -419,6 +420,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
           child: DisputeScreen(bookingId: state.pathParameters['id']!),
+        ),
+      ),
+
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '${AppRoutes.bookings}/:id/meals',
+        pageBuilder: (_, state) => _slideUpPage(
+          pageKey: state.pageKey,
+          child: BookingMealsScreen(bookingId: state.pathParameters['id']!),
         ),
       ),
 

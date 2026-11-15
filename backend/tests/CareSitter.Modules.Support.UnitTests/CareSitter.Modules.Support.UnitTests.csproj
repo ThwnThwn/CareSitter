@@ -11,6 +11,6 @@
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <Using Include="Xunit" />
-    <ProjectReference Include="../../caresitter-be/Modules/Support/CareSitter.Modules.Support.csproj" />
+    <ProjectReference Include="../../src/Modules/Support/CareSitter.Modules.Support.csproj" />
   </ItemGroup>
 </Project>

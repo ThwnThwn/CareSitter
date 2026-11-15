@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:caresitter_customer/features/booking/data/models/booking_payment_summary_model.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 
@@ -169,6 +170,20 @@ class _CancelRepository extends BookingRepository {
 
   int calls = 0;
   final result = Completer<BookingModel>();
+
+  @override
+  Future<BookingPaymentSummaryModel> getPaymentSummary(String id) async =>
+      BookingPaymentSummaryModel(
+          bookingId: id,
+          amountDue: 0,
+          canPay: false,
+          canCancel: true,
+          refundIfCancelledNow: null,
+          paymentExplanation: 'Thanh toán đang được đối soát.',
+          settlementExplanation: '',
+          matchingExplanation: '',
+          cancellationExplanation:
+              'Khoản thanh toán (nếu có) cần được đối soát trước khi xác định hoàn tiền.');
 
   @override
   Future<BookingModel> cancelBooking(String bookingId, {String? reason}) async {

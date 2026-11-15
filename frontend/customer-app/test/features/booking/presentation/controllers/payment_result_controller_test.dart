@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:caresitter_customer/features/booking/domain/payment_outcome.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/payment_result_controller.dart';
@@ -6,6 +7,70 @@ import 'package:caresitter_customer/features/booking/presentation/controllers/pa
 import 'package:caresitter_customer/features/booking/presentation/models/payment_result_presentation.dart';
 
 void main() {
+  test(
+      'payment status distinguishes a confirmed charge from acceptance of the care shift',
+      () {
+    final waiting = PaymentResultPresentation.details(PaymentOutcome.success,
+        bookingStatus: 'confirmed');
+    final accepted = PaymentResultPresentation.details(PaymentOutcome.success,
+        bookingStatus: 'caregiver_accepted');
+    expect(waiting.message, contains('Đang chờ'));
+    expect(accepted.message, contains('đã nhận ca'));
+    expect(waiting.label, 'ĐÃ THANH TOÁN');
+    expect(accepted.label, 'ĐÃ THANH TOÁN');
+  });
+  test('late provider callback is polled without inviting a second payment',
+      () {
+    fakeAsync((time) {
+      var paid = false;
+      final controller = PaymentResultController(
+          args: (bookingId: 'booking', intentId: 'intent'),
+          readBookingStatus: (_) async =>
+              paid ? 'confirmed' : 'pending_payment',
+          readIntentStatus: (_) async => paid ? 'SUCCEEDED' : 'PENDING',
+          onConfirmed: () async {});
+      unawaited(controller.refresh());
+      time.flushMicrotasks();
+      for (var i = 0; i < 9; i++) {
+        time.elapse(const Duration(seconds: 2));
+        time.flushMicrotasks();
+      }
+      expect(controller.state.outcome, PaymentOutcome.syncing);
+      paid = true;
+      time.elapse(const Duration(seconds: 2));
+      time.flushMicrotasks();
+      expect(controller.state.outcome, PaymentOutcome.success);
+      controller.dispose();
+    });
+  });
+  test(
+      'automatic polling is bounded and manual retry starts a new verification',
+      () {
+    fakeAsync((time) {
+      var reads = 0;
+      final controller = PaymentResultController(
+          args: (bookingId: 'booking', intentId: null),
+          maxPollAttempts: 3,
+          readBookingStatus: (_) async {
+            reads++;
+            return 'pending_payment';
+          },
+          readIntentStatus: (_) async => 'PENDING',
+          onConfirmed: () async {});
+      unawaited(controller.refresh());
+      time.flushMicrotasks();
+      for (var i = 0; i < 5; i++) {
+        time.elapse(const Duration(seconds: 2));
+        time.flushMicrotasks();
+      }
+      expect(reads, 3);
+      expect(controller.state.outcome, PaymentOutcome.syncing);
+      unawaited(controller.retry());
+      time.flushMicrotasks();
+      expect(reads, 4);
+      controller.dispose();
+    });
+  });
   test(
       'successful payment with failed matching never asks customer to pay again',
       () async {

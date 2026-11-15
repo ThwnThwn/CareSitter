@@ -74,7 +74,7 @@ class BookingStatusPresentation {
         );
       case 'confirmed':
         return const BookingStatusPresentation(
-          label: 'Đã xác nhận',
+          label: 'Chờ nhận ca',
           color: AppColors.primary,
           backgroundColor: AppColors.primaryContainer,
           currentStep: 1,

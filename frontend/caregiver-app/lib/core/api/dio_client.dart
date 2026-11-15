@@ -45,9 +45,12 @@ class DioClient {
       _request(() => _dio.post<T>(path, data: data, cancelToken: cancelToken));
 
   Future<Response<T>> postIdempotent<T>(String path,
-          {dynamic data, required String idempotencyKey}) =>
+          {dynamic data,
+          required String idempotencyKey,
+          CancelToken? cancelToken}) =>
       _request(() => _dio.post<T>(path,
           data: data,
+          cancelToken: cancelToken,
           options: Options(headers: {'Idempotency-Key': idempotencyKey})));
 
   Future<Response<T>> put<T>(String path, {dynamic data}) =>

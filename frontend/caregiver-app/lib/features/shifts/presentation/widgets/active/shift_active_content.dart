@@ -6,6 +6,7 @@ import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_active_overview.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_checkin_flow.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_checklist.dart';
+import '../shift_meal_link.dart';
 
 class ShiftActiveContent extends StatelessWidget {
   const ShiftActiveContent({
@@ -41,6 +42,7 @@ class ShiftActiveContent extends StatelessWidget {
             else
               ShiftCheckinFlow(booking: booking),
             const SizedBox(height: AppSpacing.compact),
+            ShiftMealLink(shift: booking),
             ShiftChecklist(booking: booking),
           ],
         ),

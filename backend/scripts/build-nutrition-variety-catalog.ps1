@@ -2,7 +2,7 @@
 param()
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$catalog = Join-Path $root 'services/nutrition/catalog'
+$catalog = Join-Path $root 'src/Services/Nutrition/catalog'
 $bundle = Get-Content "$catalog/drafts/adult-baseline-book-demo.bundle.json" -Raw | ConvertFrom-Json -AsHashtable
 $snapshotPath = "$catalog/sources/nin-food-composition-2026-10-24.json"
 $snapshot = Get-Content $snapshotPath -Raw | ConvertFrom-Json -AsHashtable

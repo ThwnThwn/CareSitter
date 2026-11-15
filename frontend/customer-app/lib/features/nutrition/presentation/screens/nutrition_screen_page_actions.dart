@@ -17,6 +17,7 @@ class NutritionScreenPageActions {
     required this.onCreatePlan,
     required this.onCreateWeek,
     required this.onConfirm,
+    this.onMealFeedback,
   });
 
   final VoidCallback onReturnToMenu;
@@ -34,4 +35,5 @@ class NutritionScreenPageActions {
   final VoidCallback onCreatePlan;
   final VoidCallback onCreateWeek;
   final VoidCallback onConfirm;
+  final VoidCallback? onMealFeedback;
 }

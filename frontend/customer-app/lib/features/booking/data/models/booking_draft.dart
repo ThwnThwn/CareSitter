@@ -8,6 +8,7 @@ class BookingDraft {
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final String? idempotencyKey;
+  final List<String> requiredSkills;
 
   const BookingDraft({
     required this.beneficiaryId,
@@ -18,5 +19,6 @@ class BookingDraft {
     required this.scheduledStart,
     required this.scheduledEnd,
     this.idempotencyKey,
+    this.requiredSkills = const [],
   });
 }

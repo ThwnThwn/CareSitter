@@ -1,12 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0.425 AS build
 WORKDIR /src
 COPY Directory.Build.props ./
-COPY caresitter-be/ ./caresitter-be/
-COPY services/nutrition/src/ ./services/nutrition/src/
-COPY services/nutrition/protos/ ./services/nutrition/protos/
-RUN dotnet publish caresitter-be/ApiHost/CareSitter.ApiHost.csproj \
+COPY src/ApiHost/ ./src/ApiHost/
+COPY src/Modules/ ./src/Modules/
+COPY src/BuildingBlocks/ ./src/BuildingBlocks/
+COPY src/Services/Nutrition/CareSitter.Nutrition/ ./src/Services/Nutrition/CareSitter.Nutrition/
+COPY src/Services/Nutrition/Protos/ ./src/Services/Nutrition/Protos/
+RUN dotnet publish src/ApiHost/CareSitter.ApiHost.csproj \
     -c Release -o /out/api /p:UseAppHost=false \
-    && dotnet publish services/nutrition/src/CareSitter.Nutrition/CareSitter.Nutrition.csproj \
+    && dotnet publish src/Services/Nutrition/CareSitter.Nutrition/CareSitter.Nutrition.csproj \
     -c Release -o /out/nutrition /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

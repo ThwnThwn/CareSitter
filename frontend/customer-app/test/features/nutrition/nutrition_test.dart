@@ -562,15 +562,12 @@ void main() {
       'id': 'committed-resource',
       'healthRevision': 7,
     };
-    await c.assess();
+    await c.saveHealthAndAssess(const {}, plannedDate: DateTime(2027, 1, 3));
     expect(c.view.resource?.status, 'stale');
     expect(c.view.resource?.id, 'committed-resource');
     expect(c.view.resource?.healthRevision, 7);
     expect(c.view.error, isNull);
     expect(c.view.loading, isFalse);
-    expect(repository.writes, hasLength(1));
-    expect(await c.recommendForDateUsingConfirmedHealth(DateTime(2027, 1, 3)),
-        isFalse);
     expect(repository.writes, hasLength(1));
   });
 

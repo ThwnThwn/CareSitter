@@ -73,3 +73,7 @@
 \ir modules/catalog/61-private-booking-reports.sql
 \ir modules/people/62-beneficiary-deletion-outbox.sql
 \ir modules/catalog/63-firebase-booking-reports.sql
+\ir modules/booking/64-booking-meal-care.sql
+\ir modules/booking/65-care-needs-and-meal-revisions.sql
+\ir modules/people/66-meal-taste-feedback.sql
+\ir modules/booking/67-meal-health-fingerprint.sql

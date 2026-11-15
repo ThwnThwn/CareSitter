@@ -16,13 +16,17 @@ class NutritionResult extends StatelessWidget {
       required this.plannedDate,
       required this.onReplace,
       required this.onConfirm,
-      this.menuOnly = false});
+      this.menuOnly = false,
+      this.onEditProfile,
+      this.onMealFeedback});
   final NutritionFlow flow;
   final NutritionFlowController controller;
   final DateTime plannedDate;
   final ValueChanged<String> onReplace;
   final VoidCallback onConfirm;
   final bool menuOnly;
+  final VoidCallback? onEditProfile;
+  final VoidCallback? onMealFeedback;
   @override
   Widget build(BuildContext context) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,6 +51,11 @@ class NutritionResult extends StatelessWidget {
     }
     if (state == 'stale') {
       return [
+        if (r.isSavedPlan && onMealFeedback != null)
+          TextButton.icon(
+              onPressed: flow.loading ? null : onMealFeedback,
+              icon: const Icon(Icons.favorite_outline),
+              label: const Text('Phản hồi món đã ăn')),
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -65,7 +74,7 @@ class NutritionResult extends StatelessWidget {
             ]),
             const SizedBox(height: AppSpacing.sm),
             const Text(
-                'Hồ sơ chưa được cập nhật và kiểm tra xong. Hãy kiểm tra lại trước khi tạo thực đơn.'),
+                'Hãy kiểm tra lại thông tin dinh dưỡng trước khi tạo thực đơn mới.'),
             const SizedBox(height: AppSpacing.sm),
             Align(
               alignment: Alignment.centerRight,
@@ -94,6 +103,11 @@ class NutritionResult extends StatelessWidget {
         }[state] ??
         'Trạng thái: $status';
     final widgets = <Widget>[
+      if (r.isSavedPlan && onMealFeedback != null)
+        TextButton.icon(
+            onPressed: flow.loading ? null : onMealFeedback,
+            icon: const Icon(Icons.favorite_outline),
+            label: const Text('Phản hồi món đã ăn')),
       if (state != 'awaiting_confirmation') ...[
         Text(title, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.compact),
@@ -115,6 +129,13 @@ class NutritionResult extends StatelessWidget {
       widgets.add(Text(NutritionErrorCopy.failedAssessment(data.errorCode)));
     }
     widgets.add(const SizedBox(height: AppSpacing.compact));
+    if (state == 'needs_information' &&
+        decision.allows('edit_health') &&
+        onEditProfile != null) {
+      widgets.add(OutlinedButton(
+          onPressed: flow.loading ? null : onEditProfile,
+          child: const Text('Bổ sung hồ sơ')));
+    }
     if (state == 'awaiting_confirmation' && decision.allows('confirm')) {
       widgets.add(SizedBox(
           width: double.infinity,

@@ -104,7 +104,7 @@ public sealed class BaselineGateContractTests
     [Fact]
     public void Actor_scoped_media_rate_limit_runs_after_authentication_before_authorization()
     {
-        var program = Read("backend/caresitter-be/ApiHost/Program.cs");
+        var program = Read("backend/src/ApiHost/Program.cs");
         var authenticate = program.IndexOf("app.UseAuthentication();", StringComparison.Ordinal);
         var rateLimit = program.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
         var authorize = program.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);

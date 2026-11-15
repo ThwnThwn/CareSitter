@@ -17,7 +17,7 @@ class BookingConsentContent extends StatelessWidget {
         for (final section in const [
           (
             '1. Cam kết dịch vụ',
-            'CareSitter cam kết cung cấp người chăm sóc đã được xác minh danh tính, kiểm tra lý lịch và đào tạo chuyên môn. Mọi caregiver phải tuân thủ quy tắc ứng xử nghiêm ngặt trong suốt ca làm việc.'
+            'CareSitter kết nối bạn với người chăm sóc đã được duyệt hồ sơ để hỗ trợ sinh hoạt phi y tế. Thông tin kinh nghiệm và kỹ năng cần được xem trong hồ sơ của từng người chăm sóc.'
           ),
           (
             '2. Trách nhiệm của khách hàng',
@@ -25,19 +25,19 @@ class BookingConsentContent extends StatelessWidget {
           ),
           (
             '3. Quyền riêng tư & dữ liệu',
-            'Thông tin cá nhân của người được chăm sóc được bảo mật tuyệt đối theo Chính sách Bảo mật của CareSitter. Dữ liệu chỉ được chia sẻ với caregiver được phân công và các cơ quan có thẩm quyền khi cần thiết.'
+            'Thông tin được xử lý theo Chính sách Bảo mật của CareSitter và quyền truy cập của từng vai trò. Khi bạn chia sẻ thực đơn cho ca, người chăm sóc được phân công chỉ nhận nội dung món ăn cần thiết cho việc hỗ trợ sinh hoạt.'
           ),
           (
             '4. Chính sách hủy & hoàn tiền',
-            'Hủy trước 24h: hoàn 100%. Hủy trước 12h: hoàn 50%. Hủy trong vòng 2h hoặc khi caregiver đã đến: không hoàn tiền. Trường hợp khẩn cấp sẽ được xem xét riêng.'
+            'Lịch đã thanh toán có thể được hoàn toàn bộ số tiền khách đã trả khi hủy trước giờ bắt đầu, hoặc khi không thể cung cấp người chăm sóc theo chính sách hiện hành. Khi ca đã bắt đầu hoặc cần xác minh no-show, yêu cầu được xử lý qua hỗ trợ/khiếu nại. Số tiền dự kiến được kiểm tra trên từng lịch trước khi hủy; thời gian nhận tiền phụ thuộc đơn vị thanh toán.'
           ),
           (
             '5. Xử lý sự cố',
-            'Trong trường hợp xảy ra sự cố trong ca chăm sóc, caregiver sẽ liên hệ ngay với các liên hệ khẩn cấp bạn đã cung cấp. CareSitter có đội hỗ trợ 24/7 để xử lý các tình huống khẩn cấp.'
+            'Khi xảy ra sự cố trong ca, người chăm sóc cần liên hệ các liên hệ khẩn cấp đã cung cấp và gửi thông tin qua kênh hỗ trợ của CareSitter. Hỗ trợ trong ứng dụng không thay thế dịch vụ cấp cứu.'
           ),
           (
             '6. Bồi thường',
-            'CareSitter có bảo hiểm trách nhiệm nghề nghiệp cho mọi ca làm việc. Trong trường hợp xảy ra thiệt hại do lỗi của caregiver, CareSitter sẽ hỗ trợ theo quy trình giải quyết khiếu nại.'
+            'Yêu cầu liên quan đến thiệt hại hoặc chất lượng ca được tiếp nhận qua quy trình hỗ trợ và khiếu nại. Kết quả hoàn tiền hoặc bồi thường phụ thuộc việc xác minh và điều khoản áp dụng cho trường hợp cụ thể.'
           ),
         ])
           Padding(

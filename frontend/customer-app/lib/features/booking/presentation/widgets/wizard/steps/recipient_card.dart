@@ -42,8 +42,7 @@ class RecipientCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _BeneficiaryAvatar(
-                      beneficiary: beneficiary, selected: isSelected),
+                  _BeneficiaryAvatar(beneficiary: beneficiary),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(child: _BeneficiaryInfo(beneficiary: beneficiary)),
                   const SizedBox(width: AppSpacing.sm),
@@ -112,13 +111,9 @@ class _BeneficiaryInfo extends StatelessWidget {
 // ── Avatar tròn ──────────────────────────────────────────────────────────────
 
 class _BeneficiaryAvatar extends StatelessWidget {
-  const _BeneficiaryAvatar({
-    required this.beneficiary,
-    required this.selected,
-  });
+  const _BeneficiaryAvatar({required this.beneficiary});
 
   final BeneficiaryModel beneficiary;
-  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -132,13 +127,9 @@ class _BeneficiaryAvatar extends StatelessWidget {
     return Container(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: selected ? AppColors.primary : AppColors.primaryContainer,
-        border: Border.all(
-          color: selected ? AppColors.primary : AppColors.border,
-          width: 1.5,
-        ),
+        color: AppColors.primaryContainer,
       ),
       clipBehavior: Clip.antiAlias,
       child: path.isNotEmpty

@@ -53,6 +53,8 @@ class NutritionReasonCopy {
     if (value.isEmpty) return null;
     final menu = reason['recipeVersionId'] == menuId;
     return switch (reason['code']) {
+      'available_ingredient_match' when mealName != null =>
+        '$mealName: có nguyên liệu “$value” trong danh sách bạn đang có.',
       'declared_allergy_filter' when mealName != null =>
         '$mealName: đã lọc dị ứng $value theo dữ liệu nguyên liệu và dị nguyên.',
       'dietary_pattern' when mealName != null && value == 'vegetarian' =>
@@ -78,6 +80,7 @@ class NutritionReasonCopy {
     if (field.startsWith('allergies')) return 'Dị ứng thực phẩm';
     if (field.startsWith('chronicConditions')) return 'Bệnh lý hiện có';
     return const {
+          'availableIngredients': 'Nguyên liệu bạn nhập khi tạo thực đơn',
           'generalNote': 'Lưu ý sức khỏe',
           'careInstructions': 'Hướng dẫn chăm sóc',
           'healthHistory/nutrition/dietaryPattern': 'Kiểu ăn',

@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--upload', action='store_true')
     args = parser.parse_args()
     backend = Path(__file__).resolve().parent.parent
-    path = backend / 'services/nutrition/catalog/sources/nutrition-recipe-images.json'
+    path = backend / 'src/Services/Nutrition/catalog/sources/nutrition-recipe-images.json'
     manifest = json.loads(path.read_text(encoding='utf-8'))
     cache = backend / 'artifacts/nutrition-image-intake'
     cache.mkdir(parents=True, exist_ok=True)

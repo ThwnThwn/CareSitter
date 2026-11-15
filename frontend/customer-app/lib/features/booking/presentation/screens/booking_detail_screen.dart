@@ -1,4 +1,6 @@
 import '../widgets/booking_detail_app_bar.dart';
+import '../controllers/booking_payment_summary_controller.dart';
+import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import '../widgets/booking_status_actions.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_content_inner.dart';
 import 'package:caresitter_customer/features/booking/presentation/widgets/booking_detail_show_complete_shift_dialog_row.dart';
@@ -76,6 +78,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         statusConfig: statusConfig,
         onRefresh: () => ref.read(bookingStoreProvider.notifier).refresh(),
         onChat: openChat,
+        onMeals: () => context.push(AppRoutes.bookingMeals(booking.id)),
         actions: BookingStatusActions(
           booking: booking,
           status: status,
@@ -105,11 +108,19 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     if (_isCancelling || _cancelDialogOpen) return;
     setState(() => _cancelDialogOpen = true);
     try {
+      final summary =
+          await ref.refresh(bookingPaymentSummaryProvider(booking.id).future);
+      if (!mounted) return;
+      if (!summary.canCancel) {
+        AppToast.error(context, summary.cancellationExplanation);
+        return;
+      }
       final confirmed = await showConfirmActionDialog(
         context,
         title: 'Hủy lịch hẹn?',
         message: 'Lịch hẹn ngày ${booking.date}, ${booking.time} sẽ bị hủy.\n'
-            'Khoản thanh toán (nếu có) vẫn cần được đối soát.',
+            '${summary.refundIfCancelledNow == null ? '' : 'Dự kiến hoàn: ${formatVnd(summary.refundIfCancelledNow!)}.\n'}'
+            '${summary.cancellationExplanation}\nĐiều kiện sẽ được kiểm tra lại khi bạn xác nhận hủy.',
         confirmLabel: 'Hủy lịch hẹn',
       );
       if (!confirmed || !mounted) return;

@@ -13,6 +13,7 @@ class CaregiverModel {
   final String? serviceCity;
   final String? serviceDistrict;
   final int? distanceMeters;
+  final List<String> matchReasons;
 
   const CaregiverModel({
     required this.id,
@@ -28,6 +29,7 @@ class CaregiverModel {
     this.serviceCity,
     this.serviceDistrict,
     this.distanceMeters,
+    this.matchReasons = const [],
   });
 
   String get displayName => fullName ?? 'Người chăm sóc';
@@ -40,6 +42,9 @@ class CaregiverModel {
   }
 
   bool get isOnline => availabilityStatus == 'ONLINE';
+  String get experienceLabel => yearsOfExperience == null
+      ? 'Kinh nghiệm chưa cập nhật'
+      : '$yearsOfExperience năm';
   String? get distanceLabel {
     final meters = distanceMeters;
     if (meters == null || meters < 0) return null;

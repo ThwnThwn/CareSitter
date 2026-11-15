@@ -13,6 +13,7 @@ class NutritionScreenActions {
     required BuildContext context,
     required DateTime startDate,
     required String? beneficiaryName,
+    String? beneficiaryId,
     required ValueChanged<VoidCallback?> onCloseSheetChanged,
   }) =>
       showSheet<int>(
@@ -21,6 +22,7 @@ class NutritionScreenActions {
         builder: (_) => NutritionPlanSetupSheet(
           startDate: startDate,
           beneficiaryName: beneficiaryName,
+          beneficiaryId: beneficiaryId,
         ),
       );
 

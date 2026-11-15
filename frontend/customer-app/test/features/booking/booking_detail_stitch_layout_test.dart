@@ -38,6 +38,8 @@ void main() {
     expect(find.text('Caregiver đồng hành'), findsOneWidget);
     expect(find.text('Thông tin lịch hẹn'), findsOneWidget);
     expect(find.text('Thanh toán'), findsOneWidget);
+    expect(find.text('360.000đđ'), findsNothing);
+    expect(find.text('360.000đ'), findsWidgets);
     final layoutError = tester.takeException();
     expect(
       layoutError,

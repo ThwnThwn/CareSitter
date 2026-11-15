@@ -93,7 +93,7 @@ try {
     Assert-Equal $true `
         ([string]$configuration.backend.project).EndsWith('CareSitter.AppHost.csproj') `
         'Launcher phải chạy AppHost để bật đồng thời API và Nutrition.'
-    Assert-Equal 'backend/orchestration/CareSitter.AppHost' `
+    Assert-Equal 'backend/src/AppHost' `
         ([string]$configuration.backend.workingDirectory) `
         'Launcher phải chạy từ thư mục AppHost để dùng đúng .NET 10 SDK.'
     Assert-Equal 'http://localhost:5035' ([string]$configuration.backend.nutritionUrl) `

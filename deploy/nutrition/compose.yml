@@ -76,7 +76,7 @@ services:
 
   nutrition-catalog:
     build:
-      context: ../backend/services/nutrition
+      context: ../backend/src/Services/Nutrition
       dockerfile: tools/CareSitter.Nutrition.CatalogTool/Dockerfile
     profiles: [nutrition-catalog]
     restart: "no"
@@ -92,7 +92,7 @@ services:
 
   nutrition:
     build:
-      context: ../backend/services/nutrition
+      context: ../backend/src/Services/Nutrition
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
