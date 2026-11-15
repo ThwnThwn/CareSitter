@@ -3,33 +3,33 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "caresitter-be", "caresitter-be", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{C8E42992-5E42-0C2B-DBFE-AA848D06431C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildingBlocks", "BuildingBlocks", "{C8E42992-5E42-0C2B-DBFE-AA848D06431C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{1D2E3F40-5A6B-7C8D-9E0F-102030405060}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.SharedKernel", "caresitter-be\Shared\CareSitter.SharedKernel\CareSitter.SharedKernel.csproj", "{5E9D8D6C-E357-4786-BF35-11EF2876DC34}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.SharedKernel", "src\BuildingBlocks\SharedKernel\CareSitter.SharedKernel.csproj", "{5E9D8D6C-E357-4786-BF35-11EF2876DC34}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Contracts", "caresitter-be\Shared\CareSitter.Contracts\CareSitter.Contracts.csproj", "{7D7C7A3D-E572-4CDA-930B-16023A7F5B7A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Contracts", "src\BuildingBlocks\Contracts\CareSitter.Contracts.csproj", "{7D7C7A3D-E572-4CDA-930B-16023A7F5B7A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Infrastructure", "caresitter-be\Shared\CareSitter.Infrastructure\CareSitter.Infrastructure.csproj", "{2D378DCC-727A-48EC-A789-A0591FD35650}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Infrastructure", "src\BuildingBlocks\Infrastructure\CareSitter.Infrastructure.csproj", "{2D378DCC-727A-48EC-A789-A0591FD35650}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Identity", "caresitter-be\Modules\Identity\CareSitter.Modules.Identity.csproj", "{1AF06B55-F28F-49A8-A2E7-3265B001F541}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Identity", "src\Modules\Identity\CareSitter.Modules.Identity.csproj", "{1AF06B55-F28F-49A8-A2E7-3265B001F541}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.People", "caresitter-be\Modules\People\CareSitter.Modules.People.csproj", "{4C54C645-823C-49FC-9E03-84E7696D6343}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.People", "src\Modules\People\CareSitter.Modules.People.csproj", "{4C54C645-823C-49FC-9E03-84E7696D6343}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Catalog", "caresitter-be\Modules\Catalog\CareSitter.Modules.Catalog.csproj", "{AF5B9EB4-90A3-4A3C-B619-703D5C835BD8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Catalog", "src\Modules\Catalog\CareSitter.Modules.Catalog.csproj", "{AF5B9EB4-90A3-4A3C-B619-703D5C835BD8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Booking", "caresitter-be\Modules\Booking\CareSitter.Modules.Booking.csproj", "{5EFA1E16-7BD8-4461-9BDE-4250E2277705}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Booking", "src\Modules\Booking\CareSitter.Modules.Booking.csproj", "{5EFA1E16-7BD8-4461-9BDE-4250E2277705}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Payments", "caresitter-be\Modules\Payments\CareSitter.Modules.Payments.csproj", "{A4AF3B62-79F0-413E-B620-598F5538D61B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Payments", "src\Modules\Payments\CareSitter.Modules.Payments.csproj", "{A4AF3B62-79F0-413E-B620-598F5538D61B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Support", "caresitter-be\Modules\Support\CareSitter.Modules.Support.csproj", "{74C111A5-DE93-4088-945D-43F952EA30B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Support", "src\Modules\Support\CareSitter.Modules.Support.csproj", "{74C111A5-DE93-4088-945D-43F952EA30B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.ApiHost", "caresitter-be\ApiHost\CareSitter.ApiHost.csproj", "{951060CD-3546-49F7-9E1E-DA4D69607E95}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.ApiHost", "src\ApiHost\CareSitter.ApiHost.csproj", "{951060CD-3546-49F7-9E1E-DA4D69607E95}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Booking.UnitTests", "tests\CareSitter.Modules.Booking.UnitTests\CareSitter.Modules.Booking.UnitTests.csproj", "{1BC85A17-C9CC-4164-AFBA-444122365494}"
 EndProject
@@ -41,7 +41,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Routing.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.ArchitectureTests", "tests\CareSitter.ArchitectureTests\CareSitter.ArchitectureTests.csproj", "{1703A6EE-1729-4927-9921-765D2C814926}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Promotion", "caresitter-be\Modules\Promotion\CareSitter.Modules.Promotion.csproj", "{745760C4-5260-4653-A481-03851F92DD80}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Promotion", "src\Modules\Promotion\CareSitter.Modules.Promotion.csproj", "{745760C4-5260-4653-A481-03851F92DD80}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Promotion.UnitTests", "tests\CareSitter.Modules.Promotion.UnitTests\CareSitter.Modules.Promotion.UnitTests.csproj", "{C75E9724-F2F6-4683-9CB8-279A44265B65}"
 EndProject
@@ -53,19 +53,25 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.People.U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Modules.Support.UnitTests", "tests\CareSitter.Modules.Support.UnitTests\CareSitter.Modules.Support.UnitTests.csproj", "{23A01BB4-A907-4AB8-8F1D-F73A42B22982}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Contracts", "caresitter-be\Shared\CareSitter.Messaging.Contracts\CareSitter.Messaging.Contracts.csproj", "{8A831915-05C9-4428-ABBF-DE2E562FE68E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Contracts", "src\BuildingBlocks\Messaging\Contracts\CareSitter.Messaging.Contracts.csproj", "{8A831915-05C9-4428-ABBF-DE2E562FE68E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Abstractions", "caresitter-be\Shared\CareSitter.Messaging.Abstractions\CareSitter.Messaging.Abstractions.csproj", "{FF98AD2F-40BA-41E4-9715-359827A1D976}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Abstractions", "src\BuildingBlocks\Messaging\Abstractions\CareSitter.Messaging.Abstractions.csproj", "{FF98AD2F-40BA-41E4-9715-359827A1D976}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Kafka", "caresitter-be\Shared\CareSitter.Messaging.Kafka\CareSitter.Messaging.Kafka.csproj", "{EC51EC89-F819-404D-8A1F-F8D47697FC04}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Kafka", "src\BuildingBlocks\Messaging\Kafka\CareSitter.Messaging.Kafka.csproj", "{EC51EC89-F819-404D-8A1F-F8D47697FC04}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Persistence", "caresitter-be\Shared\CareSitter.Messaging.Persistence\CareSitter.Messaging.Persistence.csproj", "{E7F12711-A7B6-4C75-B6C1-38DF82455E2D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Persistence", "src\BuildingBlocks\Messaging\Persistence\CareSitter.Messaging.Persistence.csproj", "{E7F12711-A7B6-4C75-B6C1-38DF82455E2D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{A1157ADE-2523-4FC5-A2D8-D510A2A10BF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.NotificationWorker", "caresitter-be\Services\NotificationWorker\CareSitter.NotificationWorker.csproj", "{5A0ADC0D-53D2-4587-8C57-9B0ED6F02DD9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.NotificationWorker", "src\Services\Notifications\CareSitter.NotificationWorker\CareSitter.NotificationWorker.csproj", "{5A0ADC0D-53D2-4587-8C57-9B0ED6F02DD9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Messaging.Tests", "tests\CareSitter.Messaging.Tests\CareSitter.Messaging.Tests.csproj", "{39326999-376A-47B6-99C3-29E534273C36}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nutrition", "Nutrition", "{065BD76D-DD54-4844-A2D4-E6C49159F8CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Nutrition", "src\Services\Nutrition\CareSitter.Nutrition\CareSitter.Nutrition.csproj", "{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CareSitter.Nutrition.Tests", "tests\CareSitter.Nutrition.Tests\CareSitter.Nutrition.Tests.csproj", "{0F50304B-CA2F-414B-9871-54BEED6653AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -401,6 +407,30 @@ Global
 		{39326999-376A-47B6-99C3-29E534273C36}.Release|x64.Build.0 = Release|Any CPU
 		{39326999-376A-47B6-99C3-29E534273C36}.Release|x86.ActiveCfg = Release|Any CPU
 		{39326999-376A-47B6-99C3-29E534273C36}.Release|x86.Build.0 = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|x64.Build.0 = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Debug|x86.Build.0 = Debug|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|x64.ActiveCfg = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|x64.Build.0 = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|x86.ActiveCfg = Release|Any CPU
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22}.Release|x86.Build.0 = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|x64.Build.0 = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Debug|x86.Build.0 = Debug|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|x64.ActiveCfg = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|x64.Build.0 = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|x86.ActiveCfg = Release|Any CPU
+		{0F50304B-CA2F-414B-9871-54BEED6653AC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -436,5 +466,8 @@ Global
 		{A1157ADE-2523-4FC5-A2D8-D510A2A10BF6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{5A0ADC0D-53D2-4587-8C57-9B0ED6F02DD9} = {A1157ADE-2523-4FC5-A2D8-D510A2A10BF6}
 		{39326999-376A-47B6-99C3-29E534273C36} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
+		{065BD76D-DD54-4844-A2D4-E6C49159F8CC} = {A1157ADE-2523-4FC5-A2D8-D510A2A10BF6}
+		{FA322082-D6CA-4EA6-B14C-C7FBB43FDC22} = {065BD76D-DD54-4844-A2D4-E6C49159F8CC}
+		{0F50304B-CA2F-414B-9871-54BEED6653AC} = {2A3B4C5D-6E7F-8A9B-0C1D-2E3F40516273}
 	EndGlobalSection
 EndGlobal

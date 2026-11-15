@@ -148,7 +148,7 @@ try {
     Write-Output 'PASS: corrupted encrypted backup rejected before restore.'
 
     $env:CARESITTER_TEST_ADMIN_CONNECTION = "Host=127.0.0.1;Port=$port;Database=postgres;Username=ops_test;Password=$password"
-    & dotnet test backend/services/nutrition/tests/CareSitter.Nutrition.Tests/CareSitter.Nutrition.Tests.csproj --no-restore --verbosity quiet --logger 'trx;LogFileName=nutrition-postgres.trx' --results-directory (Join-Path $state 'results') *> (Join-Path $state 'nutrition-tests.log')
+    & dotnet test backend/tests/CareSitter.Nutrition.Tests/CareSitter.Nutrition.Tests.csproj --no-restore --verbosity quiet --logger 'trx;LogFileName=nutrition-postgres.trx' --results-directory (Join-Path $state 'results') *> (Join-Path $state 'nutrition-tests.log')
     if ($LASTEXITCODE -ne 0) { throw "Nutrition regression failed; inspect $state." }
     Get-Content (Join-Path $state 'nutrition-tests.log') -Tail 2
     Write-Output "Ops test artifacts: $state"

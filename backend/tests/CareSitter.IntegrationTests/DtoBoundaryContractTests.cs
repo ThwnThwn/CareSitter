@@ -59,7 +59,7 @@ public sealed class DtoBoundaryContractTests
     public void Every_http_contract_is_compiled_and_does_not_expose_domain_entities_or_mediator_requests()
     {
         var root = FindRepositoryRoot();
-        var files = Directory.EnumerateFiles(Path.Combine(root, "backend", "caresitter-be", "Modules"),
+        var files = Directory.EnumerateFiles(Path.Combine(root, "backend", "src", "Modules"),
             "*.cs", SearchOption.AllDirectories).Where(path =>
             {
                 var segments = path.Split(Path.DirectorySeparatorChar);
@@ -73,7 +73,7 @@ public sealed class DtoBoundaryContractTests
         var types = ModuleAssemblies.SelectMany(assembly => assembly.GetTypes()).ToArray();
         foreach (var file in files)
         {
-            var module = Path.GetRelativePath(Path.Combine(root, "backend", "caresitter-be", "Modules"), file)
+            var module = Path.GetRelativePath(Path.Combine(root, "backend", "src", "Modules"), file)
                 .Split(Path.DirectorySeparatorChar)[0];
             var name = Path.GetFileNameWithoutExtension(file);
             var type = Assert.Single(types, type => type.Assembly.GetName().Name ==
@@ -199,7 +199,7 @@ public sealed class DtoBoundaryContractTests
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (Directory.Exists(Path.Combine(current.FullName, "backend", "caresitter-be", "Modules")))
+            if (Directory.Exists(Path.Combine(current.FullName, "backend", "src", "Modules")))
                 return current.FullName;
             current = current.Parent;
         }

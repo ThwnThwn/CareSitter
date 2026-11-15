@@ -19,7 +19,7 @@ public sealed class MessagingBoundaryTests
     [InlineData("Persistence", "Abstractions,Contracts")]
     public void Messaging_project_references_follow_the_declared_dependency_direction(string project, string allowed)
     {
-        var path = Path.Combine(Root(), "backend", "caresitter-be", "Shared", $"CareSitter.Messaging.{project}");
+        var path = Path.Combine(Root(), "backend", "src", "BuildingBlocks", "Messaging", project);
         var xml = XDocument.Load(Path.Combine(path, $"CareSitter.Messaging.{project}.csproj"));
         var targets = xml.Descendants("ProjectReference").Select(x => Path.GetFileNameWithoutExtension(
             ((string)x.Attribute("Include")!).Replace('\\', '/'))).ToArray();
@@ -33,7 +33,7 @@ public sealed class MessagingBoundaryTests
     [Fact]
     public void Module_application_and_domain_layers_do_not_depend_on_transport_or_persistence()
     {
-        var modules = Path.Combine(Root(), "backend", "caresitter-be", "Modules");
+        var modules = Path.Combine(Root(), "backend", "src", "Modules");
         foreach (var file in Directory.EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
             .Where(x => x.Replace('\\', '/').Contains("/Application/") || x.Replace('\\', '/').Contains("/Domain/")))
         {

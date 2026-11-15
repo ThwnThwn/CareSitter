@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: backend/orchestration
+        working-directory: backend/src/AppHost
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -31,8 +31,8 @@ jobs:
             10.0.401
       - name: Install pinned Aspire CLI
         run: dotnet tool install --global Aspire.Cli --version 13.6.1
-      - name: Build orchestration and independent service projects
-        run: dotnet build CareSitter.AppHost/CareSitter.AppHost.csproj --nologo -c Release
+      - name: Build AppHost and independent service projects
+        run: dotnet build CareSitter.AppHost.csproj --nologo -c Release
 
   nutrition:
     name: Nutrition service and PostgreSQL
@@ -55,9 +55,9 @@ jobs:
         with:
           global-json-file: global.json
       - name: Test independent Nutrition solution
-        run: dotnet test backend/services/nutrition/CareSitter.Nutrition.sln --nologo --logger "trx;LogFileName=nutrition.trx" --results-directory backend/artifacts/nutrition
+        run: dotnet test backend/src/Services/Nutrition/CareSitter.Nutrition.sln --nologo --logger "trx;LogFileName=nutrition.trx" --results-directory backend/artifacts/nutrition
       - name: Build independent runtime image
-        run: docker build -t caresitter-nutrition:ci backend/services/nutrition
+        run: docker build -t caresitter-nutrition:ci backend/src/Services/Nutrition
       - name: Preserve Nutrition test evidence
         if: always()
         uses: actions/upload-artifact@v4

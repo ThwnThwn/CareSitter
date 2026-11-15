@@ -38,7 +38,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $artifactRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot 'backend/artifacts/nutrition-knowledge-local'))
-$toolRoot = Join-Path $repoRoot 'backend/services/nutrition/tools/nutrition_knowledge_manual'
+$toolRoot = Join-Path $repoRoot 'backend/src/Services/Nutrition/tools/nutrition_knowledge_manual'
 
 if ($TargetKind -eq 'case') {
     if (-not $TargetPath) { $TargetPath = 'backend/artifacts/nutrition-knowledge-local/evaluation/pdf-review-draft.v9.json' }

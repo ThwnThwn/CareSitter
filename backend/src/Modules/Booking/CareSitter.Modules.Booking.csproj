@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\SharedKernel\CareSitter.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Contracts\CareSitter.Contracts.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Infrastructure\CareSitter.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CareSitter.IntegrationTests" />
+    <InternalsVisibleTo Include="CareSitter.Modules.Booking.UnitTests" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+</Project>

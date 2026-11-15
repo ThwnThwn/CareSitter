@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
-$nutritionRoot = Join-Path $PSScriptRoot '../services/nutrition'
+$nutritionRoot = Join-Path $PSScriptRoot '../src/Services/Nutrition'
 $bundle = Get-Content -LiteralPath (Join-Path $nutritionRoot 'catalog/drafts/adult-baseline-variety-demo.bundle.json') -Raw | ConvertFrom-Json
 $snapshot = Get-Content -LiteralPath (Join-Path $nutritionRoot 'catalog/sources/nin-food-composition-2026-10-24.json') -Raw | ConvertFrom-Json
 $foods = @{}

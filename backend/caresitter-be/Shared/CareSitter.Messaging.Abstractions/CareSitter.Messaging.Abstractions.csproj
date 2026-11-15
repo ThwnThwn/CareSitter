@@ -1,3 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup><ProjectReference Include="../CareSitter.Messaging.Contracts/CareSitter.Messaging.Contracts.csproj" /></ItemGroup>
-</Project>

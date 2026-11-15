@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repositoryPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path
-$orchestrationPath = Join-Path $repositoryPath 'backend/orchestration'
+$appHostPath = Join-Path $repositoryPath 'backend/src/AppHost'
 if (-not $DotnetPath) {
     $candidates = @(
         (Get-Command dotnet -ErrorAction SilentlyContinue).Source,
@@ -37,12 +37,12 @@ if (-not $AspirePath) { throw 'Cần Aspire CLI 13.6.1 cho AppHost. Có thể tr
 $DotnetPath = (Resolve-Path -LiteralPath $DotnetPath).Path
 $AspirePath = (Resolve-Path -LiteralPath $AspirePath).Path
 
-$arguments = @('run', '--project', 'CareSitter.AppHost/CareSitter.AppHost.csproj', '--launch-profile', 'http')
+$arguments = @('run', '--project', 'CareSitter.AppHost.csproj', '--launch-profile', 'http')
 $arguments += "-p:AspireCliPath=$AspirePath"
 $arguments += '-p:ASPIRE_SUPPRESS_CLI_RUN_HOOK=true'
 if ($NoBuild) { $arguments += '--no-build' }
 if ($AppHostArguments) { $arguments += '--'; $arguments += $AppHostArguments }
-Push-Location -LiteralPath $orchestrationPath
+Push-Location -LiteralPath $appHostPath
 $previousPath = $env:PATH
 $previousDotnetRoot = $env:DOTNET_ROOT
 try {
