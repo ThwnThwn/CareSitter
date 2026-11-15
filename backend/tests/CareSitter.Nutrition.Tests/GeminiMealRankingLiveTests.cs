@@ -9,6 +9,7 @@ namespace CareSitter.Nutrition.Tests;
 public sealed class GeminiMealRankingLiveTests
 {
     [SyntheticGeminiFact]
+    [Trait("Category", "GeminiLive")]
     public async Task Synthetic_candidates_can_be_ranked_by_the_real_provider()
     {
         var options = new MealRankingOptions

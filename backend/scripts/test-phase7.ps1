@@ -670,6 +670,10 @@ try {
                     # This opt-in smoke writes a temporary PDF to a real Cloudinary account.
                     $providerFilter = @('--filter', 'Category!=CloudinaryLive')
                 }
+                elseif ($testProject.BaseName -eq 'CareSitter.Nutrition.Tests' -and
+                    $env:CARESITTER_SYNTHETIC_GEMINI_TEST -ne '1') {
+                    $providerFilter = @('--filter', 'Category!=GeminiLive')
+                }
                 Invoke-CheckedCommand `
                     -FilePath 'dotnet' `
                     -Arguments (@(
