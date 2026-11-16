@@ -17,11 +17,31 @@ public sealed record KnowledgeSearchHit(string ChunkId, string Heading, int PdfP
 
 /// <summary>Retrieves only through the authorized grounding release and returns source metadata.</summary>
 public sealed class NutritionKnowledgeSearch(IMealKnowledgeRetriever retriever,
-    IOptions<MealGroundingOptions> options, IHostEnvironment? environment = null)
+    IOptions<MealGroundingOptions> options, IHostEnvironment? environment = null,
+    ILogger<NutritionKnowledgeSearch>? logger = null)
 {
     internal bool SupportsLocalDemo => environment?.IsDevelopment() == true &&
         options.Value.Mode is MealGroundingOptions.OwnerAuthorizedGraphDemoMode or
             MealGroundingOptions.OwnerAuthorizedCorpusDemoMode;
+
+    internal async Task<IReadOnlyList<KnowledgeSearchHit>> FindReferencesAsync(string query, CancellationToken ct)
+    {
+        if (!options.Value.Enabled) return [];
+        try
+        {
+            var hits = await FindAsync(query, ct);
+            return hits.Where(hit => hit.PdfPage > 0 && !string.IsNullOrWhiteSpace(hit.SourceTitle) &&
+                    !string.IsNullOrWhiteSpace(hit.SourceRevisionId))
+                .DistinctBy(hit => (hit.SourceRevisionId, hit.PdfPage))
+                .ToArray();
+        }
+        catch (Exception error) when (error is InvalidOperationException or IOException or JsonException or
+            UnauthorizedAccessException or KeyNotFoundException or FormatException)
+        {
+            logger?.LogWarning("Nutrition reference lookup failed ({ErrorType}).", error.GetType().Name);
+            return [];
+        }
+    }
 
     public async Task<IReadOnlyList<KnowledgeSearchHit>> FindAsync(string query, CancellationToken ct,
         bool localDemo = false)

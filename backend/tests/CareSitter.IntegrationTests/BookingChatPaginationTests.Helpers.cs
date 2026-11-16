@@ -21,12 +21,14 @@ public sealed partial class BookingChatPaginationTests
 {
 #region Helpers & Seeding
 
-    private BookingChatService CreateChatService(
+    private (BookingChatQueries Queries, BookingChatCommands Commands) CreateChatServices(
         BookingDbContext db, Guid userId, string role, Guid caregiverProfileId, Guid caregiverUserId)
     {
         var currentUser = new TestActor(userId, role);
         var people = new TestPeople(caregiverProfileId, caregiverUserId, approved: true);
-        return new BookingChatService(db, currentUser, people, _chatOptions, _dataProtection);
+        var access = new BookingChatParticipantAccess(currentUser, people);
+        return (new BookingChatQueries(db, currentUser, access, _chatOptions, _dataProtection),
+            new BookingChatCommands(db, currentUser, access, _chatOptions));
     }
 
     private string CreateSignedCursor(

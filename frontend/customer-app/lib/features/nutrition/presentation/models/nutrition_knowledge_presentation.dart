@@ -33,6 +33,8 @@ class NutritionKnowledgePresentation {
   }
 
   String get failureMessage => switch (search.answerStatus) {
+        'invalid_output' when search.generalKnowledge =>
+          'Gemini phản hồi ở định dạng chưa phù hợp. Hãy thử tra cứu lại.',
         'invalid_output' =>
           'Gemini đã phản hồi nhưng câu trả lời chưa khớp đầy đủ với nguồn tài liệu. Hãy thử lại hoặc xem các đoạn liên quan bên dưới.',
         'timeout' => 'AI phản hồi quá lâu. Hãy thử tra cứu lại.',

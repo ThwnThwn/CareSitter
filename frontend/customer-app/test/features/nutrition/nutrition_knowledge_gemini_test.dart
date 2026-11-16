@@ -40,6 +40,61 @@ Map<String, dynamic> fixture({bool local = true, bool invalid = false}) => {
     };
 
 void main() {
+  testWidgets('online Gemini shows related reference cards under its answer',
+      (tester) async {
+    const question = 'quả dứa có tác dụng gì';
+    const answer = 'Đây là câu trả lời thử nghiệm của Gemini.';
+    final data = <String, dynamic>{
+      'query': question,
+      'generalKnowledge': true,
+      'answerProvider': 'Gemini',
+      'answerStatus': 'ai_suggestion',
+      'results': [],
+      'references': [
+        {
+          'chunkId': 'related',
+          'heading': 'Mục về quả dứa',
+          'pdfPage': 42,
+          'printedPage': '41',
+          'sourceTitle': 'Tài liệu thử nghiệm',
+          'sourceRevisionId': 'fixture',
+          'excerpt': 'Đoạn sách riêng tư.',
+        },
+      ],
+      'answerBlocks': [
+        {'text': answer, 'chunkIds': <String>[]}
+      ],
+    };
+    await tester.pumpWidget(ProviderScope(overrides: [
+      nutritionKnowledgeControllerProvider
+          .overrideWith((_) => NutritionKnowledgeController(_Repository(data))),
+    ], child: const MaterialApp(home: NutritionKnowledgeScreen())));
+    await tester.enterText(find.byType(TextField), question);
+    await tester.pump();
+    await tester.tap(find.text('Tra cứu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI đề xuất · Gemini'), findsOneWidget);
+    expect(find.text(answer), findsOneWidget);
+    expect(find.textContaining('chưa được đối chiếu với tài liệu'),
+        findsOneWidget);
+    final referenceHeading = find.text('Tài liệu tham khảo');
+    expect(referenceHeading, findsOneWidget);
+    expect(tester.getTopLeft(referenceHeading).dy,
+        greaterThan(tester.getTopLeft(find.text(answer)).dy));
+    expect(find.text('Mục về quả dứa'), findsOneWidget);
+    expect(find.text('Tài liệu thử nghiệm · Trang PDF 42 · Trang in 41'),
+        findsOneWidget);
+    expect(find.text('Đoạn sách riêng tư.'), findsNothing);
+    expect(find.text('Nguồn đã dùng'), findsNothing);
+    expect(
+        NutritionKnowledgeSearchModel.fromJson({
+          ...data,
+          'results': fixture()['results'],
+        }).isAiSuggestion,
+        isFalse);
+  });
+
   testWidgets(
       'online reference shows book excerpts and matching answer citations',
       (tester) async {

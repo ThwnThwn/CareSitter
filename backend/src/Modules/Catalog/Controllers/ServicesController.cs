@@ -1,6 +1,6 @@
-using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog.Application;
-using CareSitter.Modules.Catalog.Application.Commands.QuoteService;
+using CareSitter.Modules.Catalog.Application.Queries.QuoteService;
+using CareSitter.Modules.Catalog.Application.Queries.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +16,10 @@ namespace CareSitter.Modules.Catalog.Controllers;
 public sealed class ServicesController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IServiceChecklistReader _checklistReader;
 
-    public ServicesController(IMediator mediator, IServiceChecklistReader checklistReader)
+    public ServicesController(IMediator mediator)
     {
         _mediator = mediator;
-        _checklistReader = checklistReader;
     }
 
     /// <summary>Lấy dịch vụ đang hoạt động, sắp xếp theo thời lượng gợi ý rồi theo tên.</summary>
@@ -48,9 +46,8 @@ public sealed class ServicesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ListChecklist(Guid id, CancellationToken ct)
     {
-        var service = await _mediator.Send(new GetActiveServiceQuery(id), ct);
-        if (service is null) return NotFound();
-        return Ok(await _checklistReader.ListActiveAsync(id, ct));
+        var checklist = await _mediator.Send(new ListServiceChecklistTemplatesQuery(id), ct);
+        return checklist is null ? NotFound() : Ok(checklist);
     }
 
     /// <summary>
@@ -64,7 +61,7 @@ public sealed class ServicesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Quote(Guid id, [FromBody] QuoteRequest request, CancellationToken ct)
     {
-        var result = await _mediator.Send(new QuoteServiceCommand(id,
+        var result = await _mediator.Send(new QuoteServiceQuery(id,
             request.ScheduledStart, request.ScheduledEnd), ct);
         return result.ToActionResult(this);
     }

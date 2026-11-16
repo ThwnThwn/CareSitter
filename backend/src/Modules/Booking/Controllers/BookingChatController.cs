@@ -1,4 +1,7 @@
 using CareSitter.Modules.Booking.Application.BookingChat;
+using CareSitter.Modules.Booking.Application.Commands.BookingChat;
+using CareSitter.Modules.Booking.Application.Queries.BookingChat;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,12 +10,12 @@ namespace CareSitter.Modules.Booking.Controllers;
 [ApiController]
 [Authorize(Roles = "CUSTOMER,CAREGIVER")]
 [Route("api/v1/bookings/{bookingId:guid}/chat")]
-public sealed class BookingChatController(IBookingChatService chat) : ControllerBase
+public sealed class BookingChatController(ISender sender) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetMetadata(Guid bookingId, CancellationToken ct)
     {
-        var result = await chat.GetMetadataAsync(bookingId, ct);
+        var result = await sender.Send(new GetBookingChatMetadataQuery(bookingId), ct);
         return result.ToActionResult(this);
     }
 
@@ -24,8 +27,8 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         [FromQuery] int limit = 50,
         CancellationToken ct = default)
     {
-        var result = await chat.GetMessagesAsync(
-            bookingId, afterCursor, beforeCursor, limit, ct);
+        var result = await sender.Send(new ListBookingChatMessagesQuery(
+            bookingId, afterCursor, beforeCursor, limit), ct);
         return result.ToActionResult(this);
     }
 
@@ -37,8 +40,8 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         [FromQuery] long scopeVersion,
         [FromQuery] int limit = 50,
         CancellationToken ct = default) =>
-        (await chat.ResumeMessagesAsync(bookingId, anchorMessageId, direction,
-            scopeVersion, limit, ct)).ToActionResult(this);
+        (await sender.Send(new ResumeBookingChatMessagesQuery(bookingId, anchorMessageId, direction,
+            scopeVersion, limit), ct)).ToActionResult(this);
 
     [HttpPost("messages")]
     [RequestSizeLimit(16 * 1024)]
@@ -54,7 +57,7 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
                 Title = "booking.chat.invalid_idempotency_key",
                 Detail = "Idempotency-Key phải là UUID hợp lệ."
             });
-        var result = await chat.SendAsync(bookingId, key, request, ct);
+        var result = await sender.Send(new SendBookingChatMessageCommand(bookingId, key, request), ct);
         return result.ToActionResult(this, message =>
             Created($"/api/v1/bookings/{bookingId}/chat/messages/{message.Id}", message));
     }
@@ -65,7 +68,7 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         [FromBody] BookingChatReadRequest request,
         CancellationToken ct)
     {
-        var result = await chat.MarkReadAsync(bookingId, request, ct);
+        var result = await sender.Send(new MarkBookingChatReadCommand(bookingId, request), ct);
         return result.ToActionResult(this);
     }
 
@@ -76,7 +79,7 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         [FromBody] BookingChatReportRequest request,
         CancellationToken ct)
     {
-        var result = await chat.ReportMessageAsync(bookingId, messageId, request, ct);
+        var result = await sender.Send(new ReportBookingChatMessageCommand(bookingId, messageId, request), ct);
         return result.ToActionResult(this, report => report.Status == "LINKED"
             ? Ok(report)
             : Accepted($"/api/v1/bookings/{bookingId}/chat/reports/{report.ReportId}", report));
@@ -87,12 +90,12 @@ public sealed class BookingChatController(IBookingChatService chat) : Controller
         Guid bookingId,
         Guid reportId,
         CancellationToken ct) =>
-        (await chat.GetReportAsync(bookingId, reportId, ct)).ToActionResult(this);
+        (await sender.Send(new GetBookingChatReportQuery(bookingId, reportId), ct)).ToActionResult(this);
 
     [HttpPut("block")]
     public async Task<IActionResult> SetBlock(
         Guid bookingId,
         [FromBody] BookingChatBlockRequest request,
         CancellationToken ct) =>
-        (await chat.SetBlockAsync(bookingId, request, ct)).ToActionResult(this);
+        (await sender.Send(new SetBookingChatBlockCommand(bookingId, request), ct)).ToActionResult(this);
 }

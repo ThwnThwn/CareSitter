@@ -278,6 +278,10 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
         client.DefaultRequestHeaders.Remove("x-test-user");
         await using var scope = Scope();
         var intent = await scope.Payments.PaymentIntents.AsNoTracking().SingleAsync();
+        using var returned = await client.GetAsync($"/api/v1/payments/payos/return?orderCode={intent.ProviderOrderRef}");
+        Assert.Equal(HttpStatusCode.Redirect, returned.StatusCode);
+        Assert.Contains("result=pending", returned.Headers.Location!.OriginalString);
+        Assert.Contains($"intentId={id}", returned.Headers.Location.OriginalString);
         _bank.Paid = 100000;
         var webhook = _bank.Webhook(intent, "http-webhook");
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/v1/payments/payos/webhook", webhook)).StatusCode);
@@ -357,7 +361,11 @@ public sealed class PayOSPaymentTests : IAsyncLifetime
             Outbox = new BookingDispatcher(Payments, Bookings);
             Finalizer = new(Payments, Outbox, new Audit(), NullLogger<PaymentFinalizationService>.Instance);
             var timing = Options.Create(new VNPayOptions { TmnCode = "test", HashSecret = "test", ReconciliationWindowMinutes = 15 });
-            PayOS = new(Payments, Gateway, bank, Finalizer, Outbox, Options.Create(new PayOSOptions { Enabled = enabled }), timing, new SystemClock());
+            var options = Options.Create(new PayOSOptions { Enabled = enabled });
+            var reconciliation = new PayOSPaymentReconciliation(Payments, Gateway, bank, Finalizer, Outbox, options);
+            var checkout = new PayOSCheckout(Payments, Gateway, bank, Finalizer, reconciliation, options, timing, new SystemClock());
+            var webhooks = new PayOSWebhookProcessor(Payments, Gateway, bank, Finalizer, reconciliation);
+            PayOS = new(checkout, reconciliation, webhooks);
             Portal = new(Payments, Gateway, new FakeVNPay(), Finalizer, Outbox, PayOS, timing, new SystemClock());
         }
         public async ValueTask DisposeAsync() { await Payments.DisposeAsync(); await Bookings.DisposeAsync(); }

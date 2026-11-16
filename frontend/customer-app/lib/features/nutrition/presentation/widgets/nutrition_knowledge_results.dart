@@ -12,7 +12,11 @@ class NutritionKnowledgeResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final presentation = NutritionKnowledgePresentation(search);
     final hasAnswer = presentation.hasAnswer;
-    final sources = hasAnswer ? search.answerSources : search.results;
+    final sources = search.generalKnowledge
+        ? search.references
+        : hasAnswer
+            ? search.answerSources
+            : search.results;
     final theme = Theme.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (search.canShowSources || search.generalKnowledge) ...[
@@ -34,24 +38,34 @@ class NutritionKnowledgeResults extends StatelessWidget {
           ),
         const SizedBox(height: AppSpacing.md),
       ],
-      if (sources.isNotEmpty) ...[
-        Text(
-            hasAnswer
-                ? 'Nguồn đã dùng'
-                : search.canShowSources
-                    ? 'Đoạn liên quan để đối chiếu'
-                    : 'Kết quả cho “${search.query}”',
-            style: theme.textTheme.titleMedium),
+      if (search.generalKnowledge || sources.isNotEmpty) ...[
+        Semantics(
+          header: true,
+          child: Text(
+              search.generalKnowledge
+                  ? 'Tài liệu tham khảo'
+                  : hasAnswer
+                      ? 'Nguồn đã dùng'
+                      : search.canShowSources
+                          ? 'Đoạn liên quan để đối chiếu'
+                          : 'Kết quả cho “${search.query}”',
+              style: theme.textTheme.titleMedium),
+        ),
         const SizedBox(height: AppSpacing.sm),
+        if (sources.isEmpty)
+          Text('Chưa tìm thấy tài liệu phù hợp với câu hỏi này.',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.textSecondary)),
         for (final (index, hit) in sources.indexed) ...[
           NutritionKnowledgeSourceCard(
             key: ValueKey('${search.query}:${hit.chunkId}'),
             hit: hit,
-            citation: hasAnswer &&
+            citation: !search.generalKnowledge &&
+                    hasAnswer &&
                     (search.answerProvider == 'Gemini' || sources.length > 1)
                 ? index + 1
                 : null,
-            showExcerpt: search.canShowSources,
+            showExcerpt: search.canShowSources && !search.generalKnowledge,
           ),
           const SizedBox(height: AppSpacing.sm),
         ],

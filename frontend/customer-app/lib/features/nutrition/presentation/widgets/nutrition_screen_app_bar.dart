@@ -41,6 +41,7 @@ class NutritionScreenAppBar extends StatelessWidget
   Widget build(BuildContext context) {
     final hasMenu = canOpenHistory || canChangeBeneficiary;
     return AppBar(
+      centerTitle: false,
       title: Text(editing ? 'Cập nhật dinh dưỡng' : 'Thực đơn dinh dưỡng'),
       leading: canReturnToMenu
           ? IconButton(

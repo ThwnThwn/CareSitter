@@ -84,6 +84,7 @@ class _NutritionEntryScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        centerTitle: false,
         title: const Text('Thực đơn dinh dưỡng'),
         actions: [
           IconButton(

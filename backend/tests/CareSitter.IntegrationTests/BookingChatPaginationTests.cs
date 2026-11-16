@@ -8,8 +8,10 @@ using CareSitter.Modules.Booking.Application.BookingChat;
 using CareSitter.Modules.Booking.Controllers;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
+using MediatR;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Xunit;
@@ -59,7 +61,7 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 250, jumbleTimestamps: true);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         var retrieved = new List<BookingChatMessageResponse>();
         string? currentCursor = direction == "forward"
@@ -70,8 +72,8 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
         while (true)
         {
             var pageResult = direction == "backward"
-                ? await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: currentCursor, limit: pageSize)
-                : await chat.GetMessagesAsync(seed.BookingId, afterCursor: currentCursor, beforeCursor: null, limit: pageSize);
+                ? await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: currentCursor, limit: pageSize)
+                : await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: currentCursor, beforeCursor: null, limit: pageSize);
 
             Assert.True(pageResult.IsSuccess, pageResult.Error.Message);
             var page = pageResult.Value;
@@ -139,19 +141,19 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 251, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var page1 = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
+        var page1 = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
         Assert.True(page1.IsSuccess);
         Assert.Equal(100, page1.Value.Items.Count);
         Assert.True(page1.Value.HasMoreBefore);
 
-        var page2 = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page1.Value.PreviousCursor, limit: 100);
+        var page2 = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page1.Value.PreviousCursor, limit: 100);
         Assert.True(page2.IsSuccess);
         Assert.Equal(100, page2.Value.Items.Count);
         Assert.True(page2.Value.HasMoreBefore);
 
-        var page3 = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page2.Value.PreviousCursor, limit: 100);
+        var page3 = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page2.Value.PreviousCursor, limit: 100);
         Assert.True(page3.IsSuccess);
         Assert.Equal(51, page3.Value.Items.Count);
         Assert.False(page3.Value.HasMoreBefore);
@@ -171,9 +173,9 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: invalidLimit);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: invalidLimit);
         Assert.True(result.IsFailure);
         Assert.Equal("booking.chat.invalid_request", result.Error.Code);
     }
@@ -183,16 +185,20 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 70, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // Gọi service với limit = 50 -> trả về đúng 50 tin
-        var result = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 50);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 50);
         Assert.True(result.IsSuccess);
         Assert.Equal(50, result.Value.Items.Count);
         Assert.True(result.Value.HasMoreBefore);
 
         // Gọi controller không truyền limit -> [FromQuery] int limit = 50 mặc định
-        var controller = new BookingChatController(chat);
+        var services = new ServiceCollection();
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<BookingChatController>());
+        services.AddSingleton<IBookingChatQueries>(chat.Queries);
+        using var provider = services.BuildServiceProvider();
+        var controller = new BookingChatController(provider.GetRequiredService<ISender>());
         var actionResult = await controller.GetMessages(seed.BookingId, afterCursor: null, beforeCursor: null);
         var okResult = Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(actionResult);
         var response = Assert.IsType<BookingChatMessagesResponse>(okResult.Value);
@@ -204,12 +210,12 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 10, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var page = await chat.GetMessagesAsync(seed.BookingId, null, null, 2);
+        var page = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 2);
         Assert.True(page.IsSuccess);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId,
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId,
             afterCursor: page.Value.NextCursor,
             beforeCursor: page.Value.PreviousCursor,
             limit: 10);
@@ -226,9 +232,9 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, afterCursor: malformedCursor, beforeCursor: null, limit: 10);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: malformedCursor, beforeCursor: null, limit: 10);
         Assert.True(result.IsFailure);
         Assert.Equal("booking.chat.cursor_invalid", result.Error.Code);
     }
@@ -238,14 +244,14 @@ public sealed partial class BookingChatPaginationTests : IClassFixture<PostgresR
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var page = await chat.GetMessagesAsync(seed.BookingId, null, null, 2);
+        var page = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 2);
         Assert.True(page.IsSuccess);
         var validCursor = page.Value.NextCursor!;
         var truncatedCursor = validCursor[..^4];
 
-        var result = await chat.GetMessagesAsync(
+        var result = await chat.Queries.GetMessagesAsync(
             seed.BookingId, afterCursor: truncatedCursor, beforeCursor: null, limit: 10);
 
         Assert.True(result.IsFailure);

@@ -77,24 +77,28 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         return provider.GetRequiredService<IHubContext<SupportChatHub>>();
     }
 
-    private SupportChatService Chat(SupportDbContext db, bool push = false,
-        bool allowPush = true, bool misconfiguredPush = false)
+    private (SupportChatQueries Queries, SupportChatCommands Commands) Chat(
+        SupportDbContext db, bool push = false, bool allowPush = true, bool misconfiguredPush = false)
     {
         var registry = new EventTypeRegistry();
         var kafka = new KafkaOptions();
         registry.Add<NotificationRequested>("caresitter.notifications.requested", 1,
             kafka.NotificationsTopic);
         var serializer = new JsonEventSerializer(registry, kafka);
-        return new(db, new BookingAccess(),
-        new AdminLookup(_admin, _secondAdmin), new RecipientReader(allowPush),
-        new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        var admins = new AdminLookup(_admin, _secondAdmin);
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["SupportChat:Enabled"] = "true",
             ["SupportChat:PushEnabled"] = push.ToString()
-        }).Build(), Hub(), NullLogger<SupportChatService>.Instance,
-        new MessagingSettings(push && !misconfiguredPush, push && !misconfiguredPush,
-            false, false, "test"), serializer,
-        new OutboxWriter<SupportDbContext>(db, serializer));
+        }).Build();
+        var responses = new SupportChatResponses(db);
+        var realtime = new SupportChatRealtimePublisher(Hub(), NullLogger<SupportChatRealtimePublisher>.Instance);
+        return (new SupportChatQueries(db, admins, responses),
+            new SupportChatCommands(db, new BookingAccess(), admins, new RecipientReader(allowPush),
+                configuration, responses, realtime,
+                new MessagingSettings(push && !misconfiguredPush, push && !misconfiguredPush,
+                    false, false, "test"), serializer,
+                new OutboxWriter<SupportDbContext>(db, serializer)));
     }
 
     [PostgresFact]
@@ -108,45 +112,45 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         await using (var db = Context())
         {
             var chat = Chat(db);
-            var created = await chat.CreateAsync(owner, createKey, request, default);
+            var created = await chat.Commands.CreateAsync(owner, createKey, request, default);
             Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Message : "");
             conversationId = created.Value.Conversation.Id;
             Assert.Equal(1, created.Value.FirstMessage.Sequence);
-            var replay = await chat.CreateAsync(owner, createKey, request, default);
+            var replay = await chat.Commands.CreateAsync(owner, createKey, request, default);
             Assert.True(replay.IsSuccess);
             Assert.True(replay.Value.Replayed);
             Assert.Equal(created.Value.FirstMessage.Id, replay.Value.FirstMessage.Id);
             Assert.Equal("support.chat.idempotency_conflict",
-                (await chat.CreateAsync(owner, createKey,
+                (await chat.Commands.CreateAsync(owner, createKey,
                     request with { FirstMessage = "Nội dung khác đủ dài." }, default)).Error.Code);
             Assert.Equal("support.chat.not_found",
-                (await chat.GetAsync(new ChatActor(_other, false, "CUSTOMER"),
+                (await chat.Queries.GetAsync(new ChatActor(_other, false, "CUSTOMER"),
                     conversationId, default)).Error.Code);
         }
         await using (var db = Context())
         {
             var chat = Chat(db);
-            var claim = await chat.ClaimAsync(admin, conversationId, 1, default);
+            var claim = await chat.Commands.ClaimAsync(admin, conversationId, 1, default);
             Assert.True(claim.IsSuccess);
             Assert.Equal("IN_PROGRESS", claim.Value.Status);
             var key = Guid.NewGuid();
-            var reply = await chat.SendAsync(admin, conversationId, key, "CareSitter đã nhận yêu cầu.", default);
+            var reply = await chat.Commands.SendAsync(admin, conversationId, key, "CareSitter đã nhận yêu cầu.", default);
             Assert.True(reply.IsSuccess);
             Assert.Equal(2, reply.Value.Sequence);
             Assert.Equal(reply.Value.Id,
-                (await chat.SendAsync(admin, conversationId, key,
+                (await chat.Commands.SendAsync(admin, conversationId, key,
                     "CareSitter đã nhận yêu cầu.", default)).Value.Id);
             Assert.Single(await db.Notifications.Where(x => x.ChatMessageId == reply.Value.Id).ToListAsync());
-            var read = await chat.ReadAsync(owner, conversationId, 2, default);
+            var read = await chat.Commands.ReadAsync(owner, conversationId, 2, default);
             Assert.Equal(0, read.Value.UnreadCount);
-            var close = await chat.StatusAsync(admin, conversationId, "CLOSED", 2,
+            var close = await chat.Commands.StatusAsync(admin, conversationId, "CLOSED", 2,
                 "Đã trả lời và kết thúc.", default);
             Assert.True(close.IsSuccess);
             Assert.Equal("CLOSED", close.Value.Status);
             Assert.Equal("support.chat.closed",
-                (await chat.SendAsync(owner, conversationId, Guid.NewGuid(),
+                (await chat.Commands.SendAsync(owner, conversationId, Guid.NewGuid(),
                     "Tôi còn một câu hỏi", default)).Error.Code);
-            var oldReply = await chat.SendAsync(admin, conversationId, key,
+            var oldReply = await chat.Commands.SendAsync(admin, conversationId, key,
                 "CareSitter đã nhận yêu cầu.", default);
             Assert.True(oldReply.IsSuccess);
             Assert.True(oldReply.Value.Replayed);
@@ -155,13 +159,13 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         await using (var db = Context())
         {
             var chat = Chat(db);
-            var next = await chat.CreateAsync(owner, Guid.NewGuid(),
+            var next = await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
                 new ChatCreateRequest("Yêu cầu tiếp theo", "Tôi cần hỗ trợ cho lịch khác.", null), default);
             Assert.True(next.IsSuccess);
-            var firstPage = await chat.ListAsync(owner, null, null, null, 1, default);
+            var firstPage = await chat.Queries.ListAsync(owner, null, null, null, 1, default);
             Assert.True(firstPage.Value.HasMore);
             Assert.Equal(next.Value.Conversation.Id, firstPage.Value.Items[0].Id);
-            var secondPage = await chat.ListAsync(owner, null, firstPage.Value.NextCreatedAt,
+            var secondPage = await chat.Queries.ListAsync(owner, null, firstPage.Value.NextCreatedAt,
                 firstPage.Value.NextId, 1, default);
             Assert.Equal(conversationId, Assert.Single(secondPage.Value.Items).Id);
         }
@@ -176,7 +180,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         async Task<Result<ChatCreateResponse>> Create(Guid key)
         {
             await using var db = Context();
-            return await Chat(db).CreateAsync(owner, key, request, default);
+            return await Chat(db).Commands.CreateAsync(owner, key, request, default);
         }
         var createResults = await Task.WhenAll(Create(Guid.NewGuid()), Create(Guid.NewGuid()));
         Assert.Single(createResults, x => x.IsSuccess);
@@ -187,7 +191,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         async Task<Result<ChatConversationResponse>> Claim()
         {
             await using var db = Context();
-            return await Chat(db).ClaimAsync(admin, id, 1, default);
+            return await Chat(db).Commands.ClaimAsync(admin, id, 1, default);
         }
         var claims = await Task.WhenAll(Claim(), Claim());
         Assert.Single(claims, x => x.IsSuccess);
@@ -197,7 +201,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         async Task<Result<ChatMessageResponse>> Send()
         {
             await using var db = Context();
-            return await Chat(db).SendAsync(owner, id, key, "Tôi gửi lại cùng yêu cầu.", default);
+            return await Chat(db).Commands.SendAsync(owner, id, key, "Tôi gửi lại cùng yêu cầu.", default);
         }
         var sends = await Task.WhenAll(Send(), Send());
         Assert.All(sends, x => Assert.True(x.IsSuccess));
@@ -214,12 +218,12 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         var admin = new ChatActor(_admin, true, "ADMIN");
         await using var db = Context();
         var chat = Chat(db, push: true);
-        var created = await chat.CreateAsync(owner, Guid.NewGuid(),
+        var created = await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
             new ChatCreateRequest("Cần hỗ trợ ứng dụng", "Tôi muốn hỏi về việc đặt lịch.", null), default);
         Assert.True(created.IsSuccess);
         var id = created.Value.Conversation.Id;
-        Assert.True((await chat.ClaimAsync(admin, id, 1, default)).IsSuccess);
-        var reply = await chat.SendAsync(admin, id, Guid.NewGuid(), "Nội dung trao đổi riêng tư", default);
+        Assert.True((await chat.Commands.ClaimAsync(admin, id, 1, default)).IsSuccess);
+        var reply = await chat.Commands.SendAsync(admin, id, Guid.NewGuid(), "Nội dung trao đổi riêng tư", default);
         Assert.True(reply.IsSuccess);
         var notification = Assert.Single(await db.Notifications.Where(x =>
             x.ChatMessageId == reply.Value.Id).ToListAsync());
@@ -231,7 +235,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         Assert.Contains(notification.Id.ToString(), outbox.Envelope);
         Assert.Equal("push", delivery.Channel);
 
-        var muted = await Chat(db, push: true, allowPush: false).SendAsync(admin, id,
+        var muted = await Chat(db, push: true, allowPush: false).Commands.SendAsync(admin, id,
             Guid.NewGuid(), "Phản hồi tiếp theo", default);
         Assert.True(muted.IsSuccess);
         var mutedInbox = Assert.Single(await db.Notifications.Where(x =>
@@ -248,31 +252,31 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         var second = new ChatActor(_secondAdmin, true, "ADMIN");
         await using var db = Context();
         var chat = Chat(db);
-        var created = await chat.CreateAsync(owner, Guid.NewGuid(),
+        var created = await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
             new ChatCreateRequest("Cần hỗ trợ lịch", "Tôi cần đổi lịch cho người thân.", null), default);
         Assert.True(created.IsSuccess);
         var id = created.Value.Conversation.Id;
-        Assert.Equal("support.chat.not_assigned", (await chat.ReadAsync(first, id, 1, default)).Error.Code);
-        Assert.Equal(0, (await chat.GetAsync(owner, id, default)).Value.StaffLastReadSequence);
+        Assert.Equal("support.chat.not_assigned", (await chat.Commands.ReadAsync(first, id, 1, default)).Error.Code);
+        Assert.Equal(0, (await chat.Queries.GetAsync(owner, id, default)).Value.StaffLastReadSequence);
 
-        var claimed = await chat.ClaimAsync(first, id, 1, default);
+        var claimed = await chat.Commands.ClaimAsync(first, id, 1, default);
         Assert.True(claimed.IsSuccess);
-        Assert.True((await chat.ReadAsync(first, id, 1, default)).IsSuccess);
-        Assert.Equal(1, (await chat.GetAsync(owner, id, default)).Value.StaffLastReadSequence);
-        var transferred = await chat.TransferAsync(first, id, _secondAdmin, false,
+        Assert.True((await chat.Commands.ReadAsync(first, id, 1, default)).IsSuccess);
+        Assert.Equal(1, (await chat.Queries.GetAsync(owner, id, default)).Value.StaffLastReadSequence);
+        var transferred = await chat.Commands.TransferAsync(first, id, _secondAdmin, false,
             claimed.Value.TicketVersion, "Chuyển ca trực", default);
         Assert.True(transferred.IsSuccess);
-        Assert.Equal("support.chat.not_assigned", (await chat.ReadAsync(first, id, 1, default)).Error.Code);
-        Assert.Equal("support.chat.not_assigned", (await chat.SendAsync(first, id,
+        Assert.Equal("support.chat.not_assigned", (await chat.Commands.ReadAsync(first, id, 1, default)).Error.Code);
+        Assert.Equal("support.chat.not_assigned", (await chat.Commands.SendAsync(first, id,
             Guid.NewGuid(), "Tôi không còn phụ trách.", default)).Error.Code);
-        Assert.True((await chat.SendAsync(second, id, Guid.NewGuid(), "Tôi đã nhận ca hỗ trợ.", default)).IsSuccess);
-        var taken = await chat.TransferAsync(first, id, _admin, true,
+        Assert.True((await chat.Commands.SendAsync(second, id, Guid.NewGuid(), "Tôi đã nhận ca hỗ trợ.", default)).IsSuccess);
+        var taken = await chat.Commands.TransferAsync(first, id, _admin, true,
             transferred.Value.TicketVersion, "Nhận lại ca trực", default);
         Assert.True(taken.IsSuccess);
         Assert.Equal(_admin, taken.Value.AssignedAdminId);
-        Assert.Equal("support.chat.version_conflict", (await chat.TransferAsync(second, id,
+        Assert.Equal("support.chat.version_conflict", (await chat.Commands.TransferAsync(second, id,
             _secondAdmin, true, transferred.Value.TicketVersion, "Phiên cũ", default)).Error.Code);
-        Assert.Equal("support.chat.not_found", (await chat.MessagesAsync(
+        Assert.Equal("support.chat.not_found", (await chat.Queries.MessagesAsync(
             new ChatActor(_other, false, "CUSTOMER"), id, null, null, null, 50, default)).Error.Code);
     }
 
@@ -282,19 +286,19 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         var owner = new ChatActor(_owner, false, "CUSTOMER");
         await using var db = Context();
         var chat = Chat(db);
-        var created = await chat.CreateAsync(owner, Guid.NewGuid(),
+        var created = await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
             new ChatCreateRequest("Hỏi về dịch vụ", "Tôi cần được giải thích dịch vụ.", null), default);
         Assert.True(created.IsSuccess);
         var id = created.Value.Conversation.Id;
         for (var i = 0; i < 124; i++)
-            Assert.True((await chat.SendAsync(owner, id, Guid.NewGuid(), $"Tin nhắn {i}", default)).IsSuccess);
+            Assert.True((await chat.Commands.SendAsync(owner, id, Guid.NewGuid(), $"Tin nhắn {i}", default)).IsSuccess);
 
         var observed = new List<long>();
         long after = 0;
         long? highWatermark = null;
         do
         {
-            var result = await chat.MessagesAsync(owner, id, null, after, highWatermark, 37, default);
+            var result = await chat.Queries.MessagesAsync(owner, id, null, after, highWatermark, 37, default);
             Assert.True(result.IsSuccess);
             var page = result.Value;
             highWatermark ??= page.HighWatermarkSequence;
@@ -304,7 +308,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         } while (true);
         Assert.Equal(Enumerable.Range(1, 125).Select(x => (long)x), observed);
         Assert.Equal(125, highWatermark);
-        Assert.Equal(125, (await chat.ReadAsync(owner, id, 125, default)).Value.OwnLastReadSequence);
+        Assert.Equal(125, (await chat.Commands.ReadAsync(owner, id, 125, default)).Value.OwnLastReadSequence);
     }
 
     [PostgresFact]
@@ -316,21 +320,21 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         await using (var db = Context())
         {
             var chat = Chat(db);
-            firstId = (await chat.CreateAsync(owner, Guid.NewGuid(),
+            firstId = (await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
                 new ChatCreateRequest("Hỗ trợ thanh toán", "Tôi cần hỏi về thanh toán.", null),
                 default)).Value.Conversation.Id;
-            Assert.True((await chat.ClaimAsync(admin, firstId, 1, default)).IsSuccess);
+            Assert.True((await chat.Commands.ClaimAsync(admin, firstId, 1, default)).IsSuccess);
         }
         async Task<Result<ChatMessageResponse>> Send(Guid id, Guid actorId, string role)
         {
             await using var db = Context();
-            return await Chat(db).SendAsync(new ChatActor(actorId, role == "ADMIN", role),
+            return await Chat(db).Commands.SendAsync(new ChatActor(actorId, role == "ADMIN", role),
                 id, Guid.NewGuid(), "Tin nhắn đang cạnh tranh khóa.", default);
         }
         async Task<Result<ChatConversationResponse>> Close(Guid id)
         {
             await using var db = Context();
-            return await Chat(db).StatusAsync(admin, id, "CLOSED", 2,
+            return await Chat(db).Commands.StatusAsync(admin, id, "CLOSED", 2,
                 "Đã hoàn tất hỗ trợ", default);
         }
         var send = Send(firstId, _owner, "CUSTOMER");
@@ -342,8 +346,8 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         {
             Assert.Equal(send.Result.IsSuccess ? 2 : 1,
                 await db.ChatMessages.CountAsync(x => x.ConversationId == firstId));
-            Assert.Equal("CLOSED", (await Chat(db).GetAsync(owner, firstId, default)).Value.Status);
-            Assert.Equal("support.chat.closed", (await Chat(db).SendAsync(owner, firstId,
+            Assert.Equal("CLOSED", (await Chat(db).Queries.GetAsync(owner, firstId, default)).Value.Status);
+            Assert.Equal("support.chat.closed", (await Chat(db).Commands.SendAsync(owner, firstId,
                 Guid.NewGuid(), "Không được gửi sau khi đóng", default)).Error.Code);
         }
 
@@ -352,15 +356,15 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         await using (var db = Context())
         {
             var chat = Chat(db);
-            secondId = (await chat.CreateAsync(owner, Guid.NewGuid(),
+            secondId = (await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
                 new ChatCreateRequest("Hỗ trợ ca mới", "Tôi cần hỗ trợ ca mới.", null),
                 default)).Value.Conversation.Id;
-            Assert.True((await chat.ClaimAsync(admin, secondId, 1, default)).IsSuccess);
+            Assert.True((await chat.Commands.ClaimAsync(admin, secondId, 1, default)).IsSuccess);
         }
         async Task<Result<ChatConversationResponse>> Transfer()
         {
             await using var db = Context();
-            return await Chat(db).TransferAsync(admin, secondId, _secondAdmin, false, 2,
+            return await Chat(db).Commands.TransferAsync(admin, secondId, _secondAdmin, false, 2,
                 "Chuyển xử lý cho ca trực sau", default);
         }
         var oldAdminSend = Send(secondId, _admin, "ADMIN");
@@ -373,7 +377,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         Assert.Equal(oldAdminSend.Result.IsSuccess ? 2 : 1,
             await check.ChatMessages.CountAsync(x => x.ConversationId == secondId));
         Assert.Equal(_secondAdmin,
-            (await Chat(check).GetAsync(owner, secondId, default)).Value.AssignedAdminId);
+            (await Chat(check).Queries.GetAsync(owner, secondId, default)).Value.AssignedAdminId);
     }
 
     [PostgresFact]
@@ -383,15 +387,15 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         var admin = new ChatActor(_admin, true, "ADMIN");
         await using var db = Context();
         var chat = Chat(db);
-        var created = await chat.CreateAsync(owner, Guid.NewGuid(),
+        var created = await chat.Commands.CreateAsync(owner, Guid.NewGuid(),
             new ChatCreateRequest("Cần hỗ trợ tài khoản", "Tài khoản của tôi gặp sự cố.", null), default);
         Assert.True(created.IsSuccess);
         var id = created.Value.Conversation.Id;
-        Assert.True((await chat.ClaimAsync(admin, id, 1, default)).IsSuccess);
+        Assert.True((await chat.Commands.ClaimAsync(admin, id, 1, default)).IsSuccess);
         // The service must not commit a reply if its required push outbox is unavailable.
         await Assert.ThrowsAsync<InvalidOperationException>(() => Chat(db,
                 push: true, misconfiguredPush: true)
-            .SendAsync(admin, id, Guid.NewGuid(), "Phản hồi chưa được commit", default));
+            .Commands.SendAsync(admin, id, Guid.NewGuid(), "Phản hồi chưa được commit", default));
         await using var check = Context();
         Assert.Equal(1, await check.ChatMessages.CountAsync(x => x.ConversationId == id));
         Assert.Empty(await check.Notifications.Where(x => x.ChatMessageId != null).ToListAsync());
@@ -535,12 +539,10 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         builder.Services.AddScoped<IBookingPartyAccess, BookingAccess>();
         builder.Services.AddScoped<INotificationRecipientReader>(_ => new RecipientReader(false));
         builder.Services.AddScoped<ISupportChatMembership, SupportChatMembership>();
-        builder.Services.AddScoped<ISupportChatService>(sp => new SupportChatService(
-            sp.GetRequiredService<SupportDbContext>(), sp.GetRequiredService<IBookingPartyAccess>(),
-            sp.GetRequiredService<IActiveAdminLookup>(),
-            sp.GetRequiredService<INotificationRecipientReader>(), builder.Configuration,
-            sp.GetRequiredService<IHubContext<SupportChatHub>>(),
-            NullLogger<SupportChatService>.Instance));
+        builder.Services.AddScoped<SupportChatResponses>();
+        builder.Services.AddScoped<SupportChatRealtimePublisher>();
+        builder.Services.AddScoped<ISupportChatQueries, SupportChatQueries>();
+        builder.Services.AddScoped<ISupportChatCommands, SupportChatCommands>();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUser, HttpActor>();
         builder.Services.AddDistributedMemoryCache();
@@ -549,6 +551,7 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         builder.Services.AddSingleton<RealtimeSessionRegistry>();
         builder.Services.AddRateLimiter(options => options.AddPolicy("support-chat-write", _ =>
             RateLimitPartition.GetNoLimiter("test")));
+        builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SupportChatController>());
         builder.Services.AddControllers().AddApplicationPart(typeof(SupportChatController).Assembly);
         var app = builder.Build();
         app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter();

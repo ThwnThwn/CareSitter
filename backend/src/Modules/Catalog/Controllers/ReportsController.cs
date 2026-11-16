@@ -1,7 +1,10 @@
 using CareSitter.Modules.Catalog.Application;
+using CareSitter.Modules.Catalog.Application.Commands.Reports;
+using CareSitter.Modules.Catalog.Application.Queries.Reports;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Contracts.Services;
 using CareSitter.SharedKernel.Results;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,8 +16,7 @@ namespace CareSitter.Modules.Catalog.Controllers;
 [Authorize]
 [Route("api/v1")]
 [EnableRateLimiting("media-read")]
-public sealed class ReportsController(ReportService service, FirebaseReportService firebase,
-    ICurrentUser currentUser, IActiveUserLookup activeUsers) : ControllerBase
+public sealed class ReportsController(ISender sender, ICurrentUser currentUser, IActiveUserLookup activeUsers) : ControllerBase
 {
     [HttpPost("bookings/{bookingId:guid}/reports/firebase-session")]
     [Authorize(Roles = "CUSTOMER")]
@@ -24,7 +26,7 @@ public sealed class ReportsController(ReportService service, FirebaseReportServi
         if (currentUser.UserId is not { } owner ||
             !await activeUsers.IsActiveWithAnyRoleAsync(owner, currentUser.Roles, ct)) return Forbid();
         if (!long.TryParse(User.FindFirst("exp")?.Value, out var expires)) return Unauthorized();
-        var result = await firebase.PrepareAsync(bookingId, request, expires * 1000, ct);
+        var result = await sender.Send(new PrepareFirebaseReportCommand(bookingId, request, expires * 1000), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     [HttpPost("reports/{reportId:guid}/firebase-completion")]
@@ -32,7 +34,7 @@ public sealed class ReportsController(ReportService service, FirebaseReportServi
     public async Task<IActionResult> FirebaseCompletion(Guid reportId, CancellationToken ct)
     {
         PrivateHeaders();
-        var result = await firebase.CompleteAsync(reportId, ct);
+        var result = await sender.Send(new CompleteFirebaseReportCommand(reportId), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     [HttpPost("bookings/{bookingId:guid}/reports")]
@@ -49,21 +51,21 @@ public sealed class ReportsController(ReportService service, FirebaseReportServi
         await using var stream = file.OpenReadStream();
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, ct);
-        var result = await service.UploadAsync(bookingId, idempotencyKey, buffer.ToArray(), ct);
+        var result = await sender.Send(new UploadBookingReportCommand(bookingId, idempotencyKey, buffer.ToArray()), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     [HttpGet("bookings/{bookingId:guid}/reports")]
     public async Task<IActionResult> List(Guid bookingId, CancellationToken ct, int page = 1, int pageSize = 20)
     {
         PrivateHeaders();
-        var result = await service.ListAsync(bookingId, page, pageSize, ct);
+        var result = await sender.Send(new ListBookingReportsQuery(bookingId, page, pageSize), ct);
         return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
     }
     [HttpGet("reports/{reportId:guid}/content")]
     public async Task<IActionResult> Content(Guid reportId, CancellationToken ct)
     {
         PrivateHeaders();
-        var result = await service.ReadAsync(reportId, ct);
+        var result = await sender.Send(new ReadBookingReportContentQuery(reportId), ct);
         return result.IsSuccess ? File(result.Value, "application/pdf", "caresitter-report.pdf") : Failure(result.Error);
     }
     private void PrivateHeaders()

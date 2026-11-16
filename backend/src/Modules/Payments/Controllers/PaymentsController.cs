@@ -49,7 +49,7 @@ public sealed class PaymentsController : ControllerBase
     [HttpGet("api/v1/payments/intents/{id:guid}")]
     public async Task<IActionResult> GetIntent(Guid id, CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetPaymentIntentQuery(id), ct);
+        var result = await _mediator.Send(new RefreshPaymentIntentCommand(id), ct);
         return result.ToActionResult(this);
     }
 

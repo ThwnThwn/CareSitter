@@ -3,9 +3,13 @@ using System.Text;
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Catalog;
 using CareSitter.Modules.Catalog.Application;
+using CareSitter.Modules.Catalog.Controllers;
 using CareSitter.Modules.Catalog.Domain;
 using CareSitter.Modules.Catalog.Infrastructure;
 using CareSitter.SharedKernel.Results;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -59,27 +63,55 @@ public sealed class BookingReportsPostgresTests : IAsyncLifetime
         var key = Guid.NewGuid(); Guid id;
         using (var scope = services.CreateScope())
         {
-            var result = await scope.ServiceProvider.GetRequiredService<ReportService>().UploadAsync(booking, key, Pdf, default);
-            Assert.True(result.IsSuccess, result.Error.Message); id = result.Value.Id;
+            var controller = CreateController(scope.ServiceProvider, actor);
+            id = (await UploadFromControllerAsync(controller, booking, key)).Id;
         }
         using (var scope = services.CreateScope())
         {
-            var service = scope.ServiceProvider.GetRequiredService<ReportService>();
-            var replay = await service.UploadAsync(booking, key, Pdf, default);
-            Assert.True(replay.IsSuccess); Assert.Equal(id, replay.Value.Id); Assert.Equal(1, gateway.Uploads);
-            Assert.True((await service.ReadAsync(id, default)).IsSuccess);
+            var controller = CreateController(scope.ServiceProvider, actor);
+            var replay = await UploadFromControllerAsync(controller, booking, key);
+            Assert.Equal(id, replay.Id);
+            Assert.Equal(1, gateway.Uploads);
+
+            var list = Assert.IsType<OkObjectResult>(await controller.List(booking, default));
+            Assert.Equal(id, Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<ReportResponse>>(list.Value)).Id);
+            var content = Assert.IsType<FileContentResult>(await controller.Content(id, default));
+            Assert.Equal(Pdf, content.FileContents);
+            Assert.Equal("no-store, private", controller.Response.Headers.CacheControl.ToString());
+
             var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
             var asset = await db.MediaAssets.SingleAsync(x => x.Id == id);
             Assert.True(asset.IsSensitive); Assert.Null(asset.Url);
             Assert.Equal("authenticated", asset.DeliveryType); Assert.Equal("pdf", asset.FileFormat);
-            var json = System.Text.Json.JsonSerializer.Serialize(replay.Value);
+            var json = System.Text.Json.JsonSerializer.Serialize(replay);
             Assert.DoesNotContain("ObjectKey", json); Assert.DoesNotContain("CloudName", json);
             actor.Id = Guid.NewGuid();
-            Assert.Equal("report.not_found", (await service.ReadAsync(id, default)).Error.Code);
+            var denied = Assert.IsType<ObjectResult>(await controller.Content(id, default));
+            Assert.Equal(StatusCodes.Status404NotFound, denied.StatusCode);
+            Assert.Equal("report.not_found", Assert.IsType<ProblemDetails>(denied.Value).Title);
             Assert.Equal(1, gateway.Downloads);
             actor.Role = "ADMIN";
-            Assert.True((await service.ReadAsync(id, default)).IsSuccess);
+            Assert.IsType<FileContentResult>(await controller.Content(id, default));
         }
+    }
+
+    private static ReportsController CreateController(IServiceProvider services, Actor actor) =>
+        new(services.GetRequiredService<ISender>(), actor, actor)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+
+    private static async Task<ReportResponse> UploadFromControllerAsync(
+        ReportsController controller, Guid booking, Guid key)
+    {
+        using var stream = new MemoryStream(Pdf);
+        var file = new FormFile(stream, 0, Pdf.Length, "file", "report.pdf")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/pdf"
+        };
+        var result = await controller.Upload(booking, file, key.ToString(), default);
+        return Assert.IsType<ReportResponse>(Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [PostgresFact]
@@ -233,13 +265,15 @@ public sealed class BookingReportsPostgresTests : IAsyncLifetime
         }
     }
 
-    private sealed class Actor(Guid owner, Guid booking) : ICurrentUser, IBookingReportAccess
+    private sealed class Actor(Guid owner, Guid booking) : ICurrentUser, IBookingReportAccess, IActiveUserLookup
     {
         private readonly Guid _owner = owner;
         public Guid Id { get; set; } = owner; public string Role = "CUSTOMER";
         public Guid? UserId => Id; public IReadOnlyCollection<string> Roles => [Role];
         public bool IsInRole(string role) => Role == role;
         public Task<bool> IsCustomerAsync(Guid b, Guid user, CancellationToken ct = default) => Task.FromResult(b == booking && user == _owner);
+        public Task<bool> IsActiveWithAnyRoleAsync(Guid userId, IReadOnlyCollection<string> roles,
+            CancellationToken ct = default) => Task.FromResult(userId == Id && roles.Contains(Role));
     }
     private sealed class Clock : IClock { public DateTimeOffset UtcNow => DateTimeOffset.UtcNow; }
     private sealed class Gateway : IReportDocumentGateway

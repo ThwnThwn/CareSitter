@@ -140,7 +140,7 @@ internal sealed class PaymentPortal(
             await payOS.RefreshAsync(intent.Id, ct);
             paymentsDb.ChangeTracker.Clear();
             intent = await paymentsDb.PaymentIntents.AsNoTracking().SingleAsync(x => x.Id == intentId, ct);
-            return PayOSPaymentPortal.ToResponse(intent);
+            return PayOSCheckout.ToResponse(intent);
         }
         return intent is null ? null : ToResponse(intent);
     }

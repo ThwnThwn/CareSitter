@@ -74,10 +74,7 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             var onlineReference = generalKnowledge && value.ReferenceKnowledge && !value.LocalDemo && !value.GeneralKnowledge;
             if (generalKnowledge && !onlineReference) return PresentGeneralKnowledge(query, value);
             if (value.GeneralKnowledge || value.ReferenceKnowledge && !onlineReference) throw new InvalidDataException();
-            if (value.Query != query || value.Results.Count > 10 ||
-                value.Results.Select(hit => hit.ChunkId).Distinct(StringComparer.Ordinal).Count() != value.Results.Count || value.Results.Any(hit =>
-                    string.IsNullOrWhiteSpace(hit.ChunkId) || hit.Heading.Length > 500 ||
-                    hit.SourceTitle.Length > 500 || hit.SourceRevisionId.Length > 200))
+            if (value.Query != query || value.References.Count != 0 || HasInvalidKnowledgeHits(value.Results))
                 throw new InvalidDataException();
             var showLocalDemo = localDemo && value.LocalDemo;
             var showPassages = showLocalDemo || onlineReference;
@@ -117,7 +114,7 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
 
     private static NutritionGatewayResponse PresentGeneralKnowledge(string query, KnowledgeSearchResponse value)
     {
-        // General answers carry no corpus text, source IDs or purported book citations.
+        // General answer blocks carry no citations. References carry metadata only.
         var blocks = value.AnswerBlocks.ToArray();
         if (value.Query != query || !value.GeneralKnowledge || value.ReferenceKnowledge || value.LocalDemo || value.Results.Count != 0 ||
             !string.IsNullOrEmpty(value.AnswerChunkId) || value.AnswerChunkIds.Count != 0 ||
@@ -125,13 +122,25 @@ internal sealed class NutritionGrpcGateway : INutritionGateway, IDisposable
             value.AnswerStatus is not ("ai_suggestion" or "insufficient_evidence" or "unavailable" or
                 "not_configured" or "rate_limited" or "timeout" or "invalid_output") ||
             blocks.Length > 4 || (value.AnswerStatus == "ai_suggestion" ? blocks.Length == 0 : blocks.Length != 0) ||
-            blocks.Any(block => block.Text.Trim().Length < 10 || block.Text.Length > 1200 || block.ChunkIds.Count != 0))
+            blocks.Any(block => block.Text.Trim().Length < 10 || block.Text.Length > 1200 || block.ChunkIds.Count != 0) ||
+            HasInvalidKnowledgeHits(value.References) || value.References.Any(hit => hit.PdfPage < 1 ||
+                string.IsNullOrWhiteSpace(hit.SourceTitle) || string.IsNullOrWhiteSpace(hit.SourceRevisionId) ||
+                hit.Excerpt.Length != 0 || hit.Summary.Length != 0))
             throw new InvalidDataException();
         return new(200, new NutritionKnowledgeSearchResponse(query, [], AnswerChunkIds: [],
             AnswerStatus: value.AnswerStatus, AnswerBlocks: blocks.Select(block =>
                 new NutritionKnowledgeAnswerBlockResponse(block.Text, [])).ToArray(),
-            AnswerProvider: "Gemini", GeneralKnowledge: true));
+            AnswerProvider: "Gemini", GeneralKnowledge: true,
+            References: value.References.Select(hit => new NutritionKnowledgeHitResponse(hit.ChunkId, hit.Heading,
+                hit.PdfPage, string.IsNullOrEmpty(hit.PrintedPage) ? null : hit.PrintedPage,
+                hit.SourceTitle, hit.SourceRevisionId)).ToArray()));
     }
+
+    private static bool HasInvalidKnowledgeHits(IReadOnlyList<KnowledgeHit> hits) =>
+        hits.Count > 10 ||
+        hits.Select(hit => hit.ChunkId).Distinct(StringComparer.Ordinal).Count() != hits.Count ||
+        hits.Any(hit => string.IsNullOrWhiteSpace(hit.ChunkId) || hit.Heading.Length > 500 ||
+            hit.SourceTitle.Length > 500 || hit.SourceRevisionId.Length > 200);
 
     private async Task<NutritionGatewayResponse> CallAsync<T>(Func<Metadata, DateTime, AsyncUnaryCall<T>> call,
         Func<T, NutritionGatewayResponse> present, CancellationToken ct, int? timeoutSeconds = null)

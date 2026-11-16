@@ -22,6 +22,10 @@ public sealed class BookingModule : IModule
 {
     public string Name => "Booking";
 
+    // Keep the original job type and method available for persisted scheduler entries.
+    public static MethodInfo LiveLocationCleanupMethod =>
+        typeof(LiveLocationCleanupJob).GetMethod(nameof(LiveLocationCleanupJob.RunAsync))!;
+
     /// <summary>
     /// Chạy backfill có kiểm soát cho các booking cũ, thông qua store nội bộ của module.
     /// Caller tạo scope và chỉ gọi khi chủ động chạy tác vụ bảo trì.
@@ -129,7 +133,9 @@ public sealed class BookingModule : IModule
         services.AddScoped<BookingDomainOutboxDispatcher>();
         services.AddScoped<IBookingAcceptanceTransaction, BookingAcceptanceTransaction>();
         services.AddScoped<IBookingChatWriter, BookingChatWriter>();
-        services.AddScoped<IBookingChatService, BookingChatService>();
+        services.AddScoped<BookingChatParticipantAccess>();
+        services.AddScoped<IBookingChatQueries, BookingChatQueries>();
+        services.AddScoped<IBookingChatCommands, BookingChatCommands>();
         services.AddScoped<IBookingChatAdminService, BookingChatAdminService>();
         services.AddScoped<IBookingChatDispatcher, BookingChatDispatcher>();
         services.AddScoped<BookingChatReportDispatcher>();

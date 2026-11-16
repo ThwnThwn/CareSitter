@@ -81,7 +81,7 @@ public sealed record BookingChatBlockResponse(
     bool Changed,
     DateTimeOffset? BlockedAt);
 
-public interface IBookingChatService
+internal interface IBookingChatQueries
 {
     Task<Result<BookingChatMetadataResponse>> GetMetadataAsync(
         Guid bookingId, CancellationToken ct = default);
@@ -94,6 +94,12 @@ public interface IBookingChatService
         Guid bookingId, Guid anchorMessageId, string direction, long scopeVersion,
         int limit, CancellationToken ct = default);
 
+    Task<Result<BookingChatReportResponse>> GetReportAsync(
+        Guid bookingId, Guid reportId, CancellationToken ct = default);
+}
+
+internal interface IBookingChatCommands
+{
     Task<Result<BookingChatMessageResponse>> SendAsync(
         Guid bookingId, Guid idempotencyKey, BookingChatSendRequest request,
         CancellationToken ct = default);
@@ -104,9 +110,6 @@ public interface IBookingChatService
     Task<Result<BookingChatReportResponse>> ReportMessageAsync(
         Guid bookingId, Guid messageId, BookingChatReportRequest request,
         CancellationToken ct = default);
-
-    Task<Result<BookingChatReportResponse>> GetReportAsync(
-        Guid bookingId, Guid reportId, CancellationToken ct = default);
 
     Task<Result<BookingChatBlockResponse>> SetBlockAsync(
         Guid bookingId, BookingChatBlockRequest request, CancellationToken ct = default);

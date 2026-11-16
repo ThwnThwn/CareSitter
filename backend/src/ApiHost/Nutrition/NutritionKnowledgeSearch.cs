@@ -20,7 +20,8 @@ public sealed record NutritionKnowledgeSearchResponse(string Query,
     IReadOnlyList<NutritionKnowledgeHitResponse> Results, string? AnswerChunkId = null, bool LocalDemo = false,
     IReadOnlyList<string>? AnswerChunkIds = null, string? AnswerStatus = null,
     IReadOnlyList<NutritionKnowledgeAnswerBlockResponse>? AnswerBlocks = null, string? AnswerProvider = null,
-    bool GeneralKnowledge = false, bool ReferenceKnowledge = false);
+    bool GeneralKnowledge = false, bool ReferenceKnowledge = false,
+    IReadOnlyList<NutritionKnowledgeHitResponse>? References = null);
 
 [ApiController, Authorize(Roles = "CUSTOMER")]
 [Route("api/v1/nutrition/knowledge")]

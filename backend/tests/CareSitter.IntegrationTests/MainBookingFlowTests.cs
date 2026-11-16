@@ -308,11 +308,16 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
             .Handle(new(booking.Id), default);
         Assert.True(accepted.IsSuccess, accepted.Error.Message);
 
-        var customerChat = new BookingChatService(db,
-            new Actor(booking.CustomerId, "CUSTOMER"), people, chatOptions, dataProtection);
-        var caregiverChat = new BookingChatService(db,
-            new Actor(caregiverUserId, "CAREGIVER"), people, chatOptions, dataProtection);
-        var metadata = await customerChat.GetMetadataAsync(booking.Id);
+        (BookingChatQueries Queries, BookingChatCommands Commands) Chat(Actor actor)
+        {
+            var access = new BookingChatParticipantAccess(actor, people);
+            return (new BookingChatQueries(db, actor, access, chatOptions, dataProtection),
+                new BookingChatCommands(db, actor, access, chatOptions));
+        }
+
+        var customerChat = Chat(new Actor(booking.CustomerId, "CUSTOMER"));
+        var caregiverChat = Chat(new Actor(caregiverUserId, "CAREGIVER"));
+        var metadata = await customerChat.Queries.GetMetadataAsync(booking.Id);
         Assert.True(metadata.IsSuccess, metadata.Error.Message);
         Assert.True(metadata.Value.CanSend);
         var epochId = metadata.Value.CurrentEpochId!.Value;
@@ -320,7 +325,7 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var customerKey = Guid.NewGuid();
         var customerRequest = new BookingChatSendRequest(epochId, "text",
             "  Chào bạn, hẹn gặp đúng giờ.  ", null, null, null);
-        var customerMessage = await customerChat.SendAsync(
+        var customerMessage = await customerChat.Commands.SendAsync(
             booking.Id, customerKey, customerRequest);
         Assert.True(customerMessage.IsSuccess, customerMessage.Error.Message);
         Assert.Equal("Chào bạn, hẹn gặp đúng giờ.", customerMessage.Value.Body);
@@ -328,44 +333,44 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         var caregiverKey = Guid.NewGuid();
         var caregiverRequest = new BookingChatSendRequest(epochId, "quick_message", null,
             "caregiver.accepted_on_time", 1, null);
-        var caregiverMessage = await caregiverChat.SendAsync(
+        var caregiverMessage = await caregiverChat.Commands.SendAsync(
             booking.Id, caregiverKey, caregiverRequest);
         Assert.True(caregiverMessage.IsSuccess, caregiverMessage.Error.Message);
-        var replay = await caregiverChat.SendAsync(booking.Id, caregiverKey, caregiverRequest);
+        var replay = await caregiverChat.Commands.SendAsync(booking.Id, caregiverKey, caregiverRequest);
         Assert.True(replay.IsSuccess, replay.Error.Message);
         Assert.Equal(caregiverMessage.Value.Id, replay.Value.Id);
 
-        var conflict = await caregiverChat.SendAsync(booking.Id, caregiverKey,
+        var conflict = await caregiverChat.Commands.SendAsync(booking.Id, caregiverKey,
             caregiverRequest with { TemplateKey = "caregiver.confirm_address" });
         Assert.True(conflict.IsFailure);
         Assert.Equal("booking.chat.idempotency_conflict", conflict.Error.Code);
 
-        var latest = await customerChat.GetMessagesAsync(booking.Id, null, null, 2);
+        var latest = await customerChat.Queries.GetMessagesAsync(booking.Id, null, null, 2);
         Assert.True(latest.IsSuccess, latest.Error.Message);
         Assert.Equal(2, latest.Value.Items.Count);
         Assert.True(latest.Value.HasMoreBefore);
         Assert.NotNull(latest.Value.PreviousCursor);
-        var older = await customerChat.GetMessagesAsync(
+        var older = await customerChat.Queries.GetMessagesAsync(
             booking.Id, null, latest.Value.PreviousCursor, 2);
         Assert.True(older.IsSuccess, older.Error.Message);
         Assert.Single(older.Value.Items);
         Assert.Equal("system", older.Value.Items[0].Kind);
 
-        var unread = await customerChat.GetMetadataAsync(booking.Id);
+        var unread = await customerChat.Queries.GetMetadataAsync(booking.Id);
         Assert.Equal(1, unread.Value.UnreadCount);
-        var read = await customerChat.MarkReadAsync(booking.Id,
+        var read = await customerChat.Commands.MarkReadAsync(booking.Id,
             new BookingChatReadRequest(epochId, caregiverMessage.Value.Id));
         Assert.True(read.IsSuccess, read.Error.Message);
         Assert.True(read.Value.Changed);
-        var readReplay = await customerChat.MarkReadAsync(booking.Id,
+        var readReplay = await customerChat.Commands.MarkReadAsync(booking.Id,
             new BookingChatReadRequest(epochId, caregiverMessage.Value.Id));
         Assert.True(readReplay.IsSuccess, readReplay.Error.Message);
         Assert.False(readReplay.Value.Changed);
-        Assert.Equal(0, (await customerChat.GetMetadataAsync(booking.Id)).Value.UnreadCount);
+        Assert.Equal(0, (await customerChat.Queries.GetMetadataAsync(booking.Id)).Value.UnreadCount);
 
         var tampered = latest.Value.NextCursor![..^1] +
             (latest.Value.NextCursor[^1] == 'A' ? "B" : "A");
-        var invalidCursor = await customerChat.GetMessagesAsync(
+        var invalidCursor = await customerChat.Queries.GetMessagesAsync(
             booking.Id, tampered, null, 2);
         Assert.True(invalidCursor.IsFailure);
         Assert.Equal("booking.chat.cursor_invalid", invalidCursor.Error.Code);

@@ -91,6 +91,9 @@ public sealed class PaymentsModule : IModule
             .ValidateOnStart();
         services.AddHttpClient<IPayOSService, PayOSService>(client => client.Timeout = TimeSpan.FromSeconds(10))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddScoped<PayOSCheckout>();
+        services.AddScoped<PayOSPaymentReconciliation>();
+        services.AddScoped<PayOSWebhookProcessor>();
         services.AddScoped<IPayOSPaymentPortal, PayOSPaymentPortal>();
         services.AddOptions<PayOSPayoutOptions>()
             .Bind(configuration.GetSection(PayOSPayoutOptions.SectionName))

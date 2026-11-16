@@ -27,14 +27,7 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             {
                 if (request.LocalDemo || !aiOptions.Value.GeneralKnowledgeEnabled)
                     throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
-                // Published reference retrieval is separately enabled; beneficiary health is never sent.
-                var referenceHits = await referenceLibrary.FindAsync(query, context.CancellationToken);
-                var general = new KnowledgeSearchResponse { Query = query, GeneralKnowledge = referenceHits is null,
-                    ReferenceKnowledge = referenceHits is not null };
-                ApplyAnswer(general, await gemini.AnswerAsync(query, referenceHits ?? [], context.CancellationToken));
-                if (general.AnswerChunkIds.FirstOrDefault() is { } primaryId) general.AnswerChunkId = primaryId;
-                if (referenceHits is not null) general.Results.AddRange(referenceHits.Select(MapHit));
-                return general;
+                return await SearchGeneralKnowledgeAsync(query, context.CancellationToken);
             }
             var localDemo = request.LocalDemo && knowledge.SupportsLocalDemo;
             var hits = await knowledge.FindAsync(query, context.CancellationToken, localDemo);
@@ -63,6 +56,28 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
         {
             throw new RpcException(new Status(StatusCode.Unavailable, "nutrition.knowledge_unavailable"));
         }
+    }
+
+    private async Task<KnowledgeSearchResponse> SearchGeneralKnowledgeAsync(string query, CancellationToken ct)
+    {
+        // The published online library has its own approval and citation contract.
+        var publishedHits = await referenceLibrary.FindAsync(query, ct);
+        if (publishedHits is not null)
+        {
+            var grounded = new KnowledgeSearchResponse { Query = query, ReferenceKnowledge = true };
+            ApplyAnswer(grounded, await gemini.AnswerAsync(query, publishedHits, ct));
+            if (grounded.AnswerChunkIds.FirstOrDefault() is { } primaryId) grounded.AnswerChunkId = primaryId;
+            grounded.Results.AddRange(publishedHits.Select(MapHit));
+            return grounded;
+        }
+
+        var answer = gemini.AnswerAsync(query, [], ct);
+        var references = knowledge.FindReferencesAsync(query, ct);
+        await Task.WhenAll(answer, references);
+        var response = new KnowledgeSearchResponse { Query = query, GeneralKnowledge = true };
+        ApplyAnswer(response, await answer);
+        response.References.AddRange((await references).Select(hit => MapHit(hit with { Excerpt = null, Summary = null })));
+        return response;
     }
 
     private static CareSitter.Nutrition.Grpc.V1.KnowledgeHit MapHit(KnowledgeSearchHit hit) => new()

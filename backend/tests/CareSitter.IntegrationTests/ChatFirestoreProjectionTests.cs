@@ -55,7 +55,8 @@ public sealed class ChatFirestoreProjectionTests(
             ProjectionEnabled = true, ProjectId = "demo-caresitter-chat", MaxAttempts = 1
         });
         var failingWorker = new ChatFirestoreProjectionWorker(configuration, failingOptions,
-            new ChatFirestoreClient(failingOptions, configuration),
+            new ChatFirestoreProjector(new ChatFirestoreDocuments(
+                new ChatFirestoreClient(failingOptions, configuration))),
             NullLogger<ChatFirestoreProjectionWorker>.Instance);
         var accessGate = new ChatFirestoreAccessGate(configuration);
         Assert.False(await accessGate.CanIssueSessionAsync(CancellationToken.None));
@@ -80,7 +81,8 @@ public sealed class ChatFirestoreProjectionTests(
             ProjectionEnabled = true, UseEmulator = true, ProjectId = "demo-caresitter-chat"
         });
         var client = new ChatFirestoreClient(settings, configuration);
-        var worker = new ChatFirestoreProjectionWorker(configuration, settings, client,
+        var worker = new ChatFirestoreProjectionWorker(configuration, settings,
+            new ChatFirestoreProjector(new ChatFirestoreDocuments(client)),
             NullLogger<ChatFirestoreProjectionWorker>.Instance);
         Assert.Equal(0, await worker.ProcessBatchAsync(CancellationToken.None));
         var controller = new ChatFirestoreAdminController(new AdminActor(adminId),
@@ -184,7 +186,8 @@ public sealed class ChatFirestoreProjectionTests(
             { ["ConnectionStrings:CareSitter"] = testDb.ConnectionString }).Build();
         var client = new ChatFirestoreClient(settings, configuration);
         var worker = new ChatFirestoreProjectionWorker(configuration, settings,
-            client, NullLogger<ChatFirestoreProjectionWorker>.Instance);
+            new ChatFirestoreProjector(new ChatFirestoreDocuments(client)),
+            NullLogger<ChatFirestoreProjectionWorker>.Instance);
         Assert.True(await worker.ProcessBatchAsync(CancellationToken.None) >= 3);
         var db = client.Database;
         var bookingMessage = db.Collection("chatConversations")

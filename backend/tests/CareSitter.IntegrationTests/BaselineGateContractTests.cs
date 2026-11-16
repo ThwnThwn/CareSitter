@@ -104,13 +104,16 @@ public sealed class BaselineGateContractTests
     [Fact]
     public void Actor_scoped_media_rate_limit_runs_after_authentication_before_authorization()
     {
-        var program = Read("backend/src/ApiHost/Program.cs");
-        var authenticate = program.IndexOf("app.UseAuthentication();", StringComparison.Ordinal);
-        var rateLimit = program.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
-        var authorize = program.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);
+        var pipeline = Read("backend/src/ApiHost/Startup/ApiApplicationExtensions.cs");
+        var authenticate = pipeline.IndexOf("app.UseAuthentication();", StringComparison.Ordinal);
+        var rateLimit = pipeline.IndexOf("app.UseRateLimiter();", StringComparison.Ordinal);
+        var authorize = pipeline.IndexOf("app.UseAuthorization();", StringComparison.Ordinal);
         Assert.True(authenticate >= 0 && rateLimit > authenticate && authorize > rateLimit);
-        Assert.Contains("options.AddPolicy(\"media-read\"", program);
-        Assert.Contains("context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)", program);
+
+        var policies = Read("backend/src/ApiHost/Security/RateLimitingExtensions.cs");
+        var mediaPolicy = policies.IndexOf("options.AddPolicy(\"media-read\"", StringComparison.Ordinal);
+        Assert.True(mediaPolicy >= 0);
+        Assert.Contains("context.User.FindFirst(ClaimTypes.NameIdentifier)", policies[mediaPolicy..]);
     }
 
     [Fact]

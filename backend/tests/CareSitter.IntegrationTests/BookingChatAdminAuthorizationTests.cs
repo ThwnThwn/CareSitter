@@ -23,6 +23,7 @@ public sealed class BookingChatAdminAuthorizationTests
             .ConfigureServices(services =>
             {
                 services.AddSingleton<IBookingChatAdminService, UnreachableAdminService>();
+                services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AdminBookingChatController>());
                 services.AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, RoleHeaderAuthenticationHandler>(
                         "Test", _ => { });

@@ -24,8 +24,6 @@ internal static class NutritionResourceExtensions
             .WithEnvironment("Kestrel__Endpoints__Grpc__Protocols", "Http2")
             .WithHttpHealthCheck("/health/ready", endpointName: "http");
 
-        // Preserve this launcher's local reference policy; standalone Nutrition keeps its stricter default.
-        nutrition.WithEnvironment("MealGrounding__AllowNonMedicalReference", "true");
         if (settings.DisableIpv6) nutrition.WithEnvironment("DOTNET_SYSTEM_NET_DISABLEIPV6", "1");
         await builder.AddNutritionDatabaseAsync(settings, nutrition);
         nutrition.WithEnvironment("Kestrel__Endpoints__Http__Url", nutrition.GetEndpoint("http"));

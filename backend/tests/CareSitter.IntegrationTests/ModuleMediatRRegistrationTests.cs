@@ -1,19 +1,28 @@
+using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking;
 using CareSitter.Modules.Booking.Application;
+using CareSitter.Modules.Booking.Application.BookingChat;
+using CareSitter.Modules.Booking.Application.Commands.BookingChat;
+using CareSitter.Modules.Booking.Application.Queries.BookingChat;
 using CareSitter.Modules.Catalog;
 using CareSitter.Modules.Catalog.Application;
 using CareSitter.Modules.Catalog.Application.Commands.CreateAddress;
+using CareSitter.Modules.Catalog.Application.Queries.QuoteService;
 using CareSitter.Modules.People;
 using CareSitter.Modules.People.Application;
 using CareSitter.Modules.People.Application.Commands.CreateFamilyContact;
 using CareSitter.Modules.Payments;
+using CareSitter.Modules.Payments.Application;
 using CareSitter.Modules.Payments.Application.Payouts;
 using CareSitter.Modules.Payments.Application.Payouts.CreatePayout;
 using CareSitter.Modules.Promotion;
 using CareSitter.Modules.Promotion.Application;
 using CareSitter.Modules.Support;
 using CareSitter.Modules.Support.Application;
+using CareSitter.Modules.Support.Application.Chat;
+using CareSitter.Modules.Support.Application.Commands.Chat;
 using CareSitter.Modules.Support.Application.Commands.CreateDispute;
+using CareSitter.Modules.Support.Application.Queries.Chat;
 using CareSitter.SharedKernel.Results;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -43,16 +52,22 @@ public sealed class ModuleMediatRRegistrationTests
             typeof(IRequestHandler<GetLatestBookingGpsQuery, Result<GpsTrackResponse>>));
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<GetBookingQuery, Result<BookingResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<ListBookingChatMessagesQuery, Result<BookingChatMessagesResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<ViewAdminBookingChatMessagesCommand, Result<BookingChatAdminMessagePage>>));
     }
 
     [Fact]
-    public void Catalog_registers_command_handlers()
+    public void Catalog_registers_split_command_and_query_handlers()
     {
         var services = new ServiceCollection();
         new CatalogModule().RegisterServices(services, Configuration);
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<CreateAddressCommand, Result<AddressResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<QuoteServiceQuery, Result<PriceQuote>>));
     }
 
     [Fact]
@@ -66,13 +81,17 @@ public sealed class ModuleMediatRRegistrationTests
     }
 
     [Fact]
-    public void Support_registers_command_handlers()
+    public void Support_registers_split_command_and_query_handlers()
     {
         var services = new ServiceCollection();
         new SupportModule().RegisterServices(services, Configuration);
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<CreateDisputeCommand, Result<DisputeResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<CreateSupportConversationCommand, Result<ChatCreateResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<ListSupportConversationsQuery, Result<ChatListResponse>>));
     }
 
     [Fact]
@@ -82,18 +101,22 @@ public sealed class ModuleMediatRRegistrationTests
         new PromotionModule().RegisterServices(services, Configuration);
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
-            typeof(IRequestHandler<PreviewPromotionCommand, Result<PromotionPreviewResponse>>));
+            typeof(IRequestHandler<PreviewPromotionQuery, Result<PromotionPreviewResponse>>));
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<ListActivePromotionsQuery, IReadOnlyList<PromotionResponse>>));
     }
 
     [Fact]
-    public void Payments_registers_payout_command_handlers()
+    public void Payments_registers_payout_and_payment_refresh_command_handlers()
     {
         var services = new ServiceCollection();
         new PaymentsModule().RegisterServices(services, Configuration);
 
         Assert.Contains(services, descriptor => descriptor.ServiceType ==
             typeof(IRequestHandler<CreatePayoutCommand, Result<CreatePayoutResult>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<RefreshPaymentIntentCommand, Result<PaymentIntentResponse>>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType ==
+            typeof(IRequestHandler<ProcessPayOSReturnCommand, string>));
     }
 }

@@ -19,7 +19,7 @@ public sealed class ConsultationRequestsController(IMediator mediator) : Control
         [FromHeader(Name = "Idempotency-Key")] string? key, CancellationToken ct)
     {
         _ = Guid.TryParse(key, out var id);
-        var result = await mediator.Send(new CreateConsultationRequest(id, body.ContactName,
+        var result = await mediator.Send(new CreateConsultationRequestCommand(id, body.ContactName,
             body.Phone, body.ServiceCategory, body.PreferredDate, body.Hours,
             body.CaregiverPreference, body.Note, body.Consent), ct);
         // Only a saved receipt is public; personal data is never echoed.
@@ -30,7 +30,7 @@ public sealed class ConsultationRequestsController(IMediator mediator) : Control
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> List(int page = 1, int pageSize = 20,
         CancellationToken ct = default) =>
-        (await mediator.Send(new ListConsultationRequests(page, pageSize), ct)).ToActionResult(this);
+        (await mediator.Send(new ListConsultationRequestsQuery(page, pageSize), ct)).ToActionResult(this);
 }
 
 public sealed record ConsultationRequestBody(string? ContactName, string? Phone,

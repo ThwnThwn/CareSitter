@@ -1,7 +1,10 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Support.Application.Chat;
+using CareSitter.Modules.Support.Application.Commands.Chat;
+using CareSitter.Modules.Support.Application.Queries.Chat;
 using CareSitter.SharedKernel.Results;
 using CareSitter.Modules.Support.Controllers.Contracts;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +15,7 @@ namespace CareSitter.Modules.Support.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/support")]
-public sealed class SupportChatController(ISupportChatService chat, ICurrentUser currentUser) : ControllerBase
+public sealed class SupportChatController(ISender sender, ICurrentUser currentUser) : ControllerBase
 {
     [HttpGet("chat-config")]
     public IActionResult Config([FromServices] IConfiguration config) => Ok(new
@@ -31,7 +34,7 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
     {
         var actor = Actor();
         if (actor is null) return Unauthorized();
-        var result = await chat.CreateAsync(actor, key, request, ct);
+        var result = await sender.Send(new CreateSupportConversationCommand(actor, key, request), ct);
         return Map(result, value => value.Replayed ? Ok(value) :
             Created($"/api/v1/support/conversations/{value.Conversation.Id}", value));
     }
@@ -41,15 +44,18 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
         [FromQuery] Guid? beforeId, [FromQuery] int limit = 20, CancellationToken ct = default)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.ListAsync(actor, null,
-            beforeCreatedAt, beforeId, limit, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new ListSupportConversationsQuery(actor, null, beforeCreatedAt, beforeId, limit), ct));
     }
 
     [HttpGet("conversations/{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.GetAsync(actor, id, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new GetSupportConversationQuery(actor, id), ct));
     }
 
     [HttpGet("conversations/{id:guid}/messages")]
@@ -58,8 +64,10 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
         [FromQuery] int limit = 50, CancellationToken ct = default)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.MessagesAsync(actor, id,
-            beforeSequence, afterSequence, highWatermarkSequence, limit, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new ListSupportChatMessagesQuery(
+                actor, id, beforeSequence, afterSequence, highWatermarkSequence, limit), ct));
     }
 
     [HttpGet("conversations/{id:guid}/activities")]
@@ -68,8 +76,9 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
         [FromQuery] int limit = 50, CancellationToken ct = default)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.ActivitiesAsync(actor, id,
-            beforeCreatedAt, beforeId, limit, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new ListSupportChatActivitiesQuery(actor, id, beforeCreatedAt, beforeId, limit), ct));
     }
 
     [HttpPost("conversations/{id:guid}/messages")]
@@ -78,8 +87,9 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
         [FromBody] ChatSendRequest request, CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.SendAsync(actor, id, key,
-            request.Body, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new SendSupportChatMessageCommand(actor, id, key, request.Body), ct));
     }
 
     [HttpPut("conversations/{id:guid}/read")]
@@ -87,8 +97,9 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
         CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : Map(await chat.ReadAsync(actor, id,
-            request.LastReadSequence, ct));
+        return actor is null
+            ? Unauthorized()
+            : Map(await sender.Send(new MarkSupportChatReadCommand(actor, id, request.LastReadSequence), ct));
     }
 
     private ChatActor? Actor()
@@ -120,7 +131,7 @@ public sealed class SupportChatController(ISupportChatService chat, ICurrentUser
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [Route("api/v1/admin/support/conversations")]
-public sealed class AdminSupportChatController(ISupportChatService chat, ICurrentUser currentUser) : ControllerBase
+public sealed class AdminSupportChatController(ISender sender, ICurrentUser currentUser) : ControllerBase
 {
     private ChatActor? Actor() => currentUser.UserId is { } id
         ? new ChatActor(id, true, "ADMIN") : null;
@@ -131,8 +142,10 @@ public sealed class AdminSupportChatController(ISupportChatService chat, ICurren
         [FromQuery] int limit = 20, CancellationToken ct = default)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : SupportChatController.Map(await chat.ListAsync(actor,
-            queue, beforeCreatedAt, beforeId, limit, ct));
+        return actor is null
+            ? Unauthorized()
+            : SupportChatController.Map(await sender.Send(new ListSupportConversationsQuery(
+                actor, queue, beforeCreatedAt, beforeId, limit), ct));
     }
 
     [HttpPost("{id:guid}/claim")]
@@ -140,8 +153,10 @@ public sealed class AdminSupportChatController(ISupportChatService chat, ICurren
         CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : SupportChatController.Map(await chat.ClaimAsync(actor,
-            id, request.ExpectedVersion, ct));
+        return actor is null
+            ? Unauthorized()
+            : SupportChatController.Map(await sender.Send(
+                new ClaimSupportConversationCommand(actor, id, request.ExpectedVersion), ct));
     }
 
     [HttpPatch("{id:guid}/assignment")]
@@ -149,9 +164,10 @@ public sealed class AdminSupportChatController(ISupportChatService chat, ICurren
         CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : SupportChatController.Map(await chat.TransferAsync(actor,
-            id, request.TargetAdminId, request.Takeover, request.ExpectedVersion,
-            request.Reason, ct));
+        return actor is null
+            ? Unauthorized()
+            : SupportChatController.Map(await sender.Send(new TransferSupportConversationCommand(
+                actor, id, request.TargetAdminId, request.Takeover, request.ExpectedVersion, request.Reason), ct));
     }
 
     [HttpPatch("{id:guid}/status")]
@@ -159,7 +175,9 @@ public sealed class AdminSupportChatController(ISupportChatService chat, ICurren
         CancellationToken ct)
     {
         var actor = Actor();
-        return actor is null ? Unauthorized() : SupportChatController.Map(await chat.StatusAsync(actor,
-            id, request.Status, request.ExpectedVersion, request.Reason, ct));
+        return actor is null
+            ? Unauthorized()
+            : SupportChatController.Map(await sender.Send(new UpdateSupportConversationStatusCommand(
+                actor, id, request.Status, request.ExpectedVersion, request.Reason), ct));
     }
 }

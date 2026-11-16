@@ -11,7 +11,7 @@ internal sealed class UpdateSupportTicketStatusCommandHandler(
     ICurrentUser currentUser,
     IAuditLogger auditLogger,
     IChatTicketGuard chatGuard,
-    ISupportChatService chat)
+    ISupportChatCommands chat)
     : IRequestHandler<UpdateSupportTicketStatusCommand, Result<SupportTicketResponse>>
 {
     public async Task<Result<SupportTicketResponse>> Handle(

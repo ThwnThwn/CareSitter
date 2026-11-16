@@ -107,6 +107,7 @@ public sealed class CrashReportsTests
         var source = new Source(); builder.Services.AddSingleton<ICrashReportSource>(source);
         builder.Services.AddSingleton<ICurrentUser>(new Actor()); builder.Services.AddSingleton<IClock>(new Clock());
         builder.Services.AddScoped<CrashReportService>();
+        builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AdminCrashReportsController>());
         await using var app = builder.Build(); app.UseRouting(); app.UseAuthentication(); app.UseAuthorization(); app.UseRateLimiter(); app.MapControllers();
         await app.StartAsync(); var client = app.GetTestClient();
         if (role != null) client.DefaultRequestHeaders.Add("X-Role", role);

@@ -26,9 +26,9 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 10, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var page = await chat.GetMessagesAsync(seed.BookingId, null, null, 2);
+        var page = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 2);
         Assert.True(page.IsSuccess);
         var validCursor = page.Value.NextCursor!;
 
@@ -37,7 +37,7 @@ public sealed partial class BookingChatPaginationTests
         bytes[bytes.Length / 2] ^= 0xFF;
         var tamperedCursor = Convert.ToBase64String(bytes);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, afterCursor: tamperedCursor, beforeCursor: null, limit: 10);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: tamperedCursor, beforeCursor: null, limit: 10);
         Assert.True(result.IsFailure);
         Assert.Equal("booking.chat.cursor_invalid", result.Error.Code);
     }
@@ -49,14 +49,14 @@ public sealed partial class BookingChatPaginationTests
         var seedA = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
         var seedB = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
 
-        var chatA = CreateChatService(db, seedA.CustomerId, "CUSTOMER", seedA.CaregiverProfileId, seedA.CaregiverUserId);
-        var chatB = CreateChatService(db, seedB.CustomerId, "CUSTOMER", seedB.CaregiverProfileId, seedB.CaregiverUserId);
+        var chatA = CreateChatServices(db, seedA.CustomerId, "CUSTOMER", seedA.CaregiverProfileId, seedA.CaregiverUserId);
+        var chatB = CreateChatServices(db, seedB.CustomerId, "CUSTOMER", seedB.CaregiverProfileId, seedB.CaregiverUserId);
 
-        var pageA = await chatA.GetMessagesAsync(seedA.BookingId, null, null, 2);
+        var pageA = await chatA.Queries.GetMessagesAsync(seedA.BookingId, null, null, 2);
         var cursorA = pageA.Value.NextCursor!;
 
         // Đem cursor của booking A sang query tại booking B
-        var resultB = await chatB.GetMessagesAsync(seedB.BookingId, afterCursor: cursorA, beforeCursor: null, limit: 10);
+        var resultB = await chatB.Queries.GetMessagesAsync(seedB.BookingId, afterCursor: cursorA, beforeCursor: null, limit: 10);
         Assert.True(resultB.IsFailure);
         Assert.Equal("booking.chat.cursor_invalid", resultB.Error.Code);
     }
@@ -67,15 +67,15 @@ public sealed partial class BookingChatPaginationTests
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 10, jumbleTimestamps: false);
 
-        var customerChat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
-        var caregiverChat = CreateChatService(db, seed.CaregiverUserId, "CAREGIVER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var customerChat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var caregiverChat = CreateChatServices(db, seed.CaregiverUserId, "CAREGIVER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // Caregiver lấy cursor
-        var cgPage = await caregiverChat.GetMessagesAsync(seed.BookingId, null, null, 2);
+        var cgPage = await caregiverChat.Queries.GetMessagesAsync(seed.BookingId, null, null, 2);
         var caregiverCursor = cgPage.Value.NextCursor!;
 
         // Customer dùng cursor của Caregiver
-        var customerResult = await customerChat.GetMessagesAsync(seed.BookingId, afterCursor: caregiverCursor, beforeCursor: null, limit: 10);
+        var customerResult = await customerChat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: caregiverCursor, beforeCursor: null, limit: 10);
         Assert.True(customerResult.IsFailure);
         Assert.Equal("booking.chat.cursor_invalid", customerResult.Error.Code);
     }
@@ -87,9 +87,9 @@ public sealed partial class BookingChatPaginationTests
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
 
         var outsiderId = Guid.NewGuid();
-        var outsiderChat = CreateChatService(db, outsiderId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var outsiderChat = CreateChatServices(db, outsiderId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var result = await outsiderChat.GetMessagesAsync(seed.BookingId, null, null, 10);
+        var result = await outsiderChat.Queries.GetMessagesAsync(seed.BookingId, null, null, 10);
         Assert.True(result.IsFailure);
         // Assert đúng mã lỗi NotFound theo chuẩn bảo mật
         Assert.Equal("booking.chat.not_found", result.Error.Code);
@@ -100,16 +100,16 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var page = await chat.GetMessagesAsync(seed.BookingId, null, null, 2);
+        var page = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 2);
         var cursor = page.Value.NextCursor!;
 
         // Tăng scope_version trong database
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE booking.booking_chat_conversations SET scope_version = scope_version + 1 WHERE id = {seed.ConversationId}");
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, afterCursor: cursor, beforeCursor: null, limit: 10);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: cursor, beforeCursor: null, limit: 10);
         Assert.True(result.IsFailure);
         Assert.Equal("booking.chat.scope_changed", result.Error.Code);
     }
@@ -123,9 +123,9 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 0, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, null, null, 50);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 50);
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Value.Items);
         Assert.False(result.Value.HasMoreBefore);
@@ -139,9 +139,9 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 100, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, null, null, 100);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 100);
         Assert.True(result.IsSuccess);
         Assert.Equal(100, result.Value.Items.Count);
         Assert.False(result.Value.HasMoreBefore, "Khi có đúng 100 tin và limit=100, hasMoreBefore phải là false ngay.");
@@ -152,13 +152,13 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 5, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // Đánh dấu purged_at
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE booking.booking_chat_conversations SET purged_at = now() WHERE id = {seed.ConversationId}");
 
-        var result = await chat.GetMessagesAsync(seed.BookingId, null, null, 10);
+        var result = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 10);
         Assert.True(result.IsFailure);
         Assert.Equal("booking.chat.purged", result.Error.Code);
     }

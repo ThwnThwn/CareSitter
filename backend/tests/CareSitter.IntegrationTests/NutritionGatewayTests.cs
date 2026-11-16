@@ -161,13 +161,16 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Online_general_knowledge_is_explicit_and_never_exposes_corpus(bool forgedCitation)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Online_general_knowledge_returns_metadata_and_rejects_corpus_content(
+        bool forgedCitation, bool referenceContainsExcerpt)
     {
         _apiHost.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<NutritionKnowledgeOptions>>()
             .Value.GeneralKnowledgeEnabled = true;
         _stub.ForgeGeneralCitation = forgedCitation;
+        _stub.ReferenceContainsExcerpt = referenceContainsExcerpt;
         Authenticate();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/nutrition/knowledge?q=fiber");
         request.Headers.Host = "customer.example";
@@ -175,7 +178,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         using var response = await _http.SendAsync(request);
         Assert.True(_stub.KnowledgeRequest?.GeneralKnowledge);
         Assert.False(_stub.KnowledgeRequest?.LocalDemo);
-        if (forgedCitation)
+        if (forgedCitation || referenceContainsExcerpt)
         {
             Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
             Assert.DoesNotContain("General nutrition answer.", await response.Content.ReadAsStringAsync());
@@ -189,6 +192,11 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         Assert.Empty(body.GetProperty("answerChunkIds").EnumerateArray());
         Assert.Equal("ai_suggestion", body.GetProperty("answerStatus").GetString());
         Assert.Equal("General nutrition answer.", body.GetProperty("answerBlocks")[0].GetProperty("text").GetString());
+        var reference = Assert.Single(body.GetProperty("references").EnumerateArray());
+        Assert.Equal(42, reference.GetProperty("pdfPage").GetInt32());
+        Assert.Equal("41", reference.GetProperty("printedPage").GetString());
+        Assert.Equal(JsonValueKind.Null, reference.GetProperty("excerpt").ValueKind);
+        Assert.Equal(JsonValueKind.Null, reference.GetProperty("summary").ValueKind);
         Assert.True(response.Headers.CacheControl?.NoStore);
     }
 
@@ -524,6 +532,7 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
         public int KnowledgeSources = 1;
         public string AnswerStatus = "answered";
         public bool ForgeGeneralCitation;
+        public bool ReferenceContainsExcerpt;
         public bool OnlineReference;
         public string? ListBeneficiary, MealType, WeekStart;
         public Failure? Failure;
@@ -591,6 +600,12 @@ public sealed class NutritionGatewayTests : IAsyncLifetime
                 var answer = new KnowledgeAnswerBlock { Text = "General nutrition answer." };
                 if (ForgeGeneralCitation) answer.ChunkIds.Add("private-book");
                 general.AnswerBlocks.Add(answer);
+                general.References.Add(new KnowledgeHit
+                {
+                    ChunkId = "related", Heading = "Fiber", PdfPage = 42,
+                    PrintedPage = "41", SourceTitle = "Fixture", SourceRevisionId = "v1",
+                    Excerpt = ReferenceContainsExcerpt ? "Private book excerpt." : ""
+                });
                 return general;
             }
             var result = new KnowledgeSearchResponse { Query = request.Query, LocalDemo = true, AnswerChunkId = AnswerStatus == "ai_suggestion" ? "" : "demo",

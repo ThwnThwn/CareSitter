@@ -21,5 +21,5 @@ public sealed class PayOSController(IMediator mediator) : ControllerBase
     [HttpGet("api/v1/payments/payos/return")]
     [HttpGet("api/v1/payments/payos/cancel")]
     public async Task<IActionResult> Return([FromQuery] string? orderCode, CancellationToken ct) =>
-        Redirect(await mediator.Send(new GetPayOSReturnQuery(orderCode), ct));
+        Redirect(await mediator.Send(new ProcessPayOSReturnCommand(orderCode), ct));
 }

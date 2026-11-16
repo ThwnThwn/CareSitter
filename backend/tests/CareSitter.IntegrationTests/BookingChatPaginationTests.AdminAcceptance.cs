@@ -1,9 +1,13 @@
 using CareSitter.Contracts.Services;
 using CareSitter.Modules.Booking.Application.BookingChat;
+using CareSitter.Modules.Booking.Controllers;
 using CareSitter.Modules.Booking.Domain;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.Support.Infrastructure;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
 namespace CareSitter.IntegrationTests;
@@ -24,12 +28,12 @@ public sealed partial class BookingChatPaginationTests
                 .SetProperty(x => x.SenderUserId, seed.CaregiverUserId)
                 .SetProperty(x => x.SenderRole, "CAREGIVER"));
         bookingDb.ChangeTracker.Clear();
-        var customerChat = CreateChatService(bookingDb, seed.CustomerId, "CUSTOMER",
+        var customerChat = CreateChatServices(bookingDb, seed.CustomerId, "CUSTOMER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var first = await customerChat.ReportMessageAsync(seed.BookingId, messageId,
+        var first = await customerChat.Commands.ReportMessageAsync(seed.BookingId, messageId,
             new BookingChatReportRequest("Nội dung không phù hợp"));
-        var replay = await customerChat.ReportMessageAsync(seed.BookingId, messageId,
+        var replay = await customerChat.Commands.ReportMessageAsync(seed.BookingId, messageId,
             new BookingChatReportRequest("Lý do retry không tạo report mới"));
 
         Assert.True(first.IsSuccess, first.Error.Message);
@@ -50,11 +54,11 @@ public sealed partial class BookingChatPaginationTests
             .CountAsync(x => x.ReportId == first.Value.ReportId));
         Assert.Equal(1, await supportDb.SupportTickets.CountAsync(x => x.Id == firstTicket));
 
-        var ownStatus = await customerChat.GetReportAsync(seed.BookingId, first.Value.ReportId);
+        var ownStatus = await customerChat.Queries.GetReportAsync(seed.BookingId, first.Value.ReportId);
         Assert.True(ownStatus.IsSuccess, ownStatus.Error.Message);
-        var caregiverChat = CreateChatService(bookingDb, seed.CaregiverUserId, "CAREGIVER",
+        var caregiverChat = CreateChatServices(bookingDb, seed.CaregiverUserId, "CAREGIVER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
-        var otherParticipantStatus = await caregiverChat.GetReportAsync(
+        var otherParticipantStatus = await caregiverChat.Queries.GetReportAsync(
             seed.BookingId, first.Value.ReportId);
         Assert.True(otherParticipantStatus.IsFailure);
         Assert.Equal("booking.chat.not_found", otherParticipantStatus.Error.Code);
@@ -67,18 +71,23 @@ public sealed partial class BookingChatPaginationTests
         var seed = await SeedConversationWithMessagesAsync(db, 2, false);
         var adminId = seed.CustomerId;
         var admin = new BookingChatAdminService(db, new TestActor(adminId, "ADMIN"));
+        var services = new ServiceCollection();
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<AdminBookingChatController>());
+        services.AddSingleton<IBookingChatAdminService>(admin);
+        using var provider = services.BuildServiceProvider();
+        var controller = new AdminBookingChatController(provider.GetRequiredService<ISender>());
 
-        var missingContext = await admin.GetMessagesAsync(seed.ConversationId,
+        var missingContext = await controller.Messages(seed.ConversationId,
             null, 50, " ", null);
-        Assert.True(missingContext.IsFailure);
-        Assert.Equal("booking.chat.invalid_request", missingContext.Error.Code);
+        var error = Assert.IsType<ProblemDetails>(Assert.IsType<BadRequestObjectResult>(missingContext).Value);
+        Assert.Equal("booking.chat.invalid_request", error.Title);
 
         var ticketId = Guid.NewGuid();
-        var page = await admin.GetMessagesAsync(seed.ConversationId,
+        var result = await controller.Messages(seed.ConversationId,
             null, 50, "Điều tra report", ticketId);
 
-        Assert.True(page.IsSuccess, page.Error.Message);
-        Assert.Equal(2, page.Value.Items.Count);
+        var page = Assert.IsType<BookingChatAdminMessagePage>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(2, page.Items.Count);
         var audit = await db.BookingChatActivityEvents.AsNoTracking()
             .SingleAsync(x => x.ConversationId == seed.ConversationId &&
                 x.Action == "ADMIN_MESSAGES_VIEWED");

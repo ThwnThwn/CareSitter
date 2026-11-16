@@ -26,6 +26,7 @@ public sealed class NutritionInternalAuthenticationTests
             {
                 services.AddLogging();
                 services.AddSingleton<IBeneficiaryHealthSnapshotReader>(reader);
+                services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<InternalNutritionProfileController>());
                 services.AddAuthentication("NutritionService").AddScheme<AuthenticationSchemeOptions,
                     NutritionServiceAuthenticationHandler>("NutritionService", _ => { });
                 services.AddAuthorization();

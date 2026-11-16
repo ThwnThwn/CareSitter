@@ -28,16 +28,16 @@ public sealed partial class BookingChatPaginationTests
         // Setup 2 epochs: Epoch 1 (50 tin, Caregiver 1), Epoch 2 (200 tin, Caregiver 2)
         var seed = await SeedTwoEpochConversationAsync(db, epoch1Messages: 50, epoch2Messages: 200);
 
-        var customerChat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
-        var caregiver2Chat = CreateChatService(db, seed.Caregiver2UserId, "CAREGIVER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
-        var caregiver1Chat = CreateChatService(db, seed.Caregiver1UserId, "CAREGIVER", seed.Caregiver1ProfileId, seed.Caregiver1UserId);
+        var customerChat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
+        var caregiver2Chat = CreateChatServices(db, seed.Caregiver2UserId, "CAREGIVER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
+        var caregiver1Chat = CreateChatServices(db, seed.Caregiver1UserId, "CAREGIVER", seed.Caregiver1ProfileId, seed.Caregiver1UserId);
 
         // 1. Customer thấy đủ 250 tin qua phân trang backward
         var customerAll = new List<BookingChatMessageResponse>();
         string? cursor = null;
         while (true)
         {
-            var p = await customerChat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cursor, limit: 100);
+            var p = await customerChat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cursor, limit: 100);
             Assert.True(p.IsSuccess);
             if (p.Value.Items.Count == 0) break;
             customerAll.AddRange(p.Value.Items);
@@ -51,7 +51,7 @@ public sealed partial class BookingChatPaginationTests
         cursor = null;
         while (true)
         {
-            var p = await caregiver2Chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cursor, limit: 100);
+            var p = await caregiver2Chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cursor, limit: 100);
             Assert.True(p.IsSuccess);
             if (p.Value.Items.Count == 0) break;
             caregiver2All.AddRange(p.Value.Items);
@@ -62,15 +62,15 @@ public sealed partial class BookingChatPaginationTests
         Assert.All(caregiver2All, m => Assert.True(m.Sequence >= 51 && m.Sequence <= 250));
 
         // 3. Caregiver 2 lật lùi về sequence 51 -> hasMoreBefore bắt buộc phải false (không lộ sự tồn tại của 50 tin Epoch 1)
-        var cg2FirstBatch = await caregiver2Chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
+        var cg2FirstBatch = await caregiver2Chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
         Assert.True(cg2FirstBatch.IsSuccess);
-        var cg2SecondBatch = await caregiver2Chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cg2FirstBatch.Value.PreviousCursor, limit: 100);
+        var cg2SecondBatch = await caregiver2Chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: cg2FirstBatch.Value.PreviousCursor, limit: 100);
         Assert.True(cg2SecondBatch.IsSuccess);
         Assert.Equal(51, cg2SecondBatch.Value.Items[0].Sequence);
         Assert.False(cg2SecondBatch.Value.HasMoreBefore, "Caregiver 2 không được thấy hasMoreBefore=true ở biên Epoch 2.");
 
         // 4. Caregiver 1 sau bàn giao (Epoch 1 ended): Gọi API nhận NotFound
-        var cg1Result = await caregiver1Chat.GetMessagesAsync(seed.BookingId, null, null, 50);
+        var cg1Result = await caregiver1Chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 50);
         Assert.True(cg1Result.IsFailure);
         Assert.Equal("booking.chat.not_found", cg1Result.Error.Code);
     }
@@ -81,13 +81,13 @@ public sealed partial class BookingChatPaginationTests
         await using var db = CreateDb();
         var seed = await SeedTwoEpochConversationAsync(db, epoch1Messages: 50, epoch2Messages: 200);
 
-        var caregiver2Chat = CreateChatService(db, seed.Caregiver2UserId, "CAREGIVER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
+        var caregiver2Chat = CreateChatServices(db, seed.Caregiver2UserId, "CAREGIVER", seed.Caregiver2ProfileId, seed.Caregiver2UserId);
 
         // Tạo một cursor hợp lệ cho Caregiver 2 nhưng có position = 25 (nằm trong Epoch 1)
         var syntheticCursor = CreateSignedCursor(seed.ConversationId, seed.Caregiver2UserId, scopeVersion: 1,
             direction: "before", position: 25, upperBound: 250);
 
-        var result = await caregiver2Chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: syntheticCursor, limit: 50);
+        var result = await caregiver2Chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: syntheticCursor, limit: 50);
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Value.Items);
         Assert.False(result.Value.HasMoreBefore);
@@ -102,10 +102,10 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 250, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // 1. Lấy trang 1: 100 tin (151..250), snapshot upperBound = 250
-        var page1 = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
+        var page1 = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: null, limit: 100);
         Assert.True(page1.IsSuccess);
         Assert.Equal(250, page1.Value.HighWatermark);
         Assert.Equal(250, page1.Value.Items[^1].Sequence);
@@ -115,7 +115,7 @@ public sealed partial class BookingChatPaginationTests
         await InsertRawMessageAsync(db, seed.ConversationId, seed.EpochId, sequence: 252, seed.CustomerId);
 
         // 3. Lấy trang 2 bằng beforeCursor: upperBound vẫn phải là 250, nhận đúng 51..150
-        var page2 = await chat.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page1.Value.PreviousCursor, limit: 100);
+        var page2 = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: null, beforeCursor: page1.Value.PreviousCursor, limit: 100);
         Assert.True(page2.IsSuccess);
         Assert.Equal(250, page2.Value.HighWatermark);
         Assert.Equal(100, page2.Value.Items.Count);
@@ -124,7 +124,7 @@ public sealed partial class BookingChatPaginationTests
 
         // 4. Dùng afterCursor vượt upperBound 250 -> bung upperBound theo allowedHigh mới (252)
         var afterCursor = page1.Value.NextCursor;
-        var newItemsPage = await chat.GetMessagesAsync(seed.BookingId, afterCursor: afterCursor, beforeCursor: null, limit: 100);
+        var newItemsPage = await chat.Queries.GetMessagesAsync(seed.BookingId, afterCursor: afterCursor, beforeCursor: null, limit: 100);
         Assert.True(newItemsPage.IsSuccess);
         Assert.Equal(2, newItemsPage.Value.Items.Count);
         Assert.Equal(251, newItemsPage.Value.Items[0].Sequence);
@@ -139,7 +139,7 @@ public sealed partial class BookingChatPaginationTests
         await using var dbB = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(dbA, messageCount: 5, jumbleTimestamps: false);
 
-        var chatB = CreateChatService(dbB, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chatB = CreateChatServices(dbB, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // Giao dịch A mở và giữ FOR UPDATE trên conversation row
         await using var txA = await dbA.Database.BeginTransactionAsync();
@@ -150,8 +150,8 @@ public sealed partial class BookingChatPaginationTests
         var taskB = Task.Run(async () =>
         {
             await using var scopedDb = CreateDb();
-            var scopedChat = CreateChatService(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
-            return await scopedChat.SendAsync(seed.BookingId, Guid.NewGuid(),
+            var scopedChat = CreateChatServices(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+            return await scopedChat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
                 new BookingChatSendRequest(seed.EpochId, "text", "Tin nhan tu giao dich B", null, null, null));
         });
 
@@ -210,7 +210,7 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, messageCount: 10, jumbleTimestamps: false);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
 
         // Mô phỏng 1 transaction ghi thất bại giữa chừng rồi rollback
         await using (var failedTx = await db.Database.BeginTransactionAsync())
@@ -229,7 +229,7 @@ public sealed partial class BookingChatPaginationTests
         db.ChangeTracker.Clear();
 
         // Lần ghi tiếp theo qua chat.SendAsync
-        var nextMsg = await chat.SendAsync(seed.BookingId, Guid.NewGuid(),
+        var nextMsg = await chat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
             new BookingChatSendRequest(seed.EpochId, "text", "Tin nhắn tiếp theo sau rollback", null, null, null));
 
         Assert.True(nextMsg.IsSuccess);
@@ -250,30 +250,30 @@ public sealed partial class BookingChatPaginationTests
             var writeTask1 = Task.Run(async () =>
             {
                 await using var scopedDb = CreateDb();
-                var chat = CreateChatService(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+                var chat = CreateChatServices(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
                 barrier.SignalAndWait();
-                return await chat.SendAsync(seed.BookingId, Guid.NewGuid(),
+                return await chat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
                     new BookingChatSendRequest(seed.EpochId, "text", "Writer 1 Msg", null, null, null));
             });
 
             var writeTask2 = Task.Run(async () =>
             {
                 await using var scopedDb = CreateDb();
-                var chat = CreateChatService(scopedDb, seed.CaregiverUserId, "CAREGIVER", seed.CaregiverProfileId, seed.CaregiverUserId);
+                var chat = CreateChatServices(scopedDb, seed.CaregiverUserId, "CAREGIVER", seed.CaregiverProfileId, seed.CaregiverUserId);
                 barrier.SignalAndWait();
-                return await chat.SendAsync(seed.BookingId, Guid.NewGuid(),
+                return await chat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
                     new BookingChatSendRequest(seed.EpochId, "text", "Writer 2 Msg", null, null, null));
             });
 
             var readTask = Task.Run(async () =>
             {
                 await using var scopedDb = CreateDb();
-                var chat = CreateChatService(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
+                var chat = CreateChatServices(scopedDb, seed.CustomerId, "CUSTOMER", seed.CaregiverProfileId, seed.CaregiverUserId);
                 barrier.SignalAndWait();
                 var pages = new List<BookingChatMessageResponse>();
                 for (var i = 0; i < 3; i++)
                 {
-                    var p = await chat.GetMessagesAsync(seed.BookingId, null, null, 10);
+                    var p = await chat.Queries.GetMessagesAsync(seed.BookingId, null, null, 10);
                     if (p.IsSuccess) pages.AddRange(p.Value.Items);
                     await Task.Delay(5);
                 }

@@ -11,7 +11,7 @@ internal sealed class AssignSupportTicketCommandHandler(
     ICurrentUser currentUser,
     IAuditLogger auditLogger,
     IChatTicketGuard chatGuard,
-    ISupportChatService chat)
+    ISupportChatCommands chat)
     : IRequestHandler<AssignSupportTicketCommand, Result<SupportTicketResponse>>
 {
     public async Task<Result<SupportTicketResponse>> Handle(

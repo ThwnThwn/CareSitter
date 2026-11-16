@@ -12,19 +12,19 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, 125, jumbleTimestamps: true);
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER",
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
         var anchor = await db.BookingChatMessages.Where(message =>
             message.ConversationId == seed.ConversationId && message.Sequence == 75)
             .Select(message => message.Id).SingleAsync();
 
-        var result = await chat.ResumeMessagesAsync(seed.BookingId, anchor, direction, 1, 50);
+        var result = await chat.Queries.ResumeMessagesAsync(seed.BookingId, anchor, direction, 1, 50);
 
         Assert.True(result.IsSuccess, result.Error.Message);
         Assert.Equal(Enumerable.Range(firstSequence, 50).Select(value => (long)value),
             result.Value.Items.Select(message => message.Sequence));
         Assert.NotNull(result.Value.NextCursor);
-        var continuation = await chat.GetMessagesAsync(seed.BookingId,
+        var continuation = await chat.Queries.GetMessagesAsync(seed.BookingId,
             result.Value.NextCursor, null, 50);
         Assert.True(continuation.IsSuccess, continuation.Error.Message);
     }
@@ -38,16 +38,16 @@ public sealed partial class BookingChatPaginationTests
         var anchor = await db.BookingChatMessages.Where(message =>
             message.ConversationId == seed.ConversationId && message.Sequence == 2)
             .Select(message => message.Id).SingleAsync();
-        var chat = CreateChatService(db, seed.CustomerId, "CUSTOMER",
+        var chat = CreateChatServices(db, seed.CustomerId, "CUSTOMER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
-        var outsider = CreateChatService(db, Guid.NewGuid(), "CUSTOMER",
+        var outsider = CreateChatServices(db, Guid.NewGuid(), "CUSTOMER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
 
         Assert.Equal("booking.chat.not_found",
-            (await outsider.ResumeMessagesAsync(seed.BookingId, anchor, "after", 1, 50)).Error.Code);
+            (await outsider.Queries.ResumeMessagesAsync(seed.BookingId, anchor, "after", 1, 50)).Error.Code);
         Assert.Equal("booking.chat.cursor_invalid",
-            (await chat.ResumeMessagesAsync(other.BookingId, anchor, "after", 1, 50)).Error.Code);
+            (await chat.Queries.ResumeMessagesAsync(other.BookingId, anchor, "after", 1, 50)).Error.Code);
         Assert.Equal("booking.chat.scope_changed",
-            (await chat.ResumeMessagesAsync(seed.BookingId, anchor, "after", 2, 50)).Error.Code);
+            (await chat.Queries.ResumeMessagesAsync(seed.BookingId, anchor, "after", 2, 50)).Error.Code);
     }
 }

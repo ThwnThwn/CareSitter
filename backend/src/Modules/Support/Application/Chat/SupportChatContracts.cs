@@ -24,26 +24,38 @@ public sealed record ChatActivityListResponse(IReadOnlyList<ChatActivityResponse
 public sealed record ChatListResponse(IReadOnlyList<ChatConversationResponse> Items,
     bool HasMore, DateTimeOffset? NextCreatedAt, Guid? NextId);
 
-public interface ISupportChatService
+internal interface ISupportChatQueries
+{
+    Task<Result<ChatListResponse>> ListAsync(ChatActor actor, string? queue,
+        DateTimeOffset? beforeCreatedAt, Guid? beforeId, int limit, CancellationToken ct);
+
+    Task<Result<ChatConversationResponse>> GetAsync(ChatActor actor, Guid id, CancellationToken ct);
+
+    Task<Result<ChatPageResponse<ChatMessageResponse>>> MessagesAsync(ChatActor actor, Guid id,
+        long? before, long? after, long? highWatermark, int limit, CancellationToken ct);
+
+    Task<Result<ChatActivityListResponse>> ActivitiesAsync(ChatActor actor, Guid id,
+        DateTimeOffset? beforeCreatedAt, Guid? beforeId, int limit, CancellationToken ct);
+}
+
+internal interface ISupportChatCommands
 {
     Task<Result<ChatCreateResponse>> CreateAsync(ChatActor actor, Guid key,
         ChatCreateRequest request, CancellationToken ct);
-    Task<Result<ChatListResponse>> ListAsync(ChatActor actor, string? queue,
-        DateTimeOffset? beforeCreatedAt, Guid? beforeId, int limit, CancellationToken ct);
-    Task<Result<ChatConversationResponse>> GetAsync(ChatActor actor, Guid id, CancellationToken ct);
-    Task<Result<ChatPageResponse<ChatMessageResponse>>> MessagesAsync(ChatActor actor, Guid id,
-        long? before, long? after, long? highWatermark, int limit, CancellationToken ct);
-    Task<Result<ChatActivityListResponse>> ActivitiesAsync(ChatActor actor, Guid id,
-        DateTimeOffset? beforeCreatedAt, Guid? beforeId, int limit, CancellationToken ct);
+
     Task<Result<ChatMessageResponse>> SendAsync(ChatActor actor, Guid id, Guid key,
         string body, CancellationToken ct);
+
     Task<Result<ChatConversationResponse>> ReadAsync(ChatActor actor, Guid id,
         long lastReadSequence, CancellationToken ct);
+
     Task<Result<ChatConversationResponse>> ClaimAsync(ChatActor actor, Guid id,
         long expectedVersion, CancellationToken ct);
+
     Task<Result<ChatConversationResponse>> TransferAsync(ChatActor actor, Guid id,
         Guid targetAdminId, bool takeover, long expectedVersion, string reason,
         CancellationToken ct);
+
     Task<Result<ChatConversationResponse>> StatusAsync(ChatActor actor, Guid id,
         string status, long expectedVersion, string reason, CancellationToken ct);
 }

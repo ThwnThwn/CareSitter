@@ -10,19 +10,19 @@ public sealed partial class BookingChatPaginationTests
     {
         await using var db = CreateDb();
         var seed = await SeedConversationWithMessagesAsync(db, 0, false);
-        var customerChat = CreateChatService(db, seed.CustomerId, "CUSTOMER",
+        var customerChat = CreateChatServices(db, seed.CustomerId, "CUSTOMER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
-        var caregiverChat = CreateChatService(db, seed.CaregiverUserId, "CAREGIVER",
+        var caregiverChat = CreateChatServices(db, seed.CaregiverUserId, "CAREGIVER",
             seed.CaregiverProfileId, seed.CaregiverUserId);
 
-        var blocked = await customerChat.SetBlockAsync(
+        var blocked = await customerChat.Commands.SetBlockAsync(
             seed.BookingId, new BookingChatBlockRequest(true));
         Assert.True(blocked.IsSuccess, blocked.Error.Message);
         Assert.True(blocked.Value.IsBlockedByMe);
         Assert.True(blocked.Value.Changed);
 
-        var customerMetadata = await customerChat.GetMetadataAsync(seed.BookingId);
-        var caregiverMetadata = await caregiverChat.GetMetadataAsync(seed.BookingId);
+        var customerMetadata = await customerChat.Queries.GetMetadataAsync(seed.BookingId);
+        var caregiverMetadata = await caregiverChat.Queries.GetMetadataAsync(seed.BookingId);
         Assert.True(customerMetadata.Value.IsBlockedByMe);
         Assert.False(customerMetadata.Value.IsBlockedByOther);
         Assert.False(customerMetadata.Value.CanSend);
@@ -32,18 +32,18 @@ public sealed partial class BookingChatPaginationTests
         Assert.False(caregiverMetadata.Value.CanSend);
         Assert.Equal("blocked_by_other", caregiverMetadata.Value.ReadOnlyReason);
 
-        var rejected = await caregiverChat.SendAsync(seed.BookingId, Guid.NewGuid(),
+        var rejected = await caregiverChat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
             new BookingChatSendRequest(seed.EpochId, "text", "Không được gửi", null, null, null));
         Assert.True(rejected.IsFailure);
         Assert.Equal("booking.chat.blocked", rejected.Error.Code);
 
-        var unblocked = await customerChat.SetBlockAsync(
+        var unblocked = await customerChat.Commands.SetBlockAsync(
             seed.BookingId, new BookingChatBlockRequest(false));
         Assert.True(unblocked.IsSuccess, unblocked.Error.Message);
         Assert.True(unblocked.Value.Changed);
         Assert.False(unblocked.Value.IsBlockedByMe);
 
-        var sent = await caregiverChat.SendAsync(seed.BookingId, Guid.NewGuid(),
+        var sent = await caregiverChat.Commands.SendAsync(seed.BookingId, Guid.NewGuid(),
             new BookingChatSendRequest(seed.EpochId, "text", "Đã gửi lại", null, null, null));
         Assert.True(sent.IsSuccess, sent.Error.Message);
         Assert.Equal(1, await db.BookingChatUserBlocks.CountAsync(x =>

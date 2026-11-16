@@ -39,7 +39,7 @@ public sealed class PromotionsController : ControllerBase
     public async Task<IActionResult> Preview(
         [FromBody] PromotionPreviewRequest request, CancellationToken ct)
     {
-        var result = await _mediator.Send(new PreviewPromotionCommand(request.Code,
+        var result = await _mediator.Send(new PreviewPromotionQuery(request.Code,
             request.ServiceTypeId, request.ScheduledStart, request.ScheduledEnd), ct);
         return result.ToActionResult(this);
     }

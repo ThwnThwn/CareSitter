@@ -38,6 +38,7 @@ class NutritionKnowledgeSearchModel {
   const NutritionKnowledgeSearchModel({
     required this.query,
     required this.results,
+    this.references = const [],
     this.localDemo = false,
     this.generalKnowledge = false,
     this.referenceKnowledge = false,
@@ -50,6 +51,7 @@ class NutritionKnowledgeSearchModel {
 
   final String query;
   final List<NutritionKnowledgeHitModel> results;
+  final List<NutritionKnowledgeHitModel> references;
   final bool localDemo;
   final bool generalKnowledge;
   final bool referenceKnowledge;
@@ -120,6 +122,10 @@ class NutritionKnowledgeSearchModel {
         answerProvider: json['answerProvider'] as String?,
         answerBlocks: (json['answerBlocks'] as List<dynamic>? ?? const [])
             .map((item) => NutritionKnowledgeAnswerBlockModel.fromJson(
+                Map<String, dynamic>.from(item as Map)))
+            .toList(growable: false),
+        references: (json['references'] as List<dynamic>? ?? const [])
+            .map((item) => NutritionKnowledgeHitModel.fromJson(
                 Map<String, dynamic>.from(item as Map)))
             .toList(growable: false),
         results: (json['results'] as List<dynamic>? ?? const [])
