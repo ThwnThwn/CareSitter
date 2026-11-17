@@ -14,12 +14,14 @@ internal sealed class NutritionStore(NpgsqlDataSource dataSource, Recommendation
         // Use a distinct pool: a held request lock must not consume the last owner-transaction connection.
         // Losers release their connection while waiting so they cannot exhaust the transaction pool.
         const string lockKey = "hashtextextended('nutrition-request:' || @owner::text || ':' || @key::text,0)";
+        const string acquireSql = "SELECT pg_try_advisory_lock(" + lockKey + ")";
+        const string releaseSql = "SELECT pg_advisory_unlock(" + lockKey + ")";
         while (true)
         {
             ct.ThrowIfCancellationRequested();
             await using (var connection = await lockDataSource.OpenConnectionAsync(ct))
             {
-                await using var acquire = new NpgsqlCommand($"SELECT pg_try_advisory_lock({lockKey})", connection);
+                await using var acquire = new NpgsqlCommand(acquireSql, connection);
                 acquire.Parameters.AddWithValue("owner", owner);
                 acquire.Parameters.AddWithValue("key", key);
                 bool acquired;
@@ -36,7 +38,7 @@ internal sealed class NutritionStore(NpgsqlDataSource dataSource, Recommendation
                     try { return await action(); }
                     finally
                     {
-                        await using var release = new NpgsqlCommand($"SELECT pg_advisory_unlock({lockKey})", connection);
+                        await using var release = new NpgsqlCommand(releaseSql, connection);
                         release.CommandTimeout = 5;
                         release.Parameters.AddWithValue("owner", owner);
                         release.Parameters.AddWithValue("key", key);

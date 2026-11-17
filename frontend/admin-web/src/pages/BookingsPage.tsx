@@ -5,8 +5,7 @@ import { useAdminMetadata } from '../adminMetadata';
 import { qs } from '../api';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, formatDate, formatMoney, shortId } from '../components/Common';
 import { Booking } from '../types';
-import { usePagedResource } from '../useResource';
-import { useResource } from '../useResource';
+import { usePagedResource, useResource } from '../useResource';
 import { hashParam } from '../routes';
 import type { ShowToast } from '../useToast';
 

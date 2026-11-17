@@ -5,7 +5,7 @@ namespace CareSitter.Nutrition.Infrastructure;
 
 // Development-only adapter for Windows machines where managed HTTPS stalls.
 // Credentials and JSON travel through stdin, never command-line arguments or temporary request files.
-public sealed class WindowsGeminiDemoHandler : HttpMessageHandler
+public sealed class WindowsGeminiDemoHandler(ILogger<WindowsGeminiDemoHandler> logger) : HttpMessageHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -23,8 +23,20 @@ public sealed class WindowsGeminiDemoHandler : HttpMessageHandler
         foreach (var value in new[] { "--config", "-", "--silent", "--show-error", "--proto", "=https", "--max-time", "28",
                      "--connect-timeout", "8", "--max-filesize", "65536", "--write-out", "\n%{http_code}", request.RequestUri.AbsoluteUri })
             start.ArgumentList.Add(value);
+        ct.ThrowIfCancellationRequested();
         using var process = Process.Start(start) ?? throw new HttpRequestException("Local transport could not start.");
-        using var cancellation = ct.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } });
+        using var cancellation = ct.Register(() =>
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill();
+            }
+            catch (InvalidOperationException) when (process.HasExited)
+            {
+                logger.LogDebug("Local HTTPS transport exited while cancelling the request.");
+            }
+        });
         var output = process.StandardOutput.ReadToEndAsync(ct);
         var errors = process.StandardError.ReadToEndAsync(ct);
         var lines = new List<string> { $"request = {Quote(request.Method.Method)}" };

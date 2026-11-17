@@ -39,15 +39,12 @@ public sealed class ChatFirestoreReconciler(
         await using var connection = new NpgsqlConnection(
             configuration.GetConnectionString("CareSitter"));
         await connection.OpenAsync(ct);
-        var table = chatType == "BOOKING"
-            ? "booking.booking_chat_messages" : "support.chat_messages";
-        await using var command = new NpgsqlCommand($"""
-            SELECT id, conversation_id, { (chatType == "BOOKING" ? "epoch_id" : "conversation_id") },
-                   created_at
-            FROM {table}
-            WHERE (@after_at IS NULL OR (created_at, id) > (@after_at, @after_id))
-            ORDER BY created_at, id LIMIT @limit
-            """, connection);
+        const string pageClause = " WHERE (@after_at IS NULL OR (created_at, id) > (@after_at, @after_id))" +
+            " ORDER BY created_at, id LIMIT @limit";
+        var sql = chatType == "BOOKING"
+            ? "SELECT id, conversation_id, epoch_id, created_at FROM booking.booking_chat_messages" + pageClause
+            : "SELECT id, conversation_id, conversation_id AS epoch_id, created_at FROM support.chat_messages" + pageClause;
+        await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.Add("after_at", NpgsqlDbType.TimestampTz).Value =
             afterCreatedAt.HasValue ? afterCreatedAt.Value.ToUniversalTime() : DBNull.Value;
         command.Parameters.Add("after_id", NpgsqlDbType.Uuid).Value =

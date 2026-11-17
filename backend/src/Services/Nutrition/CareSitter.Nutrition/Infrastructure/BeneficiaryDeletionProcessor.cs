@@ -65,9 +65,17 @@ internal sealed class BeneficiaryDeletionProcessor(NpgsqlDataSource dataSource)
             Bind(tombstone, eventId, value);
             await tombstone.ExecuteNonQueryAsync(ct);
         }
-        foreach (var table in new[] { "assessment_jobs", "assessments", "recommendations", "meal_plans", "preferences" })
+        const string filter = " WHERE customer_id = @owner AND beneficiary_id = @beneficiary";
+        foreach (var sql in new[]
         {
-            await using var delete = new NpgsqlCommand($"DELETE FROM nutrition.{table} WHERE customer_id=@owner AND beneficiary_id=@beneficiary", connection, transaction);
+            "DELETE FROM nutrition.assessment_jobs" + filter,
+            "DELETE FROM nutrition.assessments" + filter,
+            "DELETE FROM nutrition.recommendations" + filter,
+            "DELETE FROM nutrition.meal_plans" + filter,
+            "DELETE FROM nutrition.preferences" + filter
+        })
+        {
+            await using var delete = new NpgsqlCommand(sql, connection, transaction);
             delete.Parameters.AddWithValue("owner", value.OwnerUserId);
             delete.Parameters.AddWithValue("beneficiary", value.BeneficiaryId);
             await delete.ExecuteNonQueryAsync(ct);

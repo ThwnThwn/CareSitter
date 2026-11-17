@@ -69,7 +69,7 @@ internal static class NutritionAiExtensions
             client.Timeout = Timeout.InfiniteTimeSpan;
         }).ConfigurePrimaryHttpMessageHandler(services =>
             services.GetRequiredService<IOptions<KnowledgeAnswerAiOptions>>().Value.UseWindowsCurl
-                ? new WindowsGeminiDemoHandler()
+                ? new WindowsGeminiDemoHandler(services.GetRequiredService<ILogger<WindowsGeminiDemoHandler>>())
                 : new HttpClientHandler { AllowAutoRedirect = false });
         services.AddHttpClient<LocalKnowledgeAnswer>(client =>
         {

@@ -60,9 +60,11 @@ internal sealed class ChatFirestoreProjectionWorker(
                 try
                 {
                     await projector.ProjectAsync(connection, pending, ct);
-                    await using var complete = new NpgsqlCommand(
-                        "UPDATE public.chat_firestore_outbox SET delivered_at = now(), last_error = NULL " +
-                        "WHERE id = @id AND delivered_at IS NULL", connection);
+                    await using var complete = new NpgsqlCommand("""
+                        UPDATE public.chat_firestore_outbox
+                        SET delivered_at = now(), last_error = NULL
+                        WHERE id = @id AND delivered_at IS NULL
+                        """, connection);
                     complete.Parameters.AddWithValue("id", pending.Id);
                     await complete.ExecuteNonQueryAsync(ct);
                     Projected.Add(1, new KeyValuePair<string, object?>("chat_type", pending.ChatType));
@@ -77,12 +79,14 @@ internal sealed class ChatFirestoreProjectionWorker(
                         Math.Clamp(options.Value.MaxAttempts, 1, 100);
                     var delaySeconds = deadLetter ? 3600 :
                         Math.Min(300, 1 << Math.Min(pending.Attempts + 1, 8));
-                    await using var retry = new NpgsqlCommand(
-                        "UPDATE public.chat_firestore_outbox SET attempts = attempts + 1, " +
-                        "available_at = now() + @delay * interval '1 second', last_error = @error, " +
-                        "dead_letter_at = CASE WHEN @dead THEN COALESCE(dead_letter_at, now()) " +
-                        "ELSE dead_letter_at END " +
-                        "WHERE id = @id AND delivered_at IS NULL", connection);
+                    await using var retry = new NpgsqlCommand("""
+                        UPDATE public.chat_firestore_outbox
+                        SET attempts = attempts + 1,
+                            available_at = now() + @delay * interval '1 second',
+                            last_error = @error,
+                            dead_letter_at = CASE WHEN @dead THEN COALESCE(dead_letter_at, now()) ELSE dead_letter_at END
+                        WHERE id = @id AND delivered_at IS NULL
+                        """, connection);
                     retry.Parameters.AddWithValue("delay", delaySeconds);
                     retry.Parameters.AddWithValue("error", exception.GetType().Name);
                     retry.Parameters.AddWithValue("dead", deadLetter);

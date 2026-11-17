@@ -32,7 +32,7 @@ static async Task<int> RunAsync(string[] arguments)
             "review-policy" when arguments.Length == 1 => await ShowReviewPolicyAsync(),
             "set-review-policy" when arguments.Length == 4 && arguments[2] == "--reason" =>
                 await SetReviewPolicyAsync(arguments[1], arguments[3]),
-            "publish" when arguments.Length == 3 => await TransitionAsync("publish_catalog_bundle", arguments[1], arguments[2]),
+            "publish" when arguments.Length == 3 => await PublishAsync(arguments[1], arguments[2]),
             "retire" when arguments.Length == 3 => await RetireAsync(arguments[1], arguments[2]),
             _ => Usage()
         };
@@ -247,12 +247,12 @@ static async Task<int> PrepareLocalDemoAsync(string bundlePath, string outputPat
     return 0;
 }
 
-static async Task<int> TransitionAsync(string function, string idText, string digest)
+static async Task<int> PublishAsync(string idText, string digest)
 {
     if (!Guid.TryParse(idText, out var id) || id == Guid.Empty) throw new CatalogToolException("Package ID must be a non-empty UUID.", 2);
     if (digest.Length != 64 || digest.Any(character => !Uri.IsHexDigit(character))) throw new CatalogToolException("Digest must be a SHA-256 hexadecimal value.", 2);
     await using var connection = await OpenAsync();
-    await using var command = new NpgsqlCommand($"SELECT nutrition.{function}(@id,@digest)", connection);
+    await using var command = new NpgsqlCommand("SELECT nutrition.publish_catalog_bundle(@id,@digest)", connection);
     command.Parameters.AddWithValue("id", id);
     command.Parameters.AddWithValue("digest", digest.ToLowerInvariant());
     WriteJson(await command.ExecuteScalarAsync());
