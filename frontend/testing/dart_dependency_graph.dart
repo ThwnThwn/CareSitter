@@ -1,10 +1,14 @@
 import 'dart:io';
+
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 /// Resolve imports, exports and conditional branches, not just package strings.
-List<String> dependencyViolations(String packageName) {
-  final root = Directory('lib').absolute.uri;
+List<String> dependencyViolations(
+  String packageName, {
+  String sourceDirectory = 'lib',
+}) {
+  final root = Directory(sourceDirectory).absolute.uri.normalizePath();
   final graph = <String, Set<String>>{};
   final violations = <String>[];
   String relative(Uri uri) => uri.toString().substring(root.toString().length);
@@ -17,20 +21,32 @@ List<String> dependencyViolations(String packageName) {
     return resolved.toString().startsWith(root.toString()) ? resolved : null;
   }
 
-  for (final file in Directory('lib').listSync(recursive: true).whereType<File>()
-      .where((file) => file.path.endsWith('.dart'))) {
-    final path = relative(file.absolute.uri);
+  for (final file
+      in Directory(sourceDirectory)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart'))) {
+    final fileUri = file.absolute.uri.normalizePath();
+    final path = relative(fileUri);
     final unit = parseString(content: file.readAsStringSync()).unit;
     final edges = graph.putIfAbsent(path, () => {});
     for (final directive in unit.directives.whereType<NamespaceDirective>()) {
-      final names = [directive.uri.stringValue,
-        ...directive.configurations.map((config) => config.uri.stringValue)];
+      final names = [
+        directive.uri.stringValue,
+        ...directive.configurations.map((config) => config.uri.stringValue),
+      ];
       for (final name in names.whereType<String>()) {
-        final target = localTarget(file.absolute.uri, name);
+        for (final app in ['caresitter_customer', 'caregiver_app']) {
+          if (app != packageName && name.startsWith('package:$app/')) {
+            violations.add('$path: depends on another app ($name)');
+          }
+        }
+        final target = localTarget(fileUri, name);
         if (target == null) continue;
         final imported = relative(target);
         edges.add(imported);
-        if (!File.fromUri(target).existsSync()) violations.add('$path: missing $imported');
+        if (!File.fromUri(target).existsSync())
+          violations.add('$path: missing $imported');
         if (path.startsWith('core/') &&
             (imported.startsWith('app/') || imported.startsWith('features/'))) {
           violations.add('$path: core must not depend on $imported');
@@ -39,10 +55,13 @@ List<String> dependencyViolations(String packageName) {
           violations.add('$path: DTO/adapter depends on $imported');
         }
         final feature = RegExp(r'^features/([^/]+)/').firstMatch(path)?[1];
-        final other = RegExp(r'^features/([^/]+)/presentation/(screens|widgets|models)/')
-            .firstMatch(imported);
+        final other = RegExp(
+          r'^features/([^/]+)/presentation/(screens|widgets|models)/',
+        ).firstMatch(imported);
         if (feature != null && other != null && other[1] != feature) {
-          violations.add('$path: private presentation of another feature ($imported)');
+          violations.add(
+            '$path: private presentation of another feature ($imported)',
+          );
         }
         if ((path.contains('/screens/') || path.contains('/widgets/')) &&
             imported.contains('/data/repositories/')) {
@@ -58,7 +77,9 @@ List<String> dependencyViolations(String packageName) {
     if (done.contains(path)) return;
     final start = visiting.indexOf(path);
     if (start >= 0) {
-      violations.add('Dependency cycle: ${[...visiting.skip(start), path].join(' → ')}');
+      violations.add(
+        'Dependency cycle: ${[...visiting.skip(start), path].join(' → ')}',
+      );
       return;
     }
     visiting.add(path);
@@ -68,6 +89,9 @@ List<String> dependencyViolations(String packageName) {
     visiting.removeLast();
     done.add(path);
   }
-  for (final path in graph.keys) { visit(path); }
+
+  for (final path in graph.keys) {
+    visit(path);
+  }
   return violations;
 }
