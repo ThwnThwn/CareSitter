@@ -2,32 +2,22 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using CareSitter.Contracts.Services;
-using CareSitter.Messaging.Abstractions;
-using CareSitter.Messaging.Contracts;
-using CareSitter.Messaging.Contracts.Events;
-using CareSitter.Messaging.Persistence.Outbox;
-using CareSitter.Modules.Support.Application.Chat;
 using CareSitter.Modules.Support.Domain;
 using CareSitter.SharedKernel.Results;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using static CareSitter.Modules.Support.Application.Chat.SupportChatErrors;
 
-namespace CareSitter.Modules.Support.Infrastructure;
+namespace CareSitter.Modules.Support.Application.Chat;
 
 /// <summary>
-/// Owns ticket/chat transactions. Mutations lock ticket before conversation so
-/// send, claim and close observe one committed order.
+/// Coordinates chat permissions, idempotency and ticket transitions through
+/// persistence ports. Realtime signals are emitted after the transaction commits.
 /// </summary>
 internal sealed class SupportChatCommands(
-    SupportDbContext db, IBookingPartyAccess bookingAccess, IActiveAdminLookup admins,
-    INotificationRecipientReader recipients, IConfiguration configuration,
-    SupportChatResponses responses, SupportChatRealtimePublisher realtime,
-    MessagingSettings? messaging = null, IEventSerializer? serializer = null,
-    OutboxWriter<SupportDbContext>? outbox = null, SupportChatMetrics? metrics = null)
+    ISupportChatStore store, IBookingPartyAccess bookingAccess, IActiveAdminLookup admins,
+    ISupportChatRealtimePublisher realtime, SupportChatMetrics? metrics = null)
     : ISupportChatCommands
 {
-    private bool Enabled => configuration.GetValue<bool>("SupportChat:Enabled");
+    private bool Enabled => store.Enabled;
 
     public async Task<Result<ChatCreateResponse>> CreateAsync(ChatActor actor, Guid key,
         ChatCreateRequest request, CancellationToken ct)
@@ -45,27 +35,22 @@ internal sealed class SupportChatCommands(
         if (request.BookingId is { } bookingId &&
             !await bookingAccess.IsPartyAsync(bookingId, actor.UserId, ct)) return Missing;
 
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock(hashtextextended({actor.UserId.ToString()}, 0))", ct);
-        var prior = await db.ChatConversations.SingleOrDefaultAsync(x =>
-            x.OwnerUserId == actor.UserId && x.CreateKey == key, ct);
+        await using var tx = await store.BeginAsync(ct);
+        await store.LockOwnerAsync(actor.UserId, ct);
+        var prior = await store.FindCreatedAsync(actor.UserId, key, ct);
         if (prior is not null)
         {
             if (prior.CreatePayloadHash != hash) return Conflict("idempotency_conflict", "Khóa đã dùng cho nội dung khác.");
             metrics?.Replayed("create");
-            var first = await db.ChatMessages.AsNoTracking().SingleAsync(x =>
-                x.ConversationId == prior.Id && x.Sequence == 1, ct);
-            var originalTicket = await db.SupportTickets.AsNoTracking()
-                .SingleAsync(x => x.Id == prior.TicketId, ct);
+            var first = await store.FirstMessageAsync(prior.Id, ct);
+            var originalTicket = await store.TicketAsync(prior.TicketId, ct);
             var original = new ChatConversationResponse(prior.Id, originalTicket.Id,
                 prior.OwnerUserId, originalTicket.BookingId, originalTicket.Title,
                 "NEW", null, 1, 2, 1, 0, 0, 0, prior.CreatedAt, null);
             return new ChatCreateResponse(original,
-                SupportChatResponses.ToMessage(first, actor.UserId, true), true);
+                SupportChatMapping.ToMessage(first, actor.UserId, true), true);
         }
-        var open = await db.ChatConversations.AsNoTracking().FirstOrDefaultAsync(x =>
-            x.OwnerUserId == actor.UserId && x.ClosedAt == null, ct);
+        var open = await store.OpenConversationAsync(actor.UserId, ct);
         if (open is not null)
             return Conflict("open_conversation_exists", $"Đã có hội thoại mở: {open.Id}");
 
@@ -77,17 +62,17 @@ internal sealed class SupportChatCommands(
         var conversation = ChatConversation.Create(ticket.Id, actor.UserId, key, hash, now);
         var message = ChatMessage.Create(conversation.Id, conversation.AddMessage(now),
             actor.UserId, actor.Role, key, body, Hash(body), now);
-        db.SupportTickets.Add(ticket);
-        db.ChatConversations.Add(conversation);
-        db.ChatMessages.Add(message);
+        store.AddTicket(ticket);
+        store.AddConversation(conversation);
+        store.AddMessage(message);
         AddActivity(conversation.Id, actor.UserId, "CREATED", null, "NEW", null, null, null, now);
-        await db.SaveChangesAsync(ct);
+        await store.SaveAsync(ct);
         await tx.CommitAsync(ct);
         metrics?.Created();
         metrics?.MessageCommitted(actor.Role);
         await realtime.ConversationCreatedAsync(conversation, ticket);
-        return new ChatCreateResponse(await responses.ToConversationAsync(conversation, actor, ct),
-            SupportChatResponses.ToMessage(message, actor.UserId), false);
+        return new ChatCreateResponse(await store.ResponseAsync(conversation, actor, ct),
+            SupportChatMapping.ToMessage(message, actor.UserId), false);
     }
 
     public async Task<Result<ChatMessageResponse>> SendAsync(ChatActor actor, Guid id, Guid key,
@@ -98,18 +83,17 @@ internal sealed class SupportChatCommands(
         var body = Normalize(rawBody);
         if (body.Length is < 1 or > 2000) return Invalid("Tin nhắn cần 1–2.000 ký tự.");
         var hash = Hash(body);
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = await store.BeginAsync(ct);
         var locked = await LockAsync(actor, id, ct);
         if (locked is null) return Missing;
         var (conversation, ticket) = locked.Value;
-        var prior = await db.ChatMessages.AsNoTracking().SingleOrDefaultAsync(x =>
-            x.ConversationId == id && x.SenderUserId == actor.UserId && x.IdempotencyKey == key, ct);
+        var prior = await store.FindMessageAsync(id, actor.UserId, key, ct);
         if (prior is not null)
         {
             if (prior.PayloadHash != hash)
                 return Conflict("idempotency_conflict", "Khóa đã dùng cho nội dung khác.");
             metrics?.Replayed("send");
-            return SupportChatResponses.ToMessage(prior, actor.UserId, true);
+            return SupportChatMapping.ToMessage(prior, actor.UserId, true);
         }
         if (conversation.ClosedAt is not null || ticket.Status is "RESOLVED" or "CLOSED")
             return Conflict("closed", "Hội thoại đã kết thúc.");
@@ -118,7 +102,7 @@ internal sealed class SupportChatCommands(
         var now = DateTimeOffset.UtcNow;
         var message = ChatMessage.Create(id, conversation.AddMessage(now), actor.UserId,
             actor.Role, key, body, hash, now);
-        db.ChatMessages.Add(message);
+        store.AddMessage(message);
         if (actor.IsAdmin)
         {
             var notice = Notification.Create(conversation.OwnerUserId, "SUPPORT_CHAT",
@@ -129,41 +113,21 @@ internal sealed class SupportChatCommands(
                 }));
             if (notice.IsFailure) return notice.Error;
             notice.Value.LinkChatMessage(message.Id);
-            db.Notifications.Add(notice.Value);
-            if (configuration.GetValue<bool>("SupportChat:PushEnabled"))
-            {
-                var recipient = await recipients.GetAsync(conversation.OwnerUserId, ct);
-                if (recipient.SupportChatPushEnabled && recipient.PushTokens.Length > 0)
-                {
-                    if (messaging is not { Enabled: true, NotificationsEnabled: true } ||
-                        serializer is null || outbox is null)
-                        throw new InvalidOperationException("SupportChat push requires the notification outbox.");
-                    var eventId = message.Id;
-                    var envelope = serializer.Create(new NotificationRequested(notice.Value.Id,
-                            conversation.OwnerUserId, ["push"], "SUPPORT_CHAT"),
-                        new EventMetadata(eventId, now, messaging.Producer,
-                            conversation.OwnerUserId.ToString(),
-                            System.Diagnostics.Activity.Current?.TraceId.ToString()));
-                    db.Set<NotificationDelivery>().Add(new NotificationDelivery
-                    {
-                        EventId = eventId, NotificationId = notice.Value.Id, Channel = "push"
-                    });
-                    outbox.Add(envelope);
-                }
-            }
+            store.AddNotification(notice.Value);
+            await store.EnqueuePushAsync(conversation.OwnerUserId, notice.Value.Id, message.Id, now, ct);
         }
-        await db.SaveChangesAsync(ct);
+        await store.SaveAsync(ct);
         await tx.CommitAsync(ct);
         metrics?.MessageCommitted(actor.Role);
         await realtime.MessageCreatedAsync(conversation, ticket, message);
-        return SupportChatResponses.ToMessage(message, actor.UserId);
+        return SupportChatMapping.ToMessage(message, actor.UserId);
     }
 
     public async Task<Result<ChatConversationResponse>> ReadAsync(ChatActor actor, Guid id,
         long sequence, CancellationToken ct)
     {
         if (!Enabled) return Disabled;
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = await store.BeginAsync(ct);
         var locked = await LockAsync(actor, id, ct);
         if (locked is null) return Missing;
         var (conversation, ticket) = locked.Value;
@@ -173,14 +137,13 @@ internal sealed class SupportChatCommands(
             return Conflict("not_assigned", "Bạn chưa được phân công hội thoại này.");
         if (sequence < 0 || sequence > conversation.LastSequence)
             return Invalid("Vị trí đã đọc không hợp lệ.");
-        var cursor = await db.ChatReadCursors.SingleOrDefaultAsync(x =>
-            x.ConversationId == id && x.UserId == actor.UserId, ct);
+        var cursor = await store.ReadCursorAsync(id, actor.UserId, ct);
         var advanced = cursor is null ? sequence > 0 : sequence > cursor.LastReadSequence;
         if (cursor is null && advanced)
         {
             cursor = new ChatReadCursor { ConversationId = id, UserId = actor.UserId,
                 LastReadSequence = sequence, UpdatedAt = DateTimeOffset.UtcNow };
-            db.ChatReadCursors.Add(cursor);
+            store.AddReadCursor(cursor);
         }
         else if (cursor is not null && sequence > cursor.LastReadSequence)
         {
@@ -188,11 +151,11 @@ internal sealed class SupportChatCommands(
             cursor.UpdatedAt = DateTimeOffset.UtcNow;
         }
         if (advanced) conversation.MarkRead(sequence, actor.IsAdmin, DateTimeOffset.UtcNow);
-        await db.SaveChangesAsync(ct);
+        await store.SaveAsync(ct);
         await tx.CommitAsync(ct);
         if (advanced)
             await realtime.ReadCursorChangedAsync(conversation, ticket, actor.UserId, sequence);
-        return await responses.ToConversationAsync(conversation, actor, ct);
+        return await store.ResponseAsync(conversation, actor, ct);
     }
 
     public Task<Result<ChatConversationResponse>> ClaimAsync(ChatActor actor, Guid id,
@@ -216,7 +179,7 @@ internal sealed class SupportChatCommands(
     {
         if (!Enabled) return Disabled;
         if (!actor.IsAdmin) return Error.Forbidden("support.chat.forbidden", "Chỉ Admin được xử lý.");
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = await store.BeginAsync(ct);
         var locked = await LockAsync(actor, id, ct);
         if (locked is null) return Missing;
         var (conversation, ticket) = locked.Value;
@@ -269,33 +232,25 @@ internal sealed class SupportChatCommands(
         conversation.Change(now, ticket.Status is "RESOLVED" or "CLOSED");
         AddActivity(id, actor.UserId, action, oldStatus, ticket.Status,
             oldAdmin, ticket.AssignedAdminId, reason, now);
-        await db.SaveChangesAsync(ct);
+        await store.SaveAsync(ct);
         await tx.CommitAsync(ct);
         await realtime.ConversationChangedAsync(conversation, ticket, action);
-        return await responses.ToConversationAsync(conversation, actor, ct);
+        return await store.ResponseAsync(conversation, actor, ct);
     }
 
     private async Task<(ChatConversation Conversation, SupportTicket Ticket)?> LockAsync(
         ChatActor actor, Guid id, CancellationToken ct)
     {
         if (actor.IsAdmin && !await admins.IsActiveAdminAsync(actor.UserId, ct)) return null;
-        var ticketId = await db.ChatConversations.AsNoTracking()
-            .Where(x => x.Id == id).Select(x => (Guid?)x.TicketId).SingleOrDefaultAsync(ct);
-        if (ticketId is null) return null;
-        var ticket = await db.SupportTickets.FromSqlInterpolated(
-            $"SELECT * FROM support.support_tickets WHERE id = {ticketId.Value} FOR UPDATE")
-            .SingleOrDefaultAsync(ct);
-        if (ticket is null) return null;
-        var conversation = await db.ChatConversations.FromSqlInterpolated(
-            $"SELECT * FROM support.chat_conversations WHERE id = {id} FOR UPDATE")
-            .SingleOrDefaultAsync(ct);
-        if (conversation is null || (!actor.IsAdmin && conversation.OwnerUserId != actor.UserId)) return null;
-        return (conversation, ticket);
+        var locked = await store.LockAsync(id, ct);
+        if (locked is null || (!actor.IsAdmin && locked.Value.Conversation.OwnerUserId != actor.UserId))
+            return null;
+        return locked;
     }
 
     private void AddActivity(Guid conversationId, Guid actorId, string action,
         string? fromStatus, string? toStatus, Guid? fromAdmin, Guid? toAdmin,
-        string? reason, DateTimeOffset now) => db.ChatActivityEvents.Add(new ChatActivityEvent
+        string? reason, DateTimeOffset now) => store.AddActivity(new ChatActivityEvent
         {
             Id = Guid.NewGuid(), ConversationId = conversationId, ActorUserId = actorId,
             Action = action, FromStatus = fromStatus, ToStatus = toStatus,

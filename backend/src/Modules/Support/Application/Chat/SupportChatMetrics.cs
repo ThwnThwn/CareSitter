@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-namespace CareSitter.Modules.Support.Infrastructure;
+namespace CareSitter.Modules.Support.Application.Chat;
 
 /// <summary>Low-cardinality chat signals; never records IDs or message content.</summary>
 public sealed class SupportChatMetrics

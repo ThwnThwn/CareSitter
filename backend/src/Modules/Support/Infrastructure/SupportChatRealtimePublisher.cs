@@ -1,3 +1,4 @@
+using CareSitter.Modules.Support.Application.Chat;
 using CareSitter.Infrastructure.Hubs;
 using CareSitter.Modules.Support.Domain;
 using Microsoft.AspNetCore.SignalR;
@@ -7,7 +8,7 @@ namespace CareSitter.Modules.Support.Infrastructure;
 
 internal sealed class SupportChatRealtimePublisher(
     IHubContext<SupportChatHub> hub, ILogger<SupportChatRealtimePublisher> logger,
-    SupportChatMetrics? metrics = null)
+    SupportChatMetrics? metrics = null) : ISupportChatRealtimePublisher
 {
     public Task ConversationCreatedAsync(ChatConversation conversation, SupportTicket ticket) =>
         PublishQueueChangedAsync(conversation, ticket, "CREATED");
