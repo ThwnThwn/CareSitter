@@ -1,6 +1,7 @@
 import 'package:caresitter_customer/core/runtime_config/runtime_config_controller.dart';
 import 'diagnostics/crash_session_integration.dart';
 import 'auth/session_integrations.dart';
+import 'auth/session_bootstrap_gate.dart';
 import 'package:caresitter_customer/core/widgets/app_messenger.dart';
 import 'dart:async';
 
@@ -73,7 +74,7 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp>
   @override
   Widget build(BuildContext context) {
     ref.listen(authStateProvider, (_, next) {
-      final isAuthenticated = next.value?.isAuthenticated ?? false;
+      final isAuthenticated = next.valueOrNull?.isAuthenticated == true;
       if (isAuthenticated) {
         unawaited(ref
             .read(pushNotificationServiceProvider)
@@ -82,18 +83,20 @@ class _CareSitterAppState extends ConsumerState<CareSitterApp>
       }
     });
 
-    final router = ref.watch(appRouterProvider);
     // BookingSyncWatchdog bọc ngoài toàn bộ app:
     // — polling 30s khi foreground
     // — trigger requestSync ngay khi app resume
-    return BookingSyncWatchdog(
-      child: MaterialApp.router(
-        title: 'CareSitter',
-        theme: AppTheme.lightTheme,
-        routerConfig: router,
-        scaffoldMessengerKey: appMessengerKey,
-        debugShowCheckedModeBanner: false,
-      ),
-    );
+    return SessionBootstrapGate(builder: (context, sessionRef) {
+      final router = sessionRef.watch(appRouterProvider);
+      return BookingSyncWatchdog(
+        child: MaterialApp.router(
+          title: 'CareSitter',
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+          scaffoldMessengerKey: appMessengerKey,
+          debugShowCheckedModeBanner: false,
+        ),
+      );
+    });
   }
 }

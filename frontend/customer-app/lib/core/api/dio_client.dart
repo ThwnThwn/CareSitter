@@ -6,33 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/api/api_constants.dart';
 import 'package:caresitter_customer/core/error/app_exception.dart';
+import 'auth_session_api.dart';
 
 export 'package:caresitter_customer/core/error/app_exception.dart';
+export 'auth_session_api.dart' show authRefreshClientProvider;
 
 // baseUrl đọc từ --dart-define=BASE_URL=http://localhost:5033/api/v1
 // Nếu không truyền → dùng giá trị mặc định trong api_constants.dart
 final String _baseUrl = kBaseUrl;
 
-Map<String, String> _tunnelHeaders(String baseUrl) {
-  final host = Uri.tryParse(baseUrl)?.host.toLowerCase() ?? '';
-  if (host.endsWith('.ngrok-free.app') ||
-      host.endsWith('.ngrok-free.dev') ||
-      host.endsWith('.ngrok.app')) {
-    return const {'ngrok-skip-browser-warning': '1'};
-  }
-  return const {};
-}
-
 final dioClientProvider = Provider<DioClient>((ref) => DioClient(ref));
-final authRefreshClientProvider = Provider<Dio>((ref) {
-  final client = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: _tunnelHeaders(_baseUrl)));
-  ref.onDispose(() => client.close(force: true));
-  return client;
-});
 final _authInterceptorProvider =
     Provider<_AuthInterceptor>(_AuthInterceptor.new);
 
@@ -52,7 +35,7 @@ class DioClient {
         // và 'multipart/form-data' cho FormData.
         'Accept': 'application/json',
         'Accept-Language': 'vi',
-        ..._tunnelHeaders(baseUrl ?? _baseUrl),
+        ...tunnelHeaders(baseUrl ?? _baseUrl),
       },
     ));
     if (adapter != null) _dio.httpClientAdapter = adapter;
