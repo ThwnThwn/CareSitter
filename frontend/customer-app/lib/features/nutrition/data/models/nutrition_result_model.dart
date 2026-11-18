@@ -14,6 +14,17 @@ class NutritionResultModel {
   List<NutritionFactModel> get facts => nutritionJsonObjects(_json['facts'])
       .map(NutritionFactModel.fromJson)
       .toList();
+  bool get hasParsedNotes => _json['parserSchemaVersion'] != null;
+
+  bool get hasNewParsedFacts {
+    final assessmentFacts = facts;
+    final profileFacts =
+        assessmentFacts.where((fact) => fact.fromStructuredProfile).toList();
+    return assessmentFacts.any((fact) =>
+        !fact.fromStructuredProfile &&
+        !profileFacts.any(fact.describesSameFact));
+  }
+
   List<NutritionMealModel> get meals => nutritionJsonObjects(_json['meals'])
       .map(NutritionMealModel.fromJson)
       .toList();

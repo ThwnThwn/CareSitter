@@ -17,6 +17,7 @@ class NutritionFlowRepository extends NutritionRepository {
   String assessmentStatus = 'awaiting_confirmation';
   bool assessmentRetryable = true;
   bool parsedAssessment = false;
+  List<Map<String, dynamic>> assessmentFacts = const [];
   bool loseAssessmentResponse = false;
   bool loseRecommendationResponse = false;
   bool catalogChanged = false;
@@ -31,6 +32,12 @@ class NutritionFlowRepository extends NutritionRepository {
   int healthCalls = 0;
   int _healthRevision = 7;
   String? _generalNote;
+
+  Map<String, dynamic> get _assessmentData => {
+        if (parsedAssessment) 'parserSchemaVersion': 1,
+        'facts': assessmentFacts,
+        if (assessmentStatus == 'failed') 'retryable': assessmentRetryable,
+      };
 
   @override
   bool get isConfigured => true;
@@ -99,7 +106,8 @@ class NutritionFlowRepository extends NutritionRepository {
   ) async {
     if (route.startsWith('nutrition-assessments/')) {
       return pendingAssessmentRead == null
-          ? resource('assessment', 'awaiting_confirmation')
+          ? resource('assessment', 'awaiting_confirmation',
+              data: _assessmentData)
           : await pendingAssessmentRead!.future;
     }
     if (route.startsWith('meal-plans/')) {
@@ -137,11 +145,8 @@ class NutritionFlowRepository extends NutritionRepository {
     }
     NutritionResourceModel response;
     if (route == 'nutrition-assessments') {
-      response =
-          resource('assessment-${_responses.length}', assessmentStatus, data: {
-        if (parsedAssessment) 'parserSchemaVersion': 1,
-        if (assessmentStatus == 'failed') 'retryable': assessmentRetryable
-      });
+      response = resource('assessment-${_responses.length}', assessmentStatus,
+          data: _assessmentData);
     } else if (route.endsWith('/confirm')) {
       if (confirmationError != null) throw confirmationError!;
       response =

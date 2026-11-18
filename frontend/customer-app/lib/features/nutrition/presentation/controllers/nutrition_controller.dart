@@ -258,10 +258,11 @@ class NutritionFlowController extends StateNotifier<NutritionRequestState> {
     }
     _automaticRecommendationDate = null;
     if (!view.recommendationsEnabled) return;
-    if (resource.status == 'confirmed' &&
-        resource.result.decision.allows('recommend')) {
+    final result = resource.result;
+    if (resource.status == 'confirmed' && result.decision.allows('recommend')) {
       await recommend(plannedDate: date);
-    } else if (resource.payload['parserSchemaVersion'] == null) {
+    } else if (!result.hasParsedNotes ||
+        (_sameDate(_singleDayRequest, date) && !result.hasNewParsedFacts)) {
       await confirmForDate(date);
     }
   }

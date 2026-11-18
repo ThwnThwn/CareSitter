@@ -36,8 +36,8 @@ void main() {
     await tester.scrollUntilVisible(notes, -200,
         scrollable: find.byType(Scrollable).first);
     await _press(tester, 'Lưu ý và hướng dẫn hiện có');
-    final note = find.widgetWithText(
-        TextField, 'Lưu ý sức khỏe / triệu chứng chưa rõ');
+    final note =
+        find.widgetWithText(TextField, 'Lưu ý sức khỏe / triệu chứng chưa rõ');
     await tester.ensureVisible(note);
     await tester.enterText(note, 'Ghi chú thử nghiệm');
     await tester.pumpAndSettle();
@@ -401,23 +401,74 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('single-day creation confirms parsed facts for that same day',
+  testWidgets('one tap creates today’s menu after checking recorded facts',
       (tester) async {
-    final repository = NutritionFlowRepository()..parsedAssessment = true;
+    const recordedFact = {
+      'kind': 'condition',
+      'code': 'HYPERTENSION',
+      'label': 'Tăng huyết áp',
+      'subject': 'beneficiary',
+      'assertion': 'absent',
+      'temporality': 'current',
+      'sourceKey': 'chronicConditions/0',
+    };
+    final repository = NutritionFlowRepository()
+      ..assessmentStatus = 'queued'
+      ..parsedAssessment = true
+      ..assessmentFacts = [
+        recordedFact,
+        {...recordedFact, 'sourceKey': 'generalNote'},
+      ];
+    await _mount(tester, repository, width: 390);
+    final today = DateUtils.dateOnly(DateTime.now());
+    expect(
+        find.text(
+            'Chưa có thực đơn cho ngày ${formatDate(today, padded: true)}'),
+        findsOneWidget);
+    await _press(tester, 'Tạo thực đơn cho ngày này');
+    expect(repository.writes.single.route, 'nutrition-assessments');
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(repository.recommendation?.result.plannedDate, _apiDate(today));
+    expect(find.text('Tạo thực đơn'), findsNothing);
+    expect(find.text('Xác nhận thông tin'), findsNothing);
+    expect(find.byKey(const ValueKey('nutrition-plan-days-3')), findsNothing);
+    expect(find.text('Lưu thực đơn'), findsOneWidget);
+  });
+
+  testWidgets('single-day creation asks to confirm a newly parsed fact',
+      (tester) async {
+    final repository = NutritionFlowRepository()
+      ..parsedAssessment = true
+      ..assessmentFacts = const [
+        {
+          'kind': 'dietary_instruction',
+          'code': 'LIMIT_ADDED_SUGAR',
+          'label': 'Hạn chế đường bổ sung',
+          'subject': 'beneficiary',
+          'assertion': 'present',
+          'temporality': 'current',
+          'sourceKey': 'generalNote',
+        },
+      ];
     await _mount(tester, repository, width: 390);
     final date = await _selectAnotherDay(tester);
     await _press(tester, 'Tạo thực đơn cho ngày này');
 
     expect(repository.writes.single.route, 'nutrition-assessments');
+    expect(repository.recommendation, isNull);
     expect(find.text('Cập nhật dinh dưỡng'), findsNothing);
-    await _press(tester, 'Tạo thực đơn');
+    expect(find.text('Tạo thực đơn'), findsNothing);
+    await _press(tester, 'Xác nhận thông tin');
 
     expect(repository.recommendation?.result.plannedDate, _apiDate(date));
     expect(find.byKey(const ValueKey('nutrition-plan-days-3')), findsNothing);
     expect(find.text('Lưu thực đơn'), findsOneWidget);
   });
 
-  testWidgets('single-day creation offers the editor when information is missing',
+  testWidgets(
+      'single-day creation offers the editor when information is missing',
       (tester) async {
     final repository = NutritionFlowRepository()
       ..assessmentStatus = 'needs_information';
