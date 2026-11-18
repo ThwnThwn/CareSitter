@@ -68,7 +68,7 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     if (route == null) return;
 
     final isAuthenticated =
-        _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+        _ref.read(authStateProvider).valueOrNull?.isAuthenticated == true;
     if (!isAuthenticated) {
       _pendingRoute = route;
       return;
@@ -81,7 +81,7 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     if (_disposed) return;
     final route = _pendingRoute;
     final isAuthenticated =
-        _ref.read(authStateProvider).value?.isAuthenticated ?? false;
+        _ref.read(authStateProvider).valueOrNull?.isAuthenticated == true;
     if (route == null || !isAuthenticated) return;
     _pendingRoute = null;
     _ref.read(appRouterProvider).go(route);

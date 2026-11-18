@@ -1,5 +1,5 @@
 import { ShieldCheck, ShieldX } from 'lucide-react';
-import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate, shortId } from '../../components/Common';
+import { DetailList, Drawer, ErrorBanner, StatusChip, formatDate } from '../../components/Common';
 import { useConfirmation } from '../../components/ConfirmationDialog';
 import { KycProfile } from '../../types';
 import { KycDocument } from './KycDocument';

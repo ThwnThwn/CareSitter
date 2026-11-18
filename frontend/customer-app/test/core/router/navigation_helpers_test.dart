@@ -7,6 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:caresitter_customer/core/auth/auth_notifier.dart';
+import 'package:caresitter_customer/core/auth/auth_state.dart';
+
+class _AnonymousAuth extends AuthNotifier {
+  @override
+  Future<AuthState> build() async => const AuthState.initial();
+}
 
 void main() {
   GoRouter createRouter({String initialLocation = '/home'}) {
@@ -111,7 +118,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('home and catalog do not overflow at 390 logical pixels',
+  testWidgets(
+      'anonymous home and catalog entries show Login at 390 logical pixels',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -119,10 +127,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final container = ProviderContainer(overrides: [
+      authStateProvider.overrideWith(_AnonymousAuth.new),
       notificationDeepLinkServiceProvider
           .overrideWith(createNotificationDeepLinkService)
     ]);
     addTearDown(container.dispose);
+    final router = container.read(appRouterProvider)..go('/home');
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -131,9 +141,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    expect(router.routeInformationProvider.value.uri.path, '/auth/login');
 
-    container.read(appRouterProvider).push('/catalog');
+    router.go('/catalog');
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    expect(router.routeInformationProvider.value.uri.path, '/auth/login');
   });
 }

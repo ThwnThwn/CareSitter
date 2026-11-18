@@ -23,8 +23,4 @@ internal sealed class SupportChatResponses(SupportDbContext db)
             unread, conversation.CreatedAt, conversation.ClosedAt);
     }
 
-    public static ChatMessageResponse ToMessage(ChatMessage message, Guid actorId, bool replayed = false) =>
-        new(message.Id, message.ConversationId, message.Sequence, message.SenderUserId,
-            message.SenderRole, message.Body, message.CreatedAt,
-            message.SenderUserId == actorId ? message.IdempotencyKey : null, replayed);
 }

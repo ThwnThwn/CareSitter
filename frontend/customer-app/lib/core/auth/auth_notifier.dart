@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
+import '../api/auth_session_api.dart';
 
 const _storage = FlutterSecureStorage();
 
@@ -19,6 +20,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   int? _loggingOutGeneration;
   bool _rememberSession = false;
   Future<void> _storageWrites = Future<void>.value();
+  bool _active = true;
   int get sessionGeneration => _sessionGeneration;
   Future<void> _persist(Future<void> Function() action) {
     final operation = _storageWrites.then((_) => action(),
@@ -29,19 +31,59 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
+    ref.onDispose(() => _active = false);
     return _loadFromStorage();
   }
 
   Future<AuthState> _loadFromStorage() async {
+    final generation = _sessionGeneration;
+    final restored =
+        await AsyncValue.guard(() => _readPersistedSession(generation));
+    if (!_active) return const AuthState.initial();
+    if (generation != _sessionGeneration) {
+      return state.valueOrNull ?? const AuthState.initial();
+    }
+    return restored.requireValue;
+  }
+
+  Future<AuthState> _readPersistedSession(int generation) async {
+    bool current() => _active && generation == _sessionGeneration;
+    AuthState latest() => _active
+        ? state.valueOrNull ?? const AuthState.initial()
+        : const AuthState.initial();
     final token = await _storage.read(key: _kAccessToken);
     final refresh = await _storage.read(key: _kRefreshToken);
     final userId = await _storage.read(key: _kUserId);
     final phone = await _storage.read(key: _kPhone);
-    if (token != null && userId != null) {
+    if (!current()) return latest();
+    if (token != null &&
+        token.isNotEmpty &&
+        userId != null &&
+        userId.isNotEmpty) {
+      final restored =
+          await ref.read(authSessionApiProvider).restore(token, refresh);
+      if (!current()) return latest();
+      if (restored == null) {
+        await _persist(() async {
+          if (current()) await _clearPersistedSession();
+        });
+        if (!current()) return latest();
+        _rememberSession = false;
+        return const AuthState.initial();
+      }
+      if (restored.accessToken != token || restored.refreshToken != refresh) {
+        await _persist(() async {
+          if (!current()) return;
+          await _storage.write(key: _kAccessToken, value: restored.accessToken);
+          await _storage.write(
+              key: _kRefreshToken, value: restored.refreshToken);
+        });
+        if (!current()) return latest();
+      }
       _rememberSession = true;
       return AuthState(
-        accessToken: token,
-        refreshToken: refresh,
+        accessToken: restored.accessToken,
+        refreshToken: restored.refreshToken,
         userId: userId,
         phone: phone,
         isAuthenticated: true,
@@ -49,6 +91,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     _rememberSession = false;
     return const AuthState.initial();
+  }
+
+  Future<void> retryRestore() async {
+    if (state.isLoading) return;
+    final generation = _sessionGeneration;
+    state = const AsyncLoading();
+    final restored = await AsyncValue.guard(_loadFromStorage);
+    if (_active && generation == _sessionGeneration) state = restored;
   }
 
   Future<void> login({
@@ -86,11 +136,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String refreshToken,
   }) async {
     final generation = _sessionGeneration;
-    final previous = state.value;
+    final previous = state.valueOrNull;
     if (previous?.isAuthenticated != true) return;
     await _persist(() async {
       if (generation != _sessionGeneration ||
-          state.value?.refreshToken != previous!.refreshToken) {
+          state.valueOrNull?.refreshToken != previous!.refreshToken) {
         return;
       }
       if (_rememberSession) {
@@ -144,6 +194,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     _logoutCleanups.remove(cleanup);
   }
 
-  String? get accessToken => state.value?.accessToken;
-  String? get refreshToken => state.value?.refreshToken;
+  String? get accessToken => state.valueOrNull?.accessToken;
+  String? get refreshToken => state.valueOrNull?.refreshToken;
 }

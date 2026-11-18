@@ -70,7 +70,7 @@ internal sealed class SupportChatQueries(
             : await query.OrderByDescending(x => x.Sequence).Take(limit + 1).ToListAsync(ct);
         var page = rows.Take(limit).OrderBy(x => x.Sequence).ToArray();
         return new ChatPageResponse<ChatMessageResponse>(
-            page.Select(x => SupportChatResponses.ToMessage(x, actor.UserId)).ToArray(), rows.Count > limit,
+            page.Select(x => SupportChatMapping.ToMessage(x, actor.UserId)).ToArray(), rows.Count > limit,
             page.Length == 0 ? null : page[0].Sequence,
             page.Length == 0 ? after : page[^1].Sequence, ceiling);
     }

@@ -5,6 +5,11 @@ import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 void main() {
+  test('shared Booking Chat dependencies are self-contained and acyclic', () {
+    final violations = dependencyViolations('caresitter_booking_chat',
+        sourceDirectory: '../packages/caresitter_booking_chat/lib');
+    expect(violations, isEmpty, reason: violations.join('\n'));
+  });
   test('resolved dependencies have no cycles or inverted boundaries', () {
     final violations = dependencyViolations('caregiver_app');
     expect(violations, isEmpty, reason: violations.join('\n'));
@@ -17,6 +22,8 @@ void main() {
         .where((f) => f.path.endsWith('.dart'))) {
       final path = file.path.replaceAll('\\', '/');
       final source = file.readAsStringSync();
+      final isController = path.contains('/presentation/') &&
+          (path.contains('/controllers/') || path.endsWith('_controller.dart'));
       final imports = RegExp("(?:import|export)\\s+['\"]([^'\"]+)['\"]")
           .allMatches(source)
           .map((m) => m[1]!)
@@ -34,7 +41,7 @@ void main() {
               p.startsWith('package:flutter/') || p.contains('riverpod'))) {
         violations.add('$path: model → framework');
       }
-      if (path.contains('/presentation/controllers/') &&
+      if (isController &&
           imports
               .any((p) => p.contains('/screens/') || p.contains('/widgets/'))) {
         violations.add('$path: controller → UI');
@@ -59,7 +66,7 @@ void main() {
           }
         }
       }
-      if (path.contains('/presentation/controllers/') &&
+      if (isController &&
           RegExp(r'\b(BuildContext|Navigator|SnackBar|showDialog)\b')
               .hasMatch(source)) {
         violations.add('$path: controller → UI operation');

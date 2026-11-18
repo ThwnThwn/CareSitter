@@ -94,11 +94,12 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         var responses = new SupportChatResponses(db);
         var realtime = new SupportChatRealtimePublisher(Hub(), NullLogger<SupportChatRealtimePublisher>.Instance);
         return (new SupportChatQueries(db, admins, responses),
-            new SupportChatCommands(db, new BookingAccess(), admins, new RecipientReader(allowPush),
-                configuration, responses, realtime,
-                new MessagingSettings(push && !misconfiguredPush, push && !misconfiguredPush,
-                    false, false, "test"), serializer,
-                new OutboxWriter<SupportDbContext>(db, serializer)));
+            new SupportChatCommands(
+                new SupportChatStore(db, new RecipientReader(allowPush), configuration, responses,
+                    new MessagingSettings(push && !misconfiguredPush, push && !misconfiguredPush,
+                        false, false, "test"), serializer,
+                    new OutboxWriter<SupportDbContext>(db, serializer)),
+                new BookingAccess(), admins, realtime));
     }
 
     [PostgresFact]
@@ -540,7 +541,8 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
         builder.Services.AddScoped<INotificationRecipientReader>(_ => new RecipientReader(false));
         builder.Services.AddScoped<ISupportChatMembership, SupportChatMembership>();
         builder.Services.AddScoped<SupportChatResponses>();
-        builder.Services.AddScoped<SupportChatRealtimePublisher>();
+        builder.Services.AddScoped<ISupportChatRealtimePublisher, SupportChatRealtimePublisher>();
+        builder.Services.AddScoped<ISupportChatStore, SupportChatStore>();
         builder.Services.AddScoped<ISupportChatQueries, SupportChatQueries>();
         builder.Services.AddScoped<ISupportChatCommands, SupportChatCommands>();
         builder.Services.AddHttpContextAccessor();

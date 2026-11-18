@@ -38,6 +38,8 @@ class NutritionResult extends StatelessWidget {
     final decision = data.decision;
     final status = r.status;
     final state = status == 'stale' ? 'stale' : decision.state ?? status;
+    final singleDay = c.singleDayRequest != null;
+    final creatingDay = singleDay && flow.loading;
     if (state == 'eligible' && flow.weekProgress != null) {
       return [
         NutritionWeekProgressCard(
@@ -136,16 +138,19 @@ class NutritionResult extends StatelessWidget {
           onPressed: flow.loading ? null : onEditProfile,
           child: const Text('Bổ sung hồ sơ')));
     }
-    if (state == 'awaiting_confirmation' && decision.allows('confirm')) {
+    if (state == 'awaiting_confirmation' &&
+        decision.allows('confirm') &&
+        !creatingDay) {
       widgets.add(SizedBox(
           width: double.infinity,
           child: FilledButton(
               onPressed: flow.loading ? null : onConfirm,
-              child: const Text('Tạo thực đơn'))));
+              child: Text(singleDay ? 'Xác nhận thông tin' : 'Tạo thực đơn'))));
     }
     if (state == 'eligible' &&
         flow.recommendationsEnabled &&
-        decision.allows('recommend')) {
+        decision.allows('recommend') &&
+        !creatingDay) {
       widgets.add(SizedBox(
           width: double.infinity,
           child: FilledButton(

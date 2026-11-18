@@ -71,7 +71,8 @@ public sealed class SupportModule : IModule
         services.AddScoped<IUserNotificationService, UserNotificationService>();
         services.AddScoped<IBookingChatSupportTicketService, BookingChatSupportTicketService>();
         services.AddScoped<SupportChatResponses>();
-        services.AddScoped<SupportChatRealtimePublisher>();
+        services.AddScoped<ISupportChatRealtimePublisher, SupportChatRealtimePublisher>();
+        services.AddScoped<ISupportChatStore, SupportChatStore>();
         services.AddScoped<ISupportChatQueries, SupportChatQueries>();
         services.AddScoped<ISupportChatCommands, SupportChatCommands>();
         services.AddSingleton<SupportChatMetrics>();

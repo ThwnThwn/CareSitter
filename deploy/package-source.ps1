@@ -15,7 +15,7 @@ $utf8 = [Text.UTF8Encoding]::new($false)
 
 function Assert-DeploySource([string]$relative) {
     $relative = $relative.Replace('\', '/')
-    if ($relative -notmatch '^(backend/|deploy/|frontend/admin-web/|frontend/customer-app/|frontend/caregiver-app/|frontend/landing-page/|global\.json$|vercel\.json$)') {
+    if ($relative -notmatch '^(backend/|deploy/|frontend/admin-web/|frontend/customer-app/|frontend/caregiver-app/|frontend/packages/|frontend/landing-page/|global\.json$|vercel\.json$)') {
         return $false
     }
     if ($relative -in @('deploy/source-manifest.sha256', 'deploy/source-revision.txt')) {
@@ -45,6 +45,7 @@ try {
         $sourceRoots += @(
             'frontend/customer-app',
             'frontend/caregiver-app',
+            'frontend/packages',
             'frontend/landing-page',
             'vercel.json'
         )

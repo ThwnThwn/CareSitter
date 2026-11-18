@@ -40,16 +40,19 @@ public sealed class EfOutboxStore<TDbContext> : IOutboxStore where TDbContext : 
 
     /// <summary>Renews only a live lease before publishing; stale owners must skip the record.</summary>
     public async Task<bool> RenewAsync(Guid id, string owner, TimeSpan lease, CancellationToken ct) =>
+        // aislop-ignore-next-line security/sql-injection -- _table uses a validated schema; all values are parameters.
         await _db.Database.ExecuteSqlRawAsync($"UPDATE {_table} SET lease_until = now() + ({{0}} * interval '1 second') WHERE id = {{1}} AND lease_owner = {{2}} AND lease_until > now() AND published_at IS NULL",
             [(int)lease.TotalSeconds, id, owner], ct) == 1;
 
     /// <summary>Fences a stale relay from marking a record owned by a replacement relay.</summary>
     public async Task MarkPublishedAsync(Guid id, string owner, CancellationToken ct) =>
+        // aislop-ignore-next-line security/sql-injection -- _table uses a validated schema; all values are parameters.
         await _db.Database.ExecuteSqlRawAsync($"UPDATE {_table} SET published_at = now(), lease_owner = NULL, lease_until = NULL, last_error = NULL WHERE id = {{0}} AND lease_owner = {{1}}",
             [id, owner], ct);
 
     /// <summary>Persists a safe failure classification and schedules redelivery with the same envelope.</summary>
     public async Task MarkFailedAsync(Guid id, string owner, string error, TimeSpan delay, CancellationToken ct) =>
+        // aislop-ignore-next-line security/sql-injection -- _table uses a validated schema; all values are parameters.
         await _db.Database.ExecuteSqlRawAsync($"UPDATE {_table} SET next_attempt_at = now() + ({{0}} * interval '1 millisecond'), last_error = {{1}}, lease_owner = NULL, lease_until = NULL WHERE id = {{2}} AND lease_owner = {{3}}",
             [(int)delay.TotalMilliseconds, error[..Math.Min(error.Length, 512)], id, owner], ct);
 

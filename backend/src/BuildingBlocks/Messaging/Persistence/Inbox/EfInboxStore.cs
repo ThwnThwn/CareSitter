@@ -30,6 +30,7 @@ public sealed class EfInboxStore<TDbContext> : IInboxStore where TDbContext : Db
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
+            // aislop-ignore-next-line security/sql-injection -- _table uses a validated schema; all values are parameters.
             var inserted = await _db.Database.ExecuteSqlRawAsync($"INSERT INTO {_table} (consumer_name, handler_name, event_id, event_type, processed_at) VALUES ({{0}}, {{1}}, {{2}}, {{3}}, now()) ON CONFLICT DO NOTHING",
                 [context.ConsumerName, handlerName, context.EventId, context.EventType], ct);
             if (inserted == 0) { await tx.CommitAsync(ct); return HandlerResult.Success(); }

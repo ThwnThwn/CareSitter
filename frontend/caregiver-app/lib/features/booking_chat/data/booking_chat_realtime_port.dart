@@ -1,6 +1,1 @@
-abstract interface class BookingChatRealtimePort {
-  Stream<void> get changes;
-  Future<void> connect(String bookingId);
-  Future<void> disconnect();
-  void dispose();
-}
+export 'package:caresitter_booking_chat/booking_chat_realtime_port.dart';
