@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:caregiver_app/features/auth/data/models/auth_user_model.dart';
 
 const _requiredRole = 'CAREGIVER';
@@ -64,6 +66,25 @@ class AuthRepository {
 
   /// Alias dùng bởi màn hình đăng nhập OTP.
   Future<void> requestOtp(String email) => sendOtp(email);
+
+  Future<AuthUserModel> loginWithGoogle(String idToken,
+      {ApiCancellation? cancellation}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/google/caregiver',
+      data: {'idToken': idToken},
+      cancelToken: cancellation?.transportToken,
+    );
+    final user =
+        AuthUserModel.fromJson(response.data ?? {}, fallbackDisplayName: '');
+    if (user.userId.isEmpty ||
+        user.accessToken.isEmpty ||
+        user.refreshToken.isEmpty) {
+      throw const AppApiException(
+        message: 'Máy chủ chưa trả về phiên đăng nhập Caregiver.',
+      );
+    }
+    return user;
+  }
 
   /// Đăng nhập bằng OTP → POST /auth/login
   Future<AuthUserModel> loginWithOtp(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
+import 'package:caregiver_app/features/auth/presentation/controllers/google_login_controller.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
 import 'package:caregiver_app/features/auth/presentation/screens/phone_input_screen.dart';
 
@@ -29,9 +31,23 @@ class _Login implements LoginController {
       throw UnsupportedError('Unexpected action');
 }
 
+class _Google implements GoogleLoginController {
+  var attempts = 0;
+  var pending = Completer<void>();
+
+  @override
+  Future<void> signIn() {
+    attempts++;
+    return pending.future;
+  }
+
+  @override
+  void dispose() {}
+}
+
 void main() {
   late _Login login;
-  Future<void> open(WidgetTester tester) async {
+  Future<void> open(WidgetTester tester, {_Google? google}) async {
     login = _Login();
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, __) => const PhoneInputScreen()),
@@ -45,6 +61,8 @@ void main() {
     ]);
     await tester.pumpWidget(ProviderScope(overrides: [
       loginControllerProvider.overrideWithValue(login),
+      if (google != null)
+        googleLoginControllerProvider.overrideWith((ref) => google),
     ], child: MaterialApp.router(routerConfig: router)));
     await tester.pumpAndSettle();
     addTearDown(() async {
@@ -58,6 +76,29 @@ void main() {
     await tester.tap(find.text(label));
     await tester.pump();
   }
+
+  testWidgets('Google sign-in opens with empty fields and resets after cancel',
+      (tester) async {
+    final google = _Google();
+    await open(tester, google: google);
+    await submit(tester, 'Tiếp tục với Google');
+    expect(google.attempts, 1);
+    final button = find.widgetWithText(OutlinedButton, 'Đang đăng nhập…');
+    expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+    expect(login.logins, 0);
+
+    google.pending.completeError(
+      const AppApiException(message: 'Đã đóng Google', isCancelled: true),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Đăng nhập chưa thành công'), findsNothing);
+    google.pending = Completer<void>();
+    await submit(tester, 'Tiếp tục với Google');
+    expect(google.attempts, 2);
+    google.pending.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Trang chủ'), findsOneWidget);
+  });
 
   testWidgets(
       'password login validates input and blocks a repeated submit while pending',

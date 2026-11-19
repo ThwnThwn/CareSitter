@@ -6,12 +6,13 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace CareSitter.ApiHost.Security;
 
-// Browser transport only. The existing Google/customer endpoint still owns
-// account creation, role assignment and issuance of CareSitter sessions.
+// Both apps use the same registered OAuth callback. Each exchanges the
+// verified Google token through its own role-specific sign-in endpoint.
 internal static class GoogleWebAuthentication
 {
     internal const string Scheme = "GoogleWeb";
     internal const string StartPath = "/api/v1/auth/google/customer/web/start";
+    internal const string CaregiverStartPath = "/api/v1/auth/google/caregiver/web/start";
     internal const string CallbackPath = "/api/v1/auth/google/customer/web/callback";
     private const string TemporaryCookieScheme = "GoogleWebTemporary";
     private const string OriginKey = "web-origin";
@@ -98,8 +99,11 @@ internal static class GoogleWebAuthentication
         return services;
     }
 
-    public static void MapGoogleWebAuthentication(this WebApplication app) =>
+    public static void MapGoogleWebAuthentication(this WebApplication app)
+    {
         app.MapGet(StartPath, StartAsync).AllowAnonymous().RequireRateLimiting("auth-login");
+        app.MapGet(CaregiverStartPath, StartAsync).AllowAnonymous().RequireRateLimiting("auth-login");
+    }
 
     private static async Task<IResult> StartAsync(HttpContext context,
         IConfiguration configuration, IWebHostEnvironment environment,

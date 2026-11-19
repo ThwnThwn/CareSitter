@@ -42,11 +42,13 @@ public sealed class GoogleWebAuthenticationTests
         Assert.Equal(expected, GoogleWebAuthentication.IsAllowedOrigin(origin, Configuration(), development));
     }
 
-    [Fact]
-    public async Task Challenge_uses_fixed_redirect_pkce_nonce_and_secure_correlation()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Challenge_uses_fixed_redirect_pkce_nonce_and_secure_correlation(bool caregiver)
     {
         await using var app = await CreateApp();
-        var (response, query) = await Challenge(app);
+        var (response, query) = await Challenge(app, caregiver);
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal(Redirect, query["redirect_uri"]);
         Assert.Equal("code", query["response_type"]);
@@ -199,14 +201,16 @@ public sealed class GoogleWebAuthenticationTests
         return app;
     }
 
-    private static string Start(string origin, string requestId) => QueryHelpers.AddQueryString(
-        GoogleWebAuthentication.StartPath, new Dictionary<string, string?> { ["origin"] = origin, ["requestId"] = requestId });
+    private static string Start(string origin, string requestId, bool caregiver = false) => QueryHelpers.AddQueryString(
+        caregiver ? GoogleWebAuthentication.CaregiverStartPath : GoogleWebAuthentication.StartPath,
+        new Dictionary<string, string?> { ["origin"] = origin, ["requestId"] = requestId });
 
-    private static async Task<(HttpResponseMessage, Dictionary<string, Microsoft.Extensions.Primitives.StringValues>)> Challenge(WebApplication app)
+    private static async Task<(HttpResponseMessage, Dictionary<string, Microsoft.Extensions.Primitives.StringValues>)> Challenge(
+        WebApplication app, bool caregiver = false)
     {
         var client = app.GetTestClient();
         client.BaseAddress = new Uri("https://untrusted-host.test");
-        var response = await client.GetAsync(Start(Origin, RequestId));
+        var response = await client.GetAsync(Start(Origin, RequestId, caregiver));
         return (response, QueryHelpers.ParseQuery(response.Headers.Location!.Query));
     }
 

@@ -7,6 +7,8 @@ enum AppEnvironment { development, staging, production }
 abstract final class EnvConfig {
   /// Có thể truyền từ JSON hoặc .env qua `--dart-define-from-file`.
   static const _cartoApiKey = String.fromEnvironment('CARTO_API_KEY');
+  static const _googleAuthBaseUrl =
+      String.fromEnvironment('GOOGLE_AUTH_BASE_URL');
   static const _mapProvider =
       String.fromEnvironment('MAP_PROVIDER', defaultValue: 'carto');
   static String get cartoApiKey => _cartoApiKey.trim();
@@ -33,6 +35,16 @@ abstract final class EnvConfig {
       throw StateError('BASE_URL must be configured for production.');
     }
     return _configuredBaseUrl;
+  }
+
+  static Uri get googleWebStartUri {
+    final configured = _googleAuthBaseUrl.trim();
+    final base = Uri.parse(configured.isEmpty ? baseUrl : configured);
+    final path = base.path.replaceFirst(RegExp(r'/+$'), '');
+    return base.replace(
+      path:
+          '${path.isEmpty ? '/api/v1' : path}/auth/google/caregiver/web/start',
+    );
   }
 
   static AppEnvironment get environment => switch (environmentName) {
