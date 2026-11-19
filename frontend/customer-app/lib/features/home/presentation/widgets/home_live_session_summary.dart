@@ -21,7 +21,7 @@ class HomeLiveSessionSummary extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            formatCurrency(booking.totalPrice),
+            formatCurrency(booking.payableAmount.toDouble()),
             style: const TextStyle(
               color: AppColors.primaryDark,
               fontSize: AppFontSizes.s12,

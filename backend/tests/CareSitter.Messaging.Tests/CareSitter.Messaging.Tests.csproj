@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="../../init-db/modules/shared/34-kafka-messaging.sql" Link="34-kafka-messaging.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../init-db/modules/support/70-push-target-progress.sql" Link="70-push-target-progress.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Snapshots/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

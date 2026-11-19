@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'notification_chat_model.dart';
+
 class AppNotification {
   final String id;
   final String type;
@@ -7,8 +9,10 @@ class AppNotification {
   final String body;
   final DateTime createdAt;
   final Map<String, dynamic> data;
-  final bool isRead;
+  final int unreadCount;
   final String source;
+  final String? groupKey;
+  final NotificationChatModel? chat;
 
   const AppNotification({
     required this.id,
@@ -17,9 +21,20 @@ class AppNotification {
     required this.body,
     required this.createdAt,
     required this.data,
-    required this.isRead,
+    required bool isRead,
+    int? unreadCount,
     this.source = 'backend',
-  });
+    this.groupKey,
+    this.chat,
+  }) : unreadCount = unreadCount ?? (isRead ? 0 : 1);
+
+  String get key => groupKey ?? id;
+  bool get isRead => unreadCount <= 0;
+  bool get isBookingChat => type == 'BOOKING_CHAT';
+  bool get isSupportChat => type == 'SUPPORT_CHAT';
+  bool get isChat => isBookingChat || isSupportChat;
+  bool get isLocal => source == 'console_local';
+  DateTime get timestamp => chat?.sentAt ?? createdAt;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) =>
       AppNotification(
@@ -32,9 +47,15 @@ class AppNotification {
                 DateTime.now(),
         data: _decodeData(json['data']),
         isRead: json['readAt'] != null,
+        unreadCount: (json['unreadCount'] as num?)?.toInt(),
+        groupKey: json['groupKey'] as String?,
+        chat: json['chat'] is Map<String, dynamic>
+            ? NotificationChatModel.fromJson(
+                json['chat'] as Map<String, dynamic>)
+            : null,
       );
 
-  AppNotification copyWith({bool? isRead}) => AppNotification(
+  AppNotification markRead() => AppNotification(
         id: id,
         source: source,
         type: type,
@@ -42,7 +63,9 @@ class AppNotification {
         body: body,
         createdAt: createdAt,
         data: data,
-        isRead: isRead ?? this.isRead,
+        isRead: true,
+        groupKey: groupKey,
+        chat: chat,
       );
 
   static Map<String, dynamic> _decodeData(Object? raw) {

@@ -42,8 +42,7 @@ export function usePromotionEditor(
     setError('');
     setStale(false);
     try {
-      const payload = promotionPayload(form, promotion?.updatedAt);
-      if (locked && promotion) payload.startsAt = promotion.startsAt;
+      const payload = promotionPayload(form, promotion);
       await savePromotion(promotion?.id, payload);
       onChanged(promotion ? 'Đã lưu thay đổi chiến dịch.' : 'Đã tạo chiến dịch ưu đãi.');
     } catch (cause) {

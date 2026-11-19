@@ -25,7 +25,7 @@ internal sealed class PayoutProcessor(
             var now = DateTimeOffset.UtcNow;
             var nextCheckAt = now.AddSeconds(config.QueryDelaySeconds);
             var payout = await store.ClaimNextProviderWorkAsync(now, nextCheckAt, ct);
-            if (payout is null) break;
+            if (payout is not { BankBin: { } bankBin }) break;
 
             PayoutProviderResult result;
             try
@@ -36,7 +36,7 @@ internal sealed class PayoutProcessor(
                     $"payout-{payout.Id:N}",
                     payout.Amount,
                     $"CareSitter {payout.Id:N}"[..25],
-                    payout.BankBin,
+                    bankBin,
                     accountNumber);
                 result = payout.ProviderPayoutId is null
                     ? await provider.CreateAsync(request, ct)

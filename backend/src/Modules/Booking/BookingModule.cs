@@ -16,6 +16,8 @@ using FluentValidation;
 using Microsoft.AspNetCore.DataProtection;
 using System.Reflection;
 
+using CareSitter.Infrastructure.Persistence;
+
 namespace CareSitter.Modules.Booking;
 
 public sealed class BookingModule : IModule
@@ -100,6 +102,8 @@ public sealed class BookingModule : IModule
                 "BookingSideEffects configuration is outside the supported range.")
             .ValidateOnStart();
 
+        services.AddKeyedScoped<ModuleDbContext>("dispute", (sp, _) => sp.GetRequiredService<BookingDbContext>());
+        services.AddKeyedScoped<ModuleDbContext>("catalog", (sp, _) => sp.GetRequiredService<BookingDbContext>());
         services.AddDbContext<BookingDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),
@@ -135,6 +139,7 @@ public sealed class BookingModule : IModule
         services.AddScoped<IBookingChatWriter, BookingChatWriter>();
         services.AddScoped<BookingChatParticipantAccess>();
         services.AddScoped<IBookingChatQueries, BookingChatQueries>();
+        services.AddScoped<IBookingChatNotificationReader, BookingChatNotificationReader>();
         services.AddScoped<IBookingChatCommands, BookingChatCommands>();
         services.AddScoped<IBookingChatAdminService, BookingChatAdminService>();
         services.AddScoped<IBookingChatDispatcher, BookingChatDispatcher>();
@@ -148,6 +153,7 @@ public sealed class BookingModule : IModule
         services.AddHostedService<BookingDomainOutboxWorker>();
         services.AddHostedService<BookingChatReportWorker>();
         services.AddHostedService<BookingChatRetentionWorker>();
+        services.AddScoped<IServiceChecklistWriter, ChecklistTemplateManager>();
         services.AddScoped<IChecklistTemplateManager, ChecklistTemplateManager>();
         services.AddScoped<IServiceChecklistReader, ServiceChecklistReader>();
         services.AddScoped<IBookingTrackingStore, BookingTrackingStore>();

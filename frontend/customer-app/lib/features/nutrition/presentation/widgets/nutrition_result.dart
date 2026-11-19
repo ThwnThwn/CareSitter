@@ -2,6 +2,7 @@ import 'nutrition_facts.dart';
 import 'nutrition_meal_card.dart';
 import 'nutrition_week_progress_card.dart';
 import 'nutrition_daily_macros.dart';
+import 'nutrition_demo_notice.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../controllers/nutrition_controller.dart';
@@ -172,7 +173,17 @@ class NutritionResult extends StatelessWidget {
     if (state != 'stale') {
       final meals = data.meals;
       final trace = data.recommendationTrace;
-      if (meals.isNotEmpty) widgets.add(NutritionDailyMacros(meals: meals));
+      if (meals.isNotEmpty) {
+        if (trace?.isDemo == true || meals.any((meal) => meal.isLocalDemo)) {
+          widgets.add(Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.compact),
+            child: NutritionDemoNotice(
+              graphUsed: trace != null && trace.isGraphDemo && trace.isGrounded,
+            ),
+          ));
+        }
+        widgets.add(NutritionDailyMacros(meals: meals));
+      }
       for (int i = 0; i < meals.length; i++) {
         final meal = meals[i];
         // Divider nhẹ giữa các section bữa ăn (trừ section đầu tiên)

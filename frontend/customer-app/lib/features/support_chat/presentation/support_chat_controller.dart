@@ -8,13 +8,15 @@ import 'package:caresitter_customer/features/support_chat/data/support_chat_real
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-final supportChatControllerProvider =
-    StateNotifierProvider.autoDispose<SupportChatController, SupportChatState>(
-        (ref) {
+final supportChatByConversationProvider = StateNotifierProvider.autoDispose
+    .family<SupportChatController, SupportChatState, String?>(
+        (ref, conversationId) {
   ref.watch(authStateProvider.select((session) => session.valueOrNull?.userId));
-  return SupportChatController(
-      ref.read(supportChatRepositoryProvider), SupportChatRealtime(ref));
+  return SupportChatController(ref.read(supportChatRepositoryProvider),
+      SupportChatRealtime(ref), conversationId);
 });
+
+final supportChatControllerProvider = supportChatByConversationProvider(null);
 
 class SupportChatState {
   const SupportChatState(
@@ -52,7 +54,8 @@ class SupportChatState {
 }
 
 class SupportChatController extends StateNotifier<SupportChatState> {
-  SupportChatController(this._repository, [this._realtime])
+  SupportChatController(this._repository,
+      [this._realtime, this._conversationId])
       : super(const SupportChatState()) {
     _realtimeSubscription =
         _realtime?.changes.listen((_) => unawaited(refresh()));
@@ -62,6 +65,7 @@ class SupportChatController extends StateNotifier<SupportChatState> {
 
   final SupportChatRepository _repository;
   final SupportChatRealtime? _realtime;
+  String? _conversationId;
   StreamSubscription<void>? _realtimeSubscription;
   Timer? _timer;
   Future<void>? _refreshTask;
@@ -107,12 +111,15 @@ class SupportChatController extends StateNotifier<SupportChatState> {
             state.copyWith(enabled: false, loading: false, clearError: true);
         return;
       }
-      final conversations = await _repository.conversations();
-      if (!mounted) return;
-      final open = conversations.where((item) => !item.isClosed).firstOrNull;
       final current = state.conversation;
-      final target = open ?? current ?? conversations.firstOrNull;
-      if (target == null) {
+      var targetId = _conversationId;
+      if (targetId == null) {
+        final conversations = await _repository.conversations();
+        if (!mounted) return;
+        final open = conversations.where((item) => !item.isClosed).firstOrNull;
+        targetId = (open ?? current ?? conversations.firstOrNull)?.id;
+      }
+      if (targetId == null) {
         unawaited(_realtime?.disconnect());
         state = state.copyWith(
             enabled: true,
@@ -122,15 +129,17 @@ class SupportChatController extends StateNotifier<SupportChatState> {
             clearError: true);
         return;
       }
-      final detail = await _repository.get(target.id);
-      final same = current?.id == target.id;
+      final detail = await _repository.get(targetId);
+      if (!mounted) return;
+      final same = current?.id == targetId;
       final incoming = <SupportMessage>[];
       var after =
           same && state.messages.isNotEmpty ? state.messages.last.sequence : 0;
       int? watermark;
       // A fixed watermark makes every multi-page recovery deterministic.
       for (var pageIndex = 0; pageIndex < 1000; pageIndex++) {
-        final page = await _repository.messages(target.id, after, watermark);
+        final page = await _repository.messages(targetId, after, watermark);
+        if (!mounted) return;
         watermark ??= page.highWatermarkSequence;
         incoming.addAll(page.items);
         after = page.nextAfterSequence ?? after;
@@ -198,6 +207,7 @@ class SupportChatController extends StateNotifier<SupportChatState> {
       if (!mounted) return;
       _createKey = null;
       _createPayload = null;
+      _conversationId = null;
       state = state.copyWith(conversation: conversation, messages: const []);
       await refresh();
     } catch (error) {

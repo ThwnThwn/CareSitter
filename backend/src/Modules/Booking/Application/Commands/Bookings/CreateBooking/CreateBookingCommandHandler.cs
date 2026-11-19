@@ -30,28 +30,14 @@ internal sealed class CreateBookingCommandHandler(
             return Error.Validation("booking.idempotency_key.invalid",
                 "Idempotency-Key phải là UUID hợp lệ và khác rỗng.");
 
-        Guid? reservedPromotionBookingId = null;
-        Result<Domain.Booking> result;
-        try
-        {
-            result = await idempotency.ExecuteAsync(
-                customerId,
-                request.IdempotencyKey,
-                BookingCreationFingerprint.Compute(request),
-                CreateNewBookingAsync,
-                ct);
-        }
-        catch
-        {
-            if (reservedPromotionBookingId is { } bookingId)
-                await promotions.ReleaseAsync(bookingId, customerId,
-                    "BOOKING_PERSISTENCE_FAILED", CancellationToken.None);
-            throw;
-        }
+        // An unknown commit result is reconciled by the expired reservation job.
+        var result = await idempotency.ExecuteAsync(
+            customerId,
+            request.IdempotencyKey,
+            BookingCreationFingerprint.Compute(request),
+            CreateNewBookingAsync,
+            ct);
         if (result.IsFailure) return result.Error;
-        // The transaction has committed. A later response-mapping failure must not
-        // release a promotion already attached to the durable booking.
-        reservedPromotionBookingId = null;
         return await responseMapper.ToResponseAsync(result.Value, ct);
 
         async Task<Result<Domain.Booking>> CreateNewBookingAsync(CancellationToken operationCt)
@@ -100,12 +86,12 @@ internal sealed class CreateBookingCommandHandler(
             var hasPromotion = !string.IsNullOrWhiteSpace(request.PromotionCode);
             if (hasPromotion)
             {
+                await idempotency.ProtectPromotionReservationAsync(booking.Id, operationCt);
                 var reservation = await promotions.ReserveAsync(new PromotionReservationRequest(
                     request.PromotionCode!, customerId, booking.Id, request.ServiceTypeId,
                     request.ScheduledStart, request.ScheduledEnd,
-                    booking.PaymentDeadline.AddMinutes(30), quote.Value.EscrowAmount), operationCt);
+                    booking.PaymentDeadline.AddMinutes(30), quote.Value.EscrowAmount, request.ExpectedPayableAmount), operationCt);
                 if (reservation.IsFailure) return reservation.Error;
-                reservedPromotionBookingId = booking.Id;
 
                 var promo = reservation.Value;
                 var applied = booking.ApplyPromotion(promo.PromotionId, promo.Code,
@@ -115,7 +101,6 @@ internal sealed class CreateBookingCommandHandler(
                 {
                     await promotions.ReleaseAsync(booking.Id, customerId,
                         "BOOKING_PRICING_REJECTED", operationCt);
-                    reservedPromotionBookingId = null;
                     return applied.Error;
                 }
             }
@@ -126,7 +111,6 @@ internal sealed class CreateBookingCommandHandler(
                 {
                     await promotions.ReleaseAsync(booking.Id, customerId,
                         "BOOKING_TRANSITION_REJECTED", operationCt);
-                    reservedPromotionBookingId = null;
                 }
                 return transitioned.Error;
             }

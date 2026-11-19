@@ -61,6 +61,8 @@ internal sealed class PaymentIntegrationEventHandler(
             await tx.CommitAsync(ct);
             if (booking.Status is not (BookingStatus.Cancelled or BookingStatus.Refunded))
                 await FinalizePromotionAsync(booking, ct);
+            if (booking.Status == BookingStatus.Confirmed)
+                await OfferInitialAsync(booking.Id, ct);
             return;
         }
         if (booking.Status is not (BookingStatus.PendingPayment or
@@ -93,8 +95,7 @@ internal sealed class PaymentIntegrationEventHandler(
 
         await FinalizePromotionAsync(booking, ct);
 
-        await postCommit.RunAsync("caregiver matching", () =>
-            matching.OfferTopCandidatesAsync(booking.Id, ct));
+        await OfferInitialAsync(booking.Id, ct);
     }
 
     public async Task Handle(PaymentFailed notification, CancellationToken ct)
@@ -125,8 +126,7 @@ internal sealed class PaymentIntegrationEventHandler(
         if (booking.Status == BookingStatus.Cancelled)
         {
             await tx.CommitAsync(ct);
-            await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
-                "PAYMENT_REJECTED", ct);
+            await ReleaseUnpaidPromotionAsync(booking, "PAYMENT_REJECTED", ct);
             return;
         }
         if (booking.Status != BookingStatus.NeedsManualReview)
@@ -177,8 +177,7 @@ internal sealed class PaymentIntegrationEventHandler(
         if (booking.Status == BookingStatus.Cancelled)
         {
             await tx.CommitAsync(ct);
-            await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
-                "PAYMENT_EXPIRED", ct);
+            await ReleaseUnpaidPromotionAsync(booking, "PAYMENT_EXPIRED", ct);
             return;
         }
         if (booking.Status is not (BookingStatus.PendingPayment or
@@ -234,14 +233,20 @@ internal sealed class PaymentIntegrationEventHandler(
     private async Task FinalizePromotionAsync(Domain.Booking booking,
         CancellationToken ct)
     {
-        if (booking.PromotionId is null) return;
-        var subsidy = await wallet.RecordPromotionSubsidyAsync(
-            booking.Id, booking.PromotionSubsidyAmount, ct);
-        if (subsidy.IsFailure)
-            throw new InvalidOperationException(subsidy.Error.Message);
-        var redemption = await promotions.RedeemAsync(
-            booking.Id, booking.CustomerId, ct);
-        if (redemption.IsFailure)
-            throw new InvalidOperationException(redemption.Error.Message);
+        var result = await BookingPromotionFinalization.RunAsync(booking, wallet, promotions, ct);
+        if (result.IsFailure)
+            throw new InvalidOperationException(result.Error.Code);
+    }
+
+    private Task OfferInitialAsync(Guid bookingId, CancellationToken ct) =>
+        postCommit.RunAsync("caregiver matching", () => matching.EnsureInitialOffersAsync(bookingId, ct));
+
+    private async Task ReleaseUnpaidPromotionAsync(Domain.Booking booking, string reason, CancellationToken ct)
+    {
+        if (booking.PromotionId is null || await db.BookingSyncEvents.AnyAsync(e =>
+                e.BookingId == booking.Id && e.EventType == BookingSyncEventTypes.PaymentConfirmed, ct))
+            return;
+        var released = await promotions.ReleaseAsync(booking.Id, booking.CustomerId, reason, ct);
+        if (released.IsFailure) throw new InvalidOperationException(released.Error.Code);
     }
 }

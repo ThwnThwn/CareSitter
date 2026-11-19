@@ -22,6 +22,8 @@ class BookingSubmissionController {
       required String serviceId,
       List<String> serviceRequiredSkills = const [],
       required String? caregiverId,
+      String? promotionCode,
+      int? expectedPayableAmount,
       required bool Function() current,
       required void Function(String) progress}) async {
     BookingDraft? draft;
@@ -55,11 +57,15 @@ class BookingSubmissionController {
             snapshot.addressId,
             start.toUtc().toIso8601String(),
             snapshot.duration,
-            requiredSkills
+            requiredSkills,
+            promotionCode,
+            expectedPayableAmount,
           ]),
           () => const Uuid().v4());
       draft = BookingDraft(
           idempotencyKey: key,
+          promotionCode: promotionCode,
+          expectedPayableAmount: expectedPayableAmount,
           requiredSkills: requiredSkills,
           beneficiaryId: recipient.id,
           serviceTypeId: serviceId,
@@ -92,6 +98,10 @@ class BookingSubmissionController {
                   : error.message,
               caregiverConflict: conflict),
           reviewRecipient: error.code?.startsWith('beneficiary.') == true,
+          promotionError: draft?.promotionCode != null &&
+                  error.code?.startsWith('promotion.') == true
+              ? error.message
+              : null,
           reloadSelf: error.code == BookingErrorCodes.selfExists);
     } catch (_) {
       return _outcome(current()
@@ -103,11 +113,13 @@ class BookingSubmissionController {
 
   BookingSubmissionOutcome _outcome(BookingSubmitResult result,
           {BookingDraft? uncertainDraft,
+          String? promotionError,
           bool reviewRecipient = false,
           bool reloadSelf = false}) =>
       (
         result: result,
         uncertainDraft: uncertainDraft,
+        promotionError: promotionError,
         reviewRecipient: reviewRecipient,
         reloadSelf: reloadSelf
       );

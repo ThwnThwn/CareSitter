@@ -84,7 +84,8 @@ class Inbox extends NotificationsNotifier {
   static Completer<void>? pending;
   int refreshes = 0;
   @override
-  Future<List<AppNotification>> build() async => [];
+  Future<NotificationInboxModel> build() async =>
+      const NotificationInboxModel();
   @override
   Future<void> refresh() async {
     refreshes++;

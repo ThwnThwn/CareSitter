@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../../components/DataTable';
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import {
@@ -6,7 +7,7 @@ import {
   EmptyState,
   ErrorBanner,
   LoadingTable,
-  PageHeader,
+  SectionTitle,
   Pagination,
   formatDate,
   shortId,
@@ -30,10 +31,10 @@ export function ConsultationInbox() {
   const [selected, setSelected] = useState<ConsultationRequest | null>(null);
   return (
     <>
-      <PageHeader
+      <SectionTitle
         title="Yêu cầu tư vấn"
         description="Thông tin khách gửi từ landing page để CareSitter liên hệ và xác nhận nhu cầu."
-        actions={
+        action={
           <button className="secondary" disabled={loading} onClick={() => void reload()}>
             <RefreshCw size={16} /> Làm mới
           </button>
@@ -50,19 +51,9 @@ export function ConsultationInbox() {
           />
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Khách hàng</th>
-                  <th>Nhu cầu</th>
-                  <th>Ngày dự kiến</th>
-                  <th>Đã gửi</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+            <DataTable columns={['Khách hàng', 'Nhu cầu', 'Ngày dự kiến', 'Đã gửi', '']}>
                 {data.items.map((item) => (
-                  <tr key={item.id}>
+                  <DataRow key={item.id}>
                     <td>
                       <strong>{item.contactName}</strong>
                       <small>{item.phone}</small>
@@ -78,10 +69,9 @@ export function ConsultationInbox() {
                         Xem yêu cầu
                       </button>
                     </td>
-                  </tr>
+                  </DataRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTable>
           </div>
         )}
         {hasLoaded && (

@@ -77,3 +77,6 @@
 \ir modules/booking/65-care-needs-and-meal-revisions.sql
 \ir modules/people/66-meal-taste-feedback.sql
 \ir modules/booking/67-meal-health-fingerprint.sql
+\ir modules/booking/68-dispute-prior-status.sql
+\ir modules/catalog/69-service-setup-receipts.sql
+\ir modules/support/70-push-target-progress.sql

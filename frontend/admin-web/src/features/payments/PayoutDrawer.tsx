@@ -4,14 +4,20 @@ import { Payout } from '../../types';
 import { usePayoutReview } from './usePayoutReview';
 
 export function PayoutDrawer({ item, onClose, onChanged }: { item: Payout; onClose: () => void; onChanged: (message: string) => void }) {
-  const { reason, setReason, busy, error, reviewable, decide: submit } = usePayoutReview(item, onChanged);
+  const { reason, setReason, busy, error, reviewable, canApprove, decide: submit } = usePayoutReview(item, onChanged);
   const confirm = useConfirmation();
   async function decide(approved: boolean) { await submit(approved, () => confirm({ title: 'Duyệt yêu cầu rút tiền?', message: `${formatMoney(item.amount)} cho ${item.accountHolderName}.\nYêu cầu sẽ được đưa vào hàng đợi payOS; hệ thống chỉ ghi nhận đã trả sau khi provider xác nhận thành công.`, confirmLabel: 'Duyệt yêu cầu', tone: 'primary' })); }
   return <Drawer title={formatMoney(item.amount)} subtitle="Yêu cầu rút tiền" busy={!!busy} onClose={onClose}
-    footer={reviewable && <><button className="danger" disabled={!!busy} onClick={() => void decide(false)}>Từ chối yêu cầu</button><button className="primary" disabled={!!busy} onClick={() => void decide(true)}>Duyệt yêu cầu</button></>}>
+    footer={reviewable && <>
+      <button className="danger" disabled={!!busy} onClick={() => void decide(false)}>Từ chối yêu cầu</button>
+      <button className="primary" disabled={!!busy || !canApprove} onClick={() => void decide(true)}>Duyệt yêu cầu</button>
+    </>}>
     <div className="drawer-status"><StatusChip value={item.status} /><span>{formatDate(item.requestedAt)}</span></div>{error && <ErrorBanner message={error} />}
-    {reviewable && <div className="warning-box"><strong>Duyệt yêu cầu chưa phải xác nhận đã chuyển khoản</strong><p>payOS sẽ xử lý bất đồng bộ. Ledger và số dư chỉ được chốt khi trạng thái provider là thành công.</p></div>}
-    <DetailList items={[{ label: 'Người thụ hưởng', value: item.accountHolderName }, { label: 'Ngân hàng', value: `${item.bankName} · BIN ${item.bankBin}` }, { label: 'Số tài khoản', value: <span className="mono copy-value">{item.accountNumber}</span> }, { label: 'Caregiver', value: item.caregiverId }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Provider', value: item.provider }, { label: 'Mã tham chiếu', value: item.providerReferenceId }, { label: 'Payout ID', value: item.providerPayoutId }, { label: 'Trạng thái provider', value: item.providerState }, { label: 'Mã giao dịch', value: item.providerTransactionId }, { label: 'Lỗi provider', value: item.providerErrorCode }, { label: 'Số lần đối soát', value: item.providerAttemptCount }, { label: 'Hoàn tất', value: item.completedAt ? formatDate(item.completedAt) : undefined }, { label: 'Lý do từ chối', value: item.rejectReason }]} />
+    {reviewable && <div className="warning-box">{canApprove
+      ? <><strong>Duyệt yêu cầu chưa phải xác nhận đã chuyển khoản</strong><p>payOS sẽ xử lý bất đồng bộ. Ledger và số dư chỉ được chốt khi trạng thái provider là thành công.</p></>
+      : <><strong>Thiếu mã BIN ngân hàng</strong><p>Từ chối yêu cầu để người chăm sóc gửi lại với thông tin ngân hàng đầy đủ.</p></>}
+    </div>}
+    <DetailList items={[{ label: 'Người thụ hưởng', value: item.accountHolderName }, { label: 'Ngân hàng', value: item.bankBin ? `${item.bankName} · BIN ${item.bankBin}` : item.bankName }, { label: 'Số tài khoản', value: <span className="mono copy-value">{item.accountNumber}</span> }, { label: 'Caregiver', value: item.caregiverId }, { label: 'Số tiền', value: formatMoney(item.amount) }, { label: 'Provider', value: item.provider }, { label: 'Mã tham chiếu', value: item.providerReferenceId }, { label: 'Payout ID', value: item.providerPayoutId }, { label: 'Trạng thái provider', value: item.providerState }, { label: 'Mã giao dịch', value: item.providerTransactionId }, { label: 'Lỗi provider', value: item.providerErrorCode }, { label: 'Số lần đối soát', value: item.providerAttemptCount }, { label: 'Hoàn tất', value: item.completedAt ? formatDate(item.completedAt) : undefined }, { label: 'Lý do từ chối', value: item.rejectReason }]} />
     {reviewable && <label>Lý do từ chối<textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Nêu rõ thông tin cần caregiver cập nhật" /></label>}
   </Drawer>;
 }

@@ -123,6 +123,39 @@ public sealed class PaymentRaceTests : IAsyncLifetime
     }
 
     [PostgresFact]
+    public async Task LegacyPayoutWithoutBankBin_CanBeListedAndRejectedButCannotBeApproved()
+    {
+        var caregiver = await GetCaregiverAsync();
+        await ResetWalletAsync(caregiver.WalletId, available: 200_000);
+        var created = await CreatePayoutAsync(caregiver.UserId, Guid.NewGuid().ToString("N"));
+        Assert.True(created.IsSuccess, created.Error.Message);
+        var payoutId = created.Value.Payout.Id;
+        await using var connection = await _database.OpenConnectionAsync();
+        await using var legacy = new NpgsqlCommand(
+            "UPDATE payments.payout_requests SET bank_bin = NULL WHERE id = @id", connection);
+        legacy.Parameters.AddWithValue("id", payoutId);
+        Assert.Equal(1, await legacy.ExecuteNonQueryAsync());
+
+        await using var db = CreatePaymentsDbContext();
+        var store = new PayoutStore(db);
+        var mapper = new PayoutMapper(new EncryptionStub());
+        var page = await store.ListForAdminAsync("PENDING", 1, 20, mapper);
+        Assert.Empty(Assert.Single(page.Items, payout => payout.Id == payoutId).BankBin);
+
+        var adminId = await GetAdminUserIdAsync();
+        var approval = await ReviewPayoutAsync(adminId, payoutId, approve: true);
+        Assert.Equal("payout.bank_bin_missing", approval.Error.Code);
+        var rejection = await ReviewPayoutAsync(adminId, payoutId, approve: false);
+        Assert.True(rejection.IsSuccess, rejection.Error.Message);
+        Assert.Equal("REJECTED", rejection.Value.Status);
+        Assert.True((await ReviewPayoutAsync(adminId, payoutId, approve: false)).IsFailure);
+
+        var wallet = await db.WalletAccounts.SingleAsync(account => account.Id == caregiver.WalletId);
+        Assert.Equal(200_000, wallet.AvailableBalance);
+        Assert.Equal(0, wallet.PendingBalance);
+    }
+
+    [PostgresFact]
     public async Task ProviderSuccess_ReleasesPendingAndPostsPayoutExactlyOnce()
     {
         var caregiver = await GetCaregiverAsync();

@@ -24,6 +24,11 @@ public sealed class NotificationDeliveryController(IMediator mediator) : Control
             request.NotificationId, request.RecipientId, request.Channel), ct));
     }
 
+    [HttpPost("checkpoint")]
+    public async Task<IActionResult> Checkpoint(PushCheckpointRequest request,
+        [FromServices] Application.Ports.INotificationDeliveryStore store, CancellationToken ct) =>
+        await store.CheckpointAsync(request.EventId, request.ClaimToken, request.Keys, ct) ? NoContent() : Conflict();
+
     /// <summary>Records the result only if the worker still owns the claim.</summary>
     [HttpPost("complete")]
     public async Task<IActionResult> Complete(CompleteNotificationDeliveryRequest request, CancellationToken ct) =>

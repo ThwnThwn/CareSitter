@@ -13,4 +13,4 @@ public sealed record CreateBookingCommand(
     Guid? CaregiverId = null,
     IReadOnlyList<string>? RequiredSkills = null,
     string? PromotionCode = null,
-    [property: JsonIgnore] Guid IdempotencyKey = default) : IRequest<Result<BookingResponse>>;
+    [property: JsonIgnore] Guid IdempotencyKey = default, long? ExpectedPayableAmount = null) : IRequest<Result<BookingResponse>>;

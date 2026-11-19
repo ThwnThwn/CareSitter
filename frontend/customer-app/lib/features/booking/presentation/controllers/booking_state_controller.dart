@@ -25,6 +25,26 @@ class BookingStateController {
       }));
   }
 
+  void replaceSnapshot(Iterable<BookingModel> snapshot,
+      Map<String, BookingModel> beforeRefresh) {
+    final byId = <String, BookingModel>{};
+    for (final item in snapshot) {
+      final loaded = byId[item.id];
+      if (loaded == null || item.syncVersion >= loaded.syncVersion) {
+        byId[item.id] = item;
+      }
+    }
+    // Changes received while fetching may be missing from the server page.
+    for (final item in items) {
+      if (identical(item, beforeRefresh[item.id])) continue;
+      final loaded = byId[item.id];
+      if (loaded == null || item.syncVersion >= loaded.syncVersion) {
+        byId[item.id] = item;
+      }
+    }
+    replace(byId.values);
+  }
+
   void apply(BookingModel item, {bool insert = false}) {
     if (!active) return;
     replace([

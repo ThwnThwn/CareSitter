@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <ProjectReference Include="../../BuildingBlocks/Push/CareSitter.Push.csproj" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
   </ItemGroup>
 

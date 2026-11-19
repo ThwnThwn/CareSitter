@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/widgets/app_widgets.dart';
 import '../../data/models/shift_model.dart';
 import '../controllers/shift_action_policy.dart';
 import '../controllers/shift_detail_tasks_provider.dart';
-import '../controllers/shift_list_controller.dart';
+import '../controllers/shift_by_id_provider.dart';
 import '../widgets/shift_detail_active_action.dart';
 import '../widgets/shift_detail_app_bar.dart';
 import '../widgets/shift_detail_missing_app_bar.dart';
 import '../widgets/shift_detail_body.dart';
 import '../widgets/shift_detail_start_travel_action.dart';
+import '../widgets/shift_open_report_action.dart';
+import '../widgets/shift_read_state.dart';
 
 class ShiftDetailScreen extends ConsumerWidget {
   const ShiftDetailScreen({super.key, required this.id});
@@ -19,29 +20,25 @@ class ShiftDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shifts = ref.watch(shiftsProvider);
-    ShiftModel? booking;
-    for (final shift in shifts) {
-      if (shift.id == id) {
-        booking = shift;
-        break;
-      }
-    }
+    final shift = ref.watch(shiftByIdProvider(id));
+    final booking =
+        shift.isLoading || shift.hasError ? null : shift.valueOrNull;
     if (booking == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: ShiftDetailMissingAppBar(),
-        body: AppEmptyState(
-          icon: Icons.search_off_rounded,
-          title: 'Không tìm thấy ca làm việc',
-          message: 'Ca này có thể đã bị huỷ hoặc không còn tồn tại.',
+        appBar: const ShiftDetailMissingAppBar(),
+        body: ShiftReadState(
+          error: shift.error,
+          onRetry: () => ref.invalidate(shiftDetailLoadProvider(id)),
         ),
       );
     }
     final tasks = booking.status == 'in_progress'
         ? ref.watch(shiftDetailTasksProvider(id))
         : null;
-    final loadedTasks = tasks?.valueOrNull;
+    final loadedTasks = tasks != null && !tasks.isLoading && !tasks.hasError
+        ? tasks.valueOrNull
+        : null;
     final detailedBooking =
         loadedTasks == null ? booking : booking.copyWith(tasks: loadedTasks);
     return Scaffold(
@@ -63,6 +60,9 @@ class ShiftDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: ShiftDetailActiveAction(bookingId: booking.id),
           ),
+        if (booking.statusType == ShiftStatus.completed ||
+            booking.statusType == ShiftStatus.checkoutPendingReview)
+          ShiftOpenReportAction(bookingId: booking.id),
         if (booking.statusType.index >= ShiftStatus.confirmed.index &&
             booking.statusType != ShiftStatus.completed &&
             booking.statusType != ShiftStatus.cancelled)

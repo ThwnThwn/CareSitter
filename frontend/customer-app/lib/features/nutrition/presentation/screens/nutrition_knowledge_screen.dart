@@ -47,7 +47,9 @@ class _NutritionKnowledgeScreenState
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.sm),
             const Text(
-              'Hỏi kiến thức dinh dưỡng và xem nguồn đối chiếu khi có. Câu hỏi có thể được gửi đến Google Gemini; không nhập thông tin định danh cá nhân. Nội dung không thay thế tư vấn của chuyên gia y tế.',
+              'Hỏi kiến thức dinh dưỡng và xem nguồn đối chiếu khi có. '
+              'Câu hỏi có thể được gửi đến Google Gemini. Vui lòng tránh nhập thông tin định danh cá nhân. '
+              'Nội dung không thay thế tư vấn của chuyên gia y tế.',
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.lg),

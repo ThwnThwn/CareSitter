@@ -17,6 +17,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace CareSitter.Modules.Booking.Controllers;
 
@@ -213,9 +214,13 @@ public sealed class BookingsController : ControllerBase
     /// <summary>Caregiver gửi yêu cầu checkout thủ công (khi chưa auto-checkout).</summary>
     [HttpPost("{id:guid}/checkout/request")]
     [Authorize(Roles = "CAREGIVER")]
-    public async Task<IActionResult> RequestCheckout(Guid id, CancellationToken ct)
+    public async Task<IActionResult> RequestCheckout(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)]
+        RequestCheckoutRequest? request,
+        CancellationToken ct)
     {
-        var result = await _mediator.Send(new RequestBookingCheckoutCommand(id), ct);
+        var result = await _mediator.Send(new RequestBookingCheckoutCommand(id, request?.Note), ct);
         return result.ToActionResult(this);
     }
 

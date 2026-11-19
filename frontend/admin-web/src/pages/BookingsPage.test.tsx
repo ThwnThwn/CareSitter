@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { BookingsPage } from './BookingsPage';
@@ -82,6 +82,27 @@ function setupFetch(booking = mockBooking) {
   return fetchMock;
 }
 
+it('opens and closes the correct booking when the URL changes on the same page', async () => {
+  setupFetch();
+  window.history.replaceState(null, '', '#/bookings');
+  render(<BookingsPage />);
+  await screen.findByText(mockBooking.serviceName);
+  function navigate(hash: string) {
+    act(() => {
+      window.history.replaceState(null, '', hash);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+  }
+  try {
+    navigate('#/bookings?id=' + mockBooking.id);
+    await screen.findByRole('dialog');
+    navigate('#/bookings');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  } finally {
+    window.history.replaceState(null, '', '#/bookings');
+  }
+});
+
 it('renders booking list and filters items by search input', async () => {
   setupFetch();
   render(<BookingsPage />);
@@ -94,10 +115,50 @@ it('renders booking list and filters items by search input', async () => {
   await userEvent.type(searchInput, 'Không tồn tại');
 
   expect(await screen.findByText('Không tìm thấy booking')).toBeTruthy();
+  expect(screen.getByText('Tìm thấy 0 lịch trên trang này')).toBeTruthy();
 
   // Clear search
   await userEvent.clear(searchInput);
   expect(await screen.findByText('Chăm sóc người già')).toBeTruthy();
+});
+
+it('shows the total and page position when the booking list fits on one page', async () => {
+  setupFetch();
+  render(<BookingsPage />);
+
+  expect(await screen.findByText('Trang 1/1')).toBeTruthy();
+  expect(screen.getByText('Hiển thị 1–1 trong 1')).toBeTruthy();
+  expect((screen.getByRole('button', { name: 'Trang trước' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Trang sau' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('requests the next and previous server pages', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    const page = Number(new URL(url).searchParams.get('page'));
+    const items = [{ ...mockBooking, serviceName: page === 1 ? 'Dịch vụ trang đầu' : 'Dịch vụ trang sau' }];
+    return Response.json({ items, page, pageSize: 20, total: 21 });
+  }));
+  render(<BookingsPage />);
+
+  await screen.findByText('Dịch vụ trang đầu');
+  await userEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
+  expect(await screen.findByText('Dịch vụ trang sau')).toBeTruthy();
+  expect(screen.getByText('Trang 2/2')).toBeTruthy();
+  await userEvent.click(screen.getByRole('button', { name: 'Trang trước' }));
+  expect(await screen.findByText('Dịch vụ trang đầu')).toBeTruthy();
+});
+
+it('shows distinct identifiers for bookings with the same prefix and matches the displayed identifier', async () => {
+  const first = { ...mockBooking, id: 'd0000000-0000-0000-0000-000000000101', serviceName: 'Lịch một' };
+  const second = { ...mockBooking, id: 'd0000000-0000-0000-0000-000000000102', serviceName: 'Lịch hai' };
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ items: [first, second], total: 2, page: 1, pageSize: 20 })));
+  render(<BookingsPage />);
+
+  await screen.findByRole('button', { name: '#D0000000…00000101' });
+  expect(screen.getByRole('button', { name: '#D0000000…00000102' })).toBeTruthy();
+  await userEvent.type(screen.getByRole('textbox', { name: 'Tìm booking trong trang này' }), '#D0000000…00000102');
+  expect(screen.queryByText('Lịch một')).toBeNull();
+  expect(screen.getByText('Lịch hai')).toBeTruthy();
 });
 
 it('opens drawer, inspects checklist and timeline tabs', async () => {

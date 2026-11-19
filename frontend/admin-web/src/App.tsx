@@ -37,17 +37,17 @@ export function AdminApp({ onLogout }: { onLogout: () => void }) {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  function navigate(next: PageKey) {
-    // hash change tự cập nhật state qua listener — không cần gọi setPage thêm.
-    window.location.hash = `/${next}`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  function navigate(next: PageKey, query?: Record<string, string>) {
+    const params = new URLSearchParams(query).toString();
+    window.location.hash = params ? `/${next}?${params}` : `/${next}`;
+    window.scrollTo({ top: 0 });
   }
 
   if (metadataError) {
     return (
       <main className="boot-screen">
         <div className="boot-card">
-          <strong>Không thể mở Operations Console</strong>
+          <strong>Không thể mở trang quản trị</strong>
           <p>{metadataError}</p>
           <div className="button-row">
             <button className="primary" onClick={() => setMetadataRequest((value) => value + 1)}>

@@ -19,6 +19,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using CareSitter.Messaging.Persistence;
 
+using CareSitter.Infrastructure.Persistence;
+
 namespace CareSitter.Modules.Payments;
 
 public sealed class PaymentsModule : IModule
@@ -27,6 +29,7 @@ public sealed class PaymentsModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddKeyedScoped<ModuleDbContext>("dispute", (sp, _) => sp.GetRequiredService<PaymentsDbContext>());
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),
@@ -58,6 +61,7 @@ public sealed class PaymentsModule : IModule
         services.AddScoped<IOriginalPaymentRefundCoordinator, OriginalPaymentRefundCoordinator>();
         services.AddScoped<IRefundProcessor, RefundProcessor>();
         services.AddScoped<IWalletLedgerStore, WalletLedgerStore>();
+        services.AddSingleton<IDisputePricing, DisputePricing>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddOptions<VNPayOptions>()
             .Bind(configuration.GetSection(VNPayOptions.SectionName))

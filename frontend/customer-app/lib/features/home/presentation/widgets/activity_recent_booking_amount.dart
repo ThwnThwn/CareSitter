@@ -15,7 +15,7 @@ class ActivityRecentBookingAmount extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            formatVnd(booking.totalPrice),
+            formatVnd(booking.payableAmount),
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: AppFontSizes.s14,

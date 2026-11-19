@@ -43,7 +43,7 @@ public sealed class PayoutRequest : Entity
     public long Amount { get; private set; }
 
     public string BankName { get; private set; } = null!;
-    public string BankBin { get; private set; } = null!;
+    public string? BankBin { get; private set; }
     public string AccountHolderName { get; private set; } = null!;
     public string AccountNumberEncrypted { get; private set; } = null!;
 
@@ -99,6 +99,8 @@ public sealed class PayoutRequest : Entity
     {
         if (Status != "PENDING")
             return Error.Conflict("payout.status", $"không thể chuyen {Status} -> APPROVED.");
+        if (BankBin is null)
+            return Error.Conflict("payout.bank_bin_missing", "Yêu cầu thiếu mã BIN ngân hàng. Hãy từ chối để người chăm sóc gửi yêu cầu mới.");
         Status = "APPROVED";
         ReviewedByAdminId = adminId;
         ReviewedAt = DateTimeOffset.UtcNow;

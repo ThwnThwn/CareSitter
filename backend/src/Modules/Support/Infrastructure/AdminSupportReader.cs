@@ -17,7 +17,9 @@ internal sealed class AdminSupportReader(SupportDbContext db) : IAdminSupportRea
             .Where(x => x.Status == "NEW" || x.Status == "IN_PROGRESS")
             .OrderByDescending(x => x.Priority == "CRITICAL")
             .ThenByDescending(x => x.Priority == "HIGH")
+            .ThenBy(x => x.Priority == "LOW")
             .ThenBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
             .Take(5)
             .Select(x => new AdminQueueItem(
                 "SUPPORT",

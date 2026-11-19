@@ -6,6 +6,7 @@ import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_action_policy.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
+import '../widgets/shift_history_tab.dart';
 
 class ShiftListScreen extends ConsumerWidget {
   const ShiftListScreen({super.key});
@@ -54,15 +55,7 @@ class ShiftListScreen extends ConsumerWidget {
                     'Lời mời nhận ca và ca chờ khách xác nhận hoàn tất sẽ hiển thị tại đây.',
                 storageKey: 'pending-shifts',
               ),
-              ShiftListContent(
-                filtered: shifts.where(
-                  (shift) => shift.statusType == ShiftStatus.completed,
-                ),
-                emptyIcon: Icons.history_rounded,
-                emptyTitle: 'Chưa có lịch sử',
-                emptyMessage: 'Các ca đã hoàn thành sẽ được lưu lại ở đây.',
-                storageKey: 'history-shifts',
-              ),
+              const ShiftHistoryTab(),
             ],
           ),
         ),

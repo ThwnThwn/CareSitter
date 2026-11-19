@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/api/api_constants.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
 import '../models/shift_model.dart';
@@ -22,15 +23,17 @@ class ShiftRepository {
     final results = await Future.wait(
         [getShifts(pageSize: 50), getOpenOffers(pageSize: 20)]);
     final merged = <String, Map<String, dynamic>>{};
-    for (final item in results.expand((items) => items)) {
+    // An assigned shift wins if an older offers response still includes it.
+    for (final item in results.reversed.expand((items) => items)) {
       final id = item['id']?.toString();
       if (id != null && id.isNotEmpty) merged[id] = item;
     }
     return merged.values.map(mapShiftFromApi).toList();
   }
 
-  Future<List<CareTaskModel>> loadCareTasks(String id) async =>
-      (await getTasks(id)).map(CareTaskModel.fromApi).toList();
+  Future<List<CareTaskModel>> loadCareTasks(String id,
+          {ApiCancellation? token}) async =>
+      (await getTasks(id, token: token)).map(CareTaskModel.fromApi).toList();
   Future<CareTaskModel> completeCareTask(String id, String taskId) async =>
       CareTaskModel.fromApi(await completeTask(id, taskId));
   Future<CareTaskModel> skipCareTask(
@@ -75,9 +78,61 @@ class ShiftRepository {
       getShifts(status: 'open', page: page, pageSize: pageSize);
 
   /// Chi tiết ca làm việc → GET /bookings/{id}
-  Future<Map<String, dynamic>> getShift(String id) async {
-    final resp = await _dio.get<Map<String, dynamic>>(ApiPaths.booking(id));
-    return resp.data ?? {};
+  Future<ShiftModel> loadShift(String id, {ApiCancellation? token}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.booking(id),
+      cancelToken: token?.transportToken,
+    );
+    final data = response.data;
+    if (data == null || data['id']?.toString() != id) {
+      throw const AppApiException(message: 'Máy chủ chưa trả về thông tin ca.');
+    }
+    return mapShiftFromApi(data);
+  }
+
+  Future<({List<ShiftModel> items, bool hasMore})> loadHistory(
+    int page, {
+    ApiCancellation? token,
+  }) async {
+    const pageSize = 20;
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.bookings,
+      query: {'status': 'completed', 'page': page, 'pageSize': pageSize},
+      cancelToken: token?.transportToken,
+    );
+    final data = response.data;
+    if (data == null || data['items'] is! List) {
+      throw const AppApiException(message: 'Máy chủ chưa trả về lịch sử ca.');
+    }
+    final rows = data['items'] as List;
+    return (
+      items: rows.cast<Map<String, dynamic>>().map(mapShiftFromApi).toList(),
+      hasMore: page * pageSize <
+          ((data['total'] as num?)?.toInt() ??
+              (data['totalCount'] as num?)?.toInt() ??
+              (page * pageSize + (rows.length == pageSize ? 1 : 0))),
+    );
+  }
+
+  Future<String> loadCheckoutNote(
+    String id, {
+    ApiCancellation? token,
+  }) async {
+    final resp = await _dio.get<List<dynamic>>(
+      ApiPaths.timeline(id),
+      cancelToken: token?.transportToken,
+    );
+    final events = (resp.data ?? []).whereType<Map<String, dynamic>>().toList();
+    for (final event in events.reversed) {
+      if (event['eventType'] == 'CHECKOUT_MANUAL_REQUESTED' &&
+          event['note'] != null) {
+        return event['note'].toString();
+      }
+      if (event['eventType'] == 'NOTE' && event['title'] == 'Ghi chú cuối ca') {
+        return event['note']?.toString() ?? '';
+      }
+    }
+    return '';
   }
 
   /// Caregiver chấp nhận ca → POST /bookings/{id}/accept
@@ -155,10 +210,16 @@ class ShiftRepository {
   }
 
   /// Yêu cầu checkout → POST /bookings/{id}/checkout/request
-  Future<Map<String, dynamic>> requestCheckout(String id) async {
-    final resp =
-        await _dio.post<Map<String, dynamic>>(ApiPaths.checkoutRequest(id));
-    return resp.data ?? {};
+  Future<ShiftModel> requestCheckout(String id, String note) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.checkoutRequest(id),
+      data: {'note': note.isEmpty ? null : note},
+    );
+    final data = response.data;
+    if (data == null || data['id']?.toString() != id) {
+      throw const AppApiException(message: 'Chưa nhận được kết quả checkout.');
+    }
+    return mapShiftFromApi(data);
   }
 
   /// Hoàn tất ca → POST /bookings/{id}/complete
@@ -178,8 +239,10 @@ class ShiftRepository {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getTasks(String bookingId) async {
-    final resp = await _dio.get<List<dynamic>>(ApiPaths.tasks(bookingId));
+  Future<List<Map<String, dynamic>>> getTasks(String bookingId,
+      {ApiCancellation? token}) async {
+    final resp = await _dio.get<List<dynamic>>(ApiPaths.tasks(bookingId),
+        cancelToken: token?.transportToken);
     return (resp.data ?? []).cast<Map<String, dynamic>>();
   }
 

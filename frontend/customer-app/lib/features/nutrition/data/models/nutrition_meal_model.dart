@@ -7,7 +7,13 @@ class NutritionMealModel {
   NutritionMealModel.fromJson(Map<String, dynamic> json)
       : _json = Map.unmodifiable(json);
   final Map<String, dynamic> _json;
-  String get name => _json['name']?.toString() ?? '';
+  static final _legacyDemoPrefix =
+      RegExp(r'^\[DEMO\]\s*', caseSensitive: false);
+
+  String get _rawName => _json['name']?.toString() ?? '';
+  String get name => _rawName.replaceFirst(_legacyDemoPrefix, '');
+  bool get isLocalDemo =>
+      _json['isLocalDemo'] == true || _legacyDemoPrefix.hasMatch(_rawName);
   String get mealType => _json['mealType']?.toString() ?? '';
   String get recipeVersionId =>
       (_json['recipeVersionId'] ?? _json['versionId'])?.toString() ?? '';

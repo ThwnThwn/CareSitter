@@ -78,12 +78,47 @@ void main() {
         recipient: recipient,
         serviceId: 'service',
         caregiverId: null,
+        promotionCode: 'CARE20',
+        expectedPayableAmount: 240000,
         current: () => true,
         progress: (_) {});
     expect(outcome.result, isA<BookingSubmitIgnored>());
     expect(outcome.uncertainDraft, same(actions.draft));
     expect(outcome.uncertainDraft!.idempotencyKey, isNotEmpty);
+    expect(outcome.uncertainDraft!.promotionCode, 'CARE20');
+    expect(outcome.uncertainDraft!.expectedPayableAmount, 240000);
     expect(actions.creates, 1);
+  });
+  test('applying or removing a code gives the changed payload a new key',
+      () async {
+    final actions = _Actions();
+    final controller = BookingSubmissionController(actions);
+    Future<BookingDraft> submit(String? code,
+        {int? expectedPayableAmount}) async {
+      await controller.submit(snapshot(),
+          recipient: recipient,
+          serviceId: 'service',
+          caregiverId: null,
+          promotionCode: code,
+          expectedPayableAmount: expectedPayableAmount,
+          current: () => true,
+          progress: (_) {});
+      return actions.draft!;
+    }
+
+    final first = await submit('CARE20', expectedPayableAmount: 240000);
+    expect(first.promotionCode, 'CARE20');
+    expect(
+        (await submit('CARE20', expectedPayableAmount: 240000)).idempotencyKey,
+        first.idempotencyKey);
+    expect(
+        (await submit('CARE20', expectedPayableAmount: 250000)).idempotencyKey,
+        isNot(first.idempotencyKey));
+    expect(
+        (await submit('CARE50')).idempotencyKey, isNot(first.idempotencyKey));
+    final withoutPromotion = await submit(null);
+    expect(withoutPromotion.promotionCode, isNull);
+    expect(withoutPromotion.idempotencyKey, isNot(first.idempotencyKey));
   });
   test('a changed self profile returns to review before any booking POST',
       () async {

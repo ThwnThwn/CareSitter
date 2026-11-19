@@ -11,6 +11,6 @@ abstract interface class ShiftActiveActions {
   Future<void> uploadTaskPhoto(String id, XFile image);
   Future<void> createTask(String name, String description);
   Future<void> addNote(String note);
-  Future<void> checkout();
+  Future<void> checkout(String note);
   Future<void> raiseSos();
 }

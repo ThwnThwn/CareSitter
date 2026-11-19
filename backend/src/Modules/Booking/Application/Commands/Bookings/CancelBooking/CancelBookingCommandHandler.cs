@@ -40,8 +40,8 @@ internal sealed class CancelBookingCommandHandler(
             BookingSyncEventTypes.Cancelled, "Lịch chăm sóc đã bị hủy.", cancelledAt,
             BookingChatTransitionEffect.ScheduleRetention, ct);
         await bookings.SaveChangesAsync(ct);
-        await promotions.ReleaseAsync(booking.Id, booking.CustomerId,
-            "BOOKING_CANCELLED", ct);
+        if (policy.Value.RefundAmount == 0)
+            await promotions.ReleaseAsync(booking.Id, booking.CustomerId, "BOOKING_CANCELLED", ct);
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 }

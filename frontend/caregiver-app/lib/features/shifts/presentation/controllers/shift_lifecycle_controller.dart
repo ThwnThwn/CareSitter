@@ -1,4 +1,5 @@
 import 'package:caregiver_app/core/error/app_exception.dart';
+import '../../data/models/shift_model.dart';
 import '../../data/repositories/shift_repository.dart';
 import 'shift_cache_controller.dart';
 
@@ -60,13 +61,28 @@ class ShiftLifecycleController {
             (item) => item.copyWith(
                 status: 'in_progress', actualStart: started ?? DateTime.now()));
       });
-  Future<void> checkout(String id) => _run(id, () async {
-        await repository.requestCheckout(id);
-        cache.patch(
-            id,
-            (item) => item.copyWith(
-                status: 'checkout_pending_review',
-                checkoutRequestedAt: DateTime.now()));
+  Future<void> checkout(String id, String note) => _run(id, () async {
+        ShiftModel submitted;
+        try {
+          submitted = await repository.requestCheckout(id, note);
+        } on AppApiException catch (error) {
+          if (!cache.active() ||
+              (!error.outcomeMayBeUnknown && error.statusCode != 409)) {
+            rethrow;
+          }
+          final current = await repository.loadShift(id);
+          if (!cache.active()) return;
+          if (current.status != 'checkout_pending_review' &&
+              current.status != 'completed') {
+            rethrow;
+          }
+          if (note.isNotEmpty &&
+              await repository.loadCheckoutNote(id) != note) {
+            rethrow;
+          }
+          submitted = current;
+        }
+        cache.patch(id, (item) => submitted.copyWith(tasks: item.tasks));
       });
   Future<void> complete(String id) => _run(id, () async {
         try {

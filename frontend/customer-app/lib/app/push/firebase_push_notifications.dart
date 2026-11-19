@@ -257,7 +257,9 @@ class PushNotificationService {
           if (await _gateway.initialize().timeout(operationTimeout)) {
             await _gateway.deleteToken().timeout(operationTimeout);
           }
-        } catch (_) {}
+        } catch (_) {
+          debugPrint('[FCM] token deletion unavailable');
+        }
         _registeredOwner = null;
         _registeredToken = null;
         _deviceId = null;

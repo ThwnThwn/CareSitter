@@ -8,4 +8,4 @@ public sealed record CreateBookingRequest(
     DateTimeOffset ScheduledEnd,
     Guid? CaregiverId = null,
     IReadOnlyList<string>? RequiredSkills = null,
-    string? PromotionCode = null);
+    string? PromotionCode = null, long? ExpectedPayableAmount = null);

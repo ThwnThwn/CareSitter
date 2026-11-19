@@ -82,6 +82,8 @@ public sealed class PromotionRaceTests : IAsyncLifetime
 
     private sealed class BookingLookupStub : IPromotionBookingLookup
     {
+        public Task<bool> CanReleaseExpiredReservationAsync(Guid bookingId, CancellationToken ct = default) => Task.FromResult(false);
+
         public Task<bool> HasPaidBookingAsync(Guid customerId,
             CancellationToken ct = default) => Task.FromResult(false);
     }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/utils/date_formatter.dart';
+
+import '../../data/models/notification_model.dart';
 
 IconData notificationsIconFor(String type, {String? status}) {
   final normalizedType = type.trim().toUpperCase();
@@ -61,11 +64,46 @@ Color notificationsIconColorFor(String type, {String? status}) {
   };
 }
 
-String notificationsRelativeTime(DateTime value) {
-  final diff = DateTime.now().difference(value);
-  if (diff.inMinutes < 1) return 'Vừa xong';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-  if (diff.inHours < 24) return '${diff.inHours} giờ trước';
-  if (diff.inDays < 7) return '${diff.inDays} ngày trước';
-  return '${value.day}/${value.month}/${value.year}';
+String notificationTimestamp(DateTime value, DateTime now) {
+  final clock = formatClock(value);
+  if (DateUtils.isSameDay(value, now)) return clock;
+  final yesterday = DateTime(now.year, now.month, now.day - 1);
+  if (DateUtils.isSameDay(value, yesterday)) return '$clock hôm qua';
+  final date =
+      formatDate(value, padded: true, includeYear: value.year != now.year);
+  return '$date · $clock';
+}
+
+Map<String, List<AppNotification>> notificationSections(
+  Iterable<AppNotification> items,
+  DateTime now,
+) {
+  final startOfWeek = DateTime(now.year, now.month, now.day - now.weekday + 1);
+  final sections = <String, List<AppNotification>>{
+    'Hôm nay': [],
+    'Tuần này': [],
+    'Cũ hơn': [],
+  };
+  for (final item in items) {
+    final date = item.timestamp;
+    final section = DateUtils.isSameDay(date, now)
+        ? 'Hôm nay'
+        : date.isBefore(startOfWeek)
+            ? 'Cũ hơn'
+            : 'Tuần này';
+    sections[section]!.add(item);
+  }
+  sections.removeWhere((_, items) => items.isEmpty);
+  return sections;
+}
+
+String? notificationBookingLabel(AppNotification item) {
+  if (!item.isBookingChat) return null;
+  final start = item.chat?.scheduledStart;
+  if (start != null) {
+    return 'Lịch ${formatDate(start, padded: true, includeYear: false)} · ${formatClock(start)}';
+  }
+  final id = item.data['bookingId']?.toString().trim();
+  if (id == null || id.isEmpty) return null;
+  return 'Lịch #${id.substring(0, id.length.clamp(0, 8)).toUpperCase()}';
 }

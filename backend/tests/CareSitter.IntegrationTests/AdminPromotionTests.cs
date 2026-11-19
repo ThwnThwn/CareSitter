@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using CareSitter.Contracts.Services;
+using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.Promotion;
 using CareSitter.Modules.Promotion.Application;
 using CareSitter.Modules.Promotion.Controllers;
@@ -241,6 +242,63 @@ public sealed class AdminPromotionTests : IAsyncLifetime
         Assert.Equal(new[] { "ADMIN_PROMOTION_CREATED", "ADMIN_PROMOTION_UPDATED", "ADMIN_PROMOTION_ACTIVE_CHANGED", "ADMIN_PROMOTION_DELETED" }, audit.Actions);
     }
 
+    [PostgresTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Expired_hold_keeps_quota_until_payment_resolution(bool paid)
+    {
+        await CreateAsync(Configuration() with { TotalUsageLimit = 1 });
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        var start = _clock.UtcNow.AddDays(1);
+        var request = new PromotionReservationRequest("ADMIN10", CustomerId, first, ServiceId,
+            start, start.AddHours(2), _clock.UtcNow.AddMinutes(5), 500_000, 400_000);
+        await using var db = Context();
+        var service = new PromotionApplicationService(db, new BookingLookup(), _clock);
+        Assert.Equal("promotion.quote_changed", (await service.ReserveAsync(request)).Error.Code);
+        Assert.False(await db.PromotionRedemptions.AnyAsync(x => x.BookingId == first));
+        Assert.True((await service.ReserveAsync(request with { ExpectedPayableAmount = 450_000 })).IsSuccess);
+        var late = new PromotionApplicationService(db, new BookingLookup(), new Clock(_clock.UtcNow.AddHours(1)));
+        var next = request with { BookingId = second, ExpectedPayableAmount = 450_000, ExpiresAt = start };
+        Assert.Equal("promotion.usage_limit_reached", (await late.ReserveAsync(next)).Error.Code);
+        if (paid)
+        {
+            Assert.True((await late.RedeemAsync(first, CustomerId)).IsSuccess);
+            Assert.Equal("promotion.usage_limit_reached", (await late.ReserveAsync(next)).Error.Code);
+        }
+        else
+        {
+            Assert.True((await late.ReleaseAsync(first, CustomerId, "PAYMENT_EXPIRED")).IsSuccess);
+            Assert.True((await late.ReserveAsync(next)).IsSuccess);
+            Assert.True((await late.RedeemAsync(first, CustomerId)).IsFailure);
+        }
+    }
+
+    [PostgresFact]
+    public async Task Cleanup_waits_for_in_flight_booking_creation_before_reclaiming_an_orphan()
+    {
+        await CreateAsync(Configuration() with { TotalUsageLimit = 1 });
+        var orphan = Guid.NewGuid();
+        Assert.True((await ReserveAsync(orphan)).IsSuccess);
+        var late = new Clock(_clock.UtcNow.AddHours(1));
+        var options = new DbContextOptionsBuilder<BookingDbContext>().UseNpgsql(_database.ConnectionString).Options;
+        await using var writer = new BookingDbContext(options);
+        await using var booking = new BookingDbContext(options);
+        await using var promotion = Context();
+        var cleanup = new PromotionApplicationService(promotion, new PromotionBookingLookup(booking), late);
+        await using (var creating = await writer.Database.BeginTransactionAsync())
+        {
+            await new BookingCreationIdempotencyStore(writer, _clock).ProtectPromotionReservationAsync(orphan, default);
+            await cleanup.ReclaimExpiredReservationsAsync();
+            Assert.Equal(PromotionRedemptionStatus.Reserved,
+                (await promotion.PromotionRedemptions.AsNoTracking().SingleAsync(r => r.BookingId == orphan)).Status);
+            await creating.RollbackAsync();
+        }
+        await cleanup.ReclaimExpiredReservationsAsync();
+        Assert.Equal(PromotionRedemptionStatus.Released,
+            (await promotion.PromotionRedemptions.AsNoTracking().SingleAsync(r => r.BookingId == orphan)).Status);
+    }
+
     private async Task<CareSitter.SharedKernel.Results.Result<PromotionPriceQuote>> ReserveAsync(Guid bookingId)
     {
         await using var db = Context();
@@ -250,7 +308,10 @@ public sealed class AdminPromotionTests : IAsyncLifetime
     }
     private sealed record Clock(DateTimeOffset UtcNow) : IClock;
     private sealed class BookingLookup : IPromotionBookingLookup
-    { public Task<bool> HasPaidBookingAsync(Guid customerId, CancellationToken ct = default) => Task.FromResult(false); }
+    {
+        public Task<bool> HasPaidBookingAsync(Guid customerId, CancellationToken ct = default) => Task.FromResult(false);
+        public Task<bool> CanReleaseExpiredReservationAsync(Guid bookingId, CancellationToken ct = default) => Task.FromResult(false);
+    }
     private sealed class Audit : IAuditLogger
     {
         public List<string> Actions { get; } = [];

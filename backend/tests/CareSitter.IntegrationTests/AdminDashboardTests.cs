@@ -11,13 +11,15 @@ namespace CareSitter.IntegrationTests;
 public sealed class AdminDashboardTests
 {
     [Fact]
-    public async Task Critical_and_high_priority_tickets_survive_the_combined_queue_limit()
+    public async Task Higher_priority_tickets_survive_the_combined_queue_limit()
     {
         var now = DateTimeOffset.UtcNow;
-        var olderPayments = Enumerable.Range(0, 12).Select(index => Item("PAYMENT", now.AddDays(-2).AddMinutes(index))).ToArray();
+        var olderPayments = Enumerable.Range(0, 9).Select(index => Item("PAYMENT", now.AddDays(-2).AddMinutes(index))).ToArray();
         var critical = Item("SUPPORT", now) with { Priority = "CRITICAL" };
         var high = Item("SUPPORT", now.AddMinutes(-1)) with { Priority = "HIGH" };
-        var readers = new Readers(olderPayments, [high, critical]);
+        var medium = Item("SUPPORT", now) with { Priority = "MEDIUM" };
+        var low = Item("SUPPORT", now.AddDays(-3)) with { Priority = "LOW" };
+        var readers = new Readers(olderPayments, [high, low, critical, medium]);
         var services = new ServiceCollection();
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetAdminDashboardQuery>());
         services.AddSingleton<IAdminBookingReader>(readers);
@@ -36,6 +38,7 @@ public sealed class AdminDashboardTests
         Assert.Equal(critical.Id, items[0].GetProperty("Id").GetGuid());
         Assert.Equal(high.Id, items[1].GetProperty("Id").GetGuid());
         Assert.Equal(olderPayments[0].Id, items[2].GetProperty("Id").GetGuid());
+        Assert.Equal(medium.Id, items[^1].GetProperty("Id").GetGuid());
     }
 
     private static AdminQueueItem Item(string type, DateTimeOffset at) => new(type, Guid.NewGuid(), "Review", "", "NEW", at);

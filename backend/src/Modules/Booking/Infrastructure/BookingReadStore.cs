@@ -34,6 +34,7 @@ internal sealed class BookingReadStore(BookingDbContext db) : IBookingReadStore
                 .ThenByDescending(x => x.Id),
             BookingReadAudience.OfferInbox => query.OrderBy(x => x.ScheduledStart),
             _ => query.OrderByDescending(x => x.ScheduledStart)
+                .ThenByDescending(x => x.Id)
         };
         var items = await query.Skip((criteria.Page - 1) * criteria.PageSize)
             .Take(criteria.PageSize).ToListAsync(ct);

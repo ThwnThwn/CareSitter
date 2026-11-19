@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { Drawer } from './Common';
+import { ConfirmationProvider, useConfirmation } from './ConfirmationDialog';
 
 it('contains keyboard focus, preserves focus across renders, and restores the trigger', () => {
   const trigger = document.createElement('button');
@@ -28,4 +29,27 @@ it('blocks dismissal while a mutation is pending', () => {
   fireEvent.mouseDown(screen.getByRole('dialog').parentElement!);
   expect(close).not.toHaveBeenCalled();
   expect((screen.getByRole('button', { name: 'Đóng' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('keeps keyboard focus in the confirmation and dismisses only the top dialog', async () => {
+  const close = vi.fn();
+  function Review() {
+    const confirm = useConfirmation();
+    return <Drawer title="Hồ sơ" onClose={close}>
+      <button onClick={() => void confirm({ title: 'Duyệt hồ sơ?', message: 'Kiểm tra thông tin', confirmLabel: 'Duyệt' })}>
+        Xem quyết định
+      </button>
+    </Drawer>;
+  }
+  render(<ConfirmationProvider><Review /></ConfirmationProvider>);
+  const trigger = screen.getByRole('button', { name: 'Xem quyết định' });
+  trigger.focus();
+  fireEvent.click(trigger);
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Quay lại' }));
+  fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Duyệt' }));
+  fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+  expect(close).not.toHaveBeenCalled();
 });

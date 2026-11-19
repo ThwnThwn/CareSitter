@@ -20,4 +20,9 @@ describe('promotion campaign payload', () => {
     expect(() => promotionPayload({ ...form, endsAt: form.startsAt })).toThrow(/kết thúc/);
     expect(() => promotionPayload({ ...form, terms: 'x'.repeat(501) })).toThrow(/điều kiện/);
   });
+  it('requires a cap for a 100 percent discount', () => {
+    const form = { ...createPromotionForm(null), discountValue: '100' };
+    expect(() => promotionPayload(form)).toThrow(/mức giảm tối đa/);
+    expect(promotionPayload({ ...form, maxDiscountAmount: '100000' }).maxDiscountAmount).toBe(100000);
+  });
 });

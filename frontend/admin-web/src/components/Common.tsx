@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useId, useRef } from 'react';
-import { AlertCircle, Inbox, LoaderCircle, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, Inbox, RefreshCw, X } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 // Utility functions sống trong utils/format.ts — re-export ở đây để backward-compatible
 export { formatMoney, formatDate, shortId } from '../utils/format';
@@ -45,21 +45,20 @@ export function LoadingTable({ rows = 6, columns = 5 }: { rows?: number; columns
   </div>;
 }
 
-export function InlineLoading({ label = 'Đang xử lý…' }: { label?: string }) {
-  return <span className="inline-loading"><LoaderCircle size={16} className="spin" />{label}</span>;
-}
-
-export function Pagination({ page, pageSize, total, onChange }: { page: number; pageSize: number; total: number; onChange: (page: number) => void }) {
+export function Pagination({ page, pageSize, total, onChange, showSinglePage = false, summary }: {
+  page: number; pageSize: number; total: number; onChange: (page: number) => void;
+  showSinglePage?: boolean; summary?: string;
+}) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (total <= pageSize && page <= 1) return null;
-  return <div className="pagination" aria-label="Phân trang">
-    <span>{page > pages ? 'Trang hiện tại không còn dữ liệu.' : `Hiển thị ${total ? (page - 1) * pageSize + 1 : 0}–${Math.min(page * pageSize, total)} trong ${total}`}</span>
+  if (!showSinglePage && pages === 1 && page <= 1) return null;
+  return <nav className="pagination" aria-label="Phân trang">
+    <span>{summary ?? (page > pages ? 'Trang hiện tại không còn dữ liệu.' : `Hiển thị ${total ? (page - 1) * pageSize + 1 : 0}–${Math.min(page * pageSize, total)} trong ${total}`)}</span>
     <div>
       <button className="icon-page" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Trang trước">‹</button>
       <span>Trang {page}/{pages}</span>
       <button className="icon-page" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Trang sau">›</button>
     </div>
-  </div>;
+  </nav>;
 }
 
 export function Drawer({ title, subtitle, onClose, children, footer, busy = false }: {
@@ -74,7 +73,10 @@ export function Drawer({ title, subtitle, onClose, children, footer, busy = fals
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
     dialog.current?.focus();
+    const ownsFocus = () => document.querySelector('[role="alertdialog"][aria-modal="true"]') === null &&
+      Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).at(-1) === dialog.current;
     const onKey = (event: KeyboardEvent) => {
+      if (!ownsFocus()) return;
       if (event.key === 'Escape' && !pending.current) { event.preventDefault(); close.current(); }
       if (event.key !== 'Tab') return;
       const targets = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || [])
@@ -86,7 +88,7 @@ export function Drawer({ title, subtitle, onClose, children, footer, busy = fals
     };
     const keepFocus = (event: FocusEvent) => {
       // Giới hạn trong document.body — tránh conflict với portal/popup third-party.
-      if (!(event.target instanceof Node) || !document.body.contains(event.target)) return;
+      if (!ownsFocus() || !(event.target instanceof Node) || !document.body.contains(event.target)) return;
       if (!dialog.current?.contains(event.target)) dialog.current?.focus();
     };
     document.addEventListener('keydown', onKey);

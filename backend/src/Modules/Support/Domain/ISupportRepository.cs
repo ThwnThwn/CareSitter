@@ -2,7 +2,7 @@ namespace CareSitter.Modules.Support.Domain;
 
 public interface ISupportRepository
 {
-    Task<bool> DisputeExistsAsync(Guid bookingId, CancellationToken ct = default);
+    Task<Dispute?> GetDisputeByBookingAsync(Guid bookingId, CancellationToken ct = default);
     Task<Dispute?> GetDisputeAsync(Guid id, CancellationToken ct = default);
     void AddDispute(Dispute dispute);
 

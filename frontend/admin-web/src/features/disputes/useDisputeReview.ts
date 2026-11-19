@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAdminMetadata } from '../../adminMetadata';
 import { useAdminMutation } from '../../hooks/useAdminMutation';
-import { disputeAllocation } from '../../operations';
+import type { DisputeQuote } from './disputeApi';
 import { Booking, Dispute } from '../../types';
 import { useResource } from '../../useResource';
 import { cancelDispute, resolveDispute } from './disputeApi';
@@ -18,17 +18,17 @@ export function useDisputeReview(selected: Dispute, onChanged: (message: string)
   const loading = detail.loading || booking.loading;
   const loadError = detail.error || booking.error;
   const actionable = !loading && !loadError && reviewableStatuses.disputes.includes(dispute.status);
-  let allocation: ReturnType<typeof disputeAllocation> | undefined;
-  let validation = '';
-  if (actionable && booking.data && decision) {
-    try { allocation = disputeAllocation(booking.data.escrowAmount, booking.data.platformFeeAmount, decision, refundAmount, penaltyAmount); }
-    catch (cause) { validation = cause instanceof Error ? cause.message : 'Số tiền không hợp lệ.'; }
-  }
-  function reloadDetails() { void detail.reload(); void booking.reload(); }
+  const previewPath = actionable && booking.data?.status === 'disputed' && decision
+    ? `/api/v1/disputes/${dispute.id}/preview?decision=${encodeURIComponent(decision)}&refundAmount=${refundAmount}&caregiverPenaltyAmount=${penaltyAmount}`
+    : null;
+  const preview = useResource<DisputeQuote | null>(previewPath, null);
+  const allocation = previewPath && !preview.error && !preview.loading ? preview.data : null;
+  const validation = preview.error;
+  function reloadDetails() { void detail.reload(); void booking.reload(); void preview.reload(); }
   function chooseDecision(value: string) { setDecision(value); setRefundAmount(0); setPenaltyAmount(0); }
   async function resolve(confirm: () => boolean | Promise<boolean>) {
     if (mutation.busy || !actionable || !allocation || booking.data?.status !== 'disputed' || !(await confirm())) return;
-    const resolution = { decision, refundAmount: allocation.refund, caregiverPenaltyAmount: allocation.penalty };
+    const resolution = { decision, refundAmount: allocation.refund, caregiverPenaltyAmount: allocation.penalty, expectedQuote: allocation };
     await mutation.run('resolve', signal => resolveDispute(dispute.id, resolution, signal),
       'Không thể giải quyết khiếu nại.', onChanged, 'Phán quyết đã được ghi nhận.', reloadDetails);
   }

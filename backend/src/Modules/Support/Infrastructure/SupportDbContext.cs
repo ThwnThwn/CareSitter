@@ -118,6 +118,7 @@ public sealed class SupportDbContext : ModuleDbContext
             b.Property(x => x.ClaimToken).HasColumnName("claim_token");
             b.Property(x => x.LeaseUntil).HasColumnName("lease_until");
             b.Property(x => x.SentAt).HasColumnName("sent_at");
+            b.Property(x => x.CompletedPushTargets).HasColumnName("completed_push_targets").HasDefaultValueSql("'{}'::text[]");
             b.Property(x => x.LastError).HasColumnName("last_error");
             b.HasOne<Notification>().WithMany().HasForeignKey(x => x.NotificationId).OnDelete(DeleteBehavior.Cascade);
         });

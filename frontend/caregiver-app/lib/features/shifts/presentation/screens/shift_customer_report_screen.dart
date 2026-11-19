@@ -18,6 +18,7 @@ class ShiftCustomerReportScreen extends StatefulWidget {
   final int totalTasks;
   final String duration;
   final String checkInTime;
+  final String checkOutTime;
   final String caregiverNote;
   final List<String> taskPhotos; // Cloudinary URLs
 
@@ -30,7 +31,8 @@ class ShiftCustomerReportScreen extends StatefulWidget {
     required this.completedTasks,
     required this.totalTasks,
     required this.duration,
-    this.checkInTime = '08:05',
+    required this.checkInTime,
+    required this.checkOutTime,
     this.caregiverNote = '',
     this.taskPhotos = const [],
   });
@@ -41,18 +43,6 @@ class ShiftCustomerReportScreen extends StatefulWidget {
 }
 
 class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
-  // Compute check-out time from check-in + duration
-  String get _checkOutTime {
-    final parts = widget.checkInTime.split(':');
-    if (parts.length != 2) return '--:--';
-    final h = int.tryParse(parts[0]) ?? 8;
-    final m = int.tryParse(parts[1]) ?? 0;
-    final durHours =
-        int.tryParse(widget.duration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 2;
-    final total = h * 60 + m + durHours * 60;
-    return '${(total ~/ 60).toString().padLeft(2, '0')}:${(total % 60).toString().padLeft(2, '0')}';
-  }
-
   void _onShare() {
     AppToast.success(context, 'Đã sao chép link báo cáo');
   }
@@ -80,7 +70,7 @@ class _ShiftCustomerReportScreenState extends State<ShiftCustomerReportScreen> {
                 const SizedBox(height: AppSpacing.section),
                 ReportTimeline(
                   checkInTime: widget.checkInTime,
-                  checkOutTime: _checkOutTime,
+                  checkOutTime: widget.checkOutTime,
                   duration: widget.duration,
                 ),
                 const SizedBox(height: AppSpacing.section),

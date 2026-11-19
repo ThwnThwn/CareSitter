@@ -131,13 +131,14 @@ public sealed class MessagingUnitTests
         private bool _sent;
         public Task<DeliveryClaim> ClaimAsync(Guid eventId, Guid notificationId, Guid recipientId, string channel, CancellationToken ct) =>
             Task.FromResult(_sent ? new DeliveryClaim("Sent") : new DeliveryClaim("Acquired", Guid.NewGuid()));
+        public Task<bool> CheckpointAsync(Guid eventId, Guid token, string[] keys, CancellationToken ct) => Task.FromResult(true);
         public Task<bool> CompleteAsync(Guid eventId, string channel, Guid token, bool success, string? failure, CancellationToken ct)
         { _sent = success; return Task.FromResult(true); }
     }
     private sealed class FakeSender : INotificationSender
     {
         public int Count;
-        public Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, CancellationToken ct)
+        public Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct)
         { Count++; return Task.FromResult(HandlerResult.Success()); }
     }
 }

@@ -10,5 +10,6 @@ public sealed class NotificationDelivery
     public Guid? ClaimToken { get; set; }
     public DateTimeOffset? LeaseUntil { get; set; }
     public DateTimeOffset? SentAt { get; set; }
+    public string[] CompletedPushTargets { get; set; } = [];
     public string? LastError { get; set; }
 }

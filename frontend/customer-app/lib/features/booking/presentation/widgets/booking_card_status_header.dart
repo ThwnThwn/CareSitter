@@ -33,7 +33,7 @@ class BookingCardStatusHeader extends StatelessWidget {
             ),
           ),
           Text(
-            formatVnd(booking.totalPrice),
+            formatVnd(booking.payableAmount),
             style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: AppFontSizes.s15,

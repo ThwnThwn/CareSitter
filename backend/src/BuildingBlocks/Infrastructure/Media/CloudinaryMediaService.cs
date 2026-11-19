@@ -14,7 +14,7 @@ namespace CareSitter.Infrastructure.Media;
 
 internal sealed class CloudinaryMediaService : IMediaService
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly Lazy<Cloudinary> _cloudinary;
     private readonly ILogger<CloudinaryMediaService> _logger;
     private readonly IKycMediaService _kyc;
 
@@ -25,13 +25,13 @@ internal sealed class CloudinaryMediaService : IMediaService
     {
         _logger = logger;
         _kyc = kyc;
-        var settings = options.Value;
-        var account = new Account(
-            settings.CloudName,
-            settings.ApiKey,
-            settings.ApiSecret);
-        _cloudinary = new Cloudinary(account);
-        _cloudinary.Api.Secure = true;
+        _cloudinary = new Lazy<Cloudinary>(() =>
+        {
+            var settings = options.Value;
+            var client = new Cloudinary(new Account(settings.CloudName, settings.ApiKey, settings.ApiSecret));
+            client.Api.Secure = true;
+            return client;
+        });
     }
 
     public async Task<Result<string>> CreateSignedUrlAsync(Guid mediaId, TimeSpan ttl, CancellationToken ct = default)
@@ -80,7 +80,7 @@ internal sealed class CloudinaryMediaService : IMediaService
 
         try
         {
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams, ct);
+            var uploadResult = await _cloudinary.Value.UploadAsync(uploadParams, ct);
 
             if (uploadResult.Error != null)
             {

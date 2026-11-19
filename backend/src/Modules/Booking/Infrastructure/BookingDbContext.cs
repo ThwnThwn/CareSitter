@@ -96,6 +96,7 @@ public sealed class BookingDbContext : ModuleDbContext
             b.Property(x => x.NeedsReview).HasColumnName("needs_review");
             b.Property(x => x.AllowAdHocTasks).HasColumnName("allow_ad_hoc_tasks");
             b.Property(x => x.RequiredSkills).HasColumnName("required_skills").HasColumnType("jsonb");
+            b.Property(x => x.StatusBeforeDispute).HasColumnName("status_before_dispute").HasConversion<string>();
             b.Property(x => x.Status)
                 .HasColumnName("status")
                 .HasConversion(v => BookingStatusCodec.ToDatabase(v), v => BookingStatusCodec.FromDatabase(v))

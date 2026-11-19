@@ -4,7 +4,22 @@ import { expect, it, vi } from 'vitest';
 import { PaymentsPage } from './PaymentsPage';
 import type { PaymentReview, RefundRequest } from '../types';
 
-vi.mock('../adminMetadata', () => ({ useAdminMetadata: () => ({ statusDefinitions: {} }) }));
+vi.mock('../adminMetadata', () => ({ useAdminMetadata: () => ({
+  statusDefinitions: {}, filters: { payouts: { defaultValue: 'PENDING', options: [] } },
+}) }));
+
+it('opens pending payouts directly from the dashboard link', async () => {
+  const fetch = vi.fn(async (_input: RequestInfo | URL) => Response.json({ items: [], total: 0, page: 1, pageSize: 20 }));
+  vi.stubGlobal('fetch', fetch);
+  window.history.replaceState(null, '', '#/payments?tab=payouts');
+  try {
+    render(<PaymentsPage />);
+    await screen.findByRole('heading', { name: 'Yêu cầu rút tiền' });
+    expect(String(fetch.mock.calls[0]?.[0])).toContain('/payouts/pending');
+  } finally {
+    window.history.replaceState(null, '', '/');
+  }
+});
 
 const review: PaymentReview = {
   intentId: 'intent-123', bookingId: 'booking-123', customerId: 'customer-123',

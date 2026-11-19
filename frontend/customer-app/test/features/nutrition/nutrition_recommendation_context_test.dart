@@ -37,11 +37,13 @@ void main() {
     final trace = NutritionRecommendationTraceModel.fromJson({
       'strategy': 'rule_baseline',
       'usedAi': false,
+      'releaseStatus': 'ungrounded',
       'warnings': ['grounding_not_configured'],
     });
     final meal = NutritionMealModel.fromJson({
-      'name': '[DEMO] Cháo trứng',
+      'name': 'Cháo trứng',
       'mealType': 'breakfast',
+      'isLocalDemo': true,
     });
     await tester.pumpWidget(MaterialApp(
       home: NutritionRecommendationContext(trace: trace, meals: [meal]),

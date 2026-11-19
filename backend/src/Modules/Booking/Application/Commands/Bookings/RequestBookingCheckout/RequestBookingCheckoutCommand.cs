@@ -3,5 +3,5 @@ using MediatR;
 
 namespace CareSitter.Modules.Booking.Application.Commands.RequestBookingCheckout;
 
-public sealed record RequestBookingCheckoutCommand(Guid BookingId)
+public sealed record RequestBookingCheckoutCommand(Guid BookingId, string? Note = null)
     : IRequest<Result<BookingResponse>>;

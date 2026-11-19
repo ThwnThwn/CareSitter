@@ -70,13 +70,23 @@ public sealed class DisputesController : ControllerBase
         return result.ToActionResult(this);
     }
 
+    [HttpGet("{id:guid}/preview")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<IActionResult> Preview(Guid id, string decision, long? refundAmount,
+        long? caregiverPenaltyAmount, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        var result = await _mediator.Send(new PreviewDisputeQuery(id, decision, refundAmount, caregiverPenaltyAmount), ct);
+        return result.ToActionResult(this);
+    }
+
     /// <summary>Admin ra phan quyet dispute va ghi refund/penalty vao ledger.</summary>
     [HttpPost("{id:guid}/resolve")]
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> Resolve(Guid id, [FromBody] ResolveDisputeRequest req, CancellationToken ct)
     {
         var result = await _mediator.Send(new ResolveDisputeCommand(id,
-            req.Decision, req.RefundAmount, req.CaregiverPenaltyAmount), ct);
+            req.Decision, req.RefundAmount, req.CaregiverPenaltyAmount, req.ExpectedQuote), ct);
         return result.ToActionResult(this);
     }
 

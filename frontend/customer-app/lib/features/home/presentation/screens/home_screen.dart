@@ -1,7 +1,6 @@
 import '../widgets/home_header.dart';
 import '../widgets/home_live_session_card.dart';
 import '../widgets/home_promotions_section.dart';
-import '../widgets/home_promo_card.dart';
 import '../widgets/home_recently_booked_section.dart';
 import '../widgets/home_rebook_card.dart';
 import '../widgets/home_upcoming_appointments_section.dart';
@@ -90,7 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: AppSpacing.section),
                     _buildServicesSection(context),
                     const SizedBox(height: AppSpacing.lg),
-                    _buildPromotionsSection(context),
+                    const HomePromotionsSection(),
                     const SizedBox(height: AppSpacing.lg),
                     _buildRecentlyBookedSection(context, bookings),
                     const SizedBox(height: AppSpacing.lg),
@@ -141,24 +140,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── Live Session Card ───────────────────────────────────────────────────────
   Widget _buildLiveSessionCard(BookingModel booking, BuildContext context) =>
       HomeLiveSessionCard(booking: booking, formatCurrency: _formatCurrency);
-
-  // ── Promotions Section ────────────────────────────────────────────────────
-  Widget _buildPromotionsSection(BuildContext context) =>
-      HomePromotionsSection(buildPromoCard: _buildPromoCard);
-
-  Widget _buildPromoCard(
-    ({
-      String title,
-      String subtitle,
-      String hsd,
-      String badge,
-      Color bg,
-      Color accent,
-      Color borderColor,
-      String icon
-    }) promo,
-  ) =>
-      HomePromoCard(promo: promo);
 
   // ── Recently Booked Section ─────────────────────────────────────────────────
   Widget _buildRecentlyBookedSection(

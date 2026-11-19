@@ -35,7 +35,7 @@ class RiverpodShiftActiveActions implements ShiftActiveActions {
   @override
   Future<void> addNote(String note) => _store.addTimelineNote(id, note);
   @override
-  Future<void> checkout() => _store.checkOut(id);
+  Future<void> checkout(String note) => _store.checkOut(id, note);
   @override
   Future<void> raiseSos() => _store.raiseSos(id);
 }

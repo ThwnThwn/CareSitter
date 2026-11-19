@@ -5,6 +5,8 @@ using CareSitter.Modules.Booking.Application;
 using CareSitter.Modules.Booking.Application.Sync;
 using CareSitter.Modules.Booking.Infrastructure;
 using CareSitter.Modules.Booking.Domain;
+using CareSitter.Modules.Payments.Application;
+using CareSitter.Modules.Payments.Infrastructure;
 using CareSitter.SharedKernel.Results;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -129,6 +131,7 @@ public sealed class BookingReliabilityPostgresTests : IAsyncLifetime
             new BookingSyncService(dispatchDb),
             notifications,
             new PeopleLookupStub(),
+            new RecordingMatchingService(), null!, null!,
             new SystemClock(),
             Options.Create(new BookingSideEffectOptions
             {
@@ -170,6 +173,90 @@ public sealed class BookingReliabilityPostgresTests : IAsyncLifetime
         Assert.NotEqual(Guid.Empty, notification.EventId!.Value);
         Assert.Equal(bookingId.ToString(), notification.Data!["bookingId"]);
         Assert.Equal("confirmed", notification.Data["status"]);
+    }
+
+    [PostgresFact]
+    public async Task Confirmation_outbox_retries_promotion_finalization_then_starts_matching()
+    {
+        var seed = await ReadSeedAsync();
+        await using var db = CreateDb();
+        var promotionId = await db.Database.SqlQuery<Guid>(
+            $"SELECT id AS \"Value\" FROM promotion.promotions ORDER BY id LIMIT 1").SingleAsync();
+        var start = DateTimeOffset.UtcNow.AddDays(7);
+        var booking = BookingAggregate.Create(seed.CustomerId, seed.BeneficiaryId,
+            seed.AddressId, seed.ServiceTypeId, start, start.AddHours(2)).Value;
+        Assert.True(booking.ApplyPricing(100_000, 15_000, 85_000).IsSuccess);
+        Assert.True(booking.ApplyPromotion(promotionId, "TEST10", 100_000, 10_000, 90_000, 10_000).IsSuccess);
+        Assert.True(booking.TransitionTo(BookingStatus.PendingPayment).IsSuccess);
+        Assert.True(booking.ConfirmPayment().IsSuccess);
+        db.Bookings.Add(booking);
+        var sync = new BookingSyncService(db);
+        sync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
+        await db.SaveChangesAsync();
+
+        await using var paymentDb = new PaymentsDbContext(new DbContextOptionsBuilder<PaymentsDbContext>()
+            .UseNpgsql(_database.ConnectionString).Options);
+        var wallet = new WalletService(new WalletLedgerStore(paymentDb, null!), null!, null!, null!);
+        var promotions = new RetryPromotionService();
+        var matching = new RecordingMatchingService();
+        var clock = new TestClock(DateTimeOffset.UtcNow);
+        await using var dispatchDb = CreateDb();
+        var dispatcher = new BookingDomainOutboxDispatcher(dispatchDb, new RecordingHubContext(),
+            new BookingSyncService(dispatchDb),
+            new RecordingNotificationService(), new PeopleLookupStub(), matching, wallet, promotions,
+            clock, Options.Create(new BookingSideEffectOptions()), NullLogger<BookingDomainOutboxDispatcher>.Instance);
+
+        Assert.Equal(1, await dispatcher.DispatchPendingAsync(default));
+        Assert.Empty(matching.BookingIds);
+        Assert.True(await db.BookingDomainOutbox.AnyAsync(e => e.BookingId == booking.Id && e.Status == "FAILED"));
+
+        clock.UtcNow = clock.UtcNow.AddMinutes(5);
+        Assert.Equal(1, await dispatcher.DispatchPendingAsync(default));
+        Assert.Equal(0, await dispatcher.DispatchPendingAsync(default));
+        Assert.Equal(booking.Id, Assert.Single(matching.BookingIds));
+        Assert.Equal(2, promotions.Attempts);
+        var subsidy = await paymentDb.LedgerEntries.SingleAsync(e =>
+            e.BookingId == booking.Id && e.TransactionType == "PROMOTION_SUBSIDY");
+        Assert.Equal(10_000L, subsidy.Amount);
+    }
+
+    private sealed class TestClock(DateTimeOffset now) : IClock
+    {
+        public DateTimeOffset UtcNow { get; set; } = now;
+    }
+
+    private sealed class RetryPromotionService : IPromotionService
+    {
+        public int Attempts { get; private set; }
+        public Task<Result> RedeemAsync(Guid bookingId, Guid customerId, CancellationToken ct = default) =>
+            Task.FromResult(++Attempts == 1
+                ? Result.Failure(Error.Conflict("promotion.test_retry", "Temporary test failure"))
+                : Result.Success());
+        public Task<Result<PromotionPriceQuote>> PreviewAsync(PromotionPriceRequest request, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task<Result<PromotionPriceQuote>> ReserveAsync(PromotionReservationRequest request, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task<Result> ReleaseAsync(Guid bookingId, Guid customerId, string reason, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task ReclaimExpiredReservationsAsync(CancellationToken ct = default) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class RecordingMatchingService : IMatchingService
+    {
+        public List<Guid> BookingIds { get; } = [];
+        public Task<IReadOnlyList<MatchingCandidate>> OfferTopCandidatesAsync(Guid bookingId, CancellationToken ct = default)
+        {
+            BookingIds.Add(bookingId);
+            return Task.FromResult<IReadOnlyList<MatchingCandidate>>([]);
+        }
+        public Task<IReadOnlyList<MatchingCandidate>> GetEligibleCaregiversAsync(Guid bookingId, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task<IReadOnlyList<MatchingCandidate>> GetSuggestedCaregiversAsync(Guid bookingId, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task<IReadOnlyList<Guid>> GetOpenBookingIdsForCaregiverAsync(Guid caregiverId, CancellationToken ct = default) =>
+            throw new NotSupportedException();
+        public Task<int> ExpandExpiredOffersAsync(CancellationToken ct = default) => throw new NotSupportedException();
     }
 
     private BookingDbContext CreateDb() => new(

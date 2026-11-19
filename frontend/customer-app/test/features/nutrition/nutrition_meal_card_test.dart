@@ -95,8 +95,9 @@ void main() {
 
     expect(find.byType(Image), findsOneWidget);
     final imageRect = tester.getRect(find.byType(Image));
+    expect(find.textContaining('[DEMO]'), findsNothing);
     final titleRect =
-        tester.getRect(find.text('[DEMO] Cháo gạo tẻ đậu phụ và cà chua'));
+        tester.getRect(find.text('Cháo gạo tẻ đậu phụ và cà chua'));
     expect(imageRect.right, lessThan(titleRect.left));
     expect(imageRect.width, 64);
     expect(find.text('Thành phần'), findsNothing);

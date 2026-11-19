@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_active_controller.dart';
-import 'package:caregiver_app/features/shifts/presentation/controllers/shift_list_controller.dart';
+import 'package:caregiver_app/features/shifts/presentation/controllers/shift_by_id_provider.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_active_content.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_checkout_section.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_task_editor.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_timer_chip.dart';
+import '../widgets/shift_read_state.dart';
+import '../widgets/shift_open_report_action.dart';
 
 class ShiftActiveScreen extends ConsumerWidget {
   const ShiftActiveScreen({super.key, required this.id});
@@ -17,14 +19,15 @@ class ShiftActiveScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final booking = ref.watch(
-      shiftsProvider.select(
-        (list) => list.where((booking) => booking.id == id).firstOrNull,
-      ),
-    );
+    final shift = ref.watch(shiftByIdProvider(id));
+    final booking =
+        shift.isLoading || shift.hasError ? null : shift.valueOrNull;
     final checkedIn =
         ref.watch(shiftActiveProvider(id).select((s) => s.checkedIn));
     final error = ref.watch(shiftActiveProvider(id).select((s) => s.error));
+    final status = booking?.status;
+    final canOpenReport =
+        status == 'checkout_pending_review' || status == 'completed';
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -64,8 +67,10 @@ class ShiftActiveScreen extends ConsumerWidget {
         ],
       ),
       body: booking == null
-          ? const Center(
-              child: Text('Không tìm thấy thông tin ca làm việc này.'))
+          ? ShiftReadState(
+              error: shift.error,
+              onRetry: () => ref.invalidate(shiftDetailLoadProvider(id)),
+            )
           : ShiftActiveContent(
               booking: booking,
               checkedIn: checkedIn,
@@ -74,9 +79,11 @@ class ShiftActiveScreen extends ConsumerWidget {
                   ref.read(shiftActiveProvider(id).notifier).loadTasks(),
             ),
       bottomNavigationBar:
-          booking != null && booking.status == 'in_progress' && checkedIn
+          booking != null && status == 'in_progress' && checkedIn
               ? ShiftCheckoutSection(booking: booking)
-              : null,
+              : canOpenReport
+                  ? ShiftOpenReportAction(bookingId: id)
+                  : null,
     );
   }
 }

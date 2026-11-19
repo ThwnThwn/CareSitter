@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Contracts/CareSitter.Contracts.csproj" />
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+  </ItemGroup>
+</Project>

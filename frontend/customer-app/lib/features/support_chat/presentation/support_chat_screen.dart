@@ -11,7 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SupportChatScreen extends ConsumerStatefulWidget {
-  const SupportChatScreen({super.key});
+  const SupportChatScreen({super.key, this.conversationId});
+
+  final String? conversationId;
 
   @override
   ConsumerState<SupportChatScreen> createState() => _SupportChatScreenState();
@@ -26,6 +28,11 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
   late final ProviderSubscription<SupportChatState> _chatChanges;
   late final ProviderSubscription<String?> _accountChanges;
 
+  AutoDisposeStateNotifierProvider<SupportChatController, SupportChatState>
+      get _provider => widget.conversationId == null
+          ? supportChatControllerProvider
+          : supportChatByConversationProvider(widget.conversationId);
+
   bool get _nearBottom =>
       !_scrollController.hasClients ||
       _scrollController.position.extentAfter < AppSpacing.hero;
@@ -35,7 +42,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
         _scrollController.position.extentAfter > AppSpacing.lg) {
       return;
     }
-    ref.read(supportChatControllerProvider.notifier).markVisibleRead();
+    ref.read(_provider.notifier).markVisibleRead();
   }
 
   @override
@@ -43,8 +50,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_markReadAtBottom);
-    _chatChanges =
-        ref.listenManual(supportChatControllerProvider, _onChatChanged);
+    _chatChanges = ref.listenManual(_provider, _onChatChanged);
     _accountChanges = ref.listenManual(
         authStateProvider.select((value) => value.valueOrNull?.userId),
         (_, __) {
@@ -70,21 +76,18 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
   }
 
   void _scrollToLatest() {
-    final conversationId =
-        ref.read(supportChatControllerProvider).conversation?.id;
+    final conversationId = ref.read(_provider).conversation?.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted ||
           !_scrollController.hasClients ||
-          ref.read(supportChatControllerProvider).conversation?.id !=
-              conversationId) {
+          ref.read(_provider).conversation?.id != conversationId) {
         return;
       }
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted ||
             !_scrollController.hasClients ||
-            ref.read(supportChatControllerProvider).conversation?.id !=
-                conversationId) {
+            ref.read(_provider).conversation?.id != conversationId) {
           return;
         }
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -100,9 +103,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    ref
-        .read(supportChatControllerProvider.notifier)
-        .setActive(state == AppLifecycleState.resumed);
+    ref.read(_provider.notifier).setActive(state == AppLifecycleState.resumed);
   }
 
   @override
@@ -119,7 +120,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
 
   Future<void> _send() async {
     final draft = _draft.text;
-    final chat = ref.read(supportChatControllerProvider);
+    final chat = ref.read(_provider);
     final conversation = chat.conversation;
     if (draft.trim().isEmpty ||
         chat.busy ||
@@ -129,9 +130,9 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
       return;
     }
     final conversationId = conversation.id;
-    await ref.read(supportChatControllerProvider.notifier).send(draft.trim());
+    await ref.read(_provider.notifier).send(draft.trim());
     if (!mounted) return;
-    final current = ref.read(supportChatControllerProvider);
+    final current = ref.read(_provider);
     if (current.error == null &&
         current.conversation?.id == conversationId &&
         _draft.text == draft) {
@@ -140,7 +141,7 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
   }
 
   void _showInfo() {
-    final conversation = ref.read(supportChatControllerProvider).conversation;
+    final conversation = ref.read(_provider).conversation;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -177,8 +178,8 @@ class _SupportChatScreenState extends ConsumerState<SupportChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    final chat = ref.watch(supportChatControllerProvider);
-    final controller = ref.read(supportChatControllerProvider.notifier);
+    final chat = ref.watch(_provider);
+    final controller = ref.read(_provider.notifier);
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return Scaffold(
       backgroundColor: AppColors.background,

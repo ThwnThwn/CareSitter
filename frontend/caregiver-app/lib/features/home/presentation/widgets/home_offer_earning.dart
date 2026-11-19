@@ -14,19 +14,16 @@ class HomeOfferEarning extends StatelessWidget {
         children: [
           const Text(
             'Thu nhập',
-            style: TextStyle(fontFamily: 'Inter',
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppFontSizes.s11,
               color: AppColors.textSecondary,
             ),
           ),
           Text(
-            formatVnd(
-                booking.caregiverEarning > 0
-                    ? booking.caregiverEarning
-                    : booking.totalPrice,
-                compact: true,
-                round: true),
-            style: const TextStyle(fontFamily: 'Inter',
+            formatVnd(booking.caregiverEarning, compact: true, round: true),
+            style: const TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppFontSizes.s18,
               fontWeight: FontWeight.w700,
               color: AppColors.primary,

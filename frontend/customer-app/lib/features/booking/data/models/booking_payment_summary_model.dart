@@ -2,6 +2,8 @@ class BookingPaymentSummaryModel {
   const BookingPaymentSummaryModel(
       {required this.bookingId,
       required this.amountDue,
+      this.grossAmount,
+      this.discountAmount = 0,
       required this.canPay,
       required this.canCancel,
       required this.refundIfCancelledNow,
@@ -13,6 +15,8 @@ class BookingPaymentSummaryModel {
       this.afterPaymentCancellationExplanation});
   final String bookingId;
   final int amountDue;
+  final int? grossAmount;
+  final int discountAmount;
   final bool canPay, canCancel;
   final int? refundIfCancelledNow;
   final int? refundAfterPaymentIfCancelledNow;
@@ -26,6 +30,8 @@ class BookingPaymentSummaryModel {
       BookingPaymentSummaryModel(
         bookingId: json['bookingId'] as String,
         amountDue: (json['amountDue'] as num).toInt(),
+        grossAmount: (json['grossAmount'] as num?)?.toInt(),
+        discountAmount: (json['discountAmount'] as num?)?.toInt() ?? 0,
         canPay: json['canPay'] == true,
         canCancel: json['canCancel'] == true,
         refundIfCancelledNow: (json['refundIfCancelledNow'] as num?)?.toInt(),

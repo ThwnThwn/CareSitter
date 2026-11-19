@@ -16,6 +16,13 @@ public sealed class SupportNotificationClient(HttpClient http) : INotificationDe
         return await response.Content.ReadFromJsonAsync<DeliveryClaim>(ct) ?? throw new IOException("Empty claim response.");
     }
 
+    public async Task<bool> CheckpointAsync(Guid eventId, Guid token, string[] keys, CancellationToken ct)
+    {
+        using var response = await http.PostAsJsonAsync("internal/messaging/notifications/checkpoint",
+            new { eventId, claimToken = token, keys }, ct);
+        return response.IsSuccessStatusCode;
+    }
+
     /// <summary>Reports a provider result; a lost response is safely retried through the next claim.</summary>
     public async Task<bool> CompleteAsync(Guid eventId, string channel, Guid token, bool success, string? failure, CancellationToken ct)
     {

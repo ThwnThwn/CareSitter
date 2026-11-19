@@ -30,10 +30,24 @@ function integer(value: string, label: string, min = 0, max = Number.MAX_SAFE_IN
   return number;
 }
 
-export function promotionPayload(form: PromotionForm, expectedUpdatedAt?: string) {
-  const startsAt = fromDateTimeInput(form.startsAt);
-  const endsAt = fromDateTimeInput(form.endsAt);
-  if (Date.parse(endsAt) <= Date.parse(startsAt)) throw new Error('Thời điểm kết thúc phải sau thời điểm bắt đầu.');
+function resolveTime(input: string, original?: string) {
+  return original && input === toDateTimeInput(original) ? original : fromDateTimeInput(input);
+}
+
+function compareTimes(left: string, right: string) {
+  const milliseconds = Date.parse(left) - Date.parse(right);
+  if (milliseconds !== 0) return milliseconds;
+  // Date.parse drops fractional digits beyond milliseconds, but the API preserves them.
+  const fraction = (value: string) => Number((value.match(/\.(\d+)/)?.[1] ?? '').padEnd(7, '0'));
+  return fraction(left) - fraction(right);
+}
+
+export function promotionPayload(form: PromotionForm, promotion?: AdminPromotion | null) {
+  const startsAt = promotion?.hasHistory ? promotion.startsAt : resolveTime(form.startsAt, promotion?.startsAt);
+  const endsAt = resolveTime(form.endsAt, promotion?.endsAt);
+  if (compareTimes(endsAt, startsAt) <= 0) throw new Error('Thời điểm kết thúc phải sau thời điểm bắt đầu.');
+  if (form.discountType === 'percentage' && Number(form.discountValue) === 100 && !form.maxDiscountAmount.trim())
+    throw new Error('Mã giảm 100% cần có mức giảm tối đa vì chưa hỗ trợ đơn 0đ.');
   const terms = form.terms.split('\n').map((term) => term.trim()).filter(Boolean);
   if (terms.length > 20 || terms.some((term) => term.length > 500))
     throw new Error('Tối đa 20 điều kiện, mỗi điều kiện không quá 500 ký tự.');
@@ -45,6 +59,6 @@ export function promotionPayload(form: PromotionForm, expectedUpdatedAt?: string
     minOrderAmount: integer(form.minOrderAmount, 'Đơn tối thiểu'),
     totalUsageLimit: form.totalUsageLimit === '' ? null : integer(form.totalUsageLimit, 'Tổng lượt', 1, 2_147_483_647),
     perCustomerUsageLimit: integer(form.perCustomerUsageLimit, 'Lượt mỗi khách', 1, 2_147_483_647),
-    priority: integer(form.priority, 'Độ ưu tiên', 0, 2_147_483_647), expectedUpdatedAt,
+    priority: integer(form.priority, 'Độ ưu tiên', 0, 2_147_483_647), expectedUpdatedAt: promotion?.updatedAt,
   };
 }

@@ -48,6 +48,9 @@ internal sealed class PromotionApplicationService(
             request.ServiceTypeId, request.GrossAmount, now, request.BookingId, ct);
         if (eligibility.IsFailure) return eligibility.Error;
 
+        if (request.ExpectedPayableAmount is { } expected && expected != request.GrossAmount - eligibility.Value)
+            return Error.Conflict("promotion.quote_changed", "Giá đã thay đổi. Vui lòng áp dụng lại mã để xác nhận số tiền mới.");
+
         var existing = await db.PromotionRedemptions.SingleOrDefaultAsync(
             x => x.BookingId == request.BookingId, ct);
         if (existing is not null)
@@ -121,6 +124,29 @@ internal sealed class PromotionApplicationService(
         return Result.Success();
     }
 
+    public async Task ReclaimExpiredReservationsAsync(CancellationToken ct = default)
+    {
+        var cutoff = clock.UtcNow;
+        var expired = db.PromotionRedemptions.AsNoTracking()
+            .Where(x => x.Status == PromotionRedemptionStatus.Reserved && x.ExpiresAt <= cutoff);
+        Guid? after = null;
+        const int batchSize = 100;
+        while (true)
+        {
+            var page = after is { } cursor ? expired.Where(x => x.Id.CompareTo(cursor) > 0) : expired;
+            var candidates = await page.OrderBy(x => x.Id).Take(batchSize)
+                .Select(x => new { x.Id, x.BookingId, x.CustomerId }).ToArrayAsync(ct);
+            foreach (var hold in candidates)
+            {
+                if (!await bookingLookup.CanReleaseExpiredReservationAsync(hold.BookingId, ct)) continue;
+                var release = await ReleaseAsync(hold.BookingId, hold.CustomerId, "BOOKING_ABANDONED_OR_CANCELLED", ct);
+                if (release.IsFailure) throw new InvalidOperationException(release.Error.Code);
+            }
+            if (candidates.Length < batchSize) return;
+            after = candidates[^1].Id;
+        }
+    }
+
     private async Task<Result<long>> EnsureEligibleAsync(Domain.Promotion promotion,
         Guid customerId, Guid serviceTypeId, long grossAmount, DateTimeOffset now,
         Guid? bookingId, CancellationToken ct)
@@ -131,10 +157,11 @@ internal sealed class PromotionApplicationService(
             promotion.FirstPaidBookingOnly && await bookingLookup.HasPaidBookingAsync(customerId, ct));
         if (history.IsFailure) return history.Error;
 
+        // Reconciliation can still confirm payment after the nominal expiry.
         var activeUsages = db.PromotionRedemptions.AsNoTracking().Where(x =>
             x.PromotionId == promotion.Id &&
             (x.Status == PromotionRedemptionStatus.Redeemed ||
-             (x.Status == PromotionRedemptionStatus.Reserved && x.ExpiresAt >= now)));
+             x.Status == PromotionRedemptionStatus.Reserved));
         if (bookingId is { } excludedBookingId)
             activeUsages = activeUsages.Where(x => x.BookingId != excludedBookingId);
 

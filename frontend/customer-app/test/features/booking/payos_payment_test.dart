@@ -36,6 +36,8 @@ class FakePayments extends BookingRepository {
       BookingPaymentSummaryModel(
           bookingId: id,
           amountDue: 75000,
+          grossAmount: 100000,
+          discountAmount: 25000,
           canPay: true,
           canCancel: true,
           refundIfCancelledNow: 0,
@@ -184,6 +186,8 @@ void main() {
         PaymentCheckoutSheet(
             booking: booking(), openCheckout: (_) async => true));
     expect(find.text('75.000 ₫'), findsOneWidget);
+    expect(find.text('100.000đ'), findsOneWidget);
+    expect(find.text('-25.000đ'), findsOneWidget);
     repository.pending = Completer<PaymentIntentModel>();
     await tester.tap(find.text('payOS'));
     await tester.pump();

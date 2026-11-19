@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
+using CareSitter.Infrastructure.Persistence;
+
 namespace CareSitter.Modules.Identity;
 
 public sealed class IdentityModule : IModule
@@ -17,6 +19,8 @@ public sealed class IdentityModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddKeyedScoped<ModuleDbContext>("dispute", (sp, _) => sp.GetRequiredService<IdentityDbContext>());
+        services.AddKeyedScoped<ModuleDbContext>("catalog", (sp, _) => sp.GetRequiredService<IdentityDbContext>());
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),

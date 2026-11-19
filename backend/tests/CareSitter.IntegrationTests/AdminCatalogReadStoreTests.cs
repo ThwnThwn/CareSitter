@@ -60,7 +60,7 @@ public sealed class AdminCatalogReadStoreTests
         var now = DateTimeOffset.UtcNow;
         var service = ServiceType.Create("CATALOG_ACTIVE_TEST", "Gói kiểm thử đang hoạt động",
             imageUrl: "https://cdn.example.test/catalog-active.webp").Value;
-        var price = PricingRule.Create("Giá kiểm thử", service.Id, 120_000).Value;
+        var price = PricingRule.Create("Giá kiểm thử", service.Id, 120_000, effectiveFrom: now.AddMinutes(-1)).Value;
         var plan = ServicePlan.Create(
             service.Id,
             "CATALOG_ACTIVE_TEST_SINGLE",

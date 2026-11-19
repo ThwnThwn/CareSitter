@@ -55,6 +55,21 @@ it('creates a disabled campaign with normalized fields and null optional limits'
   await waitFor(() => expect(showToast).toHaveBeenCalledWith('Đã tạo chiến dịch ưu đãi.'));
 });
 
+it('saves an edited title without rewriting either timestamp of an unused campaign', async () => {
+  const current = { ...promotion, endsAt: '2026-11-01T01:00:00.654321Z' };
+  const fetch = mockApi(current);
+  render(<PromotionsPage />);
+  await userEvent.click(await screen.findByRole('button', { name: 'Mở chiến dịch CARE10' }));
+  fireEvent.change(await screen.findByLabelText('Tên chiến dịch'), { target: { value: 'Tên mới' } });
+  await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+
+  await waitFor(() => expect(fetch.mock.calls.some(([, init]) => init.method === 'PUT')).toBe(true));
+  const [, init] = fetch.mock.calls.find(([, request]) => request.method === 'PUT')!;
+  expect(JSON.parse(init.body)).toMatchObject({
+    title: 'Tên mới', startsAt: current.startsAt, endsAt: current.endsAt,
+  });
+});
+
 it('locks financial fields and preserves the exact original start time for a used campaign', async () => {
   const current = { ...promotion, hasHistory: true, canDelete: false, redeemedCount: 1 };
   const fetch = mockApi(current);

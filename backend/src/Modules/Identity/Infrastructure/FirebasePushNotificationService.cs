@@ -1,7 +1,5 @@
 using CareSitter.Contracts.Services;
-using FirebaseAdmin;
-using FirebaseAdmin.Messaging;
-using Google.Apis.Auth.OAuth2;
+using CareSitter.Push;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -13,9 +11,10 @@ internal sealed class FirebasePushNotificationService(
     IConfiguration configuration,
     ILogger<FirebasePushNotificationService> logger) : IPushNotificationService
 {
-    private static readonly object AppLock = new();
+    private readonly FirebasePushTransport _transport = new(configuration);
 
-    public async Task SendToUserAsync(UserNotificationMessage message, CancellationToken ct = default)
+    public async Task SendToUserAsync(UserNotificationMessage message, IReadOnlySet<string> completed,
+        Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct = default)
     {
         var notificationPrefs = await db.Users.AsNoTracking()
             .Where(x => x.Id == message.UserId)
@@ -25,14 +24,6 @@ internal sealed class FirebasePushNotificationService(
         if ((message.Type == "BOOKING_CHAT" && !preferences.ChatMessage) ||
             (message.Type == "SUPPORT_CHAT" && !preferences.SupportChatMessage))
             return;
-
-        var app = GetOrCreateFirebaseApp();
-        if (app is null)
-        {
-            logger.LogDebug("Firebase is not configured; skipping push notification for user {UserId}.",
-                message.UserId);
-            return;
-        }
 
         var tokens = await db.UserDevices.AsNoTracking()
             .Where(x => x.UserId == message.UserId && x.PushToken != null)
@@ -50,100 +41,18 @@ internal sealed class FirebasePushNotificationService(
             ["occurredAt"] = (message.OccurredAt ?? DateTimeOffset.UtcNow).ToString("O")
         };
 
-        var multicast = new MulticastMessage
+        var result = await _transport.SendAsync(tokens.Where(t => !completed.Contains(PushTargetKey.FromToken(t))),
+            message.Title, message.Body, data, checkpoint, ct);
+        if (result.UnregisteredTokens.Count > 0)
         {
-            Tokens = tokens,
-            Notification = new Notification
-            {
-                Title = message.Title,
-                Body = message.Body
-            },
-            Data = data
-        };
-
-        try
-        {
-            var response = await FirebaseMessaging.GetMessaging(app)
-                .SendEachForMulticastAsync(multicast, ct);
-
-            if (response.FailureCount > 0)
-            {
-                logger.LogWarning("Firebase push sent to user {UserId} with {FailureCount}/{TotalCount} failures.",
-                    message.UserId, response.FailureCount, tokens.Count);
-
-                var staleTokens = response.Responses
-                    .Select((result, index) => new
-                    {
-                        Result = result,
-                        Token = tokens[index]
-                    })
-                    .Where(x => !x.Result.IsSuccess && IsPermanentTokenFailure(x.Result.Exception))
-                    .Select(x => x.Token)
-                    .ToArray();
-
-                if (staleTokens.Length > 0)
-                {
-                    var staleDevices = await db.UserDevices
-                        .Where(x => x.PushToken != null && staleTokens.Contains(x.PushToken))
-                        .ToListAsync(ct);
-                    db.UserDevices.RemoveRange(staleDevices);
-                    await db.SaveChangesAsync(ct);
-                    logger.LogInformation("Removed {Count} invalid Firebase device tokens.",
-                        staleDevices.Count);
-                }
-            }
+            var stale = result.UnregisteredTokens.ToArray();
+            var devices = await db.UserDevices.Where(x => x.UserId == message.UserId && x.PushToken != null &&
+                stale.Contains(x.PushToken)).ToListAsync(ct);
+            db.UserDevices.RemoveRange(devices);
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Removed {Count} expired push registrations.", devices.Count);
         }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Firebase push failed for user {UserId}.", message.UserId);
-            throw;
-        }
-    }
-
-    private static bool IsPermanentTokenFailure(FirebaseMessagingException? exception)
-    {
-        var code = exception?.MessagingErrorCode?.ToString();
-        return code is "Unregistered" or "InvalidArgument" or "SenderIdMismatch";
-    }
-
-    private FirebaseApp? GetOrCreateFirebaseApp()
-    {
-        if (FirebaseApp.DefaultInstance is { } existing)
-            return existing;
-
-        lock (AppLock)
-        {
-            if (FirebaseApp.DefaultInstance is { } current)
-                return current;
-
-            var json = configuration["Firebase:ServiceAccountJson"];
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                return FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromJson(json)
-                });
-            }
-
-            var path = configuration["Firebase:ServiceAccountPath"]
-                ?? configuration["GOOGLE_APPLICATION_CREDENTIALS"];
-            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-            {
-                return FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.FromFile(path)
-                });
-            }
-
-            if (configuration.GetValue<bool>("Firebase:UseApplicationDefaultCredentials"))
-            {
-                return FirebaseApp.Create(new AppOptions
-                {
-                    Credential = GoogleCredential.GetApplicationDefault()
-                });
-            }
-        }
-
-        return null;
+        if (result.Outcome != PushOutcome.Success)
+            throw new InvalidOperationException($"Firebase delivery failed ({result.Outcome}).");
     }
 }

@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('filters Vietnamese profiles without requiring accents',
-      (tester) async {
+  testWidgets('shows all profiles without a search field', (tester) async {
     await tester.pumpWidget(_app(
       profiles: [
         _profile(id: 'loan', name: 'Trần Thị Loan', relationship: 'Mẹ'),
@@ -14,21 +13,9 @@ void main() {
       ],
     ));
 
-    await tester.enterText(
-      find.byKey(const ValueKey('nutrition-beneficiary-search')),
-      'tran thi loan',
-    );
-    await tester.pump();
-
+    expect(find.byType(TextField), findsNothing);
     expect(find.text('Trần Thị Loan'), findsOneWidget);
-    expect(find.text('Nguyễn Văn Minh'), findsNothing);
-
-    await tester.enterText(
-      find.byKey(const ValueKey('nutrition-beneficiary-search')),
-      'me',
-    );
-    await tester.pump();
-    expect(find.text('Trần Thị Loan'), findsOneWidget);
+    expect(find.text('Nguyễn Văn Minh'), findsOneWidget);
   });
 
   testWidgets('selects the tapped profile', (tester) async {

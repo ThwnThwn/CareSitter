@@ -19,6 +19,8 @@ class BookingModel {
       status; // pending | confirmed | caregiver_en_route | in_progress | ...
   final int escrowAmount;
   final int? customerPayableAmount;
+  final int promotionDiscountAmount;
+  final String? promotionCode;
   final int platformFeeAmount;
   final DateTime? cancelledAt;
   final String? cancelReason;
@@ -54,6 +56,8 @@ class BookingModel {
     required this.status,
     required this.escrowAmount,
     this.customerPayableAmount,
+    this.promotionDiscountAmount = 0,
+    this.promotionCode,
     required this.platformFeeAmount,
     this.cancelledAt,
     this.cancelReason,
@@ -120,6 +124,8 @@ class BookingModel {
       status: status ?? this.status,
       escrowAmount: escrowAmount,
       customerPayableAmount: customerPayableAmount,
+      promotionDiscountAmount: promotionDiscountAmount,
+      promotionCode: promotionCode,
       platformFeeAmount: platformFeeAmount,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       cancelReason: cancelReason ?? this.cancelReason,
@@ -145,7 +151,8 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
-    final scheduledStart = _parseNullableApiDateTime(json['scheduledStart']) ?? now;
+    final scheduledStart =
+        _parseNullableApiDateTime(json['scheduledStart']) ?? now;
     final scheduledEnd = _parseNullableApiDateTime(json['scheduledEnd']) ??
         scheduledStart.add(const Duration(hours: 1));
 
@@ -167,6 +174,8 @@ class BookingModel {
       customerPayableAmount: json['customerPayableAmount'] == null
           ? null
           : _int(json['customerPayableAmount']),
+      promotionDiscountAmount: _int(json['promotionDiscountAmount']),
+      promotionCode: _string(json['promotionCode']),
       platformFeeAmount: _int(json['platformFeeAmount']),
       cancelledAt: _parseNullableApiDateTime(json['cancelledAt']),
       cancelReason: _string(json['cancelReason']),
@@ -175,7 +184,8 @@ class BookingModel {
       caregiverName: _string(json['caregiverName']),
       caregiverAvatar: _string(json['caregiverAvatar']),
       beneficiaryName: _string(json['beneficiaryName']),
-      beneficiaryNotes: _string(json['beneficiaryNotes']) ?? _string(json['note']),
+      beneficiaryNotes:
+          _string(json['beneficiaryNotes']) ?? _string(json['note']),
       addressText: _string(json['addressText']),
       addressLatitude: _double(json['addressLatitude']),
       addressLongitude: _double(json['addressLongitude']),

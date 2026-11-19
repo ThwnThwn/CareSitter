@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../components/DataTable';
 import { useState } from 'react';
 import { Edit3, Plus, RefreshCw, Search } from 'lucide-react';
 import { qs } from '../api';
@@ -37,7 +38,7 @@ export function PromotionsPage({ showToast = () => undefined }: { showToast?: Sh
     <>
       <PageHeader
         title="Ưu đãi"
-        description="Quản lý chiến dịch giảm giá, thời gian áp dụng và lượt sử dụng theo booking."
+        description="Theo dõi mã giảm giá, thời gian áp dụng và lượt sử dụng cho từng lịch."
         actions={
           <button
             className="primary"
@@ -119,20 +120,9 @@ export function PromotionsPage({ showToast = () => undefined }: { showToast?: Sh
           />
         ) : (
           <div className="table-wrap">
-            <table className="data-table promotion-table">
-              <thead>
-                <tr>
-                  <th>Chiến dịch</th>
-                  <th>Mức giảm</th>
-                  <th>Thời gian</th>
-                  <th>Lượt sử dụng</th>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
+            <DataTable columns={['Chiến dịch', 'Mức giảm', 'Thời gian', 'Lượt sử dụng', 'Trạng thái', 'Thao tác']} className="promotion-table">
                 {data.items.map((promotion) => (
-                  <tr key={promotion.id}>
+                  <DataRow key={promotion.id}>
                     <td>
                       <strong>
                         <button
@@ -187,10 +177,9 @@ export function PromotionsPage({ showToast = () => undefined }: { showToast?: Sh
                         <Edit3 size={14} /> Chi tiết
                       </button>
                     </td>
-                  </tr>
+                  </DataRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTable>
           </div>
         )}
         {hasLoaded && (

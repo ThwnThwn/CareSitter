@@ -1,4 +1,5 @@
 using CareSitter.Modules.Support.Application;
+using CareSitter.Modules.Support.Application.Commands;
 using CareSitter.Modules.Support.Application.Commands.MarkAllNotificationsRead;
 using CareSitter.Modules.Support.Application.Commands.MarkNotificationRead;
 using MediatR;
@@ -28,6 +29,21 @@ public sealed class NotificationsController : ControllerBase
     public async Task<IActionResult> List(int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ListNotificationsQuery(page, pageSize), ct);
+        return result.ToActionResult(this);
+    }
+
+    [HttpGet("inbox")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Inbox(int page = 1, int pageSize = 20, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new ListNotificationInboxQuery(page, pageSize), ct);
+        return result.ToActionResult(this);
+    }
+
+    [HttpPut("{id:guid}/read-group")]
+    public async Task<IActionResult> MarkGroupRead(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new MarkNotificationGroupReadCommand(id), ct);
         return result.ToActionResult(this);
     }
 

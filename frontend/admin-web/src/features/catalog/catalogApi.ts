@@ -18,6 +18,12 @@ type ChecklistDraft = Pick<
   'name' | 'description' | 'isRequired' | 'requiresPhoto' | 'sortOrder'
 >;
 
+export function createServiceBundle(requestId: string, service: ServiceDraft, price: PriceDraft, checklist: ChecklistDraft[]) {
+  return api<CatalogService>(`${catalogPaths.services}/setup`, {
+    method: 'POST', body: JSON.stringify({ requestId, service, price, checklist }),
+  });
+}
+
 export function saveCatalogService(id: string | undefined, draft: ServiceDraft) {
   return api<CatalogService>(id ? `${catalogPaths.services}/${id}` : catalogPaths.services, {
     method: id ? 'PUT' : 'POST',

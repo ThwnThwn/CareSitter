@@ -29,16 +29,26 @@ void main() {
         isTrue);
     expect(
         BookingStatusRules.belongsToList(
-            BookingListCategory.upcoming, 'confirmed', false),
+            BookingListCategory.active, 'confirmed', false),
         isFalse);
     expect(
         BookingStatusRules.belongsToList(
-            BookingListCategory.upcoming, 'confirmed', true),
+            BookingListCategory.active, 'confirmed', true),
         isTrue);
     expect(
         BookingStatusRules.belongsToList(
             BookingListCategory.unmatched, 'matching_failed', false),
         isTrue);
+  });
+  test('disputes and refund history are separate categories', () {
+    expect(
+        BookingListCategory.values.where((category) =>
+            BookingStatusRules.belongsToList(category, 'disputed', true)),
+        [BookingListCategory.disputed]);
+    expect(
+        BookingListCategory.values.where((category) =>
+            BookingStatusRules.belongsToList(category, 'refunded', true)),
+        [BookingListCategory.cancelled]);
   });
   test('cancellation metadata wins over an old live status', () {
     expect(

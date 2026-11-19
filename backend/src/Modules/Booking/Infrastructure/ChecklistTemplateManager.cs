@@ -9,8 +9,12 @@ namespace CareSitter.Modules.Booking.Infrastructure;
 internal sealed class ChecklistTemplateManager(
     BookingDbContext bookingDb,
     IServiceChecklistCatalog catalog,
-    IAuditLogger auditLogger) : IChecklistTemplateManager
+    IAuditLogger auditLogger) : IChecklistTemplateManager, IServiceChecklistWriter
 {
+    public async Task<Result> AddItemAsync(Guid serviceId, ServiceChecklistItem item, CancellationToken ct)
+        => await CreateAsync(serviceId, new ChecklistTemplateInput(item.Name, item.Description, item.IsRequired,
+            item.RequiresPhoto, item.SortOrder), ct);
+
     public async Task<Result<ChecklistPolicyResponse>> SetPolicyAsync(
         Guid serviceTypeId, bool allowAdHocTasks, CancellationToken ct = default)
     {

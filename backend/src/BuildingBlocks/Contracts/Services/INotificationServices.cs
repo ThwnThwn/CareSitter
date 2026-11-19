@@ -17,5 +17,6 @@ public interface IUserNotificationService
 
 public interface IPushNotificationService
 {
-    Task SendToUserAsync(UserNotificationMessage message, CancellationToken ct = default);
+    Task SendToUserAsync(UserNotificationMessage message, IReadOnlySet<string> completed,
+        Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct = default);
 }

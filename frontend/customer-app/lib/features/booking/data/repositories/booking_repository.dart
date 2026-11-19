@@ -102,6 +102,9 @@ class BookingRepository {
       'addressId': draft.addressId,
       'scheduledStart': draft.scheduledStart.toUtc().toIso8601String(),
       'scheduledEnd': draft.scheduledEnd.toUtc().toIso8601String(),
+      if (draft.expectedPayableAmount case final amount?)
+        'expectedPayableAmount': amount,
+      if (draft.promotionCode case final code?) 'promotionCode': code,
     };
     final resp = draft.idempotencyKey == null
         ? await _dio.post<Map<String, dynamic>>(ApiPaths.bookings, data: data)

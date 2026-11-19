@@ -19,7 +19,15 @@ class BookingPaymentSummary extends StatelessWidget {
             children: [
               BookingPaymentRow(
                   label: 'Dịch vụ (${booking.duration})',
-                  amount: booking.totalPrice),
+                  amount: booking.escrowAmount),
+              if (booking.promotionDiscountAmount > 0) ...[
+                const SizedBox(height: AppSpacing.xs),
+                BookingPaymentRow(
+                    label: booking.promotionCode == null
+                        ? 'Giảm giá'
+                        : 'Ưu đãi ${booking.promotionCode}',
+                    amount: -booking.promotionDiscountAmount),
+              ],
               const Divider(height: 16, color: AppColors.divider),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -34,7 +42,7 @@ class BookingPaymentSummary extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Flexible(
                     child: Text(
-                      '${formatVnd(booking.totalPrice, suffix: '')}đ',
+                      formatVnd(booking.payableAmount),
                       textAlign: TextAlign.right,
                       style: const TextStyle(
                           color: AppColors.primary,

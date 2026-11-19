@@ -25,6 +25,8 @@ public sealed record PromotionConfiguration(
             (DiscountType == PromotionDiscountType.Percentage && DiscountValue > 100) ||
             MaxDiscountAmount is <= 0 or > MaxMoney || MinOrderAmount < 0 || MinOrderAmount > MaxMoney)
             return Invalid("Giá trị giảm phải dương; phần trăm tối đa 100%; số tiền phải là số nguyên VND hợp lệ.");
+        if (DiscountType == PromotionDiscountType.Percentage && DiscountValue == 100 && MaxDiscountAmount is null)
+            return MissingDiscountCap();
         if (StartsAt == default || EndsAt == default || EndsAt <= StartsAt)
             return Invalid("Thời điểm kết thúc phải sau thời điểm bắt đầu.");
         if (TotalUsageLimit is <= 0 || PerCustomerUsageLimit <= 0 || Priority < 0)
@@ -37,6 +39,8 @@ public sealed record PromotionConfiguration(
             return Invalid("Danh sách dịch vụ không hợp lệ hoặc bị trùng (tối đa 100 dịch vụ).");
         return Result.Success();
     }
+
+    internal static Error MissingDiscountCap() => Invalid("Mã giảm 100% cần có mức giảm tối đa vì chưa hỗ trợ đơn 0đ.");
 
     private static Error Invalid(string message) => Error.Validation("promotion.invalid_configuration", message);
 }

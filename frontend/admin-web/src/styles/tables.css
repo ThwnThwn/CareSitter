@@ -1,0 +1,31 @@
+.cell-value { min-width: 0; }
+.data-table .cell-value > .status-chip + .status-chip { margin-left: 4px; }
+@media (max-width: 760px) {
+  .table-wrap table.responsive-table { width: 100%; min-width: 0; display: block; }
+  .responsive-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .responsive-table tbody { display: block; }
+  .responsive-table tbody tr { display: grid; gap: 8px; padding: 16px; }
+  .responsive-table tbody tr + tr { border-top: 1px solid var(--line); }
+  .table-wrap .responsive-table tbody tr:hover { background: var(--surface); }
+  .table-wrap .responsive-table td {
+    display: grid;
+    grid-template-columns: minmax(84px, 34%) minmax(0, 1fr);
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    content: attr(data-label) / "";
+    color: var(--muted);
+    font: 500 12px/1.5 Inter, system-ui, sans-serif;
+  }
+  .table-wrap .responsive-table td:first-child, .table-wrap .responsive-table td[data-label=""] { display: block; min-width: 0; }
+  .responsive-table td:first-child::before, .responsive-table td[data-label=""]::before { display: none; }
+  .responsive-table td:first-child .cell-value { font-size: 15px; font-weight: 600; }
+  .responsive-table td[data-label=""] .row-action { min-height: 44px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 6px; }
+  .table-wrap .responsive-table .status-chip { white-space: normal; }
+}

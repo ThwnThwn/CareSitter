@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../components/DataTable';
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, formatDate } from '../components/Common';
@@ -19,15 +20,15 @@ function CrashTypeBadge({ type }: { type: string }) {
 
 function BigQueryChecklist({ title, summary }: { title: string; summary: string }) {
   return (
-    <div className="notice" role="status" style={{ flexDirection: 'column', gap: '0.85rem', background: '#fff' }}>
-      <div style={{ display: 'flex', gap: '0.7rem', alignItems: 'flex-start' }}>
+    <div className="notice crash-checklist" role="status">
+      <div className="crash-checklist-heading">
         <AlertCircle size={19} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
         <div>
           <strong>{title}</strong>
           <p>{summary}</p>
         </div>
       </div>
-      <ol style={{ margin: '0 0 0 1.35rem', padding: 0, lineHeight: 1.75 }}>
+      <ol>
         <li>
           Vào{' '}
           <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">
@@ -41,11 +42,11 @@ function BigQueryChecklist({ title, summary }: { title: string; summary: string 
       </ol>
       <div className="button-row">
         <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer"
-          className="secondary" style={{ textDecoration: 'none' }}>
+          className="secondary">
           <ExternalLink size={14} aria-hidden="true" /> Mở Firebase Console
         </a>
         <a href="https://console.cloud.google.com/bigquery" target="_blank" rel="noopener noreferrer"
-          className="secondary" style={{ textDecoration: 'none' }}>
+          className="secondary">
           <ExternalLink size={14} aria-hidden="true" /> Mở BigQuery Console
         </a>
       </div>
@@ -66,7 +67,7 @@ export function CrashReportsPage() {
     <section>
       <PageHeader
         title="Lỗi ứng dụng"
-        description="Báo cáo Crashlytics thực tế từ Firebase BigQuery export."
+        description="Tra cứu lỗi ứng dụng được ghi nhận qua Firebase Crashlytics."
         actions={
           <button className="secondary" onClick={refresh} disabled={reports.loading || notConfigured}>
             <RefreshCw size={15} aria-hidden="true" /> Cập nhật dữ liệu
@@ -132,20 +133,9 @@ export function CrashReportsPage() {
               />
             ) : (
               <div className="table-wrap">
-                <table className="data-table">
-                  <caption className="sr-only">Báo cáo Crashlytics đã xuất từ Firebase</caption>
-                  <thead>
-                    <tr>
-                      <th>Thời điểm</th>
-                      <th>Loại</th>
-                      <th>App / build</th>
-                      <th>Màn hình</th>
-                      <th>Đối chiếu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <DataTable columns={['Thời điểm', 'Loại', 'App / build', 'Màn hình', 'Đối chiếu']} caption="Báo cáo Crashlytics đã xuất từ Firebase">
                     {data.items.map((item) => (
-                      <tr key={item.eventId}>
+                      <DataRow key={item.eventId}>
                         <td style={{ whiteSpace: 'nowrap' }}>{formatDate(item.occurredAt)}</td>
                         <td><CrashTypeBadge type={item.errorType} /></td>
                         <td>
@@ -163,10 +153,9 @@ export function CrashReportsPage() {
                             {item.demoRunId && <p>Lần thử: <code className="mono">{item.demoRunId}</code></p>}
                           </details>
                         </td>
-                      </tr>
+                      </DataRow>
                     ))}
-                  </tbody>
-                </table>
+                  </DataTable>
               </div>
             )}
 
