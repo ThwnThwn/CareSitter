@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:caregiver_app/features/auth/data/models/auth_user_model.dart';
@@ -25,10 +26,20 @@ class AuthSessionController {
       _login(() => _repository.loginWithPassword(identifier, password));
   Future<void> loginWithOtp(String identifier, String otp) =>
       _login(() => _repository.loginWithOtp(identifier, otp));
+  Future<void> loginWithGoogle(String idToken, ApiCancellation cancellation) =>
+      _login(
+        () => _repository.loginWithGoogle(idToken, cancellation: cancellation),
+        cancellation: cancellation,
+      );
   Future<void> requestOtp(String email) => _repository.requestOtp(email);
-  Future<void> _login(Future<AuthUserModel> Function() action) async {
+  Future<void> _login(Future<AuthUserModel> Function() action,
+      {ApiCancellation? cancellation}) async {
     final version = _version, attempt = ++_attempt;
     final user = await action();
+    if (cancellation?.isCancelled == true) {
+      throw const AppApiException(
+          message: 'Đã hủy đăng nhập.', isCancelled: true);
+    }
     if (!_active || version != _version || attempt != _attempt) {
       throw StateError('Phiên đăng nhập đã thay đổi.');
     }

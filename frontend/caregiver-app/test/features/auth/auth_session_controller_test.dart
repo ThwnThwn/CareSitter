@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/api/dio_client.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/core/auth/auth_state.dart';
@@ -18,6 +19,14 @@ class _Repository extends AuthRepository {
   _Repository() : super(_Client());
   List<String> roles = ['CAREGIVER'];
   Completer<AuthUserModel>? pending;
+  String? googleToken;
+  @override
+  Future<AuthUserModel> loginWithGoogle(String idToken,
+      {ApiCancellation? cancellation}) {
+    googleToken = idToken;
+    return loginWithPassword('', '');
+  }
+
   @override
   Future<AuthUserModel> loginWithPassword(
           String identifier, String password) async =>
@@ -65,6 +74,42 @@ void main() {
     await container.read(authStateProvider.future);
   });
   tearDown(() => container.dispose());
+  test('Google token exchange keeps the caregiver role requirement', () async {
+    final controller = container.read(authSessionControllerProvider);
+    repository.roles = ['CUSTOMER'];
+    await expectLater(
+      controller.loginWithGoogle('test-google-id', ApiCancellation()),
+      throwsA(isA<AppApiException>()),
+    );
+    expect(auth.logins, 0);
+
+    repository.roles = ['CAREGIVER'];
+    await controller.loginWithGoogle('test-google-id', ApiCancellation());
+    expect(repository.googleToken, 'test-google-id');
+    expect(container.read(authStateProvider).value!.userId, 'owner');
+  });
+
+  test('closing the Google flow discards a late token exchange', () async {
+    repository.pending = Completer<AuthUserModel>();
+    final controller = container.read(authSessionControllerProvider);
+    final cancellation = ApiCancellation();
+    final login = controller.loginWithGoogle('test-google-id', cancellation);
+    final checked = expectLater(
+      login,
+      throwsA(isA<AppApiException>()
+          .having((e) => e.isCancelled, 'cancelled', true)),
+    );
+    cancellation.cancel();
+    repository.pending!.complete(const AuthUserModel(
+      accessToken: 'test-access',
+      refreshToken: 'test-refresh',
+      userId: 'owner',
+      displayName: 'Caregiver',
+      roles: ['CAREGIVER'],
+    ));
+    await checked;
+    expect(auth.logins, 0);
+  });
   test('session controller accepts a caregiver and publishes the owner',
       () async {
     await container

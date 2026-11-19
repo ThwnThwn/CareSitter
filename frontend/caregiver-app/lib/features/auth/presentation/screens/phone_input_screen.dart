@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'package:caregiver_app/core/error/app_exception.dart';
 import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/auth/presentation/controllers/login_controller.dart';
+import '../controllers/google_login_controller.dart';
 
 class PhoneInputScreen extends ConsumerStatefulWidget {
   const PhoneInputScreen({super.key, this.startWithOtp = false});
@@ -20,6 +22,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _googleLoading = false;
   bool _usePassword = true;
   bool _obscurePassword = true;
 
@@ -79,8 +82,37 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     }
   }
 
+  Future<void> _loginWithGoogle(GoogleLoginController google) async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+      _googleLoading = true;
+    });
+    try {
+      await google.signIn();
+      if (mounted) context.go('/home');
+    } catch (error) {
+      if (!mounted || (error is AppApiException && error.isCancelled)) return;
+      AppToast.error(
+        context,
+        error is AppApiException
+            ? error.message
+            : 'Chưa kết nối được với Google. Vui lòng thử lại.',
+        title: 'Đăng nhập chưa thành công',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _googleLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final google = ref.watch(googleLoginControllerProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -103,6 +135,10 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                       isLoading: _isLoading,
                       loginWithPassword: _loginWithPassword,
                       requestOtp: _requestOtp,
+                      loginWithGoogle: google == null
+                          ? null
+                          : () => _loginWithGoogle(google),
+                      googleLoading: _googleLoading,
                       onMethodChanged: (value) =>
                           setState(() => _usePassword = value),
                       onTogglePassword: () =>

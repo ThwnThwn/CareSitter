@@ -8,6 +8,7 @@ import 'package:caregiver_app/features/auth/presentation/widgets/login_method_no
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
+import 'login_google_button.dart';
 
 class LoginForm extends StatelessWidget {
   const LoginForm(
@@ -19,6 +20,8 @@ class LoginForm extends StatelessWidget {
       required this.isLoading,
       required this.loginWithPassword,
       required this.requestOtp,
+      this.loginWithGoogle,
+      this.googleLoading = false,
       required this.onMethodChanged,
       required this.onTogglePassword});
   final bool usePassword;
@@ -28,6 +31,8 @@ class LoginForm extends StatelessWidget {
   final bool isLoading;
   final Future<void> Function() loginWithPassword;
   final Future<void> Function() requestOtp;
+  final VoidCallback? loginWithGoogle;
+  final bool googleLoading;
   final ValueChanged<bool> onMethodChanged;
   final void Function() onTogglePassword;
 
@@ -82,6 +87,13 @@ class LoginForm extends StatelessWidget {
               requestOtp: requestOtp,
               isLoading: isLoading),
           const SizedBox(height: AppSpacing.section),
+          if (loginWithGoogle != null) ...[
+            LoginGoogleButton(
+              onPressed: isLoading ? null : loginWithGoogle,
+              loading: googleLoading,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           LoginRegisterLink(isLoading: isLoading),
         ],
       );
