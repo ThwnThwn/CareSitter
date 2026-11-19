@@ -5,7 +5,9 @@ import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 import 'package:caresitter_customer/core/api/api_cancellation.dart';
 import 'package:caresitter_customer/core/api/dio_client.dart';
+import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_tab_header.dart';
 import 'package:caresitter_customer/features/beneficiary/data/models/beneficiary_model.dart';
 import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart'
@@ -51,6 +53,8 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('Trần Thị Loan'), findsOneWidget);
+    expect(tester.widget<AppTabHeader>(find.byType(AppTabHeader)).title,
+        'Thực đơn dinh dưỡng');
   });
 
   testWidgets('opens nutrition inline after selecting a profile',
@@ -72,6 +76,10 @@ void main() {
           path: '/beneficiaries/create',
           builder: (_, __) => const SizedBox(),
         ),
+        GoRoute(
+          path: AppRoutes.nutritionKnowledge,
+          builder: (_, __) => const Scaffold(body: Text('Tài liệu dinh dưỡng')),
+        ),
       ],
     );
     addTearDown(router.dispose);
@@ -92,12 +100,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byTooltip('Tra cứu tài liệu dinh dưỡng'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tài liệu dinh dưỡng'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+
     await tester.tap(
       find.byKey(const ValueKey('nutrition-beneficiary-loan')),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
+    expect(find.byType(AppTabHeader), findsOneWidget);
     expect(find.byType(NutritionHealthForm), findsNothing);
     await tester.tap(find.byTooltip('Cập nhật thông tin dinh dưỡng'));
     await tester.pumpAndSettle();
@@ -138,9 +153,10 @@ void main() {
     expect(find.text('Chọn người cần lập thực đơn'), findsOneWidget);
     expect(find.text('Thực đơn cho Trần Thị Loan'), findsNothing);
 
-    await tester.tap(
-      find.byKey(const ValueKey('nutrition-beneficiary-loan')),
-    );
+    final profile = find.byKey(const ValueKey('nutrition-beneficiary-loan'));
+    await tester.ensureVisible(profile);
+    await tester.pumpAndSettle();
+    await tester.tap(profile);
     await tester.pumpAndSettle();
 
     expect(find.text('Thực đơn cho Trần Thị Loan'), findsOneWidget);
@@ -167,9 +183,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Chọn người cần lập thực đơn'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('nutrition-beneficiary-loan')),
-    );
+    await tester.ensureVisible(profile);
+    await tester.pumpAndSettle();
+    await tester.tap(profile);
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Cập nhật thông tin dinh dưỡng'));

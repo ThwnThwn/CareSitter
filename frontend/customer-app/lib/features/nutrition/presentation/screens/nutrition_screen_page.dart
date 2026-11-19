@@ -17,6 +17,7 @@ class NutritionScreenPage extends StatelessWidget {
     required this.state,
     required this.actions,
     required this.controller,
+    this.inTab = false,
     this.userId,
     this.disclaimer,
     this.disclaimerVersion,
@@ -25,6 +26,7 @@ class NutritionScreenPage extends StatelessWidget {
   final NutritionScreenPageState state;
   final NutritionScreenPageActions actions;
   final NutritionFlowController controller;
+  final bool inTab;
   final String? userId;
   final String? disclaimer, disclaimerVersion;
 
@@ -52,9 +54,11 @@ class NutritionScreenPage extends StatelessWidget {
       onEditProfile: actions.onEdit,
       onMealFeedback: actions.onMealFeedback,
     );
+    final header = _buildAppBar();
     return Scaffold(
-      appBar: _buildAppBar(),
+      appBar: inTab ? null : header,
       body: Column(children: [
+        if (inTab) header,
         NutritionDisclaimerBanner(
           userId: userId,
           trace: state.flow.resource?.result.recommendationTrace,
@@ -67,6 +71,7 @@ class NutritionScreenPage extends StatelessWidget {
   }
 
   PreferredSizeWidget _buildAppBar() => NutritionScreenAppBar(
+        inTab: inTab,
         editing: state.editing,
         canReturnToMenu: state.canReturnToMenu,
         canReturnToBeneficiaries: state.canReturnToBeneficiaries,

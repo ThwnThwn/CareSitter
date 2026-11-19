@@ -119,6 +119,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen>
     final selectedDate =
         flow.selectedDate ?? DateUtils.dateOnly(DateTime.now());
     return NutritionScreenPage(
+      inTab: widget.onChangeBeneficiary != null,
       userId: ref.watch(authStateProvider.select((s) => s.valueOrNull?.userId)),
       disclaimer:
           ref.watch(nutritionCapabilitiesProvider).valueOrNull?.disclaimer,
