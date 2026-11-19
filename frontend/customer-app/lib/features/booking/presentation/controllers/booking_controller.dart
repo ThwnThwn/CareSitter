@@ -10,6 +10,7 @@ import '../../../review/data/repositories/review_repository.dart';
 import '../../data/repositories/booking_repository.dart';
 import '../../data/models/booking_model.dart';
 import 'booking_action_controller.dart';
+import 'booking_list_load_controller.dart';
 import 'booking_payment_controller.dart';
 import 'booking_review_controller.dart';
 import 'booking_state_controller.dart';
@@ -60,7 +61,9 @@ class BookingStore extends Notifier<List<BookingModel>> {
   BookingSyncController get _synchronizer =>
       _sync ??= BookingSyncController(_repo, _store,
           refreshNotifications: _refreshNotifications,
-          announceAccepted: _announceAccepted);
+          announceAccepted: _announceAccepted,
+          updateLoadState: (next) =>
+              ref.read(bookingListLoadProvider.notifier).update(next));
   BookingRealtimeController get _events {
     if (_realtime != null) return _realtime!;
     final cache = _store;

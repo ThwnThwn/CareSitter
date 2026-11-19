@@ -9,7 +9,7 @@ using Npgsql;
 namespace CareSitter.IntegrationTests;
 
 [Trait("Category", "PostgreSQL")]
-public sealed class BookingTransactionIntegrityTests : IAsyncLifetime
+public sealed partial class BookingTransactionIntegrityTests : IAsyncLifetime
 {
     private PostgresRaceTestDatabase _database = null!;
 

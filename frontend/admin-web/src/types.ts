@@ -1,3 +1,5 @@
+export type NavigateAdmin = (page: PageKey, query?: Record<string, string>) => void;
+
 export type PageKey = 'dashboard' | 'bookings' | 'kyc' | 'payments' | 'support' | 'disputes' | 'services' | 'promotions' | 'users' | 'crash-reports';
 
 export type AdminPromotion = {
@@ -131,6 +133,7 @@ export type Booking = {
   checkoutSource?: string;
   status: string;
   escrowAmount: number;
+  customerPayableAmount?: number;
   platformFeeAmount: number;
   caregiverEarningAmount: number;
   cancelReason?: string;

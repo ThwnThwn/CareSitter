@@ -124,13 +124,13 @@ class NutritionKnowledgeSearchModel {
             .map((item) => NutritionKnowledgeAnswerBlockModel.fromJson(
                 Map<String, dynamic>.from(item as Map)))
             .toList(growable: false),
-        references: (json['references'] as List<dynamic>? ?? const [])
-            .map((item) => NutritionKnowledgeHitModel.fromJson(
-                Map<String, dynamic>.from(item as Map)))
-            .toList(growable: false),
-        results: (json['results'] as List<dynamic>? ?? const [])
-            .map((item) => NutritionKnowledgeHitModel.fromJson(
-                Map<String, dynamic>.from(item as Map)))
-            .toList(growable: false),
+        results: _readHits(json['results']),
+        references: _readHits(json['references']),
       );
+
+  static List<NutritionKnowledgeHitModel> _readHits(Object? value) =>
+      (value as List<dynamic>? ?? const [])
+          .map((item) => NutritionKnowledgeHitModel.fromJson(
+              Map<String, dynamic>.from(item as Map)))
+          .toList(growable: false);
 }

@@ -28,11 +28,12 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  test('GET orders bookings by recent activity instead of scheduled date', () async {
+  test('GET orders bookings by recent activity instead of scheduled date',
+      () async {
     await container.read(bookingStoreProvider.notifier).refresh();
 
-    expect(
-        container.read(bookingStoreProvider).map((b) => b.id), ['newer', 'older']);
+    expect(container.read(bookingStoreProvider).map((b) => b.id),
+        ['newer', 'older']);
   });
 
   test('unassigned cancellation moves first and stays ordered after delta sync',
@@ -62,8 +63,8 @@ void main() {
       ),
     ];
     await store.requestSync();
-    expect(
-        container.read(bookingStoreProvider).map((b) => b.id), ['newer', 'older']);
+    expect(container.read(bookingStoreProvider).map((b) => b.id),
+        ['newer', 'older']);
   });
 }
 
@@ -91,7 +92,8 @@ class _DisconnectedHub implements CareSignalRService {
 
 class _Notifications extends NotificationsNotifier {
   @override
-  Future<List<AppNotification>> build() async => const [];
+  Future<NotificationInboxModel> build() async =>
+      const NotificationInboxModel();
 
   @override
   Future<void> refresh() async {}
@@ -135,7 +137,8 @@ class _Repository extends BookingRepository {
           items: items, total: items.length, page: page, pageSize: pageSize);
 
   @override
-  Future<BookingModel> cancelBooking(String bookingId, {String? reason}) async =>
+  Future<BookingModel> cancelBooking(String bookingId,
+          {String? reason}) async =>
       items.firstWhere((b) => b.id == bookingId).copyWith(
             status: 'cancelled',
             cancelledAt: DateTime.utc(2026, 10, 8, 9),
@@ -144,10 +147,11 @@ class _Repository extends BookingRepository {
           );
 
   @override
-  Future<BookingSyncResponse> syncBookings(int cursor) async => BookingSyncResponse(
-      items: delta,
-      nextCursor: cursor + 1,
-      serverTime: DateTime.utc(2026, 10, 9),
-      hasMore: false,
-      resetRequired: false);
+  Future<BookingSyncResponse> syncBookings(int cursor) async =>
+      BookingSyncResponse(
+          items: delta,
+          nextCursor: cursor + 1,
+          serverTime: DateTime.utc(2026, 10, 9),
+          hasMore: false,
+          resetRequired: false);
 }

@@ -64,6 +64,8 @@ internal sealed class BookingChatWriter(
                 x => x.ConversationId == conversation.Id && x.SourceEventId == sourceEventId, ct))
             return;
 
+        if (effect.HasFlag(BookingChatTransitionEffect.UnlockAfterWithdrawal))
+            conversation.WithdrawDisputeLock(booking.Status is not (BookingStatus.Completed or BookingStatus.CheckoutPendingReview));
         if (effect.HasFlag(BookingChatTransitionEffect.StartPostShiftGrace))
             conversation.SnapshotGraceWindow(occurredAt,
                 TimeSpan.FromHours(_options.PostShiftGraceHours));

@@ -34,8 +34,6 @@ export function ServiceDrawer({
     updateChecklistItem,
     removeChecklistItem,
     editingPrice,
-    createdServiceId,
-    creationProgress,
     busy,
     error,
     editPrice,
@@ -233,7 +231,7 @@ export function ServiceDrawer({
           <section className="settings-section" aria-labelledby="initial-pricing-heading">
             <h3 id="initial-pricing-heading">Giá áp dụng ban đầu</h3>
             <p>Nhập bảng giá đầu tiên để dịch vụ có thể được báo giá ngay sau khi tạo.</p>
-            <div className="form-stack">{pricingFields(creationProgress.priceSaved)}</div>
+            <div className="form-stack">{pricingFields()}</div>
           </section>
         )}
         {!service && (
@@ -245,7 +243,6 @@ export function ServiceDrawer({
             </p>
             <div className="initial-checklist-list">
               {checklistItems.map((item, index) => {
-                const saved = index < creationProgress.checklistSavedCount;
                 return (
                   <article className="initial-checklist-item" key={item.key}>
                     <span className="order-badge">{index + 1}</span>
@@ -253,11 +250,10 @@ export function ServiceDrawer({
                       <div className="initial-checklist-item-head">
                         <strong>Công việc {index + 1}</strong>
                         <div className="tag-row">
-                          {saved && <span>Đã lưu</span>}
                           <button
                             type="button"
                             className="row-action danger-text"
-                            disabled={!!busy || saved || checklistItems.length === 1}
+                            disabled={!!busy || checklistItems.length === 1}
                             onClick={() => removeChecklistItem(index)}
                           >
                             Xóa
@@ -271,7 +267,7 @@ export function ServiceDrawer({
                           minLength={3}
                           maxLength={255}
                           aria-label={`Tên công việc ${index + 1}`}
-                          disabled={!!busy || saved}
+                          disabled={!!busy}
                           value={item.name}
                           onChange={(event) =>
                             updateChecklistItem(index, { name: event.target.value })
@@ -284,7 +280,7 @@ export function ServiceDrawer({
                           rows={2}
                           maxLength={1000}
                           aria-label={`Mô tả công việc ${index + 1}`}
-                          disabled={!!busy || saved}
+                          disabled={!!busy}
                           value={item.description}
                           onChange={(event) =>
                             updateChecklistItem(index, { description: event.target.value })
@@ -296,7 +292,7 @@ export function ServiceDrawer({
                           <input
                             type="checkbox"
                             aria-label={`Công việc ${index + 1} bắt buộc`}
-                            disabled={!!busy || saved}
+                            disabled={!!busy}
                             checked={item.isRequired}
                             onChange={(event) =>
                               updateChecklistItem(index, { isRequired: event.target.checked })
@@ -308,7 +304,7 @@ export function ServiceDrawer({
                           <input
                             type="checkbox"
                             aria-label={`Công việc ${index + 1} yêu cầu ảnh`}
-                            disabled={!!busy || saved}
+                            disabled={!!busy}
                             checked={item.requiresPhoto}
                             onChange={(event) =>
                               updateChecklistItem(index, { requiresPhoto: event.target.checked })
@@ -337,11 +333,7 @@ export function ServiceDrawer({
             ? 'Đang lưu…'
             : service
               ? 'Lưu dịch vụ'
-              : createdServiceId
-                ? creationProgress.priceSaved
-                  ? 'Hoàn tất checklist'
-                  : 'Hoàn tất giá và checklist'
-                : 'Tạo dịch vụ, giá và checklist'}
+              : 'Tạo dịch vụ, giá và checklist'}
         </button>
       </form>
       {service && (

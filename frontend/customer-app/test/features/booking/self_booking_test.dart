@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/caregiver_avatar.dart';
 import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/self_recipient_controller.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
@@ -399,9 +400,10 @@ void main() {
   });
 
   testWidgets(
-      'complete wizard resolves self only at final confirmation and books its real ID',
+      'wizard recovers caregiver suggestions before booking the real self profile',
       (tester) async {
-    final bookings = _Bookings();
+    final bookings = _Bookings()..failFirstPreview = true;
+    account.avatarUrl = 'https://example.test/customer-avatar.png';
     final container = ProviderContainer(overrides: [
       authStateProvider.overrideWith(_Auth.new),
       beneficiaryRepositoryProvider.overrideWithValue(people),
@@ -457,6 +459,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tiếp theo'));
     await tester.pumpAndSettle();
+    expect(bookings.previewLoads, 1);
+    expect(find.text('Để hệ thống gợi ý'), findsOneWidget);
+    expect(find.text('Chưa tải được danh sách chăm sóc viên.'), findsOneWidget);
+    await tester.tap(find.text('Thử lại'));
+    await tester.pumpAndSettle();
+    expect(bookings.previewLoads, 2);
+    expect(find.textContaining('Chưa có gợi ý phù hợp'), findsOneWidget);
     await tester.tap(find.text('Tiếp theo'));
     await tester.pumpAndSettle();
     final consent = find.textContaining('Tôi đã đọc, hiểu và đồng ý');
@@ -467,6 +476,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(people.creates, 0);
     expect(bookings.creates, 0);
+    expect(
+        tester.widget<CaregiverAvatar>(find.byType(CaregiverAvatar)).avatarUrl,
+        account.avatarUrl);
+    expect(find.byIcon(Icons.person_search_outlined), findsOneWidget);
     await tester.tap(find.widgetWithText(ElevatedButton, 'Xác nhận đặt lịch'));
     await tester.pumpAndSettle();
     expect(people.creates, 1);
@@ -582,11 +595,13 @@ class _People extends BeneficiaryRepository {
 class _Account implements ProfileRepository {
   int reads = 0;
   String? name = 'Từ tài khoản';
+  String? avatarUrl;
   @override
   Future<Map<String, dynamic>> getFreshProfile() async {
     reads++;
     return {
       'fullName': name,
+      'avatarUrl': avatarUrl,
       'dateOfBirth': '1990-12-23',
       'gender': 'FEMALE',
       'phone': '0901234567'
@@ -609,10 +624,26 @@ class _BookingStore extends BookingStore {
 }
 
 class _Bookings implements BookingRepository {
-  int creates = 0, selections = 0;
-  bool failSelection = false, timeoutCreate = false;
+  int creates = 0, selections = 0, previewLoads = 0;
+  bool failSelection = false, timeoutCreate = false, failFirstPreview = false;
   BookingDraft? lastDraft;
   Completer<BookingModel>? pendingCreate;
+  @override
+  Future<List<CaregiverModel>> previewCaregivers({
+    String? beneficiaryId,
+    required String addressId,
+    required String serviceTypeId,
+    required DateTime start,
+    required DateTime end,
+    List<String> requiredSkills = const [],
+  }) async {
+    previewLoads++;
+    if (failFirstPreview && previewLoads == 1) {
+      throw const AppApiException(message: 'Mất kết nối');
+    }
+    return [];
+  }
+
   @override
   Future<BookingModel> createBooking(BookingDraft draft) async {
     creates++;

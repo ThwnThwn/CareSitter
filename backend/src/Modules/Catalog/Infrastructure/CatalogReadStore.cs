@@ -39,10 +39,10 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             .ThenBy(x => x.IncludedSessions)
             .ToListAsync(ct);
 
-        return items.Select(x => new ServiceCatalogResponse(
+        return items.Where(x => x.Pricing is not null).Select(x => new ServiceCatalogResponse(
             x.Id, x.Code, x.Name, x.Description, x.ImageUrl, x.DefaultDurationMinutes,
-            x.AllowAdHocTasks, x.Pricing?.BaseHourlyPrice ?? 0,
-            x.Pricing?.PlatformFeePercent ?? 0m,
+            x.AllowAdHocTasks, x.Pricing!.BaseHourlyPrice,
+            x.Pricing!.PlatformFeePercent,
             plans.Where(plan => plan.ServiceTypeId == x.Id)
                 .Select(CatalogAdminMapper.ToResponse).ToArray(), x.RequiredCaregiverSkills)).ToArray();
     }
@@ -80,10 +80,11 @@ internal sealed class CatalogReadStore(CatalogDbContext db) : ICatalogReadStore
             .ThenBy(x => x.IncludedSessions)
             .ToListAsync(ct);
 
+        if (pricing is null) return null;
         return new ServiceCatalogResponse(item.Id, item.Code, item.Name, item.Description,
             item.ImageUrl,
             item.DefaultDurationMinutes, item.AllowAdHocTasks,
-            pricing?.BaseHourlyPrice ?? 0, pricing?.PlatformFeePercent ?? 0m,
+            pricing.BaseHourlyPrice, pricing.PlatformFeePercent,
             plans.Select(CatalogAdminMapper.ToResponse).ToArray(), item.RequiredCaregiverSkills);
     }
 

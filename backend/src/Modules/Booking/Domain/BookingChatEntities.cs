@@ -63,6 +63,12 @@ public sealed class BookingChatConversation
         UpdatedAt = lockedAt;
     }
 
+    public void WithdrawDisputeLock(bool ongoing)
+    {
+        DisputeLockedAt = null;
+        if (ongoing) RetainedUntil = null;
+    }
+
     public void ScheduleRetention(DateTimeOffset closedAt, TimeSpan retention)
     {
         RetainedUntil ??= closedAt.Add(retention);

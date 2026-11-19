@@ -19,6 +19,8 @@ public interface IPromotionService
 
     Task<Result> ReleaseAsync(Guid bookingId, Guid customerId, string reason,
         CancellationToken ct = default);
+
+    Task ReclaimExpiredReservationsAsync(CancellationToken ct = default);
 }
 
 public sealed record PromotionPriceRequest(
@@ -38,7 +40,7 @@ public sealed record PromotionReservationRequest(
     DateTimeOffset ScheduledStart,
     DateTimeOffset ScheduledEnd,
     DateTimeOffset ExpiresAt,
-    long GrossAmount);
+    long GrossAmount, long? ExpectedPayableAmount = null);
 
 public sealed record PromotionPriceQuote(
     Guid PromotionId,
@@ -53,4 +55,5 @@ public sealed record PromotionPriceQuote(
 public interface IPromotionBookingLookup
 {
     Task<bool> HasPaidBookingAsync(Guid customerId, CancellationToken ct = default);
+    Task<bool> CanReleaseExpiredReservationAsync(Guid bookingId, CancellationToken ct = default);
 }

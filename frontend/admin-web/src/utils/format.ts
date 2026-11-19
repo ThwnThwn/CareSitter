@@ -17,3 +17,7 @@ export function formatDate(value?: string, withTime = true) {
 export function shortId(value?: string) {
   return value ? `#${value.slice(0, 8).toUpperCase()}` : '—';
 }
+
+export function bookingReference(id: string) {
+  return `#${id.slice(0, 8)}…${id.slice(-8)}`.toUpperCase();
+}

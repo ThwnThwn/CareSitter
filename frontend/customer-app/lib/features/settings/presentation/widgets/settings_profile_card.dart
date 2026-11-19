@@ -17,7 +17,7 @@ class SettingsProfileCard extends StatelessWidget {
 
   final UserProfile profile;
   final int bookingCount;
-  final double totalSpent;
+  final int totalSpent;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +188,7 @@ class _ProfileIdentity extends StatelessWidget {
 class _ProfileStats extends StatelessWidget {
   const _ProfileStats({required this.bookingCount, required this.totalSpent});
   final int bookingCount;
-  final double totalSpent;
+  final int totalSpent;
 
   @override
   Widget build(BuildContext context) {

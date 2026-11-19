@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
@@ -13,8 +14,10 @@ import 'booking_list_booking_card_is_waiting_caregiver_booking_row.dart';
 import 'booking_list_booking_card_fields.dart';
 
 class BookingCard extends StatelessWidget {
-  const BookingCard({super.key, required this.booking});
+  const BookingCard(
+      {super.key, required this.booking, this.scheduledWindowEnded = false});
   final BookingModel booking;
+  final bool scheduledWindowEnded;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +43,14 @@ class BookingCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               BookingCardStatusHeader(
                   statusConfig: appearance, booking: booking),
+              if (scheduledWindowEnded) ...[
+                const SizedBox(height: AppSpacing.xs),
+                const Text('Đã qua giờ hẹn',
+                    style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: AppFontSizes.s12,
+                        fontWeight: FontWeight.w600)),
+              ],
               const SizedBox(height: AppSpacing.compact),
               BookingListBookingCardBookingRowBody(booking: booking),
               const SizedBox(height: AppSpacing.xs),

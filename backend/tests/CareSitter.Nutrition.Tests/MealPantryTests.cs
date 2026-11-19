@@ -70,6 +70,28 @@ public sealed class MealPantryTests
     }
 
     [Fact]
+    public void Meal_names_drop_demo_prefix_in_responses_while_preserving_demo_origin()
+    {
+        var demoRecipe = Recipe("breakfast", "Gạo") with { Name = "[DEMO] Cháo gạo tẻ" };
+        var publishedRecipe = Recipe("lunch", "Cá") with { Name = "Cá hấp" };
+        var payload = NutritionJson.Write(new { Meals = new[] { demoRecipe, publishedRecipe } });
+        var resource = new NutritionResource(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 1, "saved",
+            payload, Guid.NewGuid(), "fixture", DateTimeOffset.UtcNow);
+
+        var meals = ResourceMapping.Map(resource, 2).Data.GetProperty("meals");
+        Assert.Equal("Cháo gạo tẻ", meals[0].GetProperty("name").GetString());
+        Assert.True(meals[0].GetProperty("isLocalDemo").GetBoolean());
+        Assert.Equal(demoRecipe.VersionId, meals[0].GetProperty("versionId").GetGuid());
+        Assert.Equal("Cá hấp", meals[1].GetProperty("name").GetString());
+        Assert.False(meals[1].TryGetProperty("isLocalDemo", out _));
+        Assert.Equal(payload, resource.Payload);
+
+        var option = RecipePresentation.Map(demoRecipe);
+        Assert.Equal("Cháo gạo tẻ", option["name"]!.GetValue<string>());
+        Assert.True(option["isLocalDemo"]!.GetValue<bool>());
+    }
+
+    [Fact]
     public void Historical_saved_plan_identity_survives_stale_status()
     {
         var resource = new NutritionResource(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 1, "saved", "{}", Guid.NewGuid(), "fixture", DateTimeOffset.UtcNow);

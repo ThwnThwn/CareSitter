@@ -38,16 +38,16 @@ type ChatPage = {
 };
 
 export const supportChatApi = {
-  config: () => api<{ enabled: boolean }>('/api/v1/support/chat-config'),
-  list: (queue: string, cursor?: { createdAt: string; id: string }) =>
+  config: (signal?: AbortSignal) => api<{ enabled: boolean }>('/api/v1/support/chat-config', { signal }),
+  list: (queue: string, cursor?: { createdAt: string; id: string }, signal?: AbortSignal) =>
     api<ChatList>(`/api/v1/admin/support/conversations${qs({
       queue, limit: 50, beforeCreatedAt: cursor?.createdAt, beforeId: cursor?.id,
-    })}`),
-  get: (id: string) => api<ChatConversation>(`/api/v1/support/conversations/${id}`),
-  messages: (id: string, afterSequence: number, highWatermarkSequence?: number) =>
+    })}`, { signal }),
+  get: (id: string, signal?: AbortSignal) => api<ChatConversation>(`/api/v1/support/conversations/${id}`, { signal }),
+  messages: (id: string, afterSequence: number, highWatermarkSequence?: number, signal?: AbortSignal) =>
     api<ChatPage>(`/api/v1/support/conversations/${id}/messages${qs({
       afterSequence, highWatermarkSequence, limit: 100,
-    })}`),
+    })}`, { signal }),
   read: (id: string, lastReadSequence: number) =>
     api<ChatConversation>(`/api/v1/support/conversations/${id}/read`, {
       method: 'PUT', body: JSON.stringify({ lastReadSequence }),

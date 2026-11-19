@@ -16,8 +16,14 @@ const dispute = { id: 'dispute-1', bookingId: 'booking-1', reason: 'Khiếu nạ
 function mockRequests(bookingFails = false) {
   const fetch = vi.fn().mockImplementation(async (url: string, init: RequestInit) => {
     if (init.method === 'POST') return Response.json({ ...dispute, status: 'RESOLVED' });
+    if (url.includes('/preview?')) {
+      const values = new URL(url, 'http://localhost').searchParams;
+      return values.get('refundAmount') === '40000'
+        ? Response.json({ refund: 40000, promotionReversal: 10000, fee: 7500, penalty: 0, earning: 42500 })
+        : Response.json({ message: 'Số tiền hoàn không hợp lệ.' }, { status: 400 });
+    }
     if (url.includes('/bookings/')) return bookingFails ? Response.json({ message: 'Không đọc được escrow' }, { status: 500 })
-      : Response.json({ id: 'booking-1', status: 'disputed', escrowAmount: 100000, platformFeeAmount: 20000 });
+      : Response.json({ id: 'booking-1', status: 'disputed', escrowAmount: 100000, customerPayableAmount: 80000, platformFeeAmount: 15000 });
     if (url.endsWith('/disputes/dispute-1')) return Response.json(dispute);
     return Response.json({ items: [dispute], total: 1, page: 1, pageSize: 20 });
   });
@@ -35,15 +41,15 @@ it('requires a deliberate decision and valid money split, then submits the confi
   expect((screen.getByLabelText('Phán quyết') as HTMLSelectElement).value).toBe('');
   await userEvent.selectOptions(screen.getByLabelText('Phán quyết'), 'PARTIAL_REFUND');
   expect((submit as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.change(screen.getByLabelText('Số tiền hoàn (VND)'), { target: { value: 30000 } });
-  fireEvent.change(screen.getByLabelText('Chế tài caregiver (VND)'), { target: { value: 10000 } });
-  const preview = screen.getByRole('region', { name: 'Phân bổ tiền dự kiến' });
-  expect(within(preview).getByText('40.000 đ')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Số tiền hoàn (VND)'), { target: { value: 40000 } });
+  const preview = await screen.findByRole('region', { name: 'Phân bổ tiền dự kiến' });
+  expect(within(preview).getByText('42.500 đ')).toBeTruthy();
   await userEvent.click(submit);
   await waitFor(() => expect(fetch.mock.calls.some(([, init]) => init.method === 'POST')).toBe(true));
   const mutation = fetch.mock.calls.find(([, init]) => init.method === 'POST');
-  expect(JSON.parse(mutation![1].body)).toEqual({ decision: 'PARTIAL_REFUND', refundAmount: 30000, caregiverPenaltyAmount: 10000 });
-  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Caregiver nhận: 40.000 đ'));
+  expect(JSON.parse(mutation![1].body)).toEqual({ decision: 'PARTIAL_REFUND', refundAmount: 40000, caregiverPenaltyAmount: 0,
+    expectedQuote: { refund: 40000, promotionReversal: 10000, fee: 7500, penalty: 0, earning: 42500 } });
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Caregiver nhận: 42.500 đ'));
 });
 
 it('never offers financial actions when booking financial data cannot be loaded', async () => {

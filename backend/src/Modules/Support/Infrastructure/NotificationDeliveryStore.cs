@@ -17,6 +17,7 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
         string? type;
         Dictionary<string, string>? data;
         Guid token;
+        string[] completed;
         await using (var tx = await db.Database.BeginTransactionAsync(ct))
         {
             var delivery = await db.Set<Domain.NotificationDelivery>().FromSqlInterpolated(
@@ -27,6 +28,7 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
             if (notification is null) return new("Invalid");
             if (delivery.Status == "Sent") return new("Sent");
             if (delivery.LeaseUntil > DateTimeOffset.UtcNow) return new("Busy");
+            completed = delivery.CompletedPushTargets;
             token = Guid.NewGuid();
             delivery.ClaimToken = token;
             delivery.LeaseUntil = DateTimeOffset.UtcNow.AddSeconds(45);
@@ -37,6 +39,7 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
             data = notification.Data is null ? [] : JsonSerializer.Deserialize<Dictionary<string, string>>(notification.Data);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            db.Entry(delivery).State = EntityState.Detached;
         }
         // Identity remains the sole owner of device tokens. This data never enters the event log.
         var recipient = await recipients.GetAsync(recipientId, ct);
@@ -47,8 +50,11 @@ internal sealed class NotificationDeliveryStore(SupportDbContext db, INotificati
             _ => true
         };
         return new("Acquired", token, title, body, data,
-            pushEnabled ? recipient.PushTokens : [], recipient.Email);
+            pushEnabled ? recipient.PushTokens.Where(t => !completed.Contains(PushTargetKey.FromToken(t))).ToArray() : [], recipient.Email);
     }
+
+    public Task<bool> CheckpointAsync(Guid eventId, Guid token, string[] keys, CancellationToken ct) =>
+        PushDeliveryProgress.RecordAsync(db, eventId, token, keys, ct);
 
     /// <summary>Uses the claim token as a fencing value; stale workers cannot complete a newer attempt.</summary>
     public async Task<bool> CompleteAsync(Guid eventId, string channel, Guid token, bool succeeded, string? failure, CancellationToken ct) =>

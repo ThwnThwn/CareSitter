@@ -8,5 +8,6 @@ public interface INotificationDeliveryStore
     /// <summary>Claims a channel if the trusted event references the persisted recipient and notification.</summary>
     Task<DeliveryClaim> ClaimAsync(Guid eventId, Guid notificationId, Guid recipientId, string channel, CancellationToken ct);
     /// <summary>Records an outcome only for the current claim token.</summary>
+    Task<bool> CheckpointAsync(Guid eventId, Guid token, string[] keys, CancellationToken ct);
     Task<bool> CompleteAsync(Guid eventId, string channel, Guid token, bool succeeded, string? failure, CancellationToken ct);
 }

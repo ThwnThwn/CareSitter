@@ -40,6 +40,7 @@ public sealed class GetAdminDashboardQueryHandler(
             .Concat(support.WorkItems)
             .OrderByDescending(x => x.Priority == "CRITICAL")
             .ThenByDescending(x => x.Priority == "HIGH")
+            .ThenBy(x => x.Priority == "LOW")
             .ThenBy(x => x.CreatedAt)
             .ThenBy(x => x.Id)
             .Take(12)

@@ -6,9 +6,14 @@ namespace CareSitter.Modules.Booking.Application;
 
 internal sealed class BookingJobsService(BookingCheckoutJobs checkoutJobs, IBookingSettlementStore settlements,
     IBookingJobNotifier notifier, IWalletService wallet, IDisputeLookupService disputes,
-    IMatchingService matching, IPaymentReconciliationJob reconciliation, ILogger<BookingJobsService> logger) : IBookingJobsService
+    IMatchingService matching, IPaymentReconciliationJob reconciliation, IPromotionService promotions,
+    ILogger<BookingJobsService> logger) : IBookingJobsService
 {
-    public Task ReconcilePendingPaymentsAsync() => reconciliation.ExecuteAsync();
+    public async Task ReconcilePendingPaymentsAsync()
+    {
+        await reconciliation.ExecuteAsync();
+        await promotions.ReclaimExpiredReservationsAsync();
+    }
 
     public Task AlertLateCheckinsAsync() => checkoutJobs.AlertLateCheckinsAsync();
     public Task AutoRequestCheckoutExpiredShiftsAsync() => checkoutJobs.AutoRequestCheckoutExpiredShiftsAsync();

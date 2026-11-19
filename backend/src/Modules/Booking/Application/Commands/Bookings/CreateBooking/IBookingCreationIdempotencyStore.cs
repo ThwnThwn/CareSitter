@@ -5,6 +5,8 @@ namespace CareSitter.Modules.Booking.Application.Commands.CreateBooking;
 
 internal interface IBookingCreationIdempotencyStore
 {
+    Task ProtectPromotionReservationAsync(Guid bookingId, CancellationToken ct);
+
     Task<Result<Domain.Booking>> ExecuteAsync(
         Guid customerId,
         Guid idempotencyKey,

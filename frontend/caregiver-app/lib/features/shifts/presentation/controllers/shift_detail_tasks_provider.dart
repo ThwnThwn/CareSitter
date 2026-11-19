@@ -1,3 +1,4 @@
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
 import 'package:caregiver_app/features/shifts/data/models/care_task_model.dart';
 import 'package:caregiver_app/features/shifts/data/repositories/shift_repository.dart';
@@ -8,5 +9,7 @@ final shiftDetailTasksProvider =
   final session = ref.watch(authStateProvider.select((state) =>
       (state.valueOrNull?.userId, state.valueOrNull?.isAuthenticated)));
   if (session.$2 != true) return Future.value(const <CareTaskModel>[]);
-  return ref.read(shiftRepositoryProvider).loadCareTasks(id);
+  final token = ApiCancellation();
+  ref.onDispose(token.cancel);
+  return ref.read(shiftRepositoryProvider).loadCareTasks(id, token: token);
 });

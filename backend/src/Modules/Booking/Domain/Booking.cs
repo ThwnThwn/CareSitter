@@ -58,6 +58,7 @@ public sealed class Booking : AggregateRoot
     public bool AllowAdHocTasks { get; private set; }
     public string? RequiredSkills { get; private set; }
 
+    public BookingStatus? StatusBeforeDispute { get; private set; }
     public BookingStatus Status { get; private set; }
 
     /// <summary>
@@ -310,12 +311,25 @@ public sealed class Booking : AggregateRoot
         return Result.Success();
     }
 
+    public Result WithdrawDispute()
+    {
+        if (Status != BookingStatus.Disputed || StatusBeforeDispute is not { } prior ||
+            !BookingStateMachine.CanTransition(prior, BookingStatus.Disputed) || RefundAmount is not null)
+            return Error.Conflict("booking.dispute.history", "Cần đối soát trạng thái lịch trước khi hủy khiếu nại.");
+
+        Status = prior;
+        StatusBeforeDispute = null;
+        Raise(new BookingStatusChanged(Id, BookingStatus.Disputed, prior));
+        return Result.Success();
+    }
+
     public Result TransitionTo(BookingStatus next)
     {
         if (!BookingStateMachine.CanTransition(Status, next))
             return Error.Conflict("booking.transition", $"Không thể chuyển {Status} -> {next}.");
 
         var from = Status;
+        if (next == BookingStatus.Disputed) StatusBeforeDispute = from;
         Status = next;
         Raise(new BookingStatusChanged(Id, from, next));
         return Result.Success();

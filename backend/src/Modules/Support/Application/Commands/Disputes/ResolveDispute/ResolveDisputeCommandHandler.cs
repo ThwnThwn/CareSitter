@@ -10,6 +10,7 @@ internal sealed class ResolveDisputeCommandHandler(
     ICurrentUser currentUser,
     IDisputeBookingWorkflow bookingWorkflow,
     IWalletService wallet,
+    IDisputePricing pricing,
     IAuditLogger auditLogger) : IRequestHandler<ResolveDisputeCommand, Result<DisputeResponse>>
 {
     public async Task<Result<DisputeResponse>> Handle(
@@ -25,17 +26,19 @@ internal sealed class ResolveDisputeCommandHandler(
         if (booking is null) return SupportErrors.DisputeBookingNotFound();
         if (booking.CaregiverId is not { } caregiverId)
             return SupportErrors.DisputeCaregiverMissing();
-        if (booking.Status != "disputed")
-            return SupportErrors.DisputeInvalidState();
+
 
         var before = new { dispute.Status, dispute.Decision, dispute.RefundAmount, dispute.CaregiverPenaltyAmount };
-        var decision = request.Decision.Trim().ToUpperInvariant();
-        var effectiveRefund = decision switch
-        {
-            "CUSTOMER_WINS" => booking.CustomerPayableAmount,
-            "CAREGIVER_WINS" => 0,
-            _ => request.RefundAmount
-        };
+        var decision = request.Decision?.Trim().ToUpperInvariant() ?? string.Empty;
+        var quote = pricing.Quote(booking, decision, request.RefundAmount, request.CaregiverPenaltyAmount);
+        if (quote.IsFailure) return quote.Error;
+        if (request.ExpectedQuote is { } expected && expected != quote.Value)
+            return Error.Conflict("dispute.quote_changed", "Phân bổ tiền đã thay đổi. Vui lòng kiểm tra và xác nhận lại.");
+        long? effectiveRefund = quote.Value.Refund;
+        if (dispute.Status == "RESOLVED" && dispute.Decision == decision &&
+            dispute.RefundAmount == effectiveRefund && (dispute.CaregiverPenaltyAmount ?? 0) == (request.CaregiverPenaltyAmount ?? 0))
+            return SupportResponseMapper.ToResponse(dispute);
+        if (booking.Status != "disputed") return SupportErrors.DisputeInvalidState();
         var result = dispute.Resolve(adminId, decision,
             effectiveRefund, request.CaregiverPenaltyAmount);
         if (result.IsFailure) return result.Error;

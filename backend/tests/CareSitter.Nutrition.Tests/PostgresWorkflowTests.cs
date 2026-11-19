@@ -297,7 +297,12 @@ public sealed partial class PostgresWorkflowTests : IAsyncLifetime
         if (source.Recipes.All(recipe => recipe.Payload.Images is { Length: > 0 }))
             Assert.All(meals, meal => Assert.InRange(meal.GetProperty("images").GetArrayLength(), 1, 3));
         Assert.All(meals, meal =>
-            Assert.StartsWith("[DEMO] ", meal.GetProperty("name").GetString(), StringComparison.Ordinal));
+        {
+            var versionId = meal.GetProperty("versionId").GetGuid();
+            var recipe = Assert.Single(visible, candidate => candidate.VersionId == versionId);
+            Assert.Equal(recipe.Name["[DEMO] ".Length..], meal.GetProperty("name").GetString());
+            Assert.True(meal.GetProperty("isLocalDemo").GetBoolean());
+        });
 
         var options = await new ReplacementOptionsQueryHandler(
                 _people,

@@ -1,4 +1,7 @@
+import 'package:caresitter_customer/features/promotions/data/models/promotion_quote_model.dart';
+
 import '../../data/repositories/booking_repository.dart' show BookingDraft;
+import '../../domain/schedule_rules.dart';
 
 typedef BookingWizardArgs = ({
   String? serviceId,
@@ -38,6 +41,18 @@ class BookingWizardState {
   final BookingDraft? uncertainDraft;
   final String submitLabel;
   bool get uncertain => uncertainDraft != null;
+
+  PromotionBookingSlot? get promotionSlot {
+    final id = serviceId, day = date, minutes = startMinutes;
+    if (id == null || day == null || minutes == null) return null;
+    final start = ScheduleRules.at(day, minutes);
+    return (
+      serviceTypeId: id,
+      start: start,
+      end: start.add(Duration(hours: duration))
+    );
+  }
+
   BookingWizardState copyWith(
           {int? step,
           int? duration,

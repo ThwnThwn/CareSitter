@@ -13,6 +13,7 @@ class ApiPaths {
 
   // ── Bookings ──────────────────────────────────────────────
   static const bookings = '/bookings';
+  static const promotions = '/promotions';
   static String booking(String id) => '/bookings/$id';
   static String bookingCancel(String id) => '/bookings/$id/cancel';
   static String bookingCaregiver(String id) => '/bookings/$id/caregiver';

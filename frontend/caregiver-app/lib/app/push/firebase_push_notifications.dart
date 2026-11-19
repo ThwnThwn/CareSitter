@@ -172,7 +172,9 @@ class PushNotificationService {
         if (await FirebasePushNotifications.initialize()) {
           await FirebaseMessaging.instance.deleteToken();
         }
-      } catch (_) {}
+      } catch (_) {
+        debugPrint('[FCM] token deletion unavailable');
+      }
       _registeredDeviceId = null;
       _lastRegisteredToken = null;
     }

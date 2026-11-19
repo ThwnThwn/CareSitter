@@ -8,6 +8,7 @@ namespace CareSitter.Modules.Support.Application.Commands.CancelDispute;
 internal sealed class CancelDisputeCommandHandler(
     ISupportRepository repository,
     ICurrentUser currentUser,
+    IDisputeBookingWorkflow bookings,
     IAuditLogger auditLogger) : IRequestHandler<CancelDisputeCommand, Result<DisputeResponse>>
 {
     public async Task<Result<DisputeResponse>> Handle(
@@ -19,6 +20,10 @@ internal sealed class CancelDisputeCommandHandler(
         if (dispute is null) return SupportErrors.NotFound();
 
         var before = new { dispute.Status };
+        if (dispute.Status is not ("OPEN" or "INVESTIGATING" or "CANCELLED")) return SupportErrors.DisputeInvalidState();
+        var restored = await bookings.WithdrawAsync(dispute.BookingId, ct);
+        if (restored.IsFailure) return restored.Error;
+        if (dispute.Status == "CANCELLED") return SupportResponseMapper.ToResponse(dispute);
         var result = dispute.Cancel();
         if (result.IsFailure) return result.Error;
 

@@ -27,6 +27,15 @@ void main() {
     expect(repository.sentKeys[0], repository.sentKeys[1]);
     expect(controller.state.error, isNull);
   });
+
+  test('a support notification opens the requested thread', () async {
+    final repository = FakeSupportChatRepository();
+    final controller = SupportChatController(repository, null, 'older-thread');
+    addTearDown(controller.dispose);
+    await controller.refresh();
+    expect(repository.openedIds, ['older-thread']);
+    expect(controller.state.conversation?.id, 'older-thread');
+  });
 }
 
 class FakeSupportChatRepository implements SupportChatRepository {
@@ -37,6 +46,7 @@ class FakeSupportChatRepository implements SupportChatRepository {
       lastSequence: 125,
       ownLastReadSequence: 0);
   final sentKeys = <String>[];
+  final openedIds = <String>[];
   int lastRead = 0;
 
   @override
@@ -44,7 +54,17 @@ class FakeSupportChatRepository implements SupportChatRepository {
   @override
   Future<List<SupportConversation>> conversations() async => [conversation];
   @override
-  Future<SupportConversation> get(String id) async => conversation;
+  Future<SupportConversation> get(String id) async {
+    openedIds.add(id);
+    if (id == conversation.id) return conversation;
+    return SupportConversation(
+        id: id,
+        subject: 'Yêu cầu trước',
+        status: 'CLOSED',
+        lastSequence: 125,
+        ownLastReadSequence: 125);
+  }
+
   @override
   Future<SupportMessagePage> messages(
       String id, int after, int? watermark) async {

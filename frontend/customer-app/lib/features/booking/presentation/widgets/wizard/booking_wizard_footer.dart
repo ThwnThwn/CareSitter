@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import '../../controllers/booking_promotion_controller.dart';
 import '../../controllers/booking_wizard_controller.dart';
 import '../../controllers/booking_wizard_state.dart';
 import '../../controllers/booking_wizard_selectors.dart';
@@ -19,6 +20,8 @@ class BookingWizardFooter extends ConsumerWidget {
     final ready = ref.watch(wizardCanContinueProvider(args));
     final enabled = !flow.submitting && !flow.uncertain;
     final isLastStep = flow.step == 5;
+    final promotionReady = ref.watch(bookingPromotionProvider(args)
+        .select((promotion) => promotion.canSubmitFor(flow.promotionSlot)));
     final safeBottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
@@ -54,7 +57,7 @@ class BookingWizardFooter extends ConsumerWidget {
             ],
             Expanded(
               child: _ContinueButton(
-                enabled: enabled && ready,
+                enabled: enabled && ready && (!isLastStep || promotionReady),
                 submitting: flow.submitting,
                 submitLabel: flow.submitLabel,
                 isLastStep: isLastStep,

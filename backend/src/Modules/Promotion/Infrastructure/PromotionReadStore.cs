@@ -10,7 +10,8 @@ internal sealed class PromotionReadStore(PromotionDbContext db) : IPromotionRead
     public async Task<IReadOnlyList<PromotionResponse>> ListActiveAsync(
         DateTimeOffset now, CancellationToken ct)
     {
-        var items = await db.Promotions.AsNoTracking()
+        var items = await db.Promotions.AsNoTracking().Where(p => p.DiscountType != PromotionDiscountType.Percentage ||
+                p.DiscountValue != 100 || p.MaxDiscountAmount != null)
             .Include(x => x.ServiceScopes)
             .Where(x => x.IsActive && x.StartsAt <= now && x.EndsAt >= now)
             .OrderByDescending(x => x.IsFeatured)
@@ -23,7 +24,8 @@ internal sealed class PromotionReadStore(PromotionDbContext db) : IPromotionRead
     public async Task<PromotionResponse?> GetActiveAsync(
         Guid id, DateTimeOffset now, CancellationToken ct)
     {
-        var item = await db.Promotions.AsNoTracking()
+        var item = await db.Promotions.AsNoTracking().Where(p => p.DiscountType != PromotionDiscountType.Percentage ||
+                p.DiscountValue != 100 || p.MaxDiscountAmount != null)
             .Include(x => x.ServiceScopes)
             .SingleOrDefaultAsync(x => x.Id == id && x.IsActive &&
                 x.StartsAt <= now && x.EndsAt >= now, ct);

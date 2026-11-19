@@ -526,7 +526,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.supportChat,
         pageBuilder: (ctx, state) => _slideUpPage(
           pageKey: state.pageKey,
-          child: const SupportChatScreen(),
+          child: SupportChatScreen(
+            key: ValueKey(state.uri.queryParameters['conversationId']),
+            conversationId: state.uri.queryParameters['conversationId'],
+          ),
         ),
       ),
       GoRoute(

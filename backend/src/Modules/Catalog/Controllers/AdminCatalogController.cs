@@ -39,6 +39,17 @@ public sealed class AdminCatalogController : ControllerBase
             value => Created($"/api/v1/admin/catalog/services/{value.Id}", value));
     }
 
+    [HttpPost("setup")]
+    public async Task<IActionResult> CreateBundle(CreateServiceBundleRequest request, CancellationToken ct)
+    {
+        var service = request.Service;
+        var result = await _mediator.Send(new CreateServiceBundleCommand(request.RequestId,
+            new CreateServiceCommand(service.Code, service.Name, service.Description, service.ImageUrl,
+                service.DefaultDurationMinutes, service.IsActive, service.RequiredCaregiverSkills),
+            ToCreatePricingCommand(Guid.Empty, request.Price), request.Checklist), ct);
+        return result.ToActionResult(this, value => Created($"/api/v1/admin/catalog/services/{value.Id}", value));
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpsertServiceRequest request,
         CancellationToken ct)

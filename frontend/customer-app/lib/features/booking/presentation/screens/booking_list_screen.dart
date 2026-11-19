@@ -22,7 +22,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController =
+        TabController(length: BookingListCategory.values.length, vsync: this);
   }
 
   @override
@@ -32,7 +33,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     final tabTextScale =
         MediaQuery.textScalerOf(context).scale(AppFontSizes.s14) /
             AppFontSizes.s14;
-    final useScrollableTabs = screenWidth < 360 || tabTextScale > 1.2;
+    final useScrollableTabs = screenWidth < 520 || tabTextScale > 1.2;
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -59,11 +60,16 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
                     fontSize: AppFontSizes.s14, fontWeight: FontWeight.w600),
                 unselectedLabelStyle: const TextStyle(
                     fontSize: AppFontSizes.s14, fontWeight: FontWeight.w400),
-                tabs: const [
-                  Tab(text: 'Sắp tới'),
-                  Tab(text: 'Hoàn tất'),
-                  Tab(text: 'Chưa ghép'),
-                  Tab(text: 'Đã hủy'),
+                tabs: [
+                  for (final category in BookingListCategory.values)
+                    Tab(
+                        text: switch (category) {
+                      BookingListCategory.active => 'Đang xử lý',
+                      BookingListCategory.completed => 'Hoàn tất',
+                      BookingListCategory.unmatched => 'Chưa ghép',
+                      BookingListCategory.disputed => 'Khiếu nại',
+                      BookingListCategory.cancelled => 'Hủy / hoàn tiền',
+                    }),
                 ],
               ),
             ),
@@ -71,11 +77,9 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
         ],
         body: TabBarView(
           controller: _tabController,
-          children: const [
-            BookingList(category: BookingListCategory.upcoming),
-            BookingList(category: BookingListCategory.completed),
-            BookingList(category: BookingListCategory.unmatched),
-            BookingList(category: BookingListCategory.cancelled),
+          children: [
+            for (final category in BookingListCategory.values)
+              BookingList(category: category),
           ],
         ),
       ),
@@ -88,7 +92,3 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen>
     super.dispose();
   }
 }
-
-// ── Action icon button ─────────────────────────────────────────────────────
-
-// ── Sliver TabBar Delegate ──────────────────────────────────────────────────

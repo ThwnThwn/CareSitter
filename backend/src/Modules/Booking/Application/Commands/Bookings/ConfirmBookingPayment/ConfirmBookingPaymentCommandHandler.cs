@@ -26,8 +26,9 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         if (booking is null) return BookingErrors.NotFound();
         if (booking.Status == BookingStatus.Confirmed)
         {
-            var finalized = await FinalizePromotionAsync(booking, ct);
+            var finalized = await BookingPromotionFinalization.RunAsync(booking, wallet, promotions, ct);
             if (finalized.IsFailure) return finalized.Error;
+            await OfferInitialAsync(booking.Id, ct);
             return await responseMapper.ToResponseAsync(booking, ct);
         }
 
@@ -78,20 +79,12 @@ internal sealed class ConfirmBookingPaymentCommandHandler(
         bookingSync.WriteSyncEvent(booking, BookingSyncEventTypes.PaymentConfirmed);
         slotHold?.Commit();
         await bookings.SaveChangesAsync(ct);
-        var promotionFinalization = await FinalizePromotionAsync(booking, ct);
+        var promotionFinalization = await BookingPromotionFinalization.RunAsync(booking, wallet, promotions, ct);
         if (promotionFinalization.IsFailure) return promotionFinalization.Error;
-        await postCommit.RunAsync("caregiver matching", () =>
-            matching.OfferTopCandidatesAsync(request.BookingId, ct));
+        await OfferInitialAsync(booking.Id, ct);
         return await responseMapper.ToResponseAsync(booking, ct);
     }
 
-    private async Task<Result> FinalizePromotionAsync(Domain.Booking booking,
-        CancellationToken ct)
-    {
-        if (booking.PromotionId is null) return Result.Success();
-        var subsidy = await wallet.RecordPromotionSubsidyAsync(
-            booking.Id, booking.PromotionSubsidyAmount, ct);
-        if (subsidy.IsFailure) return subsidy;
-        return await promotions.RedeemAsync(booking.Id, booking.CustomerId, ct);
-    }
+    private Task OfferInitialAsync(Guid bookingId, CancellationToken ct) =>
+        postCommit.RunAsync("caregiver matching", () => matching.EnsureInitialOffersAsync(bookingId, ct));
 }

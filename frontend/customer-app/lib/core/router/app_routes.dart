@@ -42,6 +42,9 @@ class AppRoutes {
   static const support = '/settings/support';
   static const supportChat = '/settings/support/chat';
 
+  static String supportChatConversation(String id) =>
+      _withQuery(supportChat, {'conversationId': id});
+
   static String bookingDetail(String id) => '$bookings/${_segment(id)}';
   static String serviceDetail(String id) => '$catalog/${_segment(id)}';
   static String bookingReports(String id) => '${bookingDetail(id)}/reports';

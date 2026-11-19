@@ -7,5 +7,5 @@ namespace CareSitter.NotificationWorker.Application.Ports;
 public interface INotificationSender
 {
     /// <summary>Returns an explicit provider outcome; failures are never silently marked sent.</summary>
-    Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, CancellationToken ct);
+    Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct);
 }

@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../components/DataTable';
 import { ReconciliationDrawer } from '../features/payments/ReconciliationDrawer';
 import { PayoutDrawer } from '../features/payments/PayoutDrawer';
 import { RefundDrawer } from '../features/payments/RefundDrawer';
@@ -5,15 +6,20 @@ import { useMemo, useState } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
 import { useAdminMetadata } from '../adminMetadata';
 import { qs } from '../api';
+import { useHashParam } from '../hashLocation';
 import { EmptyState, ErrorBanner, LoadingTable, PageHeader, Pagination, StatusChip, Tabs, formatDate, formatMoney, shortId } from '../components/Common';
 import { PaymentReview, Payout, RefundRequest } from '../types';
 import { usePagedResource } from '../useResource';
 import type { ShowToast } from '../useToast';
 
 export function PaymentsPage({ showToast = () => undefined }: { showToast?: ShowToast }) {
-  const [tab, setTab] = useState('reconciliation');
+  const requestedTab = useHashParam('tab');
+  const tab = requestedTab === 'payouts' || requestedTab === 'refunds' ? requestedTab : 'reconciliation';
+  function setTab(value: string) {
+    window.location.hash = value === 'reconciliation' ? '/payments' : `/payments?tab=${value}`;
+  }
   return <>
-    <PageHeader title="Thanh toán" description="Đối soát thu tiền, theo dõi payout caregiver và hoàn tiền về phương thức gốc." />
+    <PageHeader title="Thanh toán" description="Đối soát giao dịch, duyệt yêu cầu rút tiền và theo dõi các khoản hoàn." />
     <Tabs value={tab} onChange={setTab} items={[{ value: 'reconciliation', label: 'Đối soát thanh toán' }, { value: 'payouts', label: 'Rút tiền caregiver' }, { value: 'refunds', label: 'Hoàn tiền' }]} />
     {tab === 'reconciliation' ? <ReconciliationQueue showToast={showToast} /> : tab === 'payouts' ? <PayoutQueue showToast={showToast} /> : <RefundQueue showToast={showToast} />}
   </>;
@@ -39,8 +45,8 @@ function RefundQueue({ showToast }: { showToast: ShowToast }) {
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
     {loading && !hasLoaded ? <LoadingTable rows={6} columns={6} /> : error && !hasLoaded ? null : result.items.length === 0
       ? <EmptyState title="Không có yêu cầu hoàn tiền" description="Không có refund phù hợp với trạng thái đã chọn." />
-      : <div className="table-wrap"><table className="data-table"><thead><tr><th>Booking</th><th>Provider gốc</th><th>Số tiền</th><th>Yêu cầu lúc</th><th>Trạng thái</th><th /></tr></thead><tbody>
-        {result.items.map((item) => <tr key={item.id}><td><strong>{shortId(item.bookingId)}</strong><small className="mono">{item.originalProviderOrderRef || item.requestId}</small></td><td>{item.provider}</td><td><strong>{formatMoney(item.amount)}</strong><small>{item.currency}</small></td><td>{formatDate(item.requestedAt)}</td><td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => setSelected(item)}>{item.status === 'MANUAL_REQUIRED' ? 'Xác nhận hoàn tiền' : 'Xem chi tiết'}</button></td></tr>)}</tbody></table></div>}
+      : <div className="table-wrap"><DataTable columns={['Booking', 'Provider gốc', 'Số tiền', 'Yêu cầu lúc', 'Trạng thái', '']}>
+        {result.items.map((item) => <DataRow key={item.id}><td><strong>{shortId(item.bookingId)}</strong><small className="mono">{item.originalProviderOrderRef || item.requestId}</small></td><td>{item.provider}</td><td><strong>{formatMoney(item.amount)}</strong><small>{item.currency}</small></td><td>{formatDate(item.requestedAt)}</td><td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => setSelected(item)}>{item.status === 'MANUAL_REQUIRED' ? 'Xác nhận hoàn tiền' : 'Xem chi tiết'}</button></td></DataRow>)}</DataTable></div>}
     {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     {selected && <RefundDrawer key={selected.id} item={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </section>;
@@ -62,11 +68,11 @@ function ReconciliationQueue({ showToast }: { showToast: ShowToast }) {
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
     {loading && !hasLoaded ? <LoadingTable rows={6} columns={5} /> : error && !hasLoaded ? null : filtered.length === 0
       ? <EmptyState title={query.trim() ? "Không có giao dịch khớp từ khóa" : "Không có giao dịch tồn đọng"} description={query.trim() ? "Không có kết quả trong trang hiện tại. Thử đổi từ khóa hoặc trang." : "Không có giao dịch chờ đối soát."} />
-      : <div className="table-wrap"><table className="data-table"><thead><tr><th>Booking / TxnRef</th><th>Số tiền</th><th>Lần query</th><th>Deadline</th><th /></tr></thead><tbody>
-        {filtered.map((item) => <tr key={item.intentId}><td><strong>{shortId(item.bookingId)}</strong><small className="mono">{item.providerOrderRef || 'Chưa có TxnRef'}</small></td>
+      : <div className="table-wrap"><DataTable columns={['Booking / TxnRef', 'Số tiền', 'Lần query', 'Deadline', '']}>
+        {filtered.map((item) => <DataRow key={item.intentId}><td><strong>{shortId(item.bookingId)}</strong><small className="mono">{item.providerOrderRef || 'Chưa có TxnRef'}</small></td>
           <td><strong>{formatMoney(item.amount)}</strong><small>{item.currency}</small></td><td>{item.reconciliationAttempts} lần</td>
           <td><strong>{formatDate(item.paymentDeadline ?? undefined)}</strong><small>{!item.paymentDeadline ? 'Cần đối chiếu' : new Date(item.paymentDeadline) < new Date() ? 'Đã quá hạn' : 'Còn hiệu lực'}</small></td>
-          <td><button className="row-action" onClick={() => setSelected(item)}>{item.canResolve === false ? 'Xem đối soát' : 'Xử lý'}</button></td></tr>)}</tbody></table></div>}
+          <td><button className="row-action" onClick={() => setSelected(item)}>{item.canResolve === false ? 'Xem đối soát' : 'Xử lý'}</button></td></DataRow>)}</DataTable></div>}
     {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     {selected && <ReconciliationDrawer key={selected.intentId} item={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </section>;
@@ -83,8 +89,8 @@ function PayoutQueue({ showToast }: { showToast: ShowToast }) {
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
     {loading && !hasLoaded ? <LoadingTable rows={6} columns={6} /> : error && !hasLoaded ? null : result.items.length === 0
       ? <EmptyState title="Không có yêu cầu rút tiền" description="Không có yêu cầu phù hợp với trạng thái đã chọn." />
-      : <div className="table-wrap"><table className="data-table"><thead><tr><th>Người thụ hưởng</th><th>Ngân hàng</th><th>Số tài khoản</th><th>Số tiền</th><th>Yêu cầu lúc</th><th>Trạng thái</th><th /></tr></thead><tbody>
-        {result.items.map((item) => <tr key={item.id}><td><strong>{item.accountHolderName}</strong><small>{shortId(item.caregiverId)}</small></td><td>{item.bankName}</td><td className="mono">{item.accountNumber}</td><td><strong>{formatMoney(item.amount)}</strong></td><td>{formatDate(item.requestedAt)}</td><td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => setSelected(item)}>Xem yêu cầu</button></td></tr>)}</tbody></table></div>}
+      : <div className="table-wrap"><DataTable columns={['Người thụ hưởng', 'Ngân hàng', 'Số tài khoản', 'Số tiền', 'Yêu cầu lúc', 'Trạng thái', '']}>
+        {result.items.map((item) => <DataRow key={item.id}><td><strong>{item.accountHolderName}</strong><small>{shortId(item.caregiverId)}</small></td><td>{item.bankName}</td><td className="mono">{item.accountNumber}</td><td><strong>{formatMoney(item.amount)}</strong></td><td>{formatDate(item.requestedAt)}</td><td><StatusChip value={item.status} /></td><td><button className="row-action" onClick={() => setSelected(item)}>Xem yêu cầu</button></td></DataRow>)}</DataTable></div>}
     {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}
     {selected && <PayoutDrawer key={selected.id} item={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </section>;

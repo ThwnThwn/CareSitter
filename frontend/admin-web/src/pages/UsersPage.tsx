@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../components/DataTable';
 import { UserDrawer } from '../features/users/UserDrawer';
 import { useEffect, useState } from 'react';
 import { RefreshCw, Search } from 'lucide-react';
@@ -24,7 +25,7 @@ export function UsersPage({ showToast = () => undefined }: { showToast?: ShowToa
   const loading = fetching || query !== debouncedQuery;
 
   return <>
-    <PageHeader title="Tài khoản" description="Quản lý trạng thái truy cập và vai trò của người dùng CareSitter."
+    <PageHeader title="Tài khoản" description="Tra cứu người dùng, thay đổi vai trò và quản lý quyền truy cập."
       actions={<button className="secondary" onClick={() => void load()} disabled={loading}><RefreshCw size={16} /> Làm mới</button>} />
     <section className="filter-bar filter-grid user-filters"><label className="search-field"><Search size={17} /><input aria-label="Tìm tài khoản" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tên, email hoặc số điện thoại…" /></label>
       <label>Vai trò<select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }}>{filters.userRoles.options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
@@ -33,8 +34,8 @@ export function UsersPage({ showToast = () => undefined }: { showToast?: ShowToa
     {error && <ErrorBanner message={error} onRetry={() => void load()} />}
     <section className="data-panel">{loading && !hasLoaded ? <LoadingTable rows={8} columns={6} /> : error && !hasLoaded ? null : result.items.length === 0
       ? <EmptyState title="Không tìm thấy tài khoản" description="Thử đổi từ khóa hoặc bộ lọc tài khoản." />
-      : <div className="table-wrap"><table className="data-table"><thead><tr><th>Tài khoản</th><th>Liên hệ</th><th>Vai trò</th><th>Đăng nhập gần nhất</th><th>Trạng thái</th><th /></tr></thead><tbody>
-        {result.items.map((user) => <tr key={user.id}><td><strong>{user.displayName || user.fullName || 'Chưa cập nhật tên'}</strong><small>{shortId(user.id)}</small></td><td><strong>{user.email}</strong><small>{user.phone || 'Chưa có số điện thoại'}</small></td><td><div className="tag-row">{user.roles.map((item) => <span key={item}>{optionLabel(roles, item)}</span>)}</div></td><td>{formatDate(user.lastLoginAt)}</td><td><StatusChip value={user.status} /></td><td><button className="row-action" onClick={() => setSelected(user)}>Quản lý</button></td></tr>)}</tbody></table></div>}
+      : <div className="table-wrap"><DataTable columns={['Tài khoản', 'Liên hệ', 'Vai trò', 'Đăng nhập gần nhất', 'Trạng thái', '']}>
+        {result.items.map((user) => <DataRow key={user.id}><td><strong>{user.displayName || user.fullName || 'Chưa cập nhật tên'}</strong><small>{shortId(user.id)}</small></td><td><strong>{user.email}</strong><small>{user.phone || 'Chưa có số điện thoại'}</small></td><td><div className="tag-row">{user.roles.map((item) => <span key={item}>{optionLabel(roles, item)}</span>)}</div></td><td>{formatDate(user.lastLoginAt)}</td><td><StatusChip value={user.status} /></td><td><button className="row-action" onClick={() => setSelected(user)}>Quản lý</button></td></DataRow>)}</DataTable></div>}
       {hasLoaded && <Pagination page={result.page} pageSize={result.pageSize} total={result.total} onChange={setPage} />}</section>
     {selected && <UserDrawer key={selected.id} user={selected} onClose={() => setSelected(null)} onChanged={(msg) => { setSelected(null); void load(); showToast(msg); }} />}
   </>;

@@ -19,7 +19,8 @@ internal enum BookingChatTransitionEffect
     None = 0,
     StartPostShiftGrace = 1,
     LockForDispute = 2,
-    ScheduleRetention = 4
+    ScheduleRetention = 4,
+    UnlockAfterWithdrawal = 8
 }
 
 public sealed class BookingChatOptions

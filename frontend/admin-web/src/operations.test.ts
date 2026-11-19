@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentPricingRule, disputeAllocation, fromDateTimeInput, toDateTimeInput, toMinuteDateTimeInput } from './operations';
+import { currentPricingRule, fromDateTimeInput, toDateTimeInput, toMinuteDateTimeInput } from './operations';
 import type { PricingRule } from './types';
 
 describe('pricing time round-trip', () => {
@@ -23,24 +23,5 @@ describe('pricing time round-trip', () => {
       rule('inactive', '2026-10-03Z', undefined, false), rule('current', '2026-10-03Z')];
     expect(currentPricingRule(rules, Date.parse('2026-10-03Z'))?.id).toBe('current');
     expect(currentPricingRule([rules[0]], Date.parse('2026-10-03Z'))).toBeUndefined();
-  });
-});
-
-describe('dispute financial preview', () => {
-  it.each([
-    ['CUSTOMER_WINS', 0, 0, { refund: 100000, fee: 0, penalty: 0, earning: 0 }],
-    ['CAREGIVER_WINS', 0, 0, { refund: 0, fee: 20000, penalty: 0, earning: 80000 }],
-    ['PARTIAL_REFUND', 30000, 10000, { refund: 30000, fee: 20000, penalty: 10000, earning: 40000 }],
-    ['PARTIAL_REFUND', 90000, 0, { refund: 90000, fee: 10000, penalty: 0, earning: 0 }],
-  ] as const)('conserves escrow for %s (%i refund, %i penalty)', (decision, refund, penalty, expected) => {
-    const result = disputeAllocation(100000, 20000, decision, refund, penalty);
-    expect(result).toEqual(expected);
-    expect(Object.values(result).reduce((sum, value) => sum + value, 0)).toBe(100000);
-  });
-  it.each([[0, 0], [100000, 0], [30000, 50001], [0.5, 0], [30000, -1], [NaN, 0]])('rejects invalid partial allocations (%s, %s)', (refund, penalty) => {
-    expect(() => disputeAllocation(100000, 20000, 'PARTIAL_REFUND', refund, penalty)).toThrow();
-  });
-  it('requires an explicit decision', () => {
-    expect(() => disputeAllocation(100000, 20000, '', 0, 0)).toThrow();
   });
 });

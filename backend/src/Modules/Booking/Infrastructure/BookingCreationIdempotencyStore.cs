@@ -9,6 +9,17 @@ namespace CareSitter.Modules.Booking.Infrastructure;
 internal sealed class BookingCreationIdempotencyStore(BookingDbContext db, IClock clock)
     : IBookingCreationIdempotencyStore
 {
+    internal static string PromotionReservationLockKey(Guid bookingId) =>
+        $"booking-promotion:{bookingId:N}";
+
+    public Task ProtectPromotionReservationAsync(Guid bookingId, CancellationToken ct)
+    {
+        // Hold the lock until Booking commits or rolls back, including while Promotion writes.
+        var key = PromotionReservationLockKey(bookingId);
+        return db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+    }
+
     public async Task<Result<Domain.Booking>> ExecuteAsync(
         Guid customerId,
         Guid idempotencyKey,

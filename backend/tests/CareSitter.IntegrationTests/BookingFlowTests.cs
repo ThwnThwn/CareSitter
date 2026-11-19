@@ -244,6 +244,9 @@ public sealed class BookingFlowTests
             Guid bookingId, CancellationToken ct = default) =>
             Task.FromResult(booking?.BookingId == bookingId ? booking : null);
 
+        public Task<Result> WithdrawAsync(Guid bookingId, CancellationToken ct = default) =>
+            Task.FromResult(Result.Success());
+
         public Task<Result> OpenAsync(Guid bookingId, CancellationToken ct = default)
         {
             OpenCalled = true;
@@ -261,8 +264,8 @@ public sealed class BookingFlowTests
         public List<Dispute> Disputes { get; } = [];
         public List<Review> Reviews { get; } = [];
 
-        public Task<bool> DisputeExistsAsync(Guid bookingId, CancellationToken ct = default) =>
-            Task.FromResult(Disputes.Any(x => x.BookingId == bookingId));
+        public Task<Dispute?> GetDisputeByBookingAsync(Guid bookingId, CancellationToken ct = default) =>
+            Task.FromResult(Disputes.SingleOrDefault(x => x.BookingId == bookingId));
         public Task<Dispute?> GetDisputeAsync(Guid id, CancellationToken ct = default) =>
             Task.FromResult(Disputes.SingleOrDefault(x => x.Id == id));
         public void AddDispute(Dispute dispute) => Disputes.Add(dispute);

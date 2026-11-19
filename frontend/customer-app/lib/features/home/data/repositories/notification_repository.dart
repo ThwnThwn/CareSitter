@@ -1,7 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:caresitter_customer/core/api/dio_client.dart';
-import 'package:caresitter_customer/features/home/data/models/notification_model.dart';
+import '../models/notification_inbox_model.dart';
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => NotificationRepository(ref.read(dioClientProvider)),
@@ -12,15 +13,14 @@ class NotificationRepository {
 
   const NotificationRepository(this._dio);
 
-  Future<List<AppNotification>> getNotifications() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/notifications',
-      query: {'pageSize': 50},
+  Future<NotificationInboxModel> getNotifications(
+      {int page = 1, CancelToken? cancelToken}) async {
+    final response = await _dio.getCancelable<Map<String, dynamic>>(
+      '/notifications/inbox',
+      query: {'page': page, 'pageSize': 50},
+      cancelToken: cancelToken ?? CancelToken(),
     );
-    return (response.data?['items'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(AppNotification.fromJson)
-        .toList(growable: false);
+    return NotificationInboxModel.fromJson(response.data ?? const {}, page);
   }
 
   Future<void> markAllRead() async {
@@ -28,6 +28,6 @@ class NotificationRepository {
   }
 
   Future<void> markRead(String id) async {
-    await _dio.put<void>('/notifications/$id/read');
+    await _dio.put<void>('/notifications/$id/read-group');
   }
 }

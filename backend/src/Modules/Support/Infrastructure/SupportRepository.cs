@@ -5,8 +5,8 @@ namespace CareSitter.Modules.Support.Infrastructure;
 
 internal sealed class SupportRepository(SupportDbContext db) : ISupportRepository
 {
-    public Task<bool> DisputeExistsAsync(Guid bookingId, CancellationToken ct = default) =>
-        db.Disputes.AnyAsync(x => x.BookingId == bookingId, ct);
+    public Task<Dispute?> GetDisputeByBookingAsync(Guid bookingId, CancellationToken ct = default) =>
+        db.Disputes.SingleOrDefaultAsync(x => x.BookingId == bookingId, ct);
 
     public Task<Dispute?> GetDisputeAsync(Guid id, CancellationToken ct = default) =>
         db.Disputes.SingleOrDefaultAsync(x => x.Id == id, ct);

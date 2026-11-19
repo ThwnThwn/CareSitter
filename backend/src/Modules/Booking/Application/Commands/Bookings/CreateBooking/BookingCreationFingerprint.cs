@@ -25,6 +25,9 @@ internal static class BookingCreationFingerprint
             PromotionCode = command.PromotionCode?.Trim().ToUpperInvariant()
         };
         var payload = JsonSerializer.Serialize(canonical);
+        // Keep the stored hash valid for requests made before the quote field was added.
+        if (command.ExpectedPayableAmount is { } expected)
+            payload += "|" + expected.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)))
             .ToLowerInvariant();
     }

@@ -18,13 +18,17 @@ final shiftActiveProvider = StateNotifierProvider.autoDispose
   ref.watch(authStateProvider
       .select((s) => (s.valueOrNull?.userId, s.valueOrNull?.isAuthenticated)));
   final controller = ShiftActiveController(RiverpodShiftActiveActions(ref, id));
-  ref.listen(shiftsProvider,
-      (_, next) => controller.reconcile(next.where((b) => b.id == id).firstOrNull));
+  final booking = shiftsProvider
+      .select((items) => items.where((item) => item.id == id).firstOrNull);
+  ref.listen(booking, (previous, next) {
+    controller.reconcile(next);
+    if (previous == null && next != null) controller.loadTasks();
+  });
   Future.microtask(() {
     if (!controller.mounted) return;
-    controller
-        .reconcile(ref.read(shiftsProvider).where((b) => b.id == id).firstOrNull);
-    controller.loadTasks();
+    final initial = ref.read(booking);
+    controller.reconcile(initial);
+    if (initial != null) controller.loadTasks();
   });
   return controller;
 });
@@ -57,8 +61,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         checkedIn: true,
         step: 3,
         startedAt: start,
-        elapsed:
-            ShiftActiveRules.elapsed(start, booking.checkoutRequestedAt ?? now));
+        elapsed: ShiftActiveRules.elapsed(
+            start, booking.checkoutRequestedAt ?? now));
     if (booking.status == 'in_progress' && enableTimer) {
       _timer ??= Timer.periodic(const Duration(seconds: 1), (_) => tick());
     } else {
@@ -69,16 +73,15 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
 
   void tick() {
     if (!mounted || state.startedAt == null) return;
-    state =
-        state.copyWith(elapsed: ShiftActiveRules.elapsed(state.startedAt!, _now()));
+    state = state.copyWith(
+        elapsed: ShiftActiveRules.elapsed(state.startedAt!, _now()));
   }
 
   Future<void> loadTasks() async {
-    if (_tasksLoaded || !mounted) return;
-    _tasksLoaded = true;
+    if (_tasksLoaded || !mounted || state.busy.contains('load')) return;
     final result = await _run('load', actions.loadTasks);
+    if (result is ShiftActionSuccess) _tasksLoaded = true;
     if (result is ShiftActionFailure && mounted) {
-      _tasksLoaded = false;
       state = state.copyWith(error: result.message);
     }
   }
@@ -88,10 +91,12 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
   }
 
   void setNote(String value) => state = state.copyWith(note: value);
-  Future<ShiftActionResult> uploadSelfie(XFile image) => _run('selfie', () async {
+  Future<ShiftActionResult> uploadSelfie(XFile image) =>
+      _run('selfie', () async {
         final url = await actions.uploadSelfie(image);
         if (url.isEmpty) {
-          throw const AppApiException(message: 'Máy chủ chưa trả về ảnh selfie.');
+          throw const AppApiException(
+              message: 'Máy chủ chưa trả về ảnh selfie.');
         }
         if (mounted) state = state.copyWith(selfieUrl: url, step: 2);
       });
@@ -104,8 +109,10 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         await actions.checkIn();
         if (mounted) reconcile(actions.snapshot);
       });
-  Future<ShiftActionResult> completeTask(String id) => _run('task:$id', () async {
-        final task = actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
+  Future<ShiftActionResult> completeTask(String id) =>
+      _run('task:$id', () async {
+        final task =
+            actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
         if (actions.snapshot?.canWorkChecklist != true ||
             task?.canComplete != true) {
           throw const AppApiException(
@@ -128,7 +135,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
       });
   Future<ShiftActionResult> uploadTaskPhoto(String id, XFile image) =>
       _run('task:$id', () async {
-        final task = actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
+        final task =
+            actions.snapshot?.tasks.where((t) => t.id == id).firstOrNull;
         if (actions.snapshot?.canWorkChecklist != true ||
             task?.canUploadEvidence != true) {
           throw const AppApiException(
@@ -150,6 +158,13 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         await actions.createTask(name.trim(), description.trim());
       });
   Future<ShiftActionResult> checkout() => _run('checkout', () async {
+        final generation = _generation;
+        await loadTasks();
+        if (!_current(generation)) return;
+        if (!_tasksLoaded) {
+          throw const AppApiException(
+              message: 'Cần tải xong checklist trước khi checkout.');
+        }
         final booking = actions.snapshot;
         if (booking == null ||
             !ShiftActiveRules.canCheckout(
@@ -158,10 +173,7 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
               message:
                   'Hoàn thành hoặc ghi lý do bỏ qua các công việc trước khi checkout.');
         }
-        final generation = _generation;
-        await actions.addNote(state.note);
-        if (!_current(generation)) return;
-        await actions.checkout();
+        await actions.checkout(state.note.trim());
         if (_current(generation)) reconcile(actions.snapshot);
       });
   Future<ShiftActionResult> reportIncident(String note) =>
@@ -170,7 +182,8 @@ class ShiftActiveController extends StateNotifier<ShiftActiveState> {
         await actions.raiseSos();
         if (_current(generation)) await actions.addNote(note);
       });
-  Future<ShiftActionResult> _run(String key, Future<void> Function() action) async {
+  Future<ShiftActionResult> _run(
+      String key, Future<void> Function() action) async {
     if (!mounted || state.busy.contains(key)) return const ShiftActionIgnored();
     final generation = _generation;
     state = state.copyWith(busy: {...state.busy, key});

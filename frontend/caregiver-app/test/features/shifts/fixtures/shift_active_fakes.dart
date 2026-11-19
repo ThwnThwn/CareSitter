@@ -23,7 +23,8 @@ class FakeShiftActiveActions implements ShiftActiveActions {
   @override
   ShiftModel? snapshot = booking();
   int checkouts = 0, notes = 0, completed = 0, uploads = 0;
-  bool failNote = false;
+  bool failCheckout = false;
+  String? checkoutNote;
   Completer<void>? pendingTask;
   Completer<String>? pendingSelfie;
   @override
@@ -54,11 +55,14 @@ class FakeShiftActiveActions implements ShiftActiveActions {
   @override
   Future<void> addNote(String note) async {
     notes++;
-    if (failNote) throw const AppApiException(message: 'Chưa lưu được ghi chú');
   }
 
   @override
-  Future<void> checkout() async {
+  Future<void> checkout(String note) async {
+    if (failCheckout) {
+      throw const AppApiException(message: 'Chưa gửi được checkout');
+    }
+    checkoutNote = note;
     checkouts++;
     snapshot = snapshot!.copyWith(
         status: 'checkout_pending_review',

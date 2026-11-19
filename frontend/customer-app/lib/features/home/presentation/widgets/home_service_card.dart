@@ -4,6 +4,7 @@ import 'package:caresitter_customer/core/router/app_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/catalog/data/models/service_model.dart';
+import '../models/home_featured_card_size.dart';
 import '../models/home_service_accent.dart';
 
 class HomeServiceCard extends StatelessWidget {
@@ -22,6 +23,7 @@ class HomeServiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textScale =
         MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3).toDouble();
+    final cardSize = homeFeaturedCardSize(textScale);
     final borderRadius = BorderRadius.circular(AppRadius.lg);
     final imageAsset = _imageAssetFor(service.code);
     final ratingLabel = _ratingFor(service.code).toStringAsFixed(1);
@@ -34,8 +36,8 @@ class HomeServiceCard extends StatelessWidget {
     return HomeServiceCardSurface(
       semanticsLabel: '${service.name}, $ratingLabel sao, $priceLabel, '
           '${_durationLabel(service.defaultDurationMinutes)}',
-      width: 156 + (textScale - 1) * 32,
-      height: 168 + (textScale - 1) * 32,
+      width: cardSize.width,
+      height: cardSize.height,
       borderRadius: borderRadius,
       imageAsset: imageAsset,
       imageUrl: service.imageUrl,

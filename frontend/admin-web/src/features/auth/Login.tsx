@@ -1,4 +1,6 @@
 import { FormEvent, useState } from 'react';
+import { Brand } from '../../components/Brand';
+import careAtHome from '../../assets/care-at-home.jpg';
 import { api, TOKEN_KEY } from '../../api';
 
 export type LoginResponse = { accessToken: string; roles: string[]; displayName?: string };
@@ -39,26 +41,18 @@ export function Login({ onLoggedIn, notice }: LoginProps) {
 
   return (
     <main className="login-page">
-      <section className="login-story">
-        <div className="brand">
-          <span className="brand-mark">C</span>
-          <span>
-            <strong>CareSitter</strong>
-            <small>Operations Console</small>
-          </span>
-        </div>
+      <div className="login-story">
+        <Brand />
         <div className="story-copy">
-          <span>VẬN HÀNH CHĂM SÓC</span>
-          <h1>Mọi quyết định quan trọng ở đúng một nơi.</h1>
-          <p>Duyệt hồ sơ, đối soát thanh toán và xử lý ca chăm sóc bằng dữ liệu được ghi nhận từ hệ thống.</p>
+          <h2>Điều phối ca chăm sóc</h2>
+          <p>Theo dõi lịch chăm sóc, duyệt hồ sơ người chăm sóc và đối soát thanh toán.</p>
         </div>
-        <p className="story-foot">Identity · Booking · Payments · Support</p>
-      </section>
+        <img className="login-photo" src={careAtHome} alt="Người chăm sóc trò chuyện cùng gia đình tại nhà" />
+      </div>
       <section className="login-panel">
         <form className="login-card" onSubmit={submit}>
-          <span className="form-kicker">ĐĂNG NHẬP QUẢN TRỊ</span>
-          <h2>Chào mừng quay lại</h2>
-          <p>Dùng tài khoản có vai trò ADMIN.</p>
+          <h1>Đăng nhập quản trị</h1>
+          <p>Sử dụng tài khoản quản trị CareSitter của bạn.</p>
           {notice && (
             <div className="notice" role="status">
               {notice}

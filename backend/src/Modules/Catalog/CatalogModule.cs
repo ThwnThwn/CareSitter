@@ -12,6 +12,9 @@ using FluentValidation;
 using CareSitter.Infrastructure.Persistence;
 using Npgsql;
 
+using MediatR;
+using CareSitter.SharedKernel.Results;
+
 namespace CareSitter.Modules.Catalog;
 
 public sealed class CatalogModule : IModule
@@ -21,6 +24,10 @@ public sealed class CatalogModule : IModule
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSpatialDataSource(configuration);
+        services.AddScoped<IServiceSetupReceipts, ServiceSetupReceipts>();
+        services.AddTransient<IPipelineBehavior<CreateServiceBundleCommand, Result<AdminServiceResponse>>,
+            AtomicModuleWriteBehavior<CreateServiceBundleCommand, AdminServiceResponse>>();
+        services.AddKeyedScoped<ModuleDbContext>("catalog", (sp, _) => sp.GetRequiredService<CatalogDbContext>());
         services.AddDbContext<CatalogDbContext>((provider, options) =>
             options.UseNpgsql(
                 provider.GetRequiredService<NpgsqlDataSource>(),

@@ -386,6 +386,28 @@ void main() {
     expect(repository.writes, hasLength(1));
   });
 
+  testWidgets('a saved demo menu shows a disclosure and a clean meal title',
+      (tester) async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final repository = NutritionFlowRepository()
+      ..saved = NutritionFlowRepository.resource('demo-plan', 'saved',
+          decision: 'suggested',
+          data: {
+            'plannedDate': _apiDate(today),
+            'meals': [
+              {
+                ...NutritionFlowRepository.meal('breakfast', 'Cháo trứng'),
+                'isLocalDemo': true,
+              },
+            ],
+          });
+
+    await _mount(tester, repository, width: 390);
+
+    expect(find.text('Cháo trứng'), findsOneWidget);
+    expect(find.textContaining('Chưa kiểm duyệt lâm sàng'), findsOneWidget);
+  });
+
   testWidgets('one tap suggests the selected day at width 320 with large text',
       (tester) async {
     final repository = NutritionFlowRepository();

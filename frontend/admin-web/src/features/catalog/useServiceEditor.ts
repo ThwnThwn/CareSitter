@@ -1,13 +1,17 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useAdminMetadata } from '../../adminMetadata';
 import { CatalogService, PricingRule } from '../../types';
 import { fromDateTimeInput, toMinuteDateTimeInput } from '../../operations';
 import {
   saveCatalogService,
-  saveChecklistTemplate,
+  createServiceBundle,
   savePricingRule,
   uploadCatalogServiceImage,
 } from './catalogApi';
+
+function resolvePriceTime(value: string, original?: string) {
+  return original && value === toMinuteDateTimeInput(original) ? original : fromDateTimeInput(value);
+}
 
 export function useServiceEditor(service: CatalogService | null, onChanged: (message: string) => void) {
   const { defaults } = useAdminMetadata();
@@ -47,14 +51,9 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
   const [localImagePreview, setLocalImagePreview] = useState('');
   const [checklistItems, setChecklistItems] = useState(() => [createChecklistItem(0)]);
   const [editingPrice, setEditingPrice] = useState<PricingRule | null>(null);
-  const [creationProgress, setCreationProgress] = useState({
-    serviceId: '',
-    priceSaved: false,
-    checklistSavedCount: 0,
-  });
+  const lastSubmission = useRef<{ body: string; id: string } | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const createdServiceId = creationProgress.serviceId;
   const imagePreviewUrl = localImagePreview || form.imageUrl;
 
   useEffect(
@@ -99,17 +98,12 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
     });
   }
   function pricingDraft() {
-    if (
-      priceForm.effectiveTo &&
-      Date.parse(fromDateTimeInput(priceForm.effectiveTo)) <=
-        Date.parse(fromDateTimeInput(priceForm.effectiveFrom))
-    )
+    const effectiveFrom = resolvePriceTime(priceForm.effectiveFrom, editingPrice?.effectiveFrom);
+    const effectiveTo = priceForm.effectiveTo ? resolvePriceTime(priceForm.effectiveTo, editingPrice?.effectiveTo) : null;
+    const datesChanged = effectiveFrom !== editingPrice?.effectiveFrom || effectiveTo !== editingPrice?.effectiveTo;
+    if (datesChanged && effectiveTo && Date.parse(effectiveTo) <= Date.parse(effectiveFrom))
       throw new Error('Hiệu lực đến phải sau thời điểm bắt đầu.');
-    return {
-      ...priceForm,
-      effectiveFrom: fromDateTimeInput(priceForm.effectiveFrom),
-      effectiveTo: priceForm.effectiveTo ? fromDateTimeInput(priceForm.effectiveTo) : null,
-    };
+    return { ...priceForm, effectiveFrom, effectiveTo };
   }
   function checklistDrafts() {
     return checklistItems.map((item, index) => ({
@@ -131,13 +125,13 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
     index: number,
     patch: Partial<Omit<(typeof checklistItems)[number], 'key'>>,
   ) {
-    if (index < creationProgress.checklistSavedCount) return;
+    if (busy) return;
     setChecklistItems((current) =>
       current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)),
     );
   }
   function removeChecklistItem(index: number) {
-    if (busy || checklistItems.length === 1 || index < creationProgress.checklistSavedCount) return;
+    if (busy || checklistItems.length === 1) return;
     setChecklistItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
   async function saveService(event: FormEvent) {
@@ -145,8 +139,6 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
     if (busy) return;
     setBusy('service');
     setError('');
-    let progress = creationProgress;
-    let serviceAlreadyCreated = Boolean(progress.serviceId);
     try {
       let serviceDraft = form;
       if (pendingImage) {
@@ -161,35 +153,14 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
       } else {
         const priceDraft = pricingDraft();
         const initialChecklist = checklistDrafts();
-        let serviceId = progress.serviceId;
-        if (serviceId) {
-          await saveCatalogService(serviceId, serviceDraft);
-        } else {
-          const createdService = await saveCatalogService(undefined, serviceDraft);
-          serviceId = createdService.id;
-          serviceAlreadyCreated = true;
-          progress = { ...progress, serviceId };
-          setCreationProgress(progress);
-        }
-        if (!progress.priceSaved) {
-          await savePricingRule(serviceId, undefined, priceDraft);
-          progress = { ...progress, priceSaved: true };
-          setCreationProgress(progress);
-        }
-        for (let index = progress.checklistSavedCount; index < initialChecklist.length; index += 1) {
-          await saveChecklistTemplate(serviceId, undefined, initialChecklist[index]);
-          progress = { ...progress, checklistSavedCount: index + 1 };
-          setCreationProgress(progress);
-        }
+        const body = JSON.stringify([serviceDraft, priceDraft, initialChecklist]);
+        if (lastSubmission.current?.body !== body) lastSubmission.current = { body, id: crypto.randomUUID() };
+        await createServiceBundle(lastSubmission.current.id, serviceDraft, priceDraft, initialChecklist);
       }
       onChanged(service ? 'Cập nhật dịch vụ thành công.' : 'Tạo dịch vụ mới thành công.');
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Không thể lưu dịch vụ.';
-      setError(
-        !service && serviceAlreadyCreated
-          ? `Dịch vụ đã được tạo nhưng giá hoặc checklist chưa hoàn tất. ${message} Kiểm tra thông tin và thử lại; hệ thống sẽ tiếp tục phần còn thiếu mà không tạo trùng.`
-          : message,
-      );
+      setError(message);
     } finally {
       setBusy('');
     }
@@ -225,8 +196,6 @@ export function useServiceEditor(service: CatalogService | null, onChanged: (mes
     updateChecklistItem,
     removeChecklistItem,
     editingPrice,
-    createdServiceId,
-    creationProgress,
     busy,
     error,
     editPrice,

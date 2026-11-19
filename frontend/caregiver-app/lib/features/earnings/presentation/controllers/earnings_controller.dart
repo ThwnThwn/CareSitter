@@ -1,8 +1,7 @@
-import 'package:caregiver_app/core/utils/date_formatter.dart';
-import 'package:caregiver_app/core/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'withdrawal_result.dart';
+import 'wallet_activity_provider.dart';
 import '../../domain/withdrawal_rules.dart';
 export 'withdrawal_result.dart';
 import 'package:caregiver_app/core/error/app_exception.dart';
@@ -26,8 +25,7 @@ class EarningsController extends StateNotifier<EarningsState> {
     String key
   })? _pendingWithdrawal;
 
-  EarningsController(this._ref)
-      : super(const EarningsState(balance: 0, transactions: [])) {
+  EarningsController(this._ref) : super(const EarningsState(balance: 0)) {
     _ref.listen(shiftsProvider, (previous, next) {
       _rebuildFromBookings(next);
     });
@@ -57,20 +55,13 @@ class EarningsController extends StateNotifier<EarningsState> {
   void _rebuildFromBookings(List<ShiftModel> bookings) {
     if (!mounted) return;
     final completed =
-        bookings.where((booking) => booking.status == 'completed').toList()
-          ..sort((a, b) {
-            final aDate =
-                a.scheduledStart ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bDate =
-                b.scheduledStart ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bDate.compareTo(aDate);
-          });
+        bookings.where((booking) => booking.status == 'completed').toList();
 
     final now = DateTime.now();
     final monthTotal = completed.where((booking) {
       final date = booking.scheduledStart;
       return date != null && date.year == now.year && date.month == now.month;
-    }).fold<double>(0, (sum, booking) => sum + _earningOf(booking));
+    }).fold<double>(0, (sum, booking) => sum + booking.caregiverEarning);
 
     final days = List<double>.filled(7, 0);
     for (final booking in completed) {
@@ -78,44 +69,14 @@ class EarningsController extends StateNotifier<EarningsState> {
       if (date == null) continue;
       final difference = _dateOnly(now).difference(_dateOnly(date)).inDays;
       if (difference >= 0 && difference < 7) {
-        days[6 - difference] += _earningOf(booking);
+        days[6 - difference] += booking.caregiverEarning;
       }
     }
-
-    final transactions = completed.map((booking) {
-      final amount = _earningOf(booking);
-      return EarningTransaction(
-        title: 'Thanh toán ca (${booking.beneficiaryName})',
-        date: _formatDate(booking.scheduledStart),
-        amount:
-            '+ ${formatVnd(amount, separator: ',', suffix: '', round: true)} đ',
-        type: 'in',
-      );
-    }).toList(growable: false);
 
     state = state.copyWith(
       monthTotal: monthTotal,
       completedShifts: completed.length,
       last7Days: days,
-      transactions: transactions,
-    );
-  }
-
-  void addEarning(double amount, String beneficiaryName) {
-    if (!mounted) return;
-    final newTransaction = EarningTransaction(
-      title: 'Thanh toán ca ($beneficiaryName)',
-      date: 'Hôm nay',
-      amount:
-          '+ ${formatVnd(amount, separator: ',', suffix: '', round: true)} đ',
-      type: 'in',
-    );
-
-    state = state.copyWith(
-      balance: state.balance + amount,
-      monthTotal: state.monthTotal + amount,
-      completedShifts: state.completedShifts + 1,
-      transactions: [newTransaction, ...state.transactions],
     );
   }
 
@@ -169,17 +130,8 @@ class EarningsController extends StateNotifier<EarningsState> {
         idempotencyKey: key,
       );
       if (!mounted) return WithdrawalResult.ignored;
-      final newTransaction = EarningTransaction(
-        title: 'Yêu cầu rút tiền về $bankName ($accountNumber)',
-        date: 'Hôm nay',
-        amount:
-            '- ${formatVnd(amount, separator: ',', suffix: '', round: true)} đ',
-        type: 'out',
-      );
-      state = state.copyWith(
-        transactions: [newTransaction, ...state.transactions],
-      );
       _pendingWithdrawal = null;
+      _ref.invalidate(walletActivityProvider);
       await refreshWallet();
       return mounted ? WithdrawalResult.submitted : WithdrawalResult.ignored;
     } catch (error) {
@@ -197,18 +149,9 @@ class EarningsController extends StateNotifier<EarningsState> {
     }
   }
 
-  static double _earningOf(ShiftModel booking) {
-    return booking.caregiverEarning > 0
-        ? booking.caregiverEarning
-        : booking.totalPrice;
-  }
-
   static DateTime _dateOnly(DateTime value) {
     return DateTime(value.year, value.month, value.day);
   }
-
-  static String _formatDate(DateTime? value) =>
-      value == null ? 'Chưa rõ ngày' : formatDate(value, padded: true);
 }
 
 final earningsProvider =

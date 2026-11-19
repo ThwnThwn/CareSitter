@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/core/utils/date_formatter.dart';
 import 'package:caregiver_app/core/widgets/app_toast.dart';
 import 'package:caregiver_app/features/shifts/data/models/shift_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_active_controller.dart';
 import 'package:caregiver_app/features/shifts/presentation/controllers/shift_active_selectors.dart';
-import 'package:caregiver_app/features/shifts/presentation/models/shift_display_model.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_action_feedback.dart';
 import 'package:caregiver_app/features/shifts/presentation/widgets/active/shift_note_field.dart';
 
@@ -18,8 +16,6 @@ class ShiftCheckoutSection extends ConsumerWidget {
   final ShiftModel booking;
 
   Future<void> _submit(BuildContext context, WidgetRef ref) async {
-    final flow = ref.read(shiftActiveProvider(booking.id));
-    final summary = ref.read(activeShiftSummaryProvider(booking.id));
     final result =
         await ref.read(shiftActiveProvider(booking.id).notifier).checkout();
     if (!context.mounted ||
@@ -27,19 +23,7 @@ class ShiftCheckoutSection extends ConsumerWidget {
             success: 'Đã gửi yêu cầu checkout đến khách hàng.')) {
       return;
     }
-    final time = flow.startedAt;
-    context.go('/shifts/${booking.id}/summary', extra: {
-      'beneficiaryName': booking.beneficiaryName,
-      'caregiverEarning': booking.caregiverEarning,
-      'completedTasks': summary.completed,
-      'skippedTasks': summary.skipped,
-      'totalTasks': summary.total,
-      'duration': booking.duration,
-      'checkInTime': time == null ? '' : formatClock(time),
-      'caregiverNote': flow.note,
-      'taskPhotos': booking.tasks.expand((t) => t.photoUrls).toSet().toList(),
-      'checkoutPendingReview': true,
-    });
+    context.go('/shifts/${booking.id}/summary');
   }
 
   void _showPendingMessage(BuildContext context, WidgetRef ref) {

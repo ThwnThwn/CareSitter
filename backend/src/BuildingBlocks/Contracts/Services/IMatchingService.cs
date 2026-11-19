@@ -18,6 +18,9 @@ public interface IMatchingService
     Task<IReadOnlyList<MatchingCandidate>> OfferTopCandidatesAsync(
         Guid bookingId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<MatchingCandidate>> EnsureInitialOffersAsync(Guid bookingId, CancellationToken ct = default)
+        => OfferTopCandidatesAsync(bookingId, ct);
+
     Task<int> ExpandExpiredOffersAsync(
         CancellationToken ct = default);
 }

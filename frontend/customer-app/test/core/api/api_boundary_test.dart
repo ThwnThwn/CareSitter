@@ -9,6 +9,8 @@ import 'package:caresitter_customer/core/auth/auth_notifier.dart';
 import 'package:caresitter_customer/core/auth/auth_state.dart';
 import 'package:caresitter_customer/features/booking/data/repositories/booking_repository.dart';
 import 'package:caresitter_customer/features/beneficiary/data/repositories/beneficiary_repository.dart';
+import 'package:caresitter_customer/core/api/api_cancellation.dart';
+import 'package:caresitter_customer/features/promotions/data/repositories/promotion_repository.dart';
 
 class _Auth extends AuthNotifier {
   @override
@@ -123,12 +125,53 @@ void main() {
         addressId: 'address',
         scheduledStart: DateTime.utc(2026, 10, 12, 1),
         scheduledEnd: DateTime.utc(2026, 10, 12, 3),
+        promotionCode: 'CARE20',
         idempotencyKey: 'stable-operation');
     await BookingRepository(client).createBooking(draft);
     final request = server.lastRequest!;
     expect(request.headers['Idempotency-Key'], 'stable-operation');
     expect(request.data['scheduledStart'], '2026-10-12T01:00:00.000Z');
+    expect(request.data['promotionCode'], 'CARE20');
     expect(request.data.containsKey('idempotencyKey'), isFalse);
+  });
+  test('promotion preview uses the selected service and UTC booking hours',
+      () async {
+    final promotions = PromotionRepository(client);
+    server.status = 200;
+    server.body = '{"code":"CARE20","grossAmount":150000,'
+        '"discountAmount":30000,"customerPayableAmount":120000}';
+    final slot = (
+      serviceTypeId: 'service',
+      start: DateTime.parse('2026-11-20T08:00:00+07:00'),
+      end: DateTime.parse('2026-11-20T10:00:00+07:00'),
+    );
+    final quote = await promotions.preview('CARE20', slot, ApiCancellation());
+
+    expect(server.lastRequest!.path, '/promotions/preview');
+    expect(server.lastRequest!.data, {
+      'code': 'CARE20',
+      'serviceTypeId': 'service',
+      'scheduledStart': '2026-11-20T01:00:00.000Z',
+      'scheduledEnd': '2026-11-20T03:00:00.000Z',
+    });
+    expect(quote.customerPayableAmount, 120000);
+    expect(quote.discountAmount, 30000);
+
+    server.body = '{"code":"OTHER","grossAmount":150000,'
+        '"discountAmount":30000,"customerPayableAmount":120000}';
+    await expectLater(promotions.preview('CARE20', slot, ApiCancellation()),
+        throwsFormatException);
+  });
+  test('active promotions are read from the server list', () async {
+    server.status = 200;
+    server.body = '[{"id":"promotion","code":"CARE20","title":"Chăm sóc",'
+        '"summary":"Giảm 20%","badgeText":"20%",'
+        '"endsAt":"2026-12-30T17:00:00Z"}]';
+    final items =
+        await PromotionRepository(client).listActive(ApiCancellation());
+    expect(server.lastRequest!.path, '/promotions');
+    expect(server.lastRequest!.method, 'GET');
+    expect(items.single.code, 'CARE20');
   });
   test('an unreadable successful POST is still an unknown write outcome',
       () async {

@@ -15,6 +15,7 @@ const ConfirmationContext = createContext<Confirm>(async ({ title, message }) =>
 
 export function ConfirmationProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<PendingConfirmation | null>(null);
+  const acceptButton = useRef<HTMLButtonElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
   const confirm = useCallback<Confirm>((options) => new Promise((resolve) => setPending({ ...options, resolve })), []);
   const close = useCallback((value: boolean) => {
@@ -26,12 +27,20 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!pending) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     cancelButton.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close(false);
+      if (event.key === 'Escape') { event.preventDefault(); close(false); }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        (document.activeElement === cancelButton.current ? acceptButton : cancelButton).current?.focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, [pending, close]);
 
   return <ConfirmationContext.Provider value={confirm}>
@@ -47,7 +56,7 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
         </div>
         <div className="confirmation-actions">
           <button ref={cancelButton} className="secondary" onClick={() => close(false)}>Quay lại</button>
-          <button className={pending.tone === 'primary' ? 'primary' : 'danger'} onClick={() => close(true)}>{pending.confirmLabel}</button>
+          <button ref={acceptButton} className={pending.tone === 'primary' ? 'primary' : 'danger'} onClick={() => close(true)}>{pending.confirmLabel}</button>
         </div>
       </section>
     </div>}

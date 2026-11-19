@@ -20,6 +20,16 @@ internal sealed class CreateDisputeCommandHandler(
         var booking = await bookingWorkflow.GetAsync(request.BookingId, ct);
         if (booking is null) return SupportErrors.DisputeBookingNotFound();
         if (booking.CustomerId != userId) return SupportErrors.Forbidden();
+        var existing = await repository.GetDisputeByBookingAsync(request.BookingId, ct);
+        if (existing is not null)
+        {
+            if (existing.Status == "OPEN" && booking.Status == "disputed" &&
+                existing.RaisedByUserId == userId && existing.Reason == request.Reason &&
+                existing.Description == request.Description)
+                return SupportResponseMapper.ToResponse(existing);
+            return SupportErrors.DisputeAlreadyExists();
+        }
+
         var noShowEligible = (booking.Status is "confirmed" or
                 "caregiver_accepted" or "caregiver_en_route") &&
             booking.CaregiverId is not null &&
@@ -34,23 +44,14 @@ internal sealed class CreateDisputeCommandHandler(
              booking.SettlementReleasedAt is not null))
             return SupportErrors.DisputeWindowExpired();
 
-        var exists = await repository.DisputeExistsAsync(request.BookingId, ct);
-        if (exists) return SupportErrors.DisputeAlreadyExists();
-
         var created = Dispute.Create(request.BookingId, userId,
             request.Reason, request.Description);
         if (created.IsFailure) return created.Error;
 
+        var opened = await bookingWorkflow.OpenAsync(request.BookingId, ct);
+        if (opened.IsFailure) return opened.Error;
         repository.AddDispute(created.Value);
         await repository.SaveChangesAsync(ct);
-
-        var opened = await bookingWorkflow.OpenAsync(request.BookingId, ct);
-        if (opened.IsFailure)
-        {
-            created.Value.Cancel();
-            await repository.SaveChangesAsync(ct);
-            return opened.Error;
-        }
         return SupportResponseMapper.ToResponse(created.Value);
     }
 }

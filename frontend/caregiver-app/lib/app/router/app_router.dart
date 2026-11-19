@@ -21,7 +21,7 @@ import 'package:caregiver_app/features/shifts/presentation/screens/shift_detail_
 import 'package:caregiver_app/features/meals/presentation/screens/booking_meals_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_active_screen.dart';
 import 'package:caregiver_app/features/shifts/presentation/screens/shift_map_screen.dart';
-import 'package:caregiver_app/features/shifts/presentation/screens/shift_summary_screen.dart';
+import 'package:caregiver_app/features/shifts/presentation/screens/shift_report_page.dart';
 import 'package:caregiver_app/features/schedule/presentation/screens/schedule_screen.dart';
 import 'package:caregiver_app/features/earnings/presentation/screens/earnings_screen.dart';
 import 'package:caregiver_app/features/earnings/presentation/screens/withdrawal_screen.dart';
@@ -34,7 +34,6 @@ import 'package:caregiver_app/features/settings/presentation/screens/faq_screen.
 import 'package:caregiver_app/features/settings/presentation/screens/support_screen.dart';
 import 'package:caregiver_app/features/support_chat/presentation/support_chat_screen.dart';
 import 'package:caregiver_app/features/booking_chat/presentation/booking_chat_screen.dart';
-import 'package:caregiver_app/features/shifts/presentation/screens/shift_customer_report_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
@@ -271,56 +270,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/summary',
-        pageBuilder: (ctx, state) {
-          final id = state.pathParameters['id']!;
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          return _detailPage(
-            pageKey: state.pageKey,
-            child: ShiftSummaryScreen(
-              bookingId: id,
-              beneficiaryName:
-                  extra['beneficiaryName'] as String? ?? 'Khách hàng',
-              caregiverName:
-                  extra['caregiverName'] as String? ?? 'Người chăm sóc',
-              caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
-              completedTasks: extra['completedTasks'] as int? ?? 0,
-              totalTasks: extra['totalTasks'] as int? ?? 0,
-              duration: extra['duration'] as String? ?? '0 giờ',
-              checkInTime: extra['checkInTime'] as String? ?? '08:00',
-              caregiverNote: extra['caregiverNote'] as String? ?? '',
-              taskPhotos:
-                  (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
-              checkoutPendingReview:
-                  extra['checkoutPendingReview'] as bool? ?? false,
-            ),
-          );
-        },
+        pageBuilder: (_, state) => _detailPage(
+          pageKey: state.pageKey,
+          child: ShiftReportPage(id: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/shifts/:id/customer-report',
-        pageBuilder: (ctx, state) {
-          final id = state.pathParameters['id']!;
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          return _detailPage(
-            pageKey: state.pageKey,
-            child: ShiftCustomerReportScreen(
-              bookingId: id,
-              beneficiaryName:
-                  extra['beneficiaryName'] as String? ?? 'Khách hàng',
-              caregiverName:
-                  extra['caregiverName'] as String? ?? 'Người chăm sóc',
-              caregiverEarning: extra['caregiverEarning'] as double? ?? 0.0,
-              completedTasks: extra['completedTasks'] as int? ?? 0,
-              totalTasks: extra['totalTasks'] as int? ?? 0,
-              duration: extra['duration'] as String? ?? '0 giờ',
-              checkInTime: extra['checkInTime'] as String? ?? '08:00',
-              caregiverNote: extra['caregiverNote'] as String? ?? '',
-              taskPhotos:
-                  (extra['taskPhotos'] as List<dynamic>? ?? []).cast<String>(),
-            ),
-          );
-        },
+        pageBuilder: (_, state) => _detailPage(
+          pageKey: state.pageKey,
+          child: ShiftReportPage(
+            id: state.pathParameters['id']!,
+            customerReport: true,
+          ),
+        ),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

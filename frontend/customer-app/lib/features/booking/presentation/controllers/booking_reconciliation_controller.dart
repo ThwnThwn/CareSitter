@@ -22,6 +22,9 @@ class BookingReconciliationController {
             booking.beneficiaryId == draft.beneficiaryId &&
             booking.serviceTypeId == draft.serviceTypeId &&
             booking.addressId == draft.addressId &&
+            booking.promotionCode == draft.promotionCode &&
+            (draft.expectedPayableAmount == null ||
+                booking.customerPayableAmount == draft.expectedPayableAmount) &&
             booking.scheduledStart.isAtSameMomentAs(draft.scheduledStart) &&
             booking.scheduledEnd.isAtSameMomentAs(draft.scheduledEnd)));
         if (result.items.length < pageSize ||
@@ -36,7 +39,8 @@ class BookingReconciliationController {
               'Chưa xác minh được kết quả. Vui lòng kiểm tra danh sách lịch hoặc liên hệ hỗ trợ.');
     } catch (_) {
       return current()
-          ? const BookingSubmitMessage('Chưa tải được lịch. Vui lòng kiểm tra lại.')
+          ? const BookingSubmitMessage(
+              'Chưa tải được lịch. Vui lòng kiểm tra lại.')
           : const BookingSubmitIgnored();
     }
   }

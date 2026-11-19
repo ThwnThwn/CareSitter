@@ -1,6 +1,7 @@
+import { DataRow, DataTable } from '../../components/DataTable';
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DetailList, EmptyState, ErrorBanner, LoadingTable, PageHeader, formatDate, shortId } from '../../components/Common';
+import { DetailList, EmptyState, ErrorBanner, LoadingTable, SectionTitle, formatDate, shortId } from '../../components/Common';
 import type { BookingChatAdminActivity, BookingChatAdminDetail, BookingChatAdminFilter, BookingChatAdminItem, BookingChatAdminMessage } from '../../types';
 import { bookingChatAdminApi } from './bookingChatAdminApi';
 
@@ -176,8 +177,8 @@ export function BookingChatConversations() {
   }
 
   return <>
-    <PageHeader title="Booking Chat" description="Xem theo quyền quản trị, xử lý report, khóa chat và kiểm tra audit log."
-      actions={<button className="secondary" disabled={loading || busy} onClick={() => void load(currentCursor)}>
+    <SectionTitle title="Booking Chat" description="Xem hội thoại theo lịch, xử lý báo cáo và tra cứu lịch sử thao tác."
+      action={<button className="secondary" disabled={loading || busy} onClick={() => void load(currentCursor)}>
         <RefreshCw size={16} /> Làm mới
       </button>} />
     {error && <ErrorBanner message={error} onRetry={() => void load(currentCursor)} />}
@@ -211,15 +212,13 @@ export function BookingChatConversations() {
     <section className="data-panel">
       {loading ? <LoadingTable rows={6} columns={6} /> : items.length === 0 ?
         <EmptyState title="Chưa có Booking Chat" description="Hội thoại hợp lệ sẽ xuất hiện tại đây." /> :
-        <div className="table-wrap"><table className="data-table"><thead><tr>
-          <th>Booking</th><th>Cập nhật</th><th>Report</th><th>Khóa ghi</th><th>Legal hold</th><th />
-        </tr></thead><tbody>{items.map(item => <tr key={item.conversationId}>
+        <div className="table-wrap"><DataTable columns={['Booking', 'Cập nhật', 'Report', 'Khóa ghi', 'Legal hold', '']}>{items.map(item => <DataRow key={item.conversationId}>
           <td><strong>{shortId(item.bookingId)}</strong><small>{shortId(item.conversationId)}</small></td>
           <td>{formatDate(item.updatedAt)}</td><td>{item.reportCount}{item.deadLetterCount > 0 ? ` · ${item.deadLetterCount} lỗi` : ''}</td>
           <td>{item.writeBlocked ? 'Đang khóa' : 'Mở'}</td><td>{item.legalHoldActive ? 'Đang giữ' : '—'}</td>
           <td><button className="row-action" disabled={busy || !readReason.trim()}
             onClick={() => void open(item.conversationId)}>Mở</button></td>
-        </tr>)}</tbody></table></div>}
+        </DataRow>)}</DataTable></div>}
       <div className="cursor-pagination" aria-label="Phân trang Booking Chat">
         <button className="secondary" disabled={loading || cursorHistory.length === 0} onClick={goPrevious}>Trang trước</button>
         <span>Trang {cursorHistory.length + 1}</span>

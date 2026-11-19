@@ -25,22 +25,3 @@ export function currentPricingRule(rules: PricingRule[], now = Date.now()) {
     && (!rule.effectiveTo || Date.parse(rule.effectiveTo) > now))
     .sort((a, b) => Date.parse(b.effectiveFrom) - Date.parse(a.effectiveFrom))[0];
 }
-
-export function disputeAllocation(escrow: number, platformFee: number, decision: string, refundInput: number, penaltyInput: number) {
-  if (![escrow, platformFee, refundInput, penaltyInput].every(Number.isSafeInteger)
-    || escrow <= 0 || platformFee < 0 || platformFee > escrow || penaltyInput < 0 || refundInput < 0) {
-    throw new Error('Số tiền phải là số nguyên VND hợp lệ, không âm.');
-  }
-  if (!['CUSTOMER_WINS', 'CAREGIVER_WINS', 'PARTIAL_REFUND'].includes(decision)) {
-    throw new Error('Vui lòng chọn phán quyết.');
-  }
-  const refund = decision === 'CUSTOMER_WINS' ? escrow : decision === 'CAREGIVER_WINS' ? 0 : refundInput;
-  if (decision === 'PARTIAL_REFUND' && (refund <= 0 || refund >= escrow)) {
-    throw new Error('Hoàn một phần phải lớn hơn 0 và nhỏ hơn tiền giữ chờ.');
-  }
-  const fee = Math.min(platformFee, escrow - refund);
-  const penalty = decision === 'PARTIAL_REFUND' ? penaltyInput : 0;
-  const earning = escrow - refund - fee - penalty;
-  if (earning < 0) throw new Error('Chế tài vượt quá thu nhập caregiver còn lại.');
-  return { refund, fee, penalty, earning };
-}

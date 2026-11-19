@@ -11,7 +11,7 @@ export function SupportPage() {
     <section className="support-page">
       <PageHeader
         title="Hỗ trợ"
-        description="Theo dõi ticket, tư vấn, chat hỗ trợ và trò chuyện trong booking."
+        description="Tiếp nhận yêu cầu tư vấn, xử lý phiếu hỗ trợ và tra cứu hội thoại theo lịch."
       />
       <Tabs
         value={tab}

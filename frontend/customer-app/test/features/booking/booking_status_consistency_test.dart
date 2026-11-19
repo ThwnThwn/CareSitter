@@ -4,6 +4,7 @@ import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/features/booking/presentation/controllers/booking_controller.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_detail_screen.dart';
 import 'package:caresitter_customer/features/booking/presentation/screens/booking_list_screen.dart';
+import 'package:caresitter_customer/features/booking/presentation/widgets/booking_card_status_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,8 +27,8 @@ void main() {
     _Scenario('draft', 'Bản nháp'),
     _Scenario('in_progress', 'Đã nhận ca'),
     _Scenario('in_progress', 'Đang diễn ra', checkedIn: true),
-    _Scenario('disputed', 'Đang xử lý', tab: 'Đã hủy'),
-    _Scenario('refunded', 'Đã hoàn tiền', tab: 'Đã hủy'),
+    _Scenario('disputed', 'Đang xử lý', tab: 'Khiếu nại'),
+    _Scenario('refunded', 'Đã hoàn tiền', tab: 'Hủy / hoàn tiền'),
     _Scenario('completed', 'Hoàn thành', tab: 'Hoàn tất'),
   ];
 
@@ -67,15 +68,14 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
-      if (scenario.tab == 'Chưa ghép' || scenario.tab == 'Đã hủy') {
-        await tester.drag(find.byType(TabBar), const Offset(-250, 0));
-        await tester.pumpAndSettle();
-      }
-      await tester.tap(find.text(scenario.tab));
+      final tab = find.widgetWithText(Tab, scenario.tab);
+      await tester.ensureVisible(tab);
+      await tester.pumpAndSettle();
+      await tester.tap(tab);
       await tester.pumpAndSettle();
 
       final cardLabel = find.descendant(
-        of: find.byType(BookingListScreen),
+        of: find.byType(BookingCardStatusHeader),
         matching: find.text(scenario.label),
       );
       expect(cardLabel, findsOneWidget);
@@ -164,7 +164,7 @@ class _Scenario {
     this.status,
     this.label, {
     this.caregiverId = 'caregiver-1',
-    this.tab = 'Sắp tới',
+    this.tab = 'Đang xử lý',
     this.expectWaiting = false,
     this.checkedIn = false,
   });

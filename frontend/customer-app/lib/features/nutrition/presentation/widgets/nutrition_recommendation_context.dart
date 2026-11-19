@@ -4,6 +4,7 @@ import 'package:caresitter_customer/features/nutrition/data/models/nutrition_rec
 import 'package:flutter/material.dart';
 
 import '../../domain/nutrition_disclaimer.dart';
+import 'nutrition_demo_notice.dart';
 import 'nutrition_recommendation_citations.dart';
 import 'nutrition_reference_text.dart';
 import '../models/nutrition_reason_copy.dart';
@@ -33,9 +34,9 @@ class NutritionRecommendationContext extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (trace.isDemo ||
-                meals.any((meal) => meal.name.startsWith('[DEMO]'))) ...[
-              _DemoNotice(graphUsed: trace.isGraphDemo && trace.isGrounded),
+            if (trace.isDemo || meals.any((meal) => meal.isLocalDemo)) ...[
+              NutritionDemoNotice(
+                  graphUsed: trace.isGraphDemo && trace.isGrounded),
               const SizedBox(height: AppSpacing.compact),
             ],
             if (trace.isReference) ...[
@@ -81,40 +82,6 @@ String _releaseLabel(NutritionRecommendationTraceModel trace) =>
         : trace.hasGraphExplanation
             ? 'Tham khảo · Trích dẫn sách + đồ thị nguồn'
             : 'Tham khảo · Trích dẫn sách';
-
-class _DemoNotice extends StatelessWidget {
-  const _DemoNotice({required this.graphUsed});
-  final bool graphUsed;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: AppColors.warningLight,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              graphUsed ? 'DEMO · GraphRAG' : 'DEMO',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Chưa kiểm duyệt lâm sàng. Nội dung chỉ dùng tham khảo trong bản demo.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-          ),
-        ],
-      );
-}
 
 class _RecommendationSummary extends StatelessWidget {
   const _RecommendationSummary({required this.trace});

@@ -243,6 +243,15 @@ public sealed class SupportChatPostgresTests : IAsyncLifetime
             x.ChatMessageId == muted.Value.Id).ToListAsync());
         Assert.Empty(await db.Set<NotificationDelivery>().Where(x =>
             x.NotificationId == mutedInbox.Id).ToListAsync());
+
+        var inbox = new SupportNotificationInboxStore(db);
+        var ownerInbox = await inbox.ListAsync(_owner, 1, 50, default);
+        var thread = Assert.Single(ownerInbox.Response.Items, x => x.GroupKey == $"SUPPORT_CHAT:{id}");
+        Assert.Equal(2, thread.UnreadCount);
+        Assert.Equal("Hỗ trợ CareSitter", thread.Chat?.SenderName);
+        Assert.Equal("Phản hồi tiếp theo", thread.Chat?.Preview);
+        var staffInbox = await inbox.ListAsync(_admin, 1, 50, default);
+        Assert.DoesNotContain(staffInbox.Response.Items, x => x.GroupKey == thread.GroupKey);
     }
 
     [PostgresFact]

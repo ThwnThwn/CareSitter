@@ -1,3 +1,4 @@
+import 'package:caresitter_customer/core/theme/app_font_sizes.dart';
 import 'package:caresitter_customer/core/theme/app_theme.dart';
 import 'package:caresitter_customer/core/utils/currency_formatter.dart';
 import 'package:caresitter_customer/core/utils/default_avatar.dart';
@@ -17,72 +18,84 @@ class CaregiverStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final choice = ref.watch(bookingWizardProvider(args)
         .select((s) => (s.systemMatched, s.caregiverId)));
-    return ref.watch(wizardCandidatesProvider(args)).when(
-        loading: () => const Center(
-            child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: CircularProgressIndicator())),
-        error: (_, __) => TextButton(
-            onPressed: () => ref.invalidate(bookingCandidateRequestProvider),
-            child: const Text('Thử lại')),
-        data: (items) =>
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Chọn người chăm sóc',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: AppSpacing.xs),
-              Text('${items.length} chăm sóc viên phù hợp với lịch và khu vực',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: AppSpacing.md),
-              WizardCard(
-                  selected: choice.$1,
-                  highlightSelected: true,
-                  onTap: () => ref
-                      .read(bookingWizardProvider(args).notifier)
-                      .selectCaregiver(null),
-                  child: Row(children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.compact),
-                    const Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Text('Để hệ thống gợi ý',
-                              style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700)),
-                          Text('Tìm người phù hợp và chờ họ xác nhận nhận ca',
-                              style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12)),
-                        ])),
-                    if (choice.$1)
-                      const Icon(Icons.check_circle, color: AppColors.primary),
-                  ])),
-              if (items.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                const Text('Hoặc tự chọn chăm sóc viên',
-                    style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: AppSpacing.control),
-              ],
-              for (final caregiver in items)
-                _CaregiverCard(
-                    caregiver: caregiver,
-                    selected: choice.$2 == caregiver.id,
-                    onTap: () => ref
-                        .read(bookingWizardProvider(args).notifier)
-                        .selectCaregiver(caregiver.id)),
-              if (items.isEmpty)
-                const Text(
-                    'Chưa có gợi ý phù hợp với khung giờ và địa chỉ này. Bạn có thể đổi lịch hoặc để hệ thống tiếp tục tìm.'),
-            ]));
+    void selectCaregiver(String? id) =>
+        ref.read(bookingWizardProvider(args).notifier).selectCaregiver(id);
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Chọn người chăm sóc',
+          style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: AppFontSizes.s16,
+              fontWeight: FontWeight.w700)),
+      const SizedBox(height: AppSpacing.md),
+      WizardCard(
+          selected: choice.$1,
+          highlightSelected: true,
+          onTap: () => selectCaregiver(null),
+          child: Row(children: [
+            const Icon(Icons.auto_awesome, color: AppColors.primary),
+            const SizedBox(width: AppSpacing.compact),
+            const Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text('Để hệ thống gợi ý',
+                      style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700)),
+                  Text('Tìm người phù hợp và chờ họ xác nhận nhận ca',
+                      style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: AppFontSizes.s12)),
+                ])),
+            if (choice.$1)
+              const Icon(Icons.check_circle, color: AppColors.primary),
+          ])),
+      const SizedBox(height: AppSpacing.xs),
+      ref.watch(wizardCandidatesProvider(args)).when(
+          skipLoadingOnRefresh: false,
+          loading: () => const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: CircularProgressIndicator(
+                      semanticsLabel: 'Đang tải danh sách chăm sóc viên'))),
+          error: (_, __) => _CaregiverSuggestionsError(
+              onRetry: () => ref.invalidate(bookingCandidateRequestProvider)),
+          data: (items) => items.isEmpty
+              ? const Text(
+                  'Chưa có gợi ý phù hợp với khung giờ và địa chỉ này. Bạn có thể đổi lịch hoặc để hệ thống tiếp tục tìm.')
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Hoặc tự chọn chăm sóc viên',
+                      style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: AppFontSizes.s13,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: AppSpacing.control),
+                  for (final caregiver in items)
+                    _CaregiverCard(
+                        caregiver: caregiver,
+                        selected: choice.$2 == caregiver.id,
+                        onTap: () => selectCaregiver(caregiver.id)),
+                ])),
+    ]);
   }
+}
+
+class _CaregiverSuggestionsError extends StatelessWidget {
+  const _CaregiverSuggestionsError({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Chưa tải được danh sách chăm sóc viên.',
+            style: TextStyle(
+                color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+        const SizedBox(height: AppSpacing.xs),
+        const Text('Bạn có thể thử lại hoặc để hệ thống tìm người phù hợp.',
+            style: TextStyle(color: AppColors.textSecondary)),
+        TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+      ]);
 }
 
 class _CaregiverCard extends StatelessWidget {

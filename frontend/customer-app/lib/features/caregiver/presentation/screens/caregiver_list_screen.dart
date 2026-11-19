@@ -65,12 +65,7 @@ class _CaregiverListScreenState extends ConsumerState<CaregiverListScreen> {
     final hasLocation =
         ref.watch(caregiverSearchAddressProvider).valueOrNull != null;
     final topPadding = MediaQuery.of(context).padding.top;
-    final unreadCount = ref
-            .watch(notificationsProvider)
-            .valueOrNull
-            ?.where((notification) => !notification.isRead)
-            .length ??
-        0;
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,

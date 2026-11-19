@@ -34,7 +34,7 @@ class NotificationsNotificationEmpty extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             const Text(
-              'Các thông báo về lịch hẹn sẽ hiển thị ở đây',
+              'Tin nhắn và cập nhật về lịch chăm sóc sẽ xuất hiện tại đây.',
               style: TextStyle(
                   color: AppColors.textSecondary, fontSize: AppFontSizes.s13),
               textAlign: TextAlign.center,

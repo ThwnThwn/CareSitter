@@ -7,7 +7,7 @@ class BookingPaymentRow extends StatelessWidget {
   const BookingPaymentRow(
       {super.key, required this.label, required this.amount});
   final String label;
-  final double amount;
+  final num amount;
   @override
   Widget build(BuildContext context) =>
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [

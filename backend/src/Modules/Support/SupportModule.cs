@@ -20,6 +20,13 @@ using CareSitter.Messaging.Persistence;
 using CareSitter.Modules.Support.Application.Ports;
 using CareSitter.Modules.Support.Application.Chat;
 
+using CareSitter.Infrastructure.Persistence;
+using CareSitter.Modules.Support.Application.Commands.CreateDispute;
+using CareSitter.Modules.Support.Application.Commands.CancelDispute;
+using CareSitter.Modules.Support.Application.Commands.ResolveDispute;
+using CareSitter.SharedKernel.Results;
+using MediatR;
+
 namespace CareSitter.Modules.Support;
 
 public sealed class SupportModule : IModule
@@ -28,6 +35,7 @@ public sealed class SupportModule : IModule
 
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddKeyedScoped<ModuleDbContext>("dispute", (sp, _) => sp.GetRequiredService<SupportDbContext>());
         services.AddDbContext<SupportDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("CareSitter"),
@@ -35,7 +43,14 @@ public sealed class SupportModule : IModule
                     .MigrationsHistoryTable("__ef_migrations", SupportDbContext.SchemaName)));
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<SupportModule>());
         services.AddValidatorsFromAssemblyContaining<SupportModule>();
+        services.AddTransient<IPipelineBehavior<CreateDisputeCommand, Result<DisputeResponse>>,
+            AtomicModuleWriteBehavior<CreateDisputeCommand, DisputeResponse>>();
+        services.AddTransient<IPipelineBehavior<CancelDisputeCommand, Result<DisputeResponse>>,
+            AtomicModuleWriteBehavior<CancelDisputeCommand, DisputeResponse>>();
+        services.AddTransient<IPipelineBehavior<ResolveDisputeCommand, Result<DisputeResponse>>,
+            AtomicModuleWriteBehavior<ResolveDisputeCommand, DisputeResponse>>();
         services.AddScoped<ISupportRepository, SupportRepository>();
+        services.AddScoped<INotificationInboxStore, SupportNotificationInboxStore>();
         services.AddOptions<CrashReportOptions>().Bind(configuration.GetSection("CrashReports"))
             .Validate(x => x.IsValid, "CrashReports configuration is invalid.").ValidateOnStart();
         services.AddSingleton<ICrashQueryTokenProvider, CrashQueryTokenProvider>();

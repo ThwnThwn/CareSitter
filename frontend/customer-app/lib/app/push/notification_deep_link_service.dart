@@ -37,6 +37,10 @@ class AppNotificationDeepLinkService implements NotificationDeepLinkService {
     final bookingId = _safeId(data['bookingId']);
     final type = data['type']?.toString().trim().toUpperCase() ?? '';
     final status = data['status']?.toString().trim().toLowerCase() ?? '';
+    final conversationId = _safeId(data['conversationId']);
+    if (type == 'SUPPORT_CHAT' && conversationId != null) {
+      return AppRoutes.supportChatConversation(conversationId);
+    }
     final supplied = _normalizeSuppliedRoute(data['deepLink']);
 
     if (supplied != null) return supplied;

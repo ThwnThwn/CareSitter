@@ -215,10 +215,14 @@ public sealed class NotificationEndToEndTests(MessagingFixture fixture) : IClass
         var sql = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "34-kafka-messaging.sql"));
         await db.Database.ExecuteSqlRawAsync(sql);
         await db.Database.ExecuteSqlRawAsync(sql);
-        Assert.Empty(await db.Set<KafkaOutboxMessage>().ToArrayAsync());
-        Assert.Empty(await db.Set<CareSitter.Modules.Support.Domain.NotificationDelivery>().ToArrayAsync());
         await using var raw = new NpgsqlConnection(connection);
         await raw.OpenAsync();
+        var progressSql = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "70-push-target-progress.sql"));
+        await using var upgrade = new NpgsqlCommand(progressSql, raw);
+        await upgrade.ExecuteNonQueryAsync();
+        await upgrade.ExecuteNonQueryAsync();
+        Assert.Empty(await db.Set<KafkaOutboxMessage>().ToArrayAsync());
+        Assert.Empty(await db.Set<CareSitter.Modules.Support.Domain.NotificationDelivery>().ToArrayAsync());
         await using var check = new NpgsqlCommand("SELECT count(*) FROM information_schema.tables WHERE table_schema IN ('support', 'payments') AND table_name IN ('kafka_outbox_messages', 'kafka_inbox_messages', 'notification_deliveries')", raw);
         Assert.Equal(5L, await check.ExecuteScalarAsync());
     }
@@ -313,19 +317,20 @@ public sealed class NotificationEndToEndTests(MessagingFixture fixture) : IClass
     private sealed class LegacyPush : IPushNotificationService
     {
         public int Count;
-        public Task SendToUserAsync(UserNotificationMessage message, CancellationToken ct = default) { Count++; return Task.CompletedTask; }
+        public Task SendToUserAsync(UserNotificationMessage message, IReadOnlySet<string> completed,
+            Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct = default) { Count++; return Task.CompletedTask; }
     }
     private sealed class FailingPush : IPushNotificationService
     {
-        public Task SendToUserAsync(UserNotificationMessage message,
-            CancellationToken ct = default) =>
+        public Task SendToUserAsync(UserNotificationMessage message, IReadOnlySet<string> completed,
+            Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct = default) =>
             Task.FromException(new TimeoutException("Injected push failure."));
     }
     private sealed class RecordingSender : INotificationSender
     {
         public int Count;
         public string? LastTitle;
-        public Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, CancellationToken ct)
+        public Task<HandlerResult> SendAsync(string channel, DeliveryClaim claim, Func<string[], CancellationToken, Task> checkpoint, CancellationToken ct)
         { Interlocked.Increment(ref Count); LastTitle = claim.Title; return Task.FromResult(HandlerResult.Success()); }
     }
     private sealed class LegacyPaymentDispatcher : IPaymentOutboxDispatcher

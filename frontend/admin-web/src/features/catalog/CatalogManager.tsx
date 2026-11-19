@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../../components/DataTable';
 import { useState } from 'react';
 import { Edit3, Plus } from 'lucide-react';
 import {
@@ -46,25 +47,13 @@ export function CatalogManager({ showToast }: { showToast: ShowToast }) {
         />
       ) : (
         <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Gói dịch vụ</th>
-                <th>Mã</th>
-                <th>Thời lượng</th>
-                <th>Giá hiện hành</th>
-                <th>Phí nền tảng</th>
-                <th>Trạng thái</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <DataTable columns={['Gói dịch vụ', 'Mã', 'Thời lượng', 'Giá hiện hành', 'Phí nền tảng', 'Trạng thái', '']}>
               {services.map((service) => {
                 const activePrice = currentPricingRule(service.pricingRules || []);
                 const activePlans = (service.plans || []).filter((plan) => plan.isActive);
                 const planPrices = activePlans.map((plan) => plan.totalPrice);
                 return (
-                  <tr key={service.id}>
+                  <DataRow key={service.id}>
                     <td>
                       <strong>{service.name}</strong>
                       <small>{service.description || 'Không có mô tả'}</small>
@@ -94,11 +83,10 @@ export function CatalogManager({ showToast }: { showToast: ShowToast }) {
                         <Edit3 size={14} /> Chỉnh sửa
                       </button>
                     </td>
-                  </tr>
+                  </DataRow>
                 );
               })}
-            </tbody>
-          </table>
+            </DataTable>
         </div>
       )}
       {selected && (

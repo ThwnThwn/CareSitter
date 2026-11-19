@@ -8,14 +8,18 @@ internal static class ResourceMapping
 {
     public static ResourceResponse Map(NutritionResource r, long currentRevision)
     {
-        using var doc = JsonDocument.Parse(r.Payload);
-        var data = doc.RootElement.Clone();
-        if (r.Status == "saved" && JsonNode.Parse(r.Payload) is JsonObject plan)
+        var data = JsonNode.Parse(r.Payload);
+        if (data is JsonObject payload)
         {
             // Preserve plan identity for historical feedback even when health/catalog has changed.
-            plan["isSavedPlan"] = true;
-            data = JsonSerializer.SerializeToElement(plan);
+            if (r.Status == "saved") payload["isSavedPlan"] = true;
+            if (payload["meals"] is JsonArray meals)
+            {
+                foreach (var meal in meals.OfType<JsonObject>())
+                    RecipePresentation.NormalizeName(meal);
+            }
         }
-        return new(r.Id, r.BeneficiaryId, r.HealthRevision, r.HealthRevision == currentRevision ? r.Status : "stale", data, r.CreatedAt);
+        return new(r.Id, r.BeneficiaryId, r.HealthRevision, r.HealthRevision == currentRevision ? r.Status : "stale",
+            JsonSerializer.SerializeToElement(data), r.CreatedAt);
     }
 }

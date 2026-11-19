@@ -30,7 +30,8 @@ internal sealed class DisputeBookingWorkflow(
 
     public async Task<Result> OpenAsync(Guid bookingId, CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct) : null;
         if (db.Database.IsRelational())
         {
             await db.Database.ExecuteSqlInterpolatedAsync(
@@ -48,7 +49,7 @@ internal sealed class DisputeBookingWorkflow(
 
         if (booking.Status == BookingStatus.Disputed)
         {
-            await tx.CommitAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
             return Result.Success();
         }
         if (!CanOpen(booking, DateTimeOffset.UtcNow))
@@ -70,7 +71,26 @@ internal sealed class DisputeBookingWorkflow(
             BookingChatTransitionEffect.LockForDispute |
             BookingChatTransitionEffect.ScheduleRetention, ct);
         await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+        if (tx is not null) await tx.CommitAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> WithdrawAsync(Guid bookingId, CancellationToken ct = default)
+    {
+        await using var tx = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct) : null;
+        var booking = await db.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync(ct);
+        if (booking is null) return Error.NotFound("booking.not_found", "Không tìm thấy lịch.");
+        if (booking.Status != BookingStatus.Disputed) return Result.Success();
+        var restored = booking.WithdrawDispute();
+        if (restored.IsFailure) return restored;
+        sync.WriteSyncEvent(booking, "DISPUTE_WITHDRAWN");
+        await bookingChat.RecordSystemTransitionAsync(booking, "DISPUTE_WITHDRAWN",
+            "Khiếu nại đã hủy. Lịch đã trở về trạng thái trước khiếu nại.", DateTimeOffset.UtcNow,
+            BookingChatTransitionEffect.UnlockAfterWithdrawal, ct);
+        await db.SaveChangesAsync(ct);
+        if (tx is not null) await tx.CommitAsync(ct);
         return Result.Success();
     }
 
@@ -82,7 +102,8 @@ internal sealed class DisputeBookingWorkflow(
         DateTimeOffset resolvedAt,
         CancellationToken ct = default)
     {
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await using var tx = db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(ct) : null;
         var booking = await db.Bookings
             .FromSqlInterpolated($"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE")
             .SingleOrDefaultAsync(ct);
@@ -101,12 +122,12 @@ internal sealed class DisputeBookingWorkflow(
             var pendingRefund = booking.RecordDisputeRefund(refundAmount);
             if (pendingRefund.IsFailure) return pendingRefund.Error;
             await db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
             return Result.Success();
         }
         if (booking.Status == target)
         {
-            await tx.CommitAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
             return Result.Success();
         }
         if (booking.Status != BookingStatus.Disputed)
@@ -140,7 +161,7 @@ internal sealed class DisputeBookingWorkflow(
                 : BookingChatTransitionEffect.None,
             ct);
         await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+        if (tx is not null) await tx.CommitAsync(ct);
         return Result.Success();
     }
 

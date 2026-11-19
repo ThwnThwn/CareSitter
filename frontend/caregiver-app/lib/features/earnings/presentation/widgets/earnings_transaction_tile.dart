@@ -1,17 +1,41 @@
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
-import 'package:caregiver_app/features/earnings/data/models/earning_model.dart';
+import 'package:caregiver_app/core/utils/currency_formatter.dart';
+import 'package:caregiver_app/core/utils/date_formatter.dart';
+import '../../data/models/wallet_activity.dart';
 
 class EarningsTransactionTile extends StatelessWidget {
   const EarningsTransactionTile(
-      {super.key,
-      required this.amountColor,
-      required this.isIn,
-      required this.t});
+      {super.key, required this.amountColor, required this.activity});
   final Color amountColor;
-  final bool isIn;
-  final EarningTransaction t;
+  final WalletActivity activity;
+
+  String get _title => switch (activity.kind) {
+        'CAREGIVER_EARNING' => 'Thu nhập ca chăm sóc',
+        'PAYOUT' => 'Chi tiền rút từ ví',
+        'PAYOUT_REQUEST' => activity.bankName == null
+            ? 'Yêu cầu rút tiền'
+            : 'Yêu cầu rút tiền · ${activity.bankName}',
+        _ => activity.isCredit ? 'Tiền vào ví' : 'Tiền ra khỏi ví',
+      };
+
+  String get _status => switch (activity.status) {
+        'PENDING' => 'Chờ duyệt',
+        'APPROVED' => 'Đã duyệt',
+        'PROCESSING' => 'Đang chuyển tiền',
+        'POSTED' => 'Đã ghi nhận',
+        'PAID' => 'Đã chuyển tiền',
+        'REJECTED' => 'Từ chối',
+        'FAILED' => 'Thất bại',
+        _ => 'Chưa rõ trạng thái',
+      };
+
+  String get _amount {
+    final value = formatVnd(activity.amount, round: true);
+    if (activity.kind == 'PAYOUT_REQUEST') return value;
+    return '${activity.isCredit ? '+' : '−'} $value';
+  }
 
   @override
   Widget build(BuildContext context) => Row(
@@ -23,7 +47,9 @@ class EarningsTransactionTile extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+              activity.isCredit
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded,
               color: amountColor,
               size: 20,
             ),
@@ -34,7 +60,7 @@ class EarningsTransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  t.title,
+                  _title,
                   style: const TextStyle(
                     fontSize: AppFontSizes.s15,
                     fontWeight: FontWeight.bold,
@@ -43,7 +69,7 @@ class EarningsTransactionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  t.date,
+                  '${formatDate(activity.date, padded: true)} · $_status',
                   style: const TextStyle(
                     fontSize: AppFontSizes.s13,
                     color: AppColors.textSecondary,
@@ -54,7 +80,7 @@ class EarningsTransactionTile extends StatelessWidget {
           ),
           Flexible(
             child: Text(
-              t.amount,
+              _amount,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
               style: TextStyle(

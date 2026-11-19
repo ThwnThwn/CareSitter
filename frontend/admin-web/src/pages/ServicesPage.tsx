@@ -12,7 +12,7 @@ export function ServicesPage({ showToast = () => undefined }: { showToast?: Show
     <>
       <PageHeader
         title="Dịch vụ"
-        description="Quản lý gói chăm sóc, bảng giá và checklist được snapshot vào booking."
+        description="Quản lý giá và danh sách công việc áp dụng khi khách đặt lịch."
         actions={<button className="secondary" onClick={() => setRevision((value) => value + 1)}><RefreshCw size={16} /> Làm mới</button>}
       />
       <Tabs

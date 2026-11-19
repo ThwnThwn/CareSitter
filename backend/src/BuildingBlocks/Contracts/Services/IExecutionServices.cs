@@ -66,7 +66,14 @@ public interface IBookingJobsService
 public interface IUserProfileReader
 {
     Task<string?> GetAvatarUrlAsync(Guid userId, CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<Guid, UserDisplayProfile>> GetDisplayProfilesAsync(
+        IReadOnlyCollection<Guid> userIds, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, UserDisplayProfile>>(
+            new Dictionary<Guid, UserDisplayProfile>());
 }
+
+public sealed record UserDisplayProfile(string? Name, string? AvatarUrl);
 
 /// <summary>Creates the People-side profile required for a newly registered caregiver.</summary>
 public interface ICaregiverRegistrationService

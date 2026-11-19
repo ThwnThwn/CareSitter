@@ -13,9 +13,9 @@ export function DisputeDrawer({ dispute: selected, onClose, onChanged }: { dispu
     resolve: submitResolution, cancel: submitCancellation } = useDisputeReview(selected, onChanged);
   async function resolve() {
     if (!allocation) return;
-    await submitResolution(() => confirm({ title: `Xác nhận phán quyết ${optionLabel(disputeDecisions, decision)}`, message: `Hoàn khách: ${formatMoney(allocation.refund)}\nPhí nền tảng: ${formatMoney(allocation.fee)}\nChế tài: ${formatMoney(allocation.penalty)}\nCaregiver nhận: ${formatMoney(allocation.earning)}`, confirmLabel: 'Ghi nhận phán quyết', tone: 'primary' }));
+    await submitResolution(() => confirm({ title: `Xác nhận phán quyết ${optionLabel(disputeDecisions, decision)}`, message: `Hoàn khách: ${formatMoney(allocation.refund)}\nThu hồi trợ giá: ${formatMoney(allocation.promotionReversal)}\nPhí nền tảng: ${formatMoney(allocation.fee)}\nChế tài: ${formatMoney(allocation.penalty)}\nCaregiver nhận: ${formatMoney(allocation.earning)}`, confirmLabel: 'Ghi nhận phán quyết', tone: 'primary' }));
   }
-  async function cancel() { await submitCancellation(() => confirm({ title: 'Hủy hồ sơ khiếu nại?', message: 'Thao tác này chỉ đóng hồ sơ, không tự hoàn tiền hoặc khôi phục trạng thái booking.', confirmLabel: 'Hủy khiếu nại' })); }
+  async function cancel() { await submitCancellation(() => confirm({ title: 'Hủy hồ sơ khiếu nại?', message: 'Đóng khiếu nại và khôi phục trạng thái lịch trước khi mở khiếu nại.', confirmLabel: 'Hủy khiếu nại' })); }
   return <Drawer title={dispute.reason || 'Khiếu nại booking'} subtitle={shortId(dispute.id)} busy={!!busy} onClose={onClose}
     footer={actionable && <><button className="danger" disabled={!!busy} onClick={() => void cancel()}><XCircle size={17} /> {busy === 'cancel' ? 'Đang hủy…' : 'Hủy khiếu nại'}</button>
       <button className="primary" disabled={!!busy || !allocation || booking?.status !== 'disputed'} onClick={() => void resolve()}><Gavel size={17} /> {busy === 'resolve' ? 'Đang ghi nhận…' : 'Ghi nhận phán quyết'}</button></>}>
@@ -31,14 +31,14 @@ export function DisputeDrawer({ dispute: selected, onClose, onChanged }: { dispu
         <label>Phán quyết<select disabled={!!busy} value={decision} onChange={(e) => { chooseDecision(e.target.value); }}>
           <option value="">Chọn phán quyết</option>{disputeDecisions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
         {decision === 'PARTIAL_REFUND' && <div className="form-columns">
-          <label>Số tiền hoàn (VND)<input type="number" min="1" step="1" disabled={!!busy} max={(booking?.escrowAmount || 0) - 1} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} /></label>
+          <label>Số tiền hoàn (VND)<input type="number" min="1" step="1" disabled={!!busy} max={booking?.customerPayableAmount == null ? undefined : booking.customerPayableAmount - 1} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} /></label>
           <label>Chế tài caregiver (VND)<input type="number" min="0" step="1" disabled={!!busy} value={penaltyAmount} onChange={(e) => setPenaltyAmount(Number(e.target.value))} /></label>
         </div>}
-        {decision === 'CUSTOMER_WINS' && <p>Hoàn toàn bộ tiền giữ chờ cho khách; không khấu trừ thêm vào ví caregiver.</p>}
-        {decision === 'CAREGIVER_WINS' && <p>Không hoàn tiền; caregiver nhận phần còn lại sau phí nền tảng.</p>}
+        {decision === 'CUSTOMER_WINS' && <p>Khách nhận lại toàn bộ số tiền đã trả.</p>}
+        {decision === 'CAREGIVER_WINS' && <p>Người chăm sóc nhận phần còn lại sau phí nền tảng.</p>}
         {validation && <ErrorBanner message={validation} />}
         {allocation && <section aria-label="Phân bổ tiền dự kiến" aria-live="polite"><h3>Phân bổ tiền dự kiến</h3><DetailList items={[
-          { label: 'Hoàn cho khách', value: formatMoney(allocation.refund) }, { label: 'Phí nền tảng', value: formatMoney(allocation.fee) },
+          { label: 'Hoàn cho khách', value: formatMoney(allocation.refund) }, { label: 'Thu hồi trợ giá', value: formatMoney(allocation.promotionReversal) }, { label: 'Phí nền tảng', value: formatMoney(allocation.fee) },
           { label: 'Chế tài', value: formatMoney(allocation.penalty) }, { label: 'Caregiver nhận', value: formatMoney(allocation.earning) },
         ]} /></section>}
       </div>}

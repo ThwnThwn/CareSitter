@@ -11,6 +11,8 @@ using CareSitter.Modules.Booking.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.SignalR;
+using CareSitter.Infrastructure.Hubs;
 using Npgsql;
 
 namespace CareSitter.IntegrationTests;
@@ -66,6 +68,37 @@ public sealed class BookingMatchingPreviewPostgresTests
         db.CaregiverSlotHolds.Add(hold);
         await db.SaveChangesAsync();
         Assert.Empty(await matching.PreviewAsync(preview, default));
+
+        var offerStart = start.AddDays(1);
+        var booking = CareSitter.Modules.Booking.Domain.Booking.Create(owner, beneficiary, address, serviceId,
+            offerStart, offerStart.AddHours(2), requiredSkills: "[\"meal preparation\"]").Value;
+        Assert.True(booking.ApplyPricing(100_000, 15_000, 85_000).IsSuccess);
+        Assert.True(booking.TransitionTo(BookingStatus.PendingPayment).IsSuccess);
+        Assert.True(booking.ConfirmPayment().IsSuccess);
+        db.Bookings.Add(booking);
+        await db.SaveChangesAsync();
+
+        var registrations = new ServiceCollection();
+        registrations.AddLogging();
+        registrations.AddSignalR();
+        new PeopleModule().RegisterServices(registrations, new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:CareSitter"] = database.ConnectionString })
+            .Build());
+        registrations.AddSingleton<IUserProfileReader, Avatars>();
+        await using var provider = registrations.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var offers = new RetryOfferNotification();
+        var initial = new MatchingService(db, profiles, new Addresses(point),
+            scope.ServiceProvider.GetRequiredService<IPeopleLookupService>(), new Routes(), offers,
+            scope.ServiceProvider.GetRequiredService<IHubContext<CareTrackingHub>>(),
+            Options.Create(new MatchingOptions()), NullLogger<MatchingService>.Instance, new SystemClock());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => initial.EnsureInitialOffersAsync(booking.Id, default));
+        Assert.Empty(await initial.EnsureInitialOffersAsync(booking.Id, default));
+        var assignment = await db.BookingAssignments.SingleAsync(x => x.BookingId == booking.Id);
+        Assert.Equal(caregiver, assignment.CaregiverId);
+        Assert.Equal("OFFERED", assignment.Status);
+        Assert.Equal(new Guid?[] { assignment.Id, assignment.Id }, offers.EventIds);
         hold.Release();
         heldBooking.SelectCaregiver(caregiver);
         heldBooking.ConfirmPayment();
@@ -106,6 +139,17 @@ public sealed class BookingMatchingPreviewPostgresTests
     private sealed class Avatars : IUserProfileReader
     {
         public Task<string?> GetAvatarUrlAsync(Guid userId,CancellationToken ct=default) => Task.FromResult<string?>(null);
+    }
+    private sealed class RetryOfferNotification : IUserNotificationService
+    {
+        public List<Guid?> EventIds { get; } = [];
+
+        public Task NotifyAsync(UserNotificationMessage message, CancellationToken ct = default)
+        {
+            EventIds.Add(message.EventId);
+            if (EventIds.Count == 1) throw new InvalidOperationException("Temporary test failure");
+            return Task.CompletedTask;
+        }
     }
     private sealed class Profiles(IReadOnlyList<MatchingCaregiverProfile> values) : IMatchingCaregiverReader
     {

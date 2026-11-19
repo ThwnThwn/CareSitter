@@ -176,7 +176,10 @@ public sealed class NutritionRpcService(IMediator mediator, NutritionKnowledgeSe
             request.MealType), context.CancellationToken);
         if (result.IsFailure) return new RecipeListResult { Failure = Failure(result.Error) };
         var list = new RecipeList();
-        list.Recipes.AddRange(result.Value.Select(value => new RecipeOption { DataJson = NutritionJson.Write(value) }));
+        list.Recipes.AddRange(result.Value.Select(value => new RecipeOption
+        {
+            DataJson = NutritionJson.Write(RecipePresentation.Map(value))
+        }));
         return new RecipeListResult { Items = list };
     }
 

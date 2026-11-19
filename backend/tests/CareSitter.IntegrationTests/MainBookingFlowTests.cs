@@ -464,11 +464,16 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
         foreach (var task in await db.CareTasks.Where(x => x.BookingId == booking.Id).ToListAsync())
             task.MarkCompleted(caregiverUserId);
         await db.SaveChangesAsync();
-        var requested = await new RequestBookingCheckoutCommandHandler(
-            repository, actor, people, sync, chat, mapper)
-            .Handle(new(booking.Id), default);
+        var checkout = new RequestBookingCheckoutCommandHandler(
+            repository, actor, people, sync, chat, mapper);
+        var requested = await checkout.Handle(new(booking.Id, "  Đã hỗ trợ ăn tối.  "), default);
         Assert.True(requested.IsSuccess, requested.Error.Message);
         Assert.Equal(BookingStatus.CheckoutPendingReview, booking.Status);
+        var repeated = await checkout.Handle(new(booking.Id, "Ghi chú lần thử lại"), default);
+        Assert.Equal("booking.transition", repeated.Error.Code);
+        var checkoutEvent = await db.TimelineEvents.SingleAsync(x =>
+            x.BookingId == booking.Id && x.EventType == "CHECKOUT_MANUAL_REQUESTED");
+        Assert.Equal("Đã hỗ trợ ăn tối.", checkoutEvent.Note);
         var completed = await new CompleteBookingCommandHandler(repository,
             new Actor(booking.CustomerId, "CUSTOMER"), new Disputes(), sync,
             chat, new Audit(), mapper)
@@ -754,6 +759,8 @@ public sealed class MainBookingFlowTests : IAsyncLifetime
 
     private sealed class Promotions : IPromotionService
     {
+        public Task ReclaimExpiredReservationsAsync(CancellationToken ct = default) => Task.CompletedTask;
+
         public Task<Result<PromotionPriceQuote>> PreviewAsync(PromotionPriceRequest request,
             CancellationToken ct = default) => throw new NotSupportedException();
         public Task<Result<PromotionPriceQuote>> ReserveAsync(PromotionReservationRequest request,

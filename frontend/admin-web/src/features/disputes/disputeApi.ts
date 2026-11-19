@@ -1,6 +1,7 @@
 import { api } from '../../api';
 
-export interface DisputeResolution { decision: string; refundAmount: number; caregiverPenaltyAmount: number }
+export interface DisputeQuote { refund: number; promotionReversal: number; fee: number; penalty: number; earning: number }
+export interface DisputeResolution { decision: string; refundAmount: number; caregiverPenaltyAmount: number; expectedQuote: DisputeQuote }
 export function resolveDispute(id: string, resolution: DisputeResolution, signal: AbortSignal) {
   return api<void>(`/api/v1/disputes/${id}/resolve`, { method: 'POST', body: JSON.stringify(resolution), signal });
 }

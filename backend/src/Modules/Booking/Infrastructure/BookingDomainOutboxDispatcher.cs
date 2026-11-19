@@ -20,6 +20,9 @@ internal sealed class BookingDomainOutboxDispatcher(
     IBookingSyncService bookingSync,
     IUserNotificationService notifications,
     IPeopleLookupService people,
+    IMatchingService matching,
+    IWalletService wallet,
+    IPromotionService promotions,
     IClock clock,
     IOptions<BookingSideEffectOptions> options,
     ILogger<BookingDomainOutboxDispatcher> logger)
@@ -44,6 +47,7 @@ internal sealed class BookingDomainOutboxDispatcher(
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                db.ChangeTracker.Clear();
                 var failedAt = clock.UtcNow;
                 message.MarkFailed(exception.GetType().Name,
                     failedAt.AddSeconds(Math.Max(1, _options.RetryDelaySeconds)),
@@ -126,6 +130,18 @@ internal sealed class BookingDomainOutboxDispatcher(
             payload.RootElement.GetProperty("From").GetString()!, ignoreCase: false);
         var toValue = Enum.Parse<BookingStatus>(
             payload.RootElement.GetProperty("To").GetString()!, ignoreCase: false);
+        if (toValue == BookingStatus.Confirmed && fromValue != BookingStatus.Disputed)
+        {
+            // Confirmation and this work item were committed together. Both financial writes
+            // and the initial matching batch can also be retried by the payment endpoint.
+            var finalized = await BookingPromotionFinalization.RunAsync(booking, wallet, promotions, ct);
+            if (finalized.IsFailure) throw new InvalidOperationException(finalized.Error.Code);
+            if (booking.Status == BookingStatus.Confirmed)
+            {
+                await matching.EnsureInitialOffersAsync(booking.Id, ct);
+                booking = await db.Bookings.AsNoTracking().SingleAsync(b => b.Id == booking.Id, ct);
+            }
+        }
         var from = BookingStatusCodec.ToApi(fromValue);
         var to = BookingStatusCodec.ToApi(toValue);
         var current = BookingStatusCodec.ToApi(booking.Status);
@@ -146,6 +162,7 @@ internal sealed class BookingDomainOutboxDispatcher(
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 booking.Id, from, to, message.OccurredAt), ct);
 
+        if (fromValue == BookingStatus.Disputed && booking.StatusBeforeDispute is null) return;
         await NotifyForStatusAsync(message, booking, to, ct);
     }
 

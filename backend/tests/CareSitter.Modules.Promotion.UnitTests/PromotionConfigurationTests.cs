@@ -12,6 +12,14 @@ public sealed class PromotionConfigurationTests
         false, false, 100, 1, 0, true, [Guid.NewGuid()]);
 
     [Fact]
+    public void Percentage_of_one_hundred_requires_a_cap()
+    {
+        var config = Configuration() with { DiscountValue = 100, MaxDiscountAmount = null };
+        Assert.True(config.Validate().IsFailure);
+        Assert.True((config with { MaxDiscountAmount = 100_000 }).Validate().IsSuccess);
+    }
+
+    [Fact]
     public void Configuration_normalizes_content_and_preserves_eligibility_and_price()
     {
         var configuration = Configuration();

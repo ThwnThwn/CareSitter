@@ -21,7 +21,7 @@ class SettingsScreen extends ConsumerWidget {
     final bookings = ref.watch(bookingStoreProvider);
     final totalSpent = bookings
         .where((b) => b.status == 'completed')
-        .fold(0.0, (sum, b) => sum + b.totalPrice);
+        .fold(0, (sum, b) => sum + b.payableAmount);
 
     return Scaffold(
       backgroundColor: AppColors.background,

@@ -4,6 +4,7 @@ import 'package:caresitter_customer/core/notifications/in_app_notification_event
 import 'package:caresitter_customer/features/home/data/repositories/notification_repository.dart';
 import 'package:caresitter_customer/features/home/presentation/controllers/notifications_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -59,7 +60,13 @@ class _Repository implements NotificationRepository {
   List<AppNotification> items = [];
 
   @override
-  Future<List<AppNotification>> getNotifications() async => items;
+  Future<NotificationInboxModel> getNotifications(
+          {int page = 1, CancelToken? cancelToken}) async =>
+      NotificationInboxModel(
+        items: items,
+        unreadCount: items.fold(0, (sum, item) => sum + item.unreadCount),
+        page: page,
+      );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

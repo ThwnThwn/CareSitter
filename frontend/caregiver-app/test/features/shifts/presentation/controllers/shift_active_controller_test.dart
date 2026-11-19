@@ -36,17 +36,21 @@ void main() {
     expect(actions.notes, 0);
     expect(actions.checkouts, 0);
   });
-  test('failed note does not send checkout and releases the submit lock',
+  test('checkout sends the note in one write and keeps the draft on failure',
       () async {
-    final actions = FakeShiftActiveActions()..failNote = true;
+    final actions = FakeShiftActiveActions()..failCheckout = true;
     final controller = ShiftActiveController(actions, enableTimer: false);
     addTearDown(controller.dispose);
+    controller.setNote('  Đã hỗ trợ ăn tối  ');
     expect(await controller.checkout(), isA<ShiftActionFailure>());
     expect(actions.checkouts, 0);
     expect(controller.state.busy, isEmpty);
-    actions.failNote = false;
+    expect(controller.state.note, '  Đã hỗ trợ ăn tối  ');
+    actions.failCheckout = false;
     expect(await controller.checkout(), isA<ShiftActionSuccess>());
     expect(actions.checkouts, 1);
+    expect(actions.checkoutNote, 'Đã hỗ trợ ăn tối');
+    expect(actions.notes, 0);
   });
   test(
       'concurrent task actions share a lock and photo-required completion is rejected',

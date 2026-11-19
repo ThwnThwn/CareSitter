@@ -15,6 +15,7 @@ import 'booking_wizard_state.dart';
 import '../../../catalog/presentation/controllers/service_controller.dart';
 import '../../../catalog/presentation/controllers/address_controller.dart';
 import 'booking_candidate_controller.dart';
+import 'booking_promotion_controller.dart';
 import 'booking_submit_result.dart';
 
 final bookingWizardProvider = AutoDisposeNotifierProvider.family<
@@ -92,11 +93,11 @@ class BookingWizardController
         : ((service.defaultDurationMinutes + 59) ~/ 60)
             .clamp(minimumDurationHours, maximumDurationHours)
             .toInt();
-    state = state.copyWith(
+    _updatePromotionSlot(state.copyWith(
       serviceId: id,
       duration: suggestedHours,
       caregiverId: null,
-    );
+    ));
   }
 
   void selectRecipient(BeneficiaryModel profile) => state = state.copyWith(
@@ -114,20 +115,30 @@ class BookingWizardController
 
   void setDateValidity(bool value) =>
       state = state.copyWith(selfDateValid: value);
-  void selectDate(DateTime date) =>
-      state = state.copyWith(date: date, startMinutes: null, caregiverId: null);
+  void selectDate(DateTime date) => _updatePromotionSlot(
+      state.copyWith(date: date, startMinutes: null, caregiverId: null));
   void selectTime(int minutes) {
     if (state.date == null) return;
     final snapped = ScheduleRules.snap(state.date!, minutes);
-    state = state.copyWith(
+    _updatePromotionSlot(state.copyWith(
         date: DateTime(snapped.year, snapped.month, snapped.day),
         startMinutes: snapped.hour * 60 + snapped.minute,
-        caregiverId: null);
+        caregiverId: null));
   }
 
-  void setDuration(int value) => state = state.copyWith(
+  void setDuration(int value) => _updatePromotionSlot(state.copyWith(
       duration: value.clamp(minimumDurationHours, maximumDurationHours),
-      caregiverId: null);
+      caregiverId: null));
+
+  void _updatePromotionSlot(BookingWizardState next) {
+    final changed = state.promotionSlot != next.promotionSlot;
+    state = next;
+    if (changed) {
+      ref.read(bookingPromotionProvider(arg).notifier).requireReapply(
+          'Dịch vụ hoặc thời gian đã thay đổi. Vui lòng áp dụng lại mã.');
+    }
+  }
+
   void selectAddress(String id) =>
       state = state.copyWith(addressId: id, caregiverId: null);
   void selectCaregiver(String? id) =>
@@ -239,6 +250,12 @@ class BookingWizardController
     }
     final generation = _generation;
     final snapshot = state;
+    final promotion = ref.read(bookingPromotionProvider(arg));
+    if (!promotion.canSubmitFor(snapshot.promotionSlot)) {
+      return const BookingSubmitMessage(
+          'Vui lòng áp dụng mã ưu đãi hoặc bỏ mã để tiếp tục.');
+    }
+    final quote = promotion.quoteFor(snapshot.promotionSlot);
     final recipient = _recipient!;
     final serviceId = _service!.id;
     final caregiverId = _caregiver?.id;
@@ -249,6 +266,8 @@ class BookingWizardController
           serviceId: serviceId,
           serviceRequiredSkills: _service!.requiredCaregiverSkills,
           caregiverId: caregiverId,
+          promotionCode: quote?.code,
+          expectedPayableAmount: quote?.customerPayableAmount,
           current: () => _current(generation),
           progress: (label) {
             if (_current(generation)) {
@@ -256,6 +275,11 @@ class BookingWizardController
             }
           });
       if (!_current(generation)) return const BookingSubmitIgnored();
+      if (outcome.promotionError case final message?) {
+        ref
+            .read(bookingPromotionProvider(arg).notifier)
+            .requireReapply(message);
+      }
       if (outcome.reviewRecipient) state = state.copyWith(step: 1);
       if (outcome.reloadSelf) ref.read(selfRecipientProvider.notifier).load();
       if (outcome.uncertainDraft != null) {

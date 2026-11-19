@@ -4,6 +4,7 @@ import type { CatalogService } from '../../types';
 import { ServiceDrawer } from './ServiceDrawer';
 
 const mocks = vi.hoisted(() => ({
+  createServiceBundle: vi.fn(),
   saveCatalogService: vi.fn(),
   savePricingRule: vi.fn(),
   saveChecklistTemplate: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./catalogApi', () => ({
+  createServiceBundle: (...args: unknown[]) => mocks.createServiceBundle(...args),
   saveCatalogService: (...args: unknown[]) => mocks.saveCatalogService(...args),
   savePricingRule: (...args: unknown[]) => mocks.savePricingRule(...args),
   saveChecklistTemplate: (...args: unknown[]) => mocks.saveChecklistTemplate(...args),
@@ -19,6 +21,7 @@ vi.mock('./catalogApi', () => ({
 
 vi.mock('../../adminMetadata', () => ({
   useAdminMetadata: () => ({
+    statusDefinitions: {},
     defaults: {
       service: { defaultDurationMinutes: 240, isActive: true },
       pricingRule: {
@@ -69,9 +72,6 @@ beforeEach(() => {
 });
 
 it('creates a service, its initial pricing rule and caregiver checklist in one submission', async () => {
-  mocks.saveCatalogService.mockResolvedValue({ ...service, id: 'service-new' });
-  mocks.savePricingRule.mockResolvedValue(undefined);
-  mocks.saveChecklistTemplate.mockResolvedValue(undefined);
   const onChanged = vi.fn();
   render(<ServiceDrawer service={null} onClose={vi.fn()} onChanged={onChanged} />);
 
@@ -86,29 +86,16 @@ it('creates a service, its initial pricing rule and caregiver checklist in one s
   });
   fireEvent.click(screen.getByRole('button', { name: 'Tạo dịch vụ, giá và checklist' }));
 
-  await waitFor(() => expect(mocks.saveChecklistTemplate).toHaveBeenCalledOnce());
-  expect(mocks.saveCatalogService).toHaveBeenCalledWith(
-    undefined,
+  await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
+  expect(mocks.createServiceBundle).toHaveBeenCalledWith(expect.any(String),
     expect.objectContaining({ code: 'COMPANION', name: 'Đồng hành tại nhà' }),
-  );
-  expect(mocks.savePricingRule).toHaveBeenCalledWith(
-    'service-new',
-    undefined,
     expect.objectContaining({ name: 'Giá chuẩn', baseHourlyPrice: 120000 }),
-  );
-  expect(mocks.saveChecklistTemplate).toHaveBeenCalledWith(
-    'service-new',
-    undefined,
-    expect.objectContaining({ name: 'Kiểm tra bữa ăn', isRequired: true, sortOrder: 1 }),
-  );
-  expect(onChanged).toHaveBeenCalledOnce();
+    [expect.objectContaining({ name: 'Kiểm tra bữa ăn', sortOrder: 1 })]);
+  expect(mocks.saveCatalogService).not.toHaveBeenCalled();
 });
 
 it('uploads the selected image before creating the service', async () => {
   mocks.uploadCatalogServiceImage.mockResolvedValue('https://cdn.example.test/service.webp');
-  mocks.saveCatalogService.mockResolvedValue({ ...service, id: 'service-new' });
-  mocks.savePricingRule.mockResolvedValue(undefined);
-  mocks.saveChecklistTemplate.mockResolvedValue(undefined);
   render(<ServiceDrawer service={null} onClose={vi.fn()} onChanged={vi.fn()} />);
 
   fireEvent.change(screen.getByLabelText('Mã dịch vụ'), { target: { value: 'COMPANION' } });
@@ -125,22 +112,14 @@ it('uploads the selected image before creating the service', async () => {
   });
   fireEvent.click(screen.getByRole('button', { name: 'Tạo dịch vụ, giá và checklist' }));
 
-  await waitFor(() => expect(mocks.saveCatalogService).toHaveBeenCalledOnce());
-  expect(mocks.uploadCatalogServiceImage).toHaveBeenCalledWith(image);
-  expect(mocks.saveCatalogService).toHaveBeenCalledWith(
-    undefined,
-    expect.objectContaining({ imageUrl: 'https://cdn.example.test/service.webp' }),
-  );
+  await waitFor(() => expect(mocks.createServiceBundle).toHaveBeenCalledOnce());
+  expect(mocks.createServiceBundle.mock.calls[0][1].imageUrl).toBe('https://cdn.example.test/service.webp');
   expect(mocks.uploadCatalogServiceImage.mock.invocationCallOrder[0]).toBeLessThan(
-    mocks.saveCatalogService.mock.invocationCallOrder[0],
-  );
+    mocks.createServiceBundle.mock.invocationCallOrder[0]);
 });
 
-it('retries pricing without creating a duplicate service', async () => {
-  mocks.saveCatalogService.mockResolvedValue({ ...service, id: 'service-new' });
-  mocks.savePricingRule.mockRejectedValueOnce(new Error('Không thể lưu bảng giá.'));
-  mocks.savePricingRule.mockResolvedValueOnce(undefined);
-  mocks.saveChecklistTemplate.mockResolvedValue(undefined);
+it('retries the same atomic submission after an uncertain response', async () => {
+  mocks.createServiceBundle.mockRejectedValueOnce(new Error('Chưa nhận được phản hồi.'));
   const onChanged = vi.fn();
   render(<ServiceDrawer service={null} onClose={vi.fn()} onChanged={onChanged} />);
 
@@ -154,60 +133,24 @@ it('retries pricing without creating a duplicate service', async () => {
   });
   fireEvent.click(screen.getByRole('button', { name: 'Tạo dịch vụ, giá và checklist' }));
 
-  expect(
-    await screen.findByText(/Dịch vụ đã được tạo nhưng giá hoặc checklist chưa hoàn tất/),
-  ).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất giá và checklist' }));
-
+  await screen.findByText('Chưa nhận được phản hồi.');
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo dịch vụ, giá và checklist' }));
   await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
-  expect(mocks.saveCatalogService).toHaveBeenCalledTimes(2);
-  expect(mocks.saveCatalogService.mock.calls[0][0]).toBeUndefined();
-  expect(mocks.saveCatalogService.mock.calls[1][0]).toBe('service-new');
-  expect(mocks.savePricingRule).toHaveBeenCalledTimes(2);
-  expect(mocks.saveChecklistTemplate).toHaveBeenCalledOnce();
+  expect(mocks.createServiceBundle.mock.calls[1]).toEqual(mocks.createServiceBundle.mock.calls[0]);
 });
 
-it('resumes from the first unsaved checklist item without duplicating price or saved tasks', async () => {
-  mocks.saveCatalogService.mockResolvedValue({ ...service, id: 'service-new' });
-  mocks.savePricingRule.mockResolvedValue(undefined);
-  mocks.saveChecklistTemplate
-    .mockResolvedValueOnce(undefined)
-    .mockRejectedValueOnce(new Error('Checklist tạm thời chưa lưu được.'))
-    .mockResolvedValueOnce(undefined);
-  const onChanged = vi.fn();
-  render(<ServiceDrawer service={null} onClose={vi.fn()} onChanged={onChanged} />);
-
-  fireEvent.change(screen.getByLabelText('Mã dịch vụ'), { target: { value: 'COMPANION' } });
-  fireEvent.change(screen.getByLabelText('Tên dịch vụ'), {
-    target: { value: 'Đồng hành tại nhà' },
-  });
-  fireEvent.change(screen.getByLabelText('Tên bảng giá'), { target: { value: 'Giá chuẩn' } });
-  fireEvent.change(screen.getByLabelText('Tên công việc 1'), {
-    target: { value: 'Kiểm tra bữa ăn' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Thêm công việc khác' }));
-  fireEvent.change(screen.getByLabelText('Tên công việc 2'), {
-    target: { value: 'Nhắc uống nước' },
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Tạo dịch vụ, giá và checklist' }));
-
-  expect(
-    await screen.findByText(/Dịch vụ đã được tạo nhưng giá hoặc checklist chưa hoàn tất/),
-  ).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất checklist' }));
-
-  await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
-  expect(mocks.savePricingRule).toHaveBeenCalledOnce();
-  expect(mocks.saveChecklistTemplate).toHaveBeenCalledTimes(3);
-  expect(mocks.saveChecklistTemplate.mock.calls[0][2]).toEqual(
-    expect.objectContaining({ name: 'Kiểm tra bữa ăn', sortOrder: 1 }),
-  );
-  expect(mocks.saveChecklistTemplate.mock.calls[1][2]).toEqual(
-    expect.objectContaining({ name: 'Nhắc uống nước', sortOrder: 2 }),
-  );
-  expect(mocks.saveChecklistTemplate.mock.calls[2][2]).toEqual(
-    expect.objectContaining({ name: 'Nhắc uống nước', sortOrder: 2 }),
-  );
+it('preserves both original timestamps when only the price name changes', async () => {
+  const rule = {
+    id: 'rule-1', serviceTypeId: service.id, name: 'Giá gốc', baseHourlyPrice: 120000,
+    nightMultiplier: 1, holidayMultiplier: 1, platformFeePercent: 15, disputeWindowHours: 24,
+    effectiveFrom: '2026-10-12T01:00:20.123456Z', effectiveTo: '2026-10-12T01:00:42.765432Z', isActive: true,
+  };
+  render(<ServiceDrawer service={{ ...service, pricingRules: [rule] }} onClose={vi.fn()} onChanged={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Sửa' }));
+  fireEvent.change(screen.getByLabelText('Tên bảng giá'), { target: { value: 'Giá mới' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu bảng giá' }));
+  await waitFor(() => expect(mocks.savePricingRule).toHaveBeenCalledWith(service.id, rule.id,
+    expect.objectContaining({ name: 'Giá mới', effectiveFrom: rule.effectiveFrom, effectiveTo: rule.effectiveTo })));
 });
 
 it('keeps pricing effective date pickers at minute precision', () => {

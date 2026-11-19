@@ -39,6 +39,25 @@ void main() {
     );
   });
 
+  test('opens the support conversation referenced by the notification', () {
+    expect(
+      service.resolveRoute({
+        'type': 'SUPPORT_CHAT',
+        'conversationId': 'request-123',
+        'deepLink': '/settings/support/chat',
+      }),
+      '/settings/support/chat?conversationId=request-123',
+    );
+    expect(
+      service.resolveRoute({
+        'type': 'SUPPORT_CHAT',
+        'conversationId': '../bookings',
+        'deepLink': '/settings/support/chat',
+      }),
+      '/settings/support/chat',
+    );
+  });
+
   test('accepts only known app routes', () {
     expect(
       service.resolveRoute({'deepLink': 'caresitter://bookings/booking-123'}),

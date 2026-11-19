@@ -1,3 +1,4 @@
+import { DataRow, DataTable } from '../../components/DataTable';
 import { SupportDrawer } from './SupportDrawer';
 import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
@@ -7,7 +8,7 @@ import {
   EmptyState,
   ErrorBanner,
   LoadingTable,
-  PageHeader,
+  SectionTitle,
   Pagination,
   StatusChip,
   formatDate,
@@ -37,10 +38,10 @@ export function SupportTickets() {
 
   return (
     <>
-      <PageHeader
-        title="Hỗ trợ"
-        description="Tiếp nhận, phân công và theo dõi yêu cầu hỗ trợ của khách hàng và caregiver."
-        actions={
+      <SectionTitle
+        title="Phiếu hỗ trợ"
+        description="Phân công và theo dõi yêu cầu của khách hàng và người chăm sóc."
+        action={
           <button className="secondary" onClick={() => void load()} disabled={loading}>
             <RefreshCw size={16} /> Làm mới
           </button>
@@ -107,21 +108,9 @@ export function SupportTickets() {
           />
         ) : (
           <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Ticket</th>
-                  <th>Loại</th>
-                  <th>Ưu tiên</th>
-                  <th>Người gửi</th>
-                  <th>Cập nhật</th>
-                  <th>Trạng thái</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+            <DataTable columns={['Ticket', 'Loại', 'Ưu tiên', 'Người gửi', 'Cập nhật', 'Trạng thái', '']}>
                 {result.items.map((item) => (
-                  <tr key={item.id}>
+                  <DataRow key={item.id}>
                     <td>
                       <strong>{item.title}</strong>
                       <small>{shortId(item.id)}</small>
@@ -140,10 +129,9 @@ export function SupportTickets() {
                         Mở ticket
                       </button>
                     </td>
-                  </tr>
+                  </DataRow>
                 ))}
-              </tbody>
-            </table>
+              </DataTable>
           </div>
         )}
         {hasLoaded && (

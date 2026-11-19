@@ -1,11 +1,10 @@
 import 'package:caregiver_app/features/earnings/presentation/widgets/earnings_balance_card.dart';
-import 'package:caregiver_app/features/earnings/presentation/widgets/earnings_transaction_list.dart';
+import 'package:caregiver_app/features/earnings/presentation/widgets/wallet_activity_history.dart';
 import 'package:caregiver_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/theme/app_theme.dart';
 import 'package:caregiver_app/core/router/navigation_helpers.dart';
-import 'package:caregiver_app/features/earnings/data/models/earning_model.dart';
 import 'package:caregiver_app/features/earnings/presentation/controllers/earnings_controller.dart';
 
 class EarningsScreen extends ConsumerWidget {
@@ -37,7 +36,7 @@ class EarningsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _buildTransactionList(earnings.transactions),
+            const WalletActivityHistory(),
           ],
         ),
       ),
@@ -46,7 +45,4 @@ class EarningsScreen extends ConsumerWidget {
 
   Widget _buildBalanceCard(BuildContext context, double balance) =>
       EarningsBalanceCard(balance: balance);
-
-  Widget _buildTransactionList(List<EarningTransaction> transactions) =>
-      EarningsTransactionList(transactions: transactions);
 }

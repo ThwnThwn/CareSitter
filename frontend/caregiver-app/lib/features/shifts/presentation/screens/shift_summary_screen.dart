@@ -11,29 +11,21 @@ import 'package:caregiver_app/core/widgets/app_widgets.dart';
 class ShiftSummaryScreen extends StatelessWidget {
   final String bookingId;
   final String beneficiaryName;
-  final String caregiverName;
   final double caregiverEarning;
   final int completedTasks;
   final int totalTasks;
   final String duration;
-  final String checkInTime;
-  final String caregiverNote;
-  final List<String> taskPhotos;
   final bool checkoutPendingReview;
 
   const ShiftSummaryScreen({
     super.key,
     required this.bookingId,
     required this.beneficiaryName,
-    this.caregiverName = 'Người chăm sóc',
     required this.caregiverEarning,
     required this.completedTasks,
     required this.totalTasks,
     required this.duration,
-    this.checkInTime = '08:05',
-    this.caregiverNote = '',
-    this.taskPhotos = const [],
-    this.checkoutPendingReview = false,
+    required this.checkoutPendingReview,
   });
 
   @override
@@ -74,20 +66,7 @@ class ShiftSummaryScreen extends StatelessWidget {
 
               // Button — View Customer Report
               ShiftSummaryReportAction(callbackAction1: () {
-                context.push(
-                  '/shifts/$bookingId/customer-report',
-                  extra: {
-                    'beneficiaryName': beneficiaryName,
-                    'caregiverName': caregiverName,
-                    'caregiverEarning': caregiverEarning,
-                    'completedTasks': completedTasks,
-                    'totalTasks': totalTasks,
-                    'duration': duration,
-                    'checkInTime': checkInTime,
-                    'caregiverNote': caregiverNote,
-                    'taskPhotos': taskPhotos,
-                  },
-                );
+                context.push('/shifts/$bookingId/customer-report');
               }),
               const SizedBox(height: AppSpacing.inset),
 

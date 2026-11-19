@@ -1,12 +1,12 @@
 /// Các bất biến trạng thái chỉ dùng input thuần Dart, không phụ thuộc DTO/UI.
-enum BookingListCategory { upcoming, completed, unmatched, cancelled }
+enum BookingListCategory { active, completed, unmatched, disputed, cancelled }
 
 class BookingStatusRules {
   static bool belongsToList(
       BookingListCategory category, String status, bool caregiverAssigned) {
     final waitingForCaregiver = status == 'confirmed' && !caregiverAssigned;
     switch (category) {
-      case BookingListCategory.upcoming:
+      case BookingListCategory.active:
         return !waitingForCaregiver &&
             const {
               'draft',
@@ -25,8 +25,10 @@ class BookingStatusRules {
         return status == 'completed';
       case BookingListCategory.unmatched:
         return waitingForCaregiver || status == 'matching_failed';
+      case BookingListCategory.disputed:
+        return status == 'disputed';
       case BookingListCategory.cancelled:
-        return const {'cancelled', 'disputed', 'refunded'}.contains(status);
+        return status == 'cancelled' || status == 'refunded';
     }
   }
 

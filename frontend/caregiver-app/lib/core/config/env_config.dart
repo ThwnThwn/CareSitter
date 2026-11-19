@@ -9,6 +9,11 @@ abstract final class EnvConfig {
   static const _cartoApiKey = String.fromEnvironment('CARTO_API_KEY');
   static const _googleAuthBaseUrl =
       String.fromEnvironment('GOOGLE_AUTH_BASE_URL');
+  // A deployment can use the shared browser OAuth entry point on older APIs.
+  static const _googleAuthWebStartPath = String.fromEnvironment(
+    'GOOGLE_AUTH_WEB_START_PATH',
+    defaultValue: '/auth/google/caregiver/web/start',
+  );
   static const _mapProvider =
       String.fromEnvironment('MAP_PROVIDER', defaultValue: 'carto');
   static String get cartoApiKey => _cartoApiKey.trim();
@@ -42,8 +47,7 @@ abstract final class EnvConfig {
     final base = Uri.parse(configured.isEmpty ? baseUrl : configured);
     final path = base.path.replaceFirst(RegExp(r'/+$'), '');
     return base.replace(
-      path:
-          '${path.isEmpty ? '/api/v1' : path}/auth/google/caregiver/web/start',
+      path: '${path.isEmpty ? '/api/v1' : path}$_googleAuthWebStartPath',
     );
   }
 

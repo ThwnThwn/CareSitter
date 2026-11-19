@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
 import { UsersPage } from './UsersPage';
@@ -45,7 +45,7 @@ const mockUser = {
 };
 
 function setupFetch(customUser = mockUser) {
-  const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+  const fetchMock = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
     if (init?.method === 'PUT') {
       return Response.json({ success: true });
     }

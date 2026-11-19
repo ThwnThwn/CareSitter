@@ -17,7 +17,7 @@ internal sealed class PayoutMapper(IEncryptionService encryption)
             payout.WalletAccountId,
             payout.Amount,
             payout.BankName,
-            payout.BankBin,
+            payout.BankBin ?? string.Empty,
             payout.AccountHolderName,
             payout.Status,
             revealAccountNumber ? accountNumber : MaskAccountNumber(accountNumber),

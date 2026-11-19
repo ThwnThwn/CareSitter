@@ -74,6 +74,7 @@ internal sealed class UserNotificationService(
 
         var fallbackClaimToken = Guid.NewGuid();
         Guid fallbackNotificationId;
+        string[] completedTargets = [];
         try
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -95,6 +96,7 @@ internal sealed class UserNotificationService(
                 }
 
                 fallbackNotificationId = existing.NotificationId;
+                completedTargets = existing.CompletedPushTargets;
                 await db.Set<NotificationDelivery>()
                     .Where(x => x.EventId == normalized.EventId.Value && x.Channel == "push")
                     .ExecuteUpdateAsync(setters => setters
@@ -133,7 +135,12 @@ internal sealed class UserNotificationService(
 
         try
         {
-            await push.SendToUserAsync(normalized with { Data = payload }, ct);
+            await push.SendToUserAsync(normalized with { Data = payload }, completedTargets.ToHashSet(),
+                async (keys, token) =>
+                {
+                    if (!await PushDeliveryProgress.RecordAsync(db, normalized.EventId!.Value, fallbackClaimToken, keys, token))
+                        throw new InvalidOperationException("Push delivery lease changed.");
+                }, ct);
             var completed = await db.Set<NotificationDelivery>()
                 .Where(x => x.EventId == normalized.EventId.Value && x.Channel == "push" &&
                             x.NotificationId == fallbackNotificationId &&

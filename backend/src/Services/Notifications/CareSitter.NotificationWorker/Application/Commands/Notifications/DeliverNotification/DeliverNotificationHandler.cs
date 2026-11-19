@@ -27,7 +27,11 @@ public sealed class DeliverNotificationHandler(INotificationDeliveryClient clien
             }
             if (claim.Status != "Acquired" || claim.ClaimToken is null)
                 return HandlerResult.Permanent("The notification reference is invalid.");
-            var result = await sender.SendAsync(channel, claim, ct);
+            var result = await sender.SendAsync(channel, claim, async (keys, token) =>
+            {
+                if (!await client.CheckpointAsync(context.EventId, claim.ClaimToken.Value, keys, token))
+                    throw new IOException("Push delivery checkpoint was not acknowledged.");
+            }, ct);
             var completed = await client.CompleteAsync(context.EventId, channel, claim.ClaimToken.Value,
                 result.Outcome == HandlerOutcome.Success, result.Reason, ct);
             if (!completed) return HandlerResult.Transient("The delivery claim could not be completed.");

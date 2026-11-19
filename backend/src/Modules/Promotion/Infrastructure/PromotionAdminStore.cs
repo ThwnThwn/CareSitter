@@ -37,7 +37,7 @@ internal sealed class PromotionAdminStore(
         var usage = await db.PromotionRedemptions.AsNoTracking()
             .Where(x => ids.Contains(x.PromotionId)).GroupBy(x => x.PromotionId)
             .Select(g => new Usage(g.Key,
-                g.Count(x => x.Status == PromotionRedemptionStatus.Reserved && x.ExpiresAt >= now),
+                g.Count(x => x.Status == PromotionRedemptionStatus.Reserved),
                 g.Count(x => x.Status == PromotionRedemptionStatus.Redeemed),
                 g.Count(x => x.Status == PromotionRedemptionStatus.Released), g.Count()))
             .ToDictionaryAsync(x => x.Id, ct);
@@ -93,7 +93,7 @@ internal sealed class PromotionAdminStore(
                 "Chiến dịch đã có lịch sử giữ hoặc sử dụng. Hãy tạo chiến dịch mới để đổi mã, mức giảm hoặc điều kiện áp dụng.");
         var activeUsage = db.PromotionRedemptions.AsNoTracking().Where(x => x.PromotionId == id &&
             (x.Status == PromotionRedemptionStatus.Redeemed ||
-                (x.Status == PromotionRedemptionStatus.Reserved && x.ExpiresAt >= clock.UtcNow)));
+                x.Status == PromotionRedemptionStatus.Reserved));
         if (configuration.TotalUsageLimit is { } limit && limit < await activeUsage.CountAsync(ct))
             return Error.Conflict("promotion.quota_below_usage", "Giới hạn tổng lượt không thể thấp hơn số lượt đang giữ và đã sử dụng.");
         if (await activeUsage.GroupBy(x => x.CustomerId)
@@ -134,6 +134,8 @@ internal sealed class PromotionAdminStore(
         if (promotion is null) return PromotionErrors.NotFound();
         if (promotion.UpdatedAt != expectedUpdatedAt) return Stale();
         var before = await ResponseAsync(promotion, ct);
+        if (isActive && promotion.DiscountType == PromotionDiscountType.Percentage && promotion.DiscountValue == 100 && promotion.MaxDiscountAmount is null)
+            return PromotionConfiguration.MissingDiscountCap();
         promotion.SetActive(isActive);
         db.Entry(promotion).Property(x => x.UpdatedAt).IsModified = true;
         await db.SaveChangesAsync(ct);
@@ -185,7 +187,7 @@ internal sealed class PromotionAdminStore(
         var now = clock.UtcNow;
         var usage = await db.PromotionRedemptions.AsNoTracking().Where(x => x.PromotionId == promotion.Id)
             .GroupBy(x => x.PromotionId).Select(g => new Usage(g.Key,
-                g.Count(x => x.Status == PromotionRedemptionStatus.Reserved && x.ExpiresAt >= now),
+                g.Count(x => x.Status == PromotionRedemptionStatus.Reserved),
                 g.Count(x => x.Status == PromotionRedemptionStatus.Redeemed),
                 g.Count(x => x.Status == PromotionRedemptionStatus.Released), g.Count()))
             .SingleOrDefaultAsync(ct);

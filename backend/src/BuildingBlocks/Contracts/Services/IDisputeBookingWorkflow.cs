@@ -27,6 +27,8 @@ public interface IDisputeBookingWorkflow
 
     Task<Result> OpenAsync(Guid bookingId, CancellationToken ct = default);
 
+    Task<Result> WithdrawAsync(Guid bookingId, CancellationToken ct = default);
+
     Task<Result> ResolveAsync(
         Guid bookingId,
         string decision,

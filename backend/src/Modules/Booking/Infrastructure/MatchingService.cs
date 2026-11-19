@@ -64,8 +64,9 @@ internal sealed class MatchingService(
             return Array.Empty<MatchingCandidate>();
 
         var caregiverIds = profiles.Select(x => x.Id).ToArray();
+        // Use LINQ membership explicitly so newer SDKs cannot bind the EF query to a Span overload.
         var conflicts = await bookingDb.Bookings.AsNoTracking()
-            .Where(x => x.CaregiverId != null && caregiverIds.Contains(x.CaregiverId.Value)
+            .Where(x => x.CaregiverId != null && Enumerable.Contains(caregiverIds, x.CaregiverId.Value)
                 && x.Status != BookingStatus.Completed
                 && x.Status != BookingStatus.Cancelled
                 && x.Status != BookingStatus.Refunded
@@ -76,7 +77,7 @@ internal sealed class MatchingService(
                 x.CaregiverId!.Value, x.Id, x.ScheduledStart, x.ScheduledEnd))
             .ToListAsync(ct);
         var held = await bookingDb.CaregiverSlotHolds.AsNoTracking()
-            .Where(x => x.BookingId != bookingId && caregiverIds.Contains(x.CaregiverId)
+            .Where(x => x.BookingId != bookingId && Enumerable.Contains(caregiverIds, x.CaregiverId)
                 && (x.Status == "COMMITTED" || (x.Status == "HELD" && x.ExpiresAt > clock.UtcNow))
                 && x.ScheduledStart < booking.ScheduledEnd && x.ScheduledEnd > booking.ScheduledStart)
             .Select(x => x.CaregiverId).ToListAsync(ct);
@@ -152,6 +153,45 @@ internal sealed class MatchingService(
         return selected;
     }
 
+    public async Task<IReadOnlyList<MatchingCandidate>> EnsureInitialOffersAsync(Guid bookingId, CancellationToken ct)
+    {
+        var assignments = bookingDb.BookingAssignments.AsNoTracking()
+            .Where(a => a.BookingId == bookingId && a.Status != "SUGGESTED");
+        var alreadyStarted = await assignments.AnyAsync(ct);
+        var eligible = alreadyStarted ? [] : await GetEligibleCaregiversAsync(bookingId, ct);
+        var selected = eligible.Take(Math.Max(1, Config.InitialOfferCount)).ToArray();
+        await using var tx = await bookingDb.Database.BeginTransactionAsync(ct);
+        // Serialize the payment request and outbox retry before creating the initial offers.
+        var booking = await bookingDb.Bookings.FromSqlInterpolated(
+            $"SELECT * FROM booking.bookings WHERE id = {bookingId} FOR UPDATE").SingleOrDefaultAsync(ct);
+        if (booking is null) return [];
+        await bookingDb.Entry(booking).ReloadAsync(ct);
+        if (booking.Status != BookingStatus.Confirmed || booking.CaregiverId != null) return [];
+
+        if (alreadyStarted || await assignments.AnyAsync(ct))
+        {
+            var now = clock.UtcNow;
+            var pending = await assignments.Where(a => a.Status == "OFFERED" && a.ExpiresAt > now)
+                .ToArrayAsync(ct);
+            await tx.CommitAsync(ct);
+            foreach (var offer in pending) await NotifyOfferAsync(offer, ct);
+            return [];
+        }
+        if (selected.Length == 0)
+        {
+            var failed = booking.MarkMatchingFailed();
+            if (failed.IsFailure) throw new InvalidOperationException(failed.Error.Code);
+            await bookingDb.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            // BookingStatusChanged in the domain outbox handles this notification.
+            return [];
+        }
+        var offers = await SaveOffersAsync(bookingId, selected, ct);
+        await tx.CommitAsync(ct);
+        foreach (var offer in offers) await NotifyOfferAsync(offer, ct);
+        return selected;
+    }
+
     public async Task<int> ExpandExpiredOffersAsync(CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;
@@ -206,19 +246,23 @@ internal sealed class MatchingService(
     private async Task PersistOffersAsync(
         Guid bookingId, IReadOnlyCollection<MatchingCandidate> selected, CancellationToken ct)
     {
-        var now = DateTimeOffset.UtcNow;
+        var offers = await SaveOffersAsync(bookingId, selected, ct);
+        foreach (var offer in offers) await NotifyOfferAsync(offer, ct);
+    }
+
+    private async Task<BookingAssignment[]> SaveOffersAsync(
+        Guid bookingId, IReadOnlyCollection<MatchingCandidate> selected, CancellationToken ct)
+    {
+        var now = clock.UtcNow;
         var expiresAt = now.AddMinutes(Math.Max(1, Config.OfferLifetimeMinutes));
-        foreach (var candidate in selected)
-        {
-            bookingDb.BookingAssignments.Add(BookingAssignment.CreateOffered(
-                bookingId, candidate.CaregiverId, candidate.Rank, candidate.DistanceMeters,
-                candidate.Score, JsonSerializer.Serialize(candidate.ScoreBreakdown), now, expiresAt));
-        }
+        var offers = selected.Select(candidate => BookingAssignment.CreateOffered(
+            bookingId, candidate.CaregiverId, candidate.Rank, candidate.DistanceMeters,
+            candidate.Score, JsonSerializer.Serialize(candidate.ScoreBreakdown), now, expiresAt)).ToArray();
+        bookingDb.BookingAssignments.AddRange(offers);
         await bookingDb.SaveChangesAsync(ct);
-        foreach (var candidate in selected)
-            await NotifyOfferAsync(bookingId, candidate, ct);
         logger.LogInformation("Created {Count} caregiver offers for booking {BookingId}.",
             selected.Count, bookingId);
+        return offers;
     }
 
     private async Task MarkMatchingFailedAsync(Domain.Booking booking, CancellationToken ct)
@@ -233,6 +277,11 @@ internal sealed class MatchingService(
             return;
         }
         await bookingDb.SaveChangesAsync(ct);
+        await NotifyMatchingFailedAsync(booking, ct);
+    }
+
+    private async Task NotifyMatchingFailedAsync(Domain.Booking booking, CancellationToken ct)
+    {
         await hub.Clients.Group(CareTrackingHub.BookingGroup(booking.Id))
             .SendAsync("BookingStatusChanged", new BookingStatusChangedEvent(
                 booking.Id, "confirmed", "matching_failed", DateTimeOffset.UtcNow), ct);
@@ -247,11 +296,11 @@ internal sealed class MatchingService(
             }), ct);
     }
 
-    private async Task NotifyOfferAsync(
-        Guid bookingId, MatchingCandidate candidate, CancellationToken ct)
+    private async Task NotifyOfferAsync(BookingAssignment offer, CancellationToken ct)
     {
-        var userId = await people.GetUserIdByCaregiverProfileIdAsync(candidate.CaregiverId, ct);
+        var userId = await people.GetUserIdByCaregiverProfileIdAsync(offer.CaregiverId, ct);
         if (userId is null) return;
+        var bookingId = offer.BookingId;
         await notifications.NotifyAsync(new UserNotificationMessage(
             userId.Value, "BOOKING_OFFER", "Bạn có ca chăm sóc phù hợp",
             "Một khách hàng đang cần bạn xác nhận ca chăm sóc.",
@@ -260,7 +309,7 @@ internal sealed class MatchingService(
                 ["bookingId"] = bookingId.ToString(),
                 ["status"] = "confirmed",
                 ["deepLink"] = $"/shifts/{bookingId}"
-            }), ct);
+            }, EventId: offer.Id, OccurredAt: offer.OfferedAt), ct);
         await hub.Clients.Group(CareTrackingHub.CaregiverGroup(userId.Value))
             .SendAsync("BookingOfferChanged", new BookingOfferChangedEvent(
                 bookingId, "created", DateTimeOffset.UtcNow), ct);

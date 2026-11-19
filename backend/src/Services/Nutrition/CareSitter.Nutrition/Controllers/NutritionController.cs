@@ -32,7 +32,7 @@ public sealed class NutritionController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> ReplacementOptions(Guid beneficiaryId, Guid id, [FromQuery] string mealType, CancellationToken ct)
     {
         var result = await mediator.Send(new ReplacementOptionsQuery(beneficiaryId, id, mealType), ct);
-        return result.IsSuccess ? Ok(result.Value) : Failure(result.Error);
+        return result.IsSuccess ? Ok(result.Value.Select(RecipePresentation.Map).ToArray()) : Failure(result.Error);
     }
     [HttpPost("meal-plans")]
     public async Task<IActionResult> Save(Guid beneficiaryId, NutritionWriteRequest request, CancellationToken ct) =>

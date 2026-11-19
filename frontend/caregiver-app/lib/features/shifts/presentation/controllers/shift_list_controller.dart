@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:caregiver_app/core/auth/auth_notifier.dart';
+import 'package:caregiver_app/core/api/api_cancellation.dart';
 import 'package:caregiver_app/core/realtime/care_signalr_service.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/repositories/shift_repository.dart';
@@ -61,12 +62,15 @@ class ShiftListController extends StateNotifier<List<ShiftModel>> {
   late final Future<String> Function(String, XFile) _uploadSelfie;
   ShiftRealtimeController? _realtime;
   Future<void> refresh() => _sync.refresh();
+  Future<ShiftModel> loadDetail(String id, ApiCancellation token) =>
+      _sync.loadDetail(id, token);
   Future<void> acceptBooking(String id) => _lifecycle.accept(id);
   Future<void> declineBooking(String id, {String? reason}) =>
       _lifecycle.decline(id, reason: reason);
   Future<void> startEnRoute(String id) => _lifecycle.enRoute(id);
   Future<void> checkIn(String id) => _lifecycle.checkIn(id);
-  Future<void> checkOut(String id) => _lifecycle.checkout(id);
+  Future<void> checkOut(String id, String note) =>
+      _lifecycle.checkout(id, note);
   Future<void> completeShift(String id) => _lifecycle.complete(id);
   Future<void> addTimelineNote(String id, String note) =>
       _lifecycle.addNote(id, note);
