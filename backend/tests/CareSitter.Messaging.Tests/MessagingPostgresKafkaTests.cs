@@ -131,7 +131,7 @@ public sealed class MessagingPostgresKafkaTests(MessagingFixture fixture) : ICla
     }
 
     [Fact]
-    public async Task Broker_restart_preserves_committed_outbox_and_resumes_publication()
+    public async Task Broker_outage_preserves_committed_outbox_and_resumes_publication()
     {
         var topic = await fixture.CreateTopicAsync();
         using var host = BuildHost(topic);
@@ -145,7 +145,8 @@ public sealed class MessagingPostgresKafkaTests(MessagingFixture fixture) : ICla
                     new EventMetadata(id, DateTimeOffset.UtcNow, "test", id.ToString())));
             await db.SaveChangesAsync();
         }
-        await fixture.Kafka.StopAsync();
+        // Keep the advertised host port allocated while simulating a broker outage.
+        await fixture.Kafka.PauseAsync();
         try
         {
             await host.StartAsync();
@@ -155,7 +156,7 @@ public sealed class MessagingPostgresKafkaTests(MessagingFixture fixture) : ICla
                 return await db.Outbox.AnyAsync(x => x.Id == id && x.AttemptCount > 0 && x.PublishedAt == null && x.LastError != null);
             });
         }
-        finally { await fixture.Kafka.StartAsync(); }
+        finally { await fixture.Kafka.UnpauseAsync(); }
         await WaitUntil(async () =>
         {
             await using var db = Database();
