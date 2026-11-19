@@ -96,9 +96,9 @@ class _ProfilesList extends StatelessWidget {
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(
+            AppSpacing.section,
             AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.md,
+            AppSpacing.section,
             AppSpacing.xl,
           ),
           children: [

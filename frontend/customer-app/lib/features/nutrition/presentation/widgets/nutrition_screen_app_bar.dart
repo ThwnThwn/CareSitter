@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_tab_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:caresitter_customer/core/router/app_routes.dart';
@@ -9,6 +10,7 @@ class NutritionScreenAppBar extends StatelessWidget
     implements PreferredSizeWidget {
   const NutritionScreenAppBar({
     super.key,
+    this.inTab = false,
     required this.editing,
     required this.canReturnToMenu,
     required this.canReturnToBeneficiaries,
@@ -22,6 +24,7 @@ class NutritionScreenAppBar extends StatelessWidget
     required this.onChangeBeneficiary,
   });
 
+  final bool inTab;
   final bool editing;
   final bool canReturnToMenu;
   final bool canReturnToBeneficiaries;
@@ -40,70 +43,80 @@ class NutritionScreenAppBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     final hasMenu = canOpenHistory || canChangeBeneficiary;
-    return AppBar(
-      centerTitle: false,
-      title: Text(editing ? 'Cập nhật dinh dưỡng' : 'Thực đơn dinh dưỡng'),
-      leading: canReturnToMenu
-          ? IconButton(
-              tooltip: 'Quay lại thực đơn',
-              onPressed: onReturnToMenu,
-              icon: const Icon(Icons.arrow_back_rounded),
-            )
-          : canReturnToBeneficiaries
-              ? IconButton(
-                  tooltip: 'Trở về chọn người',
-                  onPressed: onReturnToBeneficiaries,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                )
-              : null,
-      actions: [
+    final title = editing ? 'Cập nhật dinh dưỡng' : 'Thực đơn dinh dưỡng';
+    final leading = canReturnToMenu
+        ? IconButton(
+            tooltip: 'Quay lại thực đơn',
+            onPressed: onReturnToMenu,
+            icon: const Icon(Icons.arrow_back_rounded),
+          )
+        : canReturnToBeneficiaries
+            ? IconButton(
+                tooltip: 'Trở về chọn người',
+                onPressed: onReturnToBeneficiaries,
+                icon: const Icon(Icons.arrow_back_rounded),
+              )
+            : null;
+    final actions = <Widget>[
+      IconButton(
+        tooltip: 'Tra cứu tài liệu dinh dưỡng',
+        color: AppColors.textHint,
+        onPressed: () => context.push(AppRoutes.nutritionKnowledge),
+        icon: const Icon(Icons.menu_book_outlined),
+      ),
+      if (canEdit)
         IconButton(
-          tooltip: 'Tra cứu tài liệu dinh dưỡng',
+          tooltip: 'Cập nhật thông tin dinh dưỡng',
           color: AppColors.textHint,
-          onPressed: () => context.push(AppRoutes.nutritionKnowledge),
-          icon: const Icon(Icons.menu_book_outlined),
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_outlined),
         ),
-        if (canEdit)
-          IconButton(
-            tooltip: 'Cập nhật thông tin dinh dưỡng',
-            color: AppColors.textHint,
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined),
-          ),
-        if (hasMenu)
-          PopupMenuButton<NutritionScreenMenuAction>(
-            tooltip: 'Tùy chọn thực đơn',
-            onSelected: (action) {
-              switch (action) {
-                case NutritionScreenMenuAction.history:
-                  onOpenHistory();
-                  break;
-                case NutritionScreenMenuAction.changeBeneficiary:
-                  onChangeBeneficiary();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              if (canOpenHistory)
-                const PopupMenuItem(
-                  value: NutritionScreenMenuAction.history,
-                  child: _MenuItem(
-                    icon: Icons.history_rounded,
-                    label: 'Thực đơn đã lưu',
-                  ),
+      if (hasMenu)
+        PopupMenuButton<NutritionScreenMenuAction>(
+          tooltip: 'Tùy chọn thực đơn',
+          onSelected: (action) {
+            switch (action) {
+              case NutritionScreenMenuAction.history:
+                onOpenHistory();
+                break;
+              case NutritionScreenMenuAction.changeBeneficiary:
+                onChangeBeneficiary();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            if (canOpenHistory)
+              const PopupMenuItem(
+                value: NutritionScreenMenuAction.history,
+                child: _MenuItem(
+                  icon: Icons.history_rounded,
+                  label: 'Thực đơn đã lưu',
                 ),
-              if (canChangeBeneficiary)
-                const PopupMenuItem(
-                  value: NutritionScreenMenuAction.changeBeneficiary,
-                  child: _MenuItem(
-                    icon: Icons.switch_account_outlined,
-                    label: 'Đổi người',
-                  ),
+              ),
+            if (canChangeBeneficiary)
+              const PopupMenuItem(
+                value: NutritionScreenMenuAction.changeBeneficiary,
+                child: _MenuItem(
+                  icon: Icons.switch_account_outlined,
+                  label: 'Đổi người',
                 ),
-            ],
-          ),
-      ],
-    );
+              ),
+          ],
+        ),
+    ];
+    return inTab
+        ? AppTabHeader(
+            title: title,
+            topPadding: MediaQuery.paddingOf(context).top,
+            leading: leading,
+            actions: actions,
+          )
+        : AppBar(
+            centerTitle: false,
+            title: Text(title),
+            leading: leading,
+            actions: actions,
+          );
   }
 }
 

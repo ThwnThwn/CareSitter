@@ -1,4 +1,5 @@
 import 'package:caresitter_customer/core/theme/app_theme.dart';
+import 'package:caresitter_customer/core/widgets/app_tab_header.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_controller.dart';
 import 'package:caresitter_customer/features/beneficiary/presentation/controllers/beneficiary_load_state_controller.dart';
 import 'package:caresitter_customer/features/nutrition/presentation/models/nutrition_profile_item.dart';
@@ -83,19 +84,21 @@ class _NutritionEntryScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        centerTitle: false,
-        title: const Text('Thực đơn dinh dưỡng'),
-        actions: [
-          IconButton(
-            tooltip: 'Tra cứu tài liệu dinh dưỡng',
-            color: AppColors.textHint,
-            onPressed: () => context.push(AppRoutes.nutritionKnowledge),
-            icon: const Icon(Icons.menu_book_outlined),
-          ),
-        ],
-      ),
-      body: body,
+      body: Column(children: [
+        AppTabHeader(
+          title: 'Thực đơn dinh dưỡng',
+          topPadding: MediaQuery.paddingOf(context).top,
+          actions: [
+            IconButton(
+              tooltip: 'Tra cứu tài liệu dinh dưỡng',
+              color: AppColors.textSecondary,
+              onPressed: () => context.push(AppRoutes.nutritionKnowledge),
+              icon: const Icon(Icons.menu_book_outlined),
+            ),
+          ],
+        ),
+        Expanded(child: body),
+      ]),
     );
   }
 }
